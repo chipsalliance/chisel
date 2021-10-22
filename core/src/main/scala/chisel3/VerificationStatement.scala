@@ -63,8 +63,8 @@ object assert {
     (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Assert = {
     val id = new Assert()
     when(!Module.reset.asBool()) {
-      Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
-      failureMessage("Assertion", line, cond, message, data)
+      val msg = failureMessage("Assertion", line, cond, message, data)
+      Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, msg))
     }
     id
   }
@@ -121,8 +121,8 @@ object assume {
     (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Assume = {
     val id = new Assume()
     when(!Module.reset.asBool()) {
-      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
-      failureMessage("Assumption", line, cond, message, data)
+      val msg = failureMessage("Assumption", line, cond, message, data)
+      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, msg))
     }
     id
   }
@@ -221,7 +221,7 @@ private object VerificationStatement {
 
   // creates a printf to inform the user of a failed assertion or assumption
   def failureMessage(kind: String, lineInfo: SourceLineInfo, cond: Bool, message: Option[String], data: Seq[Bits])
-    (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : Unit = {
+    (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : String = {
     val (filename, line, content) = lineInfo
     val lineMsg = s"$filename:$line $content".replaceAll("%", "%%")
     val fmt = message match {
@@ -232,5 +232,6 @@ private object VerificationStatement {
     when(!cond) {
       printf.printfWithoutReset(fmt, data:_*)
     }
+    fmt
   }
 }
