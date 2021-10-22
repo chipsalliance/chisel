@@ -3,7 +3,7 @@ layout: docs
 title:  "Multiple Clock Domains"
 section: "chisel3"
 ---
-# Multiple Clock Domain
+# Multiple Clock Domains
 
 Chisel 3 supports multiple clock domains as follows.
 
