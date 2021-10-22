@@ -170,7 +170,7 @@ private[chisel3] trait HasId extends InstanceId {
     * @param defaultSeed Optionally provide default seed for computing the name
     * @return the name, if it can be computed
     */
-  def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
+  private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
     /** Computes a name of this signal, given the seed and prefix
       * @param seed
       * @param prefix
@@ -214,7 +214,7 @@ private[chisel3] trait HasId extends InstanceId {
   // (e.g. tried to suggest a name to part of a Record)
   private[chisel3] def forceName(prefix: Option[String], default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
-      val candidate_name = computeName(prefix, Some(default)).get
+      val candidate_name = _computeName(prefix, Some(default)).get
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
     }
@@ -234,7 +234,7 @@ private[chisel3] trait HasId extends InstanceId {
 
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg fullName c
-    case None => computeName(None, None).get
+    case None => _computeName(None, None).get
   }
 
   // Helper for reifying views if they map to a single Target
