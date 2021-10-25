@@ -18,16 +18,6 @@ import firrtl.annotations.IsModule
   */
 case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends Hierarchy[A] {
 
-  /** Returns the original object which is instantiated here.
-    * If this is an instance of a clone, return that clone's original proto
-    *
-    * @return the original object which was instantiated
-    */
-  private[chisel3] def proto: A = cloned match {
-    case Left(value: A) => value
-    case Right(i: IsClone[A]) => i._proto
-  }
-
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = cloned match {
     case Left(value: BaseModule)        => Some(value)
@@ -42,9 +32,6 @@ case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, Is
     case Right(i: BaseModule)           => i._parent
     case Right(i: InstantiableClone[_]) => i._parent
   }
-
-  /** Updated by calls to [[apply]], to avoid recloning returned Data's */
-  private [chisel3] val cache = HashMap[Data, Data]()
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]

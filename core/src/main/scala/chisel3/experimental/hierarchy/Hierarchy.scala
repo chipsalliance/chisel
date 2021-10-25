@@ -7,7 +7,6 @@ import chisel3.internal.BaseModule.IsClone
 import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.IsModule
 import scala.annotation.implicitNotFound
-import scala.reflect.runtime.universe.TypeTag
 
 trait Hierarchy[+A] {
   private[chisel3] def cloned: Either[A, IsClone[A]]
@@ -15,10 +14,6 @@ trait Hierarchy[+A] {
     case Left(value: A) => value
     case Right(i: IsClone[A]) => i._proto
   }
-  private[chisel3] def definitionTypeTag: TypeTag[_]
-  private[chisel3] def protoTypeString: String = definitionTypeTag.tpe.toString
-  // SCALA Reflection API
-  def isA[B : WeakTypeTag]: Boolean
 
   /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
   private[chisel3] val cache = HashMap[Data, Data]()
@@ -48,16 +43,16 @@ object Hierarchy {
       * @return target of this hierarchy
       */
     def toTarget: IsModule = i match {
-      case d: Definition[T] => d.toTarget
-      case i: Instance[T]   => i.toTarget
+      case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toTarget
+      case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toTarget
     }
 
     /** Returns the toAbsoluteTarget of this hierarchy
       * @return absoluteTarget of this Hierarchy
       */
     def toAbsoluteTarget: IsModule = i match {
-      case d: Definition[T] => d.toAbsoluteTarget
-      case i: Instance[T]   => i.toAbsoluteTarget
+      case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toAbsoluteTarget
+      case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toAbsoluteTarget
     }
   }
 }
