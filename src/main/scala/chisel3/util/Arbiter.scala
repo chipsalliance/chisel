@@ -13,10 +13,23 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   *
   * @param gen data type
   * @param n number of inputs
-  * @group Define IO bundle definition for an Arbiter
+  * @group Signals IO bundle definition for an Arbiter
   */
 class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
   // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
+  /* Input data, one per potential sender
+    * @group Signals
+    */
+  val in  = Flipped(Vec(n, Decoupled(gen)))
+/* Output data after arbitration
+    * @group Signals
+    */
+  val out = Decoupled(gen)
+/* One-Hot vector indicating which output was chosen
+    * @group Signals
+    */
+  val chosen = Output(UInt(log2Ceil(n).W))
+}
 
   val in  = Flipped(Vec(n, Decoupled(gen)))
   val out = Decoupled(gen)
@@ -99,7 +112,6 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   * arb.io.in(0) <> producer0.io.out
   * arb.io.in(1) <> producer1.io.out
   * consumer.io.in <> arb.io.out
-  * @group Signals
   * }}}
   */
 @chiselName
@@ -116,7 +128,6 @@ class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](g
   * arb.io.in(0) <> producer0.io.out
   * arb.io.in(1) <> producer1.io.out
   * consumer.io.in <> arb.io.out
-  * @group Define
   * }}}
   */
 @chiselName
