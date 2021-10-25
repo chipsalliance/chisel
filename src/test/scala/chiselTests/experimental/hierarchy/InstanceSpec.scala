@@ -754,5 +754,14 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new Top)
     }
   }
+  describe("10: Select APIs") {
+    it("10.0: instancesOf") { }
+    it("10.1: allInstancesOf") { }
+    it("10.2: instancesIn") { }
+    it("10.3: definitionsOf") { }
+    it("10.4: allDefinitionsOf") { }
+    it("10.5: definitionsIn") { }
+    it("10.6: instances should fail when combined with hierarchy package") { }
+  }
 }
 
