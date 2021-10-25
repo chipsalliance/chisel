@@ -4,7 +4,7 @@ package chisel3.experimental.hierarchy
 
 import chisel3._
 import scala.collection.mutable.{HashMap, HashSet}
-import scala.reflect.runtime.universe.WeakTypeTag
+import scala.reflect.runtime.universe.TypeTag
 import chisel3.internal.BaseModule.IsClone
 import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.IsModule
@@ -25,12 +25,40 @@ trait Hierarchy[+A] {
   private[chisel3] val cache = HashMap[Data, Data]()
   private[chisel3] def getInnerDataContext: Option[BaseModule]
 
+  /** Determine whether underlying proto is of type provided.
+    *
+    * IMPORTANT: this function requires summoning a TypeTag[B], which will fail if B is an inner class.
+    * IMPORTANT: this function IGNORES type parameters, akin to normal type erasure.
+    * IMPORTANT: this function relies on Java reflection for underlying proto, but Scala reflection for provided type
+    *
+    * E.g. isA[List[Int]] will return true, even if underlying proto is of type List[String]
+    * @return Whether underlying proto is of provided type (with caveats outlined above)
+    */
+  def isA[B : TypeTag]: Boolean = {
+    val tptag = implicitly[TypeTag[B]]
+    val name = tptag.tpe.toString
+    inBaseClasses(name)
+  }
+
+  protected val superClasses = HashSet[String]()
+  protected def updateSuperClasses(clz: Class[_]): Unit = {
+    if(clz != null) {
+      superClasses += clz.getCanonicalName()
+      clz.getInterfaces().foreach(i => updateSuperClasses(i))
+      updateSuperClasses(clz.getSuperclass())
+    }
+  }
+  protected def inBaseClasses(clz: String): Boolean = {
+    if(superClasses.isEmpty) updateSuperClasses(proto.getClass())
+    superClasses.contains(clz)
+  }
+
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
     *
     * Given a selector function (that) which selects a member from the original, return the
-    *   corresponding member from the hierarhcy.
+    *   corresponding member from the hierarchy.
     *
     * Our @instantiable and @public macros generate the calls to this apply method
     *
