@@ -34,7 +34,6 @@ class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
   val in  = Flipped(Vec(n, Decoupled(gen)))
   val out = Decoupled(gen)
   val chosen = Output(UInt(log2Ceil(n).W))
-}
 
 /** Arbiter Control determining which producer has access
   */
