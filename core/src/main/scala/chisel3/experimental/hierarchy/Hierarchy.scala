@@ -8,6 +8,10 @@ import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.IsModule
 import scala.annotation.implicitNotFound
 
+/** Super-trait for Instance and Definition
+  *
+  * Enables writing functions which are Instance/Definition agnostic
+  */
 trait Hierarchy[+A] {
   private[chisel3] def cloned: Either[A, IsClone[A]]
   private[chisel3] def proto: A = cloned match {
