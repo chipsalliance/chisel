@@ -192,4 +192,8 @@ object Examples {
   class ConcreteHasBlah() extends HasBlah {
     val blah = 10
   }
+  @instantiable
+  class HasTypeParams[D <: Data](d: D) extends Module {
+    @public val blah = Wire(d)
+  }
 }
