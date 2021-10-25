@@ -197,9 +197,8 @@ package internal {
       /** Determines whether another object is a clone of the same underlying proto
         *
         * @param a
-        * @return
         */
-      def isACloneOf(a: Any): Boolean = {
+      def hasSameProto(a: Any): Boolean = {
         val aProto = a match {
           case x: IsClone[BaseModule] => x._proto
           case o => o
