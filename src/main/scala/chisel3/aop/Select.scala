@@ -6,10 +6,12 @@ import chisel3._
 import chisel3.internal.{HasId}
 import chisel3.experimental.BaseModule
 import chisel3.experimental.FixedPoint
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
+import chisel3.experimental.hierarchy._
 import chisel3.internal.PseudoModule
 import chisel3.internal.BaseModule.ModuleClone
 import firrtl.annotations.ReferenceTarget
+import scala.reflect.runtime.universe.TypeTag
 
 import scala.collection.mutable
 import chisel3.internal.naming.chiselName
@@ -39,6 +41,95 @@ object Select {
     case r: Record => r +: r.getElements.flatMap(getIntermediateAndLeafs)
     case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
     case other => Seq(other)
+  }
+
+  def instancesOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
+    check(parent)
+    parent.proto._component.get match {
+      case d: DefModule => d.commands.collect {
+        case d: DefInstance if d.id.toInstance.isA[T] => d.id.toInstance.asInstanceOf[Instance[T]]
+      }
+      case other => Nil
+    }
+  }
+
+  def allInstancesOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
+    val locals = instancesOf[T](root)
+    val allLocalInstances = instancesIn(root)
+    locals ++ (allLocalInstances.flatMap(allInstancesOf[T]))
+  }
+
+
+  /** Selects all instances directly instantiated within given definition
+    * @param module
+    * @return
+    */
+  def instancesIn(instance: Hierarchy[BaseModule]): Seq[Instance[BaseModule]] = {
+    check(instance)
+    instance.proto._component.get match {
+      case d: DefModule => d.commands.collect {
+        case d: DefInstance => d.id.toInstance
+      }
+      case other => Nil
+    }
+  }
+
+  /** Selects all instances directly and indirectly instantiated within given module
+    * @param module
+    * @return
+    */
+  def definitionsOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
+    check(parent)
+    type DefType = Definition[T]
+    val defs = parent.proto._component.get match {
+      case d: DefModule => d.commands.collect {
+        case d: DefInstance if d.id.toDefinition.isA[T] =>
+          d.id.toDefinition.asInstanceOf[Definition[T]]
+      }
+    }
+    val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) { case ((set, list), definition: Definition[T]) =>
+      if(set.contains(definition)) (set, list) else (set + definition, definition +: list)
+    }
+    defList
+  }
+
+  /** Selects all definitions directly and indirectly instantiated within given module
+    * @param module
+    * @return
+    */
+  def allDefinitionsOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
+    type DefType = Definition[T]
+    val defSet = mutable.HashSet[DefType]()
+    val defList = mutable.ArrayBuffer[DefType]()
+    def rec(hier: Hierarchy[BaseModule]): Unit = {
+      val returnedDefs = definitionsOf[T](hier)
+      returnedDefs.foreach { case d if !defSet.contains(d) =>
+        defSet += d
+        defList += d
+        rec(d)
+      }
+    }
+    rec(root)
+    defList.toList
+  }
+
+  /** Selects all instances directly instantiated within given module
+    * @param module
+    * @return
+    */
+  def definitionsIn(module: Hierarchy[BaseModule]): Seq[Definition[BaseModule]] = {
+    type DefType = Definition[BaseModule]
+    check(module)
+    val defs = module.proto._component.get match {
+      case d: DefModule => d.commands.collect {
+        case i: DefInstance => i.id.toDefinition
+      }
+      case other => Nil
+    }
+    val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) { case ((set, list), definition: Definition[BaseModule]) =>
+      if(set.contains(definition)) (set, list) else (set + definition, definition +: list)
+    }
+    defList
   }
 
 
@@ -88,7 +179,7 @@ object Select {
       case d: DefModule => d.commands.flatMap {
         case i: DefInstance => i.id match {
           case m: ModuleClone[_] if !m._madeFromDefinition => None
-          case _: PseudoModule => throw new Exception("Aspect APIs are currently incompatible with Definition/Instance")
+          case _: PseudoModule => throw new Exception("instances, collectDeep, and getDeep are currently incompatible with Definition/Instance!")
           case other          => Some(other)
         }
         case _ => None
@@ -237,7 +328,7 @@ object Select {
     var seenDef = isPort
     searchWhens(module, (cmd: Command, preds) => {
       cmd match {
-        case cmd: Definition if cmd.id.isInstanceOf[Data] =>
+        case cmd: DefinitionIR if cmd.id.isInstanceOf[Data] =>
           val x = getIntermediateAndLeafs(cmd.id.asInstanceOf[Data])
           if(x.contains(signal)) prePredicates = preds
         case Connect(_, loc@Node(d: Data), exp) =>
@@ -297,6 +388,7 @@ object Select {
     require(module.isClosed, "Can't use Selector on modules that have not finished construction!")
     require(module._component.isDefined, "Can't use Selector on modules that don't have components!")
   }
+  private def check(hierarchy: Hierarchy[BaseModule]): Unit = check(hierarchy.proto)
 
   // Given a loc, return all subcomponents of id that could be assigned to in connect
   private def getEffected(a: Arg): Seq[Data] = a match {
