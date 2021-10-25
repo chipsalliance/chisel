@@ -16,7 +16,7 @@ import firrtl.annotations.IsModule
   *
   * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) {
+case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends Hierarchy[A] {
 
   /** Returns the original object which is instantiated here.
     * If this is an instance of a clone, return that clone's original proto
