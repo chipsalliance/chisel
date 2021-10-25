@@ -24,7 +24,6 @@ object Select {
   /** Return just leaf components of expanded node
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies are not included
-    * @return
     */
   def getLeafs(d: Data): Seq[Data] = d match {
     case r: Record => r.getElements.flatMap(getLeafs)
@@ -35,7 +34,6 @@ object Select {
   /** Return all expanded components, including intermediate aggregate nodes
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
-    * @return
     */
   def getIntermediateAndLeafs(d: Data): Seq[Data] = d match {
     case r: Record => r +: r.getElements.flatMap(getIntermediateAndLeafs)
@@ -43,6 +41,10 @@ object Select {
     case other => Seq(other)
   }
 
+  /** Selects all Instances of instances/modules directly instantiated within given module, of provided type
+    * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    * @param parent hierarchy which instantiates the returned Definitions
+    */
   def instancesOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
     check(parent)
     parent.proto._component.get match {
@@ -53,6 +55,10 @@ object Select {
     }
   }
 
+  /** Selects all Instances's directly and indirectly instantiated within given root hierarchy, of provided type
+    * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    * @param root top of the hierarchy to search for instances/modules of given type
+    */
   def allInstancesOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
     val locals = instancesOf[T](root)
     val allLocalInstances = instancesIn(root)
@@ -60,13 +66,12 @@ object Select {
   }
 
 
-  /** Selects all instances directly instantiated within given definition
-    * @param module
-    * @return
+  /** Selects all instances/modules directly instantiated within given definition
+    * @param instance hierarch
     */
-  def instancesIn(instance: Hierarchy[BaseModule]): Seq[Instance[BaseModule]] = {
-    check(instance)
-    instance.proto._component.get match {
+  def instancesIn(hierarchy: Hierarchy[BaseModule]): Seq[Instance[BaseModule]] = {
+    check(hierarchy)
+    hierarchy.proto._component.get match {
       case d: DefModule => d.commands.collect {
         case d: DefInstance => d.id.toInstance
       }
@@ -74,9 +79,9 @@ object Select {
     }
   }
 
-  /** Selects all instances directly and indirectly instantiated within given module
-    * @param module
-    * @return
+  /** Selects all Definitions of instances/modules directly instantiated within given module, of provided type
+    * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    * @param parent hierarchy which instantiates the returned Definitions
     */
   def definitionsOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
     check(parent)
@@ -93,9 +98,9 @@ object Select {
     defList
   }
 
-  /** Selects all definitions directly and indirectly instantiated within given module
-    * @param module
-    * @return
+  /** Selects all Definition's directly and indirectly instantiated within given root hierarchy, of provided type
+    * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    * @param root top of the hierarchy to search for definitions of given type
     */
   def allDefinitionsOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
     type DefType = Definition[T]
@@ -113,9 +118,8 @@ object Select {
     defList.toList
   }
 
-  /** Selects all instances directly instantiated within given module
+  /** Selects the Definition's of all instances/modules directly instantiated within given module
     * @param module
-    * @return
     */
   def definitionsIn(module: Hierarchy[BaseModule]): Seq[Definition[BaseModule]] = {
     type DefType = Definition[BaseModule]
@@ -136,11 +140,13 @@ object Select {
   /** Collects all components selected by collector within module and all children modules it instantiates
     *   directly or indirectly
     * Accepts a collector function, rather than a collector partial function (see [[collectDeep]])
+    *
+    * NOTE: This API will not work with the new experimental hierarchy package. Instead, use allInstancesOf or allDefinitionsOf.
+    *
     * @param module Module to collect components, as well as all children module it directly and indirectly instantiates
     * @param collector Collector function to pick, given a module, which components to collect
     * @param tag Required for generics to work, should ignore this
     * @tparam T Type of the component that will be collected
-    * @return
     */
   def getDeep[T](module: BaseModule)(collector: BaseModule => Seq[T]): Seq[T] = {
     check(module)
@@ -154,11 +160,13 @@ object Select {
   /** Collects all components selected by collector within module and all children modules it instantiates
     *   directly or indirectly
     * Accepts a collector partial function, rather than a collector function (see [[getDeep]])
+    *
+    * NOTE: This API will not work with the new experimental hierarchy package. Instead, use allInstancesOf or allDefinitionsOf.
+    *
     * @param module Module to collect components, as well as all children module it directly and indirectly instantiates
     * @param collector Collector partial function to pick, given a module, which components to collect
     * @param tag Required for generics to work, should ignore this
     * @tparam T Type of the component that will be collected
-    * @return
     */
   def collectDeep[T](module: BaseModule)(collector: PartialFunction[BaseModule, T]): Iterable[T] = {
     check(module)
@@ -169,9 +177,11 @@ object Select {
     myItems ++ deepChildrenItems
   }
 
-  /** Selects all instances directly instantiated within given module
+  /** Selects all modules directly instantiated within given module
+    *
+    * NOTE: This API will not work with the new experimental hierarchy package. Instead, use instancesIn or definitionsIn.
+    *
     * @param module
-    * @return
     */
   def instances(module: BaseModule): Seq[BaseModule] = {
     check(module)
@@ -190,7 +200,6 @@ object Select {
 
   /** Selects all registers directly instantiated within given module
     * @param module
-    * @return
     */
   def registers(module: BaseModule): Seq[Data] = {
     check(module)
@@ -202,7 +211,6 @@ object Select {
 
   /** Selects all ios directly contained within given module
     * @param module
-    * @return
     */
   def ios(module: BaseModule): Seq[Data] = {
     check(module)
@@ -211,7 +219,6 @@ object Select {
 
   /** Selects all SyncReadMems directly contained within given module
     * @param module
-    * @return
     */
   def syncReadMems(module: BaseModule): Seq[SyncReadMem[_]] = {
     check(module)
@@ -222,7 +229,6 @@ object Select {
 
   /** Selects all Mems directly contained within given module
     * @param module
-    * @return
     */
   def mems(module: BaseModule): Seq[Mem[_]] = {
     check(module)
@@ -233,7 +239,6 @@ object Select {
 
   /** Selects all arithmetic or logical operators directly instantiated within given module
     * @param module
-    * @return
     */
   def ops(module: BaseModule): Seq[(String, Data)] = {
     check(module)
@@ -246,7 +251,6 @@ object Select {
     * The kind of operators are contained in [[chisel3.internal.firrtl.PrimOp]]
     * @param opKind the kind of operator, e.g. "mux", "add", or "bits"
     * @param module
-    * @return
     */
   def ops(opKind: String)(module: BaseModule): Seq[Data] = {
     check(module)
@@ -257,7 +261,6 @@ object Select {
 
   /** Selects all wires in a module
     * @param module
-    * @return
     */
   def wires(module: BaseModule): Seq[Data] = {
     check(module)
@@ -268,7 +271,6 @@ object Select {
 
   /** Selects all memory ports, including their direction and memory
     * @param module
-    * @return
     */
   def memPorts(module: BaseModule): Seq[(Data, MemPortDirection, MemBase[_])] = {
     check(module)
@@ -280,7 +282,6 @@ object Select {
   /** Selects all memory ports of a given direction, including their memory
     * @param dir The direction of memory ports to select
     * @param module
-    * @return
     */
   def memPorts(dir: MemPortDirection)(module: BaseModule): Seq[(Data, MemBase[_])] = {
     check(module)
@@ -291,7 +292,6 @@ object Select {
 
   /** Selects all components who have been set to be invalid, even if they are later connected to
     * @param module
-    * @return
     */
   def invalids(module: BaseModule): Seq[Data] = {
     check(module)
@@ -302,7 +302,6 @@ object Select {
 
   /** Selects all components who are attached to a given signal, within a module
     * @param module
-    * @return
     */
   def attachedTo(module: BaseModule)(signal: Data): Set[Data] = {
     check(module)
@@ -317,7 +316,6 @@ object Select {
     * E.g. if signal = io.foo.bar, connectionsTo will return all connections to io, io.foo, and io.bar
     * @param module
     * @param signal
-    * @return
     */
   def connectionsTo(module: BaseModule)(signal: Data): Seq[PredicatedConnect] = {
     check(module)
@@ -354,7 +352,6 @@ object Select {
   /** Selects all stop statements, and includes the predicates surrounding the stop statement
     *
     * @param module
-    * @return
     */
   def stops(module: BaseModule): Seq[Stop]  = {
     val stops = mutable.ArrayBuffer[Stop]()
@@ -370,7 +367,6 @@ object Select {
   /** Selects all printf statements, and includes the predicates surrounding the printf statement
     *
     * @param module
-    * @return
     */
   def printfs(module: BaseModule): Seq[Printf] = {
     val printfs = mutable.ArrayBuffer[Printf]()
