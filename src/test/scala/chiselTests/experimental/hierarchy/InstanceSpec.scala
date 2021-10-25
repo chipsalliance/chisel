@@ -144,6 +144,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain (MarkAnnotation("~Top|AddOneWithAnnotation>innerWire".rt, "innerWire"))
     }
+    it("1.11: should work on things with type parameters"){
+      class Top extends Module {
+        val definition = Definition(new HasTypeParams[UInt](UInt(3.W)))
+        val i0 = Instance(definition)
+        mark(i0.blah, "blah")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain (MarkAnnotation("~Top|Top/i0:HasTypeParams>blah".rt, "blah"))
+    }
   }
   describe("2: Annotations on designs not in the same chisel compilation") {
     it("2.0: should work on an innerWire, marked in a different compilation") {

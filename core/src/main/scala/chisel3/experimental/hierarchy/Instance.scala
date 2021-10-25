@@ -16,7 +16,7 @@ import firrtl.annotations.IsModule
   *
   * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends Hierarchy[A] {
+final case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends SealedHierarchy[A] {
 
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = cloned match {

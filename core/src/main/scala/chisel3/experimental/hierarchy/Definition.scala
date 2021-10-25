@@ -20,7 +20,7 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   *
   * @param cloned The internal representation of the definition, which may be either be directly the object, or a clone of an object
   */
-case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends IsLookupable with Hierarchy[A] {
+final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends IsLookupable with SealedHierarchy[A] {
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
     *
