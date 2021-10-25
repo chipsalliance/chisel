@@ -99,7 +99,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   * arb.io.in(0) <> producer0.io.out
   * arb.io.in(1) <> producer1.io.out
   * consumer.io.in <> arb.io.out
-  * @group Define
+  * @group Signals
   * }}}
   */
 @chiselName
