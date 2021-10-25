@@ -13,6 +13,7 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   *
   * @param gen data type
   * @param n number of inputs
+  * @group Define IO bundle definition for an Arbiter
   */
 class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
   // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
@@ -98,6 +99,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   * arb.io.in(0) <> producer0.io.out
   * arb.io.in(1) <> producer1.io.out
   * consumer.io.in <> arb.io.out
+  * @group Define
   * }}}
   */
 class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](gen, n, 1)
@@ -113,6 +115,7 @@ class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](g
   * arb.io.in(0) <> producer0.io.out
   * arb.io.in(1) <> producer1.io.out
   * consumer.io.in <> arb.io.out
+  * @group Define
   * }}}
   */
 class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
