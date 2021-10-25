@@ -14,7 +14,7 @@ import scala.annotation.implicitNotFound
   *
   * Enables writing functions which are Instance/Definition agnostic
   */
-trait Hierarchy[+A] {
+sealed trait Hierarchy[+A] {
   private[chisel3] def cloned: Either[A, IsClone[A]]
   private[chisel3] def proto: A = cloned match {
     case Left(value: A) => value
@@ -42,6 +42,9 @@ trait Hierarchy[+A] {
     */
   def _lookup[B, C](that: A => B)(implicit lookup: Lookupable[B], macroGenerated: chisel3.internal.MacroGenerated): lookup.C
 }
+
+// Used to effectively seal Hierarchy, without requiring Definition and Instance to be in this file.
+private[chisel3] trait SealedHierarchy[+A] extends Hierarchy[A]
 
 object Hierarchy {
   implicit class HierarchyBaseModuleExtensions[T <: BaseModule](i: Hierarchy[T]) {
