@@ -42,17 +42,19 @@ private[chisel3] object instantiableMacro {
           val defname = TypeName(tpname + c.freshName())
           val instname = TypeName(tpname + c.freshName())
           val (newStats, extensions) = processBody(stats)
+          val argTParams = tparams.map(_.name)
           (q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats } """,
-           Seq(q"""implicit class $defname(module: chisel3.experimental.hierarchy.Definition[$tpname]) { ..$extensions }""",
-               q"""implicit class $instname(module: chisel3.experimental.hierarchy.Instance[$tpname]) { ..$extensions } """),
+           Seq(q"""implicit class $defname[..$tparams](module: chisel3.experimental.hierarchy.Definition[$tpname[..$argTParams]]) { ..$extensions }""",
+               q"""implicit class $instname[..$tparams](module: chisel3.experimental.hierarchy.Instance[$tpname[..$argTParams]]) { ..$extensions } """),
            tpname)
         case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname + c.freshName())
           val instname = TypeName(tpname + c.freshName())
           val (newStats, extensions) = processBody(stats)
+          val argTParams = tparams.map(_.name)
           (q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats }",
-           Seq(q"""implicit class $defname(module: chisel3.experimental.hierarchy.Definition[$tpname]) { ..$extensions }""",
-               q"""implicit class $instname(module: chisel3.experimental.hierarchy.Instance[$tpname]) { ..$extensions } """),
+           Seq(q"""implicit class $defname[..$tparams](module: chisel3.experimental.hierarchy.Definition[$tpname[..$argTParams]]) { ..$extensions }""",
+               q"""implicit class $instname[..$tparams](module: chisel3.experimental.hierarchy.Instance[$tpname[..$argTParams]]) { ..$extensions } """),
            tpname)
       }
       val newObj = objOpt match {
