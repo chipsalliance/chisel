@@ -93,9 +93,9 @@ object Select {
     * @param root top of the hierarchy to search for instances/modules of given type
     */
   def allInstancesOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
-    val locals = instancesOf[T](root)
+    val soFar = if(root.isA[T]) Seq(root.toInstance.asInstanceOf[Instance[T]]) else Nil
     val allLocalInstances = instancesIn(root)
-    locals ++ (allLocalInstances.flatMap(allInstancesOf[T]))
+    soFar ++ (allLocalInstances.flatMap(allInstancesOf[T]))
   }
 
   /** Selects the Definitions of all instances/modules directly instantiated within given module
@@ -165,21 +165,18 @@ object Select {
     val allDefSet = mutable.HashSet[Definition[BaseModule]]()
     val defSet = mutable.HashSet[DefType]()
     val defList = mutable.ArrayBuffer[DefType]()
-    def rec(hier: Hierarchy[BaseModule]): Unit = {
-      val returnedDefs = definitionsOf[T](hier)
-      returnedDefs.collect {
-        case d if !defSet.contains(d) =>
-          defSet += d
-          defList += d
+    def rec(hier: Definition[BaseModule]): Unit = {
+      if(hier.isA[T] && !defSet.contains(hier.asInstanceOf[DefType])) {
+        defSet  += hier.asInstanceOf[DefType]
+        defList += hier.asInstanceOf[DefType]
       }
+      allDefSet += hier
       val allDefs = definitionsIn(hier)
       allDefs.collect {
-        case d if !allDefSet.contains(d) =>
-          allDefSet += d
-          rec(d)
+        case d if !allDefSet.contains(d) => rec(d)
       }
     }
-    rec(root)
+    rec(root.toDefinition)
     defList.toList
   }
 

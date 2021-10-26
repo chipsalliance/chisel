@@ -49,6 +49,9 @@ final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Eithe
     case value: IsInstantiable => None
   }
 
+  override def toDefinition: Definition[A] = this
+  override def toInstance: Instance[A] = new Instance(cloned)
+
 }
 
 /** Factory methods for constructing [[Definition]]s */

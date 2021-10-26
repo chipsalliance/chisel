@@ -69,6 +69,9 @@ sealed trait Hierarchy[+A] {
     * @param macroGenerated a value created in the macro, to make it harder for users to use this API
     */
   def _lookup[B, C](that: A => B)(implicit lookup: Lookupable[B], macroGenerated: chisel3.internal.MacroGenerated): lookup.C
+
+  def toDefinition: Definition[A]
+  def toInstance: Instance[A]
 }
 
 // Used to effectively seal Hierarchy, without requiring Definition and Instance to be in this file.
