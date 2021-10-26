@@ -13,7 +13,6 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   *
   * @param gen data type
   * @param n number of inputs
-  * @group Signals IO bundle definition for an Arbiter
   */
 class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
   // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
