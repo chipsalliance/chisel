@@ -85,7 +85,8 @@ object Select {
     }
   }
 
-  /** Selects all Instances's directly and indirectly instantiated within given root hierarchy, of provided type
+  /** Selects all Instances directly and indirectly instantiated within given root hierarchy, of provided type
+    * 
     * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
     * @param root top of the hierarchy to search for instances/modules of given type
     */
@@ -95,7 +96,8 @@ object Select {
     locals ++ (allLocalInstances.flatMap(allInstancesOf[T]))
   }
 
-  /** Selects the Definition's of all instances/modules directly instantiated within given module
+  /** Selects the Definitions of all instances/modules directly instantiated within given module
+    * 
     * @param parent
     */
   def definitionsIn(parent: Hierarchy[BaseModule]): Seq[Definition[BaseModule]] = {
@@ -122,6 +124,7 @@ object Select {
 
 
   /** Selects all Definitions of instances/modules directly instantiated within given module, of provided type
+    * 
     * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
     * @param parent hierarchy which instantiates the returned Definitions
     */
