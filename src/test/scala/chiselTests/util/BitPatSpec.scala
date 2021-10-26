@@ -42,7 +42,7 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
     b(6, 6) should be(BitPat("b1"))
   }
 
-  it should "have a reflective overlap relation" in {
+  it should "have a commutative overlap method" in {
     val a = BitPat("b1001???")
     val b = BitPat("b10?1???")
     val c = BitPat("b10?0???")
@@ -53,7 +53,7 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
     c.overlap(a) should be(false)
   }
 
-  it should "have a anti-reflective contain relation" in {
+  it should "have a noncommutative contain method" in {
     val a = BitPat("b1001???")
     val b = BitPat("b10?1???")
     val c = BitPat("b10?0???")

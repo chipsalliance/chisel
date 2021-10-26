@@ -172,18 +172,17 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
 
   override def toString = s"BitPat($rawString)"
 
-  /**
-    * If a BitPat overlaps with another BitPat, i.e., exists x : UInt that (x === this) && (x === rhs)
+  /** If a BitPat overlaps with another BitPat, i.e., exists `x : UInt` such that `(x === this) && (x === rhs)`
     *
-    * (lhs overlap rhs) iff bitwise: both care (lhs.mask & rhs.mask) => both equal (lhs.value == rhs.value)
+    * (lhs overlap rhs) iff bitwise: both care (`lhs.mask & rhs.mask`) implies both equal (`lhs.value == rhs.value`)
     */
-  def overlap(rhs: BitPat): Boolean = ((mask & rhs.mask) & (value ^ rhs.value)) == 0
-  /**
-    * If a BitPat contains another BitPat
+  def overlaps(rhs: BitPat): Boolean = ((mask & rhs.mask) & (value ^ rhs.value)) == 0
+
+  /** If a BitPat contains another BitPat
     *
-    * (lhs contain rhs) iff bitwise: lhs care => rhs also care && equal (~(rhs.mask & (value xnor rhs.value)))
+    * (lhs contain rhs) iff bitwise: lhs cares implies rhs also cares && equal (`~(rhs.mask & (lhs.value xnor rhs.value))`)
     */
-  def contain(rhs: BitPat): Boolean = (mask & (~rhs.mask | (value ^ rhs.value))) == 0
+  def supersetOf(rhs: BitPat): Boolean = (mask & (~rhs.mask | (value ^ rhs.value))) == 0
 
   /**
     * Calculate intersection of two BitPats
