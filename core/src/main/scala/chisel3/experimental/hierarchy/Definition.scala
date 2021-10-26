@@ -18,13 +18,9 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   * 
   * These definitions are then used to create multiple [[Instance]]s.
   *
-  * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
+  * @param cloned The internal representation of the definition, which may be either be directly the object, or a clone of an object
   */
-case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends IsLookupable {
-  private[chisel3] def proto: A = cloned match {
-    case Left(value: A) => value
-    case Right(i: IsClone[A]) => i._proto
-  }
+final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends IsLookupable with SealedHierarchy[A] {
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
     *
@@ -42,10 +38,6 @@ case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, I
   def _lookup[B, C](that: A => B)(implicit lookup: Lookupable[B], macroGenerated: chisel3.internal.MacroGenerated): lookup.C = {
     lookup.definitionLookup(that, this)
   }
-
-  /** Updated by calls to [[apply]], to avoid recloning returned Data's */
-  private [chisel3] val cache = HashMap[Data, Data]()
-
 
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {

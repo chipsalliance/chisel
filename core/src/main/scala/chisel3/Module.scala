@@ -193,7 +193,18 @@ package internal {
       // Underlying object of which this is a clone of
       val _proto: T
       def getProto: T = _proto
-      def isACloneOf(a: Any): Boolean = this == a || _proto == a
+
+      /** Determines whether another object is a clone of the same underlying proto
+        *
+        * @param a
+        */
+      def hasSameProto(a: Any): Boolean = {
+        val aProto = a match {
+          case x: IsClone[BaseModule] => x._proto
+          case o => o
+        }
+        this == aProto || _proto == aProto
+      }
     }
 
     // Private internal class to serve as a _parent for Data in cloned ports
