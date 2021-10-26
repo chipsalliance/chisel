@@ -20,6 +20,7 @@ class AliasedAggregateFieldException(message: String) extends ChiselException(me
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
+  * @group Signals The actual hardware fields of the Bundle
   */
 sealed abstract class Aggregate extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
