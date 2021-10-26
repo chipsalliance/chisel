@@ -755,13 +755,100 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("10: Select APIs") {
-    it("10.0: instancesOf") { }
-    it("10.1: allInstancesOf") { }
-    it("10.2: instancesIn") { }
-    it("10.3: definitionsOf") { }
-    it("10.4: allDefinitionsOf") { }
-    it("10.5: definitionsIn") { }
-    it("10.6: instances should fail when combined with hierarchy package") { }
+    it("10.0: instancesOf") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
+        val targets = aop.Select.instancesOf[AddOne](m.toDefinition).map { i: Instance[AddOne] => i.toTarget }
+        targets should be (Seq(
+          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_2".it,
+        ))
+      })
+      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+    }
+    it("10.1: instancesIn") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
+        val insts = aop.Select.instancesIn(m.toDefinition)
+        val abs = insts.map { i: Instance[BaseModule] => i.toAbsoluteTarget }
+        val rel = insts.map { i: Instance[BaseModule] => i.toTarget }
+        abs should be (Seq(
+          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_2".it,
+        ))
+        rel should be (Seq(
+          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_2".it,
+        ))
+      })
+      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+    }
+    it("10.2: allInstancesOf") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        val insts = aop.Select.allInstancesOf[AddOne](m.toDefinition)
+        val abs = insts.map { i: Instance[AddOne] => i.toAbsoluteTarget }
+        val rel = insts.map { i: Instance[AddOne] => i.toTarget }
+        rel should be (Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne".it,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_2".it,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne".it,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_2".it,
+        ))
+        abs should be (Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne".it,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_2".it,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne".it,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_2".it,
+        ))
+      })
+      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+    }
+    it("10.3: definitionsOf") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
+        val targets = aop.Select.definitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.toTarget }
+        targets should be (Seq(
+          "~AddTwoMixedModules|AddOne".mt,
+          "~AddTwoMixedModules|AddOne_2".mt,
+        ))
+      })
+      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+    }
+    it("10.4: definitionsIn") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
+        val targets = aop.Select.definitionsIn(m.toDefinition).map { i: Definition[BaseModule] => i.toTarget }
+        targets should be (Seq(
+          "~AddTwoMixedModules|AddOne".mt,
+          "~AddTwoMixedModules|AddOne_2".mt,
+        ))
+      })
+      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+    }
+    it("10.5: allDefinitionsOf") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        val targets = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.toTarget }
+        targets should be (Seq(
+          "~AddFour|AddOne".mt,
+          "~AddFour|AddOne_2".mt,
+        ))
+      })
+      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+    }
+    it("10.6: Select.collectDeep should fail when combined with hierarchy package") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        aop.Select.collectDeep(m) { case m: AddOne => m.toTarget }
+      })
+      intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
+    }
+    it("10.7: Select.getDeep should fail when combined with hierarchy package") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        aop.Select.getDeep(m) { m: BaseModule => Nil }
+      })
+      intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
+    }
+    it("10.8: Select.instances should fail when combined with hierarchy package") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        aop.Select.instances(m)
+      })
+      intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
+    }
   }
 }
 

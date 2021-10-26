@@ -88,6 +88,21 @@ object Module extends SourceInfoDoc {
   def reset: Reset = Builder.forcedReset
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
+
+  private[chisel3] def do_pseudo_apply[T <: BaseModule](bc: => T)
+                               (implicit sourceInfo: SourceInfo,
+                                         compileOptions: CompileOptions): T = {
+    val parent = Builder.currentModule
+
+    // Execute the module, this has the following side effects:
+    //   - set currentModule
+    //   - unset readyForModuleConstr
+    //   - reset whenStack to be empty
+    //   - set currentClockAndReset
+    val module: T = bc  // bc is actually evaluated here
+
+    module
+  }
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -346,13 +361,19 @@ package experimental {
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
-    if (!Builder.readyForModuleConstr) {
-      throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
+    this match {
+      case _: PseudoModule =>
+      case other =>
+        if (!Builder.readyForModuleConstr) {
+          throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
+        }
     }
-    readyForModuleConstr = false
+    if(Builder.hasDynamicContext) {
+      readyForModuleConstr = false
 
-    Builder.currentModule = Some(this)
-    Builder.whenStack = Nil
+      Builder.currentModule = Some(this)
+      Builder.whenStack = Nil
+    }
 
     //
     // Module Construction Internals

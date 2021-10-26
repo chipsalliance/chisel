@@ -41,15 +41,45 @@ object Select {
     case other => Seq(other)
   }
 
+  /** Selects all instances/modules directly instantiated within given definition
+    * @param instance hierarch
+    */
+  def instancesIn(parent: Hierarchy[BaseModule]): Seq[Instance[BaseModule]] = {
+    check(parent)
+    implicit val mg = new chisel3.internal.MacroGenerated{}
+    parent.proto._component.get match {
+      case d: DefModule => d.commands.collect {
+        case d: DefInstance =>
+          d.id match {
+            case p: chisel3.internal.BaseModule.IsClone[_] =>
+              parent._lookup { x => new Instance(Right(p)).asInstanceOf[Instance[BaseModule]] }
+            case other: BaseModule =>
+              parent._lookup { x => other }
+          }
+      }
+      case other => Nil
+    }
+  }
+
   /** Selects all Instances of instances/modules directly instantiated within given module, of provided type
     * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
     * @param parent hierarchy which instantiates the returned Definitions
     */
   def instancesOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
     check(parent)
+    implicit val mg = new chisel3.internal.MacroGenerated{}
     parent.proto._component.get match {
-      case d: DefModule => d.commands.collect {
-        case d: DefInstance if d.id.toInstance.isA[T] => d.id.toInstance.asInstanceOf[Instance[T]]
+      case d: DefModule => d.commands.flatMap {
+        case d: DefInstance =>
+          d.id match {
+            case p: chisel3.internal.BaseModule.IsClone[_] =>
+              val i = parent._lookup { x => new Instance(Right(p)).asInstanceOf[Instance[BaseModule]] }
+              if(i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
+            case other: BaseModule =>
+              val i = parent._lookup { x => other }
+              if(i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
+          }
+        case other => None
       }
       case other => Nil
     }
@@ -65,19 +95,31 @@ object Select {
     locals ++ (allLocalInstances.flatMap(allInstancesOf[T]))
   }
 
-
-  /** Selects all instances/modules directly instantiated within given definition
-    * @param instance hierarch
+  /** Selects the Definition's of all instances/modules directly instantiated within given module
+    * @param parent
     */
-  def instancesIn(hierarchy: Hierarchy[BaseModule]): Seq[Instance[BaseModule]] = {
-    check(hierarchy)
-    hierarchy.proto._component.get match {
+  def definitionsIn(parent: Hierarchy[BaseModule]): Seq[Definition[BaseModule]] = {
+    type DefType = Definition[BaseModule]
+    implicit val mg = new chisel3.internal.MacroGenerated{}
+    check(parent)
+    val defs = parent.proto._component.get match {
       case d: DefModule => d.commands.collect {
-        case d: DefInstance => d.id.toInstance
+        case i: DefInstance =>
+          i.id match {
+            case p: chisel3.internal.BaseModule.IsClone[_] =>
+              parent._lookup { x => new Definition(Right(p)).asInstanceOf[Definition[BaseModule]] }
+            case other: BaseModule =>
+              parent._lookup { x => other.toDefinition }
+          }
       }
       case other => Nil
     }
+    val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) { case ((set, list), definition: Definition[BaseModule]) =>
+      if(set.contains(definition)) (set, list) else (set + definition, definition +: list)
+    }
+    defList.reverse
   }
+
 
   /** Selects all Definitions of instances/modules directly instantiated within given module, of provided type
     * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
@@ -85,17 +127,26 @@ object Select {
     */
   def definitionsOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
     check(parent)
+    implicit val mg = new chisel3.internal.MacroGenerated{}
     type DefType = Definition[T]
     val defs = parent.proto._component.get match {
-      case d: DefModule => d.commands.collect {
-        case d: DefInstance if d.id.toDefinition.isA[T] =>
-          d.id.toDefinition.asInstanceOf[Definition[T]]
+      case d: DefModule => d.commands.flatMap {
+        case d: DefInstance =>
+          d.id match {
+            case p: chisel3.internal.BaseModule.IsClone[_] =>
+              val d = parent._lookup { x => new Definition(Right(p)).asInstanceOf[Definition[BaseModule]] }
+              if(d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
+            case other: BaseModule =>
+              val d = parent._lookup { x => other.toDefinition }
+              if(d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
+          }
+        case other => None
       }
     }
     val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) { case ((set, list), definition: Definition[T]) =>
       if(set.contains(definition)) (set, list) else (set + definition, definition +: list)
     }
-    defList
+    defList.reverse
   }
 
   /** Selects all Definition's directly and indirectly instantiated within given root hierarchy, of provided type
@@ -104,36 +155,25 @@ object Select {
     */
   def allDefinitionsOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
     type DefType = Definition[T]
+    val allDefSet = mutable.HashSet[Definition[BaseModule]]()
     val defSet = mutable.HashSet[DefType]()
     val defList = mutable.ArrayBuffer[DefType]()
     def rec(hier: Hierarchy[BaseModule]): Unit = {
       val returnedDefs = definitionsOf[T](hier)
-      returnedDefs.foreach { case d if !defSet.contains(d) =>
-        defSet += d
-        defList += d
-        rec(d)
+      returnedDefs.collect {
+        case d if !defSet.contains(d) =>
+          defSet += d
+          defList += d
+      }
+      val allDefs = definitionsIn(hier)
+      allDefs.collect {
+        case d if !allDefSet.contains(d) =>
+          allDefSet += d
+          rec(d)
       }
     }
     rec(root)
     defList.toList
-  }
-
-  /** Selects the Definition's of all instances/modules directly instantiated within given module
-    * @param module
-    */
-  def definitionsIn(module: Hierarchy[BaseModule]): Seq[Definition[BaseModule]] = {
-    type DefType = Definition[BaseModule]
-    check(module)
-    val defs = module.proto._component.get match {
-      case d: DefModule => d.commands.collect {
-        case i: DefInstance => i.id.toDefinition
-      }
-      case other => Nil
-    }
-    val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) { case ((set, list), definition: Definition[BaseModule]) =>
-      if(set.contains(definition)) (set, list) else (set + definition, definition +: list)
-    }
-    defList
   }
 
 
