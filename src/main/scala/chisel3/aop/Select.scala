@@ -205,7 +205,7 @@ object Select {
     *   directly or indirectly
     * Accepts a collector partial function, rather than a collector function (see [[getDeep]])
     *
-    * NOTE: This API will not work with the new experimental hierarchy package. Instead, use allInstancesOf or allDefinitionsOf.
+    * @note This API will not work with the new experimental hierarchy package. Instead, use allInstancesOf or allDefinitionsOf.
     *
     * @param module Module to collect components, as well as all children module it directly and indirectly instantiates
     * @param collector Collector partial function to pick, given a module, which components to collect
@@ -223,7 +223,7 @@ object Select {
 
   /** Selects all modules directly instantiated within given module
     *
-    * NOTE: This API will not work with the new experimental hierarchy package. Instead, use instancesIn or definitionsIn.
+    * @note This API will not work with the new experimental hierarchy package. Instead, use instancesIn or definitionsIn.
     *
     * @param module
     */
