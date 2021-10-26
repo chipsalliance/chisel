@@ -42,7 +42,8 @@ object Select {
   }
 
   /** Selects all instances/modules directly instantiated within given definition
-    * @param instance hierarch
+    *
+    * @param parent
     */
   def instancesIn(parent: Hierarchy[BaseModule]): Seq[Instance[BaseModule]] = {
     check(parent)
@@ -62,7 +63,8 @@ object Select {
   }
 
   /** Selects all Instances of instances/modules directly instantiated within given module, of provided type
-    * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    *
+    * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
     * @param parent hierarchy which instantiates the returned Definitions
     */
   def instancesOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
@@ -86,8 +88,8 @@ object Select {
   }
 
   /** Selects all Instances directly and indirectly instantiated within given root hierarchy, of provided type
-    * 
-    * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    *
+    * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
     * @param root top of the hierarchy to search for instances/modules of given type
     */
   def allInstancesOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
@@ -124,8 +126,8 @@ object Select {
 
 
   /** Selects all Definitions of instances/modules directly instantiated within given module, of provided type
-    * 
-    * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    *
+    * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
     * @param parent hierarchy which instantiates the returned Definitions
     */
   def definitionsOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
@@ -153,7 +155,9 @@ object Select {
   }
 
   /** Selects all Definition's directly and indirectly instantiated within given root hierarchy, of provided type
-    * IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    *
+    * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class, i.e.
+    *   a class defined within another class.
     * @param root top of the hierarchy to search for definitions of given type
     */
   def allDefinitionsOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
@@ -184,7 +188,7 @@ object Select {
     *   directly or indirectly
     * Accepts a collector function, rather than a collector partial function (see [[collectDeep]])
     *
-    * NOTE: This API will not work with the new experimental hierarchy package. Instead, use allInstancesOf or allDefinitionsOf.
+    * @note This API will not work with the new experimental hierarchy package. Instead, use allInstancesOf or allDefinitionsOf.
     *
     * @param module Module to collect components, as well as all children module it directly and indirectly instantiates
     * @param collector Collector function to pick, given a module, which components to collect

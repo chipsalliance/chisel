@@ -94,11 +94,6 @@ object Module extends SourceInfoDoc {
                                          compileOptions: CompileOptions): T = {
     val parent = Builder.currentModule
 
-    // Execute the module, this has the following side effects:
-    //   - set currentModule
-    //   - unset readyForModuleConstr
-    //   - reset whenStack to be empty
-    //   - set currentClockAndReset
     val module: T = bc  // bc is actually evaluated here
 
     module
