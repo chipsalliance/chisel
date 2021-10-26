@@ -40,18 +40,17 @@ sealed trait Hierarchy[+A] {
     inBaseClasses(name)
   }
 
-  protected val superClasses = HashSet[String]()
-  protected def updateSuperClasses(clz: Class[_]): Unit = {
+  protected lazy val superClasses = calculateSuperClasses(proto.getClass())
+  private def calculateSuperClasses(clz: Class[_]): Set[String] = {
     if(clz != null) {
-      superClasses += clz.getCanonicalName()
-      clz.getInterfaces().foreach(i => updateSuperClasses(i))
-      updateSuperClasses(clz.getSuperclass())
+      Set(clz.getCanonicalName()) ++
+        clz.getInterfaces().flatMap(i => calculateSuperClasses(i)) ++
+        calculateSuperClasses(clz.getSuperclass())
+    } else {
+      Set.empty[String]
     }
   }
-  protected def inBaseClasses(clz: String): Boolean = {
-    if(superClasses.isEmpty) updateSuperClasses(proto.getClass())
-    superClasses.contains(clz)
-  }
+  protected def inBaseClasses(clz: String): Boolean = superClasses.contains(clz)
 
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
