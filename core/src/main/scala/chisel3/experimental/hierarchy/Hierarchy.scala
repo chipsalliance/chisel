@@ -27,9 +27,9 @@ sealed trait Hierarchy[+A] {
 
   /** Determine whether underlying proto is of type provided.
     *
-    * IMPORTANT: this function requires summoning a TypeTag[B], which will fail if B is an inner class.
-    * IMPORTANT: this function IGNORES type parameters, akin to normal type erasure.
-    * IMPORTANT: this function relies on Java reflection for underlying proto, but Scala reflection for provided type
+    * @note IMPORTANT: this function requires summoning a TypeTag[B], which will fail if B is an inner class.
+    * @note IMPORTANT: this function IGNORES type parameters, akin to normal type erasure.
+    * @note IMPORTANT: this function relies on Java reflection for underlying proto, but Scala reflection for provided type
     *
     * E.g. isA[List[Int]] will return true, even if underlying proto is of type List[String]
     * @return Whether underlying proto is of provided type (with caveats outlined above)
