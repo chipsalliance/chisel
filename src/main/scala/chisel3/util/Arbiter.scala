@@ -18,18 +18,27 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
 
   */
 class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
-  // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
-  /* Input data, one per potential sender
-    * @group Signals
-    */
+// See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
+/** Input data, one per potential sender
+  * @param gen data type
+  * @param n number of inputs	
+  * @param that the $coll signals
+  * @group Signals
+  */
   val in  = Flipped(Vec(n, Decoupled(gen)))
-/* Output data after arbitration
-    * @group Signals
-    */
+/** Output data after arbitration
+  * @param gen data type
+  * @param n number of inputs	
+  * @param that the $coll signals
+  * @group Signals
+  */
   val out = Decoupled(gen)
-/* One-Hot vector indicating which output was chosen
-    * @group Signals
-    */
+/** One-Hot vector indicating which output was chosen
+  * @param gen data type
+  * @param n number of inputs	
+  * @param that the $coll signals
+  * @group Signals
+  */
   val chosen = Output(UInt(log2Ceil(n).W))
 }
 
