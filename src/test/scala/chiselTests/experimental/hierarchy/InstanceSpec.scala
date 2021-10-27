@@ -726,7 +726,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class InnerClass extends Module
       class Top extends Module {
         val d = Definition(new InnerClass)
-        //require(d.isA[InnerClass])
+        "require(d.isA[Module])" should compile // ensures that the test below is checking something useful
+        "require(d.isA[InnerClass])" shouldNot compile
       }
       getFirrtlAndAnnos(new Top)
     }
