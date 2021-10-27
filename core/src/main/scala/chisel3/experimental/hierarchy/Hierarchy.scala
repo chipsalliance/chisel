@@ -40,6 +40,7 @@ sealed trait Hierarchy[+A] {
     inBaseClasses(name)
   }
 
+
   // This code handles a special-case where, within an mdoc context, the type returned from
   //  scala reflection (typetag) looks different than when returned from java reflection.
   //  This function detects this case and reshapes the string to match.
