@@ -88,6 +88,8 @@ object Module extends SourceInfoDoc {
   def reset: Reset = Builder.forcedReset
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
+  /** Returns the current nested module prefix */
+  def currentModulePrefix: String = Builder.getModulePrefix
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -140,6 +142,52 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   }
 }
 
+/** Creates a new module prefix scope that prefixes all instantiated modules 
+  *
+  * @example {{{
+  * val m = Module(new Module {
+  *   val child = withModulePrefix("Foo") {
+  *     Module(new Module {
+  *       override val desiredName = "Module"
+  *     })
+  *   }
+  * })
+  *
+  * // m.child.name will be equal to "FooModule"
+  * }}}
+  *
+  * Module prefixes can be nested within each other, like so:
+  * @example {{{
+  * val m = ChiselStage.construct(new Module {
+  *   val child = withModulePrefix("Foo") {
+  *     Module(new chisel3.Module {
+  *       val nestedChild = withModulePrefix("Bar") {
+  *         Module(new chisel3.Module {
+  *           override val desiredName = "Module"
+  *         })
+  *       }
+  *     })
+  *   }
+  * })
+  *
+  * // m.child.nestedChild.name will be equal to "FooBarModule"
+  * }}}
+  */
+object withModulePrefix {
+  /** Creates a new Module prefix scope
+    *
+    * @param prefix the prefix to add to all modules in the scope
+    * @param block the block of code to run with the new prefix
+    * @return the result of the block
+    */
+  def apply[T](prefix: String)(block: => T): T = {
+    Builder.pushModulePrefix(prefix)
+    val res = block // execute block
+    Builder.popModulePrefix() 
+    res
+  }
+
+}
 
 package experimental {
 
@@ -461,8 +509,9 @@ package experimental {
       // PseudoModules are not "true modules" and thus should share
       // their original modules names without uniquification
       this match {
-        case _: PseudoModule => desiredName
-        case _ => Builder.globalNamespace.name(desiredName)
+        case _: PseudoModule => Module.currentModulePrefix + desiredName
+        case _: BlackBox     => Builder.globalNamespace.name(desiredName)
+        case _               => Module.currentModulePrefix + Builder.globalNamespace.name(desiredName)
       }
     } catch {
       case e: NullPointerException => throwException(

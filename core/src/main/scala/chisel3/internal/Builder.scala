@@ -349,6 +349,9 @@ private[chisel3] class ChiselContext() {
   // Records the different prefixes which have been scoped at this point in time
   var prefixStack: Prefix = Nil
 
+  // Records the current nested module prefix
+  var modulePrefixStack: Prefix = Nil
+
   // Views belong to a separate namespace (for renaming)
   // The namespace outside of Builder context is useless, but it ensures that views can still be created
   // and the resulting .toTarget is very clearly useless (_$$View$$_...)
@@ -497,6 +500,23 @@ private[chisel3] object Builder extends LazyLogging {
 
   // Returns the prefix stack at this moment
   def getPrefix: Prefix = chiselContext.get().prefixStack
+
+  // Puts a module prefix string onto the module prefix stack
+  def pushModulePrefix(prefix: String): Unit = {
+    val context = chiselContext.get()
+    context.modulePrefixStack = prefix :: context.modulePrefixStack
+  }
+
+  // Remove the module prefix on top of the stack
+  def popModulePrefix(): List[String] = {
+    val context = chiselContext.get()
+    val tail = context.modulePrefixStack.tail
+    context.modulePrefixStack = tail
+    tail
+  }
+
+  // Returns the nested module prefix at this moment
+  def getModulePrefix: String = chiselContext.get().modulePrefixStack.foldLeft("")((a, b) => b + a)
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
