@@ -42,12 +42,15 @@ final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Eithe
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
     case value: BaseModule =>
-      val newChild = Module.do_apply(new internal.BaseModule.DefinitionClone(value))(chisel3.internal.sourceinfo.UnlocatableSourceInfo, chisel3.ExplicitCompileOptions.Strict)
+      val newChild = Module.do_pseudo_apply(new internal.BaseModule.DefinitionClone(value))(chisel3.internal.sourceinfo.UnlocatableSourceInfo, chisel3.ExplicitCompileOptions.Strict)
       newChild._circuit = value._circuit.orElse(Some(value))
       newChild._parent = None
       Some(newChild)
     case value: IsInstantiable => None
   }
+
+  override def toDefinition: Definition[A] = this
+  override def toInstance: Instance[A] = new Instance(cloned)
 
 }
 

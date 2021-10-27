@@ -40,10 +40,22 @@ sealed trait Hierarchy[+A] {
     inBaseClasses(name)
   }
 
+
+  // This code handles a special-case where, within an mdoc context, the type returned from
+  //  scala reflection (typetag) looks different than when returned from java reflection.
+  //  This function detects this case and reshapes the string to match.
+  private def modifyReplString(clz: String): String = {
+    if(clz != null) {
+      clz.split('.').toList match {
+        case "repl" :: "MdocSession" :: app :: rest => s"$app.this." + rest.mkString(".")
+        case other => clz
+      }
+    } else clz
+  }
   private lazy val superClasses = calculateSuperClasses(proto.getClass())
   private def calculateSuperClasses(clz: Class[_]): Set[String] = {
     if(clz != null) {
-      Set(clz.getCanonicalName()) ++
+      Set(modifyReplString(clz.getCanonicalName())) ++
         clz.getInterfaces().flatMap(i => calculateSuperClasses(i)) ++
         calculateSuperClasses(clz.getSuperclass())
     } else {
@@ -68,6 +80,12 @@ sealed trait Hierarchy[+A] {
     * @param macroGenerated a value created in the macro, to make it harder for users to use this API
     */
   def _lookup[B, C](that: A => B)(implicit lookup: Lookupable[B], macroGenerated: chisel3.internal.MacroGenerated): lookup.C
+
+  /** @return Return the underlying Definition[A] of this Hierarchy[A] */
+  def toDefinition: Definition[A]
+
+  /** @return Convert this Hierarchy[A] as a top-level Instance[A] */
+  def toInstance: Instance[A]
 }
 
 // Used to effectively seal Hierarchy, without requiring Definition and Instance to be in this file.
