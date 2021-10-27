@@ -40,7 +40,7 @@ sealed trait Hierarchy[+A] {
     inBaseClasses(name)
   }
 
-  protected lazy val superClasses = calculateSuperClasses(proto.getClass())
+  private lazy val superClasses = calculateSuperClasses(proto.getClass())
   private def calculateSuperClasses(clz: Class[_]): Set[String] = {
     if(clz != null) {
       Set(clz.getCanonicalName()) ++
@@ -50,7 +50,7 @@ sealed trait Hierarchy[+A] {
       Set.empty[String]
     }
   }
-  protected def inBaseClasses(clz: String): Boolean = superClasses.contains(clz)
+  private def inBaseClasses(clz: String): Boolean = superClasses.contains(clz)
 
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
