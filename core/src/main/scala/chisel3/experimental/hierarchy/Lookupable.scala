@@ -217,7 +217,7 @@ private[chisel3] object Lookupable {
       }
       (m, context) match {
         case (c, ctx) if ctx == c => Left(c)
-        case (c, ctx: IsClone[_]) if ctx.isACloneOf(c) => Right(ctx.asInstanceOf[IsClone[A]])
+        case (c, ctx: IsClone[_]) if ctx.hasSameProto(c) => Right(ctx.asInstanceOf[IsClone[A]])
         case (c, ctx) if c._parent.isEmpty => Left(c)
         case (_, _) => 
           cloneModuleToContext(Left(m._parent.get), context) match {
