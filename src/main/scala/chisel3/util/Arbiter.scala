@@ -16,8 +16,8 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
 <<<<<<< HEAD
   * @groupdesc Signals The actual hardware fields of the Bundle
 =======
-  * @groupdesc Signals The actual hardware fields of the Bundle
->>>>>>> a294d4c50b167aa4bb079be293b3ff4c3fd9f790
+
+
   */
 class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
   // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
