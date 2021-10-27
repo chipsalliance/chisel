@@ -81,3 +81,20 @@ trait BitSet extends BitSetFamily { b =>
     }
     .mkString
 }
+
+object BitSetFamily {
+  def decode(input: chisel3.UInt, bitSets: Seq[BitSetFamily], errorBit: Boolean = false) =
+    chisel3.util.experimental.decode.decoder(
+      input,
+      chisel3.util.experimental.decode.TruthTable(
+        {
+          bitSets.zipWithIndex.flatMap {
+            case (family, i) =>
+              family.terms.map(bs =>
+                s"${bs.toString.replace("-", "?")}->${if (errorBit) "0"}${"0" * (bitSets.size - i - 1)}1${"0" * i}"
+              )
+          } ++ Seq(s"${if (errorBit) "1"}${"?" * bitSets.size}")
+        }.mkString("\n")
+      )
+    )
+}
