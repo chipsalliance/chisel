@@ -44,10 +44,12 @@ sealed trait Hierarchy[+A] {
   //  scala reflection (typetag) looks different than when returned from java reflection.
   //  This function detects this case and reshapes the string to match.
   private def modifyReplString(clz: String): String = {
-    clz.split('.').toList match {
-      case "repl" :: "MdocSession" :: app :: rest => s"$app.this." + rest.mkString(".")
-      case other => clz
-    }
+    if(clz != null) {
+      clz.split('.').toList match {
+        case "repl" :: "MdocSession" :: app :: rest => s"$app.this." + rest.mkString(".")
+        case other => clz
+      }
+    } else clz
   }
   private lazy val superClasses = calculateSuperClasses(proto.getClass())
   private def calculateSuperClasses(clz: Class[_]): Set[String] = {
