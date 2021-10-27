@@ -214,8 +214,8 @@ There are six hierarchy-specific functions, which either return `Instance`'s or 
  - `instancesOf[type](parent)`: Return all instances of provided `type` directly instantiated locally within `parent`
  - `allInstancesOf[type](root)`: Return all instances of provided `type` directly and indirectly instantiated, locally and deeply, starting from `root`
  - `definitionsIn`: Return definitions of all instances directly instantiated locally within `parent`
- - `definitionsOf`: Return definitions of all instances of provided `type` directly instantiated locally within `parent`
- - `allDefinitionsOf`: Return all definitions of instances of provided `type` directly and indirectly instantiated, locally and deeply, starting from `root`
+ - `definitionsOf[type]`: Return definitions of all instances of provided `type` directly instantiated locally within `parent`
+ - `allDefinitionsOf[type]`: Return all definitions of instances of provided `type` directly and indirectly instantiated, locally and deeply, starting from `root`
 
 To demonstrate this, consider the following. We mock up an example where we are using the `Select.allInstancesOf` and `Select.allDefinitionsOf` to annotate instances and the definition of `EmptyModule`. When converting the `ChiselAnnotation` to firrtl's `Annotation`, we print out the resulting `Target`. As shown, despite `EmptyModule` actually only being elaborated once, we still provide different targets depending on how the instance or definition is selected.
 

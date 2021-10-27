@@ -363,7 +363,7 @@ package experimental {
           throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
         }
     }
-    if(Builder.hasDynamicContext) {
+    if (Builder.hasDynamicContext) {
       readyForModuleConstr = false
 
       Builder.currentModule = Some(this)

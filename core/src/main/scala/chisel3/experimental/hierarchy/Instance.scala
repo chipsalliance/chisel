@@ -18,7 +18,7 @@ import firrtl.annotations.IsModule
   */
 final case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends SealedHierarchy[A] {
   cloned match {
-    case Left(p: IsClone[_]) => throw new Exception("Cannot have a Left with a clone!")
+    case Left(p: IsClone[_]) => throwException("Cannot have a Left with a clone!")
     case other => //Ok
   }
 
