@@ -714,5 +714,46 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
     }
   }
+  describe("9: isA[..]") {
+    it("9.0: it should work on simple classes") {
+      class Top extends Module {
+        val d = Definition(new AddOne)
+        require(d.isA[AddOne])
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+    it("9.1: it should not work on inner classes") {
+      class InnerClass extends Module
+      class Top extends Module {
+        val d = Definition(new InnerClass)
+        "require(d.isA[Module])" should compile // ensures that the test below is checking something useful
+        "require(d.isA[InnerClass])" shouldNot compile
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+    it("9.2: it should work on super classes") {
+      class InnerClass extends Module
+      class Top extends Module {
+        val d = Definition(new InnerClass)
+        require(d.isA[Module])
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+    it("9.2: it should work after casts") {
+      class Top extends Module {
+        val d0: Definition[Module] = Definition(new AddOne)
+        require(d0.isA[AddOne])
+        val d1: Definition[Module] = Definition((new AddOne).asInstanceOf[Module])
+        require(d1.isA[AddOne])
+        val i0: Instance[Module] = Instance(d0)
+        require(i0.isA[AddOne])
+        val i1: Instance[Module] = Instance(d1)
+        require(i1.isA[AddOne])
+        val i2: Instance[Module] = Instance(Definition(new AddOne))
+        require(i2.isA[AddOne])
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+  }
 }
 
