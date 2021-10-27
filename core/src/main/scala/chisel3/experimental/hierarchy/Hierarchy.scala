@@ -48,7 +48,7 @@ sealed trait Hierarchy[+A] {
       updateSuperClasses(clz.getSuperclass())
     }
   }
-  def modifyReplString(clz: String): String = {
+  private def modifyReplString(clz: String): String = {
     clz.split('.').toList match {
       case "repl" :: "MdocSession" :: app :: rest => s"$app.this." + rest.mkString(".")
       case other => clz
@@ -76,7 +76,10 @@ sealed trait Hierarchy[+A] {
     */
   def _lookup[B, C](that: A => B)(implicit lookup: Lookupable[B], macroGenerated: chisel3.internal.MacroGenerated): lookup.C
 
+  /** @return Return the underlying Definition[A] of this Hierarchy[A] */
   def toDefinition: Definition[A]
+
+  /** @return Convert this Hierarchy[A] as a top-level Instance[A] */
   def toInstance: Instance[A]
 }
 
