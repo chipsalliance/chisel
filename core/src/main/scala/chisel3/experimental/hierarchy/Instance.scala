@@ -56,7 +56,7 @@ final case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either
   }
 
   /** Returns the definition of this Instance */
-  override def toDefinition: Definition[A] = new Definition(cloned)
+  override def toDefinition: Definition[A] = new Definition(Left(proto))
   override def toInstance: Instance[A] = this
 
 }

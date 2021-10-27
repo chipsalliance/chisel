@@ -111,7 +111,7 @@ object Select {
         case i: DefInstance =>
           i.id match {
             case p: chisel3.internal.BaseModule.IsClone[_] =>
-              parent._lookup { x => new Definition(Right(p)).asInstanceOf[Definition[BaseModule]] }
+              parent._lookup { x => new Definition(Left(p.getProto)).asInstanceOf[Definition[BaseModule]] }
             case other: BaseModule =>
               parent._lookup { x => other.toDefinition }
           }

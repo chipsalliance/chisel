@@ -43,9 +43,15 @@ sealed trait Hierarchy[+A] {
   protected val superClasses = HashSet[String]()
   protected def updateSuperClasses(clz: Class[_]): Unit = {
     if(clz != null) {
-      superClasses += clz.getCanonicalName()
+      superClasses += modifyReplString(clz.getCanonicalName())
       clz.getInterfaces().foreach(i => updateSuperClasses(i))
       updateSuperClasses(clz.getSuperclass())
+    }
+  }
+  def modifyReplString(clz: String): String = {
+    clz.split('.').toList match {
+      case "repl" :: "MdocSession" :: app :: rest => s"$app.this." + rest.mkString(".")
+      case other => clz
     }
   }
   protected def inBaseClasses(clz: String): Boolean = {
