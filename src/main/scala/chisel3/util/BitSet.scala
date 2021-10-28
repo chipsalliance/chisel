@@ -56,8 +56,8 @@ trait BitSet extends BitSetFamily { b =>
   def intersect(that: BitSet): BitSet = {
     require(width == that.width)
     new BitSet {
-      val onSet:          BigInt = b.onSet & that.onSet
-      val offSet:         BigInt = b.offSet & that.offSet
+      val onSet:               BigInt = b.onSet & that.onSet
+      val offSet:              BigInt = b.offSet & that.offSet
       override lazy val width: Int = b.width
     }
   }
@@ -65,8 +65,8 @@ trait BitSet extends BitSetFamily { b =>
   def subtract(that: BitSet): BitSet = {
     require(width == that.width)
     new BitSet {
-      val onSet:          BigInt = b.onSet & ~that.onSet
-      val offSet:         BigInt = b.offSet & ~that.offSet
+      val onSet:               BigInt = b.onSet & ~that.onSet
+      val offSet:              BigInt = b.offSet & ~that.offSet
       override lazy val width: Int = b.width
     }
   }
@@ -84,7 +84,29 @@ trait BitSet extends BitSetFamily { b =>
     .mkString
 }
 
-object BitSetFamily {
+object BitSet {
+  def apply(str: String): BitSetFamily = {
+    new BitSetFamily {
+      val terms = str
+        .split('\n')
+        .map(str =>
+          new BitSet {
+            val onSet: BigInt = str.zipWithIndex.map {
+              case ('-' | '1', i) => BigInt(1) << i
+              case ('~' | '0', _) => BigInt(0)
+              case _              => throw new Exception("bitset parse error")
+            }.sum
+            val offSet: BigInt = str.zipWithIndex.map {
+              case ('-' | '0', i) => BigInt(1) << i
+              case ('~' | '1', _) => BigInt(0)
+              case _              => throw new Exception("bitset parse error")
+            }.sum
+            override lazy val width: Int = str.length
+          }
+        ).toSet
+    }
+  }
+
   def decode(input: chisel3.UInt, bitSets: Seq[BitSetFamily], errorBit: Boolean = false) =
     chisel3.util.experimental.decode.decoder(
       input,
