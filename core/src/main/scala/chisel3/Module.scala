@@ -88,6 +88,16 @@ object Module extends SourceInfoDoc {
   def reset: Reset = Builder.forcedReset
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
+
+  private[chisel3] def do_pseudo_apply[T <: BaseModule](bc: => T)
+                               (implicit sourceInfo: SourceInfo,
+                                         compileOptions: CompileOptions): T = {
+    val parent = Builder.currentModule
+
+    val module: T = bc  // bc is actually evaluated here
+
+    module
+  }
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -193,7 +203,18 @@ package internal {
       // Underlying object of which this is a clone of
       val _proto: T
       def getProto: T = _proto
-      def isACloneOf(a: Any): Boolean = this == a || _proto == a
+
+      /** Determines whether another object is a clone of the same underlying proto
+        *
+        * @param a
+        */
+      def hasSameProto(a: Any): Boolean = {
+        val aProto = a match {
+          case x: IsClone[BaseModule] => x._proto
+          case o => o
+        }
+        this == aProto || _proto == aProto
+      }
     }
 
     // Private internal class to serve as a _parent for Data in cloned ports
@@ -346,13 +367,19 @@ package experimental {
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
-    if (!Builder.readyForModuleConstr) {
-      throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
+    this match {
+      case _: PseudoModule =>
+      case other =>
+        if (!Builder.readyForModuleConstr) {
+          throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
+        }
     }
-    readyForModuleConstr = false
+    if (Builder.hasDynamicContext) {
+      readyForModuleConstr = false
 
-    Builder.currentModule = Some(this)
-    Builder.whenStack = Nil
+      Builder.currentModule = Some(this)
+      Builder.whenStack = Nil
+    }
 
     //
     // Module Construction Internals

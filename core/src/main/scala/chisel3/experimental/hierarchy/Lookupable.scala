@@ -211,13 +211,13 @@ private[chisel3] object Lookupable {
     // Recursive call
     def rec[A <: BaseModule](m: A): Either[A, IsClone[A]] = {
       def clone(x: A, p: Option[BaseModule], name: () => String): Either[A, IsClone[A]] = {
-        val newChild = Module.do_apply(new internal.BaseModule.InstanceClone(x, name))
+        val newChild = Module.do_pseudo_apply(new internal.BaseModule.InstanceClone(x, name))
         newChild._parent = p
         Right(newChild)
       }
       (m, context) match {
         case (c, ctx) if ctx == c => Left(c)
-        case (c, ctx: IsClone[_]) if ctx.isACloneOf(c) => Right(ctx.asInstanceOf[IsClone[A]])
+        case (c, ctx: IsClone[_]) if ctx.hasSameProto(c) => Right(ctx.asInstanceOf[IsClone[A]])
         case (c, ctx) if c._parent.isEmpty => Left(c)
         case (_, _) => 
           cloneModuleToContext(Left(m._parent.get), context) match {
@@ -233,7 +233,7 @@ private[chisel3] object Lookupable {
         rec(m) match {
           case Left(mx) => Right(mx)
           case Right(i: InstanceClone[_]) =>
-            val newChild = Module.do_apply(new InstanceClone(m._proto, () => m.instanceName))
+            val newChild = Module.do_pseudo_apply(new InstanceClone(m._proto, () => m.instanceName))
             newChild._parent = i._parent
             Right(newChild)
         }
@@ -241,7 +241,7 @@ private[chisel3] object Lookupable {
         rec(m) match {
           case Left(mx) => Right(mx)
           case Right(i: InstanceClone[_]) =>
-            val newChild = Module.do_apply(new InstanceClone(m._proto, () => m.instanceName))
+            val newChild = Module.do_pseudo_apply(new InstanceClone(m._proto, () => m.instanceName))
             newChild._parent = i._parent
             Right(newChild)
         }

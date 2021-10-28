@@ -561,6 +561,8 @@ private[chisel3] object Builder extends LazyLogging {
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
+  def hasDynamicContext: Boolean = dynamicContextVar.value.isDefined
+
   def readyForModuleConstr: Boolean = dynamicContext.readyForModuleConstr
   def readyForModuleConstr_=(target: Boolean): Unit = {
     dynamicContext.readyForModuleConstr = target

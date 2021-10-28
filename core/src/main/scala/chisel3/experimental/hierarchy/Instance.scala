@@ -16,16 +16,10 @@ import firrtl.annotations.IsModule
   *
   * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) {
-
-  /** Returns the original object which is instantiated here.
-    * If this is an instance of a clone, return that clone's original proto
-    *
-    * @return the original object which was instantiated
-    */
-  private[chisel3] def proto: A = cloned match {
-    case Left(value: A) => value
-    case Right(i: IsClone[A]) => i._proto
+final case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends SealedHierarchy[A] {
+  cloned match {
+    case Left(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Left with a clone!")
+    case other => //Ok
   }
 
   /** @return the context of any Data's return from inside the instance */
@@ -42,9 +36,6 @@ case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, Is
     case Right(i: BaseModule)           => i._parent
     case Right(i: InstantiableClone[_]) => i._parent
   }
-
-  /** Updated by calls to [[apply]], to avoid recloning returned Data's */
-  private [chisel3] val cache = HashMap[Data, Data]()
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
@@ -65,7 +56,8 @@ case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, Is
   }
 
   /** Returns the definition of this Instance */
-  def toDefinition: Definition[A] = new Definition(Left(proto))
+  override def toDefinition: Definition[A] = new Definition(Left(proto))
+  override def toInstance: Instance[A] = this
 
 }
 
