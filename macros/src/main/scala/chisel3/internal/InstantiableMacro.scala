@@ -14,6 +14,9 @@ private[chisel3] object instantiableMacro {
     def processBody(stats: Seq[Tree]): (Seq[Tree], Iterable[Tree]) = {
       val extensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
       extensions += q"implicit val mg = new chisel3.internal.MacroGenerated{}"
+      // Note the triple `_` prefixing `module` is to avoid conflicts if a user marks a 'val module'
+      //  with @public; in this case, the lookup code is ambiguous between the generated `def module`
+      //  function and the argument to the generated implicit class.
       val resultStats = stats.flatMap {
         case x @ q"@public val $tpname: $tpe = $name" if tpname.toString() == name.toString() =>
           extensions += atPos(x.pos)(q"def $tpname = ___module._lookup(_.$tpname)")
