@@ -17,16 +17,22 @@ import chisel3._
   * @tparam T the type of the data
   * @param gen some data
   * @see [[Valid$ Valid factory]] for concrete examples
+  * @groupdesc Signals The actual hardware fields of the Bundle
   */
 class Valid[+T <: Data](gen: T) extends Bundle {
-  /** A bit that will be asserted when `bits` is valid */
+  /** A bit that will be asserted when `bits` is valid 
+    * @group Signals
+    */
   val valid = Output(Bool())
 
-  /** Some data */
+  /** Some data 
+    * @group Signals
+    */
   val bits  = Output(gen)
 
   /** True when `valid` is asserted
     * @return a Chisel [[Bool]] true if `valid` is asserted
+    * @group Signals
     */
   def fire: Bool = valid
 
