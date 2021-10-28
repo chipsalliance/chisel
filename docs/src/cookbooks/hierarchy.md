@@ -10,6 +10,8 @@ section: "chisel3"
 * [How do I access internal fields of an instance?](#how-do-i-access-internal-fields-of-an-instance)
 * [How do I make my parameters accessable from an instance?](#how-do-i-make-my-parameters-accessable-from-an-instance)
 * [How do I reuse a previously elaborated module, if my new module has the same parameterization?](#how-do-i-reuse-a-previously-elaborated-module-if-my-new-module-has-the-same-parameterization)
+* [How do I parameterize a module by its children instances?](#how-do-I-parameterize-a-module-by-its-children-instances)
+* [How do I use the new hierarchy-specific Select functions?](#how-do-I-use-the-new-hierarchy-specific-Select-functions)
 
 ## How do I instantiate multiple instances with the same module parameterization?
 
@@ -201,4 +203,59 @@ class AddTwo(addOneDef: Definition[AddOne]) extends Module {
 ```
 ```scala mdoc:verilog
 chisel3.stage.ChiselStage.emitVerilog(new AddTwo(Definition(new AddOne(10))))
+```
+
+## How do I use the new hierarchy-specific Select functions?
+
+Select functions can be applied after a module has been elaborated, either in a Chisel Aspect or in a parent module applied to a child module.
+
+There are six hierarchy-specific functions, which either return `Instance`'s or `Definition`'s:
+ - `instancesIn(parent)`: Return all instances directly instantiated locally within `parent`
+ - `instancesOf[type](parent)`: Return all instances of provided `type` directly instantiated locally within `parent`
+ - `allInstancesOf[type](root)`: Return all instances of provided `type` directly and indirectly instantiated, locally and deeply, starting from `root`
+ - `definitionsIn`: Return definitions of all instances directly instantiated locally within `parent`
+ - `definitionsOf[type]`: Return definitions of all instances of provided `type` directly instantiated locally within `parent`
+ - `allDefinitionsOf[type]`: Return all definitions of instances of provided `type` directly and indirectly instantiated, locally and deeply, starting from `root`
+
+To demonstrate this, consider the following. We mock up an example where we are using the `Select.allInstancesOf` and `Select.allDefinitionsOf` to annotate instances and the definition of `EmptyModule`. When converting the `ChiselAnnotation` to firrtl's `Annotation`, we print out the resulting `Target`. As shown, despite `EmptyModule` actually only being elaborated once, we still provide different targets depending on how the instance or definition is selected.
+
+```scala mdoc:reset
+import chisel3._
+import chisel3.experimental.hierarchy.{Definition, Instance, Hierarchy, instantiable, public}
+import firrtl.annotations.{IsModule, NoTargetAnnotation}
+case object EmptyAnnotation extends NoTargetAnnotation
+case class MyChiselAnnotation(m: Hierarchy[RawModule], tag: String) extends experimental.ChiselAnnotation {
+  def toFirrtl = {
+    println(tag + ": " + m.toTarget)
+    EmptyAnnotation
+  }
+}
+
+@instantiable
+class EmptyModule extends Module {
+  println("Elaborating EmptyModule!")
+}
+
+@instantiable
+class TwoEmptyModules extends Module {
+  val definition = Definition(new EmptyModule)
+  val i0         = Instance(definition)
+  val i1         = Instance(definition)
+}
+
+class Top extends Module {
+  val definition = Definition(new TwoEmptyModules)
+  val instance   = Instance(definition)
+  aop.Select.allInstancesOf[EmptyModule](instance).foreach { i =>
+    experimental.annotate(MyChiselAnnotation(i, "instance"))
+  }
+  aop.Select.allDefinitionsOf[EmptyModule](instance).foreach { d =>
+    experimental.annotate(MyChiselAnnotation(d, "definition"))
+  }
+}
+```
+```scala mdoc:passthrough
+println("```")
+val x = chisel3.stage.ChiselStage.emitFirrtl(new Top)
+println("```")
 ```

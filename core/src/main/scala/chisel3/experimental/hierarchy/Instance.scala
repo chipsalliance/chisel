@@ -17,6 +17,10 @@ import firrtl.annotations.IsModule
   * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
 final case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends SealedHierarchy[A] {
+  cloned match {
+    case Left(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Left with a clone!")
+    case other => //Ok
+  }
 
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = cloned match {
@@ -52,7 +56,8 @@ final case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either
   }
 
   /** Returns the definition of this Instance */
-  def toDefinition: Definition[A] = new Definition(Left(proto))
+  override def toDefinition: Definition[A] = new Definition(Left(proto))
+  override def toInstance: Instance[A] = this
 
 }
 
