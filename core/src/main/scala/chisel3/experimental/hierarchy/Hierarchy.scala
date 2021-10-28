@@ -15,8 +15,8 @@ import scala.annotation.implicitNotFound
   * Enables writing functions which are Instance/Definition agnostic
   */
 sealed trait Hierarchy[+A] {
-  private[chisel3] def cloned: Underlying[A]
-  private[chisel3] def proto: A = cloned match {
+  private[chisel3] def underlying: Underlying[A]
+  private[chisel3] def proto: A = underlying match {
     case Proto(value: A) => value
     case Clone(i: IsClone[A]) => i.getProto
   }

@@ -672,7 +672,7 @@ private[chisel3] object Builder extends LazyLogging {
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
-    case (id: Instance[_]) => id.cloned match {
+    case (id: Instance[_]) => id.underlying match {
       case Clone(m: internal.BaseModule.ModuleClone[_]) => namer(m.getPorts, prefix)
       case _ =>
     }

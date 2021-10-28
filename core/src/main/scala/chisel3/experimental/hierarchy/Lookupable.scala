@@ -37,7 +37,7 @@ trait Lookupable[-B] {
     */
   def definitionLookup[A](that: A => B, definition: Definition[A]): C
   protected def getProto[A](h: Hierarchy[A]): A = h.proto
-  protected def getUnderlying[A](h: Hierarchy[A]): Underlying[A] = h.cloned
+  protected def getUnderlying[A](h: Hierarchy[A]): Underlying[A] = h.underlying
 }
 
 object Lookupable {
@@ -147,7 +147,7 @@ object Lookupable {
 
     val result = data.cloneTypeFull
 
-    // We have to lookup the target(s) of the view since they may need to be cloned into the current context
+    // We have to lookup the target(s) of the view since they may need to be underlying into the current context
     val newBinding = data.topBinding match {
       case ViewBinding(target) => ViewBinding(lookupData(reify(target)))
       case avb @ AggregateViewBinding(map, targetOpt) => data match {
@@ -201,10 +201,10 @@ object Lookupable {
     * This function effectively recurses up the parents of module to find whether:
     *   (1) A parent is already in the context; then we do nothing and return module
     *   (2) A parent is in a different clone of the context; then we clone all the parents up
-    *         to that parent and set their parents to be in this cloned context
+    *         to that parent and set their parents to be in this underlying context
     *   (3) A parent has no root; in that case, we do nothing and return the module.
     *
-    * @param module original or clone to be cloned into a new context
+    * @param module original or clone to be underlying into a new context
     * @param context new context
     * @return original or clone in the new context
     */
@@ -261,14 +261,14 @@ object Lookupable {
     type C = Instance[B]
     def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      new Instance(cloneModuleToContext(ret.cloned, definition.getInnerDataContext.get))
+      new Instance(cloneModuleToContext(ret.underlying, definition.getInnerDataContext.get))
     }
     def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      instance.cloned match {
+      instance.underlying match {
         // If instance is just a normal module, no changing of context is necessary
-        case Proto(_)  => new Instance(ret.cloned)
-        case Clone(_) => new Instance(cloneModuleToContext(ret.cloned, instance.getInnerDataContext.get))
+        case Proto(_)  => new Instance(ret.underlying)
+        case Clone(_) => new Instance(cloneModuleToContext(ret.underlying, instance.getInnerDataContext.get))
       }
     }
   }
@@ -281,7 +281,7 @@ object Lookupable {
     }
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      instance.cloned match {
+      instance.underlying match {
         // If instance is just a normal module, no changing of context is necessary
         case Proto(_)  => new Instance(Proto(ret))
         case Clone(_) => new Instance(cloneModuleToContext(Proto(ret), instance.getInnerDataContext.get))
@@ -301,7 +301,7 @@ object Lookupable {
     }
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      val ioMap: Option[Map[Data, Data]] = instance.cloned match {
+      val ioMap: Option[Map[Data, Data]] = instance.underlying match {
         case Clone(x: ModuleClone[_]) => Some(x.ioMap)
         case Proto(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
         case _ => None
@@ -344,19 +344,19 @@ object Lookupable {
     type C = Instance[B]
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      val cloned = new InstantiableClone[B] {
+      val underlying = new InstantiableClone[B] {
         val getProto = ret
         lazy val _innerContext = definition
       }
-      new Instance(Clone(cloned))
+      new Instance(Clone(underlying))
     }
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      val cloned = new InstantiableClone[B] {
+      val underlying = new InstantiableClone[B] {
         val getProto = ret
         lazy val _innerContext = instance
       }
-      new Instance(Clone(cloned))
+      new Instance(Clone(underlying))
     }
   }
 
