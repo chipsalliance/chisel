@@ -346,16 +346,16 @@ object Lookupable {
       val ret = that(definition.proto)
       val cloned = new InstantiableClone[B] {
         val _proto = ret
+        lazy val _innerContext = definition
       }
-      cloned.setInnerDataContext(definition)
       new Instance(Right(cloned))
     }
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
       val cloned = new InstantiableClone[B] {
         val _proto = ret
+        lazy val _innerContext = instance
       }
-      cloned.setInnerDataContext(instance)
       new Instance(Right(cloned))
     }
   }

@@ -306,8 +306,8 @@ package internal {
       */
     trait InstantiableClone[T <: IsInstantiable] extends IsClone[T] {
       protected val _proto: T
-      def setInnerDataContext(h: experimental.hierarchy.Hierarchy[_]): Unit = _innerContext = h.getInnerDataContext
-      private[chisel3] var _innerContext: Option[BaseModule] = internal.Builder.currentModule
+      protected def _innerContext: experimental.hierarchy.Hierarchy[_]
+      private[chisel3] def getInnerContext: Option[BaseModule] = _innerContext.getInnerDataContext
     }
 
     /** Record type returned by CloneModuleAsRecord
