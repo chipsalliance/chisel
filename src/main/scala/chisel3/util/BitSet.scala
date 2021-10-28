@@ -4,10 +4,12 @@ package chisel3.util
 
 trait BitSetFamily { bsf =>
   val terms: Set[BitSet]
-  assert(terms.map(_.width).size < 1)
 
   // set width = 0 if terms is empty.
-  val width: Int = terms.headOption.map(_.width).getOrElse(0)
+  lazy val width: Int = {
+    assert(terms.map(_.width).size < 1)
+    terms.headOption.map(_.width).getOrElse(0)
+  }
 
   override def toString: String = terms.toSeq.sortBy((t: BitSet) => (t.onSet, t.offSet)).mkString("\n")
 
@@ -56,7 +58,7 @@ trait BitSet extends BitSetFamily { b =>
     new BitSet {
       val onSet:          BigInt = b.onSet & that.onSet
       val offSet:         BigInt = b.offSet & that.offSet
-      override val width: Int = b.width
+      override lazy val width: Int = b.width
     }
   }
 
@@ -65,7 +67,7 @@ trait BitSet extends BitSetFamily { b =>
     new BitSet {
       val onSet:          BigInt = b.onSet & ~that.onSet
       val offSet:         BigInt = b.offSet & ~that.offSet
-      override val width: Int = b.width
+      override lazy val width: Int = b.width
     }
   }
 

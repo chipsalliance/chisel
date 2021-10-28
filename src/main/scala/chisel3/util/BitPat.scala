@@ -119,11 +119,12 @@ object BitPat {
   * "b10001".U === BitPat("b101??") // evaluates to false.B
   * }}}
   */
-sealed class BitPat(val value: BigInt, val mask: BigInt, override val width: Int) extends BitSet with SourceInfoDoc {
+sealed class BitPat(val value: BigInt, val mask: BigInt, w: Int) extends BitSet with SourceInfoDoc {
   val onSet = value & mask
   val offSet = ~value & mask
+  override lazy val width = w
 
-  def getWidth: Int = width
+  def getWidth: Int = w
   def apply(x: Int): BitPat = macro SourceInfoTransform.xArg
   def apply(x: Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
   def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
