@@ -39,6 +39,10 @@ final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Eithe
     lookup.definitionLookup(that, this)
   }
 
+  def _buildInstance[X](func: Either[A, IsClone[A]] => Either[X, IsClone[X]])(implicit macroGenerated: chisel3.internal.MacroGenerated): Instance[X] = {
+    new Instance(func(cloned))
+  }
+
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
     case value: BaseModule =>
@@ -51,6 +55,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Eithe
 
   override def toDefinition: Definition[A] = this
   override def toInstance: Instance[A] = new Instance(cloned)
+
 
 }
 
@@ -92,4 +97,9 @@ object Definition extends SourceInfoDoc {
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     new Definition(Left(module))
   }
+
+  def _buildDefinition[A](cloned: Either[A, IsClone[A]])(implicit macroGenerated: chisel3.internal.MacroGenerated): Definition[A] = {
+    new Definition(cloned)
+  }
+
 }

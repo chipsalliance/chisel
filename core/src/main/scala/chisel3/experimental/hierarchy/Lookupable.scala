@@ -19,7 +19,7 @@ import chisel3.internal.{AggregateViewBinding, Builder, ChildBinding, ViewBindin
   */
 @implicitNotFound("@public is only legal within a class marked @instantiable and only on vals of type" +
   " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable or Option")
-sealed trait Lookupable[-B] {
+trait Lookupable[-B] {
   type C // Return type of the lookup
   /** Function called to modify the returned value of type B from A, into C
     * 
@@ -36,9 +36,11 @@ sealed trait Lookupable[-B] {
     * @return
     */
   def definitionLookup[A](that: A => B, definition: Definition[A]): C
+  protected def getProto[A](h: Hierarchy[A]): A = h.proto
+  protected def getCloned[A](h: Hierarchy[A]): Either[A, IsClone[A]] = h.cloned
 }
 
-private[chisel3] object Lookupable {
+object Lookupable {
 
   /** Clones a data and sets its internal references to its parent module to be in a new context.
     *
@@ -342,14 +344,18 @@ private[chisel3] object Lookupable {
     type C = Instance[B]
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      val cloned = new InstantiableClone(ret)
-      cloned._parent = definition.getInnerDataContext
+      val cloned = new InstantiableClone[B] {
+        val _proto = ret
+      }
+      cloned.setInnerDataContext(definition)
       new Instance(Right(cloned))
     }
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      val cloned = new InstantiableClone(ret)
-      cloned._parent = instance.getInnerDataContext
+      val cloned = new InstantiableClone[B] {
+        val _proto = ret
+      }
+      cloned.setInnerDataContext(instance)
       new Instance(Right(cloned))
     }
   }

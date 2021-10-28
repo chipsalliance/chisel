@@ -27,14 +27,14 @@ final case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either
     case Left(value: BaseModule)        => Some(value)
     case Left(value: IsInstantiable)    => None
     case Right(i: BaseModule)           => Some(i)
-    case Right(i: InstantiableClone[_]) => i._parent
+    case Right(i: InstantiableClone[_]) => i._innerContext
   }
 
   /** @return the context this instance. Note that for non-module clones, getInnerDataContext will be the same as getClonedParent */
   private[chisel3] def getClonedParent: Option[BaseModule] = cloned match {
     case Left(value: BaseModule) => value._parent
     case Right(i: BaseModule)           => i._parent
-    case Right(i: InstantiableClone[_]) => i._parent
+    case Right(i: InstantiableClone[_]) => i._innerContext
   }
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
