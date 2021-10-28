@@ -192,7 +192,7 @@ package experimental {
 
 package internal {
   import chisel3.experimental.BaseModule
-  import chisel3.experimental.hierarchy.IsInstantiable
+  import chisel3.experimental.hierarchy.{IsInstantiable, Proto, Clone}
 
   object BaseModule {
     /** Represents a clone of an underlying object. This is used to support CloneModuleAsRecord and Instance/Definition.
@@ -349,13 +349,13 @@ package internal {
 
 package experimental {
 
-  import chisel3.experimental.hierarchy.IsInstantiable
+  import chisel3.experimental.hierarchy.{IsInstantiable, Proto}
 
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
       import chisel3.experimental.hierarchy.{Instance, Definition}
-      def toInstance: Instance[T] = new Instance(Left(b))
-      def toDefinition: Definition[T] = new Definition(Left(b))
+      def toInstance: Instance[T] = new Instance(Proto(b))
+      def toDefinition: Definition[T] = new Definition(Proto(b))
     }
   }
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.

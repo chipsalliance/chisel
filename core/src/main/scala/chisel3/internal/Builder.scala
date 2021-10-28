@@ -6,7 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.Instance
+import chisel3.experimental.hierarchy.{Instance, Clone}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -673,7 +673,7 @@ private[chisel3] object Builder extends LazyLogging {
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
     case (id: Instance[_]) => id.cloned match {
-      case Right(m: internal.BaseModule.ModuleClone[_]) => namer(m.getPorts, prefix)
+      case Clone(m: internal.BaseModule.ModuleClone[_]) => namer(m.getPorts, prefix)
       case _ =>
     }
     case (id: HasId) => namer(id, prefix)

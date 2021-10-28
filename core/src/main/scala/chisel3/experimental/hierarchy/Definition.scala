@@ -20,7 +20,7 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   *
   * @param cloned The internal representation of the definition, which may be either be directly the object, or a clone of an object
   */
-final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends IsLookupable with SealedHierarchy[A] {
+final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Underlying[A]) extends IsLookupable with SealedHierarchy[A] {
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
     *
@@ -39,7 +39,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Eithe
     lookup.definitionLookup(that, this)
   }
 
-  def _buildInstance[X](func: Either[A, IsClone[A]] => Either[X, IsClone[X]])(implicit macroGenerated: chisel3.internal.MacroGenerated): Instance[X] = {
+  def _buildInstance[X](func: Underlying[A] => Underlying[X])(implicit macroGenerated: chisel3.internal.MacroGenerated): Instance[X] = {
     new Instance(func(cloned))
   }
 
@@ -95,10 +95,10 @@ object Definition extends SourceInfoDoc {
     Builder.annotations ++= ir.annotations
     module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-    new Definition(Left(module))
+    new Definition(Proto(module))
   }
 
-  def _buildDefinition[A](cloned: Either[A, IsClone[A]])(implicit macroGenerated: chisel3.internal.MacroGenerated): Definition[A] = {
+  def _buildDefinition[A](cloned: Underlying[A])(implicit macroGenerated: chisel3.internal.MacroGenerated): Definition[A] = {
     new Definition(cloned)
   }
 
