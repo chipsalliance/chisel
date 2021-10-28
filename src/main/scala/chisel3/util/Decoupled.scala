@@ -16,6 +16,7 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
   * while the consumer uses the flipped interface (inputs bits).
   * The actual semantics of ready/valid are enforced via the use of concrete subclasses.
   * @param gen the type of data to be wrapped in Ready/Valid
+  * @groupdesc Signals The actual hardware fields of the Bundle
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
