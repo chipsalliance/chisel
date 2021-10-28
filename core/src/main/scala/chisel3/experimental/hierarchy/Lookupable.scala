@@ -235,7 +235,7 @@ object Lookupable {
         rec(m) match {
           case Left(mx) => Right(mx)
           case Right(i: InstanceClone[_]) =>
-            val newChild = Module.do_pseudo_apply(new InstanceClone(m._proto, () => m.instanceName))
+            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
             Right(newChild)
         }
@@ -243,7 +243,7 @@ object Lookupable {
         rec(m) match {
           case Left(mx) => Right(mx)
           case Right(i: InstanceClone[_]) =>
-            val newChild = Module.do_pseudo_apply(new InstanceClone(m._proto, () => m.instanceName))
+            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
             Right(newChild)
         }
@@ -345,7 +345,7 @@ object Lookupable {
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
       val ret = that(definition.proto)
       val cloned = new InstantiableClone[B] {
-        val _proto = ret
+        val getProto = ret
         lazy val _innerContext = definition
       }
       new Instance(Right(cloned))
@@ -353,7 +353,7 @@ object Lookupable {
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
       val cloned = new InstantiableClone[B] {
-        val _proto = ret
+        val getProto = ret
         lazy val _innerContext = instance
       }
       new Instance(Right(cloned))
