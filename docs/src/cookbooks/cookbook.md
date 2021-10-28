@@ -88,13 +88,14 @@ you are tying off, you can use `chiselTypeOf`:
 
 ```scala mdoc:silent:reset
 import chisel3._
+import chisel3.stage.ChiselStage
 
 class MyBundle extends Bundle {
   val foo = UInt(4.W)
   val bar = Vec(4, UInt(1.W))
 }
 
-class Foo(typ: Data) extends RawModule {
+class Foo(typ: MyBundle) extends RawModule {
   val bundleA = IO(Output(typ))
   val bundleB = IO(Output(typ))
   
@@ -107,9 +108,7 @@ class Foo(typ: Data) extends RawModule {
   bundleB := 0.U.asTypeOf(chiselTypeOf(bundleB)) 
 }
 
-class Bar extends RawModule {
-  val foo = Module(new Foo(new MyBundle()))
-}
+ChiselStage.emitVerilog(new Foo(new MyBundle))
 ```
 ### How do I create a Vec of Bools from a UInt?
 
