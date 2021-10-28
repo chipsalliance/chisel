@@ -304,7 +304,7 @@ package internal {
     /** @note If we are cloning a non-module, we need another object which has the proper _parent set!
       */
     trait InstantiableClone[T <: IsInstantiable] extends IsClone[T] {
-      protected def _innerContext: experimental.hierarchy.Hierarchy[_]
+      private[chisel3] def _innerContext: experimental.hierarchy.Hierarchy[_]
       private[chisel3] def getInnerContext: Option[BaseModule] = _innerContext.getInnerDataContext
     }
 
