@@ -201,8 +201,8 @@ package internal {
       */
     trait IsClone[+T] {
       // Underlying object of which this is a clone of
-      val _proto: T
-      def getProto: T = _proto
+      protected val _proto: T
+      private[chisel3] def getProto: T = _proto
 
       /** Determines whether another object is a clone of the same underlying proto
         *
@@ -305,7 +305,7 @@ package internal {
     /** @note If we are cloning a non-module, we need another object which has the proper _parent set!
       */
     trait InstantiableClone[T <: IsInstantiable] extends IsClone[T] {
-      val _proto: T
+      protected val _proto: T
       def setInnerDataContext(h: experimental.hierarchy.Hierarchy[_]): Unit = _innerContext = h.getInnerDataContext
       private[chisel3] var _innerContext: Option[BaseModule] = internal.Builder.currentModule
     }

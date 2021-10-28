@@ -18,7 +18,7 @@ sealed trait Hierarchy[+A] {
   private[chisel3] def cloned: Either[A, IsClone[A]]
   private[chisel3] def proto: A = cloned match {
     case Left(value: A) => value
-    case Right(i: IsClone[A]) => i._proto
+    case Right(i: IsClone[A]) => i.getProto
   }
 
   /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
