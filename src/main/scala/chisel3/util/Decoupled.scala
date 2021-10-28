@@ -177,6 +177,7 @@ object DeqIO {
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue.
   * @param hasFlush A boolean for whether the generated Queue is flushable
+  * @groupdesc Signals An I/O Bundle for Queues
   */
 class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boolean = false) extends Bundle
 { // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
@@ -185,13 +186,21 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boo
    *  but internally, the queue implementation itself sits on the other side
    *  of the interface so uses the flipped instance.
    */
-  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. */
+  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. 
+    * @group Signals
+    */
   val enq = Flipped(EnqIO(gen))
-  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]*/
+  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]
+    * @group Signals
+    */
   val deq = Flipped(DeqIO(gen))
-  /** The current amount of data in the queue */
+  /** The current amount of data in the queue 
+    * @group Signals
+    */
   val count = Output(UInt(log2Ceil(entries + 1).W))
-  /** When asserted, reset the enqueue and dequeue pointers, effectively flushing the queue (Optional IO for a flushable Queue)*/ 
+  /** When asserted, reset the enqueue and dequeue pointers, effectively flushing the queue (Optional IO for a flushable Queue)
+    * @group Signals
+    */ 
   val flush = if (hasFlush) Some(Input(Bool())) else None
 
 }
