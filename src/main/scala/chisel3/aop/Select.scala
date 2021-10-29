@@ -53,7 +53,7 @@ object Select {
         case d: DefInstance =>
           d.id match {
             case p: chisel3.internal.BaseModule.IsClone[_] =>
-              parent._lookup { x => new Instance(Right(p)).asInstanceOf[Instance[BaseModule]] }
+              parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
             case other: BaseModule =>
               parent._lookup { x => other }
           }
@@ -75,7 +75,7 @@ object Select {
         case d: DefInstance =>
           d.id match {
             case p: chisel3.internal.BaseModule.IsClone[_] =>
-              val i = parent._lookup { x => new Instance(Right(p)).asInstanceOf[Instance[BaseModule]] }
+              val i = parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
               if(i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
             case other: BaseModule =>
               val i = parent._lookup { x => other }
@@ -111,7 +111,7 @@ object Select {
         case i: DefInstance =>
           i.id match {
             case p: chisel3.internal.BaseModule.IsClone[_] =>
-              parent._lookup { x => new Definition(Left(p.getProto)).asInstanceOf[Definition[BaseModule]] }
+              parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
             case other: BaseModule =>
               parent._lookup { x => other.toDefinition }
           }
@@ -139,7 +139,7 @@ object Select {
         case d: DefInstance =>
           d.id match {
             case p: chisel3.internal.BaseModule.IsClone[_] =>
-              val d = parent._lookup { x => new Definition(Right(p)).asInstanceOf[Definition[BaseModule]] }
+              val d = parent._lookup { x => new Definition(Clone(p)).asInstanceOf[Definition[BaseModule]] }
               if(d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
             case other: BaseModule =>
               val d = parent._lookup { x => other.toDefinition }
