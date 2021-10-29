@@ -20,7 +20,7 @@ import chisel3.util.DecoupledIO
 The diagram for the experiment can be viewed **[here](https://docs.google.com/document/d/14C918Hdahk2xOGSJJBT-ZVqAx99_hg3JQIq-vaaifQU/edit?usp=sharing)**
 
 
-```scala 
+```scala mdoc:silent
 class Wrapper extends Module{
   val io = IO(new Bundle {
   val in = Flipped(DecoupledIO(UInt(8.W)))
