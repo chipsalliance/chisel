@@ -28,11 +28,11 @@ class Wrapper extends Module{
   })
   val p = Module(new PipelineStage)
   val c = Module(new PipelineStage) 
-  //connect Producer to IO
+  // connect Producer to IO
   p.io.a <> io.in
   // connect producer to consumer
   c.io.a <> p.io.b
-  //connect consumer to IO
+  // connect consumer to IO
   io.out <> c.io.b
 }
 
