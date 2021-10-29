@@ -37,7 +37,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
   */
   val valid = Output(Bool())
   
-/** Data stored in the 'bits' subfield
+/** The data to be transferred when ready and valid are asserted at the same cycle
   * @group Signals
   */
   val bits  = Output(genType)
