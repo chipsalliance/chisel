@@ -178,7 +178,7 @@ class Pipe[T <: Data](val gen: T, val latency: Int = 1)(implicit compileOptions:
 
   /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
     * @define notAQueue
-    * @groupdesc Signals Pipe for [[Valid]] interface 
+    * @groupdesc Signals Hardware fields of the Bundle
     */
   class PipeIO extends Bundle {
 
