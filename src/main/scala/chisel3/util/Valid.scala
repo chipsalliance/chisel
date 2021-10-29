@@ -32,7 +32,6 @@ class Valid[+T <: Data](gen: T) extends Bundle {
 
   /** True when `valid` is asserted
     * @return a Chisel [[Bool]] true if `valid` is asserted
-    * @group Signals
     */
   def fire: Bool = valid
 
