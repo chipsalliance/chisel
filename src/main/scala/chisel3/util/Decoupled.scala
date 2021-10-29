@@ -174,7 +174,7 @@ object DeqIO {
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue.
   * @param hasFlush A boolean for whether the generated Queue is flushable
-  * @groupdesc Signals An I/O Bundle for Queues
+  * @groupdesc Signals The hardware fields of the Bundle
   */
 class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boolean = false) extends Bundle
 { // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
