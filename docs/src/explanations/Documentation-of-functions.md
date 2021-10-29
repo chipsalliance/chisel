@@ -44,7 +44,8 @@ class PipelineStage extends Module{
   io.b <> io.a
 }
 ```
-```scala 
+Below we can see the resulting verilog for this example:
+```scala modc
 ChiselStage.emitVerilog(new Wrapper)
 ```
 
