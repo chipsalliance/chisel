@@ -13,7 +13,6 @@ This document explains the difference by setting up an experiment using Scastie 
 
 ```scala mdoc:silent
 // Imports used by the following examples
-import Chisel.Queue
 import chisel3._
 import chisel3.util.DecoupledIO
 ```
