@@ -120,8 +120,7 @@ object BitPat {
   * }}}
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, w: Int) extends BitSet with SourceInfoDoc {
-  val onSet = value & mask
-  val offSet = ~value & mask
+  override val terms = Set(this)
   override lazy val width = w
 
   def getWidth: Int = w
@@ -158,14 +157,63 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, w: Int) extends BitSet 
     new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)
   }
 
-  /** Generate raw string of a BitPat. */
-  def rawString: String = Seq.tabulate(width) { i =>
-      (value.testBit(width - i - 1), mask.testBit(width - i - 1)) match {
-      case (true, true) => "1"
-      case (false, true) => "0"
-      case (_, false) => "?"
+  def overlap(rhs: BitPat): Boolean = ((mask & rhs.mask) & (value ^ rhs.value)) == 0
+
+  def cover(that: BitPat): Boolean = (mask & (~that.mask | (value ^ that.value))) == 0
+
+  def intersect(that: BitPat): BitSet = {
+    if (!overlap(that)) {
+      BitSet.emptyBitSet
+    } else {
+      new BitPat(this.value | that.value, this.mask | that.mask, this.width.max(that.width))
     }
-  }.mkString
+  }
+
+  def subtract(that: BitPat): BitSet = {
+    require(width == that.width)
+    def enumerateBits(mask: BigInt): Seq[BigInt] = {
+      if (mask == 0) {
+        Nil
+      } else {
+        // bits comes after the first '1' in a number are inverted in its two's complement.
+        // therefore bit is always the first '1' in x (counting from least significant bit).
+        val bit = mask & (-mask)
+        bit +: enumerateBits(mask & ~bit)
+      }
+    }
+
+    val intersection = intersect(that)
+    val omask = this.mask
+    if (intersection.isEmpty) {
+      this
+    } else {
+      new BitSet {
+        val terms =
+          intersection.terms.flatMap { remove =>
+            enumerateBits(~omask & remove.mask).map { bit =>
+              // Only care about higher than current bit in remove
+              val nmask = (omask | ~(bit - 1)) & remove.mask
+              val nvalue = (remove.value ^ bit) & nmask
+              val nwidth = remove.width
+              new BitPat(nvalue, nmask, nwidth)
+            }
+          }
+      }
+    }
+  }
+
+  override def isEmpty: Boolean = false
+
+  /** Generate raw string of a BitSat. */
+  def rawString: String = Seq
+    .tabulate(width) { i =>
+      (value.testBit(width - i - 1), mask.testBit(width - i - 1)) match {
+        case (true, true)  => "1"
+        case (false, true) => "0"
+        case (_, false)    => "?"
+      }
+    }
+    .mkString
 
   override def toString = s"BitPat($rawString)"
 }
