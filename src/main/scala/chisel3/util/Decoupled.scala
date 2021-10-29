@@ -32,7 +32,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
   */
   val ready = Input(Bool())
   
-/** indicates that the producer has put valid data in 'bits' 
+/** Indicates that the producer has put valid data in 'bits' 
   * @group Signals
   */
   val valid = Output(Bool())
