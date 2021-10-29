@@ -179,13 +179,18 @@ class Pipe[T <: Data](val gen: T, val latency: Int = 1)(implicit compileOptions:
 
   /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
     * @define notAQueue
+    * @groupdesc Signals Pipe for [[Valid]] interface 
     */
   class PipeIO extends Bundle {
 
-    /** [[Valid]] input */
+    /** [[Valid]] input 
+      * @group Signals
+      */
     val enq = Input(Valid(gen))
 
-    /** [[Valid]] output. Data will appear here `latency` cycles after being valid at `enq`. */
+    /** [[Valid]] output. Data will appear here `latency` cycles after being valid at `enq`. 
+      * @group Signals
+      */
     val deq = Output(Valid(gen))
   }
 
