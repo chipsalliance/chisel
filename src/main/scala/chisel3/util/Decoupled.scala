@@ -140,9 +140,6 @@ class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 /** Factory adds an irrevocable handshaking protocol to a data bundle. */
 object Irrevocable
 {
- /**
-   *@group Signals
-   */
   def apply[T <: Data](gen: T): IrrevocableIO[T] = new IrrevocableIO(gen)
 
   /** Upconverts a DecoupledIO input to an IrrevocableIO, allowing an IrrevocableIO to be used
