@@ -18,9 +18,9 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   * 
   * These definitions are then used to create multiple [[Instance]]s.
   *
-  * @param cloned The internal representation of the definition, which may be either be directly the object, or a clone of an object
+  * @param underlying The internal representation of the definition, which may be either be directly the object, or a clone of an object
   */
-final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends IsLookupable with SealedHierarchy[A] {
+final case class Definition[+A] private[chisel3] (private[chisel3] underlying: Underlying[A]) extends IsLookupable with SealedHierarchy[A] {
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
     *
@@ -50,7 +50,8 @@ final case class Definition[+A] private[chisel3] (private[chisel3] cloned: Eithe
   }
 
   override def toDefinition: Definition[A] = this
-  override def toInstance: Instance[A] = new Instance(cloned)
+  override def toInstance: Instance[A] = new Instance(underlying)
+
 
 }
 
@@ -90,6 +91,7 @@ object Definition extends SourceInfoDoc {
     Builder.annotations ++= ir.annotations
     module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-    new Definition(Left(module))
+    new Definition(Proto(module))
   }
+
 }

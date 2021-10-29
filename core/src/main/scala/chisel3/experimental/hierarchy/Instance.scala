@@ -14,27 +14,27 @@ import firrtl.annotations.IsModule
   * Represents a unique instance of type [[A]] which are marked as @instantiable 
   * Can be created using Instance.apply method.
   *
-  * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
+  * @param underlying The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-final case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends SealedHierarchy[A] {
-  cloned match {
-    case Left(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Left with a clone!")
+final case class Instance[+A] private [chisel3] (private[chisel3] underlying: Underlying[A]) extends SealedHierarchy[A] {
+  underlying match {
+    case Proto(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Proto with a clone!")
     case other => //Ok
   }
 
   /** @return the context of any Data's return from inside the instance */
-  private[chisel3] def getInnerDataContext: Option[BaseModule] = cloned match {
-    case Left(value: BaseModule)        => Some(value)
-    case Left(value: IsInstantiable)    => None
-    case Right(i: BaseModule)           => Some(i)
-    case Right(i: InstantiableClone[_]) => i._parent
+  private[chisel3] def getInnerDataContext: Option[BaseModule] = underlying match {
+    case Proto(value: BaseModule)        => Some(value)
+    case Proto(value: IsInstantiable)    => None
+    case Clone(i: BaseModule)           => Some(i)
+    case Clone(i: InstantiableClone[_]) => i.getInnerContext
   }
 
   /** @return the context this instance. Note that for non-module clones, getInnerDataContext will be the same as getClonedParent */
-  private[chisel3] def getClonedParent: Option[BaseModule] = cloned match {
-    case Left(value: BaseModule) => value._parent
-    case Right(i: BaseModule)           => i._parent
-    case Right(i: InstantiableClone[_]) => i._parent
+  private[chisel3] def getClonedParent: Option[BaseModule] = underlying match {
+    case Proto(value: BaseModule) => value._parent
+    case Clone(i: BaseModule)           => i._parent
+    case Clone(i: InstantiableClone[_]) => i.getInnerContext
   }
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
@@ -56,7 +56,7 @@ final case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either
   }
 
   /** Returns the definition of this Instance */
-  override def toDefinition: Definition[A] = new Definition(Left(proto))
+  override def toDefinition: Definition[A] = new Definition(Proto(proto))
   override def toInstance: Instance[A] = this
 
 }
@@ -67,17 +67,17 @@ object Instance extends SourceInfoDoc {
     /** If this is an instance of a Module, returns the toTarget of this instance
       * @return target of this instance
       */
-    def toTarget: IsModule = i.cloned match {
-      case Left(x: BaseModule) => x.getTarget
-      case Right(x: IsClone[_] with BaseModule) => x.getTarget
+    def toTarget: IsModule = i.underlying match {
+      case Proto(x: BaseModule) => x.getTarget
+      case Clone(x: IsClone[_] with BaseModule) => x.getTarget
     }
 
     /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
       * @return absoluteTarget of this instance
       */
-    def toAbsoluteTarget: IsModule = i.cloned match {
-      case Left(x) => x.toAbsoluteTarget
-      case Right(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
+    def toAbsoluteTarget: IsModule = i.underlying match {
+      case Proto(x) => x.toAbsoluteTarget
+      case Clone(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
     }
 
   }
@@ -97,7 +97,7 @@ object Instance extends SourceInfoDoc {
     val ports = experimental.CloneModuleAsRecord(definition.proto)
     val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
     clone._madeFromDefinition = true
-    new Instance(Right(clone))
+    new Instance(Clone(clone))
   }
 
 }
