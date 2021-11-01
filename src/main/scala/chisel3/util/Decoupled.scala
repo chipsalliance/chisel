@@ -297,7 +297,7 @@ class Queue[T <: Data](val gen: T,
 object Queue
 {
   /** Create a queue and supply a DecoupledIO containing the product. */
- def apply[T <: Data](
+  def apply[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
@@ -324,7 +324,7 @@ object Queue
     * Irrevocable semantics; we didn't want to change the return type of
     * apply() for backwards compatibility reasons.
     */
- def irrevocable[T <: Data](
+  def irrevocable[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
