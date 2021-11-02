@@ -19,7 +19,7 @@ import chisel3.internal.{AggregateViewBinding, Builder, ChildBinding, ViewBindin
   */
 @implicitNotFound("@public is only legal within a class marked @instantiable and only on vals of type" +
   " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable or Option")
-sealed trait Lookupable[-B] {
+trait Lookupable[-B] {
   type C // Return type of the lookup
   /** Function called to modify the returned value of type B from A, into C
     * 
@@ -36,9 +36,11 @@ sealed trait Lookupable[-B] {
     * @return
     */
   def definitionLookup[A](that: A => B, definition: Definition[A]): C
+  protected def getProto[A](h: Hierarchy[A]): A = h.proto
+  protected def getUnderlying[A](h: Hierarchy[A]): Underlying[A] = h.underlying
 }
 
-private[chisel3] object Lookupable {
+object Lookupable {
 
   /** Clones a data and sets its internal references to its parent module to be in a new context.
     *
@@ -52,10 +54,10 @@ private[chisel3] object Lookupable {
     data._parent match {
       case None => data
       case Some(parent) =>
-        val newParent = cloneModuleToContext(Left(parent), context)
+        val newParent = cloneModuleToContext(Proto(parent), context)
         newParent match {
-          case Left(p) if p == parent => data
-          case Right(m: BaseModule) =>
+          case Proto(p) if p == parent => data
+          case Clone(m: BaseModule) =>
             val newChild = data.cloneTypeFull
             newChild.setRef(data.getRef, true)
             newChild.bind(internal.CrossModuleBinding)
@@ -145,7 +147,7 @@ private[chisel3] object Lookupable {
 
     val result = data.cloneTypeFull
 
-    // We have to lookup the target(s) of the view since they may need to be cloned into the current context
+    // We have to lookup the target(s) of the view since they may need to be underlying into the current context
     val newBinding = data.topBinding match {
       case ViewBinding(target) => ViewBinding(lookupData(reify(target)))
       case avb @ AggregateViewBinding(map, targetOpt) => data match {
@@ -199,51 +201,51 @@ private[chisel3] object Lookupable {
     * This function effectively recurses up the parents of module to find whether:
     *   (1) A parent is already in the context; then we do nothing and return module
     *   (2) A parent is in a different clone of the context; then we clone all the parents up
-    *         to that parent and set their parents to be in this cloned context
+    *         to that parent and set their parents to be in this underlying context
     *   (3) A parent has no root; in that case, we do nothing and return the module.
     *
-    * @param module original or clone to be cloned into a new context
+    * @param module original or clone to be underlying into a new context
     * @param context new context
     * @return original or clone in the new context
     */
-  private[chisel3] def cloneModuleToContext[T <: BaseModule](module: Either[T, IsClone[T]], context: BaseModule)
-      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Either[T, IsClone[T]] = {
+  private[chisel3] def cloneModuleToContext[T <: BaseModule](module: Underlying[T], context: BaseModule)
+      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Underlying[T] = {
     // Recursive call
-    def rec[A <: BaseModule](m: A): Either[A, IsClone[A]] = {
-      def clone(x: A, p: Option[BaseModule], name: () => String): Either[A, IsClone[A]] = {
+    def rec[A <: BaseModule](m: A): Underlying[A] = {
+      def clone(x: A, p: Option[BaseModule], name: () => String): Underlying[A] = {
         val newChild = Module.do_pseudo_apply(new internal.BaseModule.InstanceClone(x, name))
         newChild._parent = p
-        Right(newChild)
+        Clone(newChild)
       }
       (m, context) match {
-        case (c, ctx) if ctx == c => Left(c)
-        case (c, ctx: IsClone[_]) if ctx.hasSameProto(c) => Right(ctx.asInstanceOf[IsClone[A]])
-        case (c, ctx) if c._parent.isEmpty => Left(c)
+        case (c, ctx) if ctx == c => Proto(c)
+        case (c, ctx: IsClone[_]) if ctx.hasSameProto(c) => Clone(ctx.asInstanceOf[IsClone[A]])
+        case (c, ctx) if c._parent.isEmpty => Proto(c)
         case (_, _) => 
-          cloneModuleToContext(Left(m._parent.get), context) match {
-            case Left(p) => Left(m)
-            case Right(p: BaseModule) =>
+          cloneModuleToContext(Proto(m._parent.get), context) match {
+            case Proto(p) => Proto(m)
+            case Clone(p: BaseModule) =>
               clone(m, Some(p), () => m.instanceName)
           }
       }
     }
     module match {
-      case Left(m) => rec(m)
-      case Right(m: ModuleClone[_]) =>
+      case Proto(m) => rec(m)
+      case Clone(m: ModuleClone[_]) =>
         rec(m) match {
-          case Left(mx) => Right(mx)
-          case Right(i: InstanceClone[_]) =>
-            val newChild = Module.do_pseudo_apply(new InstanceClone(m._proto, () => m.instanceName))
+          case Proto(mx) => Clone(mx)
+          case Clone(i: InstanceClone[_]) =>
+            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
-            Right(newChild)
+            Clone(newChild)
         }
-      case Right(m: InstanceClone[_]) =>
+      case Clone(m: InstanceClone[_]) =>
         rec(m) match {
-          case Left(mx) => Right(mx)
-          case Right(i: InstanceClone[_]) =>
-            val newChild = Module.do_pseudo_apply(new InstanceClone(m._proto, () => m.instanceName))
+          case Proto(mx) => Clone(mx)
+          case Clone(i: InstanceClone[_]) =>
+            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
-            Right(newChild)
+            Clone(newChild)
         }
     }
   }
@@ -259,14 +261,14 @@ private[chisel3] object Lookupable {
     type C = Instance[B]
     def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      new Instance(cloneModuleToContext(ret.cloned, definition.getInnerDataContext.get))
+      new Instance(cloneModuleToContext(ret.underlying, definition.getInnerDataContext.get))
     }
     def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      instance.cloned match {
+      instance.underlying match {
         // If instance is just a normal module, no changing of context is necessary
-        case Left(_)  => new Instance(ret.cloned)
-        case Right(_) => new Instance(cloneModuleToContext(ret.cloned, instance.getInnerDataContext.get))
+        case Proto(_)  => new Instance(ret.underlying)
+        case Clone(_) => new Instance(cloneModuleToContext(ret.underlying, instance.getInnerDataContext.get))
       }
     }
   }
@@ -275,14 +277,14 @@ private[chisel3] object Lookupable {
     type C = Instance[B]
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      new Instance(cloneModuleToContext(Left(ret), definition.getInnerDataContext.get))
+      new Instance(cloneModuleToContext(Proto(ret), definition.getInnerDataContext.get))
     }
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      instance.cloned match {
+      instance.underlying match {
         // If instance is just a normal module, no changing of context is necessary
-        case Left(_)  => new Instance(Left(ret))
-        case Right(_) => new Instance(cloneModuleToContext(Left(ret), instance.getInnerDataContext.get))
+        case Proto(_)  => new Instance(Proto(ret))
+        case Clone(_) => new Instance(cloneModuleToContext(Proto(ret), instance.getInnerDataContext.get))
       }
     }
   }
@@ -299,9 +301,9 @@ private[chisel3] object Lookupable {
     }
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      val ioMap: Option[Map[Data, Data]] = instance.cloned match {
-        case Right(x: ModuleClone[_]) => Some(x.ioMap)
-        case Left(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
+      val ioMap: Option[Map[Data, Data]] = instance.underlying match {
+        case Clone(x: ModuleClone[_]) => Some(x.ioMap)
+        case Proto(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
         case _ => None
       }
       if (isView(ret)) {
@@ -342,15 +344,19 @@ private[chisel3] object Lookupable {
     type C = Instance[B]
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      val cloned = new InstantiableClone(ret)
-      cloned._parent = definition.getInnerDataContext
-      new Instance(Right(cloned))
+      val underlying = new InstantiableClone[B] {
+        val getProto = ret
+        lazy val _innerContext = definition
+      }
+      new Instance(Clone(underlying))
     }
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      val cloned = new InstantiableClone(ret)
-      cloned._parent = instance.getInnerDataContext
-      new Instance(Right(cloned))
+      val underlying = new InstantiableClone[B] {
+        val getProto = ret
+        lazy val _innerContext = instance
+      }
+      new Instance(Clone(underlying))
     }
   }
 
