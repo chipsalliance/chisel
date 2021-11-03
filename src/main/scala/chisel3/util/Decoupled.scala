@@ -176,11 +176,6 @@ object DeqIO {
 /** An I/O Bundle for Queues
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue.
-<<<<<<< HEAD
-=======
-  * @param hasFlush A boolean for whether the generated Queue is flushable
-  * @groupdesc Signals The hardware fields of the Bundle
->>>>>>> a79f5756 (Add field grouping ScalaDoc for other subclasses of Bundle  (#2214))
   */
 class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
 { // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
@@ -201,15 +196,6 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
     * @group Signals
     */
   val count = Output(UInt(log2Ceil(entries + 1).W))
-<<<<<<< HEAD
-=======
-  /** When asserted, reset the enqueue and dequeue pointers, effectively flushing the queue (Optional IO for a flushable Queue)
-    * @group Signals
-    */ 
-  val flush = if (hasFlush) Some(Input(Bool())) else None
-
->>>>>>> a79f5756 (Add field grouping ScalaDoc for other subclasses of Bundle  (#2214))
-}
 
 /** A hardware module implementing a Queue
   * @param gen The type of data to queue
