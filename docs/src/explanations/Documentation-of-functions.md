@@ -170,7 +170,7 @@ ChiselStage.emitVerilog(new Wrapper)
 
 ### Conclusion: 
 
-The Verilog remained the same without incurring errors.
+The Verilog remained the same without incurring errors, showing that the `<>` operator is generally communicative.
 
 
 
