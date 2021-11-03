@@ -58,11 +58,27 @@ ChiselStage.emitVerilog(new Wrapper)
 
 ## Concept 1: <> is Communicative
 
+<<<<<<< HEAD
 This experiment is set up to test for the function of `<>` using the experiment above.
+=======
+
+
+This experiment is set up to test for the function of `<>` using the experiment above.
+
+>>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
 Achieving this involves flipping the RHS and LHS of each arrow and seeing how "<>"  will react.
 ( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/LVhlbkFQQnq7X3trHfgZZQ )
 
+<<<<<<< HEAD
 ```scala mdoc:silent:reset
+=======
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/LVhlbkFQQnq7X3trHfgZZQ )
+
+
+
+```scala mdoc:silent
+
+>>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
 class Wrapper extends Module{
   val io = IO(new Bundle {
   val in = Flipped(DecoupledIO(UInt(8.W)))
@@ -91,7 +107,13 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion: 
+<<<<<<< HEAD
 The Verilog remained the same without incurring errors, showing that the `<>` operator is generally communicative.
+=======
+
+The Verilog remained the same without incurring errors, showing that the `<>` operator is generally communicative.
+
+>>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
 
 
 ## Concept 2: := means assign ALL signals from the RHS to the LHS, regardless of their direction.
@@ -123,7 +145,13 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
+<<<<<<< HEAD
 ```scala mdoc:crash
+=======
+
+```scala mdoc:crash
+
+>>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
@@ -173,7 +201,13 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
+<<<<<<< HEAD
 ```scala mdoc:crash
+=======
+
+```scala mdoc:crash
+
+>>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
