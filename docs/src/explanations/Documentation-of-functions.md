@@ -234,7 +234,7 @@ class PipelineStage extends Module{
 
 Below we can see the resulting Verilog for this example:
 
-```scala modc
+```scala mdoc:crash
 
 ChiselStage.emitVerilog(new Wrapper)
 
