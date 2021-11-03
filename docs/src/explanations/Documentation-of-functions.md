@@ -104,7 +104,7 @@ ChiselStage.emitVerilog(new Wrapper)
 
 
 
-This experiment is set up to test for the function of "<>" using the experiment above.
+This experiment is set up to test for the function of `<>` using the experiment above.
 
 Achieving this involves flipping the RHS and LHS of each arrow and seeing how "<>"  will react.
 
