@@ -108,7 +108,7 @@ This experiment is set up to test for the function of `<>` using the experiment 
 
 Achieving this involves flipping the RHS and LHS of each arrow and seeing how "<>"  will react.
 
-( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/LVhlbkFQQnq7X3trHfgZZQ )
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/LVhlbkFQQnq7X3trHfgZZQ )
 
 
 
