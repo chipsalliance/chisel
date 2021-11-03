@@ -196,6 +196,7 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
     * @group Signals
     */
   val count = Output(UInt(log2Ceil(entries + 1).W))
+}
 
 /** A hardware module implementing a Queue
   * @param gen The type of data to queue
