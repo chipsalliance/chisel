@@ -18,7 +18,7 @@ This document explains the difference by setting up an experiment using Scastie 
 
 ### Experiment
 
-```scala mdoc:silent
+```scala mdoc
 // Imports used by the following examples
 import chisel3._
 import chisel3.util.DecoupledIO
@@ -55,30 +55,22 @@ Below we can see the resulting Verilog for this example:
 ```scala modc
 ChiselStage.emitVerilog(new Wrapper)
 ```
-
 ## Concept 1: <> is Communicative
 
-<<<<<<< HEAD
-This experiment is set up to test for the function of `<>` using the experiment above.
-=======
 
 
 This experiment is set up to test for the function of `<>` using the experiment above.
 
->>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
-Achieving this involves flipping the RHS and LHS of each arrow and seeing how "<>"  will react.
+Achieving this involves flipping the RHS and LHS of each arrow and seeing how '<>'  will react.
 ( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/LVhlbkFQQnq7X3trHfgZZQ )
 
-<<<<<<< HEAD
+
+
+
 ```scala mdoc:silent:reset
-=======
-( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/LVhlbkFQQnq7X3trHfgZZQ )
+import chisel3._
+import chisel3.util.DecoupledIO
 
-
-
-```scala mdoc:silent
-
->>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
 class Wrapper extends Module{
   val io = IO(new Bundle {
   val in = Flipped(DecoupledIO(UInt(8.W)))
@@ -107,13 +99,9 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion: 
-<<<<<<< HEAD
-The Verilog remained the same without incurring errors, showing that the `<>` operator is generally communicative.
-=======
-
 The Verilog remained the same without incurring errors, showing that the `<>` operator is generally communicative.
 
->>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
+
 
 
 ## Concept 2: := means assign ALL signals from the RHS to the LHS, regardless of their direction.
@@ -122,7 +110,10 @@ To achieve this, "<>" is being replaced with ":=" in the sample code above and t
 (Scastie link to the experiment:https://scastie.scala-lang.org/Shorla/o1ShdaY3RWKf0IIFwwQ1UQ)
 
 ```scala mdoc:silent:reset
-class Wrapper extends Modle{
+import chisel3._
+import chisel3.util.DecoupledIO
+
+class Wrapper extends Module{
   val io = IO(new Bundle {
   val in = Flipped(DecoupledIO(UInt(8.W)))
   val out = DecoupledIO(UInt(8.W))
@@ -145,13 +136,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-<<<<<<< HEAD
-```scala mdoc:crash
-=======
-
-```scala mdoc:crash
-
->>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
+```scala modc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
@@ -166,26 +151,27 @@ chisel3.internal.ChiselException: Connection between sink (DecoupledIO(IO io_in 
 	at ... ()
 	at ... (Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace)
 ~~~
-
-
 ## Concept 3: Always Use := to assign DontCare to Wires
 ":=" or "<>" which is best used to assign wires of unknown direction to DontCare? 
 We will find that out using the sample codes above.
 ( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
+import chisel3._
+import chisel3.util.DecoupledIO
+
 class Wrapper extends Module{
   val io = IO(new Bundle {
-  val in = Flipped(DecoupledIO(UInt(8.W))
+  val in = Flipped(DecoupledIO(UInt(8.W)))
   val out = DecoupledIO(UInt(8.W))
   })
   val p = Module(new PipelineStage)
   val c = Module(new PipelineStage) 
   //connect Producer to IO
-  io.in <> DontCare
+  io.in := DontCare
   p.io.a <> DontCare
   val tmp = Wire(Flipped(DecoupledIO(UInt(8.W))))
-  tmp <> DontCare
+  tmp := DontCare
   p.io.a <> io.in
   // connect producer to consumer
   c.io.a <> p.io.b
@@ -201,17 +187,11 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-<<<<<<< HEAD
-```scala mdoc:crash
-=======
-
-```scala mdoc:crash
-
->>>>>>> ac9c548e4cb21b072f258dda8f8f47ff94a48691
+```scala modc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-When "<>" was used to assign a wire with an unknown direction "tmp" to DontCare, the following error message appeared:
+When '<>' was used to assign a wire with an unknown direction "tmp" to DontCare, the following error message appeared:
 ~~~ 
 chisel3.internal.ChiselException: Connection between left (DecoupledIO(Wire in Wrapper)) and source (DontCare()) failed @.bits: Locally unclear whether Left or Right (both internal)
 	at ... ()
@@ -225,12 +205,15 @@ But when ":=" was used to assign the wire to DontCare, No errors came up.
 
 
 ##  Concept 4: You can use <> or := to assign DontCare to directioned things (IOs)
-":=" or "<>" which is best used to assign directioned things to DontCare? 
+':=' or '<>' which is best used to assign directioned things to DontCare? 
 We will find that out using the sample codes above.
 ( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
-class Wrapper extends Modle{
+import chisel3._
+import chisel3.util.DecoupledIO
+
+class Wrapper extends Module{
   val io = IO(new Bundle {
   val in = Flipped(DecoupledIO(UInt(8.W)))
   val out = DecoupledIO(UInt(8.W))
@@ -268,23 +251,22 @@ The goal is to check if <> can connect two wires using the Experiment code above
 ( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
+import chisel3._
+import chisel3.util.DecoupledIO
+
 class Wrapper extends Module{
   val io = IO(new Bundle {
   val in = Flipped(DecoupledIO(UInt(8.W)))
   val out = DecoupledIO(UInt(8.W))
   })
   val p = Module(new PipelineStage)
-  val c = Module(new PipelineStage)
+  val c = Module(new PipelineStage) 
   //connect Producer to IO
-    // For this experiment, we add a temporary wire and see if it works..
-  //p.io.a <> io.in
-  val tmp1 = Wire(DecoupledIO(UInt(8.W)))
-  val tmp2 = Wire(DecoupledIO(UInt(8.W)))
-  // connect intermediate wire
-  tmp1 <> io.in
-  tmp2 <> tmp1
-  p.io.a <> tmp2
-  //p.io.a <> io.in
+  io.in := DontCare
+  p.io.a <> DontCare
+  val tmp = Wire(Flipped(DecoupledIO(UInt(8.W))))
+  tmp := DontCare
+  p.io.a <> io.in
   // connect producer to consumer
   c.io.a <> p.io.b
   //connect consumer to IO
@@ -295,7 +277,7 @@ class PipelineStage extends Module{
     val a = Flipped(DecoupledIO(UInt(8.W)))
     val b = DecoupledIO(UInt(8.W))
   })
-  io.b <> io.
+  io.b <> io.a
 }
 ```
 Below we can see the resulting Verilog for this example:
@@ -320,7 +302,10 @@ If there is at least one known flow what will <> do? This will be showed using t
 ( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/gKx9ReLVTTqDTk9vmw5ozg)
 
 ```scala mdoc:silent:reset
-class Wrapper extends Modle{
+import chisel3._
+import chisel3.util.DecoupledIO
+
+class Wrapper extends Module{
   val io = IO(new Bundle {
   val in = Flipped(DecoupledIO(UInt(8.W)))
   val out = DecoupledIO(UInt(8.W))
