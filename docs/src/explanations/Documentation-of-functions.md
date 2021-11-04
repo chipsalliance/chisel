@@ -8,7 +8,7 @@ section: "chisel3"
 
 ---
 
-# Documentation of Functions := vs <>
+# Further Explanation for the := and  <> Operators
 
 The difference in the function of := and <> has been a major source of debate in lots of conversations
 
