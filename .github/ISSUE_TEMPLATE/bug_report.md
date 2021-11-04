@@ -29,11 +29,6 @@ If applicable, add screenshots to help explain your problem.
  - Browser [e.g. chrome, safari]
  - Version [e.g. 22]
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
 
 **Additional context**
 Include detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, [Scastie](https://scastie.scala-lang.org/KtzZQ3nFTea9KoNh0tRqtg).
