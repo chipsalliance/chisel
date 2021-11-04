@@ -14,7 +14,7 @@ Chisel contains two connection operators, `:=` and `<>`. This document serves fo
 
 
 
-### Experiment
+### Experiment Setup
 
 ```scala mdoc
 // Imports used by the following examples
