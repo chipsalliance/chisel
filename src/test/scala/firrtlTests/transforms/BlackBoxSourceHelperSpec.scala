@@ -193,4 +193,19 @@ class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
     new File(subdir, filename) should exist
     new File(dir, filename) shouldNot exist
   }
+
+  "verilog file list" should "end with a newline" in {
+    val annos = Seq(
+      BlackBoxTargetDirAnno("test_run_dir"),
+      BlackBoxResourceAnno(moduleName, "/blackboxes/AdderExtModule.v")
+    )
+
+    execute(input, output, annos)
+
+    val filename = os.pwd / "test_run_dir" / BlackBoxSourceHelper.defaultFileListName
+    assert(os.exists(filename), "verilog file list should exist")
+    val content = os.read(filename)
+    assert(content.contains("AdderExtModule.v"))
+    assert(content.last == '\n', "Some simulators like Icarus Verilog seem to expect a trailing new line character")
+  }
 }
