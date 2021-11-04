@@ -295,7 +295,7 @@ chisel3.internal.ChiselException: Connection between left (DecoupledIO(Wire in W
 	at ... (Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace)
 ~~~
 
-## Concept 6: <> only works between things with at least one known flow (An IO or child's IO). 
+## Concept 6: `<>`  works between things with at least one known flow (An IO or child's IO). 
 If there is at least one known flow what will <> do? This will be showed using the experiment code.
 ( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/gKx9ReLVTTqDTk9vmw5ozg)
 
