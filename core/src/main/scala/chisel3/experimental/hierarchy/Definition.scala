@@ -18,13 +18,9 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   * 
   * These definitions are then used to create multiple [[Instance]]s.
   *
-  * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
+  * @param underlying The internal representation of the definition, which may be either be directly the object, or a clone of an object
   */
-case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends IsLookupable {
-  private[chisel3] def proto: A = cloned match {
-    case Left(value: A) => value
-    case Right(i: IsClone[A]) => i._proto
-  }
+final case class Definition[+A] private[chisel3] (private[chisel3] underlying: Underlying[A]) extends IsLookupable with SealedHierarchy[A] {
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
     *
@@ -43,19 +39,19 @@ case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, I
     lookup.definitionLookup(that, this)
   }
 
-  /** Updated by calls to [[apply]], to avoid recloning returned Data's */
-  private [chisel3] val cache = HashMap[Data, Data]()
-
-
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
     case value: BaseModule =>
-      val newChild = Module.do_apply(new internal.BaseModule.DefinitionClone(value))(chisel3.internal.sourceinfo.UnlocatableSourceInfo, chisel3.ExplicitCompileOptions.Strict)
+      val newChild = Module.do_pseudo_apply(new internal.BaseModule.DefinitionClone(value))(chisel3.internal.sourceinfo.UnlocatableSourceInfo, chisel3.ExplicitCompileOptions.Strict)
       newChild._circuit = value._circuit.orElse(Some(value))
       newChild._parent = None
       Some(newChild)
     case value: IsInstantiable => None
   }
+
+  override def toDefinition: Definition[A] = this
+  override def toInstance: Instance[A] = new Instance(underlying)
+
 
 }
 
@@ -95,6 +91,7 @@ object Definition extends SourceInfoDoc {
     Builder.annotations ++= ir.annotations
     module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-    new Definition(Left(module))
+    new Definition(Proto(module))
   }
+
 }

@@ -4,7 +4,7 @@ resolvers += Classpaths.sbtPluginReleases
 
 resolvers += "jgit-repo" at "https://download.eclipse.org/jgit/maven"
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.0")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.0")
 
@@ -20,9 +20,9 @@ addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.23" )
 
 addSbtPlugin("com.eed3si9n" % "sbt-sriracha" % "0.1.0")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.0")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.1")
 
-addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.9")
+addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.10")
 
 // From FIRRTL for building from source
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.31")
