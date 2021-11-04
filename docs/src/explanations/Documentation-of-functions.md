@@ -336,4 +336,4 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-The connection above went smoothly with no errors, this goes to show <> will work if there is only one wire in between because the IO and the childIO "fix" the direction.
+The connection above went smoothly with no errors, this goes to show <> will work as long as there is at least one directioned thing (IO or submodule's IO) to "fix" the direction.
