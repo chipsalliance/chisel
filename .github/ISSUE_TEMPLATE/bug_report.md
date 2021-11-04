@@ -1,34 +1,27 @@
----
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
+<!-- Note: for support questions, you are strongly advised to use [Stack Overflow](https://stackoverflow.com/questions/tagged/chisel). -->
+<!--
+This repository's issues are reserved for feature requests and bug reports.
+Please select the item best describing the issue in each category and delete the other items.
+-->
+<!-- choose all that apply -->
+**Type of issue**: bug report
 
----
+<!-- choose one -->
+**Impact**: no functional change | API addition (no impact on existing code) | API modification | unknown
 
+**Other information**
+ <!-- include detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, Scastie (https://scastie.scala-lang.org/KtzZQ3nFTea9KoNh0tRqtg) -->
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**Please provide the steps to reproduce the problem:**
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**What is the current behavior?**
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+**What is the expected behavior?**
 
-
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-
-**Additional context**
-Include detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, [Scastie](https://scastie.scala-lang.org/KtzZQ3nFTea9KoNh0tRqtg).
+**Please tell us about your environment:**
+<!--    (examples)
+    - version: `3.4-SNAPSHOT`
+    - OS: `Linux knight 4.4.0-92-generic #115-Ubuntu SMP Thu Aug 10 09:04:33 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux`
+-->
 
 **What is the use case for changing the behavior?**
