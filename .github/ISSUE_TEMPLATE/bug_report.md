@@ -7,8 +7,7 @@ assignees: ''
 
 ---
 
-<!-- Note: for support questions, you are strongly advised to use [Stack Overflow](https://stackoverflow.com/questions/tagged/chisel).
--->
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
