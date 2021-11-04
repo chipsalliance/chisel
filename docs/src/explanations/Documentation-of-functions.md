@@ -23,7 +23,7 @@ import chisel3.util.DecoupledIO
 ```
 
 The diagram for the experiment can be viewed **[here](https://docs.google.com/document/d/14C918Hdahk2xOGSJJBT-ZVqAx99_hg3JQIq-vaaifQU/edit?usp=sharing)**
-![Experiment Image](../../images/experiment-setup.jpg)
+![Experiment Image](../../images/chisel.png)
 
 ```scala mdoc:silent
 
