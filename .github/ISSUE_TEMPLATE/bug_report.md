@@ -1,6 +1,5 @@
 <!-- Note: for support questions, you are strongly advised to use [Stack Overflow](https://stackoverflow.com/questions/tagged/chisel). -->
 <!--
-This repository's issues are reserved for feature requests and bug reports.
 Please select the item best describing the issue in each category and delete the other items.
 -->
 <!-- choose all that apply -->
