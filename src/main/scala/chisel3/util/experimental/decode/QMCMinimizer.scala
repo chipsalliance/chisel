@@ -222,7 +222,7 @@ object QMCMinimizer extends Minimizer {
 
     // for all outputs
     val minimized = (0 until m).flatMap(i => {
-      val outputBp = BitPat("b" + "?" * (m - i - 1) + "1" + "?" * i)
+      val outputBp = BitPat("b" + "0" * (m - i - 1) + "1" + "0" * i)
 
       // Minterms, implicants that makes the output to be 1
       val mint: Seq[Implicant] = table.table.filter { case (_, t) => t.mask.testBit(i) && t.value.testBit(i) }.keys.map(toImplicant).toSeq
@@ -287,7 +287,7 @@ object QMCMinimizer extends Minimizer {
         tb.copy(table = tb.table.map { case (k, v) =>
           if (k == t._1) {
             def ones(bitPat: BitPat) = bitPat.rawString.zipWithIndex.collect{case ('1', x) => x}
-            (k, BitPat("b" + (0 until v.getWidth).map(i => if ((ones(v) ++ ones(t._2)).contains(i)) "1" else "?").mkString))
+            (k, BitPat("b" + (0 until v.getWidth).map(i => if ((ones(v) ++ ones(t._2)).contains(i)) "1" else "0").mkString))
           } else (k, v)
         })
       } else {
