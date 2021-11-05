@@ -189,8 +189,8 @@ Thus, when assigning DontCare to a wire, always use `:=`.
 
 
 ##  Concept 4: You can use <> or := to assign DontCare to directioned things (IOs)
-':=' or '<>' which is best used to assign directioned things to DontCare? 
-We will find that out using the sample codes above.
+When assigning `DontCare` to something that is directioned, should you use `:=` or `<>`? 
+We will find out using the sample codes below:
 ( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
