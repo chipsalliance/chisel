@@ -182,8 +182,10 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-When '<>' was used to assign a wire with an unknown direction "tmp" to DontCare, the following error message appeared.
-But when ":=" was used to assign the wire to DontCare, No errors came up. 
+When `<>` was used to assign the unidrectioned wire `tmp` to DontCare, we got an error.
+But when `:=` was used to assign the wire to DontCare, no errors will occur.
+
+Thus, when assigning DontCare to a wire, always use `:=`.
 
 
 ##  Concept 4: You can use <> or := to assign DontCare to directioned things (IOs)
