@@ -138,7 +138,7 @@ Below we can see the resulting error message for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-Trying to use ":=" to connect an input will give this error, whether flipped or not.
+The `:=` operator goes field-by-field and attempts to connect the RHS to the LHS. If something on the LHS is actually an `Input`, or something on the RHS is an `Output`, you will get this error:
 
 
 ## Concept 3: Always Use := to assign DontCare to Wires
