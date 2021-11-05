@@ -269,7 +269,7 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-The code above shows that <> can't connect two wires, this is because Chisel can't figure out which way things flow. If it is used this is the expected error.
+The code above shows that `<>` can't connect two `Wire`s, this is because Chisel can't figure out which way things flow. If it is used this is the expected error.
 
 
 ## Concept 6: `<>`  works between things with at least one known flow (An IO or child's IO). 
