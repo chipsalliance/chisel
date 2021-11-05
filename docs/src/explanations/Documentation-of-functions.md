@@ -89,7 +89,7 @@ class PipelineStage extends Module{
     val a = Flipped(DecoupledIO(UInt(8.W)))
     val b = DecoupledIO(UInt(8.W))
   })
-  io.b <> io.a
+  io.a <> io.b
 }
 ```
 Below we can see the resulting Verilog for this example:
