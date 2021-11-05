@@ -266,7 +266,7 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-The code above shows that <> can't connect two wires, this is because Chisel can't figure out which way things flow. If it is used this is the expected error.
+The code above shows that <> can't connect two wires, this is because Chisel can't figure out which way things flow.
 
 
 ## Concept 6: `<>`  works between things with at least one known flow (An IO or child's IO). 
@@ -311,3 +311,87 @@ ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
 The connection above went smoothly with no errors, this goes to show <> will work as long as there is at least one directioned thing (IO or submodule's IO) to "fix" the direction.
+
+
+## Concept 7: <> and := connects signals by field name.
+This experiment creates a MockDecoupledIO which has the same fields by name as a DecoupledIO. Chisel lets us connect it and produces the same verilog, even though MockDecoupledIO and DecoupledIO are different types.
+( Scastie link for the ecperiment:https://scastie.scala-lang.org/Uf4tQquvQYigZAW705NFIQ)
+
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.util.DecoupledIO
+
+class MockDecoupledIO extends Bundle {
+  val valid = Output(Bool())
+  val ready = Input(Bool())
+  val bits = Output(UInt(8.W))
+}
+class Wrapper extends Module{
+  val io = IO(new Bundle {
+  val in = Flipped(new MockDecoupledIO())
+  val out = new MockDecoupledIO()
+  })
+  val p = Module(new PipelineStage)
+  val c = Module(new PipelineStage) 
+  // connect producer to I/O
+  p.io.a <> io.in
+  // connect producer  to consumer
+  c.io.a <> p.io.b
+  // connect consumer to I/O
+  io.out <> c.io.b
+}
+class PipelineStage extends Module{
+  val io = IO(new Bundle{
+    val a = Flipped(DecoupledIO(UInt(8.W)))
+    val b = DecoupledIO(UInt(8.W))
+  })
+  io.a <> io.b
+}
+```
+Below we can see the resulting Verilog for this example:
+```scala modc
+ChiselStage.emitVerilog(new Wrapper)
+```
+And here is another experiment, where we remove one of the fields of MockDecoupledIO:
+( Scastie link for the ecperiment:https://scastie.scala-lang.org/ChtkhKCpS9CvJkjjqpdeIA)
+
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.util.DecoupledIO
+
+class MockDecoupledIO extends Bundle {
+  val valid = Output(Bool())
+  val ready = Input(Bool())
+  //val bits = Output(UInt(8.W))
+}
+class Wrapper extends Module{
+  val io = IO(new Bundle {
+  val in = Flipped(new MockDecoupledIO())
+  val out = new MockDecoupledIO()
+  })
+  val p = Module(new PipelineStage)
+  val c = Module(new PipelineStage) 
+  // connect producer to I/O
+  p.io.a <> io.in
+  // connect producer  to consumer
+  c.io.a <> p.io.b
+  // connect consumer to I/O
+  io.out <> c.io.b
+}
+class PipelineStage extends Module{
+  val io = IO(new Bundle{
+    val a = Flipped(DecoupledIO(UInt(8.W)))
+    val b = DecoupledIO(UInt(8.W))
+  })
+  io.a <> io.b
+}
+```
+Below we can see the resulting Verilog for this example:
+```scala modc:crash
+ChiselStage.emitVerilog(new Wrapper)
+```
+This one fails because there is a field 'bits' missing.
+
+### Conclusion:
+It doesn't matter the order of the fields, they need to be the same.
+Same is true for ':=', the Scala types do not need to match but all the signals must match up.
