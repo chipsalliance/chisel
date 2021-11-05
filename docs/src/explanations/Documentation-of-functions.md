@@ -228,7 +228,7 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion: 
-Both "<>" and ":=" can be used to assign directioned things (IOs) to DontCare as shown in "io.in" and "p.io.a" respectively. This is basically equivalent because in this case both "<>" and ":=" will figure the direction from the LHS.
+Both `<>` and `:=` can be used to assign directioned things (IOs) to DontCare as shown in `io.in` and `p.io.a` respectively. This is basically equivalent because in this case both `<>` and `:=` will determine the direction from the LHS.
 
 ##  Concept 5:  `<>` Cannot be used to connect two non-directioned things (Wires)
 The goal is to check if <> can connect two wires using the Experiment code above.
