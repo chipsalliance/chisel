@@ -53,7 +53,7 @@ Below we can see the resulting Verilog for this example:
 ```scala modc
 ChiselStage.emitVerilog(new Wrapper)
 ```
-## Concept 1: <> is Communicative
+## Concept 1: <> is Commutative
 
 
 
@@ -89,7 +89,7 @@ class PipelineStage extends Module{
     val a = Flipped(DecoupledIO(UInt(8.W)))
     val b = DecoupledIO(UInt(8.W))
   })
-  io.b <> io.a
+  io.a <> io.b
 }
 ```
 Below we can see the resulting Verilog for this example:
@@ -97,7 +97,7 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion: 
-The Verilog remained the same without incurring errors, showing that the `<>` operator is generally communicative.
+The Verilog remained the same without incurring errors, showing that the `<>` operator is generally commutative.
 
 
 
@@ -130,7 +130,7 @@ class PipelineStage extends Module{
     val a = Flipped(DecoupledIO(UInt(8.W)))
     val b = DecoupledIO(UInt(8.W))
   })
-  io.b <> io.a
+  io.b := io.a
 }
 ```
 Below we can see the resulting error message for this example:
@@ -138,13 +138,14 @@ Below we can see the resulting error message for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-Trying to use ":=" to connect an input will give this error, whether flipped or not.
+The `:=` operator goes field-by-field and attempts to connect the RHS to the LHS. If something on the LHS is actually an `Input`, or something on the RHS is an `Output`, you will get this error:
 
 
 ## Concept 3: Always Use := to assign DontCare to Wires
-":=" or "<>" which is best used to assign wires of unknown direction to DontCare? 
-We will find that out using the sample codes above.
-( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
+
+When assigning `DontCare` to something that is not directioned, should you use `:=` or `<>`? 
+We will find out using the sample codes below:
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -181,13 +182,15 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-When '<>' was used to assign a wire with an unknown direction "tmp" to DontCare, the following error message appeared.
-But when ":=" was used to assign the wire to DontCare, No errors came up. 
+When `<>` was used to assign the unidrectioned wire `tmp` to DontCare, we got an error.
+But when `:=` was used to assign the wire to DontCare, no errors will occur.
+
+Thus, when assigning DontCare to a wire, always use `:=`.
 
 
 ##  Concept 4: You can use <> or := to assign DontCare to directioned things (IOs)
-':=' or '<>' which is best used to assign directioned things to DontCare? 
-We will find that out using the sample codes above.
+When assigning `DontCare` to something that is directioned, should you use `:=` or `<>`? 
+We will find out using the sample codes below:
 ( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
@@ -225,10 +228,10 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion: 
-Both "<>" and ":=" can be used to assign directioned things (IOs) to DontCare as shown in "io.in" and "p.io.a" respectively. This is basically equivalent because in this case both "<>" and ":=" will figure the direction from the LHS.
+Both `<>` and `:=` can be used to assign directioned things (IOs) to DontCare as shown in `io.in` and `p.io.a` respectively. This is basically equivalent because in this case both `<>` and `:=` will determine the direction from the LHS.
 
 ##  Concept 5:  `<>` Cannot be used to connect two non-directioned things (Wires)
-The goal is to check if <> can connect two wires using the Experiment code above.
+The goal is to check if `<>` can connect two `Wire`s using the Experiment code above.
 ( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
@@ -266,7 +269,11 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
+<<<<<<< HEAD
 The code above shows that <> can't connect two wires, this is because Chisel can't figure out which way things flow.
+=======
+The code above shows that `<>` can't connect two `Wire`s, this is because Chisel can't figure out which way things flow. If it is used this is the expected error.
+>>>>>>> 928c3bf4f0e1bfeee2ebad8729101fb67f5caf3d
 
 
 ## Concept 6: `<>`  works between things with at least one known flow (An IO or child's IO). 
