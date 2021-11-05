@@ -142,9 +142,10 @@ The `:=` operator goes field-by-field and attempts to connect the RHS to the LHS
 
 
 ## Concept 3: Always Use := to assign DontCare to Wires
-":=" or "<>" which is best used to assign wires of unknown direction to DontCare? 
-We will find that out using the sample codes above.
-( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
+
+When assigning `DontCare` to something that is not directioned, should you use `:=` or `<>`? 
+We will find out using the sample codes below:
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
 import chisel3._
