@@ -130,7 +130,7 @@ class PipelineStage extends Module{
     val a = Flipped(DecoupledIO(UInt(8.W)))
     val b = DecoupledIO(UInt(8.W))
   })
-  io.b <> io.a
+  io.b := io.a
 }
 ```
 Below we can see the resulting error message for this example:
