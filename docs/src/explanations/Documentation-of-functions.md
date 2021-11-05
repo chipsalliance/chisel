@@ -53,7 +53,7 @@ Below we can see the resulting Verilog for this example:
 ```scala modc
 ChiselStage.emitVerilog(new Wrapper)
 ```
-## Concept 1: <> is Communicative
+## Concept 1: <> is Commutative
 
 
 
