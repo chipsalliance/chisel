@@ -13,17 +13,20 @@ import chisel3.internal.sourceinfo._
 import chisel3.internal.{Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId, throwException}
 import firrtl.annotations._
 
-
+@deprecated("EnumAnnotations will be removed in 3.5.", "Chisel 3.4")
 object EnumAnnotations {
   /** An annotation for strong enum instances that are ''not'' inside of Vecs
     *
     * @param target the enum instance being annotated
     * @param enumTypeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
     */
+
+  @deprecated("EnumComponentAnnotation will be replaced by firrtl.annoataions.SignalTranslateAnnotation in 3.5.", "Chisel 3.4")
   case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
     def duplicate(n: Named): EnumComponentAnnotation = this.copy(target = n)
   }
 
+  @deprecated("EnumComponentChiselAnnotation will be removed in 3.5.", "Chisel 3.4")
   case class EnumComponentChiselAnnotation(target: InstanceId, enumTypeName: String) extends ChiselAnnotation {
     def toFirrtl: EnumComponentAnnotation = EnumComponentAnnotation(target.toNamed, enumTypeName)
   }
@@ -49,10 +52,12 @@ object EnumAnnotations {
     * @param fields a list of all chains of elements leading from the Vec instance to its inner enum fields.
     *
     */
+  @deprecated("EnumVecAnnotation will be be replaced by firrtl.annoataions.SignalTranslateAnnotation in 3.5.", "Chisel 3.4")
   case class EnumVecAnnotation(target: Named, typeName: String, fields: Seq[Seq[String]]) extends SingleTargetAnnotation[Named] {
     def duplicate(n: Named): EnumVecAnnotation = this.copy(target = n)
   }
 
+  @deprecated("EnumVecChiselAnnotation will be removed in 3.5.", "Chisel 3.4")
   case class EnumVecChiselAnnotation(target: InstanceId, typeName: String, fields: Seq[Seq[String]]) extends ChiselAnnotation {
     override def toFirrtl: EnumVecAnnotation = EnumVecAnnotation(target.toNamed, typeName, fields)
   }
@@ -62,8 +67,10 @@ object EnumAnnotations {
     * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
     * @param definition a map describing which integer values correspond to which enum names
     */
+  @deprecated("EnumDefAnnotation will be removed in 3.5.", "Chisel 3.4")
   case class EnumDefAnnotation(typeName: String, definition: Map[String, BigInt]) extends NoTargetAnnotation
 
+  @deprecated("EnumDefChiselAnnotation will be removed in 3.5.", "Chisel 3.4")
   case class EnumDefChiselAnnotation(typeName: String, definition: Map[String, BigInt]) extends ChiselAnnotation {
     override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
   }
