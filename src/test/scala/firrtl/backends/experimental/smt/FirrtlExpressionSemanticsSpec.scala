@@ -113,6 +113,8 @@ class FirrtlExpressionSemanticsSpec extends AnyFlatSpec {
     assert(primop(false, "div", 8, List(8, 4), modelUndef = false) == "udiv(i0, zext(i1, 4))")
     assert(primop(true, "div", 8, List(7, 7), modelUndef = false) == "sdiv(sext(i0, 1), sext(i1, 1))")
     assert(primop(true, "div", 8, List(7, 4), modelUndef = false) == "sdiv(sext(i0, 1), sext(i1, 4))")
+    // result width is always the width of the numerator, even if the denominator is larger
+    assert(primop(false, "div", 1, List(1, 2), modelUndef = false) == "udiv(zext(i0, 1), i1)[0]")
   }
 
   it should "correctly translate the `rem` primitive operation" in {

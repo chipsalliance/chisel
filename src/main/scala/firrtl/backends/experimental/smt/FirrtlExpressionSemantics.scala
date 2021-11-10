@@ -58,17 +58,22 @@ private object FirrtlExpressionSemantics {
         val width = args.map(getWidth).sum
         BVOp(Op.Mul, toSMT(e1, width), toSMT(e2, width))
       case (PrimOps.Div, Seq(num, den), _) =>
-        val (width, op) = if (isSigned(num)) {
-          (getWidth(num) + 1, Op.SignedDiv)
-        } else { (getWidth(num), Op.UnsignedDiv) }
-        BVOp(op, toSMT(num, width), forceWidth(toSMT(den), isSigned(den), width))
+        val signed = isSigned(num)
+        val resWidth = if (signed) { getWidth(num) + 1 }
+        else { getWidth(num) }
+        val op = if (signed) { Op.SignedDiv }
+        else { Op.UnsignedDiv }
+        // we do the calculation on the widened values and then narrow the result if needed
+        val width = args.map(getWidth).max + (if (signed) 1 else 0)
+        val res = BVOp(op, toSMT(num, width), toSMT(den, width))
+        forceWidth(res, signed, resWidth, allowNarrow = true)
       case (PrimOps.Rem, Seq(num, den), _) =>
-        val op = if (isSigned(num)) Op.SignedRem else Op.UnsignedRem
+        val signed = isSigned(num)
+        val op = if (signed) Op.SignedRem else Op.UnsignedRem
         val width = args.map(getWidth).max
         val resWidth = args.map(getWidth).min
         val res = BVOp(op, toSMT(num, width), toSMT(den, width))
-        if (res.width > resWidth) { BVSlice(res, resWidth - 1, 0) }
-        else { res }
+        forceWidth(res, signed, resWidth, allowNarrow = true)
       case (PrimOps.Lt, Seq(e1, e2), _) =>
         val width = args.map(getWidth).max
         BVNot(BVComparison(Compare.GreaterEqual, toSMT(e1, width), toSMT(e2, width), isSigned(e1)))
