@@ -139,15 +139,27 @@ module MyModule :
 Note that a module definition does {\em not} indicate that the module will be physically present in the final circuit. Refer to the description of the instance statement for details on how to instantiate a module (section \ref{instances}).
 
 \subsection{Externally Defined Modules}
-Externally defined modules consist of a given name, and a list of ports, whose types and names must match its external definition.
+Externally defined modules are modules whose implementation is not provided in the current circuit.
+Only the ports and name of the externally defined module are specified in the circuit.
+An externally defined module may include, in order, an optional \emph{defname} which sets the name of the external module in the resulting Verilog and zero or more name--value \emph{parameter} statements.
+Each name--value parameter statement will result in a value being passed to the named parameter in the resulting Verilog.
+
+An example of an externally defined module is:
 
 \begin{lstlisting}
 extmodule MyExternalModule :
-   input foo: UInt
-   output bar: UInt
-   output baz: SInt
+   input foo: UInt<2>
+   output bar: UInt<4>
+   output baz: SInt<8>
+   defname = VerilogName
+   parameter x = "hello"
+   parameter y = 42
 \end{lstlisting}
 
+The widths of all externally defined module ports must be specified.
+Width inference, described in section \ref{width_inference}, is not supported for module ports.
+
+A common use of an externally defined module is to represent a Verilog module that will be written separately and provided together with FIRRTL-generated Verilog to downstream tools.
 
 % The following example is the port declaration of a module that spans two clock domains.
 
@@ -2098,7 +2110,10 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
 \begin{tabular}{rrll}
 \pd{circuit}    &=     &\vv{circuit} \pd{id} \vv{:} \opt{\pd{info}} \vv{(}\rpt{\pd{module}}\vv{)}              &\text{Circuit}\\
 \pd{module}     &=     &\vv{module} \pd{id} \vv{:} \opt{\pd{info}} \vv{(}\rpt{\pd{port}} \pd{stmt}\vv{)}       &\text{Module}\\
-                &\pipe &\vv{extmodule} \pd{id} \vv{:} \opt{\pd{info}} \vv{(}\rpt{\pd{port}}\vv{)}              &\text{External Module}\\
+                       &\pipe &\vv{extmodule} \pd{id} \vv{:} \opt{\pd{info}} \vv{(}\rpt{\pd{port}}\vv{)}
+                        \vv{(}\pd{defname}\vv{)}
+                        \vv{(}\rpt{\pd{parameter}}\vv{)}
+                                                                                                               &\text{External Module}\\
 \pd{port}       &=     &\pd{dir} \pd{id} \vv{:} \pd{type} \opt{\pd{info}}                                      &\text{Port}\\
 \pd{dir}        &=     &\vv{input} \pipe \vv{ output}                                                          &\text{Port Direction}\\
 \pd{type}       &=     &\vv{UInt}\opt{\vv{<}\pd{int}\vv{>}}                                                    &\text{Unsigned Integer}\\
@@ -2133,6 +2148,8 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
                 &\pipe &\vv{(}\rpt{\pd{stmt}}\vv{)}                                                            &\text{Statement Group}\\
 \pd{ruw}        &=     &\vv{old} \pipe \vv{ new} \pipe \vv{ undefined}                                         &\text{Read Under Write Flag}\\
 \pd{info}       &=     &\vv{@[}\pd{string}\vv{]}                                                               &\text{File Information Token}\\
+\pd{defname}    &=     &\vv{defname} \vv{=} \pd{string}                                                        &\text{External Module Defname}\\
+\pd{parameter}  &=     &\vv{parameter} \vv{=} \vv{(} \pd{string} \pipe~\pd{int} \vv{)}
 \end{tabular}
 
 \begin{tabular}{rrll}
