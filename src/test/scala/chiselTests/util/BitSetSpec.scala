@@ -8,8 +8,8 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
   behavior of classOf[BitSet].toString
 
   it should "reject unequal width when constructing a BitSet" in {
-    intercept[AssertionError] {
-      BitSet(
+    intercept[IllegalArgumentException] {
+      BitSet.fromString(
         """b0010
           |b00010
           |""".stripMargin)
@@ -39,12 +39,12 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be able to handle complex subtract between BitSet" in {
-    val aBitSet = BitSet(
+    val aBitSet = BitSet.fromString(
       """b?01?0
         |b11111
         |b00000
         |""".stripMargin)
-    val bBitSet = BitSet(
+    val bBitSet = BitSet.fromString(
       """b?1111
         |b?0000
         |""".stripMargin
@@ -55,7 +55,7 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be generated from BitPat union" in {
-    val aBitSet = BitSet(
+    val aBitSet = BitSet.fromString(
       """b001?0
         |b000??""".stripMargin)
     val aBitPat = BitPat("b000??")
@@ -68,7 +68,7 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be generated from BitPat substraction" in {
-    val aBitSet = BitSet(
+    val aBitSet = BitSet.fromString(
       """b001?0
         |b000??""".stripMargin)
     val aBitPat = BitPat("b00???")
@@ -78,11 +78,11 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "union two BitSet together" in {
-    val aBitSet = BitSet(
+    val aBitSet = BitSet.fromString(
       """b001?0
         |b001?1
         |""".stripMargin)
-    val bBitSet = BitSet(
+    val bBitSet = BitSet.fromString(
       """b000??
         |b01???
         |""".stripMargin
