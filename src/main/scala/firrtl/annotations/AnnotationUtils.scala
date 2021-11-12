@@ -9,6 +9,7 @@ import firrtl.ir._
 
 case class InvalidAnnotationFileException(file: File, cause: FirrtlUserException = null)
     extends FirrtlUserException(s"$file", cause)
+case class UnrecogizedAnnotationsException(msg: String) extends FirrtlUserException(s"Unrecognized annotations $msg")
 case class InvalidAnnotationJSONException(msg: String) extends FirrtlUserException(msg)
 case class AnnotationFileNotFoundException(file: File)
     extends FirrtlUserException(

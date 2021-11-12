@@ -6,9 +6,9 @@ import firrtl.AnnotationSeq
 import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol}
 import firrtl.options.{InputAnnotationFileAnnotation, Phase, StageUtils}
 import firrtl.FileUtils
+import firrtl.stage.AllowUnrecognizedAnnotations
 
 import java.io.File
-
 import scala.collection.mutable
 import scala.util.{Failure, Try}
 
@@ -25,10 +25,13 @@ class GetIncludes extends Phase {
     * @param filename a JSON or YAML file of [[annotations.Annotation]]
     * @throws annotations.AnnotationFileNotFoundException if the file does not exist
     */
-  private def readAnnotationsFromFile(filename: String): AnnotationSeq = {
+  private def readAnnotationsFromFile(
+    filename:                     String,
+    allowUnrecognizedAnnotations: Boolean = false
+  ): AnnotationSeq = {
     val file = new File(filename).getCanonicalFile
     if (!file.exists) { throw new AnnotationFileNotFoundException(file) }
-    JsonProtocol.deserialize(file)
+    JsonProtocol.deserialize(file, allowUnrecognizedAnnotations)
   }
 
   /** Recursively read all [[Annotation]]s from any [[InputAnnotationFileAnnotation]]s while making sure that each file is
@@ -38,6 +41,7 @@ class GetIncludes extends Phase {
     * @return the original annotation sequence with any discovered annotations added
     */
   private def getIncludes(includeGuard: mutable.Set[String] = mutable.Set())(annos: AnnotationSeq): AnnotationSeq = {
+    val allowUnrecognizedAnnotations = annos.contains(AllowUnrecognizedAnnotations)
     annos.flatMap {
       case a @ InputAnnotationFileAnnotation(value) =>
         if (includeGuard.contains(value)) {
@@ -45,7 +49,7 @@ class GetIncludes extends Phase {
           None
         } else {
           includeGuard += value
-          getIncludes(includeGuard)(readAnnotationsFromFile(value))
+          getIncludes(includeGuard)(readAnnotationsFromFile(value, allowUnrecognizedAnnotations))
         }
       case x => Seq(x)
     }

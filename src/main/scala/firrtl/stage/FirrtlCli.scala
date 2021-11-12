@@ -27,7 +27,8 @@ trait FirrtlCli { this: Shell =>
     DisableFold,
     OptimizeForFPGA,
     CurrentFirrtlStateAnnotation,
-    CommonSubexpressionElimination
+    CommonSubexpressionElimination,
+    AllowUnrecognizedAnnotations
   )
     .map(_.addOptions(parser))
 

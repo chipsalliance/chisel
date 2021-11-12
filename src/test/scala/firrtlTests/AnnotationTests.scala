@@ -564,7 +564,7 @@ class JsonAnnotationTests extends AnnotationTests {
     val manager = setupManager(Some(anno))
 
     the[Exception] thrownBy Driver.execute(manager) should matchPattern {
-      case InvalidAnnotationFileException(_, _: AnnotationClassNotFoundException) =>
+      case InvalidAnnotationFileException(_, _: UnrecogizedAnnotationsException) =>
     }
   }
 
@@ -614,4 +614,37 @@ class JsonAnnotationTests extends AnnotationTests {
     val cr = DoNothingTransform.runTransform(CircuitState(parse(input), ChirrtlForm, annos))
     cr.annotations.toSeq shouldEqual annos
   }
+
+  "fully qualified class name that is undeserializable" should "give an invalid json exception" in {
+    val anno = """
+                 |[
+                 |  {
+                 |    "class":"firrtlTests.MyUnserAnno",
+                 |    "box":"7"
+                 |  }
+                 |] """.stripMargin
+
+    val manager = setupManager(Some(anno))
+    the[Exception] thrownBy Driver.execute(manager) should matchPattern {
+      case InvalidAnnotationFileException(_, _: InvalidAnnotationJSONException) =>
+    }
+  }
+
+  "unqualified class name" should "give an unrecognized annotation exception" in {
+    val anno = """
+                 |[
+                 |  {
+                 |    "class":"MyUnserAnno"
+                 |    "box":"7"
+                 |  }
+                 |] """.stripMargin
+    val manager = setupManager(Some(anno))
+    the[Exception] thrownBy Driver.execute(manager) should matchPattern {
+      case InvalidAnnotationFileException(_, _: UnrecogizedAnnotationsException) =>
+    }
+  }
 }
+
+/* These are used by the last two tests. It is outside the main test to keep the qualified name simpler*/
+class UnserBox(val x: Int)
+case class MyUnserAnno(box: UnserBox) extends NoTargetAnnotation

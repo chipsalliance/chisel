@@ -4,6 +4,7 @@ package firrtl
 package annotations
 
 import firrtl.options.StageUtils
+import org.json4s.JValue
 
 import scala.collection.Traversable
 
@@ -165,3 +166,5 @@ object Annotation
 case class DeletedAnnotation(xFormName: String, anno: Annotation) extends NoTargetAnnotation {
   override def serialize: String = s"""DELETED by $xFormName\n${anno.serialize}"""
 }
+
+case class UnrecognizedAnnotation(underlying: JValue) extends NoTargetAnnotation

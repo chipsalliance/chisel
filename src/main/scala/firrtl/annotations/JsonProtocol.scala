@@ -4,6 +4,8 @@ package firrtl
 package annotations
 
 import firrtl.ir._
+import firrtl.stage.AllowUnrecognizedAnnotations
+import logger.LazyLogging
 
 import scala.util.{Failure, Success, Try}
 
@@ -11,6 +13,8 @@ import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read, write, writePretty}
+
+import scala.collection.mutable
 
 trait HasSerializationHints {
   // For serialization of complicated constructor arguments, let the annotation
@@ -22,7 +26,9 @@ trait HasSerializationHints {
 /** Wrapper [[Annotation]] for Annotations that cannot be serialized */
 case class UnserializeableAnnotation(error: String, content: String) extends NoTargetAnnotation
 
-object JsonProtocol {
+object JsonProtocol extends LazyLogging {
+  private val GetClassPattern = "[^']*'([^']+)'.*".r
+
   class TransformClassSerializer
       extends CustomSerializer[Class[_ <: Transform]](format =>
         (
@@ -207,6 +213,14 @@ object JsonProtocol {
         )
       )
 
+  class UnrecognizedAnnotationSerializer
+      extends CustomSerializer[JObject](format =>
+        (
+          { case JObject(s) => JObject(s) },
+          { case UnrecognizedAnnotation(underlying) => underlying }
+        )
+      )
+
   /** Construct Json formatter for annotations */
   def jsonFormat(tags: Seq[Class[_]]) = {
     Serialization.formats(FullTypeHints(tags.toList)).withTypeHintFieldName("class") +
@@ -217,7 +231,8 @@ object JsonProtocol {
       new LoadMemoryFileTypeSerializer + new IsModuleSerializer + new IsMemberSerializer +
       new CompleteTargetSerializer + new TypeSerializer + new ExpressionSerializer +
       new StatementSerializer + new PortSerializer + new DefModuleSerializer +
-      new CircuitSerializer + new InfoSerializer + new GroundTypeSerializer
+      new CircuitSerializer + new InfoSerializer + new GroundTypeSerializer +
+      new UnrecognizedAnnotationSerializer
   }
 
   /** Serialize annotations to a String for emission */
@@ -266,9 +281,17 @@ object JsonProtocol {
     writePretty(safeAnnos)
   }
 
-  def deserialize(in: JsonInput): Seq[Annotation] = deserializeTry(in).get
+  /** Deserialize JSON input into a Seq[Annotation]
+    *
+    * @param in JsonInput, can be file or string
+    * @param allowUnrecognizedAnnotations is set to true if command line contains flag to allow this behavior
+    * @return
+    */
+  def deserialize(in: JsonInput, allowUnrecognizedAnnotations: Boolean = false): Seq[Annotation] = {
+    deserializeTry(in, allowUnrecognizedAnnotations).get
+  }
 
-  def deserializeTry(in: JsonInput): Try[Seq[Annotation]] = Try({
+  def deserializeTry(in: JsonInput, allowUnrecognizedAnnotations: Boolean = false): Try[Seq[Annotation]] = Try {
     val parsed = parse(in)
     val annos = parsed match {
       case JArray(objs) => objs
@@ -277,6 +300,15 @@ object JsonProtocol {
           s"Annotations must be serialized as a JArray, got ${x.getClass.getName} instead!"
         )
     }
+
+    /* Tries to extract class name from the mapping exception */
+    def getAnnotationNameFromMappingException(mappingException: MappingException): String = {
+      mappingException.getMessage match {
+        case GetClassPattern(name) => name
+        case other                 => other
+      }
+    }
+
     // Recursively gather typeHints by pulling the "class" field from JObjects
     // Json4s should emit this as the first field in all serialized classes
     // Setting requireClassField mandates that all JObjects must provide a typeHint,
@@ -288,26 +320,83 @@ object JsonProtocol {
           throw new InvalidAnnotationJSONException(s"Expected field 'class' not found! $obj")
         case JObject(fields) => findTypeHints(fields.map(_._2))
         case JArray(arr)     => findTypeHints(arr)
-        case oJValue         => Seq()
+        case _               => Seq()
       })
       .distinct
 
+    // I don't much like this var here, but it has made it much simpler
+    // to maintain backward compatibility with the exception test structure
+    var classNotFoundBuildingLoaded = false
     val classes = findTypeHints(annos, true)
-    val loaded = classes.map(Class.forName(_))
+    val loaded = classes.flatMap { x =>
+      (try {
+        Some(Class.forName(x))
+      } catch {
+        case _: java.lang.ClassNotFoundException =>
+          classNotFoundBuildingLoaded = true
+          None
+      }): Option[Class[_]]
+    }
     implicit val formats = jsonFormat(loaded)
-    read[List[Annotation]](in)
-  }).recoverWith {
+    try {
+      read[List[Annotation]](in)
+    } catch {
+      case e: org.json4s.MappingException =>
+        // If we get here, the build `read` failed to process an annotation
+        // So we will map the annos one a time, wrapping the JSON of the unrecognized annotations
+        val exceptionList = new mutable.ArrayBuffer[String]()
+        val firrtlAnnos = annos.map { jsonAnno =>
+          try {
+            jsonAnno.extract[Annotation]
+          } catch {
+            case mappingException: org.json4s.MappingException =>
+              exceptionList += getAnnotationNameFromMappingException(mappingException)
+              UnrecognizedAnnotation(jsonAnno)
+          }
+        }
+
+        if (firrtlAnnos.contains(AllowUnrecognizedAnnotations) || allowUnrecognizedAnnotations) {
+          firrtlAnnos
+        } else {
+          logger.error(
+            "Annotation parsing found unrecognized annotations\n" +
+              "This error can be ignored with an AllowUnrecognizedAnnotationsAnnotation" +
+              " or command line flag --allow-unrecognized-annotations\n" +
+              exceptionList.mkString("\n")
+          )
+          if (classNotFoundBuildingLoaded) {
+            val distinctProblems = exceptionList.distinct
+            val problems = distinctProblems.take(10).mkString(", ")
+            val dots = if (distinctProblems.length > 10) {
+              ", ..."
+            } else {
+              ""
+            }
+            throw UnrecogizedAnnotationsException(s"($problems$dots)")
+          } else {
+            throw e
+          } // throw the mapping exception
+        }
+    }
+  }.recoverWith {
     // Translate some generic errors to specific ones
     case e: java.lang.ClassNotFoundException =>
-      Failure(new AnnotationClassNotFoundException(e.getMessage))
+      Failure(AnnotationClassNotFoundException(e.getMessage))
     // Eat the stack traces of json4s exceptions
     case e @ (_: org.json4s.ParserUtil.ParseException | _: org.json4s.MappingException) =>
-      Failure(new InvalidAnnotationJSONException(e.getMessage))
+      Failure(InvalidAnnotationJSONException(e.getMessage))
   }.recoverWith { // If the input is a file, wrap in InvalidAnnotationFileException
+    case e: UnrecogizedAnnotationsException =>
+      in match {
+        case FileInput(file) =>
+          Failure(InvalidAnnotationFileException(file, e))
+        case _ =>
+          Failure(e)
+      }
     case e: FirrtlUserException =>
       in match {
         case FileInput(file) =>
-          Failure(new InvalidAnnotationFileException(file, e))
+          Failure(InvalidAnnotationFileException(file, e))
         case _ => Failure(e)
       }
   }
