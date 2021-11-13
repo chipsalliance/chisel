@@ -306,7 +306,7 @@ object Queue
       pipe: Boolean = false,
       flow: Boolean = false,
       useSyncReadMem: Boolean = false,
-      hasFlush: Boolean = false): DecoupledIO[T] = {
+      flush: Option[Bool] = None): DecoupledIO[T] = {
     if (entries == 0) {
       val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
@@ -314,7 +314,8 @@ object Queue
       enq.ready := deq.ready
       deq
     } else {
-      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow, useSyncReadMem, hasFlush))
+      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow, useSyncReadMem, flush.isDefined))
+      q.io.flush.foreach(_ := flush.getOrElse(false.B))
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
       enq.ready := q.io.enq.ready
@@ -333,8 +334,9 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false,
-      useSyncReadMem: Boolean = false): IrrevocableIO[T] = {
-    val deq = apply(enq, entries, pipe, flow, useSyncReadMem)
+      useSyncReadMem: Boolean = false,
+      flush: Option[Bool] = None): IrrevocableIO[T] = {
+    val deq = apply(enq, entries, pipe, flow, useSyncReadMem, flush)
     require(entries > 0, "Zero-entry queues don't guarantee Irrevocability")
     val irr = Wire(new IrrevocableIO(chiselTypeOf(deq.bits)))
     irr.bits := deq.bits
