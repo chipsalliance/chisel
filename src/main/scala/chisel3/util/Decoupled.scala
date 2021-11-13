@@ -227,7 +227,7 @@ class Queue[T <: Data](val gen: T,
   val full = ptr_match && maybe_full
   val do_enq = WireDefault(io.enq.fire)
   val do_deq = WireDefault(io.deq.fire)
-  val flush = io.flush.getOrElse(false.B) 
+  val flush = io.flush.getOrElse(false.B)
 
   // when flush is high, empty the queue
   // Semantically, any enqueues happen before the flush.
@@ -285,20 +285,26 @@ class Queue[T <: Data](val gen: T,
   }
 }
 
-/** Factory for a generic hardware queue.
-  *
-  * @param enq input (enqueue) interface to the queue, also determines width of queue elements
-  * @param entries depth (number of elements) of the queue
-  *
-  * @return output (dequeue) interface from the queue
-  *
-  * @example {{{
-  * consumer.io.in <> Queue(producer.io.out, 16)
-  * }}}
-  */
+/** Factory for a generic hardware queue. */
 object Queue
 {
-  /** Create a queue and supply a DecoupledIO containing the product. */
+  /** Create a [[Queue]] and supply a [[DecoupledIO]] containing the product.
+    *
+    * @param enq input (enqueue) interface to the queue, also determines type of queue elements.
+    * @param entries depth (number of elements) of the queue
+    * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The `ready` signals are
+    *             combinationally coupled.
+    * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
+    *             The `valid` signals are coupled.
+    * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+    * @param flush Optional [[Bool]] signal, if defined, the [[Queue.hasFlush]] will be true, and connect correspond
+    *              signal to [[Queue]] instance.
+    * @return output (dequeue) interface from the queue.
+    *
+    * @example {{{
+    *   consumer.io.in <> Queue(producer.io.out, 16)
+    * }}}
+    */
   @chiselName
   def apply[T <: Data](
       enq: ReadyValidIO[T],
@@ -323,10 +329,25 @@ object Queue
     }
   }
 
-  /** Create a queue and supply a IrrevocableIO containing the product.
-    * Casting from Decoupled is safe here because we know the Queue has
-    * Irrevocable semantics; we didn't want to change the return type of
-    * apply() for backwards compatibility reasons.
+  /** Create a queue and supply a [[IrrevocableIO]] containing the product.
+    * Casting from [[DecoupledIO]] is safe here because we know the [[Queue]] has
+    * Irrevocable semantics.
+    * we didn't want to change the return type of apply() for backwards compatibility reasons.
+    *
+    * @param enq [[DecoupledIO]] signal to enqueue.
+    * @param entries The max number of entries in the queue
+    * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''ready'' signals are
+    * combinationally coupled.
+    * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
+    * The ''valid'' signals are coupled.
+    * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+    * @param flush Optional [[Bool]] signal, if defined, the [[Queue.hasFlush]] will be true, and connect correspond
+    *              signal to [[Queue]] instance.
+    * @return a [[DecoupledIO]] signal which should connect to the dequeue signal.
+    *
+    * @example {{{
+    *   consumer.io.in <> Queue(producer.io.out, 16)
+    * }}}
     */
   @chiselName
   def irrevocable[T <: Data](
