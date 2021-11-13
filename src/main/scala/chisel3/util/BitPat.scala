@@ -120,7 +120,7 @@ object BitPat {
   * "b10001".U === BitPat("b101??") // evaluates to false.B
   * }}}
   */
-sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc {
+sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc with Ordered[BitPat] {
   def getWidth: Int = width
   def apply(x: Int): BitPat = macro SourceInfoTransform.xArg
   def apply(x: Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
@@ -169,6 +169,9 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
       case (_, false) => "?"
     }
   }.mkString
+
+  import scala.math.Ordered.orderingToOrdered
+  def compare(that: BitPat): Int = (getWidth, value, mask) compare (that.getWidth, that.value, that.mask)
 
   override def toString = s"BitPat($rawString)"
 }
