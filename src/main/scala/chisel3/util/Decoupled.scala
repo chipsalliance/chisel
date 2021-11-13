@@ -315,7 +315,7 @@ object Queue
       deq
     } else {
       val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow, useSyncReadMem, flush.isDefined))
-      q.io.flush.foreach(_ := flush.getOrElse(false.B))
+      q.io.flush.zip(flush).foreach(f => f._1 := f._2)
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
       enq.ready := q.io.enq.ready
