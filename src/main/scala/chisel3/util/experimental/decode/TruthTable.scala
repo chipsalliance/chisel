@@ -4,7 +4,9 @@ package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
 
-final class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
+final class TruthTable(setTable: Seq[(BitPat, BitPat)], val default: BitPat) {
+
+  val table: Seq[(BitPat, BitPat)] = setTable.sorted
 
   def inputWidth = table.head._1.getWidth
 
@@ -14,10 +16,10 @@ final class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
     def writeRow(map: (BitPat, BitPat)): String =
       s"${map._1.rawString}->${map._2.rawString}"
 
-    (table.map(writeRow) ++ Seq(s"${" "*(inputWidth + 2)}${default.rawString}")).toSeq.sorted.mkString("\n")
+    (table.map(writeRow) ++ Seq(s"${" "*(inputWidth + 2)}${default.rawString}")).mkString("\n")
   }
 
-  def copy(table: Map[BitPat, BitPat] = this.table, default: BitPat = this.default) = new TruthTable(table, default)
+  def copy(table: Seq[(BitPat, BitPat)] = this.table, default: BitPat = this.default) = new TruthTable(table, default)
 
   override def equals(y: Any): Boolean = {
     y match {
@@ -46,7 +48,7 @@ object TruthTable {
     require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
     require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
     val outputWidth = table.map(_._2.getWidth).head
-    new TruthTable(table.toSeq.groupBy(_._1.toString).map { case (key, values) =>
+    new TruthTable(table.groupBy(_._1.toString).map { case (key, values) =>
       // merge same input inputs.
       values.head._1 -> BitPat(s"b${
         Seq.tabulate(outputWidth) { i =>
@@ -59,7 +61,7 @@ object TruthTable {
           outputSet.headOption.getOrElse('?')
         }.mkString
       }")
-    }, default)
+    }.toSeq, default)
   }
 
 
@@ -99,18 +101,17 @@ object TruthTable {
     tables: Seq[(TruthTable, Seq[Int])]
   ): TruthTable = {
     def reIndex(bitPat: BitPat, table: TruthTable, indexes: Seq[Int]): Seq[(Char, Int)] =
-      (table.table.map(a => a._1.toString -> a._2).getOrElse(bitPat.toString, BitPat.dontCare(indexes.size))).rawString.zip(indexes)
+      table.table.map(a => a._1.toString -> a._2).collectFirst{ case (k, v) if k == bitPat.toString => v}.getOrElse(BitPat.dontCare(indexes.size)).rawString.zip(indexes)
     def bitPat(indexedChar: Seq[(Char, Int)]) = BitPat(s"b${indexedChar
       .sortBy(_._2)
       .map(_._1)
       .mkString}")
     TruthTable(
       tables
-        .flatMap(_._1.table.keys)
+        .flatMap(_._1.table.map(_._1))
         .map { key =>
           key -> bitPat(tables.flatMap { case (table, indexes) => reIndex(key, table, indexes) })
-        }
-        .toMap,
+        },
       bitPat(tables.flatMap { case (table, indexes) => table.default.rawString.zip(indexes) })
     )
   }
