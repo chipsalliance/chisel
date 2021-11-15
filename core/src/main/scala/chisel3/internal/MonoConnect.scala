@@ -38,31 +38,31 @@ import chisel3.internal.sourceinfo.SourceInfo
 private[chisel3] object MonoConnect {
   // These are all the possible exceptions that can be thrown.
   // These are from element-level connection
-  def UnreadableSourceException =
-    MonoConnectException(": Source is unreadable from current module.")
-  def UnwritableSinkException =
-    MonoConnectException(": Sink is unwriteable by current module.")
+  def UnreadableSourceException(sink: Data, source: Data) =
+    MonoConnectException(s"""${source.nameStrOpt.getOrElse("(unknown)")} in ${source.parentStrOpt.getOrElse("(unknown)")} cannot be accessed from module ${sink.parentStrOpt.getOrElse("(unknown)")}""")
+  def UnwritableSinkException(sink: Data, source: Data) =
+    MonoConnectException(s"""${sink.nameStrOpt.getOrElse("(unknown)")} in ${sink.parentStrOpt.getOrElse("(unknown)")} cannot be written from module ${source.parentStrOpt.getOrElse("(unknown)")}""")
   def SourceEscapedWhenScopeException =
-    MonoConnectException(": Source has escaped the scope of the when in which it was constructed.")
+    MonoConnectException("Source has escaped the scope of the when in which it was constructed.")
   def SinkEscapedWhenScopeException =
-    MonoConnectException(": Sink has escaped the scope of the when in which it was constructed.")
+    MonoConnectException("Sink has escaped the scope of the when in which it was constructed.")
   def UnknownRelationException =
-    MonoConnectException(": Sink or source unavailable to current module.")
+    MonoConnectException("Sink or source unavailable to current module.")
   // These are when recursing down aggregate types
   def MismatchedVecException =
-    MonoConnectException(": Sink and Source are different length Vecs.")
+    MonoConnectException("Sink and Source are different length Vecs.")
   def MissingFieldException(field: String) =
-    MonoConnectException(s": Source Record missing field ($field).")
+    MonoConnectException(s"Source Record missing field ($field).")
   def MismatchedException(sink: String, source: String) =
-    MonoConnectException(s": Sink ($sink) and Source ($source) have different types.")
+    MonoConnectException(s"Sink ($sink) and Source ($source) have different types.")
   def DontCareCantBeSink =
-    MonoConnectException(": DontCare cannot be a connection sink (LHS)")
+    MonoConnectException("DontCare cannot be a connection sink (LHS)")
   def AnalogCantBeMonoSink =
-    MonoConnectException(": Analog cannot participate in a mono connection (sink - LHS)")
+    MonoConnectException("Analog cannot participate in a mono connection (sink - LHS)")
   def AnalogCantBeMonoSource =
-    MonoConnectException(": Analog cannot participate in a mono connection (source - RHS)")
+    MonoConnectException("Analog cannot participate in a mono connection (source - RHS)")
   def AnalogMonoConnectionException =
-    MonoConnectException(": Analog cannot participate in a mono connection (source and sink)")
+    MonoConnectException("Analog cannot participate in a mono connection (source and sink)")
 
   def checkWhenVisibility(x: Data): Boolean = {
     x.topBinding match {
@@ -196,7 +196,7 @@ private[chisel3] object MonoConnect {
     val source = reify(_source)
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException)
+    val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
     val sink_parent = Builder.retrieveParent(sink_mod, context_mod).getOrElse(None)
@@ -220,7 +220,7 @@ private[chisel3] object MonoConnect {
         //    CURRENT MOD   CURRENT MOD
         case (Output,       _) => issueConnect(sink, source)
         case (Internal,     _) => issueConnect(sink, source)
-        case (Input,        _) => throw UnwritableSinkException
+        case (Input,        _) => throw UnwritableSinkException(sink, source)
       }
     }
 
@@ -238,11 +238,11 @@ private[chisel3] object MonoConnect {
           if (!(connectCompileOptions.dontAssumeDirectionality)) {
             issueConnect(sink, source)
           } else {
-            throw UnreadableSourceException
+            throw UnreadableSourceException(sink, source)
           }
         }
         case (Input,        Output) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink)
-        case (Input,        _)    => throw UnwritableSinkException
+        case (Input,        _)    => throw UnwritableSinkException(sink, source)
       }
     }
 
@@ -253,8 +253,8 @@ private[chisel3] object MonoConnect {
         //    SINK          SOURCE
         //    CHILD MOD     CURRENT MOD
         case (Input,        _) => issueConnect(sink, source)
-        case (Output,       _) => throw UnwritableSinkException
-        case (Internal,     _) => throw UnwritableSinkException
+        case (Output,       _) => throw UnwritableSinkException(sink, source)
+        case (Internal,     _) => throw UnwritableSinkException(sink, source)
       }
     }
 
@@ -268,15 +268,15 @@ private[chisel3] object MonoConnect {
         //    CHILD MOD     CHILD MOD
         case (Input,        Input)  => issueConnect(sink, source)
         case (Input,        Output) => issueConnect(sink, source)
-        case (Output,       _)      => throw UnwritableSinkException
+        case (Output,       _)      => throw UnwritableSinkException(sink, source)
         case (_,            Internal) => {
           if (!(connectCompileOptions.dontAssumeDirectionality)) {
             issueConnect(sink, source)
           } else {
-            throw UnreadableSourceException
+            throw UnreadableSourceException(sink, source)
           }
         }
-        case (Internal,     _)      => throw UnwritableSinkException
+        case (Internal,     _)      => throw UnwritableSinkException(sink, source)
       }
     }
 

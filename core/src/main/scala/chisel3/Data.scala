@@ -494,7 +494,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       } catch {
         case MonoConnectException(message) =>
           throwException(
-            s"Connection between sink ($this) and source ($that) failed @$message"
+            s"Connection between sink ($this) and source ($that) failed @: $message"
           )
       }
     } else {
