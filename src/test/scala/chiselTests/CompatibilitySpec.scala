@@ -536,6 +536,9 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
 
       info("toUInt works")
       s.toUInt shouldBe a [UInt]
+
+      info("toBools works")
+      s.toBools shouldBe a [Seq[Bool]]
     }
 
     ChiselStage.elaborate(new Foo)
