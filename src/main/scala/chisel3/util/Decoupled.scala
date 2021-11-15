@@ -16,6 +16,7 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
   * while the consumer uses the flipped interface (inputs bits).
   * The actual semantics of ready/valid are enforced via the use of concrete subclasses.
   * @param gen the type of data to be wrapped in Ready/Valid
+  * @groupdesc Signals The actual hardware fields of the Bundle
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
@@ -26,8 +27,19 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
     case _ => gen
   }
 
+/** Indicates that the consumer is ready to accept the data this cycle
+  * @group Signals
+  */
   val ready = Input(Bool())
+  
+/** Indicates that the producer has put valid data in 'bits' 
+  * @group Signals
+  */
   val valid = Output(Bool())
+  
+/** The data to be transferred when ready and valid are asserted at the same cycle
+  * @group Signals
+  */
   val bits  = Output(genType)
 }
 
@@ -121,6 +133,7 @@ object Decoupled
   * Additionally, once 'valid' is raised it will never be lowered until after
   * 'ready' has also been raised.
   * @param gen the type of data to be wrapped in IrrevocableIO
+  * @groupdesc Signals The actual hardware fields of the Bundle
   */
 class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 
@@ -161,6 +174,7 @@ object DeqIO {
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue.
   * @param hasFlush A boolean for whether the generated Queue is flushable
+  * @groupdesc Signals The hardware fields of the Bundle
   */
 class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boolean = false) extends Bundle
 { // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
@@ -169,13 +183,21 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boo
    *  but internally, the queue implementation itself sits on the other side
    *  of the interface so uses the flipped instance.
    */
-  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. */
+  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. 
+    * @group Signals
+    */
   val enq = Flipped(EnqIO(gen))
-  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]*/
+  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]
+    * @group Signals
+    */
   val deq = Flipped(DeqIO(gen))
-  /** The current amount of data in the queue */
+  /** The current amount of data in the queue 
+    * @group Signals
+    */
   val count = Output(UInt(log2Ceil(entries + 1).W))
-  /** When asserted, reset the enqueue and dequeue pointers, effectively flushing the queue (Optional IO for a flushable Queue)*/ 
+  /** When asserted, reset the enqueue and dequeue pointers, effectively flushing the queue (Optional IO for a flushable Queue)
+    * @group Signals
+    */ 
   val flush = if (hasFlush) Some(Input(Bool())) else None
 
 }

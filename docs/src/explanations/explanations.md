@@ -16,6 +16,7 @@ read these documents in the following order:
 * [Motivation](motivation)
 * [Supported Hardware](supported-hardware)
 * [Data Types](data-types)
+* [DataView](dataview)
 * [Bundles and Vecs](bundles-and-vecs)
 * [Combinational Circuits](combinational-circuits)
 * [Operators](operators)

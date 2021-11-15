@@ -13,7 +13,7 @@ import chisel3._
   *
   * $seedExplanation
   *
-  * In the example below, a 4-bit LFSR Fibonacci LFSR is constructed. The tap points are defined as four and three
+  * In the example below, a 4-bit LFSR Galois LFSR is constructed. The tap points are defined as four and three
   * (using LFSR convention of indexing from one). This results in the hardware configuration shown in the diagram.
   *
   * {{{
@@ -85,7 +85,7 @@ class MaxPeriodGaloisLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction:
   */
 object GaloisLFSR {
 
-  /** Return a pseudorandom [[UInt]] generated from a [[FibonacciLFSR]].
+  /** Return a pseudorandom [[UInt]] generated from a [[GaloisLFSR]].
     * $paramWidth
     * $paramTaps
     * $paramIncrement

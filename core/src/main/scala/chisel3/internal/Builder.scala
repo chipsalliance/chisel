@@ -6,7 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.Instance
+import chisel3.experimental.hierarchy.{Instance, Clone}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -170,7 +170,7 @@ private[chisel3] trait HasId extends InstanceId {
     * @param defaultSeed Optionally provide default seed for computing the name
     * @return the name, if it can be computed
     */
-  def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
+  private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
     /** Computes a name of this signal, given the seed and prefix
       * @param seed
       * @param prefix
@@ -214,7 +214,7 @@ private[chisel3] trait HasId extends InstanceId {
   // (e.g. tried to suggest a name to part of a Record)
   private[chisel3] def forceName(prefix: Option[String], default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
-      val candidate_name = computeName(prefix, Some(default)).get
+      val candidate_name = _computeName(prefix, Some(default)).get
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
     }
@@ -234,7 +234,7 @@ private[chisel3] trait HasId extends InstanceId {
 
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg fullName c
-    case None => computeName(None, None).get
+    case None => _computeName(None, None).get
   }
 
   // Helper for reifying views if they map to a single Target
@@ -561,6 +561,8 @@ private[chisel3] object Builder extends LazyLogging {
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
+  def hasDynamicContext: Boolean = dynamicContextVar.value.isDefined
+
   def readyForModuleConstr: Boolean = dynamicContext.readyForModuleConstr
   def readyForModuleConstr_=(target: Boolean): Unit = {
     dynamicContext.readyForModuleConstr = target
@@ -670,8 +672,8 @@ private[chisel3] object Builder extends LazyLogging {
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
-    case (id: Instance[_]) => id.cloned match {
-      case Right(m: internal.BaseModule.ModuleClone[_]) => namer(m.getPorts, prefix)
+    case (id: Instance[_]) => id.underlying match {
+      case Clone(m: internal.BaseModule.ModuleClone[_]) => namer(m.getPorts, prefix)
       case _ =>
     }
     case (id: HasId) => namer(id, prefix)

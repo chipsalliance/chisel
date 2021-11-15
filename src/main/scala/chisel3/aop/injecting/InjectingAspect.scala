@@ -43,7 +43,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     injection: M => Unit
 ) extends Aspect[T] {
   final def toAnnotation(top: T): AnnotationSeq = {
-    val moduleNames = Select.collectDeep(top) { case i => i.name }.toSeq
+    val moduleNames = Select.allDefinitionsOf[chisel3.experimental.BaseModule](top.toDefinition).map{i => i.toTarget.module }.toSeq
     toAnnotation(selectRoots(top), top.name, moduleNames)
   }
 
