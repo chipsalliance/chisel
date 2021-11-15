@@ -130,4 +130,30 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be (true)
   }
 
+  class BoreBundle extends Bundle {
+    val in = Input(Bool())
+    val out = Output(Bool())
+  }
+
+  class BoreIO2 extends Module {
+    val io = IO(new BoreBundle)
+    io.out := DontCare
+  }
+
+  class BoreIO extends Module {
+    val io = IO(new BoreBundle)
+
+    val a = Module(new BoreIO2)
+
+    BoringUtils.bore(io.in, Seq(a.io.in))
+
+    BoringUtils.bore(a.io.out, Seq(io.out))
+  }
+
+  it should "connect io bundles" in {
+    runTester(new ShouldntAssertTester {
+      val dut = Module(new BoreIO)
+      dut.io.in := DontCare
+    },annotations = Seq(TreadleBackend)) should be (true)
+  }
 }
