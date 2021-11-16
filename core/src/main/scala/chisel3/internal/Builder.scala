@@ -19,7 +19,7 @@ import logger.LazyLogging
 import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
-  private val names = collection.mutable.HashMap[String, Long]()
+  private[chisel3] val names = collection.mutable.HashMap[String, Long]()
   def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) => other.names(s) = l }
   for (keyword <- keywords)
     names(keyword) = 1
@@ -740,14 +740,15 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
-  private [chisel3] def build[T <: BaseModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
+  private[chisel3] def build[T <: BaseModule](f: => T, dynamicContext: DynamicContext, forceModName: Boolean = true): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent // Must initialize the singleton in a Builder context or weird things can happen
                  // in tiny designs/testcases that never access anything in chisel3.internal
       checkScalaVersion()
       logger.info("Elaborating design...")
       val mod = f
-      mod.forceName(None, mod.name, globalNamespace)
+      if (forceModName || globalNamespace.names.size > 1) // This avoids instance name index skipping with D/I
+        mod.forceName(None, mod.name, globalNamespace)
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 

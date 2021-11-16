@@ -97,7 +97,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         mark(definition.i1, "i0.i1")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_2".it, "i0.i1"))
+      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_1".it, "i0.i1"))
     }
     // Can you define an instantiable container? I think not.
     // Instead, we can test the instantiable container in a definition
@@ -322,7 +322,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         amark(i.i1.in, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_2>in".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_1>in".rt, "blah"))
     }
     it("5.3: toAbsoluteTarget on a submodule's data, in an aggregate, within a definition") {
       class Top() extends Module {
@@ -330,7 +330,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         amark(i.i1.x.head, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|InstantiatesHasVec/i1:HasVec_2>x[0]".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|InstantiatesHasVec/i1:HasVec_1>x[0]".rt, "blah"))
     }
   }
   describe("6: @instantiable traits should work as expected") {
