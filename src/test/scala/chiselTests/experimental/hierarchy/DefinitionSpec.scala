@@ -64,6 +64,20 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       chirrtl.serialize should include ("module AddOneParameterized :")
       chirrtl.serialize should include ("module AddOneParameterized_1 :")
     }
+    it("0.5: nested definitions should have sequential names") {
+      class Top extends Module {
+        val k = Module(new AddTwoWithNested(4, (x: Int) => Seq.tabulate(x){j =>
+          val addOneDef = Definition(new AddOneWithNested(x+j))
+          val addOne = Instance(addOneDef)
+          addOne
+        }))
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include ("module AddOneWithNested :")
+      chirrtl.serialize should include ("module AddOneWithNested_1 :")
+      chirrtl.serialize should include ("module AddOneWithNested_2 :")
+      chirrtl.serialize should include ("module AddOneWithNested_3 :")
+    }
   }
   describe("1: Annotations on definitions in same chisel compilation") {
     it("1.0: should work on a single definition, annotating the definition") {
