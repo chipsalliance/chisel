@@ -39,9 +39,9 @@ private[chisel3] object MonoConnect {
   // These are all the possible exceptions that can be thrown.
   // These are from element-level connection
   def UnreadableSourceException(sink: Data, source: Data) =
-    MonoConnectException(s"""${source.nameStrOpt.getOrElse("(unknown)")} in ${source.parentStrOpt.getOrElse("(unknown)")} cannot be accessed from module ${sink.parentStrOpt.getOrElse("(unknown)")}""")
+    MonoConnectException(s"""${source.nameStrOpt.getOrElse("(unknown)")} in ${source.parentStrOpt.getOrElse("(unknown)")} cannot be read from module ${sink.parentStrOpt.getOrElse("(unknown)")}.""")
   def UnwritableSinkException(sink: Data, source: Data) =
-    MonoConnectException(s"""${sink.nameStrOpt.getOrElse("(unknown)")} in ${sink.parentStrOpt.getOrElse("(unknown)")} cannot be written from module ${source.parentStrOpt.getOrElse("(unknown)")}""")
+    MonoConnectException(s"""${sink.nameStrOpt.getOrElse("(unknown)")} in ${sink.parentStrOpt.getOrElse("(unknown)")} cannot be written from module ${source.parentStrOpt.getOrElse("(unknown)")}.""")
   def SourceEscapedWhenScopeException =
     MonoConnectException("Source has escaped the scope of the when in which it was constructed.")
   def SinkEscapedWhenScopeException =
