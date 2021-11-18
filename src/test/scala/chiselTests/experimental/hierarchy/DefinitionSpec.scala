@@ -40,6 +40,30 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       chirrtl.serialize should include ("inst i0 of HasUninferredReset")
     }
+    it("0.3: module names of repeated definition should be sequential") {
+      class Top extends Module {
+        val k = Module(new AddTwoParameterized(4, (x: Int) => Seq.tabulate(x){j =>
+          val addOneDef = Definition(new AddOneParameterized(x+j))
+          val addOne = Instance(addOneDef)
+          addOne
+        }))
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include ("module AddOneParameterized :")
+      chirrtl.serialize should include ("module AddOneParameterized_1 :")
+      chirrtl.serialize should include ("module AddOneParameterized_2 :")
+      chirrtl.serialize should include ("module AddOneParameterized_3 :")
+    }
+    it("0.4: multiple instantiations should have sequential names") {
+      class Top extends Module {
+        val addOneDef = Definition(new AddOneParameterized(4))
+        val addOne = Instance(addOneDef)
+        val otherAddOne = Module(new AddOneParameterized(4))
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include ("module AddOneParameterized :")
+      chirrtl.serialize should include ("module AddOneParameterized_1 :")
+    }
   }
   describe("1: Annotations on definitions in same chisel compilation") {
     it("1.0: should work on a single definition, annotating the definition") {
