@@ -436,19 +436,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
-
     topBindingOpt match {
-      // Just a type, return type
-      case None => chiselType  // note this is no longer an `Option` because of changes above
+      case None => chiselType
       case Some(topBinding) =>
-        val binding: String = _bindingToString(topBinding) // some new method since it's taking just `Binding`
-        
-        // Note we could replace every `.getOrElse("")` with `.mkString`, it's a stylistic choice
+        val binding: String = _bindingToString(topBinding)
         val name = nameStrOpt.getOrElse("?")
         val subname = subcomponentStrOpt(topBinding.location).getOrElse("")
-        val mod = parentStrOpt.map(_ + ".").getOrElse("") // This could even be a `.get`
-          s"$mod$name$subname: $binding[$chiselType]"
-}
+        val mod = parentStrOpt.map(_ + ".").getOrElse("")
+
+        s"$mod$name$subname: $binding[$chiselType]"
+    }
   }
 
   // User-friendly representation of the binding as a helper function for toString.
@@ -459,8 +456,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // protected def bindingToString: String = _bindingToString()
 
   private[chisel3] def _bindingToString(topBindingOpt: TopBinding): String =
-    Try({topBindingOpt match {
-      // case None => None
+    topBindingOpt match {
       case OpBinding(_, _) => "OpResult"
       case MemoryPortBinding(_, _) => "MemPort"
       case PortBinding(_) => "IO"
@@ -470,7 +466,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case ElementLitBinding(litArg) => "(unhandled literal)"
       case BundleLitBinding(litMap) => "(unhandled bundle literal)"
       case VecLitBinding(litMap) => "(unhandled vec literal)"
-    }}).getOrElse("")
+      case _ => ""
+    }
 
   private[chisel3] def nameStrOpt: Option[String] = {
     val computedName: Option[String] = _computeName(None, Some(""), ".")
