@@ -442,7 +442,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         val binding: String = _bindingToString(topBinding)
         val name = nameStrOpt.getOrElse("?")
         val subname = subcomponentStrOpt(topBinding.location).getOrElse("")
-        val mod = parentStrOpt.map(_ + ".").getOrElse("")
+        val mod = parentNameOpt.map(_ + ".").getOrElse("")
 
         if (this.isLit) chiselType
         else s"$mod$name$subname: $binding[$chiselType]"
@@ -470,6 +470,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _ => ""
     }
 
+  // Convert a computed name string into an optional name string. This function
+  //  tries to get a name while sidestepping around computeName oddities. The
+  //  Some("") seed avoids adding an extra seperator for the suffix.
   private[chisel3] def nameStrOpt: Option[String] = {
     val computedName: Option[String] = _computeName(None, Some(""), ".")
     computedName match {
@@ -486,7 +489,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       }
     }
 
-  private[chisel3] def parentStrOpt: Option[String] = this._parent.map(_.name)
+  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
