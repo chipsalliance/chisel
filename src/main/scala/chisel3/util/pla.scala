@@ -113,10 +113,6 @@ class PLAModule(table: Seq[(BitPat, BitPat)], invert: BitPat = BitPat("b0")) ext
 }
 
 object pla {
-
-  private val definitions: collection.mutable.HashMap[(Seq[(BitPat, BitPat)], BitPat), Definition[PLAModule]] =
-    collection.mutable.HashMap()
-
   /** Instance a [[PLA]], and return its io.
     *
     * @param table A [[Seq]] of inputs -> outputs mapping
@@ -139,7 +135,7 @@ object pla {
     * }}}
     */
   def apply(table: Seq[(BitPat, BitPat)], invert: BitPat = BitPat("b0")): (UInt, UInt) = {
-    val pla = Instance(definitions.getOrElseUpdate((table, invert), Definition(new PLAModule(table, invert))))
+    val pla = Module(new PLAModule(table, invert))
     (pla.inputs, pla.outputs)
   }
 }
