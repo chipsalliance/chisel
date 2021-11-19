@@ -32,6 +32,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       EnumTest.Type().toString should be ("EnumTest")
         (new BundleTest).toString should be ("BundleTest")
       new Bundle { val a = UInt(8.W) }.toString should be ("AnonymousBundle")
+      new Bundle { val a = UInt(8.W) }.a.toString should be ("UInt<8>")
     }}
   }
 
@@ -76,6 +77,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       true.B.toString should be ("Bool(true)")
       2.25.F(6.W, 2.BP).toString should be ("FixedPoint<6><<2>>(2.25)")
       -2.25.F(6.W, 2.BP).toString should be ("FixedPoint<6><<2>>(-2.25)")
+      Vec(3, UInt(4.W)).toString should be ("UInt<4>[3]")
       EnumTest.sNone.toString should be ("EnumTest(0=sNone)")
       EnumTest.sTwo.toString should be ("EnumTest(2=sTwo)")
       EnumTest(1.U).toString should be ("EnumTest(1=sOne)")
