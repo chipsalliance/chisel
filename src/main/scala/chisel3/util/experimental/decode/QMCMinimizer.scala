@@ -8,6 +8,15 @@ import scala.annotation.tailrec
 import scala.math.Ordered.orderingToOrdered
 import scala.language.implicitConversions
 
+/** A [[Minimizer]] implementation to use Quine-Mccluskey algorithm to minimize the [[TruthTable]].
+  *
+  * This algorithm can always find the best solution, but is a NP-Complete algorithm,
+  * which means, for large-scale [[TruthTable]] minimization task, it will be really slow,
+  * and might run out of memory of JVM stack.
+  *
+  * In this situation, users should consider switch to [[EspressoMinimizer]],
+  * which uses heuristic algorithm providing a sub-optimized result.
+  */
 object QMCMinimizer extends Minimizer {
   private implicit def toImplicant(x: BitPat): Implicant = new Implicant(x)
 
