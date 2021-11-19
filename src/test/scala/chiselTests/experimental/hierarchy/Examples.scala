@@ -58,7 +58,7 @@ object Examples {
     i0.in := in
     i1.in := i0.out
     out := i1.out
-  }  
+  }
   @instantiable
   class AddTwoMixedModules extends Module {
     @public val in  = IO(Input(UInt(32.W)))
