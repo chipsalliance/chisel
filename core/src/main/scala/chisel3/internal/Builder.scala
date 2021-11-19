@@ -747,7 +747,7 @@ private[chisel3] object Builder extends LazyLogging {
       checkScalaVersion()
       logger.info("Elaborating design...")
       val mod = f
-      if (forceModName || globalNamespace.names.size > 1) // This avoids instance name index skipping with D/I
+      if (forceModName) // This avoids definition name index skipping with D/I
         mod.forceName(None, mod.name, globalNamespace)
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
