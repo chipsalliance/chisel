@@ -11,9 +11,16 @@ After a Pull Request is merged, a second Travis CI build will run on the `master
 ## Requirements
 
 To build the website you need:
-* `sbt`
+* [`sbt`](https://www.scala-sbt.org/download.html)
 * `jekyll`
 * `gmake` - tested with version 4.2.1
+
+#### Installing jekyll
+
+```
+sudo apt-get install jekyll
+gem install jekyll-redirect-from
+```
 
 ## Building the Website
 
