@@ -85,7 +85,7 @@ case class Node(id: HasId) extends Arg {
     case Some(arg) => arg.name
     case None => id.instanceName
   }
-  override def simpleName: String = id.getOptionRef match {
+  override private[chisel3] def simpleName: String = id.getOptionRef match {
     case Some(arg) => arg.name
     case None => "?"
   }
