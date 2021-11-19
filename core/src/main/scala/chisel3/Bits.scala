@@ -400,7 +400,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[UInt] {
   override def toString: String = {
     litOption match {
-      case Some(value) => stringAccessor(s"UInt$width$value")
+      case Some(value) => stringAccessor(s"UInt$width($value)")
       case _ => stringAccessor(s"UInt$width")
     }
   }
@@ -773,7 +773,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[SInt] {
   override def toString: String = {
     litOption match {
-      case Some(value) => stringAccessor(s"SInt$width$value")
+      case Some(value) => stringAccessor(s"SInt$width($value)")
       case _ => stringAccessor(s"SInt$width")
     }
   }
@@ -1120,7 +1120,7 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
 sealed class Bool() extends UInt(1.W) with Reset {
   override def toString: String = {
     litToBooleanOption match {
-      case Some(value) => stringAccessor(s"Bool$value")
+      case Some(value) => stringAccessor(s"Bool($value)")
       case _ => stringAccessor("Bool")
     }
   }
@@ -1280,7 +1280,7 @@ package experimental {
 
     override def toString: String = {
       litToDoubleOption match {
-        case Some(value) => stringAccessor(s"FixedPoint$width$binaryPoint$value")
+        case Some(value) => stringAccessor(s"FixedPoint$width$binaryPoint($value)")
         case _ => stringAccessor(s"FixedPoint$width$binaryPoint")
       }
     }
@@ -1699,7 +1699,7 @@ package experimental {
 
     override def toString: String = {
       litOption match {
-        case Some(value) => stringAccessor(s"Interval$width$value")
+        case Some(value) => stringAccessor(s"Interval$width($value)")
         case _ => stringAccessor(s"Interval$width")
       }
     }

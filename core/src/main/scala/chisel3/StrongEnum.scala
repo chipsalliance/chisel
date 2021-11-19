@@ -80,8 +80,8 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   override def toString: String = {
     litOption match {
       case Some(value) => factory.nameOfValue(value) match {
-        case Some(name) => stringAccessor(s"${factory.getClass.getSimpleName.init}$value=$name")
-        case None => stringAccessor(s"${factory.getClass.getSimpleName.init}$value=(invalid)")
+        case Some(name) => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=$name)")
+        case None => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=(invalid))")
       }
       case _ => stringAccessor(s"${factory.getClass.getSimpleName.init}")
     }

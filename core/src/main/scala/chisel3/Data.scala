@@ -444,7 +444,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         val subname = subcomponentStrOpt(topBinding.location).getOrElse("")
         val mod = parentStrOpt.map(_ + ".").getOrElse("")
 
-        s"$mod$name$subname: $binding[$chiselType]"
+        if (this.isLit) chiselType
+        else s"$mod$name$subname: $binding[$chiselType]"
     }
   }
 
