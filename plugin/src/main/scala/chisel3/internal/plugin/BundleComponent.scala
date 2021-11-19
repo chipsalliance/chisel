@@ -9,7 +9,16 @@ import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.transform.TypingTransformers
 
-// TODO This component could also implement val elements in Bundles
+/** Performs three operations
+  * 1) Records that this plugin ran on a bundle by adding a method
+  *    `override protected def _usingPlugin: Boolean = true`
+  * 2) Constructs a cloneType method
+  * 3) Builds a `def elements` that is computed once in this plugin
+  *    Eliminates needing reflection to discover the hardware fields of a `Bundle`
+  *
+  * @param global
+  * @param arguments
+  */
 private[plugin] class BundleComponent(val global: Global, arguments: ChiselPluginArguments)
     extends PluginComponent
     with TypingTransformers {
@@ -46,6 +55,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     val bundleTpe = inferType(tq"chisel3.Bundle")
     val dataTpe = inferType(tq"chisel3.Data")
+    val seqMapTpe = inferType(tq"scala.collection.immutable.SeqMap[String,$dataTpe]")
 
     // Not cached because it should only be run once per class (thus once per Type)
     def isBundle(sym: Symbol): Boolean = sym.tpe <:< bundleTpe
@@ -82,10 +92,35 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       (primaryConstructor, paramAccessors.toList)
     }
 
+    def getBundleElements(body: List[Tree]): List[(Symbol, Tree)] = {
+      val elements = mutable.ListBuffer[(Symbol, Tree)]()
+      body.foreach {
+        case acc: ValDef if acc.symbol.typeSignature <:< bundleTpe =>
+          // println(s"ValdDefBundle: $acc ${acc.symbol.name} ${acc.symbol.typeSignature}")
+          elements += acc.symbol -> acc.rhs
+        case acc: ValDef if acc.symbol.typeSignature <:< dataTpe && acc.rhs != EmptyTree =>
+          // println(s"ValdDef: $acc, ${acc.mods.annotations.mkString(" ||| ")}, ${acc.symbol.name}, ${acc.symbol.typeSignature}, TS='${acc.rhs}")
+          elements += acc.symbol -> acc.rhs
+        case _ =>
+      }
+      elements.toList
+    }
 
     override def transform(tree: Tree): Tree = tree match {
 
       case bundle: ClassDef if isBundle(bundle.symbol) && !bundle.mods.hasFlag(Flag.ABSTRACT) =>
+        def show(string: String): Unit = {
+          if (bundle.symbol.name.toString == "DemoBundle" || bundle.symbol.name.toString == "AnimalBundle") {
+            println(("=" * 100 + "\n") * 1)
+            println(string)
+          }
+        }
+
+        show(s"Bundle: ${show(bundle.toString)}")
+        show(s"BundleType: ${show(bundle.tpe.toString)}")
+
+        show("Demo")
+        show(s"BundleName: '${bundle.symbol.name}'")
 
         // ==================== Generate _cloneTypeImpl ====================
         val (con, params) = getConstructorAndParams(bundle.impl.body)
@@ -93,12 +128,19 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           global.reporter.warning(bundle.pos, "Unable to determine primary constructor!")
           return super.transform(tree)
         }
-        val constructor = con.get
 
+        val constructor = con.get
+        show(s"Constructor: ${constructor.toString()}")
         val thiz = gen.mkAttributedThis(bundle.symbol)
+
+//          show(s"thiz: ${thiz.toString()}")
+        show(s"thiz: ${thiz.tpe.toString()}")
+//          show(s"thiz: ${thiz.tpe.members.mkString("\n")}")
 
         // The params have spaces after them (Scalac implementation detail)
         val paramLookup: String => Symbol = params.map(sym => sym.name.toString.trim -> sym).toMap
+
+        show(paramLookup.toString())
 
         // Create a this.<ref> for each field matching order of constructor arguments
         // List of Lists because we can have multiple parameter lists
@@ -111,10 +153,15 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             if (isData(vp.symbol)) cloneTypeFull(select) else select
           })
 
-        val tparamList = bundle.tparams.map{ t => Ident(t.symbol) }
-        val ttpe = if(tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
+        show(s"conArgs:  ${conArgs.toString()}")
+
+        val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
+        val ttpe = if (tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
         val newUntyped = New(ttpe, conArgs)
         val neww = localTyper.typed(newUntyped)
+
+        show(s"tparamList: " + tparamList.toString())
+        show(s"members: ${bundle.symbol}")
 
         // Create the symbol for the method and have it be associated with the Bundle class
         val cloneTypeSym =  bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
@@ -125,12 +172,35 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
         val cloneTypeImpl = localTyper.typed(DefDef(cloneTypeSym, neww))
 
+        // ==================== Generate val elements ====================
+        // Create the symbol for the method and have it be associated with the Bundle class
+
+        val elements = getBundleElements(bundle.impl.body).reverse
+        val elementArgs: List[(String, Tree)] = elements.map { case (symbol, chiselType) =>
+           // Make this.<ref>
+          val select = gen.mkAttributedSelect(thiz, symbol)
+          (symbol.name.toString, select)
+        }
+
+        val elementsImplSym =
+          bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+        // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
+        elementsImplSym.resetFlag(Flags.METHOD)
+        // Need to set the type to chisel3.Bundle for the override to work
+        elementsImplSym.setInfo(NullaryMethodType(seqMapTpe))
+
+        val elementsImpl = localTyper.typed(DefDef(elementsImplSym, q"scala.collection.immutable.SeqMap.apply[String, chisel3.Data](..$elementArgs)"))
+
+        show("ELEMENTS:\n" + elements.map { case (symbol, tree) => s"(${symbol}, ${tree})" }.mkString("\n"))
+        show("ElementsImpl: " + showRaw(elementsImpl) + "\n\n\n")
+
         // ==================== Generate _usingPlugin ====================
         // Unclear why quasiquotes work here but didn't for cloneTypeSym, maybe they could.
         val usingPlugin = localTyper.typed(q"override protected def _usingPlugin: Boolean = true")
 
         val withMethods = deriveClassDef(bundle) { t =>
-          deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin)
+          deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin :+ elementsImpl)
+//            deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin)
         }
 
         super.transform(localTyper.typed(withMethods))
