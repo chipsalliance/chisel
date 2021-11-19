@@ -72,11 +72,10 @@ import EnumAnnotations._
 
 
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
-  /**
-    * Use getSimpleName instead of enumTypeName because for debugging purposes
-    * the fully qualified name isn't necessary (compared to for the Enum annotation),
-    * and it's more consistent with Bundle printing.
-   */
+
+  // Use getSimpleName instead of enumTypeName because for debugging purposes
+  //   the fully qualified name isn't necessary (compared to for the
+  //  Enum annotation), and it's more consistent with Bundle printing.
   override def toString: String = {
     litOption match {
       case Some(value) => factory.nameOfValue(value) match {

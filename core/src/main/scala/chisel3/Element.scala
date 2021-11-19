@@ -6,7 +6,6 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.internal._
-import chisel3.experimental.BaseModule
 
 /** Element is a leaf data type: it cannot contain other [[Data]] objects. Example uses are for representing primitive
   * data types, like integers and bits.
