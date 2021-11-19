@@ -774,7 +774,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def toString: String = {
     litOption match {
       case Some(value) => stringAccessor(s"SInt$width$value")
-      case _ => stringAccessor("SInt$width")
+      case _ => stringAccessor(s"SInt$width")
     }
   }
 

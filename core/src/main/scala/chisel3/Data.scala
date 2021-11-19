@@ -436,55 +436,41 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
-    if (this.isLit) {
-      (chiselTypeStrOpt(chiselType),
-        valuesStrOpt(vals)) match {
-        case (Some(a), Some(b)) => s"$a($b)"
-        case (None, None) => ""
-        case (Some(a), _) => s"$a"
-        case (_, Some(b)) => s"$b"
-      }
-    } else {
-      (parentStrOpt,
-        nameStrOpt,
-        subcomponentStrOpt(topBindingOpt.flatMap(_.location)),
-        bindingToStringOpt(),
-        chiselTypeStrOpt(chiselType),
-        valuesStrOpt(vals)) match {
-        //    parent   name     subcomp  binding  type     values
-        case (Some(a), Some(b), Some(c), Some(d), Some(e), Some(f)) => s"$a.$b$c: $d[$e]($f)"
-        case (Some(a), Some(b), Some(c), Some(d), Some(e), None) => s"$a.$b$c: $d[$e]"
-        case (Some(a), None, None, Some(d), Some(e), None) => s"$a: $d[$e]"
-        case (Some(a), None, Some(c), Some(d), Some(e), None) => s"$a.$c: $d[$e]"
-        case (Some(a), Some(b), None, None, Some(e), None) => s"$a.$b: $e"
-        case (_, _, None, None, Some(e), None) => s"$e"
-        case (Some(a), Some(b), _, Some(d), Some(e), _) => s"$a.$b: $d[$e]"
-        case (Some(a), None, None, Some(d), Some(e), Some(f)) => s"$a: $d[$e]($f)"
-        case (None, None, None, None, None, None) => s""
-      }
-    }
+
+    topBindingOpt match {
+      // Just a type, return type
+      case None => chiselType  // note this is no longer an `Option` because of changes above
+      case Some(topBinding) =>
+        val binding: String = _bindingToString(topBinding) // some new method since it's taking just `Binding`
+        
+        // Note we could replace every `.getOrElse("")` with `.mkString`, it's a stylistic choice
+        val name = nameStrOpt.getOrElse("?")
+        val subname = subcomponentStrOpt(topBinding.location).getOrElse("")
+        val mod = parentStrOpt.map(_ + ".").getOrElse("") // This could even be a `.get`
+          s"$mod$name$subname: $binding[$chiselType]"
+}
   }
 
   // User-friendly representation of the binding as a helper function for toString.
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
   // TODO Is this okay for sample_element? It *shouldn't* be visible to users
-  @deprecated("This was never intended to be visible to user-defined types", "Chisel 3.5.0")
-  protected def bindingToString: String = bindingToStringOpt().getOrElse("")
+  // @deprecated("This was never intended to be visible to user-defined types", "Chisel 3.5.0")
+  // protected def bindingToString: String = _bindingToString()
 
-  private[chisel3] def bindingToStringOpt(topBindingOpt: Option[TopBinding] = this.topBindingOpt) =
-    Try({this.topBindingOpt match {
-      case None => None
-      case Some(OpBinding(_, _)) => Some("OpResult")
-      case Some(MemoryPortBinding(_, _)) => Some("MemPort")
-      case Some(PortBinding(_)) => Some("IO")
-      case Some(RegBinding(_, _)) => Some("Reg")
-      case Some(WireBinding(_, _)) => Some("Wire")
-      case Some(DontCareBinding()) => Some("(DontCare)")
-      case Some(ElementLitBinding(litArg)) => Some("(unhandled literal)")
-      case Some(BundleLitBinding(litMap)) => Some("(unhandled bundle literal)")
-      case Some(VecLitBinding(litMap)) => Some("(unhandled vec literal)")
-    }}).getOrElse(None)
+  private[chisel3] def _bindingToString(topBindingOpt: TopBinding): String =
+    Try({topBindingOpt match {
+      // case None => None
+      case OpBinding(_, _) => "OpResult"
+      case MemoryPortBinding(_, _) => "MemPort"
+      case PortBinding(_) => "IO"
+      case RegBinding(_, _) => "Reg"
+      case WireBinding(_, _) => "Wire"
+      case DontCareBinding() => "(DontCare)"
+      case ElementLitBinding(litArg) => "(unhandled literal)"
+      case BundleLitBinding(litMap) => "(unhandled bundle literal)"
+      case VecLitBinding(litMap) => "(unhandled vec literal)"
+    }}).getOrElse("")
 
   private[chisel3] def nameStrOpt: Option[String] = {
     val computedName: Option[String] = _computeName(None, Some(""), ".")
