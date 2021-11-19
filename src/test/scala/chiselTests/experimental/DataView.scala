@@ -496,7 +496,7 @@ class DataViewSpec extends ChiselFlatSpec {
       out := in.viewAs[BundleB]
     }
     val err = the [InvalidViewException] thrownBy ChiselStage.emitChirrtl(new MyModule)
-    val expected = """View field _\.bar MyModule.out.bar: UInt<4> has width <4> that is incompatible with target value .+'s width <8>""".r
+    val expected = """View field _\.bar UInt<4> has width <4> that is incompatible with target value .+'s width <8>""".r
     err.getMessage should fullyMatch regex expected
   }
 
@@ -514,7 +514,7 @@ class DataViewSpec extends ChiselFlatSpec {
       out := in.viewAs[BundleB]
     }
     val err = the [InvalidViewException] thrownBy ChiselStage.emitChirrtl(new MyModule)
-    val expected = """View field _\.bar MyModule.out.bar: UInt<4> has width <4> that is incompatible with target value .+'s width <unknown>""".r
+    val expected = """View field _\.bar UInt<4> has width <4> that is incompatible with target value .+'s width <unknown>""".r
     err.getMessage should fullyMatch regex expected
   }
 
