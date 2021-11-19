@@ -2,7 +2,7 @@
 
 package firrtl
 
-import firrtl.annotations.MemoryLoadFileType
+import firrtl.annotations.{MemoryLoadFileType, NoTargetAnnotation}
 
 /**
   * Base type for emission customization options
@@ -11,12 +11,26 @@ import firrtl.annotations.MemoryLoadFileType
   */
 trait EmissionOption
 
+/** Control how register initialization code is emitted */
+case class CustomDefaultRegisterEmission(
+  override val useInitAsPreset:      Boolean,
+  override val disableRandomization: Boolean)
+    extends RegisterEmissionOption
+    with NoTargetAnnotation
+
+/** Customize how memory initialization code is emitted */
+case class CustomDefaultMemoryEmission(override val initValue: MemoryInitValue)
+    extends MemoryEmissionOption
+    with NoTargetAnnotation
+
 /** Emission customization options for memories */
 trait MemoryEmissionOption extends EmissionOption {
   def initValue: MemoryInitValue = MemoryRandomInit
 }
 
+/** Emission customization option for memory initialization */
 sealed trait MemoryInitValue
+case object MemoryNoInit extends MemoryInitValue
 case object MemoryRandomInit extends MemoryInitValue
 case class MemoryScalarInit(value: BigInt) extends MemoryInitValue
 case class MemoryArrayInit(values: Seq[BigInt]) extends MemoryInitValue

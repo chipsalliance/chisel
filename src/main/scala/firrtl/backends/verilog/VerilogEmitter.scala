@@ -466,8 +466,12 @@ class VerilogEmitter extends SeqTransform with Emitter {
     */
   private[firrtl] class EmissionOptions(annotations: AnnotationSeq) {
     // Private so that we can present an immutable API
-    private val memoryEmissionOption = new EmissionOptionMap[MemoryEmissionOption](MemoryEmissionOptionDefault)
-    private val registerEmissionOption = new EmissionOptionMap[RegisterEmissionOption](RegisterEmissionOptionDefault)
+    private val memoryEmissionOption = new EmissionOptionMap[MemoryEmissionOption](
+      annotations.collectFirst { case a: CustomDefaultMemoryEmission => a }.getOrElse(MemoryEmissionOptionDefault)
+    )
+    private val registerEmissionOption = new EmissionOptionMap[RegisterEmissionOption](
+      annotations.collectFirst { case a: CustomDefaultRegisterEmission => a }.getOrElse(RegisterEmissionOptionDefault)
+    )
     private val wireEmissionOption = new EmissionOptionMap[WireEmissionOption](WireEmissionOptionDefault)
     private val portEmissionOption = new EmissionOptionMap[PortEmissionOption](PortEmissionOptionDefault)
     private val nodeEmissionOption = new EmissionOptionMap[NodeEmissionOption](NodeEmissionOptionDefault)
@@ -905,6 +909,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
                                 |  end""".stripMargin
             memoryInitials += Seq(inlineLoad)
           }
+        case MemoryNoInit =>
+        // do nothing
       }
     }
 

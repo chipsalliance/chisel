@@ -835,6 +835,43 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     )
     result2 should containLine("assign z = ~(&x);")
   }
+
+  it should "remove random line with Memory and Register with some emission option" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    input clock: Clock
+          |    input reset: UInt<1>
+          |    input in_0: UInt<1>
+          |    output out: UInt<1>
+          |    mem mem :
+          |      data-type => UInt<1>
+          |      depth => 1
+          |      read-latency => 1
+          |      write-latency => 1
+          |      reader => r
+          |      read-under-write => undefined
+          |    reg tmp : UInt<1>, clock
+          |    tmp <= in_0
+          |    mem.r.addr <= tmp
+          |    mem.r.en <= UInt<1>(0)
+          |    mem.r.clk <= clock
+          |    out <= mem.r.data
+          |""".stripMargin
+    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val state = CircuitState(
+      circuit,
+      LowForm,
+      Seq(
+        EmitCircuitAnnotation(classOf[VerilogEmitter]),
+        CustomDefaultMemoryEmission(MemoryNoInit),
+        CustomDefaultRegisterEmission(useInitAsPreset = true, disableRandomization = true)
+      )
+    )
+    val result = (new VerilogEmitter).execute(state)
+    (result.getEmittedCircuit.value should not).include("RANDOMIZE")
+  }
+
 }
 
 class VerilogDescriptionEmitterSpec extends FirrtlFlatSpec {
