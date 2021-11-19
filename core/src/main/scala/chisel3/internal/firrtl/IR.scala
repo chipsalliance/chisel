@@ -66,7 +66,7 @@ object PrimOp {
 
 abstract class Arg {
   def localName: String = name
-  def simpleName: String = name
+  private[chisel3] def simpleName: String = name
   def contextualName(ctx: Component): String = name
   def fullName(ctx: Component): String = contextualName(ctx)
   def name: String
