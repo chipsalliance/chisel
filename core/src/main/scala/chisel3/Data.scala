@@ -452,8 +452,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
   // TODO Is this okay for sample_element? It *shouldn't* be visible to users
-  // @deprecated("This was never intended to be visible to user-defined types", "Chisel 3.5.0")
-  // protected def bindingToString: String = _bindingToString()
+  @deprecated("This was never intended to be visible to user-defined types", "Chisel 3.5.0")
+  protected def bindingToString: String = _bindingToString(topBinding)
 
   private[chisel3] def _bindingToString(topBindingOpt: TopBinding): String =
     topBindingOpt match {
