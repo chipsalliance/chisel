@@ -478,20 +478,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  private[chisel3] def subcomponentStrOpt(enclosure: Option[BaseModule]): Option[String] = enclosure match {
-    case None => None
-    case Some(enc) => this.getOptionRef match {
-      case None => None
-      case Some(Index(imm, value)) => Some(s"${imm.simpleName}[${value.localName}]")
-      case _ => None
+  private[chisel3] def subcomponentStrOpt(enclosure: Option[BaseModule]): Option[String] =
+    enclosure.flatMap { _ => // enclosure is unused
+      this.getOptionRef.collect {
+        case Index(imm, value) => s"${imm.simpleName}[${value.localName}]"
+        case Slot(imm, name) => s""
+      }
     }
-  }
-
-  private[chisel3] def chiselTypeStrOpt(chiselType: Option[String]): Option[String] = chiselType.map(_.toString)
 
   private[chisel3] def parentStrOpt: Option[String] = this._parent.map(_.name)
-
-  private[chisel3] def valuesStrOpt(vals: Option[String]): Option[String] = vals.map(_.toString)
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
