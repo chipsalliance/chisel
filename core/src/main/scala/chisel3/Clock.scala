@@ -14,7 +14,7 @@ object Clock {
 
 // TODO: Document this.
 sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element {
-  override def toString: String = stringAccessor(Some("Clock"), None)
+  override def toString: String = stringAccessor("Clock")
 
   def cloneType: this.type = Clock().asInstanceOf[this.type]
 

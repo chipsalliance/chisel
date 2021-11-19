@@ -435,7 +435,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     _direction = Some(actualDirection)
   }
 
-  private[chisel3] def stringAccessor(chiselType: Option[String], vals: Option[String]): String = {
+  private[chisel3] def stringAccessor(chiselType: String): String = {
     if (this.isLit) {
       (chiselTypeStrOpt(chiselType),
         valuesStrOpt(vals)) match {

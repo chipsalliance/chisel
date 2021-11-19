@@ -169,8 +169,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
         val contents = vecLitBinding.zipWithIndex.map { case ((data, lit), index) =>
           s"$index=$lit"
         }.mkString(", ")
-        stringAccessor(Some(s"${sample_element.cloneType}[$length]"), Some(contents))
-      case _ => stringAccessor(Some(s"${sample_element.cloneType}[$length]"), None)
+        stringAccessor(s"${sample_element.cloneType}[$length]$contents")
+      case _ => stringAccessor(s"${sample_element.cloneType}[$length]")
     }
   }
 
@@ -925,8 +925,8 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
         val contents = elements.toList.reverse.map { case (name, data) =>
           s"$name=$data"
         }.mkString(", ")
-        stringAccessor(Some(className), Some(contents))
-      case _ => stringAccessor(Some(className), None)
+        stringAccessor(s"$className$contents")
+      case _ => stringAccessor(s"$className")
     }
   }
 

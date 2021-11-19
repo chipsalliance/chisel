@@ -400,8 +400,8 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[UInt] {
   override def toString: String = {
     litOption match {
-      case Some(value) => stringAccessor(Some(s"UInt$width"), Some(s"$value"))
-      case _ => stringAccessor(Some(s"UInt$width"), None)
+      case Some(value) => stringAccessor(s"UInt$width$value")
+      case _ => stringAccessor(s"UInt$width")
     }
   }
 
@@ -773,8 +773,8 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[SInt] {
   override def toString: String = {
     litOption match {
-      case Some(value) => stringAccessor(Some(s"SInt$width"), Some(s"$value"))
-      case _ => stringAccessor(Some(s"SInt$width"), None)
+      case Some(value) => stringAccessor(s"SInt$width$value")
+      case _ => stringAccessor("SInt$width")
     }
   }
 
@@ -1037,7 +1037,7 @@ object Reset {
   * super type due to Bool inheriting from abstract class UInt
   */
 final class ResetType(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
-  override def toString: String = stringAccessor(Some("Reset"), None)
+  override def toString: String = stringAccessor("Reset")
 
   def cloneType: this.type = Reset().asInstanceOf[this.type]
 
@@ -1079,7 +1079,7 @@ object AsyncReset {
   * asychronously reset registers.
   */
 sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
-  override def toString: String = stringAccessor(Some("AsyncReset"), None)
+  override def toString: String = stringAccessor("AsyncReset")
 
   def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
 
@@ -1120,8 +1120,8 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
 sealed class Bool() extends UInt(1.W) with Reset {
   override def toString: String = {
     litToBooleanOption match {
-      case Some(value) => stringAccessor(Some("Bool"), Some(s"$value"))
-      case _ => stringAccessor(Some("Bool"), None)
+      case Some(value) => stringAccessor(s"Bool$value")
+      case _ => stringAccessor("Bool")
     }
   }
 
@@ -1280,8 +1280,8 @@ package experimental {
 
     override def toString: String = {
       litToDoubleOption match {
-        case Some(value) => stringAccessor(Some(s"FixedPoint$width$binaryPoint"), Some(s"$value"))
-        case _ => stringAccessor(Some(s"FixedPoint$width$binaryPoint"), None)
+        case Some(value) => stringAccessor(s"FixedPoint$width$binaryPoint$value")
+        case _ => stringAccessor(s"FixedPoint$width$binaryPoint")
       }
     }
 
@@ -1699,8 +1699,8 @@ package experimental {
 
     override def toString: String = {
       litOption match {
-        case Some(value) => stringAccessor(Some("Interval$width"), Some(s"$value"))
-        case _ => stringAccessor(Some("Interval$width"), None)
+        case Some(value) => stringAccessor(s"Interval$width$value")
+        case _ => stringAccessor(s"Interval$width")
       }
     }
 
