@@ -66,7 +66,9 @@ object PrimOp {
 
 abstract class Arg {
   def localName: String = name
-  private[chisel3] def simpleName: String = name
+  // Same as localName except it can be called on Args before all names are complete (will return ? in those cases)
+  // TODO unify with localName which probably shouldn't be calling instanceName on None
+  private[chisel3] def earlyLocalName: String = name
   def contextualName(ctx: Component): String = name
   def fullName(ctx: Component): String = contextualName(ctx)
   def name: String
