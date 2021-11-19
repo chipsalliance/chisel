@@ -438,6 +438,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def stringAccessor(chiselType: String): String = {
     topBindingOpt match {
       case None => chiselType
+      // Handle DontCares specially as they are "literal-like" but not actually literals
+      case Some(DontCareBinding()) => s"$chiselType(DontCare)"
       case Some(topBinding) =>
         val binding: String = _bindingToString(topBinding)
         val name = nameStrOpt.getOrElse("?")
