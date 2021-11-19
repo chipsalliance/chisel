@@ -484,7 +484,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def subcomponentStrOpt(enclosure: Option[BaseModule]): Option[String] =
     enclosure.flatMap { _ => // enclosure is unused
       this.getOptionRef.collect {
-        case Index(imm, value) => s"${imm.simpleName}[${value.localName}]"
+        case Index(imm, value) => s"${imm.earlyLocalName}[${value.localName}]"
         case Slot(imm, name) => s""
       }
     }
