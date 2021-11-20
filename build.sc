@@ -55,7 +55,7 @@ class firrtlCrossModule(val crossScalaVersion: String)
       ivy"com.lihaoyi::os-lib:0.7.8"
     ) ++ {
       if (majorVersion == 13)
-        Agg(ivy"org.scala-lang.modules::scala-parallel-collections:1.0.3")
+        Agg(ivy"org.scala-lang.modules::scala-parallel-collections:1.0.4")
       else
         Agg()
     }
