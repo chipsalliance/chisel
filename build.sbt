@@ -29,8 +29,8 @@ lazy val firrtlSettings = Seq(
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.3.0" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.10" % "test",
+    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.10.0" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1",
     "net.jcazevedo" %% "moultingyaml" % "0.4.2",
     "org.json4s" %% "json4s-native" % "3.6.12",
