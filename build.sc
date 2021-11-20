@@ -10,7 +10,7 @@ import mill.contrib.buildinfo.BuildInfo
 
 import java.io.IOException
 
-object firrtl extends mill.Cross[firrtlCrossModule]("2.12.14", "2.13.6")
+object firrtl extends mill.Cross[firrtlCrossModule]("2.12.14", "2.13.7")
 
 class firrtlCrossModule(val crossScalaVersion: String)
     extends CrossSbtModule
