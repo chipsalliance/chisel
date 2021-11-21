@@ -12,8 +12,8 @@ import chisel3.util.Valid
 class PRNGIO(val n: Int) extends Bundle {
 
   /** A [[chisel3.util.Valid Valid]] interface that can be used to set the seed (internal PRNG state) 
-   * @group Signals
-  */
+    * @group Signals
+    */
   val seed: Valid[Vec[Bool]] = Input(Valid(Vec(n, Bool())))
 
   /** When asserted, the PRNG will increment by one 
