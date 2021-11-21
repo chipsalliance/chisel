@@ -17,13 +17,13 @@ class PRNGIO(val n: Int) extends Bundle {
   val seed: Valid[Vec[Bool]] = Input(Valid(Vec(n, Bool())))
 
   /** When asserted, the PRNG will increment by one 
-   * @group Signals
-  */
+    * @group Signals
+    */
   val increment: Bool = Input(Bool())
 
   /** The current state of the PRNG 
-   * @group Signals
-  */
+    * @group Signals
+    */
   val out: Vec[Bool] = Output(Vec(n, Bool()))
 }
 
