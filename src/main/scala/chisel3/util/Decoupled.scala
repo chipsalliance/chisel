@@ -26,7 +26,6 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
         if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
     case _ => gen
   }
- 
 /** Indicates that the consumer is ready to accept the data this cycle
   * @group Signals
   */
