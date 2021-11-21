@@ -10,7 +10,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.0")
 
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0")
 
-addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
+addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.15")
 
@@ -25,4 +25,4 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.1")
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.10")
 
 // From FIRRTL for building from source
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.31")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.32")
