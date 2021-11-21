@@ -10,8 +10,8 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
 
 /** IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs
   * (selects) at most one.
-  *
   * @groupdesc Signals The actual hardware fields of the Bundle
+  *
   * @param gen data type
   * @param n number of inputs
   */
