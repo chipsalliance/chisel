@@ -4,7 +4,7 @@ resolvers += Classpaths.sbtPluginReleases
 
 resolvers += "jgit-repo" at "https://download.eclipse.org/jgit/maven"
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.1")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.2")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.0")
 
