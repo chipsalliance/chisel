@@ -57,6 +57,18 @@ object Examples {
     i1.in := i0.out
     out := i1.out
   }
+
+  @instantiable
+  class AddFour extends Module {
+    @public val in  = IO(Input(UInt(32.W)))
+    @public val out = IO(Output(UInt(32.W)))
+    @public val definition = Definition(new AddTwoMixedModules)
+    @public val i0 = Instance(definition)
+    @public val i1 = Instance(definition)
+    i0.in := in
+    i1.in := i0.out
+    out := i1.out
+  }
   @instantiable
   class AggregatePortModule extends Module {
     @public val io = IO(new Bundle {
@@ -191,5 +203,9 @@ object Examples {
   @instantiable
   class ConcreteHasBlah() extends HasBlah {
     val blah = 10
+  }
+  @instantiable
+  class HasTypeParams[D <: Data](d: D) extends Module {
+    @public val blah = Wire(d)
   }
 }

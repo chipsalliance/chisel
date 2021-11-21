@@ -16,6 +16,7 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
   * while the consumer uses the flipped interface (inputs bits).
   * The actual semantics of ready/valid are enforced via the use of concrete subclasses.
   * @param gen the type of data to be wrapped in Ready/Valid
+  * @groupdesc Signals The actual hardware fields of the Bundle
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
@@ -26,8 +27,19 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
     case _ => gen
   }
 
+/** Indicates that the consumer is ready to accept the data this cycle
+  * @group Signals
+  */
   val ready = Input(Bool())
+  
+/** Indicates that the producer has put valid data in 'bits' 
+  * @group Signals
+  */
   val valid = Output(Bool())
+  
+/** The data to be transferred when ready and valid are asserted at the same cycle
+  * @group Signals
+  */
   val bits  = Output(genType)
 }
 
@@ -121,6 +133,7 @@ object Decoupled
   * Additionally, once 'valid' is raised it will never be lowered until after
   * 'ready' has also been raised.
   * @param gen the type of data to be wrapped in IrrevocableIO
+  * @groupdesc Signals The actual hardware fields of the Bundle
   */
 class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 
@@ -161,6 +174,7 @@ object DeqIO {
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue.
   * @param hasFlush A boolean for whether the generated Queue is flushable
+  * @groupdesc Signals The hardware fields of the Bundle
   */
 class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boolean = false) extends Bundle
 { // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
@@ -169,13 +183,21 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boo
    *  but internally, the queue implementation itself sits on the other side
    *  of the interface so uses the flipped instance.
    */
-  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. */
+  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. 
+    * @group Signals
+    */
   val enq = Flipped(EnqIO(gen))
-  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]*/
+  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]
+    * @group Signals
+    */
   val deq = Flipped(DeqIO(gen))
-  /** The current amount of data in the queue */
+  /** The current amount of data in the queue 
+    * @group Signals
+    */
   val count = Output(UInt(log2Ceil(entries + 1).W))
-  /** When asserted, reset the enqueue and dequeue pointers, effectively flushing the queue (Optional IO for a flushable Queue)*/ 
+  /** When asserted, reset the enqueue and dequeue pointers, effectively flushing the queue (Optional IO for a flushable Queue)
+    * @group Signals
+    */ 
   val flush = if (hasFlush) Some(Input(Bool())) else None
 
 }
@@ -227,7 +249,7 @@ class Queue[T <: Data](val gen: T,
   val full = ptr_match && maybe_full
   val do_enq = WireDefault(io.enq.fire)
   val do_deq = WireDefault(io.deq.fire)
-  val flush = io.flush.getOrElse(false.B) 
+  val flush = io.flush.getOrElse(false.B)
 
   // when flush is high, empty the queue
   // Semantically, any enqueues happen before the flush.
@@ -285,20 +307,26 @@ class Queue[T <: Data](val gen: T,
   }
 }
 
-/** Factory for a generic hardware queue.
-  *
-  * @param enq input (enqueue) interface to the queue, also determines width of queue elements
-  * @param entries depth (number of elements) of the queue
-  *
-  * @return output (dequeue) interface from the queue
-  *
-  * @example {{{
-  * consumer.io.in <> Queue(producer.io.out, 16)
-  * }}}
-  */
+/** Factory for a generic hardware queue. */
 object Queue
 {
-  /** Create a queue and supply a DecoupledIO containing the product. */
+  /** Create a [[Queue]] and supply a [[DecoupledIO]] containing the product.
+    *
+    * @param enq input (enqueue) interface to the queue, also determines type of queue elements.
+    * @param entries depth (number of elements) of the queue
+    * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The `ready` signals are
+    *             combinationally coupled.
+    * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
+    *             The `valid` signals are coupled.
+    * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+    * @param flush Optional [[Bool]] signal, if defined, the [[Queue.hasFlush]] will be true, and connect correspond
+    *              signal to [[Queue]] instance.
+    * @return output (dequeue) interface from the queue.
+    *
+    * @example {{{
+    *   consumer.io.in <> Queue(producer.io.out, 16)
+    * }}}
+    */
   @chiselName
   def apply[T <: Data](
       enq: ReadyValidIO[T],
@@ -306,7 +334,7 @@ object Queue
       pipe: Boolean = false,
       flow: Boolean = false,
       useSyncReadMem: Boolean = false,
-      hasFlush: Boolean = false): DecoupledIO[T] = {
+      flush: Option[Bool] = None): DecoupledIO[T] = {
     if (entries == 0) {
       val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
@@ -314,7 +342,8 @@ object Queue
       enq.ready := deq.ready
       deq
     } else {
-      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow, useSyncReadMem, hasFlush))
+      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow, useSyncReadMem, flush.isDefined))
+      q.io.flush.zip(flush).foreach(f => f._1 := f._2)
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
       enq.ready := q.io.enq.ready
@@ -322,10 +351,25 @@ object Queue
     }
   }
 
-  /** Create a queue and supply a IrrevocableIO containing the product.
-    * Casting from Decoupled is safe here because we know the Queue has
-    * Irrevocable semantics; we didn't want to change the return type of
-    * apply() for backwards compatibility reasons.
+  /** Create a queue and supply a [[IrrevocableIO]] containing the product.
+    * Casting from [[DecoupledIO]] is safe here because we know the [[Queue]] has
+    * Irrevocable semantics.
+    * we didn't want to change the return type of apply() for backwards compatibility reasons.
+    *
+    * @param enq [[DecoupledIO]] signal to enqueue.
+    * @param entries The max number of entries in the queue
+    * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''ready'' signals are
+    * combinationally coupled.
+    * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
+    * The ''valid'' signals are coupled.
+    * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+    * @param flush Optional [[Bool]] signal, if defined, the [[Queue.hasFlush]] will be true, and connect correspond
+    *              signal to [[Queue]] instance.
+    * @return a [[DecoupledIO]] signal which should connect to the dequeue signal.
+    *
+    * @example {{{
+    *   consumer.io.in <> Queue(producer.io.out, 16)
+    * }}}
     */
   @chiselName
   def irrevocable[T <: Data](
@@ -333,8 +377,9 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false,
-      useSyncReadMem: Boolean = false): IrrevocableIO[T] = {
-    val deq = apply(enq, entries, pipe, flow, useSyncReadMem)
+      useSyncReadMem: Boolean = false,
+      flush: Option[Bool] = None): IrrevocableIO[T] = {
+    val deq = apply(enq, entries, pipe, flow, useSyncReadMem, flush)
     require(entries > 0, "Zero-entry queues don't guarantee Irrevocability")
     val irr = Wire(new IrrevocableIO(chiselTypeOf(deq.bits)))
     irr.bits := deq.bits

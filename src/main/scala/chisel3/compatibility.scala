@@ -637,6 +637,7 @@ package object Chisel {
 
     final def toUInt(implicit compileOptions: CompileOptions): UInt = a.do_asUInt(DeprecatedSourceInfo, compileOptions)
 
+    final def toBools(implicit compileOptions: CompileOptions): Seq[Bool] = a.do_asBools(DeprecatedSourceInfo, compileOptions)
   }
 
 }
