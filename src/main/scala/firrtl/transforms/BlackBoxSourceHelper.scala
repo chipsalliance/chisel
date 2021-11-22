@@ -183,12 +183,6 @@ object BlackBoxSourceHelper {
 
   val defaultFileListName = "firrtl_black_box_resource_files.f"
 
-  @deprecated(
-    "Renamed to defaultFileListName, as the file list name may now be changed with an annotation",
-    "FIRRTL 1.2"
-  )
-  def fileListName = defaultFileListName
-
   def writeTextToFile(text: String, file: File): Unit = {
     val out = new PrintWriter(file)
     out.write(text)
