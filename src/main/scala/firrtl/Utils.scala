@@ -264,10 +264,6 @@ object Utils extends LazyLogging {
 
   def isTemp(str: String): Boolean = str.head == '_'
 
-  /** Indent the results of [[ir.FirrtlNode.serialize]] */
-  @deprecated("Use ther new firrt.ir.Serializer instead.", "FIRRTL 1.4")
-  def indent(str: String) = str.replaceAllLiterally("\n", "\n  ")
-
   implicit def toWrappedExpression(x: Expression): WrappedExpression = new WrappedExpression(x)
   def getSIntWidth(s:                 BigInt):     Int = s.bitLength + 1
   def getUIntWidth(u:                 BigInt):     Int = u.bitLength
@@ -354,34 +350,6 @@ object Utils extends LazyLogging {
     }
     onExp(expression)
     ReferenceTarget(main, module, Nil, ref, tokens.toSeq)
-  }
-
-  @deprecated("get_flip is fundamentally slow, use to_flip(flow(expr))", "FIRRTL 1.2")
-  def get_flip(t: Type, i: Int, f: Orientation): Orientation = {
-    if (i >= get_size(t)) throwInternalError(s"get_flip: shouldn't be here - $i >= get_size($t)")
-    t match {
-      case (_:  GroundType) => f
-      case (tx: BundleType) =>
-        val (_, flip) = tx.fields.foldLeft((i, None: Option[Orientation])) {
-          case ((n, ret), x) if n < get_size(x.tpe) =>
-            ret match {
-              case None    => (n, Some(get_flip(x.tpe, n, times(x.flip, f))))
-              case Some(_) => (n, ret)
-            }
-          case ((n, ret), x) => (n - get_size(x.tpe), ret)
-        }
-        flip.get
-      case (tx: VectorType) =>
-        val (_, flip) = (0 until tx.size).foldLeft((i, None: Option[Orientation])) {
-          case ((n, ret), x) if n < get_size(tx.tpe) =>
-            ret match {
-              case None    => (n, Some(get_flip(tx.tpe, n, f)))
-              case Some(_) => (n, ret)
-            }
-          case ((n, ret), x) => (n - get_size(tx.tpe), ret)
-        }
-        flip.get
-    }
   }
 
   def get_point(e: Expression): Int = e match {
