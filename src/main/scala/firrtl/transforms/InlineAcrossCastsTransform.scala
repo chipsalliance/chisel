@@ -10,8 +10,7 @@ import firrtl.options.Dependency
 
 import firrtl.Utils.{isBitExtract, isCast, NodeMap}
 
-@deprecated("Replaced by InlineAcrossCastsTransform", "FIRRTL 1.4.3")
-object InlineCastsTransform {
+object InlineAcrossCastsTransform {
 
   // Checks if an Expression is made up of only casts terminated by a Literal or Reference
   // There must be at least one cast
@@ -82,8 +81,7 @@ object InlineCastsTransform {
   * simply contain a cast. It does so by greedily building larger expression trees that contain at
   * most one expression that is neither a cast nor reference-like node.
   */
-@deprecated("Replaced by InlineAcrossCastsTransform", "FIRRTL 1.4.3")
-class InlineCastsTransform extends Transform with DependencyAPIMigration {
+class InlineAcrossCastsTransform extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq(
@@ -104,7 +102,7 @@ class InlineCastsTransform extends Transform with DependencyAPIMigration {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val modulesx = state.circuit.modules.map(InlineCastsTransform.onMod(_))
+    val modulesx = state.circuit.modules.map(InlineAcrossCastsTransform.onMod)
     state.copy(circuit = state.circuit.copy(modules = modulesx))
   }
 }
