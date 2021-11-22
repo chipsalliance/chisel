@@ -17,9 +17,8 @@ import chisel3._
   * @tparam T the type of the data
   * @param gen some data
   * @see [[Valid$ Valid factory]] for concrete examples
-  *  @groupdesc Signals The actual hardware fields of the Bundle
+  * @groupdesc Signals The actual hardware fields of the Bundle
   */
-
 class Valid[+T <: Data](gen: T) extends Bundle {
   /** A bit that will be asserted when `bits` is valid
     * @group Signals
@@ -27,7 +26,8 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   val valid = Output(Bool())
 
   /** The data to be transferred, qualified by `valid`
-   * @group Signals */
+    * @group Signals 
+    */
 
   val bits  = Output(gen)
 
@@ -179,7 +179,7 @@ class Pipe[T <: Data](val gen: T, val latency: Int = 1)(implicit compileOptions:
 
   /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
     * @define notAQueue
-    *  @groupdesc Signals Hardware fields of the Bundle
+    * @groupdesc Signals Hardware fields of the Bundle
     */
   class PipeIO extends Bundle {
 
