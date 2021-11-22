@@ -4,22 +4,6 @@ package firrtl
 
 import scala.util.control.NoStackTrace
 
-@deprecated("External users should use either FirrtlUserException or their own hierarchy", "FIRRTL 1.2")
-object FIRRTLException {
-  def defaultMessage(message: String, cause: Throwable) = {
-    if (message != null) {
-      message
-    } else if (cause != null) {
-      cause.toString
-    } else {
-      null
-    }
-  }
-}
-@deprecated("External users should use either FirrtlUserException or their own hierarchy", "FIRRTL 1.2")
-class FIRRTLException(val str: String, cause: Throwable = null)
-    extends RuntimeException(FIRRTLException.defaultMessage(str, cause), cause)
-
 /** Exception indicating user error
   *
   * These exceptions indicate a problem due to bad input and thus do not include a stack trace.
