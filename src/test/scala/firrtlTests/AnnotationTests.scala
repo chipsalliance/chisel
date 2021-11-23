@@ -3,14 +3,14 @@
 package firrtlTests
 
 import java.io.{File, FileWriter}
-
 import firrtl.annotations._
 import firrtl._
 import firrtl.FileUtils
-import firrtl.options.Dependency
+import firrtl.options.{Dependency, InputAnnotationFileAnnotation}
 import firrtl.transforms.OptimizableExtModuleAnnotation
 import firrtl.passes.InlineAnnotation
 import firrtl.passes.memlib.PinAnnotation
+import firrtl.stage.{FirrtlSourceAnnotation, FirrtlStage}
 import firrtl.util.BackendCompilationUtilities
 import firrtl.testutils._
 import org.scalatest.matchers.should.Matchers
@@ -519,7 +519,7 @@ class JsonAnnotationTests extends AnnotationTests {
     annos should be(readAnnos)
   }
 
-  private def setupManager(annoFileText: Option[String]) = {
+  private def setupManager(annoFileText: Option[String]): Driver.Arg = {
     val source = """
                    |circuit test :
                    |  module test :
@@ -536,13 +536,15 @@ class JsonAnnotationTests extends AnnotationTests {
       w.close()
     }
 
-    new ExecutionOptionsManager("annos") with HasFirrtlOptions {
-      commonOptions = CommonOptions(targetDirName = testDir.getPath)
-      firrtlOptions = FirrtlExecutionOptions(
-        firrtlSource = Some(source),
-        annotationFileNames = List(annoFile.getPath)
-      )
-    }
+    (
+      Array("--target-dir", testDir.getPath),
+      Seq(FirrtlSourceAnnotation(source), InputAnnotationFileAnnotation(annoFile.getPath))
+    )
+  }
+
+  private object Driver {
+    type Arg = (Array[String], AnnotationSeq)
+    def execute(args: Arg) = ((new FirrtlStage).execute _).tupled(args)
   }
 
   "Annotation file not found" should "give a reasonable error message" in {

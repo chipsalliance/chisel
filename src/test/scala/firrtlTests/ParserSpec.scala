@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.ir._
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
 import org.scalacheck.Gen
@@ -291,11 +292,8 @@ class ParserSpec extends FirrtlFlatSpec {
                    |  module Test :
 
                    |""".stripMargin
-    val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
-      firrtlOptions = FirrtlExecutionOptions(firrtlSource = Some(input))
-    }
     a[SyntaxErrorsException] shouldBe thrownBy {
-      Driver.execute(manager)
+      (new FirrtlStage).execute(Array(), Seq(FirrtlSourceAnnotation(input)))
     }
   }
 
@@ -318,7 +316,7 @@ class ParserSpec extends FirrtlFlatSpec {
       firrtlOptions = FirrtlExecutionOptions(firrtlSource = Some(input))
     }
     a[SyntaxErrorsException] shouldBe thrownBy {
-      Driver.execute(manager)
+      (new FirrtlStage).execute(Array(), Seq(FirrtlSourceAnnotation(input)))
     }
   }
 

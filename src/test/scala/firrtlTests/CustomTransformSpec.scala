@@ -129,11 +129,14 @@ class CustomTransformSpec extends FirrtlFlatSpec {
   }
 
   they should "not cause \"Internal Errors\"" in {
-    val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
-      firrtlOptions = FirrtlExecutionOptions(firrtlSource = Some(input), customTransforms = List(new ErroringTransform))
-    }
     (the[java.lang.IllegalArgumentException] thrownBy {
-      Driver.execute(optionsManager)
+      (new FirrtlStage).execute(
+        Array(),
+        Seq(
+          FirrtlSourceAnnotation(input),
+          RunFirrtlTransformAnnotation(new ErroringTransform)
+        )
+      )
     }).getMessage should include(errorString)
   }
 

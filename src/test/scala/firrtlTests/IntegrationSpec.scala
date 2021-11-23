@@ -3,6 +3,7 @@
 package firrtlTests
 
 import firrtl._
+import firrtl.stage.FirrtlStage
 import firrtl.testutils._
 
 import java.io.File
@@ -20,16 +21,19 @@ class GCDSplitEmissionExecutionTest extends FirrtlFlatSpec {
     val sourceFile = new File(testDir, s"$top.fir")
     copyResourceToFile(s"/integration/$top.fir", sourceFile)
 
-    val optionsManager = new ExecutionOptionsManager("GCDTesterSplitEmission") with HasFirrtlOptions {
-      commonOptions = CommonOptions(topName = top, targetDirName = testDir.getPath)
-      firrtlOptions = FirrtlExecutionOptions(
-        inputFileNameOverride = sourceFile.getPath,
-        compilerName = "verilog",
-        infoModeName = "ignore",
-        emitOneFilePerModule = true
-      )
-    }
-    firrtl.Driver.execute(optionsManager)
+    (new FirrtlStage).execute(
+      Array(
+        "--target-dir",
+        testDir.getPath,
+        "--input-file",
+        sourceFile.getPath,
+        "--info-mode",
+        "ignore",
+        "--emit-modules",
+        "verilog"
+      ),
+      Seq()
+    )
 
     // expected filenames
     val dutFile = new File(testDir, "DecoupledGCD.v")

@@ -7,6 +7,7 @@ import firrtl.passes._
 import firrtl.transforms._
 import firrtl.annotations._
 import firrtl.passes.memlib.SimpleTransform
+import firrtl.stage.FirrtlStage
 import firrtl.testutils._
 
 import java.io.File
@@ -537,18 +538,26 @@ class DCECommandLineSpec extends FirrtlFlatSpec {
   val args = Array("-i", inputFile.getAbsolutePath, "-o", outFile.getAbsolutePath, "-X", "verilog")
 
   "Dead Code Elimination" should "run by default" in {
-    firrtl.Driver.execute(args) match {
-      case FirrtlExecutionSuccess(_, verilog) =>
-        (verilog should not).include(regex("wire +a"))
-      case _ => fail("Unexpected compilation failure")
-    }
+    val verilog =
+      try {
+        (new FirrtlStage)
+          .execute(args, Seq())
+          .collectFirst { case EmittedVerilogCircuitAnnotation(value) => value }
+          .get
+          .value
+      } catch { case _: Throwable => fail("Unexpected compilation failure") }
+    (verilog should not).include(regex("wire +a"))
   }
 
   it should "not run when given --no-dce option" in {
-    firrtl.Driver.execute(args :+ "--no-dce") match {
-      case FirrtlExecutionSuccess(_, verilog) =>
-        (verilog should include).regex("wire +a")
-      case _ => fail("Unexpected compilation failure")
-    }
+    val verilog =
+      try {
+        (new FirrtlStage)
+          .execute(args :+ "--no-dce", Seq())
+          .collectFirst { case EmittedVerilogCircuitAnnotation(value) => value }
+          .get
+          .value
+      } catch { case _: Throwable => fail("Unexpected compilation failure") }
+    (verilog should include).regex("wire +a")
   }
 }

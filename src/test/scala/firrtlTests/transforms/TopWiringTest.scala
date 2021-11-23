@@ -9,6 +9,7 @@ import firrtl._
 import firrtl.ir.{GroundType, IntWidth, Type}
 import firrtl.Parser
 import firrtl.annotations.{CircuitName, ComponentName, ModuleName, Target}
+import firrtl.stage.FirrtlStage
 import firrtl.transforms.TopWiring._
 import firrtl.testutils._
 
@@ -604,18 +605,20 @@ class TopWiringTests extends MiddleTransformSpec with TopWiringTestsCommon {
       "firrtl.transforms.TopWiring.TopWiringTransform",
       "--input-file",
       inputFile,
-      "--top-name",
-      "Top",
       "--compiler",
       "low",
       "--info-mode",
       "ignore"
     )
-    firrtl.Driver.execute(args) match {
-      case FirrtlExecutionSuccess(_, emitted) =>
-        parse(emitted).serialize should be(parse(input).serialize)
-      case _ => fail
-    }
+    val emitted =
+      try {
+        (new FirrtlStage)
+          .execute(args, Seq())
+          .collectFirst { case EmittedFirrtlCircuitAnnotation(value) => value }
+          .get
+          .value
+      } catch { case _: Throwable => fail }
+    parse(emitted).serialize should be(parse(input).serialize)
   }
 
   "TopWiringTransform" should "remove TopWiringAnnotations" in {

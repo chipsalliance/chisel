@@ -5,8 +5,8 @@ package annotationTests
 
 import firrtl._
 import firrtl.testutils.FirrtlFlatSpec
-
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
 
 case object FoundTargetDirTransformRanAnnotation extends NoTargetAnnotation
 case object FoundTargetDirTransformFoundTargetDirAnnotation extends NoTargetAnnotation
@@ -40,15 +40,13 @@ class TargetDirAnnotationSpec extends FirrtlFlatSpec {
   it should "be available as an annotation when using execution options" in {
     val findTargetDir = new FindTargetDirTransform // looks for the annotation
 
-    val optionsManager = new ExecutionOptionsManager("TargetDir") with HasFirrtlOptions {
-      commonOptions = commonOptions.copy(targetDirName = targetDir, topName = "Top")
-      firrtlOptions =
-        firrtlOptions.copy(compilerName = "high", firrtlSource = Some(input), customTransforms = Seq(findTargetDir))
-    }
-    val annotations: Seq[Annotation] = Driver.execute(optionsManager) match {
-      case a: FirrtlExecutionSuccess => a.circuitState.annotations
-      case _ => fail
-    }
+    val annotations: Seq[Annotation] = (new FirrtlStage).execute(
+      Array("--target-dir", targetDir, "--compiler", "high"),
+      Seq(
+        FirrtlCircuitAnnotation(Parser.parse(input)),
+        RunFirrtlTransformAnnotation(findTargetDir)
+      )
+    )
 
     annotations should contain(FoundTargetDirTransformRanAnnotation)
     annotations should contain(FoundTargetDirTransformFoundTargetDirAnnotation)
