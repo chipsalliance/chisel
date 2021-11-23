@@ -365,7 +365,8 @@ package object Chisel {
   implicit class fromBooleanToLiteral(x: Boolean) extends chisel3.fromBooleanToLiteral(x)
   implicit class fromIntToWidth(x: Int) extends chisel3.fromIntToWidth(x)
 
-  type BackendCompilationUtilities = firrtl.util.BackendCompilationUtilities
+  @deprecated("Use object firrtl.util.BackendCompilationUtilities instead", "Chisel 3.5")
+  type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
   val ImplicitConversions = chisel3.util.ImplicitConversions
 
   // Deprecated as of Chisel3
