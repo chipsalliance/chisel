@@ -16,9 +16,9 @@ import scopt.OptionParser
 
 import java.io.File
 
-/** Provides compatibility methods to replicate deprecated [[Driver]] semantics.
+/** Provides compatibility methods to replicate deprecated `Driver` semantics.
   *
-  * At a high level, the [[Driver]] tries extremely hard to figure out what the user meant and to enable them to not be
+  * At a high level, the `Driver` tries extremely hard to figure out what the user meant and to enable them to not be
   * explicit with command line options. As an example, the `--top-name` option is not used for any FIRRTL top module
   * determination, but to find a FIRRTL file by that name and/or an annotation file by that name. This mode of file
   * discovery is only used if no explicit FIRRTL file/source/circuit and/or annotation file is given. Going further, the
@@ -26,7 +26,7 @@ import java.io.File
   * derive an annotation file. Summarily, the [[firrtl.options.Phase Phase]]s provided by this enable this type of
   * resolution.
   *
-  * '''Only use these methods if you are intending to replicate old [[Driver]] semantics for a good reason.'''
+  * '''Only use these methods if you are intending to replicate old `Driver` semantics for a good reason.'''
   * Otherwise, opt for more explicit specification by the user.
   */
 object DriverCompatibility {

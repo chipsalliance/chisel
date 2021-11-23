@@ -20,10 +20,10 @@ object CatchCustomTransformExceptions {
   private[firrtl] def isCustomTransform(xform: Transform): Boolean = {
     def getTopPackage(pack: java.lang.Package): java.lang.Package =
       Package.getPackage(pack.getName.split('.').head)
-    // We use the top package of the Driver to get the top firrtl package
-    Option(xform.getClass.getPackage).map { p =>
-      getTopPackage(p) != firrtl.Driver.getClass.getPackage
-    }.getOrElse(true)
+    // We use the top package of the Parser to get the top firrtl package
+    Option(xform.getClass.getPackage).forall { p =>
+      getTopPackage(p) != firrtl.Parser.getClass.getPackage
+    }
   }
 
   def apply(a: Transform): CatchCustomTransformExceptions = new CatchCustomTransformExceptions(a)
