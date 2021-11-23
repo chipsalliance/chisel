@@ -7,10 +7,6 @@ import chisel3._
 /** For each element in a list, muxes (looks up) between cases (one per list element) based on a
   * common address.
   *
-  * @note This appears to be an odd, specialized operator that we haven't seen used much, and seems
-  *       to be a holdover from chisel2. This may be deprecated and removed, usage is not
-  *       recommended.
-  *
   * @param addr common select for cases, shared (same) across all list elements
   * @param default default value for each list element, should the address not match any case
   * @param mapping list of cases, where each entry consists of a [[chisel3.util.BitPat BitPath]] (compared against addr) and
@@ -37,10 +33,6 @@ object ListLookup {
 
 /** Muxes between cases based on whether an address matches any pattern for a case.
   * Similar to [[chisel3.util.MuxLookup MuxLookup]], but uses [[chisel3.util.BitPat BitPat]] for address comparison.
-  *
-  * @note This appears to be an odd, specialized operator that we haven't seen used much, and seems
-  *       to be a holdover from chisel2. This may be deprecated and removed, usage is not
-  *       recommended.
   *
   * @param addr address to select between cases
   * @param default default value should the address not match any case
