@@ -155,12 +155,12 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     z.litValue should be(BigInt("03020202", 16))
   }
 
-  "packing sparse vec lits should not pack, litOption returns None" in {
-    // missing sub-listeral for index 2
-    val z = Vec(4, UInt(8.W)).Lit(0 -> 0x2.U, 1 -> 0x2.U, 3 -> 0x3.U)
+  // "packing sparse vec lits should not pack, litOption returns None" in {
+  //   // missing sub-listeral for index 2
+  //   val z = Vec(4, UInt(8.W)).Lit(0 -> 0x2.U, 1 -> 0x2.U, 3 -> 0x3.U)
 
-    z.litOption should be(None)
-  }
+  //   z.litOption should be(None)
+  // }
 
   "registers can be initialized with a Vec literal" in {
     assertTesterPasses(new BasicTester {
