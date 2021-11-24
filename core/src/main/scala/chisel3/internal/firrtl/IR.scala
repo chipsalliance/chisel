@@ -87,9 +87,12 @@ case class Node(id: HasId) extends Arg {
     case Some(arg) => arg.name
     case None => id.instanceName
   }
-  override private[chisel3] def earlyLocalName: String = id.getOptionRef match {
-    case Some(arg) => arg.name
-    case None => "?"
+  override private[chisel3] def earlyLocalName: String = this match {
+    case data: Data => data._computeName(None, Some("?")).get
+    case _ => id.getOptionRef match {
+      case Some(arg) => arg.name
+      case None => "?"
+    }
   }
 }
 

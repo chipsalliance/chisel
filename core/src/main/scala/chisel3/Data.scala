@@ -443,11 +443,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(topBinding) =>
         val binding: String = _bindingToString(topBinding)
         val name = nameStrOpt.getOrElse("?")
-        val subname = subcomponentStrOpt(topBinding.location).getOrElse("")
         val mod = parentNameOpt.map(_ + ".").getOrElse("")
 
         if (this.isLit) chiselType
-        else s"$mod$name$subname: $binding[$chiselType]"
+        else s"$mod$name: $binding[$chiselType]"
     }
   }
 
@@ -472,24 +471,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _ => ""
     }
 
-  // Convert a computed name string into an optional name string. This function
-  //  tries to get a name while sidestepping around computeName oddities. The
-  //  Some("") seed avoids adding an extra seperator for the suffix.
-  private[chisel3] def nameStrOpt: Option[String] = {
-    val computedName: Option[String] = _computeName(None, Some(""), ".")
-    computedName match {
-      case Some(".") | Some("") => None
-      case _ => computedName
-    }
-  }
-
-  private[chisel3] def subcomponentStrOpt(enclosure: Option[BaseModule]): Option[String] =
-    enclosure.flatMap { _ => // enclosure is unused
-      this.getOptionRef.collect {
-        case Index(imm, value) => s"${imm.earlyLocalName}[${value.localName}]"
-        case Slot(imm, name) => s""
-      }
-    }
+  private[chisel3] def nameStrOpt: Option[String] = this.getOptionRef.map(_.earlyLocalName)
 
   private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 
