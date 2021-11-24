@@ -11,7 +11,7 @@ Chisel has a number of new features that are worth checking out.  This page is a
 - [Module Variants](#module-variants)
 - [Module Variants](#bundle-literals)
 - [Interval Type](#interval-type)
-- [Loading Memories for simulation or FPGA initialization](#loading-memories)
+- [SystemVerilog Bind Memory Initialization](#loading-memories)
 
 
 ### FixedPoint  <a name="fixed-point"></a>
@@ -225,93 +225,9 @@ Consider a Interval with a binary point of 3: aaa.bbb
 | shiftLeftBinaryPoint(2) | a.aabbb |  5 | X | X  | increase the precision |
 | shiftRighBinaryPoint(2) | aaaa.b |  1 | X | X  | reduce the precision |
 
-## Loading Memories for simulation or FPGA initialization <a name="loading-memories"></a>
+## SystemVerilog Bind Memory Initialization <a name="loading-memories"></a>
 
-Chisel supports multiple experimental methods for annotating memories to be loaded from a text file containing hex or binary data. When using verilog simulation it uses the `$readmemh` or `$readmemb` verilog extension. The treadle simulator can also load memories using the same annotation.
-
-### Inline initialization with external file
-
-Memories can be initialized by generating inline `readmemh` or `readmemb` statements in the output Verilog.
-
-The function `loadMemoryFromFileInline` from `chisel3.util.experimental` allows the memory to be initialized by the synthesis software from the specified file. Chisel does not validate the file contents nor its location. Both the memory initialization file and the Verilog source should be accessible for the toolchain.
-
-```scala mdoc:silent
-import chisel3._
-import chisel3.util.experimental.loadMemoryFromFileInline
-
-class InitMemInline(memoryFile: String = "") extends Module {
-  val width: Int = 32
-  val io = IO(new Bundle {
-    val enable = Input(Bool())
-    val write = Input(Bool())
-    val addr = Input(UInt(10.W))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
-  })
-
-  val mem = SyncReadMem(1024, UInt(width.W))
-  // Initialize memory
-  if (memoryFile.trim().nonEmpty) {
-    loadMemoryFromFileInline(mem, memoryFile)
-  }
-  io.dataOut := DontCare
-  when(io.enable) {
-    val rdwrPort = mem(io.addr)
-    when (io.write) { rdwrPort := io.dataIn }
-      .otherwise    { io.dataOut := rdwrPort }
-  }
-}
-```
-
-The default is to use `$readmemh` (which assumes all numbers in the file are in ascii hex),
-but to use ascii binary there is an optional `hexOrBinary` argument which can be set to `MemoryLoadFileType.Hex` or `MemoryLoadFileType.Binary`. You will need to add an additional import.
-
-By default, the inline initialization will generate the memory `readmem` statements inside an `ifndef SYNTHESIS` block, which suits ASIC workflow.
-
-Some synthesis tools (like Synplify and Yosys) define `SYNTHESIS` so the `readmem` statement is not read when inside this block.
-
-To control this, one can use the `MemoryNoSynthInit` and `MemorySynthInit` annotations from `firrtl.annotations`. The former which is the default setting when no annotation is present generates `readmem` inside the block. Using the latter, the statement are generated outside the `ifndef` block so it can be used by FPGA synthesis tools.
-
-Below an example for initialization suited for FPGA workflows:
-
-```scala mdoc:silent
-import chisel3._
-import chisel3.util.experimental.loadMemoryFromFileInline
-import chisel3.experimental.{annotate, ChiselAnnotation}
-import firrtl.annotations.MemorySynthInit
-
-class InitMemInlineFPGA(memoryFile: String = "") extends Module {
-  val width: Int = 32
-  val io = IO(new Bundle {
-    val enable = Input(Bool())
-    val write = Input(Bool())
-    val addr = Input(UInt(10.W))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
-  })
-
-  // Notice the annotation below
-  annotate(new ChiselAnnotation {
-    override def toFirrtl =
-      MemorySynthInit
-  })
-
-  val mem = SyncReadMem(1024, UInt(width.W))
-  if (memoryFile.trim().nonEmpty) {
-    loadMemoryFromFileInline(mem, memoryFile)
-  }
-  io.dataOut := DontCare
-  when(io.enable) {
-    val rdwrPort = mem(io.addr)
-    when (io.write) { rdwrPort := io.dataIn }
-      .otherwise    { io.dataOut := rdwrPort }
-  }
-}
-```
-
-#### SystemVerilog Bind Initialization
-
-Chisel can also initialize memories by generating a SV bind module with `readmemh` or `readmemb` statements by using the function `loadMemoryFromFile` from `chisel3.util.experimental`.
+Chisel can also initialize memories by generating a SV bind module with `readmemh` or `readmemb` statements by using the function `loadMemoryFromFileBind` from `chisel3.util.experimental`.
 
 ```scala mdoc:silent
 import chisel3._

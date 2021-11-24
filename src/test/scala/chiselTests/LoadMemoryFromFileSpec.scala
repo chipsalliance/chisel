@@ -6,7 +6,8 @@ import java.io.File
 
 import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.util.experimental.{loadMemoryFromFile,loadMemoryFromFileInline}
+import chisel3.util.experimental.loadMemoryFromFileBind
+import chisel3.util.loadMemoryFromFile
 import chisel3.util.log2Ceil
 import firrtl.annotations.MemoryLoadFileType
 import org.scalatest.freespec.AnyFreeSpec
@@ -23,9 +24,9 @@ class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
   val memory1 = Mem(memoryDepth, memoryType)
   val memory2 = Mem(memoryDepth, memoryType)
   val memory3 = Mem(memoryDepth, memoryType)
-  loadMemoryFromFile(memory1, "./mem1")
-  loadMemoryFromFile(memory2, "./mem1")
-  loadMemoryFromFile(memory3, "./mem1")
+  loadMemoryFromFileBind(memory1, "./mem1")
+  loadMemoryFromFileBind(memory2, "./mem1")
+  loadMemoryFromFileBind(memory3, "./mem1")
 
   io.value1 := memory1(io.address)
   io.value2 := memory2(io.address)
@@ -43,9 +44,9 @@ class UsesThreeMemsInline(memoryDepth: Int, memoryType: Data, memoryFile: String
   val memory1 = Mem(memoryDepth, memoryType)
   val memory2 = Mem(memoryDepth, memoryType)
   val memory3 = Mem(memoryDepth, memoryType)
-  loadMemoryFromFileInline(memory1, memoryFile, hexOrBinary)
-  loadMemoryFromFileInline(memory2, memoryFile, hexOrBinary)
-  loadMemoryFromFileInline(memory3, memoryFile, hexOrBinary)
+  loadMemoryFromFile(memory1, memoryFile, hexOrBinary)
+  loadMemoryFromFile(memory2, memoryFile, hexOrBinary)
+  loadMemoryFromFile(memory3, memoryFile, hexOrBinary)
 
   io.value1 := memory1(io.address)
   io.value2 := memory2(io.address)
@@ -61,7 +62,7 @@ class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
   })
 
   val memory = Mem(memoryDepth, memoryType)
-  loadMemoryFromFile(memory, "./mem1")
+  loadMemoryFromFileBind(memory, "./mem1")
 
   io.value := memory(io.address)
 
@@ -82,7 +83,7 @@ class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
 
   val memory = Mem(memoryDepth, memoryType)
 
-  loadMemoryFromFile(memory, "./mem2")
+  loadMemoryFromFileBind(memory, "./mem2")
 
   io.value := memory(io.address)
 }
@@ -96,7 +97,7 @@ class FileHasSuffix(memoryDepth: Int, memoryType: Data) extends Module {
 
   val memory = Mem(memoryDepth, memoryType)
 
-  loadMemoryFromFile(memory, "./mem1.txt")
+  loadMemoryFromFileBind(memory, "./mem1.txt")
 
   io.value := memory(io.address)
 
@@ -120,7 +121,7 @@ class HasComplexMemory(memoryDepth: Int) extends Module {
 
   val memory = Mem(memoryDepth, new MemoryShape)
 
-  loadMemoryFromFile(memory, "./mem", MemoryLoadFileType.Hex)
+  loadMemoryFromFileBind(memory, "./mem", MemoryLoadFileType.Hex)
 
   io.value := memory(io.address)
 }
@@ -133,7 +134,7 @@ class HasBinarySupport(memoryDepth: Int, memoryType: Data) extends Module {
 
   val memory = Mem(memoryDepth, memoryType)
 
-  loadMemoryFromFile(memory, "./mem", MemoryLoadFileType.Binary)
+  loadMemoryFromFileBind(memory, "./mem", MemoryLoadFileType.Binary)
 
   io.value := memory(io.address)
 }
