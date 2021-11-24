@@ -77,12 +77,15 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   //   the fully qualified name isn't necessary (compared to for the
   //  Enum annotation), and it's more consistent with Bundle printing.
   override def toString: String = {
-    litOption match {
-      case Some(value) => factory.nameOfValue(value) match {
-        case Some(name) => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=$name)")
-        case None => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=(invalid))")
+    litArgOption match {
+      case Some(DontCareLit) => s"${factory.getClass.getSimpleName.init}(DontCare)"
+      case _ => litOption match {
+        case Some(value) => factory.nameOfValue(value) match {
+          case Some(name) => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=$name)")
+          case None => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=(invalid))")
+        }
+        case _ => stringAccessor(s"${factory.getClass.getSimpleName.init}")
       }
-      case _ => stringAccessor(s"${factory.getClass.getSimpleName.init}")
     }
   }
 

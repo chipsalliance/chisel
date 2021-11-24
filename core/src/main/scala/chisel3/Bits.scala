@@ -399,9 +399,12 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   */
 sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[UInt] {
   override def toString: String = {
-    litOption match {
-      case Some(value) => stringAccessor(s"UInt$width($value)")
-      case _ => stringAccessor(s"UInt$width")
+    litArgOption match {
+      case Some(DontCareLit) => "UInt(DontCare)"
+      case _ => litOption match {
+        case Some(value) => stringAccessor(s"UInt$width($value)")
+        case _ => stringAccessor(s"UInt$width")
+      }
     }
   }
 
@@ -772,9 +775,12 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   */
 sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[SInt] {
   override def toString: String = {
-    litOption match {
-      case Some(value) => stringAccessor(s"SInt$width($value)")
-      case _ => stringAccessor(s"SInt$width")
+    litArgOption match {
+      case Some(DontCareLit) => "SInt(DontCare)"
+      case _ => litOption match {
+        case Some(value) => stringAccessor(s"SInt$width($value)")
+        case _ => stringAccessor(s"SInt$width")
+      }
     }
   }
 
@@ -1119,9 +1125,12 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
   */
 sealed class Bool() extends UInt(1.W) with Reset {
   override def toString: String = {
-    litToBooleanOption match {
-      case Some(value) => stringAccessor(s"Bool($value)")
-      case _ => stringAccessor("Bool")
+    litArgOption match {
+      case Some(DontCareLit) => "Bool(DontCare)"
+      case _ => litToBooleanOption match {
+        case Some(value) => stringAccessor(s"Bool($value)")
+        case _ => stringAccessor("Bool")
+      }
     }
   }
 
@@ -1279,9 +1288,12 @@ package experimental {
     extends Bits(width) with Num[FixedPoint] with HasBinaryPoint {
 
     override def toString: String = {
-      litToDoubleOption match {
-        case Some(value) => stringAccessor(s"FixedPoint$width$binaryPoint($value)")
-        case _ => stringAccessor(s"FixedPoint$width$binaryPoint")
+      litArgOption match {
+        case Some(DontCareLit) => "FixedPoint(DontCare)"
+        case _ => litToDoubleOption match {
+          case Some(value) => stringAccessor(s"FixedPoint$width$binaryPoint($value)")
+          case _ => stringAccessor(s"FixedPoint$width$binaryPoint")
+        }
       }
     }
 
@@ -1698,9 +1710,12 @@ package experimental {
     extends Bits(range.getWidth) with Num[Interval] with HasBinaryPoint {
 
     override def toString: String = {
-      litOption match {
-        case Some(value) => stringAccessor(s"Interval$width($value)")
-        case _ => stringAccessor(s"Interval$width")
+      litArgOption match {
+        case Some(DontCareLit) => "Interval(DontCare)"
+        case _ => litOption match {
+          case Some(value) => stringAccessor(s"Interval$width($value)")
+          case _ => stringAccessor(s"Interval$width")
+        }
       }
     }
 

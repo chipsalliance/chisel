@@ -43,6 +43,7 @@ abstract class Element extends Data {
 
   private[chisel3] def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
+    case Some(DontCareBinding()) => Some(DontCareLit)
     case _ => None
   }
 

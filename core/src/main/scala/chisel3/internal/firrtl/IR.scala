@@ -68,7 +68,7 @@ abstract class Arg {
   def localName: String = name
   // Same as localName except it can be called on Args before all names are complete (will return ? in those cases)
   // TODO unify with localName which probably shouldn't be calling instanceName on None
-  private[chisel3] def earlyLocalName: String = name
+  private[chisel3] def earlyLocalName: String = localName
   def contextualName(ctx: Component): String = name
   def fullName(ctx: Component): String = contextualName(ctx)
   def name: String
@@ -172,6 +172,12 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
   def cloneWithWidth(newWidth: Width): this.type = {
     IntervalLit(n, newWidth, binaryPoint).asInstanceOf[this.type]
   }
+}
+
+case object DontCareLit extends LitArg(0, UnknownWidth()) {
+  def name: String = "DontCare()"
+  def minWidth: Int = Int.MaxValue
+  def cloneWithWidth(newWidth: Width): this.type = this
 }
 
 case class Ref(name: String) extends Arg
