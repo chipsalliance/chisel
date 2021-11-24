@@ -5,6 +5,7 @@ package firrtl.stage
 import firrtl.transforms._
 import firrtl.passes.memlib._
 import firrtl.options.{HasShellOptions, ShellOption}
+import firrtl.annotations.MemorySynthInit
 
 /**
   * This flag enables a set of options that guide the FIRRTL compilation flow to ultimately generate Verilog that is
@@ -31,6 +32,8 @@ import firrtl.options.{HasShellOptions, ShellOption}
   * 5) Add a [[firrtl.passes.memlib.PassthroughSimpleSyncReadMemsAnnotation]] to allow some synchronous-read memories
   *    and readwrite ports to pass through [[firrtl.passes.memlib.VerilogMemDelays]] without introducing explicit
   *    pipeline registers or splitting ports.
+  *
+  * 6) Add a [[firrtl.annotations.MemorySynthInit]] to enable memory initialization values to be synthesized.
   */
 object OptimizeForFPGA extends HasShellOptions {
   private val fpgaAnnos = Seq(
@@ -40,7 +43,8 @@ object OptimizeForFPGA extends HasShellOptions {
     DefaultReadFirstAnnotation,
     RunFirrtlTransformAnnotation(new SetDefaultReadUnderWrite),
     RunFirrtlTransformAnnotation(new SimplifyMems),
-    PassthroughSimpleSyncReadMemsAnnotation
+    PassthroughSimpleSyncReadMemsAnnotation,
+    MemorySynthInit
   )
   val options = Seq(
     new ShellOption[Unit](
