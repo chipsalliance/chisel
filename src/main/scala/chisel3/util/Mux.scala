@@ -9,6 +9,7 @@ import chisel3._
 
 /** Builds a Mux tree out of the input signal vector using a one hot encoded
   * select signal. Returns the output of the Mux tree.
+  * Pairs well with [[ChiselEnum1H]] to create a one hot encoded select signal.
   *
   * @example {{{
   * val hotValue = chisel3.util.Mux1H(Seq(
@@ -17,6 +18,21 @@ import chisel3._
   *  io.selector(2) -> 8.U,
   *  io.selector(4) -> 11.U,
   * ))
+  *
+  * // or using ChiselEnum1H
+  *
+  * object selector extends chisel3.experimental.ChiselEnum1H {
+  *   val s0, s1, s2, s3 = Value
+  * }
+  * val selectorVal = Wire(UInt(selector.getWidth.W))
+  * selectorVal := selector.s1.asUInt
+  * val hotValue = chisel3.util.Mux1H(selectorVal.asUInt,
+      Seq(
+  *     2.U,
+  *     4.U,
+  *     8.U,
+  *     11.U,
+  *   ))
   * }}}
   *
   * @note results unspecified unless exactly one select signal is high

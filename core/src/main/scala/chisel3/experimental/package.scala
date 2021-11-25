@@ -24,6 +24,13 @@ package object experimental {
 
   type ChiselEnum = EnumFactory
 
+  /**
+   * ChiselEnum1H extends the ChiselEnum type for creating enums with
+   * one-hot encoding IDs.
+   * This enum type pairs well with [[Mux1H]] for parallel mux processing.
+   */
+  type ChiselEnum1H = EnumFactory1H
+
   // Rocket Chip-style clonemodule
 
   /** A record containing the results of CloneModuleAsRecord
