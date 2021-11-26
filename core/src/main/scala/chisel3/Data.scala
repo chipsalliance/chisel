@@ -665,6 +665,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
    */
   def litValue: BigInt = litOption.get
 
+  /**
+    * Returns the value as BitInt
+    * @return
+    */
+  def toBigInt: BigInt = litOption.get
+
   @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
   def litValue(dummy: Int*): BigInt = litValue
 

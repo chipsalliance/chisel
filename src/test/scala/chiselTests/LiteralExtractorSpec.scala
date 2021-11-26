@@ -30,6 +30,20 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     assert(-2.25.F(2.BP).litValue === BigInt("-1001", 2))
   }
 
+  "toBigInt" should "return the literal value" in {
+    assert(0.U.toBigInt === BigInt(0))
+    assert(1.U.toBigInt === BigInt(1))
+    assert(42.U.toBigInt === BigInt(42))
+    assert(42.U.toBigInt === 42.U.litValue)
+
+    assert(0.S.toBigInt === BigInt(0))
+    assert(-1.S.toBigInt === BigInt(-1))
+    assert(-42.S.toBigInt === BigInt(-42))
+
+    assert(true.B.toBigInt === BigInt(1))
+    assert(false.B.toBigInt === BigInt(0))
+  }
+
   "litToBoolean" should "return the literal value" in {
     assert(true.B.litToBoolean === true)
     assert(false.B.litToBoolean === false)
