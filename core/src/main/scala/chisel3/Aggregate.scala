@@ -1058,7 +1058,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     * }}}
     */
   final lazy val elements: SeqMap[String, Data] = _elementsImpl
-//  protected def _elementsImpl: SeqMap[String, Data] = ???
   /*
    * This method will be overwritten by the Chisel-Plugin
    */
