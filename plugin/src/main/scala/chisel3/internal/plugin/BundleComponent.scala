@@ -64,6 +64,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     // Cached because this is run on every argument to every Bundle
     def isData(sym: Symbol): Boolean = isDataCache.getOrElseUpdate(sym.tpe, sym.tpe <:< dataTpe)
 
+    def isEmptyTree(tree: Tree): Boolean = tree == EmptyTree
+
     def cloneTypeFull(tree: Tree): Tree =
       localTyper.typed(q"chisel3.experimental.DataMirror.internal.chiselTypeClone[${tree.tpe}]($tree)")
 
@@ -95,11 +97,11 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     def getBundleElements(body: List[Tree]): List[(Symbol, Tree)] = {
       val elements = mutable.ListBuffer[(Symbol, Tree)]()
       body.foreach {
-        case acc: ValDef if acc.symbol.typeSignature <:< bundleTpe =>
-          // println(s"ValdDefBundle: $acc ${acc.symbol.name} ${acc.symbol.typeSignature}")
+        case acc: ValDef if isBundle(acc.symbol) =>
           elements += acc.symbol -> acc.rhs
-        case acc: ValDef if acc.symbol.typeSignature <:< dataTpe && acc.rhs != EmptyTree =>
-          // println(s"ValdDef: $acc, ${acc.mods.annotations.mkString(" ||| ")}, ${acc.symbol.name}, ${acc.symbol.typeSignature}, TS='${acc.rhs}")
+        case acc: ValDef if isData(acc.symbol) && ! isEmptyTree(acc.rhs) =>
+          // empty tree test seems necessary to rule out generator methods passed into bundles
+          // but there must be a better way here
           elements += acc.symbol -> acc.rhs
         case _ =>
       }
@@ -153,15 +155,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             if (isData(vp.symbol)) cloneTypeFull(select) else select
           })
 
-        show(s"conArgs:  ${conArgs.toString()}")
-
         val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
         val ttpe = if (tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
         val newUntyped = New(ttpe, conArgs)
         val neww = localTyper.typed(newUntyped)
-
-        show(s"tparamList: " + tparamList.toString())
-        show(s"members: ${bundle.symbol}")
 
         // Create the symbol for the method and have it be associated with the Bundle class
         val cloneTypeSym =  bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
@@ -182,8 +179,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           (symbol.name.toString, select)
         }
 
-        val elementsImplSym =
-          bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+        val elementsImplSym = bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
         // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
         elementsImplSym.resetFlag(Flags.METHOD)
         // Need to set the type to chisel3.Bundle for the override to work
