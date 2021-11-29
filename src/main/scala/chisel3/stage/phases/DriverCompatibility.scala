@@ -2,19 +2,13 @@
 
 package chisel3.stage.phases
 
-import firrtl.{AnnotationSeq, ExecutionOptionsManager, HasFirrtlOptions}
-import firrtl.annotations.NoTargetAnnotation
-import firrtl.options.{Dependency, OptionsException, OutputAnnotationFileAnnotation, Phase, Unserializable}
-import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
-import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
+import firrtl.annotations.Annotation
+import firrtl.options.Phase
 
-import chisel3.HasChiselExecutionOptions
-import chisel3.stage.{ChiselStage, NoRunFirrtlCompilerAnnotation, ChiselOutputFileAnnotation}
-
-/** This provides components of a compatibility wrapper around Chisel's deprecated [[chisel3.Driver]].
+/** This formerly provided components of a compatibility wrapper around Chisel's removed `chisel3.Driver`.
   *
-  * Primarily, this object includes [[firrtl.options.Phase Phase]]s that generate [[firrtl.annotations.Annotation]]s
-  * derived from the deprecated [[firrtl.stage.phases.DriverCompatibility.TopNameAnnotation]].
+  * This object formerly included [[firrtl.options.Phase Phase]]s that generate [[firrtl.annotations.Annotation]]s
+  * derived from the deprecated `firrtl.stage.phases.DriverCompatibility.TopNameAnnotation`.
   */
 @deprecated("This object contains no public members. This will be removed in Chisel 3.6.", "Chisel 3.5")
 object DriverCompatibility
