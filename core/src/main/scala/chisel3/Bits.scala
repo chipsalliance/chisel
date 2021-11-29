@@ -310,12 +310,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
-  final def toBools: Seq[Bool] = macro SourceInfoTransform.noArg
-
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
-  final def toBools(dummy: Int*): Seq[Bool] = macro SourceInfoWhiteboxTransform.noArgDummy
-
-  /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   final def asBools: Seq[Bool] = macro SourceInfoTransform.noArg
 
   @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")

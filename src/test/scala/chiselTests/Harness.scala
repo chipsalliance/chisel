@@ -4,10 +4,7 @@ package chiselTests
 
 import java.io.File
 
-import firrtl.util.BackendCompilationUtilities
-
-class HarnessSpec extends ChiselPropSpec
-  with BackendCompilationUtilities {
+class HarnessSpec extends ChiselPropSpec {
 
   def makeTrivialVerilog: (File => File) = makeHarness((prefix: String) => s"""
 module ${prefix};
