@@ -4,7 +4,7 @@ package firrtl.stage.phases
 
 import firrtl.stage._
 
-import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, EmitCircuitAnnotation, Emitter, FirrtlExecutionResult, Parser}
+import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, EmitCircuitAnnotation, Emitter, Parser}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.FileUtils
 import firrtl.proto.FromProto
@@ -35,14 +35,6 @@ object DriverCompatibility {
   private def optionRemoved(a: String): String =
     s"""|Option '$a' was removed as part of the FIRRTL Stage refactor. Use an explicit input/output options instead.
         |This error will be removed in 1.3.""".stripMargin
-
-  /** Convert an [[firrtl.AnnotationSeq AnnotationSeq]] to a ''deprecated'' [[firrtl.FirrtlExecutionResult
-    * FirrtlExecutionResult]].
-    * @param annotations a sequence of [[firrtl.annotations.Annotation Annotation]]
-    */
-  @deprecated("FirrtlExecutionResult is deprecated as part of the Stage/Phase refactor. Migrate to FirrtlStage.", "1.2")
-  def firrtlResultView(annotations: AnnotationSeq): FirrtlExecutionResult =
-    Viewer[FirrtlExecutionResult].view(annotations)
 
   /** Holds the name of the top (main) module in an input circuit
     * @param value top module name

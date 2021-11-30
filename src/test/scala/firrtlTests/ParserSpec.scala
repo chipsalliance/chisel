@@ -312,9 +312,6 @@ class ParserSpec extends FirrtlFlatSpec {
                    |    bar.a <- a
                    |    b <- bar.b
       """.stripMargin
-    val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
-      firrtlOptions = FirrtlExecutionOptions(firrtlSource = Some(input))
-    }
     a[SyntaxErrorsException] shouldBe thrownBy {
       (new FirrtlStage).execute(Array(), Seq(FirrtlSourceAnnotation(input)))
     }

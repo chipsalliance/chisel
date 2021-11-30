@@ -4,7 +4,7 @@ package logger
 
 import java.io.{ByteArrayOutputStream, File, FileOutputStream, PrintStream}
 
-import firrtl.{AnnotationSeq, ExecutionOptionsManager}
+import firrtl.AnnotationSeq
 import firrtl.options.Viewer.view
 import logger.phases.{AddDefaults, Checks}
 
@@ -13,8 +13,6 @@ import scala.util.DynamicVariable
 /**
   * This provides a facility for a log4scala* type logging system.  Why did we write our own?  Because
   * the canned ones are just too darned hard to turn on, particularly when embedded in a distribution.
-  * This one can be turned on programmatically or with the options exposed in the [[firrtl.CommonOptions]]
-  * and [[ExecutionOptionsManager]] APIs in firrtl.
   * There are 4 main options:
   *  * A simple global option to turn on all in scope (and across threads, might want to fix this)
   *  * Turn on specific levels for specific fully qualified class names
@@ -30,7 +28,10 @@ import scala.util.DynamicVariable
   * The supported log levels, what do they mean? Whatever you want them to.
   */
 object LogLevel extends Enumeration {
+  // None indicates "not set"
   val Error, Warn, Info, Debug, Trace, None = Value
+
+  def default = Warn
 
   def apply(s: String): LogLevel.Value = s.toLowerCase match {
     case "error" => LogLevel.Error
@@ -55,7 +56,7 @@ trait LazyLogging {
   * when used in multi-threaded environments
   */
 private class LoggerState {
-  var globalLevel = LogLevel.Warn
+  var globalLevel = LogLevel.None
   val classLevels = new scala.collection.mutable.HashMap[String, LogLevel.Value]
   val classToLevelCache = new scala.collection.mutable.HashMap[String, LogLevel.Value]
   var logClassNames = false
@@ -114,44 +115,13 @@ object Logger {
     }
   }
 
-  /**
-    * This creates a block of code that will have access to the
-    * thread specific logger.  The state will be set according to the
-    * logging options set in the common options of the manager
-    * @param manager  source of logger settings
-    * @param codeBlock      code to be run with these logger settings
-    * @tparam A       The return type of codeBlock
-    * @return         Whatever block returns
-    */
-  @deprecated("Use makeScope(opts: FirrtlOptions)", "FIRRTL 1.2")
-  def makeScope[A](manager: ExecutionOptionsManager)(codeBlock: => A): A =
-    makeScope(manager.commonOptions.toAnnotations)(codeBlock)
-
-  /**
-    * See makeScope using manager.  This creates a manager from a command line arguments style
-    * list of strings
-    * @param args List of strings
-    * @param codeBlock  the block to call
-    * @tparam A   return type of codeBlock
-    * @return
-    */
-  @deprecated("Use makescope(opts: FirrtlOptions)", "FIRRTL 1.2")
-  def makeScope[A](args: Array[String] = Array.empty)(codeBlock: => A): A = {
-    val executionOptionsManager = new ExecutionOptionsManager("logger")
-    if (executionOptionsManager.parse(args)) {
-      makeScope(executionOptionsManager)(codeBlock)
-    } else {
-      throw new Exception(s"logger invoke failed to parse args ${args.mkString(", ")}")
-    }
-  }
-
   /** Set a scope for this logger based on available annotations
     * @param options a sequence annotations
     * @param codeBlock some Scala code over which to define this scope
     * @tparam A return type of the code block
     * @return the original return of the code block
     */
-  def makeScope[A](options: AnnotationSeq)(codeBlock: => A): A = {
+  def makeScope[A](options: AnnotationSeq = Seq.empty)(codeBlock: => A): A = {
     val runState: LoggerState = {
       val newRunState = updatableLoggerState.value.getOrElse(new LoggerState)
       if (newRunState.fromInvoke) {
@@ -237,17 +207,16 @@ object Logger {
       case Some(true)  => logIt()
       case Some(false) =>
       case None =>
-        if (
-          (state.globalLevel == LogLevel.None && level == LogLevel.Error) ||
-          (state.globalLevel != LogLevel.None && state.globalLevel >= level)
-        ) {
+        if (getGlobalLevel >= level) {
           logIt()
         }
     }
   }
 
-  def getGlobalLevel: LogLevel.Value = {
-    state.globalLevel
+  def getGlobalLevel: LogLevel.Value = state.globalLevel match {
+    // None means "not set" so use default in that case
+    case LogLevel.None => LogLevel.default
+    case other         => other
   }
 
   /**
@@ -349,15 +318,6 @@ object Logger {
     state.classLevels ++= namesToLevel
   }
 
-  /**
-    * This is used to set the options that have been set in a optionsManager or are coming
-    * from the command line via an options manager
-    * @param optionsManager manager
-    */
-  @deprecated("Use setOptions(annotations: AnnotationSeq)", "FIRRTL 1.2")
-  def setOptions(optionsManager: ExecutionOptionsManager): Unit =
-    setOptions(optionsManager.commonOptions.toAnnotations)
-
   /** Set logger options based on the content of an [[firrtl.AnnotationSeq AnnotationSeq]]
     * @param inputAnnotations annotation sequence containing logger options
     */
@@ -372,7 +332,6 @@ object Logger {
       case (x, LogLevel.None)             => x
       case (LogLevel.None, x)             => x
       case (_, x)                         => x
-      case _                              => LogLevel.Error
     }
     setClassLogLevels(lopts.classLogLevels)
 

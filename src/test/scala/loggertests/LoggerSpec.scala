@@ -41,7 +41,7 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
   "Logger is a simple but powerful logging system" - {
     "Following tests show how global level can control logging" - {
 
-      "setting level to None will result in only error messages" in {
+      "setting level to None will result in warn messages" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
           Logger.setOutput(captor.printStream)
@@ -52,7 +52,7 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
           val messagesLogged = captor.getOutputAsString
 
           messagesLogged.contains(LoggerSpec.ErrorMsg) should be(true)
-          messagesLogged.contains(LoggerSpec.WarnMsg) should be(false)
+          messagesLogged.contains(LoggerSpec.WarnMsg) should be(true)
           messagesLogged.contains(LoggerSpec.InfoMsg) should be(false)
           messagesLogged.contains(LoggerSpec.DebugMsg) should be(false)
           messagesLogged.contains(LoggerSpec.TraceMsg) should be(false)
@@ -263,22 +263,6 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
           Logger.setLevel(LogLevel.Info)
           Logger.setLevel("loggertests.LogsInfo2", LogLevel.Error)
 
-          val r2 = new LogsInfo2
-          val r3 = new LogsInfo3
-          r2.run()
-          r3.run()
-
-          val messagesLogged = captor.getOutputAsString
-
-          messagesLogged.contains("logger2") should be(false)
-          messagesLogged.contains("logger3") should be(true)
-        }
-      }
-      "Show logging can be set with command options" in {
-        val captor = new Logger.OutputCaptor
-
-        Logger.makeScope(Array("--class-log-level", "loggertests.LogsInfo3:info")) {
-          Logger.setOutput(captor.printStream)
           val r2 = new LogsInfo2
           val r3 = new LogsInfo3
           r2.run()

@@ -208,7 +208,6 @@ object CompilerAnnotation extends HasShellOptions {
 }
 
 /** Holds the unambiguous class name of a [[Transform]] to run
-  *  - will be append to [[FirrtlExecutionOptions.customTransforms]]
   *  - set with `-fct/--custom-transforms`
   * @param transform the full class name of the transform
   */

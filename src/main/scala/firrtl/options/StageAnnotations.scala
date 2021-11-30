@@ -138,7 +138,6 @@ object ProgramArgsAnnotation {
 }
 
 /** Holds a filename containing one or more [[annotations.Annotation]] to be read
-  *  - this is not stored in [[FirrtlExecutionOptions]]
   *  - set with `-faf/--annotation-file`
   * @param value input annotation filename
   */

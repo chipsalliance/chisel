@@ -13,7 +13,7 @@ sealed trait LoggerOption { this: Annotation => }
   *  - if unset, a [[LogLevelAnnotation]] with the default log level will be emitted
   * @param level the level of logging
   */
-case class LogLevelAnnotation(globalLogLevel: LogLevel.Value = LogLevel.Warn)
+case class LogLevelAnnotation(globalLogLevel: LogLevel.Value = LogLevel.None)
     extends NoTargetAnnotation
     with LoggerOption
 
