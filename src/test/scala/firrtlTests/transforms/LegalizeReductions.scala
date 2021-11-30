@@ -5,7 +5,7 @@ package firrtlTests.transforms
 import firrtl._
 import firrtl.ir.StringLit
 import firrtl.testutils._
-
+import firrtl.util.BackendCompilationUtilities._
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File

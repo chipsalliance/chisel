@@ -4,7 +4,6 @@ package firrtlTests
 package transforms
 
 import java.io._
-
 import firrtl._
 import firrtl.ir.{GroundType, IntWidth, Type}
 import firrtl.Parser
@@ -12,6 +11,7 @@ import firrtl.annotations.{CircuitName, ComponentName, ModuleName, Target}
 import firrtl.stage.FirrtlStage
 import firrtl.transforms.TopWiring._
 import firrtl.testutils._
+import firrtl.util.BackendCompilationUtilities.createTestDirectory
 
 trait TopWiringTestsCommon extends FirrtlRunners {
 

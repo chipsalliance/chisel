@@ -7,12 +7,10 @@ import org.scalatest.featurespec.AnyFeatureSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.io.{File, PrintWriter}
-
 import firrtl.{BuildInfo, FileUtils}
-
 import firrtl.stage.{FirrtlMain, WarnNoScalaVersionDeprecation}
 import firrtl.stage.transforms.CheckScalaVersion
-import firrtl.util.BackendCompilationUtilities
+import firrtl.util.BackendCompilationUtilities._
 import org.scalatest.featurespec.AnyFeatureSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -21,12 +19,7 @@ import org.scalatest.matchers.should.Matchers
   * This test uses the [[org.scalatest.FeatureSpec FeatureSpec]] intentionally as this test exercises the top-level
   * interface and is more suitable to an Acceptance Testing style.
   */
-class FirrtlMainSpec
-    extends AnyFeatureSpec
-    with GivenWhenThen
-    with Matchers
-    with firrtl.testutils.Utils
-    with BackendCompilationUtilities {
+class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers with firrtl.testutils.Utils {
 
   /** Parameterizes one test of [[FirrtlMain]]. Running the [[FirrtlMain]] `main` with certain args should produce
     * certain files and not produce others.

@@ -246,36 +246,3 @@ object BackendCompilationUtilities extends LazyLogging {
     command.! != 0
   }
 }
-
-@deprecated("use object BackendCompilationUtilities", "FIRRTL 1.3")
-trait BackendCompilationUtilities extends LazyLogging {
-  lazy val TestDirectory = BackendCompilationUtilities.TestDirectory
-  def timeStamp:            String = BackendCompilationUtilities.timeStamp
-  def loggingProcessLogger: ProcessLogger = BackendCompilationUtilities.loggingProcessLogger
-  def copyResourceToFile(name:      String, file: File): Unit = BackendCompilationUtilities.copyResourceToFile(name, file)
-  def createTestDirectory(testName: String): File = BackendCompilationUtilities.createTestDirectory(testName)
-  def makeHarness(template:         String => String, post: String)(f: File): File =
-    BackendCompilationUtilities.makeHarness(template, post)(f)
-  def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder =
-    BackendCompilationUtilities.firrtlToVerilog(prefix, dir)
-  def verilogToCpp(
-    dutFile:          String,
-    dir:              File,
-    vSources:         Seq[File],
-    cppHarness:       File,
-    suppressVcd:      Boolean = false,
-    resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
-  ): ProcessBuilder = {
-    BackendCompilationUtilities.verilogToCpp(dutFile, dir, vSources, cppHarness, suppressVcd, resourceFileName)
-  }
-  def cppToExe(prefix: String, dir: File): ProcessBuilder = BackendCompilationUtilities.cppToExe(prefix, dir)
-  def executeExpectingFailure(
-    prefix:       String,
-    dir:          File,
-    assertionMsg: String = ""
-  ): Boolean = {
-    BackendCompilationUtilities.executeExpectingFailure(prefix, dir, assertionMsg)
-  }
-  def executeExpectingSuccess(prefix: String, dir: File): Boolean =
-    BackendCompilationUtilities.executeExpectingSuccess(prefix, dir)
-}

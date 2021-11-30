@@ -11,7 +11,7 @@ import firrtl.passes._
 import firrtl.transforms.{CombineCats, NoDCEAnnotation}
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
-import firrtl.util.BackendCompilationUtilities
+import firrtl.util.BackendCompilationUtilities._
 
 import scala.sys.process.{Process, ProcessLogger}
 
@@ -1366,7 +1366,7 @@ class EmittedMacroSpec extends FirrtlPropSpec {
       "+define+FIRRTL_AFTER_INITIAL=initial begin $fwrite(32'h80000002, \"printing from FIRRTL_AFTER_INITIAL macro\\n\"); end"
     )
 
-    BackendCompilationUtilities.verilogToCpp(prefix, testDir, List.empty, harness, extraCmdLineArgs = cmdLineArgs) #&&
+    verilogToCpp(prefix, testDir, List.empty, harness, extraCmdLineArgs = cmdLineArgs) #&&
       cppToExe(prefix, testDir) !
       loggingProcessLogger
 

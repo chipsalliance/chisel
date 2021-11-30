@@ -3,9 +3,9 @@
 package firrtlTests.execution
 
 import java.io.File
-
 import firrtl.ir._
 import firrtl.testutils._
+import firrtl.util.BackendCompilationUtilities.createTestDirectory
 
 sealed trait SimpleTestCommand
 case class Step(n: Int) extends SimpleTestCommand
