@@ -19,7 +19,7 @@ import logger.LazyLogging
 import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
-  private[chisel3] val names = collection.mutable.HashMap[String, Long]()
+  private val names = collection.mutable.HashMap[String, Long]()
   def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) => other.names(s) = l }
   for (keyword <- keywords)
     names(keyword) = 1
