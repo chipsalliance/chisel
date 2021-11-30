@@ -402,7 +402,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     litArgOption match {
       case Some(DontCareLit) => "UInt(DontCare)"
       case _ => litOption match {
-        case Some(value) => stringAccessor(s"UInt$width($value)")
+        case Some(value) => s"UInt$width($value)"
         case _ => stringAccessor(s"UInt$width")
       }
     }
@@ -778,7 +778,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     litArgOption match {
       case Some(DontCareLit) => "SInt(DontCare)"
       case _ => litOption match {
-        case Some(value) => stringAccessor(s"SInt$width($value)")
+        case Some(value) => s"SInt$width($value)"
         case _ => stringAccessor(s"SInt$width")
       }
     }
@@ -1128,7 +1128,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
     litArgOption match {
       case Some(DontCareLit) => "Bool(DontCare)"
       case _ => litToBooleanOption match {
-        case Some(value) => stringAccessor(s"Bool($value)")
+        case Some(value) => s"Bool($value)"
         case _ => stringAccessor("Bool")
       }
     }
@@ -1291,7 +1291,7 @@ package experimental {
       litArgOption match {
         case Some(DontCareLit) => "FixedPoint(DontCare)"
         case _ => litToDoubleOption match {
-          case Some(value) => stringAccessor(s"FixedPoint$width$binaryPoint($value)")
+          case Some(value) => s"FixedPoint$width$binaryPoint($value)"
           case _ => stringAccessor(s"FixedPoint$width$binaryPoint")
         }
       }
@@ -1713,7 +1713,7 @@ package experimental {
       litArgOption match {
         case Some(DontCareLit) => "Interval(DontCare)"
         case _ => litOption match {
-          case Some(value) => stringAccessor(s"Interval$width($value)")
+          case Some(value) => s"Interval$width($value)"
           case _ => stringAccessor(s"Interval$width")
         }
       }
