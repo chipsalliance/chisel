@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.{AbstractParseTreeVisitor, ParseTreeVisitor, TerminalNode}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.annotation.tailrec
 import firrtl.antlr._
 import PrimOps._
 import FIRRTLParser._
@@ -57,7 +58,7 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
 
   private def string2Int(s: String): Int = string2BigInt(s).toInt
 
-  private def visitInfo(ctx: Option[InfoContext], parentCtx: ParserRuleContext): Info = {
+  private[firrtl] def visitInfo(ctx: Option[InfoContext], parentCtx: ParserRuleContext): Info = {
     // Convert a compressed FileInfo string into either into a singular FileInfo or a MultiInfo
     // consisting of several FileInfos
     def parseCompressedInfo(escaped: String): Info = {
@@ -129,7 +130,7 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
   private def visitCircuit(ctx: CircuitContext): Circuit =
     Circuit(visitInfo(Option(ctx.info), ctx), ctx.module.asScala.map(visitModule).toSeq, ctx.id.getText)
 
-  private def visitModule(ctx: ModuleContext): DefModule = {
+  private[firrtl] def visitModule(ctx: ModuleContext): DefModule = {
     val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0).getText match {
       case "module" =>
@@ -441,9 +442,9 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
       // If we don't match on the first child, try the next one
       case _ =>
         ctx.getChild(1).getText match {
-          case "<=" => Connect(info, visitExp(ctx_exp(0)), visitExp(ctx_exp(1)))
-          case "<-" => PartialConnect(info, visitExp(ctx_exp(0)), visitExp(ctx_exp(1)))
-          case "is" => IsInvalid(info, visitExp(ctx_exp(0)))
+          case "<=" => Connect(info, visitRef(ctx.ref), visitExp(ctx_exp(0)))
+          case "<-" => PartialConnect(info, visitRef(ctx.ref), visitExp(ctx_exp(0)))
+          case "is" => IsInvalid(info, visitRef(ctx.ref))
           case "mport" =>
             CDefMPort(
               info,
@@ -457,32 +458,47 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
     }
   }
 
+  @tailrec private def visitSubRef(ctx: SubrefContext, inner: Expression): Expression = {
+    val ref = ctx.getChild(0).getText match {
+      case "." =>
+        if (ctx.fieldId != null) {
+          SubField(inner, ctx.fieldId.getText)
+        } else {
+          ctx.DoubleLit.getText.split('.') match {
+            case Array(a, b) if legalId(a) && legalId(b) => SubField(SubField(inner, a), b)
+            case _                                       => throw new ParserException(s"Illegal Expression at ${ctx.getText}")
+          }
+        }
+      case "[" =>
+        if (ctx.intLit != null) {
+          val lit = string2Int(ctx.intLit.getText)
+          SubIndex(inner, lit, UnknownType)
+        } else {
+          val idx = visitExp(ctx.exp)
+          SubAccess(inner, idx, UnknownType)
+        }
+    }
+    if (ctx.subref != null) {
+      visitSubRef(ctx.subref, ref)
+    } else {
+      ref
+    }
+  }
+
+  private def visitRef(ctx: RefContext): Expression = {
+    val ref = Reference(ctx.getChild(0).getText)
+    if (ctx.subref != null) {
+      visitSubRef(ctx.subref, ref)
+    } else {
+      ref
+    }
+  }
+
   private def visitExp(ctx: ExpContext): Expression = {
     val ctx_exp = ctx.exp.asScala
     ctx.getChild(0) match {
-      case _: IdContext => Reference(ctx.getText, UnknownType)
-      case _: ExpContext =>
-        ctx.getChild(1).getText match {
-          case "." =>
-            val expr1 = visitExp(ctx_exp(0))
-            // TODO Workaround for #470
-            if (ctx.fieldId == null) {
-              ctx.DoubleLit.getText.split('.') match {
-                case Array(a, b) if legalId(a) && legalId(b) =>
-                  val inner = new SubField(expr1, a, UnknownType)
-                  new SubField(inner, b, UnknownType)
-                case Array() => throw new ParserException(s"Illegal Expression at ${ctx.getText}")
-              }
-            } else {
-              new SubField(expr1, ctx.fieldId.getText, UnknownType)
-            }
-          case "[" =>
-            if (ctx.exp(1) == null)
-              new SubIndex(visitExp(ctx_exp(0)), string2Int(ctx.intLit(0).getText), UnknownType)
-            else
-              new SubAccess(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), UnknownType)
-        }
-      case _: PrimopContext =>
+      case ref: RefContext => visitRef(ref)
+      case _:   PrimopContext =>
         DoPrim(
           visitPrimop(ctx.primop),
           ctx_exp.map(visitExp).toSeq,

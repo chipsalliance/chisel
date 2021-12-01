@@ -139,7 +139,7 @@ class firrtlCrossModule(val crossScalaVersion: String)
           antlrSource().path.toString,
           "-package",
           "firrtl.antlr",
-          "-no-listener",
+          "-listener",
           "-visitor",
           antlrSource().path.toString
         ).call()
@@ -152,7 +152,7 @@ class firrtlCrossModule(val crossScalaVersion: String)
           antlrSource().path.toString,
           "-package",
           "firrtl.antlr",
-          "-no-listener",
+          "-listener",
           "-visitor",
           antlrSource().path.toString
         ).call()
