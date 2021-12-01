@@ -28,7 +28,7 @@ make_verilog () {
     git checkout $1
     local filename="$DUT.$1.v"
 
-    sbt "runMain firrtl.stage.FirrtlMain -i $DUT.fir -o $filename -X verilog"
+    sbt "clean; runMain firrtl.stage.FirrtlMain -i $DUT.fir -o $filename -X verilog"
     RET=$filename
 }
 
