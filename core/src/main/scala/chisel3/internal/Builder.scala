@@ -740,14 +740,16 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
-  private [chisel3] def build[T <: BaseModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
+  private[chisel3] def build[T <: BaseModule](f: => T, dynamicContext: DynamicContext, forceModName: Boolean = true): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent // Must initialize the singleton in a Builder context or weird things can happen
                  // in tiny designs/testcases that never access anything in chisel3.internal
       checkScalaVersion()
       logger.info("Elaborating design...")
       val mod = f
-      mod.forceName(None, mod.name, globalNamespace)
+      if (forceModName) { // This avoids definition name index skipping with D/I
+        mod.forceName(None, mod.name, globalNamespace)
+      }
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 
