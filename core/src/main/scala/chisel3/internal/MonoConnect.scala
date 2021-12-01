@@ -36,7 +36,7 @@ import chisel3.internal.sourceinfo.SourceInfo
 */
 
 private[chisel3] object MonoConnect {
-  def formatName(data: Data) = s"""${data.nameStrOpt.getOrElse("(unknown)")} in ${data.parentNameOpt.getOrElse("(unknown)")}"""
+  def formatName(data: Data) = s"""${data.earlyName} in ${data.parentNameOpt.getOrElse("(unknown)")}"""
 
   // These are all the possible exceptions that can be thrown.
   // These are from element-level connection
