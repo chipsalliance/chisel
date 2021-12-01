@@ -1,1 +1,0 @@
-../../../../../src/test/scala/chiselTests/NamingAnnotationTest.scala

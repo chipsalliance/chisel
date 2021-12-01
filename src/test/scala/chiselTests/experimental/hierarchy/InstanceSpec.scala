@@ -89,7 +89,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i0.i1, "i0.i1")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddTwoMixedModules/i1:AddOne_2".it, "i0.i1"))
+      annos should contain (MarkAnnotation("~Top|Top/i0:AddTwoMixedModules/i1:AddOne_1".it, "i0.i1"))
     }
     it("1.5: should work on an instantiable container, annotating a wire") {
       class Top extends Module {
@@ -362,7 +362,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         amark(i.i1.in, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|Top/i:AddTwoMixedModules/i1:AddOne_2>in".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|Top/i:AddTwoMixedModules/i1:AddOne_1>in".rt, "blah"))
     }
     it("5.3: toAbsoluteTarget on a submodule's data, in an aggregate, within an instance") {
       class Top() extends Module {
@@ -370,7 +370,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         amark(i.i1.x.head, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_2>x[0]".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_1>x[0]".rt, "blah"))
     }
     it("5.4: toAbsoluteTarget on a submodule's data, in an aggregate, within an instance, ILit") {
       class MyBundle extends Bundle { val x = UInt(3.W) }
@@ -388,7 +388,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         amark(i.i1.x.head.x, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_2>x[0].x".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_1>x[0].x".rt, "blah"))
     }
     it("5.5: toAbsoluteTarget on a subinstance") {
       class Top() extends Module {
@@ -761,7 +761,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val targets = aop.Select.instancesOf[AddOne](m.toDefinition).map { i: Instance[AddOne] => i.toTarget }
         targets should be (Seq(
           "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
-          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_2".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it,
         ))
       })
       getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
@@ -773,11 +773,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val rel = insts.map { i: Instance[BaseModule] => i.toTarget }
         abs should be (Seq(
           "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
-          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_2".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it,
         ))
         rel should be (Seq(
           "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
-          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_2".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it,
         ))
       })
       getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
@@ -789,15 +789,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val rel = insts.map { i: Instance[AddOne] => i.in.toTarget }
         rel should be (Seq(
           "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_2>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
           "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_2>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
         ))
         abs should be (Seq(
           "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_2>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
           "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_2>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
         ))
       })
       getFirrtlAndAnnos(new AddFour, Seq(aspect))
@@ -807,7 +807,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val targets = aop.Select.definitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
         targets should be (Seq(
           "~AddTwoMixedModules|AddOne>in".rt,
-          "~AddTwoMixedModules|AddOne_2>in".rt,
+          "~AddTwoMixedModules|AddOne_1>in".rt,
         ))
       })
       getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
@@ -817,7 +817,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val targets = aop.Select.definitionsIn(m.toDefinition).map { i: Definition[BaseModule] => i.toTarget }
         targets should be (Seq(
           "~AddTwoMixedModules|AddOne".mt,
-          "~AddTwoMixedModules|AddOne_2".mt,
+          "~AddTwoMixedModules|AddOne_1".mt,
         ))
       })
       getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
@@ -827,7 +827,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val targets = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
         targets should be (Seq(
           "~AddFour|AddOne>in".rt,
-          "~AddFour|AddOne_2>in".rt,
+          "~AddFour|AddOne_1>in".rt,
         ))
       })
       getFirrtlAndAnnos(new AddFour, Seq(aspect))
