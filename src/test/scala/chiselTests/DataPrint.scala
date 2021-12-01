@@ -105,7 +105,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       EnumTest.sTwo.toString should be ("EnumTest(2=sTwo)")
       EnumTest(1.U).toString should be ("EnumTest(1=sOne)")
       (new BundleTest).Lit(_.a -> 2.U, _.b -> false.B).toString should be ("BundleTest(a=UInt<8>(2), b=Bool(false))")
-      (new PartialBundleTest).Lit().toString should be ("PartialBundleTest(a=UInt(DontCare), b=Bool(DontCare), c=SInt(DontCare), e=FixedPoint(DontCare), f=EnumTest(DontCare))")
+      (new PartialBundleTest).Lit().toString should be ("PartialBundleTest(a=UInt<8>(DontCare), b=Bool(DontCare), c=SInt<8>(DontCare), e=FixedPoint<5><<3>>(DontCare), f=EnumTest(DontCare))")
       DontCare.toString should be ("DontCare()")
     } }
   }

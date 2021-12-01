@@ -183,12 +183,6 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
   }
 }
 
-case object DontCareLit extends LitArg(0, UnknownWidth()) {
-  def name: String = "DontCare()"
-  def minWidth: Int = Int.MaxValue
-  def cloneWithWidth(newWidth: Width): this.type = this
-}
-
 case class Ref(name: String) extends Arg
 /** Arg for ports of Modules
   * @param mod the module this port belongs to
