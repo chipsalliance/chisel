@@ -36,16 +36,18 @@ import chisel3.internal.sourceinfo.SourceInfo
 */
 
 private[chisel3] object MonoConnect {
+  def formatName(data: Data) = s"""${data.nameStrOpt.getOrElse("(unknown)")} in ${data.parentNameOpt.getOrElse("(unknown)")}"""
+
   // These are all the possible exceptions that can be thrown.
   // These are from element-level connection
   def UnreadableSourceException(sink: Data, source: Data) =
-    MonoConnectException(s"""${source.nameStrOpt.getOrElse("(unknown)")} in ${source.parentNameOpt.getOrElse("(unknown)")} cannot be read from module ${sink.parentNameOpt.getOrElse("(unknown)")}.""")
+    MonoConnectException(s"""${formatName(source)} cannot be read from module ${sink.parentNameOpt.getOrElse("(unknown)")}.""")
   def UnwritableSinkException(sink: Data, source: Data) =
-    MonoConnectException(s"""${sink.nameStrOpt.getOrElse("(unknown)")} in ${sink.parentNameOpt.getOrElse("(unknown)")} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}.""")
-  def SourceEscapedWhenScopeException =
-    MonoConnectException("Source has escaped the scope of the when in which it was constructed.")
-  def SinkEscapedWhenScopeException =
-    MonoConnectException("Sink has escaped the scope of the when in which it was constructed.")
+    MonoConnectException(s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}.""")
+  def SourceEscapedWhenScopeException(source: Data) =
+    MonoConnectException(s"Source ${formatName(source)} has escaped the scope of the when in which it was constructed.")
+  def SinkEscapedWhenScopeException(sink: Data) =
+    MonoConnectException(s"Sink ${formatName(sink)} has escaped the scope of the when in which it was constructed.")
   def UnknownRelationException =
     MonoConnectException("Sink or source unavailable to current module.")
   // These are when recursing down aggregate types
@@ -53,16 +55,16 @@ private[chisel3] object MonoConnect {
     MonoConnectException("Sink and Source are different length Vecs.")
   def MissingFieldException(field: String) =
     MonoConnectException(s"Source Record missing field ($field).")
-  def MismatchedException(sink: String, source: String) =
-    MonoConnectException(s"Sink ($sink) and Source ($source) have different types.")
-  def DontCareCantBeSink =
-    MonoConnectException("DontCare cannot be a connection sink (LHS)")
-  def AnalogCantBeMonoSink =
-    MonoConnectException("Analog cannot participate in a mono connection (sink - LHS)")
-  def AnalogCantBeMonoSource =
-    MonoConnectException("Analog cannot participate in a mono connection (source - RHS)")
-  def AnalogMonoConnectionException =
-    MonoConnectException("Analog cannot participate in a mono connection (source and sink)")
+  def MismatchedException(sink: Data, source: Data) =
+    MonoConnectException(s"Sink (${sink.cloneType.toString}) and Source (${source.cloneType.toString}) have different types.")
+  def DontCareCantBeSink(sink: Data) =
+    MonoConnectException("DontCare cannot be a connection sink")
+  def AnalogCantBeMonoSink(sink: Data) =
+    MonoConnectException(s"Sink ${formatName(sink)} of type Analog cannot participate in a mono connection")
+  def AnalogCantBeMonoSource(source: Data) =
+    MonoConnectException(s"Source ${formatName(source)} of type Analog cannot participate in a mono connection")
+  def AnalogMonoConnectionException(source: Data, sink: Data) =
+    MonoConnectException(s"Source ${formatName(source)} and sink ${formatName(sink)} of type Analog cannot participate in a mono connection")
 
   def checkWhenVisibility(x: Data): Boolean = {
     x.topBinding match {
@@ -167,15 +169,15 @@ private[chisel3] object MonoConnect {
       // Source is DontCare - it may be connected to anything. It generates a defInvalid for the sink.
       case (sink, DontCare) => pushCommand(DefInvalid(sourceInfo, sink.lref))
       // DontCare as a sink is illegal.
-      case (DontCare, _) => throw DontCareCantBeSink
+      case (DontCare, _) => throw DontCareCantBeSink(sink)
       // Analog is illegal in mono connections.
-      case (_: Analog, _:Analog) => throw AnalogMonoConnectionException
+      case (_: Analog, _:Analog) => throw AnalogMonoConnectionException(source, sink)
       // Analog is illegal in mono connections.
-      case (_: Analog, _) => throw AnalogCantBeMonoSink
+      case (_: Analog, _) => throw AnalogCantBeMonoSink(sink)
       // Analog is illegal in mono connections.
-      case (_, _: Analog) => throw AnalogCantBeMonoSource
+      case (_, _: Analog) => throw AnalogCantBeMonoSource(source)
       // Sink and source are different subtypes of data so fail
-      case (sink, source) => throw MismatchedException(sink.toString, source.toString)
+      case (sink, source) => throw MismatchedException(sink, source)
     }
 
   // This function (finally) issues the connection operation
@@ -206,11 +208,11 @@ private[chisel3] object MonoConnect {
     val source_direction = BindingDirection.from(source.topBinding, source.direction)
 
     if (!checkWhenVisibility(sink)) {
-      throw SinkEscapedWhenScopeException
+      throw SinkEscapedWhenScopeException(sink)
     }
 
     if (!checkWhenVisibility(source)) {
-      throw SourceEscapedWhenScopeException
+      throw SourceEscapedWhenScopeException(source)
     }
 
     // CASE: Context is same module that both left node and right node are in
