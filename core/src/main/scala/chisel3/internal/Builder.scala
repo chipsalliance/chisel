@@ -168,10 +168,9 @@ private[chisel3] trait HasId extends InstanceId {
   /** Computes the name of this HasId, if one exists
     * @param defaultPrefix Optionally provide a default prefix for computing the name
     * @param defaultSeed Optionally provide default seed for computing the name
-    * @param sep Set a seperator for prefixes, defaults to "_"
     * @return the name, if it can be computed
     */
-  private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String], sep: String = "_"): Option[String] = {
+  private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
     /** Computes a name of this signal, given the seed and prefix
       * @param seed
       * @param prefix
@@ -179,7 +178,7 @@ private[chisel3] trait HasId extends InstanceId {
       */
     def buildName(seed: String, prefix: Prefix): String = {
       val builder = new StringBuilder()
-      prefix.foreach(builder ++= _ + sep)
+      prefix.foreach(builder ++= _ + "_")
       builder ++= seed
       builder.toString
     }
