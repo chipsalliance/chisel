@@ -130,6 +130,9 @@ lazy val docSettings = Seq(
   Compile / doc := (ScalaUnidoc / doc).value,
   autoAPIMappings := true,
   Compile / doc / scalacOptions ++= Seq(
+    // ANTLR-generated classes aren't really part of public API and cause
+    // errors in ScalaDoc generation
+    "-skip-packages", "firrtl.antlr",
     "-Xfatal-warnings",
     "-feature",
     "-diagrams",
