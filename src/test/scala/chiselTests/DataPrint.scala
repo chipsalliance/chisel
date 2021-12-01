@@ -70,6 +70,21 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     val tpe = new FooTypeTest
     val fooio: FooTypeTest = IO(Input(tpe))
     fooio.foo(0).toString should be ("BoundDataModule.fooio.foo[0]: IO[UInt<8>]")
+
+    class NestedBundle extends Bundle {
+      val nestedFoo = UInt(8.W)
+      val nestedFooVec = Vec(2, UInt(8.W))
+    }
+    class NestedType extends Bundle {
+      val foo = new NestedBundle
+    }
+
+    val nestedTpe = new NestedType
+    val nestedio = IO(Input(nestedTpe))
+    (nestedio.foo.nestedFoo.toString should be
+      ("BoundDataModule.nestedio.foo.nestedFoo: IO[UInt<8>]"))
+    (nestedio.foo.nestedFooVec(0).toString should be
+      ("BoundDataModule.nestedio.foo.nestedFooVec[0]: IO[UInt<8>]"))
   }
 
   "Bound data types" should "have a meaningful string representation" in {

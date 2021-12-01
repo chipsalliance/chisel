@@ -87,7 +87,13 @@ case class Node(id: HasId) extends Arg {
     case Some(arg) => arg.name
     case None => id.instanceName
   }
-  override private[chisel3] def earlyLocalName: String = id.getOptionRef match {
+  override private[chisel3] def earlyLocalName: String = Arg.getSubclassString(this.id)
+}
+
+object Arg {
+  def getSubclassString(id: HasId): String = id.getOptionRef match {
+    case Some(Index(imm, value)) => s"${imm.earlyLocalName}[${value.earlyLocalName}]"
+    case Some(Slot(imm, name)) => s"${imm.earlyLocalName}.$name"
     case Some(arg) => arg.name
     case None => id match {
       case data: Data => data._computeName(None, Some("?")).get
