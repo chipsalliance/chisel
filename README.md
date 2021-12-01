@@ -189,13 +189,6 @@ If the compilation succeeded and the dependencies noted above are installed, you
 sbt test
 ```
 
-If you would like to run the tests without the compiler plugin (less common), you can do so by first launching `sbt`,
-then running `noPluginTests / test`:
-```
-sbt
-> noPluginTests / test
-```
-
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
