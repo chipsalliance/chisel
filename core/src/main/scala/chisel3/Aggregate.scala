@@ -731,6 +731,13 @@ package experimental {
   * }}}
   */
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
+  if (!_usingPlugin) {
+    Builder.deprecated(
+      "Compiling Chisel code without the compiler plugin is now deprecated. " +
+      "Please see https://github.com/chipsalliance/chisel3#build-your-own-chisel-projects."
+    )
+  }
+
   override def className: String = this.getClass.getSimpleName match {
     case name if name.startsWith("$anon$") => "AnonymousBundle"  // fallback for anonymous Bundle case
     case "" => "AnonymousBundle"  // ditto, but on other platforms
