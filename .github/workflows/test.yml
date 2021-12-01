@@ -47,7 +47,7 @@ jobs:
         if: startsWith(matrix.scala, '2.12')
         run: sbt ++${{ matrix.scala }} docs/mdoc
       - name: Test
-        run: sbt ++${{ matrix.scala }} test noPluginTests/test
+        run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 

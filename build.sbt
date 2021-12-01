@@ -221,15 +221,6 @@ lazy val chisel = (project in file(".")).
     )
   )
 
-lazy val noPluginTests = (project in file ("no-plugin-tests")).
-  dependsOn(chisel).
-  settings(commonSettings: _*).
-  settings(chiselSettings: _*).
-  settings(Seq(
-    // Totally don't know why GitHub Action won't introduce FIRRTL to dependency.
-    libraryDependencies += defaultVersions("firrtl"),
-  ))
-
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
 lazy val integrationTests = (project in file ("integration-tests")).
   dependsOn(chisel).
