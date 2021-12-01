@@ -442,7 +442,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(DontCareBinding()) => s"$chiselType(DontCare)"
       case Some(topBinding) =>
         val binding: String = _bindingToString(topBinding)
-        val name = nameStrOpt.getOrElse("?")
+        val name = earlyName
         val mod = parentNameOpt.map(_ + ".").getOrElse("")
 
         s"$mod$name: $binding[$chiselType]"
@@ -470,7 +470,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _ => ""
     }
 
-  private[chisel3] def nameStrOpt: Option[String] = this.getOptionRef.map(_.earlyLocalName)
+  private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
 
   private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 

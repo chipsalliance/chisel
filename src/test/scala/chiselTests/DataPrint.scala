@@ -48,7 +48,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     Wire(UInt()).toString should be("BoundDataModule.?: Wire[UInt]")
     Reg(SInt()).toString should be("BoundDataModule.?: Reg[SInt]")
     val io = IO(Output(Bool()))  // needs a name so elaboration doesn't fail
-    io.toString should be("BoundDataModule.?: IO[Bool]")
+    io.toString should be("BoundDataModule.io: IO[Bool]")
     val m = Mem(4, UInt(2.W))
     m(2).toString should be("BoundDataModule.?: MemPort[UInt<2>]")
     (2.U + 2.U).toString should be("BoundDataModule.?: OpResult[UInt<2>]")

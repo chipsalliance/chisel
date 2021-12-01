@@ -66,9 +66,6 @@ object PrimOp {
 
 abstract class Arg {
   def localName: String = name
-  // Same as localName except it can be called on Args before all names are complete (will return ? in those cases)
-  // TODO unify with localName which probably shouldn't be calling instanceName on None
-  private[chisel3] def earlyLocalName: String = name
   def contextualName(ctx: Component): String = name
   def fullName(ctx: Component): String = contextualName(ctx)
   def name: String
@@ -87,13 +84,13 @@ case class Node(id: HasId) extends Arg {
     case Some(arg) => arg.name
     case None => id.instanceName
   }
-  override private[chisel3] def earlyLocalName: String = Arg.getSubclassString(this.id)
 }
 
-object Arg {
-  def getSubclassString(id: HasId): String = id.getOptionRef match {
-    case Some(Index(imm, value)) => s"${imm.earlyLocalName}[${value.earlyLocalName}]"
-    case Some(Slot(imm, name)) => s"${imm.earlyLocalName}.$name"
+private[chisel3] object Arg {
+  def earlyLocalName(id: HasId): String = id.getOptionRef match {
+    case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
+    case Some(Index(Node(imm), arg)) => s"${earlyLocalName(imm)}[${arg.localName}]"
+    case Some(Slot(Node(imm), name)) => s"${earlyLocalName(imm)}.$name"
     case Some(arg) => arg.name
     case None => id match {
       case data: Data => data._computeName(None, Some("?")).get
@@ -198,7 +195,6 @@ case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   */
 case class ModuleCloneIO(mod: BaseModule, name: String) extends Arg {
   override def localName = ""
-  override private[chisel3] def earlyLocalName: String = ""
   override def contextualName(ctx: Component): String =
     // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
     if (mod eq ctx.id) localName else name
@@ -212,16 +208,11 @@ case class Slot(imm: Node, name: String) extends Arg {
     val immName = imm.localName
     if (immName.isEmpty) name else s"$immName.$name"
   }
-  override private[chisel3] def earlyLocalName: String = {
-    val immName = imm.earlyLocalName
-    if (immName.isEmpty) name else s"$immName.$name"
-  }
 }
-case class Index(imm: Arg, value: Arg) extends Arg {
+case class Index(imm: Node, value: Arg) extends Arg {
   def name: String = s"[$value]"
   override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
   override def localName: String = s"${imm.localName}[${value.localName}]"
-  override private[chisel3] def earlyLocalName: String = s"${imm.earlyLocalName}[${value.earlyLocalName}]"
 }
 
 object Width {
