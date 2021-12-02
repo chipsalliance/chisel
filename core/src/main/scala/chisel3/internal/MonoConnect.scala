@@ -57,7 +57,7 @@ private[chisel3] object MonoConnect {
     MonoConnectException(s"Source Record missing field ($field).")
   def MismatchedException(sink: Data, source: Data) =
     MonoConnectException(s"Sink (${sink.cloneType.toString}) and Source (${source.cloneType.toString}) have different types.")
-  def DontCareCantBeSink(sink: Data) =
+  def DontCareCantBeSink =
     MonoConnectException("DontCare cannot be a connection sink")
   def AnalogCantBeMonoSink(sink: Data) =
     MonoConnectException(s"Sink ${formatName(sink)} of type Analog cannot participate in a mono connection")
@@ -169,7 +169,7 @@ private[chisel3] object MonoConnect {
       // Source is DontCare - it may be connected to anything. It generates a defInvalid for the sink.
       case (sink, DontCare) => pushCommand(DefInvalid(sourceInfo, sink.lref))
       // DontCare as a sink is illegal.
-      case (DontCare, _) => throw DontCareCantBeSink(sink)
+      case (DontCare, _) => throw DontCareCantBeSink
       // Analog is illegal in mono connections.
       case (_: Analog, _:Analog) => throw AnalogMonoConnectionException(source, sink)
       // Analog is illegal in mono connections.

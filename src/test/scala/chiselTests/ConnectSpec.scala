@@ -153,10 +153,12 @@ class ConnectSpec extends ChiselPropSpec with Utils {
     val expectedReadError = """.*@: myReg in InnerExample cannot be read from module OuterReadExample."""
     readError.getMessage should fullyMatch regex expectedReadError
 
-    class OuterBiconnect extends Module {
-      val myReg = RegInit(0.U(8.W))
-      val inner = Module(new InnerExample())
-      myReg <> inner.myReg
-    }
+    val typeMismatchError = the [ChiselException] thrownBy {ChiselStage.elaborate { new RawModule {
+      val myUInt = Wire(UInt(4.W))
+      val mySInt = Wire(SInt(4.W))
+      myUInt := mySInt
+    }}}
+    val expectedTypeMismatchError = """.*@: Sink \(UInt<4>\) and Source \(SInt<4>\) have different types."""
+    typeMismatchError.getMessage should fullyMatch regex expectedTypeMismatchError
   }
 }
