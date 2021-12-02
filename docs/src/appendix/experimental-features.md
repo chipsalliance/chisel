@@ -231,7 +231,7 @@ Chisel can also initialize memories by generating a SV bind module with `readmem
 
 ```scala mdoc:silent
 import chisel3._
-import chisel3.util.experimental.loadMemoryFromFile
+import chisel3.util.experimental.loadMemoryFromFileBind
 
 class InitMemBind(val bits: Int, val size: Int, filename: String) extends Module {
   val io = IO(new Bundle {
@@ -241,7 +241,7 @@ class InitMemBind(val bits: Int, val size: Int, filename: String) extends Module
 
   val memory = Mem(size, UInt(32.W))
   io.insn := memory(io.nia >> 2);
-  loadMemoryFromFile(memory, filename)
+  loadMemoryFromFileBind(memory, filename)
 }
 ```
 
