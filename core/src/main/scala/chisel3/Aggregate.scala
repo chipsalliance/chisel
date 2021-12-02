@@ -164,16 +164,14 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
 
   override def toString: String = {
-    val bindingString = topBindingOpt match {
+    topBindingOpt match {
       case Some(VecLitBinding(vecLitBinding)) =>
         val contents = vecLitBinding.zipWithIndex.map { case ((data, lit), index) =>
           s"$index=$lit"
         }.mkString(", ")
-        s"($contents)"
-      case _ => bindingToString
+        s"${sample_element.cloneType}[$length]($contents)"
+      case _ => stringAccessor(s"${sample_element.cloneType}[$length]")
     }
-    val elementType = sample_element.cloneType
-    s"$elementType[$length]$bindingString"
   }
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
@@ -922,15 +920,14 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     * }}}
     */
   override def toString: String = {
-    val bindingString = topBindingOpt match {
+    topBindingOpt match {
       case Some(BundleLitBinding(_)) =>
         val contents = elements.toList.reverse.map { case (name, data) =>
           s"$name=$data"
         }.mkString(", ")
-        s"($contents)"
-      case _ => bindingToString
+        s"$className($contents)"
+      case _ => stringAccessor(s"$className")
     }
-    s"$className$bindingString"
   }
 
   def elements: SeqMap[String, Data]

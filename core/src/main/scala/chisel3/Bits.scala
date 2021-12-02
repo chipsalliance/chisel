@@ -399,11 +399,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   */
 sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[UInt] {
   override def toString: String = {
-    val bindingString = litOption match {
-      case Some(value) => s"($value)"
-      case _ => bindingToString
+    litOption match {
+      case Some(value) => s"UInt$width($value)"
+      case _ => stringAccessor(s"UInt$width")
     }
-    s"UInt$width$bindingString"
   }
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean =
@@ -773,11 +772,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   */
 sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[SInt] {
   override def toString: String = {
-    val bindingString = litOption match {
-      case Some(value) => s"($value)"
-      case _ => bindingToString
+    litOption match {
+      case Some(value) => s"SInt$width($value)"
+      case _ => stringAccessor(s"SInt$width")
     }
-    s"SInt$width$bindingString"
   }
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean =
@@ -1039,7 +1037,7 @@ object Reset {
   * super type due to Bool inheriting from abstract class UInt
   */
 final class ResetType(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
-  override def toString: String = s"Reset$bindingToString"
+  override def toString: String = stringAccessor("Reset")
 
   def cloneType: this.type = Reset().asInstanceOf[this.type]
 
@@ -1081,7 +1079,7 @@ object AsyncReset {
   * asychronously reset registers.
   */
 sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
-  override def toString: String = s"AsyncReset$bindingToString"
+  override def toString: String = stringAccessor("AsyncReset")
 
   def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
 
@@ -1121,11 +1119,10 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
   */
 sealed class Bool() extends UInt(1.W) with Reset {
   override def toString: String = {
-    val bindingString = litToBooleanOption match {
-      case Some(value) => s"($value)"
-      case _ => bindingToString
+    litToBooleanOption match {
+      case Some(value) => s"Bool($value)"
+      case _ => stringAccessor("Bool")
     }
-    s"Bool$bindingString"
   }
 
   private[chisel3] override def cloneTypeWidth(w: Width): this.type = {
@@ -1282,11 +1279,10 @@ package experimental {
     extends Bits(width) with Num[FixedPoint] with HasBinaryPoint {
 
     override def toString: String = {
-      val bindingString = litToDoubleOption match {
-        case Some(value) => s"($value)"
-        case _ => bindingToString
+      litToDoubleOption match {
+        case Some(value) => s"FixedPoint$width$binaryPoint($value)"
+        case _ => stringAccessor(s"FixedPoint$width$binaryPoint")
       }
-      s"FixedPoint$width$binaryPoint$bindingString"
     }
 
     private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
@@ -1702,11 +1698,10 @@ package experimental {
     extends Bits(range.getWidth) with Num[Interval] with HasBinaryPoint {
 
     override def toString: String = {
-      val bindingString = litOption match {
-        case Some(value) => s"($value)"
-        case _ => bindingToString
+      litOption match {
+        case Some(value) => s"Interval$width($value)"
+        case _ => stringAccessor(s"Interval$width")
       }
-      s"Interval$width$bindingString"
     }
 
     private[chisel3] override def cloneTypeWidth(w: Width): this.type =

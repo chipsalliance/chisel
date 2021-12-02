@@ -435,27 +435,44 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     _direction = Some(actualDirection)
   }
 
+  private[chisel3] def stringAccessor(chiselType: String): String = {
+    topBindingOpt match {
+      case None => chiselType
+      // Handle DontCares specially as they are "literal-like" but not actually literals
+      case Some(DontCareBinding()) => s"$chiselType(DontCare)"
+      case Some(topBinding) =>
+        val binding: String = _bindingToString(topBinding)
+        val name = earlyName
+        val mod = parentNameOpt.map(_ + ".").getOrElse("")
+
+        s"$mod$name: $binding[$chiselType]"
+    }
+  }
+
   // User-friendly representation of the binding as a helper function for toString.
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
   // TODO Is this okay for sample_element? It *shouldn't* be visible to users
-  protected def bindingToString: String = Try(topBindingOpt match {
-    case None => ""
-    case Some(OpBinding(enclosure, _)) => s"(OpResult in ${enclosure.desiredName})"
-    case Some(MemoryPortBinding(enclosure, _)) => s"(MemPort in ${enclosure.desiredName})"
-    case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
-    case Some(PortBinding(enclosure)) if enclosure.isClosed =>
-      DataMirror.fullModulePorts(enclosure).find(_._2 eq this) match {
-        case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
-        case None => s"(IO (unknown) in ${enclosure.desiredName})"
-      }
-    case Some(RegBinding(enclosure, _)) => s"(Reg in ${enclosure.desiredName})"
-    case Some(WireBinding(enclosure, _)) => s"(Wire in ${enclosure.desiredName})"
-    case Some(DontCareBinding()) => s"(DontCare)"
-    case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
-    case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
-    case Some(VecLitBinding(litMap)) => s"(unhandled vec literal)"
-  }).getOrElse("")
+  @deprecated("This was never intended to be visible to user-defined types", "Chisel 3.5.0")
+  protected def bindingToString: String = _bindingToString(topBinding)
+
+  private[chisel3] def _bindingToString(topBindingOpt: TopBinding): String =
+    topBindingOpt match {
+      case OpBinding(_, _) => "OpResult"
+      case MemoryPortBinding(_, _) => "MemPort"
+      case PortBinding(_) => "IO"
+      case RegBinding(_, _) => "Reg"
+      case WireBinding(_, _) => "Wire"
+      case DontCareBinding() => "(DontCare)"
+      case ElementLitBinding(litArg) => "(unhandled literal)"
+      case BundleLitBinding(litMap) => "(unhandled bundle literal)"
+      case VecLitBinding(litMap) => "(unhandled vec literal)"
+      case _ => ""
+    }
+
+  private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
+
+  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits

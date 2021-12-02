@@ -86,6 +86,19 @@ case class Node(id: HasId) extends Arg {
   }
 }
 
+private[chisel3] object Arg {
+  def earlyLocalName(id: HasId): String = id.getOptionRef match {
+    case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
+    case Some(Index(Node(imm), arg)) => s"${earlyLocalName(imm)}[${arg.localName}]"
+    case Some(Slot(Node(imm), name)) => s"${earlyLocalName(imm)}.$name"
+    case Some(arg) => arg.name
+    case None => id match {
+      case data: Data => data._computeName(None, Some("?")).get
+      case _ => "?"
+    }
+  }
+}
+
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
@@ -196,7 +209,7 @@ case class Slot(imm: Node, name: String) extends Arg {
     if (immName.isEmpty) name else s"$immName.$name"
   }
 }
-case class Index(imm: Arg, value: Arg) extends Arg {
+case class Index(imm: Node, value: Arg) extends Arg {
   def name: String = s"[$value]"
   override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
   override def localName: String = s"${imm.localName}[${value.localName}]"
