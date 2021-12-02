@@ -94,34 +94,30 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       (primaryConstructor, paramAccessors.toList)
     }
 
-    def getBundleElements(body: List[Tree]): List[(Symbol, Tree)] = {
-      val elements = mutable.ListBuffer[(Symbol, Tree)]()
-      body.foreach {
-        case acc: ValDef if isBundle(acc.symbol) =>
-          elements += acc.symbol -> acc.rhs
-        case acc: ValDef if isData(acc.symbol) && ! isEmptyTree(acc.rhs) =>
-          // empty tree test seems necessary to rule out generator methods passed into bundles
-          // but there must be a better way here
-          elements += acc.symbol -> acc.rhs
-        case _ =>
-      }
-      elements.toList
-    }
-
     override def transform(tree: Tree): Tree = tree match {
 
-      case bundle: ClassDef if isBundle(bundle.symbol) && !bundle.mods.hasFlag(Flag.ABSTRACT) =>
+      // The following case will show the abstract bunbdle
+//      case bundle: ClassDef if isBundle(bundle.symbol) && bundle.mods.hasFlag(Flag.ABSTRACT) =>
+//        println(s"!!!!!!!!! We have an abstract bundle $bundle")
+//        bundle
+
+//      case bundle: ClassDef if isBundle(bundle.symbol) && !bundle.mods.hasFlag(Flag.ABSTRACT) =>
+      case bundle: ClassDef if isBundle(bundle.symbol) =>
+        // We need to learn how to match on abstact bundles, line below fails to instantiate abstact
+//      case bundle: ClassDef if isBundle(bundle.symbol) =>
         def show(string: String): Unit = {
-          if (bundle.symbol.name.toString == "DemoBundle" || bundle.symbol.name.toString == "AnimalBundle") {
+          if (Seq("DemoBundle", "AnimalBundle", "OneFieldBundle", "AbstractBundle", "ParamIsField")
+                  .contains(bundle.symbol.name.toString())) {
             println(("=" * 100 + "\n") * 1)
             println(string)
           }
         }
 
-        show(s"Bundle: ${show(bundle.toString)}")
-        show(s"BundleType: ${show(bundle.tpe.toString)}")
+        show(("#" * 80 + "\n") * 3)
 
-        show("Demo")
+        show(s"Bundle: ${bundle.toString}" +
+          s"\nBundleType: ${bundle.symbol.typeSignature.toString}")
+
         show(s"BundleName: '${bundle.symbol.name}'")
 
         // ==================== Generate _cloneTypeImpl ====================
@@ -144,9 +140,12 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
         show(paramLookup.toString())
 
-        // Create a this.<ref> for each field matching order of constructor arguments
-        // List of Lists because we can have multiple parameter lists
-        val conArgs: List[List[Tree]] =
+        var additionalMethods: Seq[Tree] = Seq()
+
+        if (!bundle.mods.hasFlag(Flag.ABSTRACT)) {
+          // Create a this.<ref> for each field matching order of constructor arguments
+          // List of Lists because we can have multiple parameter lists
+          val conArgs: List[List[Tree]] =
           constructor.vparamss.map(_.map { vp =>
             val p = paramLookup(vp.name.toString)
             // Make this.<ref>
@@ -155,50 +154,116 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             if (isData(vp.symbol)) cloneTypeFull(select) else select
           })
 
-        val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
-        val ttpe = if (tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
-        val newUntyped = New(ttpe, conArgs)
-        val neww = localTyper.typed(newUntyped)
+          val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
+          val ttpe = if (tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
+          val newUntyped = New(ttpe, conArgs)
+          val neww = localTyper.typed(newUntyped)
 
-        // Create the symbol for the method and have it be associated with the Bundle class
-        val cloneTypeSym =  bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
-        // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
-        cloneTypeSym.resetFlag(Flags.METHOD)
-        // Need to set the type to chisel3.Bundle for the override to work
-        cloneTypeSym.setInfo(NullaryMethodType(bundleTpe))
+          // Create the symbol for the method and have it be associated with the Bundle class
+          val cloneTypeSym = bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+          // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
+          cloneTypeSym.resetFlag(Flags.METHOD)
+          // Need to set the type to chisel3.Bundle for the override to work
+          cloneTypeSym.setInfo(NullaryMethodType(bundleTpe))
 
-        val cloneTypeImpl = localTyper.typed(DefDef(cloneTypeSym, neww))
+          additionalMethods ++= Seq(localTyper.typed(DefDef(cloneTypeSym, neww)))
+        }
 
         // ==================== Generate val elements ====================
         // Create the symbol for the method and have it be associated with the Bundle class
+        // Iff we are sure this is a Bundle construction we can handle.
+        // Currently Bundles extending Bundles and traits are not supported
+        // Just simple Bundles
 
-        val elements = getBundleElements(bundle.impl.body).reverse
-        val elementArgs: List[(String, Tree)] = elements.map { case (symbol, chiselType) =>
-           // Make this.<ref>
-          val select = gen.mkAttributedSelect(thiz, symbol)
-          (symbol.name.toString, select)
+        /* Test to see if the bundle found is amenable to having it's elements
+         * converted to an immediate form that will not require reflection
+         * First pass at this, we will only process Bundles with one parent
+         */
+        def isSupportedBundleType: Boolean = {
+          val result = arguments.buildElementsAccessor && bundle.impl.parents.length < 10
+          show(s"buildElementsAccessor=${arguments.buildElementsAccessor} && " +
+            s"parents=${bundle.impl.parents.length} result=${result}"
+          )
+          result
         }
 
-        val elementsImplSym = bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
-        // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
-        elementsImplSym.resetFlag(Flags.METHOD)
-        // Need to set the type to chisel3.Bundle for the override to work
-        elementsImplSym.setInfo(NullaryMethodType(seqMapTpe))
+        if (isSupportedBundleType) {
 
-        val elementsImpl = localTyper.typed(DefDef(elementsImplSym, q"scala.collection.immutable.SeqMap.apply[String, chisel3.Data](..$elementArgs)"))
+          show("Bundle parents:\n" + bundle.impl.parents.map { parent =>
+            s"parent: ${parent.symbol.name} [${isBundle(parent.symbol)}] " +
+              s"IsBundle=" + isBundle(parent.symbol) + parent.symbol + "\n" +
+//              "parent.symbol.info.decl: " + parent.symbol.info.decl(parent.symbol.info.decls.head.name). +
+              s"\nDecls::\n  " +
+              parent.symbol.info.decls.map { decl =>
+                decl.name.toString + ": " + decl.typeSignature.toString() + " isData=" + isData(decl)
+              }.mkString("\n  ") +
+              " grandparents:\n" + parent.symbol.parentSymbols.mkString(",")
+          }.mkString("\n"))
 
-        show("ELEMENTS:\n" + elements.map { case (symbol, tree) => s"(${symbol}, ${tree})" }.mkString("\n"))
-        show("ElementsImpl: " + showRaw(elementsImpl) + "\n\n\n")
+          /* extracts the true fields of the Bundle
+           */
+          def getBundleElements(body: List[Tree]): List[(Symbol, Tree)] = {
+            val elements = mutable.ListBuffer[(Symbol, Tree)]()
+            body.foreach {
+              case acc: ValDef if isBundle(acc.symbol) =>
+                elements += acc.symbol -> acc.rhs
+              case acc: ValDef if isData(acc.symbol) && ! isEmptyTree(acc.rhs) =>
+                // empty tree test seems necessary to rule out generator methods passed into bundles
+                // but there must be a better way here
+                elements += acc.symbol -> acc.rhs
+              case _ =>
+            }
+            elements.toList
+          }
+
+//          def getSuperClassBundleFields(parents: List[Tree]): Seq[(Symbol, Tree)] = {
+//            parents.flatMap { parent =>
+//              parent.symbol.info.decls.flatMap {
+//                case decl if isData(decl) => Some((decl.name.toString, decl.typeSignature))
+//                case _ => None
+//              }
+//            }
+//          }
+//
+          val elements: List[(Symbol, Tree)] = {
+            getBundleElements(bundle.impl.body)
+          }.reverse
+
+          val elementArgs: List[(String, Tree)] = elements.map { case (symbol, chiselType) =>
+            // Make this.<ref>
+            val select = gen.mkAttributedSelect(thiz, symbol)
+            (symbol.name.toString, select)
+          }
+
+          val elementsImplSym = bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+          // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
+          elementsImplSym.resetFlag(Flags.METHOD)
+          // Need to set the type to chisel3.Bundle for the override to work
+          elementsImplSym.setInfo(NullaryMethodType(seqMapTpe))
+
+          val elementsImpl = localTyper.typed(DefDef(elementsImplSym, q"scala.collection.immutable.SeqMap.apply[String, chisel3.Data](..$elementArgs)"))
+
+          show("ELEMENTS: \n" + elements.map { case (symbol, tree) => s"(${symbol}, ${tree})" }.mkString("\n"))
+          show("ElementsImpl: " + showRaw(elementsImpl) + "\n\n\n")
+          show(s"Made: buildElementAccessor was built for ${bundle.symbol.name.toString}")
+          additionalMethods ++= Seq(elementsImpl)
+        }
 
         // ==================== Generate _usingPlugin ====================
         // Unclear why quasiquotes work here but didn't for cloneTypeSym, maybe they could.
         val usingPlugin = localTyper.typed(q"override protected def _usingPlugin: Boolean = true")
+        additionalMethods ++= Seq(usingPlugin)
 
         val withMethods = deriveClassDef(bundle) { t =>
-          deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin :+ elementsImpl)
+          deriveTemplate(t)(_ ++ additionalMethods)
 //            deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin)
         }
 
+//        val withMethods = deriveClassDef(bundle) { t =>
+//          deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin :+ elementsImpl)
+////            deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin)
+//        }
+//
         super.transform(localTyper.typed(withMethods))
 
       case _ => super.transform(tree)
