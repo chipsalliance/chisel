@@ -27,6 +27,7 @@ sealed abstract class Aggregate extends Data {
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    println(s"Bind: Elements " + allElements.map(x => s"${x} ${x.hashCode}").mkString(","))
     val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
       throw new AliasedAggregateFieldException(s"Aggregate $this contains aliased fields $duplicates")
@@ -1056,14 +1057,10 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     *   assert(uint === "h12345678".U) // This will pass
     * }}}
     */
-  final lazy val elements: SeqMap[String, Data] = _elementsImplWrapper
+  final lazy val elements: SeqMap[String, Data] = _elementsImpl
   /*
    * This method will be overwritten by the Chisel-Plugin
    */
-  protected def _elementsImplWrapper: SeqMap[String, Data] = {
-    println(s"In _elementsImplrWrapper for ${this.getClass}")
-    _elementsImpl
-  }
   protected def _elementsImpl: SeqMap[String, Data] = {
     println(s"In elementsImp for ${this.className}")
     val nameMap = LinkedHashMap[String, Data]()

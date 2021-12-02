@@ -180,7 +180,9 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
          * First pass at this, we will only process Bundles with one parent
          */
         def isSupportedBundleType: Boolean = {
-          val result = arguments.buildElementsAccessor && bundle.impl.parents.length < 10
+          val result =
+            arguments.buildElementsAccessor && bundle.impl.parents.length < 100 &&
+            !bundle.mods.hasFlag(Flag.ABSTRACT)
           show(s"buildElementsAccessor=${arguments.buildElementsAccessor} && " +
             s"parents=${bundle.impl.parents.length} result=${result}"
           )
@@ -200,41 +202,46 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
               " grandparents:\n" + parent.symbol.parentSymbols.mkString(",")
           }.mkString("\n"))
 
+          //TODO: Without the trims over the next dozen or so lines the variable names seem to have
+          //      an extra space on the end.
+
           /* extracts the true fields of the Bundle
            */
-          def getBundleElements(body: List[Tree]): List[(Symbol, Tree)] = {
-            val elements = mutable.ListBuffer[(Symbol, Tree)]()
+          def getBundleElements(body: List[Tree]): List[(String, Tree)] = {
+            val elements = mutable.ListBuffer[(String, Tree)]()
             body.foreach {
               case acc: ValDef if isBundle(acc.symbol) =>
-                elements += acc.symbol -> acc.rhs
+                elements += acc.symbol.name.toString.trim -> gen.mkAttributedSelect(thiz, acc.symbol)
               case acc: ValDef if isData(acc.symbol) && ! isEmptyTree(acc.rhs) =>
                 // empty tree test seems necessary to rule out generator methods passed into bundles
                 // but there must be a better way here
-                elements += acc.symbol -> acc.rhs
+                elements += acc.symbol.name.toString.trim -> gen.mkAttributedSelect(thiz, acc.symbol)
               case _ =>
             }
-            elements.toList
+            elements.toList.reverse
           }
 
-//          def getSuperClassBundleFields(parents: List[Tree]): Seq[(Symbol, Tree)] = {
-//            parents.flatMap { parent =>
-//              parent.symbol.info.decls.flatMap {
-//                case decl if isData(decl) => Some((decl.name.toString, decl.typeSignature))
-//                case _ => None
-//              }
-//            }
+          def getSuperClassBundleFields(parents: List[Tree]): List[(String, Tree)] = {
+            parents.flatMap {
+              case parent if isBundle(parent.symbol) =>
+                parent.symbol.info.decls.flatMap {
+                  case decl if isData(decl) => Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
+                  case _ => None
+                }
+              case _ => None
+            }.reverse
+          }
+          val superFields = getSuperClassBundleFields(bundle.impl.parents)
+          show(s"SuperFields:\n" + superFields.map(x => s"${x._1}: ${x._2}").mkString("\n"))
+
+          val elementArgs: List[(String, Tree)] = getBundleElements(bundle.impl.body) ++ getSuperClassBundleFields(bundle.impl.parents)
+
+//          val elementArgs: List[(String, Tree)] = elements.map { case (symbol, chiselType) =>
+//            // Make this.<ref>
+//            val select = gen.mkAttributedSelect(thiz, symbol)
+//            (symbol.name.toString.trim, select)
 //          }
 //
-          val elements: List[(Symbol, Tree)] = {
-            getBundleElements(bundle.impl.body)
-          }.reverse
-
-          val elementArgs: List[(String, Tree)] = elements.map { case (symbol, chiselType) =>
-            // Make this.<ref>
-            val select = gen.mkAttributedSelect(thiz, symbol)
-            (symbol.name.toString, select)
-          }
-
           val elementsImplSym = bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
           // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
           elementsImplSym.resetFlag(Flags.METHOD)
@@ -243,7 +250,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
           val elementsImpl = localTyper.typed(DefDef(elementsImplSym, q"scala.collection.immutable.SeqMap.apply[String, chisel3.Data](..$elementArgs)"))
 
-          show("ELEMENTS: \n" + elements.map { case (symbol, tree) => s"(${symbol}, ${tree})" }.mkString("\n"))
+          show("ELEMENTS: \n" + elementArgs.map { case (symbol, tree) => s"(${symbol}, ${tree})" }.mkString("\n"))
           show("ElementsImpl: " + showRaw(elementsImpl) + "\n\n\n")
           show(s"Made: buildElementAccessor was built for ${bundle.symbol.name.toString}")
           additionalMethods ++= Seq(elementsImpl)
