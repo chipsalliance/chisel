@@ -90,7 +90,7 @@ object BitPat {
     */
   def apply(x: UInt): BitPat = {
     val len = if (x.isWidthKnown) x.getWidth else 0
-    apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
+    apply("b" + x.litOption.getOrElse(throw new ChiselException(s"$x is not a literal, BitPat.apply(x: UInt) only accept literal")).toString(2).reverse.padTo(len, "0").reverse.mkString)
   }
 
   implicit class fromUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
