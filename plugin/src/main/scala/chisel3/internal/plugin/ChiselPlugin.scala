@@ -7,9 +7,14 @@ import nsc.Global
 import nsc.plugins.{Plugin, PluginComponent}
 import scala.reflect.internal.util.NoPosition
 
-private[plugin] case class ChiselPluginArguments(var useBundlePlugin: Boolean = true) {
+private[plugin] case class ChiselPluginArguments(
+  var useBundlePlugin: Boolean = true,
+  var buildElementsAccessor: Boolean = true
+) {
   def useBundlePluginOpt = "useBundlePlugin"
   def useBundlePluginFullOpt = s"-P:chiselplugin:$useBundlePluginOpt"
+  def buildElementAccessorOpt = "buildElementAccessor"
+  def buildElementAccessorFullOpt = s"-P:chiselplugin:$buildElementAccessorOpt"
 }
 
 // The plugin to be run by the Scala compiler during compilation of Chisel code
@@ -27,13 +32,14 @@ class ChiselPlugin(val global: Global) extends Plugin {
       if (option == arguments.useBundlePluginOpt) {
         val msg = s"'${arguments.useBundlePluginFullOpt}' is now default behavior, you can stop using the scalacOption."
         global.reporter.warning(NoPosition, msg)
+      }
+      if (option == arguments.buildElementAccessorOpt) {
+        arguments.buildElementsAccessor = true
       } else {
         error(s"Option not understood: '$option'")
       }
     }
     true
   }
-
-
 }
 

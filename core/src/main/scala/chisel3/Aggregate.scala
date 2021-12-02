@@ -1056,11 +1056,16 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     *   assert(uint === "h12345678".U) // This will pass
     * }}}
     */
-  final lazy val elements: SeqMap[String, Data] = _elementsImpl
+  final lazy val elements: SeqMap[String, Data] = _elementsImplWrapper
   /*
    * This method will be overwritten by the Chisel-Plugin
    */
+  protected def _elementsImplWrapper: SeqMap[String, Data] = {
+    println(s"In _elementsImplrWrapper for ${this.getClass}")
+    _elementsImpl
+  }
   protected def _elementsImpl: SeqMap[String, Data] = {
+    println(s"In elementsImp for ${this.className}")
     val nameMap = LinkedHashMap[String, Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
