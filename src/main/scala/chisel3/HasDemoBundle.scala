@@ -41,7 +41,7 @@ class HasDemoBundle extends Module {
     val bar = Bool()
     val qux = gen2
     val bad = 4
-    val baz = Decoupled(UInt(16.W))
+//     val baz = Decoupled(UInt(16.W))
     val animals = new AnimalBundle(4, 8)
   }
 
