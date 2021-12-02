@@ -629,7 +629,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
 
     it("7.3: should work with DataView + implicit conversion") {
-      import chiselTests.experimental.SeqToVec._
+      import chisel3.experimental.conversions._
       @instantiable
       class MyModule extends RawModule {
         private val a = IO(Input(UInt(8.W)))
