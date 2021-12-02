@@ -221,7 +221,7 @@ object Width {
   def apply(): Width = UnknownWidth()
 }
 
-sealed private[chisel3] abstract class Width {
+sealed abstract class Width {
   type W = Int
   def min(that: Width): Width = this.op(that, _ min _)
   def max(that: Width): Width = this.op(that, _ max _)
