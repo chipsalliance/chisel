@@ -3,7 +3,7 @@
 package chisel3.experimental.dataview
 
 import chisel3.experimental.BaseModule
-import chisel3.{Data, getRecursiveFields}
+import chisel3.{Data, Vec, getRecursiveFields}
 
 import scala.annotation.implicitNotFound
 
@@ -41,17 +41,24 @@ trait DataProduct[-A] {
   def dataSet(a: A): Data => Boolean = dataIterator(a, "").map(_._1).toSet
 }
 
-/** Encapsulating object for automatically provided implementations of [[DataProduct]]
+/** Low priority built-in implementations of [[DataProduct]]
   *
-  * @note DataProduct implementations provided in this object are available in the implicit scope
+  * @note This trait exists so that `dataDataProduct` can be lower priority than `seqDataProduct` to resolve ambiguity
   */
-object DataProduct {
+sealed trait LowPriorityDataProduct {
+
   /** [[DataProduct]] implementation for [[Data]] */
   implicit val dataDataProduct: DataProduct[Data] = new DataProduct[Data] {
     def dataIterator(a: Data, path: String): Iterator[(Data, String)] =
       getRecursiveFields.lazily(a, path).iterator
   }
+}
 
+/** Encapsulating object for built-in implementations of [[DataProduct]]
+  *
+  * @note DataProduct implementations provided in this object are available in the implicit scope
+  */
+object DataProduct extends LowPriorityDataProduct {
   /** [[DataProduct]] implementation for [[BaseModule]] */
   implicit val userModuleDataProduct: DataProduct[BaseModule] = new DataProduct[BaseModule] {
     def dataIterator(a: BaseModule, path: String): Iterator[(Data, String)] = {
@@ -67,6 +74,28 @@ object DataProduct {
       val lastId = a._lastId // Not cheap to compute
       // Return a function
       e => e._id > a._id && e._id <= lastId
+    }
+  }
+
+  /** [[DataProduct]] implementation for any `Seq[A]` where `A` has an implementation of `DataProduct`. */
+  implicit def seqDataProduct[A : DataProduct]: DataProduct[Seq[A]] = new DataProduct[Seq[A]] {
+    def dataIterator(a: Seq[A], path: String): Iterator[(Data, String)] = {
+      val dpa = implicitly[DataProduct[A]]
+      a.iterator
+        .zipWithIndex
+        .flatMap { case (elt, idx) =>
+          dpa.dataIterator(elt, s"$path[$idx]")
+        }
+    }
+  }
+
+  /** [[DataProduct]] implementation for any [[Tuple2]] where each field has an implementation of `DataProduct`. */
+  implicit def tuple2DataProduct[A : DataProduct, B : DataProduct]: DataProduct[(A, B)] = new DataProduct[(A, B)] {
+    def dataIterator(tup: (A, B), path: String): Iterator[(Data, String)] = {
+      val dpa = implicitly[DataProduct[A]]
+      val dpb = implicitly[DataProduct[B]]
+      val (a, b) = tup
+      dpa.dataIterator(a, s"$path._1") ++ dpb.dataIterator(b, s"$path._2")
     }
   }
 }

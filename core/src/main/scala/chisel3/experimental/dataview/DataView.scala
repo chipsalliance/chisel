@@ -3,9 +3,12 @@
 package chisel3.experimental.dataview
 
 import chisel3._
-import chisel3.internal.sourceinfo.SourceInfo
-import scala.reflect.runtime.universe.WeakTypeTag
+import chisel3.experimental.DataMirror.internal.chiselTypeClone
+import chisel3.experimental.HWTuple2
+import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.ExplicitCompileOptions.Strict
 
+import scala.reflect.runtime.universe.WeakTypeTag
 import annotation.implicitNotFound
 
 
@@ -132,9 +135,33 @@ object DataView {
     case (b, a) => f(a, b).map(_.swap)
   }
 
+  // ****************************** Built-in Implementations of DataView ******************************
+  // Sort of the "Standard library" implementations
+
   /** All Chisel Data are viewable as their own type */
   implicit def identityView[A <: Data](implicit sourceInfo: SourceInfo): DataView[A, A] =
     DataView[A, A](chiselTypeOf.apply, { case (x, y) => (x, y) })
+
+  /** Provides `DataView[Seq[A], Vec[B]]` for all `A` such that there exists `DataView[A, B]` */
+  implicit def seqDataView[A : DataProduct, B <: Data](implicit dv: DataView[A, B], sourceInfo: SourceInfo): DataView[Seq[A], Vec[B]] = {
+    // TODO this would need a better way to determine the prototype for the Vec
+    DataView.mapping[Seq[A], Vec[B]](
+      xs => Vec(xs.size, chiselTypeClone(xs.head.viewAs[B]))(sourceInfo, Strict), // xs.head is not correct in general
+      { case (s, v) => s.zip(v).map { case (a, b) => a.viewAs[B] -> b } }
+    )
+  }
+
+  /** Provides implementations of [[DataView]] for `(A, B)` to `HWTuple2[A, B]`  */
+  implicit def tuple2DataView[T1 : DataProduct, T2 : DataProduct, V1 <: Data, V2 <: Data](
+    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], sourceInfo: SourceInfo
+  ): DataView[(T1, T2), HWTuple2[V1, V2]] =
+    DataView.mapping(
+      { case (a, b) => new HWTuple2(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType)},
+      { case ((a, b), hwt) =>
+        Seq(a.viewAs[V1] -> hwt._1,
+          b.viewAs[V2] -> hwt._2)
+      }
+    )
 }
 
 /** Factory methods for constructing non-total [[DataView]]s */

@@ -205,13 +205,6 @@ The issue, is that Chisel primitives like `Mux` and `:=` only operate on subtype
 Tuples (as members of the Scala standard library), are not subclasses of `Data`.
 `DataView` provides a mechanism to _view_ a `Tuple` as if it were a `Data`:
 
-<!-- TODO replace this with stdlib import -->
-
-```scala mdoc:invisible
-// ProductDataProduct
-import chisel3.experimental.conversions.tuple2DataProduct
-```
-
 ```scala mdoc
 // We need a type to represent the Tuple
 class HWTuple2[A <: Data, B <: Data](val _1: A, val _2: B) extends Bundle

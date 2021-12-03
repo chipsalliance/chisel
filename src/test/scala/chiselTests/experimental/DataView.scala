@@ -7,6 +7,7 @@ import chisel3._
 import chisel3.experimental.dataview._
 import chisel3.experimental.conversions._
 import chisel3.experimental.DataMirror.internal.chiselTypeClone
+import chisel3.experimental.HWTuple2
 import chisel3.stage.ChiselStage
 import chisel3.util.{Decoupled, DecoupledIO}
 
