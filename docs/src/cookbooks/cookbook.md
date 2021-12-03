@@ -24,6 +24,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * [How do I unpack a value ("reverse concatenation") like in Verilog?](#how-do-i-unpack-a-value-reverse-concatenation-like-in-verilog)
 * [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
+* [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
 * Predictable Naming
   * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
   * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
@@ -404,6 +405,33 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 }
 ```
 
+### How do I minimize the number of bits used in an output vector?
+
+Use inferred width and a sequence instead of a `Vec`:
+
+Consider:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+// Count the number of set bits up to and including each bit position
+class CountBits(width: Int) extends Module {
+  val bits = IO(Input(UInt(width.W)))
+  val countSequence = Seq.tabulate(width)(i => IO(Output(UInt())))
+  val countVector = IO(Output(Vec(width, UInt())))
+  countSequence.zipWithIndex.foreach { case (port, i) =>
+    port := util.PopCount(bits(i, 0))
+  }
+  countVector := countSequence
+}
+```
+
+As can be seen the number of bits in the output with a sequence is adapted to actual required bits, whereas all elements in a Vec() are of the same width.
+
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new CountBits(4))
+```
+
 ## Predictable Naming
 
 ### How do I get Chisel to name signals properly in blocks like when/withClockAndReset?
@@ -560,31 +588,4 @@ ChiselStage.emitVerilog(new CoercedRegConnect {
   // dontTouch so that it shows up in the Verilog
   dontTouch(monitor)
 })
-```
-
-### How do I minimize the number of bits used in an output vector?
-
-Use inferred width and a sequence instead of a `Vec`:
-
-Consider:
-
-```scala mdoc:silent:reset
-import chisel3._
-
-// Count the number of set bits up to and including each bit position
-class CountBits(width: Int) extends Module {
-  val bits = IO(Input(UInt(width.W)))
-  val countSequence = Seq.tabulate(width)(i => IO(Output(UInt())))
-  val countVector = IO(Output(Vec(width, UInt())))
-  countSequence.zipWithIndex.foreach { case (port, i) =>
-    port := util.PopCount(bits(i, 0))
-  }
-  countVector := countSequence
-}
-```
-
-As can be seen the number of bits in the output with a sequence is adapted to actual required bits, whereas all elements in a Vec() are of the same width.
-
-```scala mdoc:verilog
-ChiselStage.emitVerilog(new CountBits(4))
 ```
