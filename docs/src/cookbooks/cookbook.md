@@ -564,7 +564,7 @@ ChiselStage.emitVerilog(new CoercedRegConnect {
 
 ### How do I minimize the number of bits used in an output vector?
 
-Use inferred with and a sequence instead of a Vec():
+Use inferred width and a sequence instead of a `Vec`:
 
 Consider:
 
@@ -576,35 +576,15 @@ class CountBits(width: Int) extends Module {
   val bits = IO(Input(UInt(width.W)))
   val countSequence = Seq.tabulate(width)(i => IO(Output(UInt())))
   val countVector = IO(Output(Vec(width, UInt())))
-  (countSequence zip (0 until bits.asBools.length).map { i =>
-    VecInit(bits.asBools.slice(0, i + 1)).count { b: Bool =>
-      b
-    }
-  }).foreach {
-    case (a, b) =>
-      a := b
+  countSequence.zipWithIndex.foreach { case (port, i) =>
+    port := util.PopCount(bits(i, 0))
   }
   countVector := countSequence
 }
-
-println(getVerilogString(new CountBits(4)))
 ```
 
 As can be seen the number of bits in the output with a sequence is adapted to actual required bits, whereas all elements in a Vec() are of the same width.
 
-```verilog
-
-module CountBits(
-  input        clock,
-  input        reset,
-  input  [3:0] bits,
-  output       countSequence_0,
-  output [1:0] countSequence_1,
-  output [1:0] countSequence_2,
-  output [2:0] countSequence_3,
-  output [2:0] countVector_0,
-  output [2:0] countVector_1,
-  output [2:0] countVector_2,
-  output [2:0] countVector_3
-);
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new CountBits(4))
 ```
