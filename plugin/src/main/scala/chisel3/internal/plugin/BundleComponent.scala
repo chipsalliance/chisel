@@ -53,12 +53,16 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
+    val objectType = inferType(tq"Object")
     val bundleTpe = inferType(tq"chisel3.Bundle")
     val dataTpe = inferType(tq"chisel3.Data")
     val seqMapTpe = inferType(tq"scala.collection.immutable.SeqMap[String,$dataTpe]")
 
     // Not cached because it should only be run once per class (thus once per Type)
     def isBundle(sym: Symbol): Boolean = sym.tpe <:< bundleTpe
+    def isObject(sym: Symbol): Boolean = {
+      sym.name.toString == "Object"
+    }
 
     val isDataCache = new mutable.HashMap[Type, Boolean]
     // Cached because this is run on every argument to every Bundle
@@ -221,27 +225,45 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             elements.toList.reverse
           }
 
-          def getSuperClassBundleFields(parents: List[Tree]): List[(String, Tree)] = {
+          /* extract the true fields from the super classes a given bundle
+           */
+          def getSuperClassBundleFields(bundleSymbol: Symbol): List[(String, Tree)] = {
+            val parents = bundleSymbol.parentSymbols
+
+            show(s"getSuperClassBundle: " + parents.map(_.name.toString))
             parents.flatMap {
-              case parent if isBundle(parent.symbol) =>
-                parent.symbol.info.decls.flatMap {
-                  case decl if isData(decl) => Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
-                  case _ => None
+//              case parent if isBundle(parent) =>
+              case parent =>
+                val superFields = getSuperClassBundleFields(parent)
+                show(s"getSuper processing ${parent}: \n" +showRaw(parent))
+                superFields ++
+                parent.info.decls.flatMap {
+                  case decl if decl.isPublic =>
+//                    show(s"Processing DECL ${decl}  isData=${isData(decl)} ${showRaw(decl)} : ${showRaw(decl.typeSignature)}")
+                    if (isData(decl)) {
+                      show(s"Processing DECL ${decl}  isData=${isData(decl)} ${showRaw(decl)} : ${showRaw(decl.typeSignature)}")
+                      show(s"Found a field in $parent.${decl}")
+                      Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
+                    } else if (parent.isTrait && isData(decl.typeSignature.typeSymbol)) {
+                      show(s"GOT a BOOL field in $parent.$decl ${decl.typeSignature} raw=${showRaw(decl.typeSignature.typeSymbol)}")
+                      Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
+                    } else if (decl.typeSignature.toString == "=> chisel3.Bool") {
+                      show(s"Found a BOOL field in $parent.$decl ${decl.typeSignature} raw=${showRaw(decl.typeSignature.typeSymbol)}")
+                      Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
+                    } else {
+                      None
+                    }
+                  case _=>
+                    None
                 }
-              case _ => None
             }.reverse
           }
-          val superFields = getSuperClassBundleFields(bundle.impl.parents)
+
+          val superFields = getSuperClassBundleFields(bundle.symbol)
           show(s"SuperFields:\n" + superFields.map(x => s"${x._1}: ${x._2}").mkString("\n"))
 
-          val elementArgs: List[(String, Tree)] = getBundleElements(bundle.impl.body) ++ getSuperClassBundleFields(bundle.impl.parents)
+          val elementArgs: List[(String, Tree)] = getBundleElements(bundle.impl.body) ++ superFields
 
-//          val elementArgs: List[(String, Tree)] = elements.map { case (symbol, chiselType) =>
-//            // Make this.<ref>
-//            val select = gen.mkAttributedSelect(thiz, symbol)
-//            (symbol.name.toString.trim, select)
-//          }
-//
           val elementsImplSym = bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
           // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
           elementsImplSym.resetFlag(Flags.METHOD)

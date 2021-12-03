@@ -15,6 +15,8 @@ class HasDemoBundle extends Module {
 
   trait Varmint {
     val varmint = Bool()
+    def vermin = Bool()
+    private val puppy = Bool()
   }
 
   abstract class AbstractBundle extends Bundle {
@@ -24,7 +26,7 @@ class HasDemoBundle extends Module {
   }
 
   class OneFieldBundle extends Bundle {
-    val fieldOne = SInt(8.W)
+    val fieldOne =  SInt(8.W)
   }
 
   class TwoFieldBundle extends OneFieldBundle {
@@ -33,14 +35,15 @@ class HasDemoBundle extends Module {
   }
   class AnimalBundle(w1: Int, w2: Int) extends Bundle {
     val dog = SInt(w1.W)
-    val fox = UInt(w2.W)
+    val fox =  UInt(w2.W)
   }
 
   class DemoBundle[T <: Data](gen: T, gen2: => T) extends TwoFieldBundle with Varmint {
     val foo = gen
     val bar = Bool()
     val qux = gen2
-    val bad = 4
+    val bad = 44
+    //TODO: This line is breaking things,, not sure why, error is AliasedAggregateField
 //     val baz = Decoupled(UInt(16.W))
     val animals = new AnimalBundle(4, 8)
   }
