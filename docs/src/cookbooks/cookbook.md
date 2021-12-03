@@ -407,7 +407,7 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 
 ### How do I minimize the number of bits used in an output vector?
 
-Use inferred width and a sequence instead of a `Vec`:
+Use inferred width and a `Seq` instead of a `Vec`:
 
 Consider:
 
@@ -426,10 +426,11 @@ class CountBits(width: Int) extends Module {
 }
 ```
 
-As can be seen the number of bits in the output with a sequence is adapted to actual required bits, whereas all elements in a Vec() are of the same width.
+Unlike `Vecs` which represent a singular Chisel type and must have the same width for every element,
+`Seq` is a purely Scala construct, so their elements are independent from the perspective of Chisel and can have different widths.
 
 ```scala mdoc:verilog
-ChiselStage.emitVerilog(new CountBits(4))
+chisel3.stage.ChiselStage.emitVerilog(new CountBits(4))
 ```
 
 ## Predictable Naming
