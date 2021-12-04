@@ -364,7 +364,7 @@ Consider:
 import chisel3._
 
 // Count the number of set bits up to and including each bit position
-class CountBits(width: Int) extends Module {
+class CountBits(width: Int) extends MultiIOModule {
   val bits = IO(Input(UInt(width.W)))
   val countSequence = Seq.tabulate(width)(i => IO(Output(UInt())))
   val countVector = IO(Output(Vec(width, UInt())))
