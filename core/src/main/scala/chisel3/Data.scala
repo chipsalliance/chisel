@@ -605,6 +605,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     *
     * @return a copy of the object.
     */
+  @deprecated("cloneType is not typesafe, use chisel3.chiselTypeOf instead, this API will be private in Chisel 3.6", "Chisel 3.5")
   def cloneType: this.type
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
