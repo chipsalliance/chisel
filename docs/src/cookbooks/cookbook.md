@@ -25,6 +25,8 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
 * [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
+* [How do I create a single input/output wire for a Bundle?]
+(#how-do-i-create-a-bundle-from-a-uint)
 * Predictable Naming
   * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
   * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
@@ -62,24 +64,33 @@ class Foo extends RawModule {
 
 Use the [`asTypeOf`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html#asTypeOf[T%3C:chisel3.Data](that:T):T) method to reinterpret the [`UInt`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html) as the type of the [`Bundle`](https://www.chisel-lang.org/api/latest/chisel3/Bundle.html).
 
+If you have a bundle with many elements in a module interface,
+the interface can become quite verbose. To simplify the module
+interface, the entire bundle can be represented with a single wire.
+
 ```scala mdoc:silent:reset
 import chisel3._
 
-class MyBundle extends Bundle {
-  val foo = UInt(4.W)
-  val bar = UInt(4.W)
+class FooBundle extends Bundle {
+  // Lots of individual wires
+  val a = Vec(5, Bool())
 }
 
-class Foo extends RawModule {
-  val uint = 0xb4.U
-  val bundle = uint.asTypeOf(new MyBundle)
-  
-  printf(p"$bundle") // Bundle(foo -> 11, bar -> 4)
+class Foo() extends Module {
+  // many wires
+  val b = IO(Input(new FooBundle))
+  // single wire
+  val c = IO(Input(UInt((new FooBundle).getWidth.W)))
+  val out = IO(Output(Bool()))
 
-  // Test
-  assert(bundle.foo === 0xb.U)
-  assert(bundle.bar === 0x4.U)
+  val foo = c.asTypeOf(new FooBundle)
+
+  out := (b.a ++ foo.a).reduce((a, b)=> a||b)
 }
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new Foo())
 ```
 
 ### How can I tieoff a Bundle/Vec to 0?
