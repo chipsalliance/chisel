@@ -27,7 +27,6 @@ sealed abstract class Aggregate extends Data {
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    println(s"Bind: Elements " + allElements.map(x => s"${x} ${x.hashCode}").mkString(","))
     val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
       throw new AliasedAggregateFieldException(s"Aggregate $this contains aliased fields $duplicates")
@@ -1062,6 +1061,39 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
    * This method will be overwritten by the Chisel-Plugin
    */
   protected def _elementsImpl: SeqMap[String, Data] = {
+    println(s"In elementsImp for ${this.className}")
+    val nameMap = LinkedHashMap[String, Data]()
+    for (m <- getPublicFields(classOf[Bundle])) {
+      getBundleField(m) match {
+        case Some(d: Data) =>
+          requireIsChiselType(d)
+
+          if (nameMap contains m.getName) {
+            require(nameMap(m.getName) eq d)
+          } else {
+            nameMap(m.getName) = d
+          }
+        case None =>
+          if (!ignoreSeq) {
+            m.invoke(this) match {
+              case s: scala.collection.Seq[Any] if s.nonEmpty => s.head match {
+                // Ignore empty Seq()
+                case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
+                  s"(found public Seq member '${m.getName}'). " +
+                  "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
+                  "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
+                  "IgnoreSeqInBundle.")
+                case _ => // don't care about non-Data Seq
+              }
+              case _ => // not a Seq
+            }
+          }
+      }
+    }
+    VectorMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
+  }
+
+  def oldElements: SeqMap[String, Data] = {
     println(s"In elementsImp for ${this.className}")
     val nameMap = LinkedHashMap[String, Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
