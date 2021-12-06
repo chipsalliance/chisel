@@ -59,9 +59,11 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     val seqMapTpe = inferType(tq"scala.collection.immutable.SeqMap[String,$dataTpe]")
 
     // Not cached because it should only be run once per class (thus once per Type)
-    def isBundle(sym: Symbol): Boolean = sym.tpe <:< bundleTpe
-    def isObject(sym: Symbol): Boolean = {
-      sym.name.toString == "Object"
+    def isBundle(sym: Symbol): Boolean = {
+      sym.tpe <:< bundleTpe
+    }
+    def isExactBundle(sym: Symbol): Boolean = {
+      sym.tpe =:= bundleTpe
     }
 
     val isDataCache = new mutable.HashMap[Type, Boolean]
@@ -100,29 +102,14 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     override def transform(tree: Tree): Tree = tree match {
 
-      // The following case will show the abstract bunbdle
-//      case bundle: ClassDef if isBundle(bundle.symbol) && bundle.mods.hasFlag(Flag.ABSTRACT) =>
-//        println(s"!!!!!!!!! We have an abstract bundle $bundle")
-//        bundle
-
-//      case bundle: ClassDef if isBundle(bundle.symbol) && !bundle.mods.hasFlag(Flag.ABSTRACT) =>
       case bundle: ClassDef if isBundle(bundle.symbol) =>
         // We need to learn how to match on abstact bundles, line below fails to instantiate abstact
 //      case bundle: ClassDef if isBundle(bundle.symbol) =>
         def show(string: String): Unit = {
-          if (Seq("DemoBundle", "AnimalBundle", "OneFieldBundle", "AbstractBundle", "ParamIsField")
-                  .contains(bundle.symbol.name.toString())) {
-            println(("=" * 100 + "\n") * 1)
+          if (bundle.symbol.name.toString.startsWith("Bpip")) {
             println(string)
           }
         }
-
-        show(("#" * 80 + "\n") * 3)
-
-        show(s"Bundle: ${bundle.toString}" +
-          s"\nBundleType: ${bundle.symbol.typeSignature.toString}")
-
-        show(s"BundleName: '${bundle.symbol.name}'")
 
         // ==================== Generate _cloneTypeImpl ====================
         val (con, params) = getConstructorAndParams(bundle.impl.body)
@@ -132,17 +119,13 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         }
 
         val constructor = con.get
-        show(s"Constructor: ${constructor.toString()}")
         val thiz = gen.mkAttributedThis(bundle.symbol)
 
 //          show(s"thiz: ${thiz.toString()}")
-        show(s"thiz: ${thiz.tpe.toString()}")
 //          show(s"thiz: ${thiz.tpe.members.mkString("\n")}")
 
         // The params have spaces after them (Scalac implementation detail)
         val paramLookup: String => Symbol = params.map(sym => sym.name.toString.trim -> sym).toMap
-
-        show(paramLookup.toString())
 
         var additionalMethods: Seq[Tree] = Seq()
 
@@ -193,17 +176,25 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           result
         }
 
+//        def showDecls(decls: Scope): String = {
+//          decls.map { decl =>
+//            decl.name.toString + ": " + decl.typeSignature.toString() + " isData=" + isData(decl)
+//          }.mkString("\n  ")
+//        }
+        def showDecls(info: Type): String = {
+          info.members.mkString("\n")
+        }
         if (isSupportedBundleType) {
+          show(("#" * 80 + "\n") * 2)
+          show(s"Processing: Bundle named: ${bundle.name.toString}")
+          show(" ")
+          show(s"BundleType: ${bundle.symbol.typeSignature.toString}")
 
-          show("Bundle parents:\n" + bundle.impl.parents.map { parent =>
+          show("Bundle parents: \n" + bundle.impl.parents.map { parent =>
             s"parent: ${parent.symbol.name} [${isBundle(parent.symbol)}] " +
               s"IsBundle=" + isBundle(parent.symbol) + parent.symbol + "\n" +
 //              "parent.symbol.info.decl: " + parent.symbol.info.decl(parent.symbol.info.decls.head.name). +
-              s"\nDecls::\n  " +
-              parent.symbol.info.decls.map { decl =>
-                decl.name.toString + ": " + decl.typeSignature.toString() + " isData=" + isData(decl)
-              }.mkString("\n  ") +
-              " grandparents:\n" + parent.symbol.parentSymbols.mkString(",")
+              s"\nDecls::\n  " + showDecls(parent.symbol.info)
           }.mkString("\n"))
 
           //TODO: Without the trims over the next dozen or so lines the variable names seem to have
@@ -227,35 +218,47 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
           /* extract the true fields from the super classes a given bundle
            */
-          def getSuperClassBundleFields(bundleSymbol: Symbol): List[(String, Tree)] = {
+          def getSuperClassBundleFields(bundleSymbol: Symbol, depth: Int = 0): List[(String, Tree)] = {
             val parents = bundleSymbol.parentSymbols
 
-            show(s"getSuperClassBundle: " + parents.map(_.name.toString))
+            show(s"getSuperClassBundle(${bundleSymbol.name.toString}): parents: " + parents.map(_.name.toString))
+
             parents.flatMap {
 //              case parent if isBundle(parent) =>
               case parent =>
-                val superFields = getSuperClassBundleFields(parent)
-                show(s"getSuper processing ${parent}: \n" +showRaw(parent))
-                superFields ++
-                parent.info.decls.flatMap {
-                  case decl if decl.isPublic =>
-//                    show(s"Processing DECL ${decl}  isData=${isData(decl)} ${showRaw(decl)} : ${showRaw(decl.typeSignature)}")
+//                show(showDecls(parent.info.decls))
+
+                show(s"\n\nParent fields: " + parent.getClass.getFields.mkString(","))
+//                show(s"Parent methods: " + parent.getClass.getMethods.mkString(","))
+                show(s"parent.info.decls:\n" + showDecls(parent.info))
+                val currentFields = parent.info.decls.flatMap {
+                        //TODO: Figure out what exactly to test for here, does it need to be public
+                        //      or not private or what
+//                  case decl if decl.isPublic =>
+                  case decl =>
+                    show(s"Processing DECL ${decl}  isData=${isData(decl)}  info=${showRaw(decl.isMethod)} : ${showRaw(decl.typeSignature)}")
                     if (isData(decl)) {
                       show(s"Processing DECL ${decl}  isData=${isData(decl)} ${showRaw(decl)} : ${showRaw(decl.typeSignature)}")
                       show(s"Found a field in $parent.${decl}")
                       Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
                     } else if (parent.isTrait && isData(decl.typeSignature.typeSymbol)) {
-                      show(s"GOT a BOOL field in $parent.$decl ${decl.typeSignature} raw=${showRaw(decl.typeSignature.typeSymbol)}")
+                      show(s"GOT a field in $parent.$decl ${decl.typeSignature} raw=${showRaw(decl.typeSignature.typeSymbol)}")
                       Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
                     } else if (decl.typeSignature.toString == "=> chisel3.Bool") {
                       show(s"Found a BOOL field in $parent.$decl ${decl.typeSignature} raw=${showRaw(decl.typeSignature.typeSymbol)}")
                       Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
                     } else {
+                      show(s"decl: ${decl.name.toString} was not a field")
                       None
                     }
-                  case _=>
-                    None
+//                  case decl =>
+//                    show(s"Processing DECL ${decl}  isData=${isData(decl)} ${showRaw(decl)} : ${showRaw(decl.typeSignature)}")
+//                    show(s"decl: ${decl.name.toString} was not public")
+//                    None
                 }
+                val superFields = if (depth < 4 && ! isExactBundle(parent)) { getSuperClassBundleFields(parent, depth + 1) } else { List() }
+                show(s"getSuper processing ${bundleSymbol.name.toString}.${parent}: \n" +showRaw(parent))
+                superFields ++ currentFields
             }.reverse
           }
 
@@ -276,6 +279,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           show("ElementsImpl: " + showRaw(elementsImpl) + "\n\n\n")
           show(s"Made: buildElementAccessor was built for ${bundle.symbol.name.toString}")
           additionalMethods ++= Seq(elementsImpl)
+
+          show(("#" * 80 + "\n") * 2)
         }
 
         // ==================== Generate _usingPlugin ====================
