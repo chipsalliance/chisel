@@ -169,8 +169,8 @@ class BpipDecoupled extends BpipOneField  {
 }
 
 class BpipBadBundleWithHardware extends Bundle {
-  val goodField = SInt(8.W)
-  val badField  = 244.U(16.W)
+  val noHardwareField = SInt(8.W)
+  val isHardwareField  = 244.U(16.W)
 }
 
 class BpipExtendsBadBundleWithHardware extends BpipBadBundleWithHardware  {
@@ -243,7 +243,7 @@ object DebugProblem5 {
 }
 
 class BadSeqBundle extends Bundle {
-  val bar = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
+  val badSeqField = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
 }
 
 /* plugin should not affect the seq detection
