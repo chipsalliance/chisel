@@ -223,34 +223,72 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
             show(s"getSuperClassBundle(${bundleSymbol.name.toString}): parents: " + parents.map(_.name.toString))
 
-            parents.flatMap {
-//              case parent if isBundle(parent) =>
-              case parent =>
-//                show(showDecls(parent.info.decls))
+            def showType(tpe: Type): String = {
+              val tf = BooleanFlag(Some(true))
+              tpe match {
+                case NullaryMethodType(TypeRef(ThisType(t1), t2, list)) =>
+                  s"matched: ${t1}:$t2}" +
+                    s"IsData: ${isData(TypeRef(ThisType(t1), t2, list).typeSymbol)}" +
+                    showRaw(tpe, printTypes = tf, printKinds = tf, printPositions = tf)
+                case _ =>
+                  "Not matched" + showRaw(tpe, printTypes = tf, printKinds = tf, printPositions = tf)
+              }
+            }
 
-                show(s"\n\nParent fields: " + parent.getClass.getFields.mkString(","))
-//                show(s"Parent methods: " + parent.getClass.getMethods.mkString(","))
+            def isMethodReturningData(tpe: Type): Boolean = {
+              tpe match {
+                case NullaryMethodType(TypeRef(ThisType(t1), t2, list)) =>
+                  isData(TypeRef(ThisType(t1), t2, list).typeSymbol)
+                case _ =>
+                  false
+              }
+            }
+
+            def getNullaryMethodType(member: Symbol): Type = {
+              member.tpe match {
+                case NullaryMethodType(TypeRef(ThisType(t1), t2, list)) =>
+                  TypeRef(ThisType(t1), t2, list)
+                case _ =>
+                  member.tpe
+              }
+            }
+
+            def isBundleField(member: Symbol): Boolean = {
+              member.isAccessor && isMethodReturningData(member.tpe)
+            }
+
+            parents.flatMap {
+              case parent =>
+
                 show(s"parent.info.decls:\n" + showDecls(parent.info))
-                val currentFields = parent.info.decls.flatMap {
-                        //TODO: Figure out what exactly to test for here, does it need to be public
-                        //      or not private or what
-//                  case decl if decl.isPublic =>
-                  case decl =>
-                    show(s"Processing DECL ${decl}  isData=${isData(decl)}  info=${showRaw(decl.isMethod)} : ${showRaw(decl.typeSignature)}")
-                    if (isData(decl)) {
-                      show(s"Processing DECL ${decl}  isData=${isData(decl)} ${showRaw(decl)} : ${showRaw(decl.typeSignature)}")
-                      show(s"Found a field in $parent.${decl}")
-                      Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
-                    } else if (parent.isTrait && isData(decl.typeSignature.typeSymbol)) {
-                      show(s"GOT a field in $parent.$decl ${decl.typeSignature} raw=${showRaw(decl.typeSignature.typeSymbol)}")
-                      Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
-                    } else if (decl.typeSignature.toString == "=> chisel3.Bool") {
-                      show(s"Found a BOOL field in $parent.$decl ${decl.typeSignature} raw=${showRaw(decl.typeSignature.typeSymbol)}")
-                      Some(decl.name.toString.trim -> gen.mkAttributedSelect(thiz, decl))
+                val currentFields = parent.info.members.flatMap {
+
+                  case member if member.isPublic =>
+                    show(s"    Processing member ${member} isMethod=${member.isMethod} isAccessor==${member.isAccessor} tpe=${member.tpe}:${showType(member.tpe)} : kind: ${member.kindString} " +
+                      s"${showRaw(member.typeSignature, printKinds = BooleanFlag(Some(true)), printIds = BooleanFlag(Some(true)))}")
+
+                    if (isBundleField(member)) {
+                      show(s"     MATCHED: Trait Member ${member}  isData=${isData(member)} ${showRaw(member)} : ${showRaw(member.typeSignature)}")
+                      Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
+                    } else if (isData(member)) {
+                      show(s"     Matched Bundle Member ${member}  isData=${isData(member)} ${showRaw(member)} : ${showRaw(member.typeSignature)}")
+                      show(s"     Found a field in $parent.${member}")
+                      Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
+//                    } else if (parent.isTrait && isData(member.typeSignature.typeSymbol)) {
+//                      show(s"GOT a field in $parent.$member ${member.typeSignature} raw=${showRaw(member.typeSignature.typeSymbol)}")
+//                      Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
+                    } else if (member.kindString == "value") {
+//                      member.typeSignature match {
+//                        case
+//                      }
+                      show(s"    Member ${member.name} found with type: ${member.tpe} typeSig: ${member.typeSignature}")
+                      Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
                     } else {
-                      show(s"decl: ${decl.name.toString} was not a field")
+                      show(s"    method: ${member.name} was not a field")
                       None
                     }
+
+                  case _ => None
 //                  case decl =>
 //                    show(s"Processing DECL ${decl}  isData=${isData(decl)} ${showRaw(decl)} : ${showRaw(decl.typeSignature)}")
 //                    show(s"decl: ${decl.name.toString} was not public")
