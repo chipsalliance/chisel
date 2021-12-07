@@ -141,8 +141,8 @@ object BundleComparator {
 //}
 
 trait BpipTraitWithField {
-  val fromTrait = Bool()
-  def notField = Bool()
+  val fromTrait = SInt(17.W)
+  def notField = SInt(22.W)
 }
 
 class BpipOneField extends Bundle with BpipTraitWithField {
@@ -153,7 +153,7 @@ class BpipOneField extends Bundle with BpipTraitWithField {
 class BpipTwoField extends BpipOneField  {
   val fieldTwo = SInt(8.W)
   val fieldThree = Vec(4, UInt(12.W))
-  val baz = Decoupled(UInt(16.W))
+//  val baz = Decoupled(UInt(16.W))
 }
 
 class BpipDecoupled extends BpipOneField  {
@@ -182,7 +182,7 @@ object DebugProblem2  {
  *
  */
 class DebugProblem3 extends Module {
-  val out1 = IO(Output(new BpipOneField))
+  val out1 = IO(Output(new BpipTwoField))
   out1 := DontCare
   println(s"out1.elements:\n" + out1.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
 }
