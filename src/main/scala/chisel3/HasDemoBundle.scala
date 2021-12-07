@@ -168,6 +168,16 @@ class BpipDecoupled extends BpipOneField  {
   val baz = Decoupled(UInt(16.W))
 }
 
+class BpipBadBundleWithHardware extends Bundle {
+  val goodField = SInt(8.W)
+  val badField  = 244.U(16.W)
+}
+
+class BpipExtendsBadBundleWithHardware extends BpipBadBundleWithHardware  {
+  val anotherField = SInt(8.W)
+}
+
+
 class DebugProblem2 extends Module {
   val out1 = IO(Output(new BpipDecoupled))
   out1 := DontCare
@@ -199,5 +209,58 @@ object DebugProblem3 {
     println("done!")
   }
 }
+
+/* plugin should not affect the seq detection
+ *
+ */
+class DebugProblem4 extends Module {
+  val out1 = IO(Output(new BpipBadBundleWithHardware))
+  out1 := DontCare
+  println(s"out1.elements:\n" + out1.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
+}
+
+object DebugProblem4 {
+  def main(args: Array[String]): Unit = {
+    ChiselStage.emitFirrtl(new DebugProblem4)
+    println("done!")
+  }
+}
+
+/* plugin should not affect the seq detection
+ *
+ */
+class DebugProblem5 extends Module {
+  val out1 = IO(Output(new BpipExtendsBadBundleWithHardware))
+  out1 := DontCare
+  println(s"out1.elements:\n" + out1.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
+}
+
+object DebugProblem5 {
+  def main(args: Array[String]): Unit = {
+    ChiselStage.emitFirrtl(new DebugProblem5)
+    println("done!")
+  }
+}
+
+class BadSeqBundle extends Bundle {
+  val bar = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
+}
+
+/* plugin should not affect the seq detection
+ *
+ */
+class DebugProblem6 extends Module {
+  val out1 = IO(Output(new BadSeqBundle))
+  out1 := DontCare
+  println(s"out1.elements:\n" + out1.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
+}
+
+object DebugProblem6 {
+  def main(args: Array[String]): Unit = {
+    ChiselStage.emitFirrtl(new DebugProblem6)
+    println("done!")
+  }
+}
+
 
 
