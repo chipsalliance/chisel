@@ -64,12 +64,12 @@ class AluMux1File extends Module {
   // Default value for aluMux1Out
   io.aluMux1Out := 0.U
 
-  switch (io.aluMux1Sel) {
-    is (selectRS1) {
-      io.aluMux1Out := io.rs1Out
+  io.aluMux1Sel match {
+    case AluMux1Sel.selectRS1 => {
+         io.aluMux1Out := io.rs1Out
     }
-    is (selectPC) {
-      io.aluMux1Out := io.pcOut
+    case AluMux1Sel.selectPC => {
+         io.aluMux1Out := io.pcOut
     }
   }
 }
