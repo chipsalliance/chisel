@@ -16,8 +16,8 @@ import scala.tools.nsc.transform.TypingTransformers
   * 3) Builds a `def elements` that is computed once in this plugin
   *    Eliminates needing reflection to discover the hardware fields of a `Bundle`
   *
-  * @param global
-  * @param arguments
+  * @param global     the environment
+  * @param arguments  run time parameters to code
   */
 private[plugin] class BundleComponent(val global: Global, arguments: ChiselPluginArguments)
     extends PluginComponent
@@ -53,10 +53,9 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
-    val objectType = inferType(tq"Object")
-    val bundleTpe = inferType(tq"chisel3.Bundle")
-    val dataTpe = inferType(tq"chisel3.Data")
-    val seqMapTpe = inferType(tq"scala.collection.immutable.SeqMap[String,$dataTpe]")
+    val bundleTpe:  Type = inferType(tq"chisel3.Bundle")
+    val dataTpe:    Type = inferType(tq"chisel3.Data")
+    val seqMapTpe:  Type = inferType(tq"scala.collection.immutable.SeqMap[String,$dataTpe]")
 
     // Not cached because it should only be run once per class (thus once per Type)
     def isBundle(sym: Symbol): Boolean = {
@@ -105,7 +104,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       case bundle: ClassDef if isBundle(bundle.symbol) =>
         // We need to learn how to match on abstact bundles, line below fails to instantiate abstact
 //      case bundle: ClassDef if isBundle(bundle.symbol) =>
-        def show(string: String): Unit = {
+        def show(string: => String): Unit = {
           if (bundle.symbol.name.toString.startsWith("Bpip")) {
             println(string)
           }
@@ -121,9 +120,6 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         val constructor = con.get
         val thiz = gen.mkAttributedThis(bundle.symbol)
 
-//          show(s"thiz: ${thiz.toString()}")
-//          show(s"thiz: ${thiz.tpe.members.mkString("\n")}")
-
         // The params have spaces after them (Scalac implementation detail)
         val paramLookup: String => Symbol = params.map(sym => sym.name.toString.trim -> sym).toMap
 
@@ -133,21 +129,23 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           // Create a this.<ref> for each field matching order of constructor arguments
           // List of Lists because we can have multiple parameter lists
           val conArgs: List[List[Tree]] =
-          constructor.vparamss.map(_.map { vp =>
-            val p = paramLookup(vp.name.toString)
-            // Make this.<ref>
-            val select = gen.mkAttributedSelect(thiz, p)
-            // Clone any Data parameters to avoid field aliasing, need full clone to include direction
-            if (isData(vp.symbol)) cloneTypeFull(select) else select
-          })
+            constructor.vparamss.map(_.map { vp =>
+              val p = paramLookup(vp.name.toString)
+              // Make this.<ref>
+              val select = gen.mkAttributedSelect(thiz, p)
+              // Clone any Data parameters to avoid field aliasing, need full clone to include direction
+              if (isData(vp.symbol)) cloneTypeFull(select) else select
+            })
 
           val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
-          val ttpe = if (tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
+          val ttpe =
+            if (tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
           val newUntyped = New(ttpe, conArgs)
           val neww = localTyper.typed(newUntyped)
 
           // Create the symbol for the method and have it be associated with the Bundle class
-          val cloneTypeSym = bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+          val cloneTypeSym =
+            bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
           // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
           cloneTypeSym.resetFlag(Flags.METHOD)
           // Need to set the type to chisel3.Bundle for the override to work
@@ -169,21 +167,18 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         def isSupportedBundleType: Boolean = {
           val result =
             arguments.buildElementsAccessor && bundle.impl.parents.length < 100 &&
-            !bundle.mods.hasFlag(Flag.ABSTRACT)
-          show(s"buildElementsAccessor=${arguments.buildElementsAccessor} && " +
-            s"parents=${bundle.impl.parents.length} result=${result}"
+              !bundle.mods.hasFlag(Flag.ABSTRACT)
+          show(
+            s"buildElementsAccessor=${arguments.buildElementsAccessor} && " +
+              s"parents=${bundle.impl.parents.length} result=$result"
           )
           result
         }
 
-//        def showDecls(decls: Scope): String = {
-//          decls.map { decl =>
-//            decl.name.toString + ": " + decl.typeSignature.toString() + " isData=" + isData(decl)
-//          }.mkString("\n  ")
-//        }
-        def showDecls(info: Type): String = {
+        def showInfo(info: Type): String = {
           info.members.mkString("\n")
         }
+
         if (isSupportedBundleType) {
           show(("#" * 80 + "\n") * 2)
           show(s"Processing: Bundle named: ${bundle.name.toString}")
@@ -194,7 +189,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             s"parent: ${parent.symbol.name} [${isBundle(parent.symbol)}] " +
               s"IsBundle=" + isBundle(parent.symbol) + parent.symbol + "\n" +
 //              "parent.symbol.info.decl: " + parent.symbol.info.decl(parent.symbol.info.decls.head.name). +
-              s"\nDecls::\n  " + showDecls(parent.symbol.info)
+              s"\nDecls::\n  " + showInfo(parent.symbol.info)
           }.mkString("\n"))
 
           //TODO: Without the trims over the next dozen or so lines the variable names seem to have
@@ -207,7 +202,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             body.foreach {
               case acc: ValDef if isBundle(acc.symbol) =>
                 elements += acc.symbol.name.toString.trim -> gen.mkAttributedSelect(thiz, acc.symbol)
-              case acc: ValDef if isData(acc.symbol) && ! isEmptyTree(acc.rhs) =>
+              case acc: ValDef if isData(acc.symbol) && !isEmptyTree(acc.rhs) =>
                 // empty tree test seems necessary to rule out generator methods passed into bundles
                 // but there must be a better way here
                 elements += acc.symbol.name.toString.trim -> gen.mkAttributedSelect(thiz, acc.symbol)
@@ -244,44 +239,32 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
               }
             }
 
-            def getNullaryMethodType(member: Symbol): Type = {
-              member.tpe match {
-                case NullaryMethodType(TypeRef(ThisType(t1), t2, list)) =>
-                  TypeRef(ThisType(t1), t2, list)
-                case _ =>
-                  member.tpe
-              }
-            }
-
             def isBundleField(member: Symbol): Boolean = {
               member.isAccessor && isMethodReturningData(member.tpe)
             }
 
             parents.flatMap {
               case parent =>
-
-                show(s"parent.info.decls:\n" + showDecls(parent.info))
+                show(s"parent.info.decls:\n" + showInfo(parent.info))
                 val currentFields = parent.info.members.flatMap {
 
                   case member if member.isPublic =>
-                    show(s"    Processing member ${member} isMethod=${member.isMethod} isAccessor==${member.isAccessor} tpe=${member.tpe}:${showType(member.tpe)} : kind: ${member.kindString} " +
-                      s"${showRaw(member.typeSignature, printKinds = BooleanFlag(Some(true)), printIds = BooleanFlag(Some(true)))}")
+                    show(
+                      s"    Processing member ${member} isMethod=${member.isMethod} isAccessor==${member.isAccessor} tpe=${member.tpe}:${showType(member.tpe)} : kind: ${member.kindString} " +
+                        s"${showRaw(member.typeSignature, printKinds = BooleanFlag(Some(true)), printIds = BooleanFlag(Some(true)))}"
+                    )
 
                     if (isBundleField(member)) {
-                      show(s"     MATCHED: Trait Member ${member}  isData=${isData(member)} ${showRaw(member)} : ${showRaw(member.typeSignature)}")
+                      show(
+                        s"     MATCHED: Trait Member ${member}  isData=${isData(member)} ${showRaw(member)} : ${showRaw(member.typeSignature)}"
+                      )
                       Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
                     } else if (isData(member)) {
-                      show(s"     Matched Bundle Member ${member}  isData=${isData(member)} ${showRaw(member)} : ${showRaw(member.typeSignature)}")
+                      show(
+                        s"     Matched Bundle Member ${member}  isData=${isData(member)} ${showRaw(member)} : ${showRaw(member.typeSignature)}"
+                      )
                       show(s"     Found a field in $parent.${member}")
                       Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
-//                    } else if (parent.isTrait && isData(member.typeSignature.typeSymbol)) {
-//                      show(s"GOT a field in $parent.$member ${member.typeSignature} raw=${showRaw(member.typeSignature.typeSymbol)}")
-//                      Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
-                    } else if (member.kindString == "value") {
-//                      member.typeSignature match {
-//                        case
-//                      }
-                      show(s"    Member ${member.name} found with type: ${member.tpe} typeSig: ${member.typeSignature}")
                       Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
                     } else {
                       show(s"    method: ${member.name} was not a field")
@@ -289,13 +272,11 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
                     }
 
                   case _ => None
-//                  case decl =>
-//                    show(s"Processing DECL ${decl}  isData=${isData(decl)} ${showRaw(decl)} : ${showRaw(decl.typeSignature)}")
-//                    show(s"decl: ${decl.name.toString} was not public")
-//                    None
                 }
-                val superFields = if (depth < 4 && ! isExactBundle(parent)) { getSuperClassBundleFields(parent, depth + 1) } else { List() }
-                show(s"getSuper processing ${bundleSymbol.name.toString}.${parent}: \n" +showRaw(parent))
+                val superFields = if (depth < 4 && !isExactBundle(parent)) {
+                  getSuperClassBundleFields(parent, depth + 1)
+                } else { List() }
+                show(s"getSuper processing ${bundleSymbol.name.toString}.${parent}: \n" + showRaw(parent))
                 superFields ++ currentFields
             }.reverse
           }
@@ -305,13 +286,16 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
           val elementArgs: List[(String, Tree)] = getBundleElements(bundle.impl.body) ++ superFields
 
-          val elementsImplSym = bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+          val elementsImplSym =
+            bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
           // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
           elementsImplSym.resetFlag(Flags.METHOD)
           // Need to set the type to chisel3.Bundle for the override to work
           elementsImplSym.setInfo(NullaryMethodType(seqMapTpe))
 
-          val elementsImpl = localTyper.typed(DefDef(elementsImplSym, q"scala.collection.immutable.SeqMap.apply[String, chisel3.Data](..$elementArgs)"))
+          val elementsImpl = localTyper.typed(
+            DefDef(elementsImplSym, q"scala.collection.immutable.SeqMap.apply[String, chisel3.Data](..$elementArgs)")
+          )
 
           show("ELEMENTS: \n" + elementArgs.map { case (symbol, tree) => s"(${symbol}, ${tree})" }.mkString("\n"))
           show("ElementsImpl: " + showRaw(elementsImpl) + "\n\n\n")
@@ -328,14 +312,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
         val withMethods = deriveClassDef(bundle) { t =>
           deriveTemplate(t)(_ ++ additionalMethods)
-//            deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin)
         }
 
-//        val withMethods = deriveClassDef(bundle) { t =>
-//          deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin :+ elementsImpl)
-////            deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin)
-//        }
-//
         super.transform(localTyper.typed(withMethods))
 
       case _ => super.transform(tree)

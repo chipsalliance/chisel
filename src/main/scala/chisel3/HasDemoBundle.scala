@@ -140,9 +140,14 @@ object BundleComparator {
 //  }
 //}
 
-trait BpipTraitWithField {
-  val fromTrait = SInt(17.W)
-  def notField = SInt(22.W)
+trait BpipSuperTraitWithField {
+  val fromTraitOne = SInt(17.W)
+  def notFieldOne = SInt(22.W)
+}
+
+trait BpipTraitWithField extends BpipSuperTraitWithField {
+  val fromTraitTwo = SInt(17.W)
+  def notFieldTwo = SInt(22.W)
 }
 
 class BpipOneField extends Bundle with BpipTraitWithField {
@@ -153,6 +158,7 @@ class BpipOneField extends Bundle with BpipTraitWithField {
 class BpipTwoField extends BpipOneField  {
   val fieldTwo = SInt(8.W)
   val fieldThree = Vec(4, UInt(12.W))
+  val myInt = 7
 //  val baz = Decoupled(UInt(16.W))
 }
 

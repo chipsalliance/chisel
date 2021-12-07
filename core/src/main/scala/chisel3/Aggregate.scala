@@ -1061,7 +1061,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
    * This method will be overwritten by the Chisel-Plugin
    */
   protected def _elementsImpl: SeqMap[String, Data] = {
-    println(s"In elementsImp for ${this.className}")
     val nameMap = LinkedHashMap[String, Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
