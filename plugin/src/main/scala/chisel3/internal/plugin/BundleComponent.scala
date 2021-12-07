@@ -53,16 +53,24 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
-    val bundleTpe:  Type = inferType(tq"chisel3.Bundle")
-    val dataTpe:    Type = inferType(tq"chisel3.Data")
-    val seqMapTpe:  Type = inferType(tq"scala.collection.immutable.SeqMap[String,$dataTpe]")
+    val bundleTpe:         Type = inferType(tq"chisel3.Bundle")
+    val dataTpe:           Type = inferType(tq"chisel3.Data")
+    val seqOfDataTpe:      Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
+    val seqMapTpe:         Type = inferType(tq"scala.collection.immutable.SeqMap[String,$dataTpe]")
+    val ignoreSeqInBundle: Type = inferType(tq"chisel3.IgnoreSeqInBundle")
 
     // Not cached because it should only be run once per class (thus once per Type)
     def isBundle(sym: Symbol): Boolean = {
       sym.tpe <:< bundleTpe
     }
+    def isSeqOfData(sym: Symbol): Boolean = {
+      sym.tpe <:< seqOfDataTpe
+    }
     def isExactBundle(sym: Symbol): Boolean = {
       sym.tpe =:= bundleTpe
+    }
+    def isIgnoreSeqInBundle(sym: Symbol): Boolean = {
+      sym.tpe <:< ignoreSeqInBundle
     }
 
     val isDataCache = new mutable.HashMap[Type, Boolean]
@@ -201,11 +209,30 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             val elements = mutable.ListBuffer[(String, Tree)]()
             body.foreach {
               case acc: ValDef if isBundle(acc.symbol) =>
+                show(s"getBundleElements:Bundle rhs ${acc.rhs} ${showRaw(acc.rhs)}")
                 elements += acc.symbol.name.toString.trim -> gen.mkAttributedSelect(thiz, acc.symbol)
               case acc: ValDef if isData(acc.symbol) && !isEmptyTree(acc.rhs) =>
                 // empty tree test seems necessary to rule out generator methods passed into bundles
                 // but there must be a better way here
+                show(s"getBundleElements:ValDefNotBundle rhs ${acc.rhs} ${showRaw(acc.rhs)}")
                 elements += acc.symbol.name.toString.trim -> gen.mkAttributedSelect(thiz, acc.symbol)
+              case acc: ValDef =>
+                def ik(t: Symbol): Unit = {
+                  show(s"--->  gBE: rhs ${isSeqOfData(t)} : ${showRaw(t).take(60)}")
+                }
+//                show(s"gBE: acc ${showRaw(acc).take(60)}")
+                //TODO: Remove the following ik lines, only the first one showed the Seq[Data]
+//                ik(acc.symbol)
+//                ik(acc.rhs.symbol)
+//                ik(acc.rhs.tpe.typeSymbol)
+//                ik(acc.tpe.typeSymbol)
+//                ik(acc.tpe.termSymbol)
+                if (isSeqOfData(acc.symbol) && !isIgnoreSeqInBundle(bundle.symbol)) {
+                  show(s"--> gBE: ${bundle.symbol.parentSymbols.mkString(",")}")
+                  show(s"--> gBE: isIgnore ${isIgnoreSeqInBundle(bundle.symbol)}")
+
+                  global.reporter.error(acc.pos, s"Bundle: ${acc.symbol.name} has field which is a Seq[Data]")
+                }
               case _ =>
             }
             elements.toList.reverse
@@ -261,7 +288,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
                       Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
                     } else if (isData(member)) {
                       show(
-                        s"     Matched Bundle Member ${member}  isData=${isData(member)} ${showRaw(member)} : ${showRaw(member.typeSignature)}"
+                        s"     Matched Bundle Member ${member} isData=${isData(member)} ${showRaw(member)} : ${showRaw(member.typeSignature)}"
                       )
                       show(s"     Found a field in $parent.${member}")
                       Some(member.name.toString.trim -> gen.mkAttributedSelect(thiz, member))
