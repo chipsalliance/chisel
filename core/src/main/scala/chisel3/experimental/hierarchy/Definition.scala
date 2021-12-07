@@ -86,7 +86,7 @@ object Definition extends SourceInfoDoc {
     val dynamicContext = new DynamicContext(Nil)
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true
-    val (ir, module) = Builder.build(Module(proto), dynamicContext)
+    val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations
     module._circuit = Builder.currentModule

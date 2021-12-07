@@ -113,11 +113,18 @@ If you like a textbook to learn Chisel and also a bit of digital design in gener
 
 See [the setup instructions](SETUP.md) for how to set up your environment to build Chisel locally.
 
-When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench. Follow the [chisel-template readme](https://github.com/freechipsproject/chisel-template) to get started.
+When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench.
+Follow the [chisel-template README](https://github.com/freechipsproject/chisel-template) to get started.
 
-If you insist on setting up your own project, the magic SBT lines are:
+If you insist on setting up your own project from scratch, your project needs to depend on both the chisel3-plugin (Scalac plugin) and the chisel3 library.
+For example, in SBT this could be expressed as:
 ```scala
+// build.sbt
+scalaVersion := "2.12.13"
+addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.4.4" cross CrossVersion.full)
 libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.4"
+scalacOptions += "-Xsource:2.11"
+// We also recommend using chiseltest for writing unit tests 
 libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.4" % "test"
 ```
 ### Guide For New Contributors
@@ -180,13 +187,6 @@ If the compilation succeeded and the dependencies noted above are installed, you
 
 ```
 sbt test
-```
-
-If you would like to run the tests without the compiler plugin (less common), you can do so by first launching `sbt`,
-then running `noPluginTests / test`:
-```
-sbt
-> noPluginTests / test
 ```
 
 ### Running Projects Against Local Chisel

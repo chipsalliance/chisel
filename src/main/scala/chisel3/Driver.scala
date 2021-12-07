@@ -2,85 +2,106 @@
 
 package chisel3
 
-import chisel3.internal.ErrorLog
 import internal.firrtl._
 import firrtl._
-import firrtl.options.{Dependency, Phase, PhaseManager, StageError}
-import firrtl.options.phases.DeletedWrapper
-import firrtl.options.Viewer.view
-import firrtl.annotations.JsonProtocol
 import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
-import chisel3.stage.{ChiselExecutionResultView, ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.stage.phases.DriverCompatibility
 import java.io._
+import _root_.logger.LazyLogging
 
+@deprecated("Use object firrtl.util.BackendCompilationUtilities instead", "Chisel 3.5")
+trait BackendCompilationUtilities extends LazyLogging {
 
-/**
-  * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
-  * By default firrtl is automatically run after chisel.  an [[ExecutionOptionsManager]]
-  * is needed to manage options.  It can parser command line arguments or coordinate
-  * multiple chisel toolchain tools options.
-  *
-  * @example
-  *          {{{
-  *          val optionsManager = new ExecutionOptionsManager("chisel3")
-  *              with HasFirrtlOptions
-  *              with HasChiselExecutionOptions {
-  *            commonOptions = CommonOption(targetDirName = "my_target_dir")
-  *            chiselOptions = ChiselExecutionOptions(runFirrtlCompiler = false)
-  *          }
-  *          chisel3.Driver.execute(optionsManager, () => new Dut)
-  *          }}}
-  * or via command line arguments
-  * @example {{{
-  *          args = "--no-run-firrtl --target-dir my-target-dir".split(" +")
-  *          chisel3.execute(args, () => new DUT)
-  *          }}}
-  */
+  import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
 
-trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
+  // Inlined from old trait firrtl.util.BackendCompilationUtilities
+  lazy val TestDirectory = FirrtlBackendCompilationUtilities.TestDirectory
+  def timeStamp:            String = FirrtlBackendCompilationUtilities.timeStamp
+  def loggingProcessLogger: ProcessLogger = FirrtlBackendCompilationUtilities.loggingProcessLogger
+  def copyResourceToFile(name:      String, file: File): Unit = FirrtlBackendCompilationUtilities.copyResourceToFile(name, file)
+  def createTestDirectory(testName: String): File = FirrtlBackendCompilationUtilities.createTestDirectory(testName)
+  def makeHarness(template:         String => String, post: String)(f: File): File =
+    FirrtlBackendCompilationUtilities.makeHarness(template, post)(f)
+  def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder =
+    FirrtlBackendCompilationUtilities.firrtlToVerilog(prefix, dir)
+  def verilogToCpp(
+    dutFile:          String,
+    dir:              File,
+    vSources:         Seq[File],
+    cppHarness:       File,
+    suppressVcd:      Boolean = false,
+    resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
+  ): ProcessBuilder = {
+    FirrtlBackendCompilationUtilities.verilogToCpp(dutFile, dir, vSources, cppHarness, suppressVcd, resourceFileName)
+  }
+  def cppToExe(prefix: String, dir: File): ProcessBuilder = FirrtlBackendCompilationUtilities.cppToExe(prefix, dir)
+  def executeExpectingFailure(
+    prefix:       String,
+    dir:          File,
+    assertionMsg: String = ""
+  ): Boolean = {
+    FirrtlBackendCompilationUtilities.executeExpectingFailure(prefix, dir, assertionMsg)
+  }
+  def executeExpectingSuccess(prefix: String, dir: File): Boolean =
+    FirrtlBackendCompilationUtilities.executeExpectingSuccess(prefix, dir)
+
   /** Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
     *
     * @param prefix basename of the file
     * @param dir    directory where file lives
     * @return       true if compiler completed successfully
     */
+  @deprecated("Use ChiselStage instead", "Chisel 3.5")
   def compileFirrtlToVerilog(prefix: String, dir: File): Boolean = {
-    val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
-      commonOptions = CommonOptions(topName = prefix, targetDirName = dir.getAbsolutePath)
-      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog")
+
+    // ====== Implemented by inlining logic from ExecutionsOptionManager.toAnnotations =====
+    import firrtl.stage.InfoModeAnnotation
+    import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
+    import _root_.logger.LogLevelAnnotation
+    val annos: AnnotationSeq = List(
+      InfoModeAnnotation("append"),
+      TopNameAnnotation(prefix),
+      TargetDirAnnotation(dir.getAbsolutePath),
+      LogLevelAnnotation(_root_.logger.LogLevel.None)
+    )
+
+    // ******************* Implemented by inlining firrtl.Driver.execute ***************************
+    import firrtl.stage.phases.DriverCompatibility
+    import firrtl.stage.FirrtlStage
+    import firrtl.options.{Dependency, Phase, PhaseManager}
+    import firrtl.options.phases.DeletedWrapper
+
+    val phases: Seq[Phase] = {
+      import DriverCompatibility._
+      new PhaseManager(
+        List(
+          Dependency[AddImplicitFirrtlFile],
+          Dependency[AddImplicitAnnotationFile],
+          Dependency[AddImplicitOutputFile],
+          Dependency[AddImplicitEmitter],
+          Dependency[FirrtlStage]
+        )
+      ).transformOrder
+        .map(DeletedWrapper(_))
     }
 
-    firrtl.Driver.execute(optionsManager) match {
-      case _: FirrtlExecutionSuccess => true
-      case _: FirrtlExecutionFailure => false
+    val annosx =
+      try {
+        phases.foldLeft(annos)((a, p) => p.transform(a))
+      } catch {
+        case _: firrtl.options.OptionsException => return false
+      }
+    // *********************************************************************************************
+
+    val options = annosx
+
+    // ********** Implemented by inlining firrtl.stage.FirrtlExecutionResultView.view **************
+    import firrtl.stage.FirrtlCircuitAnnotation
+
+    options.collectFirst { case a: FirrtlCircuitAnnotation => a.circuit } match {
+      case None => false
+      case Some(_) => true
     }
+    // *********************************************************************************************
   }
 }
 
-/**
-  * This family provides return values from the chisel3 and possibly firrtl compile steps
-  */
-@deprecated("This will be removed in Chisel 3.5", "Chisel3 3.4")
-trait ChiselExecutionResult
-
-/**
-  *
-  * @param circuitOption  Optional circuit, has information like circuit name
-  * @param emitted            The emitted Chirrrl text
-  * @param firrtlResultOption Optional Firrtl result, @see freechipsproject/firrtl for details
-  */
-@deprecated("This will be removed in Chisel 3.5", "Chisel 3.4")
-case class ChiselExecutionSuccess(
-                                  circuitOption: Option[Circuit],
-                                  emitted: String,
-                                  firrtlResultOption: Option[FirrtlExecutionResult]
-                                  ) extends ChiselExecutionResult
-
-/**
-  * Getting one of these indicates failure of some sort.
-  *
-  * @param message A clue might be provided here.
-  */
-@deprecated("This will be removed in Chisel 3.5", "Chisel 3.4")
-case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult

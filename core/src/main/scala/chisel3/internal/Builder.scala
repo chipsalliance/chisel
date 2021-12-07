@@ -343,9 +343,6 @@ private[chisel3] trait NamedComponent extends HasId {
 private[chisel3] class ChiselContext() {
   val idGen = new IdGen
 
-  // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
-  val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
-
   // Records the different prefixes which have been scoped at this point in time
   var prefixStack: Prefix = Nil
 
@@ -360,8 +357,6 @@ private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq) {
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
-  // This is only used for testing, it can be removed if the plugin becomes mandatory
-  var allowReflectiveAutoCloneType = true
 
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
@@ -603,16 +598,6 @@ private[chisel3] object Builder extends LazyLogging {
                      .getOrElse(false)
   }
 
-  // This should only be used for testing, must be true outside of Builder context
-  def allowReflectiveAutoCloneType: Boolean = {
-    dynamicContextVar.value
-                     .map(_.allowReflectiveAutoCloneType)
-                     .getOrElse(true)
-  }
-  def allowReflectiveAutoCloneType_=(value: Boolean): Unit = {
-    dynamicContext.allowReflectiveAutoCloneType = value
-  }
-
   def forcedClock: Clock = currentClock.getOrElse(
     throwException("Error: No implicit clock.")
   )
@@ -630,40 +615,6 @@ private[chisel3] object Builder extends LazyLogging {
     // Bind each element of the returned Data to being a Op
     cmd.id.bind(OpBinding(forcedUserModule, currentWhen))
     pushCommand(cmd).id
-  }
-
-  // Called when Bundle construction begins, used to record a stack of open Bundle constructors to
-  // record candidates for Bundle autoclonetype. This is a best-effort guess.
-  // Returns the current stack of open Bundles
-  // Note: elt will NOT have finished construction, its elements cannot be accessed
-  def updateBundleStack(elt: Bundle): Seq[Bundle] = {
-    val stackElts = Thread.currentThread().getStackTrace()
-        .reverse  // so stack frame numbers are deterministic across calls
-        .dropRight(2)  // discard Thread.getStackTrace and updateBundleStack
-
-    // Determine where we are in the Bundle stack
-    val eltClassName = elt.getClass.getName
-    val eltStackPos = stackElts.map(_.getClassName).lastIndexOf(eltClassName)
-
-    // Prune the existing Bundle stack of closed Bundles
-    // If we know where we are in the stack, discard frames above that
-    val stackEltsTop = if (eltStackPos >= 0) eltStackPos else stackElts.size
-    val pruneLength = chiselContext.get.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
-      pos >= stackEltsTop || stackElts(pos).getClassName != cname || stackElts(pos).getMethodName != mname
-    }
-    chiselContext.get.bundleStack.trimEnd(pruneLength)
-
-    // Return the stack state before adding the most recent bundle
-    val lastStack = chiselContext.get.bundleStack.map(_._1).toSeq
-
-    // Append the current Bundle to the stack, if it's on the stack trace
-    if (eltStackPos >= 0) {
-      val stackElt = stackElts(eltStackPos)
-      chiselContext.get.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
-    }
-    // Otherwise discard the stack frame, this shouldn't fail noisily
-
-    lastStack
   }
 
   /** Recursively suggests names to supported "container" classes
@@ -740,14 +691,16 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
-  private [chisel3] def build[T <: BaseModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
+  private[chisel3] def build[T <: BaseModule](f: => T, dynamicContext: DynamicContext, forceModName: Boolean = true): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent // Must initialize the singleton in a Builder context or weird things can happen
                  // in tiny designs/testcases that never access anything in chisel3.internal
       checkScalaVersion()
       logger.info("Elaborating design...")
       val mod = f
-      mod.forceName(None, mod.name, globalNamespace)
+      if (forceModName) { // This avoids definition name index skipping with D/I
+        mod.forceName(None, mod.name, globalNamespace)
+      }
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 

@@ -8,7 +8,6 @@ import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.experimental.{loadMemoryFromFile,loadMemoryFromFileInline}
 import chisel3.util.log2Ceil
-import firrtl.FirrtlExecutionSuccess
 import firrtl.annotations.MemoryLoadFileType
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
