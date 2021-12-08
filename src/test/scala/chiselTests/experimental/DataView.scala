@@ -266,30 +266,19 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include ("z.fizz <= b.foo")
   }
 
-  it should "enable using Tuple2 like Data" in {
+  it should "enable using Seq like Data" in {
     class MyModule extends Module {
       val a, b, c, d = IO(Input(UInt(8.W)))
       val sel = IO(Input(Bool()))
       val y, z = IO(Output(UInt(8.W)))
-      (y, z) := Mux(sel, (a, b), (c, d))
+      // Unclear why the implicit conversion does not work in this case for Seq
+      // That being said, it's easy enough to cast via `.viewAs` with or without
+      Seq(y, z) := Mux(sel, Seq(a, b).viewAs, Seq(c, d).viewAs[Vec[UInt]])
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
     val verilog = ChiselStage.emitVerilog(new MyModule)
     verilog should include ("assign y = sel ? a : c;")
     verilog should include ("assign z = sel ? b : d;")
-  }
-
-  it should "support nesting of tuples" in {
-    class MyModule extends Module {
-      val a, b, c, d = IO(Input(UInt(8.W)))
-      val w, x, y, z = IO(Output(UInt(8.W)))
-      ((w, x), (y, z)) := ((a, b), (c, d))
-    }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include ("w <= a")
-    chirrtl should include ("x <= b")
-    chirrtl should include ("y <= c")
-    chirrtl should include ("z <= d")
   }
 
   // This example should be turned into a built-in feature

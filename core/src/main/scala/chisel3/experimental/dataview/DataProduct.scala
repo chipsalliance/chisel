@@ -98,4 +98,215 @@ object DataProduct extends LowPriorityDataProduct {
       dpa.dataIterator(a, s"$path._1") ++ dpb.dataIterator(b, s"$path._2")
     }
   }
+
+  /** [[DataProduct]] implementation for any [[Tuple3]] where each field has an implementation of `DataProduct`. */
+  implicit def tuple3DataProduct[A : DataProduct, B : DataProduct, C : DataProduct]: DataProduct[(A, B, C)] =
+    new DataProduct[(A, B, C)] {
+      def dataIterator(tup: (A, B, C), path: String): Iterator[(Data, String)] = {
+        val dpa = implicitly[DataProduct[A]]
+        val dpb = implicitly[DataProduct[B]]
+        val dpc = implicitly[DataProduct[C]]
+        val (a, b, c) = tup
+        dpa.dataIterator(a, s"$path._1") ++ dpb.dataIterator(b, s"$path._2") ++ dpc.dataIterator(c, s"$path._3")
+      }
+    }
+
+  /** [[DataProduct]] implementation for any [[Tuple4]] where each field has an implementation of `DataProduct`. */
+  implicit def tuple4DataProduct[A : DataProduct, B : DataProduct, C : DataProduct, D : DataProduct]: DataProduct[(A, B, C, D)] =
+    new DataProduct[(A, B, C, D)] {
+      def dataIterator(tup: (A, B, C, D), path: String): Iterator[(Data, String)] = {
+        val dpa = implicitly[DataProduct[A]]
+        val dpb = implicitly[DataProduct[B]]
+        val dpc = implicitly[DataProduct[C]]
+        val dpd = implicitly[DataProduct[D]]
+        val (a, b, c, d) = tup
+        dpa.dataIterator(a, s"$path._1") ++
+          dpb.dataIterator(b, s"$path._2") ++
+          dpc.dataIterator(c, s"$path._3") ++
+          dpd.dataIterator(d, s"$path._4")
+      }
+    }
+
+  /** [[DataProduct]] implementation for any [[Tuple5]] where each field has an implementation of `DataProduct`. */
+  implicit def tuple5DataProduct[
+      A : DataProduct,
+      B : DataProduct,
+      C : DataProduct,
+      D : DataProduct,
+      E : DataProduct]: DataProduct[(A, B, C, D, E)] =
+    new DataProduct[(A, B, C, D, E)] {
+      def dataIterator(tup: (A, B, C, D, E), path: String): Iterator[(Data, String)] = {
+        val dpa = implicitly[DataProduct[A]]
+        val dpb = implicitly[DataProduct[B]]
+        val dpc = implicitly[DataProduct[C]]
+        val dpd = implicitly[DataProduct[D]]
+        val dpe = implicitly[DataProduct[E]]
+        val (a, b, c, d, e) = tup
+        dpa.dataIterator(a, s"$path._1") ++
+          dpb.dataIterator(b, s"$path._2") ++
+          dpc.dataIterator(c, s"$path._3") ++
+          dpd.dataIterator(d, s"$path._4") ++
+          dpe.dataIterator(e, s"$path._5")
+      }
+    }
+
+  /** [[DataProduct]] implementation for any [[Tuple6]] where each field has an implementation of `DataProduct`. */
+  implicit def tuple6DataProduct[
+    A : DataProduct,
+    B : DataProduct,
+    C : DataProduct,
+    D : DataProduct,
+    E : DataProduct,
+    F : DataProduct]: DataProduct[(A, B, C, D, E, F)] =
+    new DataProduct[(A, B, C, D, E, F)] {
+      def dataIterator(tup: (A, B, C, D, E, F), path: String): Iterator[(Data, String)] = {
+        val dpa = implicitly[DataProduct[A]]
+        val dpb = implicitly[DataProduct[B]]
+        val dpc = implicitly[DataProduct[C]]
+        val dpd = implicitly[DataProduct[D]]
+        val dpe = implicitly[DataProduct[E]]
+        val dpf = implicitly[DataProduct[F]]
+        val (a, b, c, d, e, f) = tup
+        dpa.dataIterator(a, s"$path._1") ++
+          dpb.dataIterator(b, s"$path._2") ++
+          dpc.dataIterator(c, s"$path._3") ++
+          dpd.dataIterator(d, s"$path._4") ++
+          dpe.dataIterator(e, s"$path._5") ++
+          dpf.dataIterator(f, s"$path._6")
+      }
+    }
+
+  /** [[DataProduct]] implementation for any [[Tuple7]] where each field has an implementation of `DataProduct`. */
+  implicit def tuple7DataProduct[
+    A : DataProduct,
+    B : DataProduct,
+    C : DataProduct,
+    D : DataProduct,
+    E : DataProduct,
+    F : DataProduct,
+    G : DataProduct]: DataProduct[(A, B, C, D, E, F, G)] =
+    new DataProduct[(A, B, C, D, E, F, G)] {
+      def dataIterator(tup: (A, B, C, D, E, F, G), path: String): Iterator[(Data, String)] = {
+        val dpa = implicitly[DataProduct[A]]
+        val dpb = implicitly[DataProduct[B]]
+        val dpc = implicitly[DataProduct[C]]
+        val dpd = implicitly[DataProduct[D]]
+        val dpe = implicitly[DataProduct[E]]
+        val dpf = implicitly[DataProduct[F]]
+        val dpg = implicitly[DataProduct[G]]
+        val (a, b, c, d, e, f, g) = tup
+        dpa.dataIterator(a, s"$path._1") ++
+          dpb.dataIterator(b, s"$path._2") ++
+          dpc.dataIterator(c, s"$path._3") ++
+          dpd.dataIterator(d, s"$path._4") ++
+          dpe.dataIterator(e, s"$path._5") ++
+          dpf.dataIterator(f, s"$path._6") ++
+          dpg.dataIterator(g, s"$path._7")
+      }
+    }
+
+  /** [[DataProduct]] implementation for any [[Tuple8]] where each field has an implementation of `DataProduct`. */
+  implicit def tuple8DataProduct[
+    A : DataProduct,
+    B : DataProduct,
+    C : DataProduct,
+    D : DataProduct,
+    E : DataProduct,
+    F : DataProduct,
+    G : DataProduct,
+    H : DataProduct]: DataProduct[(A, B, C, D, E, F, G, H)] =
+    new DataProduct[(A, B, C, D, E, F, G, H)] {
+      def dataIterator(tup: (A, B, C, D, E, F, G, H), path: String): Iterator[(Data, String)] = {
+        val dpa = implicitly[DataProduct[A]]
+        val dpb = implicitly[DataProduct[B]]
+        val dpc = implicitly[DataProduct[C]]
+        val dpd = implicitly[DataProduct[D]]
+        val dpe = implicitly[DataProduct[E]]
+        val dpf = implicitly[DataProduct[F]]
+        val dpg = implicitly[DataProduct[G]]
+        val dph = implicitly[DataProduct[H]]
+        val (a, b, c, d, e, f, g, h) = tup
+        dpa.dataIterator(a, s"$path._1") ++
+          dpb.dataIterator(b, s"$path._2") ++
+          dpc.dataIterator(c, s"$path._3") ++
+          dpd.dataIterator(d, s"$path._4") ++
+          dpe.dataIterator(e, s"$path._5") ++
+          dpf.dataIterator(f, s"$path._6") ++
+          dpg.dataIterator(g, s"$path._7") ++
+          dph.dataIterator(h, s"$path._8")
+      }
+    }
+
+  /** [[DataProduct]] implementation for any [[Tuple9]] where each field has an implementation of `DataProduct`. */
+  implicit def tuple9DataProduct[
+    A : DataProduct,
+    B : DataProduct,
+    C : DataProduct,
+    D : DataProduct,
+    E : DataProduct,
+    F : DataProduct,
+    G : DataProduct,
+    H : DataProduct,
+    I : DataProduct]: DataProduct[(A, B, C, D, E, F, G, H, I)] =
+    new DataProduct[(A, B, C, D, E, F, G, H, I)] {
+      def dataIterator(tup: (A, B, C, D, E, F, G, H, I), path: String): Iterator[(Data, String)] = {
+        val dpa = implicitly[DataProduct[A]]
+        val dpb = implicitly[DataProduct[B]]
+        val dpc = implicitly[DataProduct[C]]
+        val dpd = implicitly[DataProduct[D]]
+        val dpe = implicitly[DataProduct[E]]
+        val dpf = implicitly[DataProduct[F]]
+        val dpg = implicitly[DataProduct[G]]
+        val dph = implicitly[DataProduct[H]]
+        val dpi = implicitly[DataProduct[I]]
+        val (a, b, c, d, e, f, g, h, i) = tup
+        dpa.dataIterator(a, s"$path._1") ++
+          dpb.dataIterator(b, s"$path._2") ++
+          dpc.dataIterator(c, s"$path._3") ++
+          dpd.dataIterator(d, s"$path._4") ++
+          dpe.dataIterator(e, s"$path._5") ++
+          dpf.dataIterator(f, s"$path._6") ++
+          dpg.dataIterator(g, s"$path._7") ++
+          dph.dataIterator(h, s"$path._8") ++
+          dpi.dataIterator(i, s"$path._9")
+      }
+    }
+
+  /** [[DataProduct]] implementation for any [[Tuple9]] where each field has an implementation of `DataProduct`. */
+  implicit def tuple10DataProduct[
+    A : DataProduct,
+    B : DataProduct,
+    C : DataProduct,
+    D : DataProduct,
+    E : DataProduct,
+    F : DataProduct,
+    G : DataProduct,
+    H : DataProduct,
+    I : DataProduct,
+    J : DataProduct]: DataProduct[(A, B, C, D, E, F, G, H, I, J)] =
+    new DataProduct[(A, B, C, D, E, F, G, H, I, J)] {
+      def dataIterator(tup: (A, B, C, D, E, F, G, H, I, J), path: String): Iterator[(Data, String)] = {
+        val dpa = implicitly[DataProduct[A]]
+        val dpb = implicitly[DataProduct[B]]
+        val dpc = implicitly[DataProduct[C]]
+        val dpd = implicitly[DataProduct[D]]
+        val dpe = implicitly[DataProduct[E]]
+        val dpf = implicitly[DataProduct[F]]
+        val dpg = implicitly[DataProduct[G]]
+        val dph = implicitly[DataProduct[H]]
+        val dpi = implicitly[DataProduct[I]]
+        val dpj = implicitly[DataProduct[J]]
+        val (a, b, c, d, e, f, g, h, i, j) = tup
+        dpa.dataIterator(a, s"$path._1") ++
+          dpb.dataIterator(b, s"$path._2") ++
+          dpc.dataIterator(c, s"$path._3") ++
+          dpd.dataIterator(d, s"$path._4") ++
+          dpe.dataIterator(e, s"$path._5") ++
+          dpf.dataIterator(f, s"$path._6") ++
+          dpg.dataIterator(g, s"$path._7") ++
+          dph.dataIterator(h, s"$path._8") ++
+          dpi.dataIterator(i, s"$path._9") ++
+          dpj.dataIterator(j, s"$path._10")
+      }
+    }
 }
