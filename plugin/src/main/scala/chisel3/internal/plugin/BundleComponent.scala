@@ -125,6 +125,13 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           return super.transform(tree)
         }
 
+        show(s"Bundle: ${bundle.name}, params:\n")
+        params.foreach { param =>
+          show(s"Param symbol ${params} tpe: ${param.tpe}")
+        }
+
+        val topLevelParamsFields = params
+
         val constructor = con.get
         val thiz = gen.mkAttributedThis(bundle.symbol)
 
@@ -193,12 +200,12 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           show(" ")
           show(s"BundleType: ${bundle.symbol.typeSignature.toString}")
 
-          show("Bundle parents: \n" + bundle.impl.parents.map { parent =>
-            s"parent: ${parent.symbol.name} [${isBundle(parent.symbol)}] " +
-              s"IsBundle=" + isBundle(parent.symbol) + parent.symbol + "\n" +
-//              "parent.symbol.info.decl: " + parent.symbol.info.decl(parent.symbol.info.decls.head.name). +
-              s"\nDecls::\n  " + showInfo(parent.symbol.info)
-          }.mkString("\n"))
+//          show("Bundle parents: \n" + bundle.impl.parents.map { parent =>
+//            s"parent: ${parent.symbol.name} [${isBundle(parent.symbol)}] " +
+//              s"IsBundle=" + isBundle(parent.symbol) + parent.symbol + "\n" +
+////              "parent.symbol.info.decl: " + parent.symbol.info.decl(parent.symbol.info.decls.head.name). +
+//              s"\nDecls::\n  " + showInfo(parent.symbol.info)
+//          }.mkString("\n"))
 
           //TODO: Without the trims over the next dozen or so lines the variable names seem to have
           //      an extra space on the end.
@@ -231,7 +238,11 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
                   show(s"--> gBE: ${bundle.symbol.parentSymbols.mkString(",")}")
                   show(s"--> gBE: isIgnore ${isIgnoreSeqInBundle(bundle.symbol)}")
 
-                  global.reporter.error(acc.pos, s"Bundle: ${acc.symbol.name} has field which is a Seq[Data]")
+                  global.reporter.error(
+                    acc.pos,
+                    s"Bundle.field ${bundle.name}.${acc.name} cannot be a Seq[Data]. " +
+                      "Use Vec or MixedVec or mix in trait IgnoreSeqInBundle"
+                  )
                 }
               case _ =>
             }
@@ -276,10 +287,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
                 val currentFields = parent.info.members.flatMap {
 
                   case member if member.isPublic =>
-                    show(
-                      s"    Processing member ${member} isMethod=${member.isMethod} isAccessor==${member.isAccessor} tpe=${member.tpe}:${showType(member.tpe)} : kind: ${member.kindString} " +
-                        s"${showRaw(member.typeSignature, printKinds = BooleanFlag(Some(true)), printIds = BooleanFlag(Some(true)))}"
-                    )
+//                    show(
+//                      s"    Processing member ${member} isMethod=${member.isMethod} isAccessor==${member.isAccessor} tpe=${member.tpe}:${showType(member.tpe)} : kind: ${member.kindString} " +
+//                        s"${showRaw(member.typeSignature, printKinds = BooleanFlag(Some(true)), printIds = BooleanFlag(Some(true)))}"
+//                    )
 
                     if (isBundleField(member)) {
                       show(
@@ -304,8 +315,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
                   getSuperClassBundleFields(parent, depth + 1)
                 } else { List() }
                 show(s"getSuper processing ${bundleSymbol.name.toString}.${parent}: \n" + showRaw(parent))
-                superFields ++ currentFields
-            }.reverse
+                superFields.reverse ++ currentFields
+            }
           }
 
           val superFields = getSuperClassBundleFields(bundle.symbol)
@@ -324,7 +335,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             DefDef(elementsImplSym, q"scala.collection.immutable.SeqMap.apply[String, chisel3.Data](..$elementArgs)")
           )
 
-          show("ELEMENTS: \n" + elementArgs.map { case (symbol, tree) => s"(${symbol}, ${tree})" }.mkString("\n"))
+          show("ELEMENTS:\n" + elementArgs.map { case (symbol, tree) => s"(${symbol}, ${tree})" }.mkString("\n"))
           show("ElementsImpl: " + showRaw(elementsImpl) + "\n\n\n")
           show(s"Made: buildElementAccessor was built for ${bundle.symbol.name.toString}")
           additionalMethods ++= Seq(elementsImpl)

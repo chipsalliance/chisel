@@ -22,7 +22,11 @@ trait BundleSpecUtils {
     val bar = UInt(16.W)
   }
 
-  class BadSeqBundle extends Bundle {
+//  class BadSeqBundle extends Bundle {
+//    val bar = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
+//  }
+//
+  class BadSeqBundleWithIgnoreSeqInBundle extends Bundle with IgnoreSeqInBundle {
     val bar = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
   }
 
@@ -70,24 +74,24 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }).getMessage should include ("Left Record missing field")
   }
 
-  "Bundles" should "not be able to use Seq for constructing hardware" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate {
-        new Module {
-          val io = IO(new Bundle {
-            val b = new BadSeqBundle
-          })
-        }
-      }
-    }).getMessage should include("Public Seq members cannot be used to define Bundle elements")
-  }
+//  "Bundles" should "not be able to use Seq for constructing hardware" in {
+//    (the[ChiselException] thrownBy extractCause[ChiselException] {
+//      ChiselStage.elaborate {
+//        new Module {
+//          val io = IO(new Bundle {
+//            val b = new BadSeqBundle
+//          })
+//        }
+//      }
+//    }).getMessage should include("Public Seq members cannot be used to define Bundle elements")
+//  }
 
   "Bundles" should "be allowed to have Seq if need be" in {
     assertTesterPasses {
       new BasicTester {
         val m = Module(new Module {
           val io = IO(new Bundle {
-            val b = new BadSeqBundle with IgnoreSeqInBundle
+            val b = new BadSeqBundleWithIgnoreSeqInBundle
           })
         })
         stop()

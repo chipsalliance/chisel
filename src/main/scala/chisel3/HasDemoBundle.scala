@@ -7,23 +7,29 @@ import chisel3.stage.ChiselStage
 import chisel3.util.Decoupled
 
 object BundleComparator {
-  println(f"${"New Field Name"}%30s ${"Old Field Name"}%30s")
-  def compare(bundle: Bundle): Unit = {
+  def compare(bundle: Bundle): Boolean = {
+    val header = s"=== Bundle Comparator ${bundle.className} " + "=" * 40
+    println(header)
+    println(f"${"New Field Name"}%30s ${"id"}%6s ${"Old Field Name"}%30s ${"id"}%6s")
+
     val newElements = bundle.elements.toList
-//    val oldElements = bundle.oldElements.toList
-//
-//    newElements.zipAll(oldElements, "Oops" -> Bool(), "Oops" -> Bool()).foreach { case ((a, b), (c, d)) =>
-//      val color = if(a == c) { Console.RESET } else { Console.RED }
-//      println(f"$color$a%30s $c%30s${Console.RESET}")
-//    }
-    println(s"BundleComparator:\n" + newElements.mkString("\n"))
+    val oldElements = bundle.oldElementsNoChecks.toList
+
+    var discrepancyFound = false
+    newElements.zipAll(oldElements, "Oops" -> Bool(), "Oops" -> Bool()).foreach {
+      case ((a, b), (c, d)) =>
+        val color = if (a == c) { Console.RESET }
+        else { discrepancyFound = true; Console.RED }
+        println(f"$color$a%30s (${b._id}%06x) $c%30s (${d._id}%06x) ${Console.RESET}")
+    }
+    println("=" * header.length)
+    discrepancyFound
   }
 }
 
 /* Demo stuff
  */
-class BpipHasDemoBundle extends Module {
-  // Example
+class BpipIsComplexBundle extends Module {
 
   trait BpipVarmint {
     val varmint = Bool()
@@ -55,8 +61,7 @@ class BpipHasDemoBundle extends Module {
     val bar = Bool()
     val qux = gen2
     val bad = 44
-    //TODO: This line is breaking things,, not sure why, error is AliasedAggregateField
-//     val baz = Decoupled(UInt(16.W))
+    val baz = Decoupled(UInt(16.W))
     val animals = new BpipAnimalBundle(4, 8)
   }
 
@@ -73,17 +78,18 @@ class BpipHasDemoBundle extends Module {
   out := DontCare
   out5 := DontCare
 
-  println(s"BpipTwoField.elements: \n" + out5.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
-  println(s"\n\nDemoBundle.elements:\n" + out.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
-  println(s"\nBpipAbstractBundle.elements:\n" + out2.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
-  println(s"\nAnimal.elements:\n" + out4.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
-  println(s"\nTwoField.elements:\n" + out5.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
+  assert(!BundleComparator.compare(out5), "Bundle BpipTwoField not the same")
+  assert(!BundleComparator.compare(out), "Bundle DemoBundle not the same")
+  assert(!BundleComparator.compare(out2), "Bundle BpipAbstractBundle not the same")
+  assert(!BundleComparator.compare(out4), "Bundle Animal not the same")
 
-  // The following block does not work, suggesting that ParamIsField is not a case we need to solve
-//  class ParamIsField(val paramField: UInt) extends Bundle
-//  val out3 = IO(Output(new ParamIsField(UInt(10.W))))
-//  println(s"ParamsIsField.elements:\n" + out3.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
-//  out3.paramField := 7.U
+  println(s"Testing call ${out.elements.map(_._1).mkString(",")}")
+  println(s"Testing call ${out.elements.map(_._1).mkString(",")}")
+  println(s"Testing call ${out.elements.map(_._1).mkString(",")}")
+  println(s"Testing call ${out.elements.map(_._1).mkString(",")}")
+  println(s"Testing call ${out.elements.map(_._1).mkString(",")}")
+  println(s"Testing call ${out.elements.map(_._1).mkString(",")}")
+  println(s"Testing call ${out.elements.map(_._1).mkString(",")}")
 }
 
 /* Rich and complicated bundle example
@@ -91,7 +97,7 @@ class BpipHasDemoBundle extends Module {
  */
 object DebugProblem1 {
   def main(args: Array[String]): Unit = {
-    ChiselStage.emitFirrtl(new BpipHasDemoBundle)
+    ChiselStage.emitFirrtl(new BpipIsComplexBundle)
     println("done!")
   }
 }
@@ -136,7 +142,7 @@ class BpipExtendsBadBundleWithHardware extends BpipBadBundleWithHardware {
 class DebugProblem2 extends Module {
   val out1 = IO(Output(new BpipDecoupled))
   out1 := DontCare
-  println(s"out1.elements:\n" + out1.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
+  assert(!BundleComparator.compare(out1))
 }
 
 /* plugin should work with decoupled
@@ -155,7 +161,7 @@ object DebugProblem2 {
 class DebugProblem3 extends Module {
   val out1 = IO(Output(new BpipTwoField))
   out1 := DontCare
-  println(s"out1.elements:\n" + out1.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
+  assert(!BundleComparator.compare(out1))
 }
 
 object DebugProblem3 {
@@ -172,6 +178,7 @@ class DebugProblem4 extends Module {
   val out1 = IO(Output(new BpipBadBundleWithHardware))
   out1 := DontCare
   println(s"out1.elements:\n" + out1.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
+  println(s"out1.elements:\n" + out1.oldElementsNoChecks.map(e => s"${e._1} (${e._2})").mkString("\n"))
 }
 
 object DebugProblem4 {
@@ -237,6 +244,58 @@ class DebugProblem7 extends Module {
 object DebugProblem7 {
   def main(args: Array[String]): Unit = {
     ChiselStage.emitFirrtl(new DebugProblem7)
+    println("done!")
+  }
+}
+
+class BpipP8_1 extends Bundle {
+  val field_1_1 = UInt(11.W)
+  val field_1_2 = UInt(12.W)
+}
+
+class BpipP8_2 extends BpipP8_1 {
+  val field_2_1 = UInt(11.W)
+  val field_2_2 = UInt(12.W)
+}
+
+class BpipP8_3 extends BpipP8_2 {
+  val field_3_1 = UInt(11.W)
+  val field_3_2 = UInt(12.W)
+}
+
+/* plugin should not affect the seq detection
+ *
+ */
+class DebugProblem8 extends Module {
+  val out1 = IO(Output(new BpipP8_3))
+  out1 := DontCare
+  assert(!BundleComparator.compare(out1), "BpipP8_2 out of order")
+}
+
+object DebugProblem8 {
+  def main(args: Array[String]): Unit = {
+    ChiselStage.emitFirrtl(new DebugProblem8)
+    println("done!")
+  }
+}
+
+/* plugin should not affect the seq detection
+ *
+ */
+class DebugProblem9 extends Module {
+  // The following block does not work, suggesting that ParamIsField is not a case we need to solve
+  class BpipParamIsField0(val paramField0: UInt) extends Bundle
+  class BpipParamIsField1(val paramField1: UInt) extends BpipParamIsField0(UInt(66.W))
+
+  val out3 = IO(Output(new BpipParamIsField1(UInt(10.W))))
+  // println(s"ParamsIsField.elements:\n" + out3.elements.map(e => s"${e._1} (${e._2})").mkString("\n"))
+  out3 := DontCare
+  BundleComparator.compare(out3)
+}
+
+object DebugProblem9 {
+  def main(args: Array[String]): Unit = {
+    ChiselStage.emitFirrtl(new DebugProblem9)
     println("done!")
   }
 }

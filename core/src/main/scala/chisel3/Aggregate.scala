@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.experimental.dataview.{InvalidViewException, isView}
+import chisel3.experimental.dataview.{isView, InvalidViewException}
 
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
@@ -527,8 +527,8 @@ object VecInit extends SourceInfoDoc {
 
     val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
     val op = getConnectOpFromDirectionality(vec.head)
-    
-    (vec zip elts).foreach{ x => 
+
+    (vec zip elts).foreach{ x =>
       op(x._1, x._2)
     }
     vec
@@ -574,24 +574,24 @@ object VecInit extends SourceInfoDoc {
   def tabulate[T <: Data](n: Int, m: Int)(gen: (Int, Int) => T): Vec[Vec[T]] = macro VecTransform.tabulate2D
 
   /** @group SourceInfoTransformMacro */
-  def do_tabulate[T <: Data](n: Int, m: Int)(gen: (Int, Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[T]] = {    
+  def do_tabulate[T <: Data](n: Int, m: Int)(gen: (Int, Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[T]] = {
     // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
     val elts = Seq.tabulate(n, m)(gen)
     val flatElts = elts.flatten
 
     require(flatElts.nonEmpty, "Vec hardware values are not allowed to be empty")
     flatElts.foreach(requireIsHardware(_, "vec element"))
-  
+
     val tpe = cloneSupertype(flatElts, "Vec.tabulate")
     val myVec = Wire(Vec(n, Vec(m, tpe)))
     val op = getConnectOpFromDirectionality(myVec.head.head)
     for (
       (xs1D, ys1D) <- myVec zip elts;
       (x, y) <- xs1D zip ys1D
-    ) { 
-      op(x, y) 
+    ) {
+      op(x, y)
     }
-    myVec 
+    myVec
   }
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the results of the given
@@ -613,17 +613,17 @@ object VecInit extends SourceInfoDoc {
 
     require(flatElts.nonEmpty, "Vec hardware values are not allowed to be empty")
     flatElts.foreach(requireIsHardware(_, "vec element"))
-    
+
     val tpe = cloneSupertype(flatElts, "Vec.tabulate")
     val myVec = Wire(Vec(n, Vec(m, Vec(p, tpe))))
     val op = getConnectOpFromDirectionality(myVec.head.head.head)
-    
+
     for (
       (xs2D, ys2D) <- myVec zip elts;
       (xs1D, ys1D) <- xs2D zip ys2D;
       (x, y) <- xs1D zip ys1D
-    ) { 
-      op(x, y) 
+    ) {
+      op(x, y)
     }
 
     myVec
@@ -631,9 +631,9 @@ object VecInit extends SourceInfoDoc {
 
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
    * function applied to an element of data type T.
-   * 
+   *
    * @param n number of elements in the vector
-   * @param gen function that takes in an element T and returns an output 
+   * @param gen function that takes in an element T and returns an output
    * element of the same type
    */
   def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
@@ -644,10 +644,10 @@ object VecInit extends SourceInfoDoc {
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
    * function applied to an element of data type T.
-   * 
+   *
    * @param n number of inner vectors (rows) in the outer vector
    * @param m number of elements in each inner vector (column)
-   * @param gen function that takes in an element T and returns an output 
+   * @param gen function that takes in an element T and returns an output
    * element of the same type
    */
   def fill[T <: Data](n: Int, m: Int)(gen: => T): Vec[Vec[T]] = macro VecTransform.fill2D
@@ -659,11 +659,11 @@ object VecInit extends SourceInfoDoc {
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the result of the given
    * function applied to an element of data type T.
-   * 
+   *
    * @param n number of 2D vectors inside outer vector
    * @param m number of 1D vectors in each 2D vector
    * @param p number of elements in each 1D vector
-   * @param gen function that takes in an element T and returns an output 
+   * @param gen function that takes in an element T and returns an output
    * element of the same type
    */
   def fill[T <: Data](n: Int, m: Int, p: Int)(gen: => T): Vec[Vec[Vec[T]]] = macro VecTransform.fill3D
@@ -672,20 +672,20 @@ object VecInit extends SourceInfoDoc {
   def do_fill[T <: Data](n: Int, m: Int, p: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[T]]] = {
     do_tabulate(n, m, p)((_, _, _) => gen)
   }
-  
+
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
    * function applied to an element of data type T.
-   * 
+   *
    * @param start First element in the Vec
    * @param len Lenth of elements in the Vec
-   * @param f Function that applies the element T from previous index and returns the output 
+   * @param f Function that applies the element T from previous index and returns the output
    * element to the next index
    */
   def iterate[T <: Data](start: T, len: Int)(f: (T) => T): Vec[T] = macro VecTransform.iterate
-  
+
   /** @group SourceInfoTransformMacro */
-  def do_iterate[T <: Data](start: T, len: Int)(f: (T) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = 
-    apply(Seq.iterate(start, len)(f)) 
+  def do_iterate[T <: Data](start: T, len: Int)(f: (T) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    apply(Seq.iterate(start, len)(f))
 }
 
 /** A trait for [[Vec]]s containing common hardware generators for collection
@@ -1057,7 +1057,12 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     *   assert(uint === "h12345678".U) // This will pass
     * }}}
     */
-  final lazy val elements: SeqMap[String, Data] = _elementsImpl
+  final lazy val elements: SeqMap[String, Data] = {
+    println(s"Hey I'm in elements for bundle $className")
+    VectorMap(_elementsImpl.toSeq.sortWith {
+      case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))
+    }: _*)
+  }
   /*
    * This method will be overwritten by the Chisel-Plugin
    */
@@ -1093,31 +1098,34 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     VectorMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
   }
 
-  def oldElements: SeqMap[String, Data] = {
-    println(s"In elementsImp for ${this.className}")
+  /* This is for checking compatibility between using bundle plugin vs not using it
+   */
+  def oldElementsNoChecks: SeqMap[String, Data] = {
     val nameMap = LinkedHashMap[String, Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
         case Some(d: Data) =>
-          requireIsChiselType(d)
-
           if (nameMap contains m.getName) {
-            require(nameMap(m.getName) eq d)
+
           } else {
             nameMap(m.getName) = d
           }
         case None =>
           if (!ignoreSeq) {
             m.invoke(this) match {
-              case s: scala.collection.Seq[Any] if s.nonEmpty => s.head match {
-                // Ignore empty Seq()
-                case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
-                  s"(found public Seq member '${m.getName}'). " +
-                  "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
-                  "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
-                  "IgnoreSeqInBundle.")
-                case _ => // don't care about non-Data Seq
-              }
+              case s: scala.collection.Seq[Any] if s.nonEmpty =>
+                s.head match {
+                  // Ignore empty Seq()
+                  case d: Data =>
+                    throwException(
+                      "Public Seq members cannot be used to define Bundle elements " +
+                        s"(found public Seq member '${m.getName}'). " +
+                        "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
+                        "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
+                        "IgnoreSeqInBundle."
+                    )
+                  case _ => // don't care about non-Data Seq
+                }
               case _ => // not a Seq
             }
           }
