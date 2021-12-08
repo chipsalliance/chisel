@@ -10,7 +10,7 @@ section: "chisel3"
 
 # Further Explanation for the := and  <> Operators
 
-Chisel contains two connection operators, `:=` and `<>`. This document serves for a deeper explanation of the differences of the two and when to use one or the other. The differences are demonstrated with experiments using Scastie examples + DecoupledIO examples.
+Chisel contains two connection operators, `:=` and `<>`. This document provides a deeper explanation of the differences of the two and when to use one or the other. The differences are demonstrated with experiments using Scastie examples + DecoupledIO examples.
 
 
 
