@@ -177,7 +177,7 @@ class PipelineStage extends Module{
   io.b <> io.a
 }
 ```
-Below we can see the resulting Verilog for this example:
+Below we can see the resulting error for this example:
 ```scala modc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
