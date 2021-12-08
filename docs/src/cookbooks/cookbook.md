@@ -431,6 +431,9 @@ Unlike `Vecs` which represent a singular Chisel type and must have the same widt
 
 ```scala mdoc:verilog
 chisel3.stage.ChiselStage.emitVerilog(new CountBits(4))
+  // remove the body of the module by removing everything after ');'
+  .split("\\);")
+  .head + ");\n"
 ```
 
 ## Predictable Naming
