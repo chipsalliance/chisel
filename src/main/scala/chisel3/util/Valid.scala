@@ -26,7 +26,7 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   val valid = Output(Bool())
 
   /** The data to be transferred, qualified by `valid`
-    * @group Signals 
+    * @group Signals
     */
 
   val bits  = Output(gen)
