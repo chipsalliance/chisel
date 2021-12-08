@@ -83,8 +83,63 @@ where <> bulk connects interfaces of opposite gender between sibling modules or 
 
 Bulk connections connect leaf ports of the same name to each other. If the names do not match or are missing, Chisel does not generate a connection.
 
-Caution: bulk connections should only be used with **directioned elements** (like IOs), and is not magical (e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically [chisel3#603](https://github.com/freechipsproject/chisel3/issues/603)).
+```scala mdoc:silent:reset
+import chisel3._
 
+class SimpleLink extends Bundle {
+  val data = Output(UInt(16.W))
+  val valid = Output(Bool())
+  val ready = Input(Bool())
+}
+class PLink extends SimpleLink {
+  val parity = Output(UInt(5.W))
+}
+class FilterIO extends Bundle {
+  val x = Flipped(new PLink)
+  val y = new PLink
+}
+class NotReallyAFilterIO extends Bundle {
+  val x = Flipped(new PLink)
+  val y = new PLink
+  //val z = Output(new Bool())
+}
+class Block extends Module {
+  val io1 = IO(new FilterIO)
+  val io2 = IO(Flipped(new NotReallyAFilterIO))
+
+  io1 <> io2
+}
+```
+Caution: bulk connections should only be used with **directioned elements** (like IOs), and is not magical (e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically [chisel3#603](https://github.com/freechipsproject/chisel3/issues/603)).
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.util.DecoupledIO
+class Wrapper extends Module{
+  val io = IO(new Bundle {
+  val in = Flipped(DecoupledIO(UInt(8.W)))
+  val out = DecoupledIO(UInt(8.W))
+  })
+  val p = Module(new PipelineStage)
+  val c = Module(new PipelineStage) 
+  //connect Producer to IO
+  io.in := DontCare
+  p.io.a <> DontCare
+  val tmp = Wire(Flipped(DecoupledIO(UInt(8.W))))
+  tmp := DontCare
+  p.io.a <> io.in
+  // connect producer to consumer
+  c.io.a <> p.io.b
+  //connect consumer to IO
+  io.out <> c.io.b
+}
+class PipelineStage extends Module{
+  val io = IO(new Bundle{
+    val a = Flipped(DecoupledIO(UInt(8.W)))
+    val b = DecoupledIO(UInt(8.W))
+  })
+  io.b <> io.a
+}
+```
 ## The standard ready-valid interface (ReadyValidIO / Decoupled)
 
 Chisel provides a standard interface for [ready-valid interfaces](http://inst.eecs.berkeley.edu/~cs150/Documents/Interfaces.pdf).

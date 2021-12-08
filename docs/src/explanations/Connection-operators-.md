@@ -103,8 +103,8 @@ The Verilog remained the same without incurring errors, showing that the `<>` op
 
 
 ## Concept 2: := means assign ALL signals from the RHS to the LHS, regardless of their direction.
-Using the same experiment code as above, we set to test for the function of ":="
-To achieve this, "<>" is being replaced with ":=" in the sample code above.
+Using the same experiment code as above, we set to test for the function of `:=`
+To achieve this, `<>` is being replaced with `:=` in the sample code above.
 (Scastie link to the experiment:https://scastie.scala-lang.org/Shorla/o1ShdaY3RWKf0IIFwwQ1UQ)
 
 ```scala mdoc:silent:reset
@@ -136,7 +136,9 @@ class PipelineStage extends Module{
 Below we can see the resulting error message for this example:
 ```scala modc:crash
 ChiselStage.emitVerilog(new Wrapper)
-
+```
+###Conclusion:
+The := operator goes field-by-field and attempts to connect the RHS to the LHS. If something on the LHS is actually an Input, or something on the RHS is an Output, you will get an error as shown above.
 ## Concept 3: Always Use := to assign DontCare to Wires
 
 When assigning `DontCare` to something that is not directioned, should you use `:=` or `<>`? 
@@ -265,11 +267,8 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-<<<<<<< HEAD
-The code above shows that <> can't connect two wires, this is because Chisel can't figure out which way things flow.
-=======
+
 The code above shows that `<>` can't connect two `Wire`s, this is because Chisel can't figure out which way things flow. If it is used this is the expected error.
->>>>>>> 928c3bf4f0e1bfeee2ebad8729101fb67f5caf3d
 
 
 ## Concept 6: `<>`  works between things with at least one known flow (An IO or child's IO). 
