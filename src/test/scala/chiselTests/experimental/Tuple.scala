@@ -45,12 +45,11 @@ class TupleSpec extends ChiselFlatSpec {
       val v, w, x = IO(Output(UInt(8.W)))
       (v, w, x) := Mux(sel, (a, b, c), (f, g, h))
     }
-    println(ChiselStage.emitChirrtl(new MyModule))
+    // Verilog instead of CHIRRTL because the optimizations make it much prettier
     val verilog = ChiselStage.emitVerilog(new MyModule)
     verilog should include ("assign v = sel ? a : f;")
     verilog should include ("assign w = sel ? b : g;")
     verilog should include ("assign x = sel ? c : h;")
-    verilog should include ("assign y = sel ? d : i;")
   }
 
   it should "enable using Tuple4 like Data" in {
@@ -61,7 +60,7 @@ class TupleSpec extends ChiselFlatSpec {
       val v, w, x, y = IO(Output(UInt(8.W)))
       (v, w, x, y) := Mux(sel, (a, b, c, d), (f, g, h, i))
     }
-    println(ChiselStage.emitChirrtl(new MyModule))
+    // Verilog instead of CHIRRTL because the optimizations make it much prettier
     val verilog = ChiselStage.emitVerilog(new MyModule)
     verilog should include ("assign v = sel ? a : f;")
     verilog should include ("assign w = sel ? b : g;")
