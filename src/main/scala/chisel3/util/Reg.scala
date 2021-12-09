@@ -42,7 +42,7 @@ object ShiftRegister
     * val regDelayTwo = ShiftRegister(nextVal, 2, ena)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): T = ShiftRegisters(in, n, en).lastOption.getOrElse(in)
+  def apply[T <: Data](in: T, n: Int, en: Bool = true.B, flatten: Boolean = true): T = ShiftRegisters(in, n, en, flatten).lastOption.getOrElse(in)
 
   /** Returns the n-cycle delayed version of the input signal with reset initialization.
     *
@@ -55,7 +55,7 @@ object ShiftRegister
     * val regDelayTwoReset = ShiftRegister(nextVal, 2, 0.U, ena)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T = ShiftRegisters(in, n, resetData, en).lastOption.getOrElse(in)
+  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool, flatten: Boolean): T = ShiftRegisters(in, n, resetData, en, flatten).lastOption.getOrElse(in)
 }
 
 
@@ -68,8 +68,20 @@ object ShiftRegisters
     * @param en enable the shift
     *
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): Seq[T] =
-    Seq.iterate(in, n + 1)(util.RegEnable(_, en)).drop(1)
+  def apply[T <: Data](in: T, n: Int, en: Bool = true.B, flatten: Boolean = true): Seq[T] = {
+    if (flatten) {
+      Seq.iterate(in, n + 1)(util.RegEnable(_, en)).drop(1)
+    } else  {
+      class ShiftRegisters extends Module {
+        val in = IO(Input(UInt()))
+        val out = IO(Output(Vec(n, UInt())))
+        out := ShiftRegisters(in.asUInt, n, en, true)
+      }
+      val shift = Module(new ShiftRegisters)
+      shift.in := in
+      shift.out.map(_.asTypeOf(in))
+    }
+  }
 
   /** Returns delayed input signal registers with reset initialization from 1 to n.
     *
@@ -79,6 +91,20 @@ object ShiftRegisters
     * @param en        enable the shift
     *
     */
-  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): Seq[T] =
-    Seq.iterate(in, n + 1)(util.RegEnable(_, resetData, en)).drop(1)
+  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool, flatten: Boolean): Seq[T] = {
+    if (flatten) {
+      Seq.iterate(in, n + 1)(util.RegEnable(_, resetData, en)).drop(1)
+    } else  {
+      class ShiftRegistersX extends Module {
+        val resetData = IO(Input(Bool()))
+        val in = IO(Input(UInt()))
+        val out = IO(Output(Vec(n, UInt())))
+        out := ShiftRegisters(in.asUInt, n, resetData, en, true)
+      }
+      val shift = Module(new ShiftRegistersX)
+      shift.resetData := resetData
+      shift.in := in
+      shift.out.map(_.asTypeOf(in))
+    }
+  }
 }
