@@ -81,7 +81,7 @@ class Block extends Module {
 ```
 where <> bulk connects interfaces of opposite gender between sibling modules or interfaces of the same gender between parent/child modules.
 
-Bulk connections connect leaf ports of the same name to each other. The Scala types of the Bundles are not required to match. If one named signal is missing from either side, Chisel will give an error such as in the following example:
+The bidirectional bulk connection operator `<>` connects leaf ports of the same name to each other. The Scala types of the Bundles are not required to match. If one named signal is missing from either side, Chisel will give an error such as in the following example:
 
 ```scala mdoc:silent
 
@@ -103,7 +103,7 @@ ChiselStage.emitVerilog(new Wrapper)
 ```
 Caution: bulk connections should only be used with **directioned elements** (like IOs), and is not magical (e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically [chisel3#603](https://github.com/freechipsproject/chisel3/issues/603)).
 
-For example, putting a temporary wire here:
+For example, putting two temporary wires and connecting them here will not work, even though the directions could be known from the endpoints:
 
 ```scala mdoc:silent
 
