@@ -28,6 +28,14 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
     (BitPat.Y(4) ## BitPat.dontCare(3) ## BitPat.N(2)).toString should be (s"BitPat(1111???00)")
   }
 
+  it should "throw when BitPat apply to a Hardware" in {
+    intercept[java.lang.IllegalArgumentException]{
+      chisel3.stage.ChiselStage.emitChirrtl(new chisel3.Module {
+        BitPat(chisel3.Reg(chisel3.Bool()))
+      })
+    }
+  }
+
   it should "index and return new BitPat" in {
     val b = BitPat("b1001???")
     b(0) should be(BitPat.dontCare(1))
