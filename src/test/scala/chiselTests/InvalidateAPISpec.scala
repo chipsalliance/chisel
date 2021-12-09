@@ -105,7 +105,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
         ChiselStage.elaborate(new ModuleWithDontCareSink)
       }
     }
-    exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
+    exception.getMessage should include("DontCare cannot be a connection sink")
   }
 
   property("a DontCare cannot be a connection sink (LHS) for <>") {
