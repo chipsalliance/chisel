@@ -66,7 +66,7 @@ class CrossbarIo(n: Int) extends Bundle {
 ```
 where Vec takes a size as the first argument and a block returning a port as the second argument.
 
-## Bulk Connections
+## Bidirectional Bulk Connections
 
 We can now compose two filters into a filter block as follows:
 ```scala mdoc:silent
