@@ -89,6 +89,7 @@ object BitPat {
     * @note the UInt must be a literal
     */
   def apply(x: UInt): BitPat = {
+    require(x.isLit, s"$x is not a literal, BitPat.apply(x: UInt) only accepts literals")
     val len = if (x.isWidthKnown) x.getWidth else 0
     apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
   }
