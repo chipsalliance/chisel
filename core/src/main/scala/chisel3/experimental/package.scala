@@ -2,7 +2,8 @@
 
 package chisel3
 
-import chisel3.internal.NamedComponent
+import chisel3.ExplicitCompileOptions.Strict
+import chisel3.experimental.DataMirror.internal.chiselTypeClone
 import chisel3.internal.sourceinfo.SourceInfo
 
 /** Package for experimental features, which may have their API changed, be removed, etc.
@@ -166,4 +167,150 @@ package object experimental {
   val prefix = chisel3.internal.prefix
   // Use to remove prefixes not in provided scope
   val noPrefix = chisel3.internal.noPrefix
+
+  // ****************************** Hardware equivalents of Scala Tuples ******************************
+  // These are intended to be used via DataView
+
+  /** [[Data]] equivalent of Scala's [[Tuple2]]
+    *
+    * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple2` in
+    * `chisel3.experimental.conversions`
+    */
+  final class HWTuple2[+A <: Data, +B <: Data] private[chisel3] (val _1: A, val _2: B) extends Bundle()(Strict) {
+    // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
+    override protected def _usingPlugin: Boolean = true
+    override protected def _cloneTypeImpl: Bundle = new HWTuple2(chiselTypeClone(_1), chiselTypeClone(_2))
+  }
+
+  /** [[Data]] equivalent of Scala's [[Tuple3]]
+    *
+    * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple3` in
+    * `chisel3.experimental.conversions`
+    */
+  final class HWTuple3[+A <: Data, +B <: Data, +C <: Data] private[chisel3] (
+    val _1: A, val _2: B, val _3: C
+  ) extends Bundle()(Strict) {
+    // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
+    override protected def _usingPlugin: Boolean = true
+    override protected def _cloneTypeImpl: Bundle = new HWTuple3(
+      chiselTypeClone(_1), chiselTypeClone(_2), chiselTypeClone(_3)
+    )
+  }
+
+  /** [[Data]] equivalent of Scala's [[Tuple4]]
+    *
+    * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple4` in
+    * `chisel3.experimental.conversions`
+    */
+  final class HWTuple4[+A <: Data, +B <: Data, +C <: Data, +D <: Data] private[chisel3] (
+    val _1: A, val _2: B, val _3: C, val _4: D
+  ) extends Bundle()(Strict) {
+    // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
+    override protected def _usingPlugin: Boolean = true
+    override protected def _cloneTypeImpl: Bundle = new HWTuple4(
+      chiselTypeClone(_1), chiselTypeClone(_2), chiselTypeClone(_3), chiselTypeClone(_4)
+    )
+  }
+
+  /** [[Data]] equivalent of Scala's [[Tuple5]]
+    *
+    * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple5` in
+    * `chisel3.experimental.conversions`
+    */
+  final class HWTuple5[+A <: Data, +B <: Data, +C <: Data, +D <: Data, +E <: Data] private[chisel3] (
+    val _1: A, val _2: B, val _3: C, val _4: D, val _5: E
+  ) extends Bundle()(Strict) {
+    // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
+    override protected def _usingPlugin: Boolean = true
+    override protected def _cloneTypeImpl: Bundle = new HWTuple5(
+      chiselTypeClone(_1), chiselTypeClone(_2), chiselTypeClone(_3), chiselTypeClone(_4), chiselTypeClone(_5)
+    )
+  }
+
+  /** [[Data]] equivalent of Scala's [[Tuple6]]
+    *
+    * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple6` in
+    * `chisel3.experimental.conversions`
+    */
+  final class HWTuple6[+A <: Data, +B <: Data, +C <: Data, +D <: Data, +E <: Data, +F <: Data] private[chisel3] (
+    val _1: A, val _2: B, val _3: C, val _4: D, val _5: E, val _6: F
+  ) extends Bundle()(Strict) {
+    // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
+    override protected def _usingPlugin: Boolean = true
+    override protected def _cloneTypeImpl: Bundle = new HWTuple6(
+      chiselTypeClone(_1), chiselTypeClone(_2), chiselTypeClone(_3), chiselTypeClone(_4), chiselTypeClone(_5),
+      chiselTypeClone(_6)
+    )
+  }
+
+  /** [[Data]] equivalent of Scala's [[Tuple7]]
+    *
+    * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple7` in
+    * `chisel3.experimental.conversions`
+    */
+  final class HWTuple7[+A <: Data, +B <: Data, +C <: Data, +D <: Data, +E <: Data, +F <: Data, +G <: Data] private[chisel3] (
+    val _1: A, val _2: B, val _3: C, val _4: D, val _5: E, val _6: F, val _7: G
+  ) extends Bundle()(Strict) {
+    // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
+    override protected def _usingPlugin: Boolean = true
+    override protected def _cloneTypeImpl: Bundle = new HWTuple7(
+      chiselTypeClone(_1), chiselTypeClone(_2), chiselTypeClone(_3), chiselTypeClone(_4), chiselTypeClone(_5),
+      chiselTypeClone(_6), chiselTypeClone(_7)
+    )
+  }
+
+  /** [[Data]] equivalent of Scala's [[Tuple8]]
+    *
+    * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple8` in
+    * `chisel3.experimental.conversions`
+    */
+  final class HWTuple8[
+    +A <: Data, +B <: Data, +C <: Data, +D <: Data, +E <: Data, +F <: Data, +G <: Data, +H <: Data
+  ] private[chisel3] (
+    val _1: A, val _2: B, val _3: C, val _4: D, val _5: E, val _6: F, val _7: G, val _8: H
+  ) extends Bundle()(Strict) {
+    // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
+    override protected def _usingPlugin: Boolean = true
+    override protected def _cloneTypeImpl: Bundle = new HWTuple8(
+      chiselTypeClone(_1), chiselTypeClone(_2), chiselTypeClone(_3), chiselTypeClone(_4), chiselTypeClone(_5),
+      chiselTypeClone(_6), chiselTypeClone(_7), chiselTypeClone(_8)
+    )
+  }
+
+  /** [[Data]] equivalent of Scala's [[Tuple9]]
+    *
+    * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple9` in
+    * `chisel3.experimental.conversions`
+    */
+  final class HWTuple9[
+    +A <: Data, +B <: Data, +C <: Data, +D <: Data, +E <: Data, +F <: Data, +G <: Data, +H <: Data, +I <: Data
+  ] private[chisel3] (
+    val _1: A, val _2: B, val _3: C, val _4: D, val _5: E, val _6: F, val _7: G, val _8: H, val _9: I
+  ) extends Bundle()(Strict) {
+    // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
+    override protected def _usingPlugin: Boolean = true
+    override protected def _cloneTypeImpl: Bundle = new HWTuple9(
+      chiselTypeClone(_1), chiselTypeClone(_2), chiselTypeClone(_3), chiselTypeClone(_4), chiselTypeClone(_5),
+      chiselTypeClone(_6), chiselTypeClone(_7), chiselTypeClone(_8), chiselTypeClone(_9)
+    )
+  }
+
+
+  /** [[Data]] equivalent of Scala's [[Tuple9]]
+    *
+    * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple9` in
+    * `chisel3.experimental.conversions`
+    */
+  final class HWTuple10[
+    +A <: Data, +B <: Data, +C <: Data, +D <: Data, +E <: Data, +F <: Data, +G <: Data, +H <: Data, +I <: Data, +J <: Data
+  ] private[chisel3] (
+    val _1: A, val _2: B, val _3: C, val _4: D, val _5: E, val _6: F, val _7: G, val _8: H, val _9: I, val _10: J
+  ) extends Bundle()(Strict) {
+    // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
+    override protected def _usingPlugin: Boolean = true
+    override protected def _cloneTypeImpl: Bundle = new HWTuple10(
+      chiselTypeClone(_1), chiselTypeClone(_2), chiselTypeClone(_3), chiselTypeClone(_4), chiselTypeClone(_5),
+      chiselTypeClone(_6), chiselTypeClone(_7), chiselTypeClone(_8), chiselTypeClone(_9), chiselTypeClone(_10)
+    )
+  }
 }
