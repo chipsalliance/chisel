@@ -29,7 +29,7 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "throw when BitPat apply to a Hardware" in {
-    intercept[chisel3.internal.ChiselException]{
+    intercept[java.lang.IllegalArgumentException]{
       chisel3.stage.ChiselStage.emitChirrtl(new chisel3.Module {
         BitPat(chisel3.Reg(chisel3.Bool()))
       })
