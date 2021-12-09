@@ -81,7 +81,7 @@ class Block extends Module {
 ```
 where <> bulk connects interfaces of opposite gender between sibling modules or interfaces of the same gender between parent/child modules.
 
-Bulk connections connect leaf ports of the same name to each other. The Scala types of the Bundles are not required to match. If one named signal is missing from either side, Chisel will give an error such as in the following example:
+The bidirectional bulk connection operator `<>` connects leaf ports of the same name to each other. The Scala types of the Bundles are not required to match. If one named signal is missing from either side, Chisel will give an error such as in the following example:
 
 ```scala mdoc:silent
 
