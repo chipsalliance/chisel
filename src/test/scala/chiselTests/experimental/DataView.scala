@@ -313,8 +313,26 @@ class DataViewSpec extends ChiselFlatSpec {
     verilog should include ("assign z = d;")
   }
 
-  it should "error if you try to dynamically index a Vec view" in {
+  it should "support dynamic indexing for Vec identity views" in {
+    class MyModule extends Module {
+      val dataIn = IO(Input(UInt(8.W)))
+      val addr = IO(Input(UInt(2.W)))
+      val dataOut = IO(Output(UInt(8.W)))
 
+      val vec = RegInit(0.U.asTypeOf(Vec(4, UInt(8.W))))
+      val view = vec.viewAs[Vec[UInt]]
+      // Dynamic indexing is more of a "generator" in Chisel3 than an individual node
+      // This style is not recommended, this is just testing the behavior
+      val selected = view(addr)
+      selected := dataIn
+      dataOut := selected
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include ("vec[addr] <= dataIn")
+    chirrtl should include ("dataOut <= vec[addr]")
+  }
+
+  it should "error if you try to dynamically index a Vec view that does not correspond to a Vec target" in {
     class MyModule extends Module {
       val inA, inB = IO(Input(UInt(8.W)))
       val outA, outB = IO(Output(UInt(8.W)))
@@ -323,6 +341,7 @@ class DataViewSpec extends ChiselFlatSpec {
       val a, b, c, d = RegInit(0.U)
 
       // Dynamic indexing is more of a "generator" in Chisel3 than an individual node
+      // This style is not recommended, this is just testing the behavior
       val selected = Seq((a, b), (c, d)).apply(idx)
       selected := (inA, inB)
       (outA, outB) := selected
