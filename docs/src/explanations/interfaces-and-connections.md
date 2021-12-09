@@ -103,7 +103,7 @@ ChiselStage.emitVerilog(new Wrapper)
 ```
 Caution: bulk connections should only be used with **directioned elements** (like IOs), and is not magical (e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically [chisel3#603](https://github.com/freechipsproject/chisel3/issues/603)).
 
-For example, putting a temporary wire here:
+For example, putting two temporary wires and connecting them here will not work, even though the directions could be known from the endpoints:
 
 ```scala mdoc:silent
 
