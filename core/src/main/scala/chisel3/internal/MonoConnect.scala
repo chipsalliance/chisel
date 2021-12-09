@@ -60,11 +60,11 @@ private[chisel3] object MonoConnect {
   def DontCareCantBeSink =
     MonoConnectException("DontCare cannot be a connection sink")
   def AnalogCantBeMonoSink(sink: Data) =
-    MonoConnectException(s"Sink ${formatName(sink)} of type Analog cannot participate in a mono connection")
+    MonoConnectException(s"Sink ${formatName(sink)} of type Analog cannot participate in a mono connection (:=)")
   def AnalogCantBeMonoSource(source: Data) =
-    MonoConnectException(s"Source ${formatName(source)} of type Analog cannot participate in a mono connection")
+    MonoConnectException(s"Source ${formatName(source)} of type Analog cannot participate in a mono connection (:=)")
   def AnalogMonoConnectionException(source: Data, sink: Data) =
-    MonoConnectException(s"Source ${formatName(source)} and sink ${formatName(sink)} of type Analog cannot participate in a mono connection")
+    MonoConnectException(s"Source ${formatName(source)} and sink ${formatName(sink)} of type Analog cannot participate in a mono connection (:=)")
 
   def checkWhenVisibility(x: Data): Boolean = {
     x.topBinding match {
