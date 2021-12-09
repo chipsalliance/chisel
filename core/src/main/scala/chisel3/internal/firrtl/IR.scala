@@ -243,7 +243,7 @@ sealed case class UnknownWidth() extends Width {
   override def toString: String = ""
 }
 
-sealed private[chisel3] case class KnownWidth(value: Int) extends Width {
+sealed case class KnownWidth(value: Int) extends Width {
   require(value >= 0)
   def known: Boolean = true
   def get: Int = value
