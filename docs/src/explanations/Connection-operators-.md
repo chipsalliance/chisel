@@ -189,7 +189,7 @@ Thus, when assigning DontCare to a wire, always use `:=`.
 ##  Concept 4: You can use <> or := to assign DontCare to directioned things (IOs)
 When assigning `DontCare` to something that is directioned, should you use `:=` or `<>`? 
 We will find out using the sample codes below:
-( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -230,7 +230,7 @@ Both `<>` and `:=` can be used to assign directioned things (IOs) to DontCare as
 
 ##  Concept 5:  `<>` Cannot be used to connect two non-directioned things (Wires)
 The goal is to check if `<>` can connect two `Wire`s using the Experiment code above.
-( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -273,7 +273,7 @@ The code above shows that `<>` can't connect two `Wire`s, this is because Chisel
 
 ## Concept 6: `<>`  works between things with at least one known flow (An IO or child's IO). 
 If there is at least one known flow what will <> do? This will be showed using the experiment code.
-( Scastie link for the ecperiment:https://scastie.scala-lang.org/Shorla/gKx9ReLVTTqDTk9vmw5ozg)
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/gKx9ReLVTTqDTk9vmw5ozg)
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -317,7 +317,7 @@ The connection above went smoothly with no errors, this goes to show <> will wor
 
 ## Concept 7: <> and := connects signals by field name.
 This experiment creates a MockDecoupledIO which has the same fields by name as a DecoupledIO. Chisel lets us connect it and produces the same verilog, even though MockDecoupledIO and DecoupledIO are different types.
-( Scastie link for the ecperiment:https://scastie.scala-lang.org/Uf4tQquvQYigZAW705NFIQ)
+( Scastie link for the experiment:https://scastie.scala-lang.org/Uf4tQquvQYigZAW705NFIQ)
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -355,7 +355,7 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 And here is another experiment, where we remove one of the fields of MockDecoupledIO:
-( Scastie link for the ecperiment:https://scastie.scala-lang.org/ChtkhKCpS9CvJkjjqpdeIA)
+( Scastie link for the experiment:https://scastie.scala-lang.org/ChtkhKCpS9CvJkjjqpdeIA)
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -397,3 +397,6 @@ This one fails because there is a field 'bits' missing.
 ### Conclusion:
 It doesn't matter the order of the fields, they need to be the same.
 Same is true for ':=', the Scala types do not need to match but all the signals must match up.
+
+Note: when viewing `Chisel._` code, the `:=` operates as a bidirectional connect with different rules than the chisel3. `<>` bidirectional connect operator.
+

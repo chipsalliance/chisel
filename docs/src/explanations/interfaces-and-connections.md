@@ -83,25 +83,12 @@ where <> bulk connects interfaces of opposite gender between sibling modules or 
 
 Bulk connections connect leaf ports of the same name to each other. The Scala types of the Bundles are not required to match. If one named signal is missing from either side, Chisel will give an error such as in the following example:
 
-```scala mdoc:silent:reset
-import chisel3._
+```scala mdoc:silent
 
-class SimpleLink extends Bundle {
-  val data = Output(UInt(16.W))
-  val valid = Output(Bool())
-  val ready = Input(Bool())
-}
-class PLink extends SimpleLink {
-  val parity = Output(UInt(5.W))
-}
-class FilterIO extends Bundle {
-  val x = Flipped(new PLink)
-  val y = new PLink
-}
 class NotReallyAFilterIO extends Bundle {
   val x = Flipped(new PLink)
   val y = new PLink
-  //val z = Output(new Bool())
+  val z = Output(new Bool())
 }
 class Block extends Module {
   val io1 = IO(new FilterIO)
@@ -110,36 +97,35 @@ class Block extends Module {
   io1 <> io2
 }
 ```
-Caution: bulk connections should only be used with **directioned elements** (like IOs), and is not magical (e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically [chisel3#603](https://github.com/freechipsproject/chisel3/issues/603)).
-```scala mdoc:silent:reset
-import chisel3._
-import chisel3.util.DecoupledIO
-class Wrapper extends Module{
-  val io = IO(new Bundle {
-  val in = Flipped(DecoupledIO(UInt(8.W)))
-  val out = DecoupledIO(UInt(8.W))
-  })
-  val p = Module(new PipelineStage)
-  val c = Module(new PipelineStage) 
-  //connect Producer to IO
-  io.in := DontCare
-  p.io.a <> DontCare
-  val tmp = Wire(Flipped(DecoupledIO(UInt(8.W))))
-  tmp := DontCare
-  p.io.a <> io.in
-  // connect producer to consumer
-  c.io.a <> p.io.b
-  //connect consumer to IO
-  io.out <> c.io.b
-}
-class PipelineStage extends Module{
-  val io = IO(new Bundle{
-    val a = Flipped(DecoupledIO(UInt(8.W)))
-    val b = DecoupledIO(UInt(8.W))
-  })
-  io.b <> io.a
-}
+Below we can see the resulting error for this example:
+```scala modc:crash
+ChiselStage.emitVerilog(new Wrapper)
 ```
+Caution: bulk connections should only be used with **directioned elements** (like IOs), and is not magical (e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically [chisel3#603](https://github.com/freechipsproject/chisel3/issues/603)).
+
+For example, putting a temporary wire here:
+
+```scala mdoc:silent
+
+class Block extends Module {
+  val io = IO(new FilterIO)
+  val f1 = Module(new Filter)
+  val f2 = Module(new Filter)
+  f1.io.x <> io.x
+ val tmp1 = Wire(Flipped(DecoupledIO(UInt(8.W))))
+ val tmp2 = Wire(DecoupledIO(UInt(8.W))
+  f1.io.y <> tmp1
+  tmp1 <> tmp2
+  tmp2 <> f2.io.x
+  f2.io.y <> io.y
+}
+
+```
+Below we can see the resulting error for this example:
+```scala modc:crash
+ChiselStage.emitVerilog(new Wrapper)
+```
+For more details and information, see [Deep Dive into Connection Operators](Connection-operators-.md)
 ## The standard ready-valid interface (ReadyValidIO / Decoupled)
 
 Chisel provides a standard interface for [ready-valid interfaces](http://inst.eecs.berkeley.edu/~cs150/Documents/Interfaces.pdf).
@@ -199,6 +185,6 @@ class ConsumingData extends Module {
 That means `ready` and `valid` can also be deasserted without a data transfer.
 
 `IrrevocableIO` is a ready-valid interface with the *convention* that the value of `bits` will not change while `valid` is asserted and `ready` is deasserted.
-Also the consumer shall keep `ready` asserted after a cycle where `ready` was high and `valid` was low.
+Also, the consumer shall keep `ready` asserted after a cycle where `ready` was high and `valid` was low.
 Note that the *irrevocable* constraint *is only a convention* and cannot be enforced by the interface.
 Chisel does not automatically generate checkers or assertions to enforce the *irrevocable* convention.
