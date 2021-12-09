@@ -1,0 +1,38 @@
+    1  sudo apt install ./zoom_amd64.deb
+    2  sudo apt install ffmpeg
+    3  sudo apt install gdebi
+    4  su -
+    5  sudo snap install intellij-idea-community--classic
+    6  sudo snap install intellij-idea-community ---classic
+    7  sudo snap install intellij-idea-community --classic
+    8  java -version
+    9  sudo apt update
+   10  sudo apt install default-jdk
+   11  Git status
+   12  git status
+   13  git remote -v
+   14  git remote add https://github.com/chipsalliance/chisel3.git upstream
+   15  git remote add upstream https://github.com/chispsalliance/chisel3.git
+   16  git remote add upstream https://github.com/chipsalliance/chisel3.git
+   17  git remote set-url upstream https://github.com/chipsalliance/chisel3.git 
+   18  git fetch upstream
+   19  git remote -v
+   20  git merge upstream/master
+   21  git diff --name-only upstream/master
+   22  git diff upstream/master src/main/scala/chisel3/util/Arbiter.scala
+   23  git add src/main/scala/chisel3/util/Arbiter.scala
+   24  git commit -m "Resolve diff for Arbiter.scala
+"
+   25  git diff --name-only upstream/master
+   26  git diff upstream/master src/main/scala/chisel3/util/Decoupled.scala
+   27  git checkout upstream/master -- src/main/scala/chisel3/util/Decoupled.scala
+   28  git diff upstream/master src/main/scala/chisel3/util/Decoupled.scala
+   29  git diff upstream/master src/main/scala/chisel3/util/Valid.scala
+   30  git checkout upstream/master -- src/main/scala/chisel3/util/Valid.scala
+   31  git add -u
+   32  git status
+   33  git commit
+   34  git status
+   35  git log
+   36  git push origin master
+   37  history > history.txt
