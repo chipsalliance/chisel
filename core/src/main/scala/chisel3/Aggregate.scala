@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.experimental.dataview.{InvalidViewException, isView}
+import chisel3.experimental.dataview.{InvalidViewException, isView, reifySingleData}
 
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
@@ -258,9 +258,20 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
     requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
+
+    // Special handling for views
     if (isView(this)) {
-      throw InvalidViewException("Dynamic indexing of Views is not yet supported")
+      reifySingleData(this) match {
+        // Views complicate things a bit, but views that correspond exactly to an identical Vec can just forward the
+        // dynamic indexing to the target Vec
+        // In theory, we could still do this forwarding if the sample element were different by deriving a DataView
+        case Some(target: Vec[T @unchecked]) if this.length == target.length &&
+                                                this.sample_element.typeEquivalent(target.sample_element) =>
+          return target.do_apply(p)
+        case _ => throw InvalidViewException("Dynamic indexing of Views is not yet supported")
+      }
     }
+
     val port = gen
 
     // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.
