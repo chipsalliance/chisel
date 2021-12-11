@@ -122,7 +122,7 @@ class Block extends Module {
 
 ```
 Below we can see the resulting error for this example:
-```scala modc:crash
+```scala mdoc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
 For more details and information, see [Deep Dive into Connection Operators](Connection-operators-.md)
