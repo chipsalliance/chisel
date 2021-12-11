@@ -99,7 +99,7 @@ class Block extends Module {
 ```
 Below we can see the resulting error for this example:
 ```scala modc:crash
-ChiselStage.emitVerilog(new Wrapper)
+ChiselStage.emitVerilog(new Block)
 ```
 Caution: bulk connections should only be used with **directioned elements** (like IOs), and is not magical (e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically [chisel3#603](https://github.com/freechipsproject/chisel3/issues/603)).
 
@@ -123,7 +123,7 @@ class Block extends Module {
 ```
 Below we can see the resulting error for this example:
 ```scala mdoc:crash
-ChiselStage.emitVerilog(new Wrapper)
+ChiselStage.emitVerilog(new Block)
 ```
 For more details and information, see [Deep Dive into Connection Operators](Connection-operators-.md)
 ## The standard ready-valid interface (ReadyValidIO / Decoupled)
