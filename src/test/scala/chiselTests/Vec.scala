@@ -313,6 +313,36 @@ class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
   when (done) { stop() }
 }
 
+class ReduceTreeTester() extends BasicTester {
+  class FooIO[T <: Data](n: Int, private val gen: T) extends Bundle {
+    val in = Flipped(Vec(n, new DecoupledIO(gen)))
+    val out = new DecoupledIO(gen)
+  }
+
+  class Foo[T <: Data](n: Int, private val gen: T) extends Module {
+    val io = IO(new FooIO(n, gen))
+
+    def foo(a: DecoupledIO[T], b: DecoupledIO[T]) = {
+      a.ready := true.B
+      b.ready := true.B
+      val out = Wire(new DecoupledIO(gen))
+
+      out.valid := true.B
+
+      val regSel = RegInit(false.B)
+      out.bits := Mux(regSel, a.bits, b.bits)
+      out.ready := a.ready
+      out
+    }
+
+    io.out <> io.in.reduceTree(foo)
+  }
+
+  val dut = Module(new Foo(5, UInt(5.W)))
+  dut.io := DontCare
+  stop()
+}
+
 class VecSpec extends ChiselPropSpec with Utils {
   // Disable shrinking on error.
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
@@ -455,5 +485,9 @@ class VecSpec extends ChiselPropSpec with Utils {
           foo(0.U) := false.B
         }}
     }
+  }
+
+  property("reduceTree should preserve input/output type") {
+      assertTesterPasses { new ReduceTreeTester() }
   }
 }
