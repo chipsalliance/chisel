@@ -112,8 +112,8 @@ class Block extends Module {
   val f1 = Module(new Filter)
   val f2 = Module(new Filter)
   f1.io.x <> io.x
- val tmp1 = Wire(Flipped(DecoupledIO(UInt(8.W))))
- val tmp2 = Wire(DecoupledIO(UInt(8.W))
+ val tmp1 = Wire(new FilterIO)
+ val tmp2 = Wire(new FilterIO)
   f1.io.y <> tmp1
   tmp1 <> tmp2
   tmp2 <> f2.io.x
