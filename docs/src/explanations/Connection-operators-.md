@@ -50,7 +50,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala modc
+```scala mdoc
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ## Concept 1: <> is Commutative
@@ -93,7 +93,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala modc
+```scala mdoc
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion: 
@@ -134,7 +134,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting error message for this example:
-```scala modc:crash
+```scala mdoc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ###Conclusion:
@@ -176,7 +176,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting error for this example:
-```scala modc:crash
+```scala mdoc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
@@ -222,7 +222,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala modc
+```scala mdoc
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion: 
@@ -263,7 +263,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala modc:crash
+```scala mdoc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
@@ -308,7 +308,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala modc
+```scala mdoc
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
@@ -351,7 +351,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala modc
+```scala mdoc
 ChiselStage.emitVerilog(new Wrapper)
 ```
 And here is another experiment, where we remove one of the fields of MockDecoupledIO:
@@ -389,7 +389,7 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala modc:crash
+```scala mdoc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
 This one fails because there is a field 'bits' missing.
