@@ -234,7 +234,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
 }
 
 trait EnumFactory1H extends EnumFactory{
-  override val oneHot: Boolean = true
+  final override val oneHot: Boolean = true
 }
 
 abstract class EnumFactory {
@@ -245,7 +245,7 @@ abstract class EnumFactory {
 
   private var id: BigInt = 0
   private[chisel3] var width: Width = 0.W
-  val oneHot: Boolean = false
+  private[chisel3] val oneHot: Boolean = false
 
   private case class EnumRecord(inst: Type, name: String)
   private val enumRecords = mutable.ArrayBuffer.empty[EnumRecord]
