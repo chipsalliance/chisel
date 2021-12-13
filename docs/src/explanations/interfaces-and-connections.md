@@ -90,7 +90,7 @@ class NotReallyAFilterIO extends Bundle {
   val y = new PLink
   val z = Output(new Bool())
 }
-class Block extends Module {
+class Block2 extends Module {
   val io1 = IO(new FilterIO)
   val io2 = IO(Flipped(new NotReallyAFilterIO))
 
@@ -99,7 +99,7 @@ class Block extends Module {
 ```
 Below we can see the resulting error for this example:
 ```scala modc:crash
-ChiselStage.emitVerilog(new Block)
+ChiselStage.emitVerilog(new Block2)
 ```
 Caution: bulk connections should only be used with **directioned elements** (like IOs), and is not magical (e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically [chisel3#603](https://github.com/freechipsproject/chisel3/issues/603)).
 
@@ -107,7 +107,7 @@ For example, putting two temporary wires and connecting them here will not work,
 
 ```scala mdoc:silent
 
-class Block extends Module {
+class BlockWithTemporaryWires extends Module {
   val io = IO(new FilterIO)
   val f1 = Module(new Filter)
   val f2 = Module(new Filter)
@@ -122,8 +122,8 @@ class Block extends Module {
 
 ```
 Below we can see the resulting error for this example:
-```scala mdoc:crash
-ChiselStage.emitVerilog(new Block)
+```scala modc:crash
+ChiselStage.emitVerilog(new BlockWithTemporaryWires)
 ```
 For more details and information, see [Deep Dive into Connection Operators](Connection-operators-.md)
 ## The standard ready-valid interface (ReadyValidIO / Decoupled)
