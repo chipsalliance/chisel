@@ -122,7 +122,7 @@ class BlockWithTemporaryWires extends Module {
 
 ```
 Below we can see the resulting error for this example:
-```scala modc:crash
+```scala mdoc:crash
 ChiselStage.emitVerilog(new BlockWithTemporaryWires)
 ```
 For more details and information, see [Deep Dive into Connection Operators](Connection-operators-.md)
