@@ -166,18 +166,24 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends
     new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)
   }
 
-  /**
-    * @return whether this BitPat overlap with that BitPat, i.e. !(intersect.isEmpty)
+  /** Check whether this [[BitPat]] overlap with that [[BitPat]], i.e. !(intersect.isEmpty)
+    *
+    * @param that [[BitPat]] to be checked.
+    * @return true if this and that [[BitPat]] have overlap.
     */
-  def overlap(rhs: BitPat): Boolean = ((mask & rhs.mask) & (value ^ rhs.value)) == 0
+  def overlap(that: BitPat): Boolean = ((mask & that.mask) & (value ^ that.value)) == 0
 
-  /**
-    * @return whether this BitPat overlap with that BitPat, i.e. !(intersect.isEmpty)
+  /** Check whether this [[BitSet]] covers that (i.e. forall b matches that, b also matches this)
+    *
+    * @param that [[BitPat]] to be covered
+    * @return true if this [[BitSet]] can cover that [[BitSet]]
     */
   def cover(that: BitPat): Boolean = (mask & (~that.mask | (value ^ that.value))) == 0
 
-  /**
-    * @return a BitPat that only match a value when both operand match
+  /** Intersect `this` and `that` [[BitPat]].
+    *
+    * @param that [[BitPat]] to be intersected.
+    * @return a [[BitSet]] containing all elements of `this` that also belong to `that`.
     */
   def intersect(that: BitPat): BitSet = {
     if (!overlap(that)) {
@@ -187,9 +193,10 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends
     }
   }
 
-  /**
-    * Subtract that from this BitPat
-    * @param that subtrahend
+  /** Subtract a [[BitPat]] from this.
+    *
+    * @param that subtrahend [[BitPat]].
+    * @return a [[BitSet]] containing elements of `this` which are not the elements of `that`.
     */
   def subtract(that: BitPat): BitSet = {
     require(width == that.width)
@@ -226,7 +233,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends
 
   override def isEmpty: Boolean = false
 
-  /** Generate raw string of a BitSat. */
+  /** Generate raw string of a [[BitPat]]. */
   def rawString: String = Seq
     .tabulate(width) { i =>
       (value.testBit(width - i - 1), mask.testBit(width - i - 1)) match {
