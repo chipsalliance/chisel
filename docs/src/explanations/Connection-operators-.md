@@ -104,7 +104,7 @@ The Verilog remained the same without incurring errors, showing that the `<>` op
 
 ## Concept 2: := means assign ALL signals from the RHS to the LHS, regardless of their direction.
 Using the same experiment code as above, we set to test for the function of `:=`
-To achieve this, `<>` is being replaced with `:=` in the sample code above.
+We replace all instances of `<>` with `:=` in the sample code above.
 (Scastie link to the experiment:https://scastie.scala-lang.org/Shorla/o1ShdaY3RWKf0IIFwwQ1UQ)
 
 ```scala mdoc:silent:reset
