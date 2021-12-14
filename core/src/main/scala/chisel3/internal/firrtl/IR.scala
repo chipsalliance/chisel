@@ -15,11 +15,11 @@ import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 
 
-case class PrimOp(name: String) {
+private[chisel3] case class PrimOp(name: String) {
   override def toString: String = name
 }
 
-object PrimOp {
+private[chisel3] object PrimOp {
   val AddOp = PrimOp("add")
   val SubOp = PrimOp("sub")
   val TailOp = PrimOp("tail")
@@ -64,14 +64,14 @@ object PrimOp {
   val AsAsyncResetOp = PrimOp("asAsyncReset")
 }
 
-abstract class Arg {
+sealed private[chisel3] abstract class Arg {
   def localName: String = name
   def contextualName(ctx: Component): String = name
   def fullName(ctx: Component): String = contextualName(ctx)
   def name: String
 }
 
-case class Node(id: HasId) extends Arg {
+private[chisel3] case class Node(id: HasId) extends Arg {
   override def contextualName(ctx: Component): String = id.getOptionRef match {
     case Some(arg) => arg.contextualName(ctx)
     case None => id.instanceName
@@ -99,7 +99,7 @@ private[chisel3] object Arg {
   }
 }
 
-abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
+private[chisel3] abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
   override def contextualName(ctx: Component): String = name
@@ -125,11 +125,11 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   }
 }
 
-case class ILit(n: BigInt) extends Arg {
+private[chisel3] case class ILit(n: BigInt) extends Arg {
   def name: String = n.toString
 }
 
-case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
+private[chisel3] case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name: String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
   def minWidth: Int = 1 max n.bitLength
 
@@ -140,7 +140,7 @@ case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
-case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
+private[chisel3] case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asSInt(${ULit(unsigned, width).name})"
@@ -152,7 +152,7 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   }
 }
 
-case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
+private[chisel3] case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asFixedPoint(${ULit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
@@ -164,7 +164,7 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
   }
 }
 
-case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
+private[chisel3] case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asInterval(${ULit(unsigned, width).name}, ${n}, ${n}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
@@ -180,12 +180,12 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
   }
 }
 
-case class Ref(name: String) extends Arg
+private[chisel3] case class Ref(name: String) extends Arg
 /** Arg for ports of Modules
   * @param mod the module this port belongs to
   * @param name the name of the port
   */
-case class ModuleIO(mod: BaseModule, name: String) extends Arg {
+private[chisel3] case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   override def contextualName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
@@ -193,13 +193,13 @@ case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   * @param mod The original module for which these ports are a clone
   * @param name the name of the module instance
   */
-case class ModuleCloneIO(mod: BaseModule, name: String) extends Arg {
+private[chisel3] case class ModuleCloneIO(mod: BaseModule, name: String) extends Arg {
   override def localName = ""
   override def contextualName(ctx: Component): String =
     // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
     if (mod eq ctx.id) localName else name
 }
-case class Slot(imm: Node, name: String) extends Arg {
+private[chisel3] case class Slot(imm: Node, name: String) extends Arg {
   override def contextualName(ctx: Component): String = {
     val immName = imm.contextualName(ctx)
     if (immName.isEmpty) name else s"$immName.$name"
@@ -209,7 +209,8 @@ case class Slot(imm: Node, name: String) extends Arg {
     if (immName.isEmpty) name else s"$immName.$name"
   }
 }
-case class Index(imm: Node, value: Arg) extends Arg {
+
+private[chisel3] case class Index(imm: Arg, value: Arg) extends Arg {
   def name: String = s"[$value]"
   override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
   override def localName: String = s"${imm.localName}[${value.localName}]"
@@ -773,47 +774,47 @@ sealed class IntervalRange(
   }
 }
 
-abstract class Command {
+private[chisel3] abstract class Command {
   def sourceInfo: SourceInfo
 }
-abstract class Definition extends Command {
+private[chisel3] abstract class Definition extends Command {
   def id: HasId
   def name: String = id.getRef.name
 }
-case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition
-case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
-case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
-case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition
-case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition
-case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
-case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt, readUnderWrite: fir.ReadUnderWrite.Value) extends Definition
-case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
-case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
-case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
-case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
-case class AltBegin(sourceInfo: SourceInfo) extends Command
-case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
-case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
-case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
-case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
-case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
-case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
-case class Port(id: Data, dir: SpecifiedDirection)
-case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
-object Formal extends Enumeration {
+private[chisel3] case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition
+private[chisel3] case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
+private[chisel3] case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
+private[chisel3] case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition
+private[chisel3] case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition
+private[chisel3] case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
+private[chisel3] case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt, readUnderWrite: fir.ReadUnderWrite.Value) extends Definition
+private[chisel3] case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
+private[chisel3] case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
+private[chisel3] case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
+private[chisel3] case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
+private[chisel3] case class AltBegin(sourceInfo: SourceInfo) extends Command
+private[chisel3] case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
+private[chisel3] case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+private[chisel3] case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
+private[chisel3] case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
+private[chisel3] case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+private[chisel3] case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
+private[chisel3] case class Port(id: Data, dir: SpecifiedDirection)
+private[chisel3] case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
+private[chisel3] object Formal extends Enumeration {
   val Assert = Value("assert")
   val Assume = Value("assume")
   val Cover = Value("cover")
 }
-case class Verification[T <: VerificationStatement](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
+private[chisel3] case class Verification[T <: VerificationStatement](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
                         predicate: Arg, message: String) extends Definition
-abstract class Component extends Arg {
+private[chisel3] abstract class Component extends Arg {
   def id: BaseModule
   def name: String
   def ports: Seq[Port]
 }
-case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
-case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
+private[chisel3] case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+private[chisel3] case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
 
 case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap) {
   def firrtlAnnotations: Iterable[Annotation] = annotations.flatMap(_.toFirrtl.update(renames))
