@@ -127,6 +127,9 @@ Below we can see the resulting error for this example:
 ChiselStage.emitVerilog(new BlockWithTemporaryWires)
 ```
 For more details and information, see [Deep Dive into Connection Operators](Connection-operators-.md)
+
+NOTE: When using `Chisel._` (compatibility mode) instead of `chisel3._`, the `:=` operator works in a bidirectional fashion similar to `<>`, but not exactly the same.
+
 ## The standard ready-valid interface (ReadyValidIO / Decoupled)
 
 Chisel provides a standard interface for [ready-valid interfaces](http://inst.eecs.berkeley.edu/~cs150/Documents/Interfaces.pdf).
