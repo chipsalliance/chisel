@@ -396,4 +396,4 @@ This one fails because there is a field 'bits' missing.
 
 ### Conclusion:
 It doesn't matter the order of the fields, they need to be the same.
-For ':=', the Scala types do not need to match but all the signals on the LHS must be provided by the RHS or you will get a Chisel elaboration error. There may be additional signals on the RHS, these will be ignored.
+For `:=`, the Scala types do not need to match but all the signals on the LHS must be provided by the RHS or you will get a Chisel elaboration error. There may be additional signals on the RHS, these will be ignored.
