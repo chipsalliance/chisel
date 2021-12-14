@@ -28,19 +28,6 @@ sealed class TruthTable(val table: Seq[(BitPat, BitPat)], val default: BitPat) {
 }
 
 object TruthTable {
-  /** Parse TruthTable from its string representation. */
-  def apply(tableString: String): TruthTable = {
-    TruthTable(
-      tableString
-        .split("\n")
-        .filter(_.contains("->"))
-        .map(_.split("->").map(str => BitPat(s"b$str")))
-        .map(bps => bps(0) -> bps(1))
-        .toSeq,
-      BitPat(s"b${tableString.split("\n").filterNot(_.contains("->")).head.replace(" ", "")}")
-    )
-  }
-
   /** Convert a table and default output into a [[TruthTable]]. */
   def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sorted: Boolean = true): TruthTable = {
     require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
@@ -64,6 +51,18 @@ object TruthTable {
     new TruthTable(if(sorted) tableIn.sorted else tableIn, default)
   }
 
+  /** Parse TruthTable from its string representation. */
+  def fromString(tableString: String): TruthTable = {
+    TruthTable(
+      tableString
+        .split("\n")
+        .filter(_.contains("->"))
+        .map(_.split("->").map(str => BitPat(s"b$str")))
+        .map(bps => bps(0) -> bps(1))
+        .toSeq,
+      BitPat(s"b${tableString.split("\n").filterNot(_.contains("->")).head.replace(" ", "")}")
+    )
+  }
 
   /** consume 1 table, split it into up to 3 tables with the same default bits.
     *

@@ -35,16 +35,16 @@ class TruthTableSpec extends AnyFlatSpec {
     assert(table.toString contains "     0")
   }
   "TruthTable" should "deserialize" in {
-    assert(TruthTable(str) == table)
+    assert(TruthTable.fromString(str) == table)
   }
   "TruthTable" should "merge same key" in {
     assert(
-      TruthTable(
+      TruthTable.fromString(
         """001100->??1
           |001100->1??
           |???
           |""".stripMargin
-      ) == TruthTable(
+      ) == TruthTable.fromString(
         """001100->1?1
           |???
           |""".stripMargin
@@ -53,7 +53,7 @@ class TruthTableSpec extends AnyFlatSpec {
   }
   "TruthTable" should "crash when merging 0 and 1" in {
     intercept[IllegalArgumentException] {
-      TruthTable(
+      TruthTable.fromString(
         """0->0
           |0->1
           |???
