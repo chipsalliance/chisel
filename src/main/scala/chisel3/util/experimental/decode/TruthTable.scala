@@ -4,9 +4,7 @@ package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
 
-final class TruthTable(setTable: Seq[(BitPat, BitPat)], val default: BitPat) {
-
-  val table: Seq[(BitPat, BitPat)] = setTable.sorted
+sealed class TruthTable(val table: Seq[(BitPat, BitPat)], val default: BitPat) {
 
   def inputWidth = table.head._1.getWidth
 
@@ -44,11 +42,11 @@ object TruthTable {
   }
 
   /** Convert a table and default output into a [[TruthTable]]. */
-  def apply(table: Iterable[(BitPat, BitPat)], default: BitPat): TruthTable = {
+  def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sorted: Boolean = true): TruthTable = {
     require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
     require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
     val outputWidth = table.map(_._2.getWidth).head
-    new TruthTable(table.groupBy(_._1.toString).map { case (key, values) =>
+    val tableIn = table.groupBy(_._1.toString).map { case (key, values) =>
       // merge same input inputs.
       values.head._1 -> BitPat(s"b${
         Seq.tabulate(outputWidth) { i =>
@@ -61,7 +59,9 @@ object TruthTable {
           outputSet.headOption.getOrElse('?')
         }.mkString
       }")
-    }.toSeq, default)
+    }.toSeq
+
+    new TruthTable(if(sorted) tableIn.sorted else tableIn, default)
   }
 
 
