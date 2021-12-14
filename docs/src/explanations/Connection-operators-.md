@@ -97,7 +97,7 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion: 
-The Verilog remained the same without incurring errors, showing that the `<>` operator is generally commutative.
+The Verilog remained the same without incurring errors, showing that the `<>` operator is commutative.
 
 
 
