@@ -392,7 +392,7 @@ Below we can see the resulting Verilog for this example:
 ```scala mdoc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
-This one fails because there is a field 'bits' missing.
+This one fails because there is a field `bits` missing.
 
 ### Conclusion:
 It doesn't matter the order of the fields, they need to be the same.
