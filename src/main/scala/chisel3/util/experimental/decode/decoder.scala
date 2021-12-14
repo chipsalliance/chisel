@@ -4,8 +4,8 @@ package chisel3.util.experimental.decode
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, annotate}
-import chisel3.util.{BitPat, BitSet, pla}
-import chisel3.util.experimental.getAnnotations
+import chisel3.util.{BitPat, pla}
+import chisel3.util.experimental.{BitSet, getAnnotations}
 import firrtl.annotations.Annotation
 import logger.LazyLogging
 
