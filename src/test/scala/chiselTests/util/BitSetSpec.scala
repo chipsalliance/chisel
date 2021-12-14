@@ -1,5 +1,6 @@
 package chiselTests.util
 
+import chisel3.util.experimental.BitSet
 import chisel3.util.{BitPat, BitSet}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

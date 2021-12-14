@@ -117,33 +117,36 @@ object BitPat {
   }
 }
 
-object BitSet {
+package experimental {
+  object BitSet {
 
-  /** Construct a [[BitSet]] from a sequence of [[BitPat]].
-    * All [[BitPat]] must have the same width.
-    */
-  def apply(bitpats: BitPat*): BitSet = {
-    val bs = new BitSet { def terms = bitpats.flatMap(_.terms).toSet }
-    // check width
-    bs.getWidth
-    bs
-  }
+    /** Construct a [[BitSet]] from a sequence of [[BitPat]].
+      * All [[BitPat]] must have the same width.
+      */
+    def apply(bitpats: BitPat*): BitSet = {
+      val bs = new BitSet { def terms = bitpats.flatMap(_.terms).toSet }
+      // check width
+      bs.getWidth
+      bs
+    }
 
-  /** Empty [[BitSet]]. */
-  val empty: BitSet = new BitSet {
-    def terms = Set()
-  }
+    /** Empty [[BitSet]]. */
+    val empty: BitSet = new BitSet {
+      def terms = Set()
+    }
 
-  /** Construct a [[BitSet]] from String.
-    * each line should be a valid [[BitPat]] string with the same width.
-    */
-  def fromString(str: String): BitSet = {
-    val bs = new BitSet { def terms = str.split('\n').map(str => BitPat(str)).toSet }
-    // check width
-    bs.getWidth
-    bs
+    /** Construct a [[BitSet]] from String.
+      * each line should be a valid [[BitPat]] string with the same width.
+      */
+    def fromString(str: String): BitSet = {
+      val bs = new BitSet { def terms = str.split('\n').map(str => BitPat(str)).toSet }
+      // check width
+      bs.getWidth
+      bs
+    }
   }
 }
+
 
 /** Bit patterns are literals with masks, used to represent values with don't
   * care bits. Equality comparisons will ignore don't care bits.
@@ -155,6 +158,7 @@ object BitSet {
   * }}}
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends BitSet with SourceInfoDoc {
+  import chisel3.util.experimental.BitSet
   def terms = Set(this)
 
   /**
@@ -277,7 +281,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends
 
 /** A Set of [[BitPat]] represents a set of bit vector with mask. */
 sealed trait BitSet { outer =>
-
+  import chisel3.util.experimental.BitSet
   /** all [[BitPat]] elements in [[terms]] make up this [[BitSet]].
     * all [[terms]] should be have the same width.
     */
