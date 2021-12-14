@@ -18,6 +18,7 @@ As we saw earlier, users can define their own interfaces by defining a class tha
 
 ```scala mdoc:invisible
 import chisel3._
+import chisel3.stage.ChiselStage
 ```
 
 ```scala mdoc:silent
