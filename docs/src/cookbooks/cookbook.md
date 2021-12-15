@@ -24,6 +24,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * [How do I unpack a value ("reverse concatenation") like in Verilog?](#how-do-i-unpack-a-value-reverse-concatenation-like-in-verilog)
 * [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
+* [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
 * Predictable Naming
   * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
   * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
@@ -402,6 +403,37 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 
   out := in.getOrElse(false.B)
 }
+```
+
+### How do I minimize the number of bits used in an output vector?
+
+Use inferred width and a `Seq` instead of a `Vec`:
+
+Consider:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+// Count the number of set bits up to and including each bit position
+class CountBits(width: Int) extends Module {
+  val bits = IO(Input(UInt(width.W)))
+  val countSequence = Seq.tabulate(width)(i => IO(Output(UInt())))
+  val countVector = IO(Output(Vec(width, UInt())))
+  countSequence.zipWithIndex.foreach { case (port, i) =>
+    port := util.PopCount(bits(i, 0))
+  }
+  countVector := countSequence
+}
+```
+
+Unlike `Vecs` which represent a singular Chisel type and must have the same width for every element,
+`Seq` is a purely Scala construct, so their elements are independent from the perspective of Chisel and can have different widths.
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new CountBits(4))
+  // remove the body of the module by removing everything after ');'
+  .split("\\);")
+  .head + ");\n"
 ```
 
 ## Predictable Naming

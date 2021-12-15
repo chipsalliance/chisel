@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import org.scalatest._
+
 import chisel3._
 import chisel3.experimental.{Analog, FixedPoint}
 import chisel3.stage.ChiselStage
@@ -125,5 +127,38 @@ class ConnectSpec extends ChiselPropSpec with Utils {
   }
   property("Pipe internal connections should succeed") {
     ChiselStage.elaborate( new PipeInternalWires)
+  }
+
+  property("Connect error messages should have meaningful information") {
+    class InnerExample extends Module {
+      val myReg = RegInit(0.U(8.W))
+    }
+
+    class OuterAssignExample extends Module {
+      val inner = Module(new InnerExample())
+      inner.myReg := false.B // ERROR
+    }
+
+    val assignError = the [ChiselException] thrownBy {ChiselStage.elaborate { new OuterAssignExample}}
+    val expectedAssignError = """.*@: myReg in InnerExample cannot be written from module OuterAssignExample."""
+    assignError.getMessage should fullyMatch regex expectedAssignError
+
+    class OuterReadExample extends Module {
+      val myReg = RegInit(0.U(8.W))
+      val inner = Module(new InnerExample())
+      myReg := inner.myReg // ERROR
+    }
+
+    val readError = the [ChiselException] thrownBy {ChiselStage.elaborate { new OuterReadExample }}
+    val expectedReadError = """.*@: myReg in InnerExample cannot be read from module OuterReadExample."""
+    readError.getMessage should fullyMatch regex expectedReadError
+
+    val typeMismatchError = the [ChiselException] thrownBy {ChiselStage.elaborate { new RawModule {
+      val myUInt = Wire(UInt(4.W))
+      val mySInt = Wire(SInt(4.W))
+      myUInt := mySInt
+    }}}
+    val expectedTypeMismatchError = """.*@: Sink \(UInt<4>\) and Source \(SInt<4>\) have different types."""
+    typeMismatchError.getMessage should fullyMatch regex expectedTypeMismatchError
   }
 }

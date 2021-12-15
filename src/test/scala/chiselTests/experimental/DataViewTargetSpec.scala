@@ -4,8 +4,8 @@ package chiselTests.experimental
 
 import chisel3._
 import chisel3.experimental.dataview._
+import chisel3.experimental.conversions._
 import chisel3.experimental.{ChiselAnnotation, annotate}
-import chisel3.stage.ChiselStage
 import chiselTests.ChiselFlatSpec
 
 object DataViewTargetSpec {
@@ -127,7 +127,6 @@ class DataViewTargetSpec extends ChiselFlatSpec {
   }
 
   it should "support annotating views that cannot be mapped to a single ReferenceTarget" in {
-    import HWTuple._
     class MyBundle extends Bundle {
       val a, b = Input(UInt(8.W))
       val c, d = Output(UInt(8.W))
