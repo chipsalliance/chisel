@@ -279,7 +279,7 @@ abstract class EnumFactory {
   protected def do_Value(name: String): Type = {
     val result = new Type
 
-    val resId = if (!oneHot) id else BigInt(1 << id.toInt)
+    val resId = if (!oneHot) id else BigInt(1) << id.toInt
 
     // We have to use UnknownWidth here, because we don't actually know what the final width will be
     result.bindToLiteral(resId, UnknownWidth())

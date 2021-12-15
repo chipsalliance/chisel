@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.FixedPoint
+import chisel3.experimental.ChiselEnum1H
 import chisel3.internal.ChiselException
 import chisel3.testers.BasicTester
 import chisel3.util.{Mux1H, UIntToOH}
@@ -50,6 +51,9 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
         val out = UIntToOH(0.U, 0)
       })
     }
+  }
+  "one hot mux with OneHotEnum should work" in {
+    assertTesterPasses(new OneHotEnumMux1HTester)
   }
 
 }
@@ -304,3 +308,22 @@ class UIntToOHTester extends BasicTester {
 
   stop()
 }
+
+
+class OneHotEnumMux1HTester extends BasicTester {
+   object selector extends ChiselEnum1H {
+     val s0, s1, s2, s3 = Value
+   }
+   val selectorVal = Wire(UInt(selector.getWidth.W))
+   selectorVal := selector.s1.asUInt
+   val hotValue = chisel3.util.Mux1H(selectorVal.asUInt,
+      Seq(
+       2.U,
+       4.U,
+       8.U,
+       11.U,
+     ))
+    assert(hotValue === 4.U)
+
+    stop()
+  }

@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselEnum
+import chisel3.experimental.ChiselEnum1H
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.internal.naming.chiselName
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
@@ -512,6 +513,18 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "correctly check if the enumeration is one of the values in a given sequence" in {
     assertTesterPasses(new IsOneOfTester)
+  }
+
+  it should "check OneHot enums values" in {
+    object OneHotEnum extends ChiselEnum1H {
+	    val VAL1, VAL2, VAL3 = Value
+    }
+
+    var r = 1
+    for (enumVal <- OneHotEnum.all) {
+      assert(enumVal.litValue === r)
+      r = r << 1
+    }
   }
 }
 
