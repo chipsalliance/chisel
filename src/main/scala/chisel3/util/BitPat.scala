@@ -8,6 +8,12 @@ import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 
 object BitPat {
+
+  private[chisel3] implicit val bitPatOrder = new Ordering[BitPat] {
+    import scala.math.Ordered.orderingToOrdered
+    def compare(x: BitPat, y: BitPat): Int = (x.getWidth, x.value, x.mask) compare (y.getWidth, y.value, y.mask)
+  }
+
   /** Parses a bit pattern string into (bits, mask, width).
     *
     * @return bits the literal value, with don't cares being 0

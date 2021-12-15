@@ -19,7 +19,7 @@ object decoder extends LazyLogging {
     */
   def apply(minimizer: Minimizer, input: UInt, truthTable: TruthTable): UInt = {
     val minimizedTable = getAnnotations().collect {
-      case DecodeTableAnnotation(_, in, out) => TruthTable(in) -> TruthTable(out)
+      case DecodeTableAnnotation(_, in, out) => TruthTable.fromString(in) -> TruthTable.fromString(out)
     }.toMap.getOrElse(truthTable, minimizer.minimize(truthTable))
     if (minimizedTable.table.isEmpty) {
       val outputs = Wire(UInt(minimizedTable.default.getWidth.W))
