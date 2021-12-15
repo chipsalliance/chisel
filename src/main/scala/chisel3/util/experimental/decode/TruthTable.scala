@@ -4,7 +4,7 @@ package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
 
-sealed class TruthTable(val table: Seq[(BitPat, BitPat)], val default: BitPat) {
+sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat) {
 
   def inputWidth = table.head._1.getWidth
 
