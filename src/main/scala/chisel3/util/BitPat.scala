@@ -160,7 +160,8 @@ package experimental {
       terms.headOption.map(_.width).getOrElse(0)
     }
 
-    override def toString: String = terms.toSeq.sortBy((t: BitPat) => (t.mask, t.value)).mkString("\n")
+    import BitPat.bitPatOrder
+    override def toString: String = terms.toSeq.sorted.mkString("\n")
 
     /** whether this [[BitSet]] is empty (i.e. no value matches) */
     def isEmpty: Boolean = terms.forall(_.isEmpty)
