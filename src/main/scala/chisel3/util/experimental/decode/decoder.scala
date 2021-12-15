@@ -100,7 +100,7 @@ object decoder extends LazyLogging {
   def bitset(input: chisel3.UInt, bitSets: Seq[BitSet], errorBit: Boolean = false): chisel3.UInt =
     chisel3.util.experimental.decode.decoder(
       input,
-      chisel3.util.experimental.decode.TruthTable(
+      chisel3.util.experimental.decode.TruthTable.fromString(
         {
           bitSets.zipWithIndex.flatMap {
             case (family, i) =>
