@@ -4,7 +4,7 @@ package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
 
-sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat, val sorted: Boolean) {
+sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat, val sort: Boolean) {
   def inputWidth = table.head._1.getWidth
 
   def outputWidth = table.head._2.getWidth
@@ -16,7 +16,7 @@ sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: 
     (table.map(writeRow) ++ Seq(s"${" "*(inputWidth + 2)}${default.rawString}")).mkString("\n")
   }
 
-  def copy(table: Seq[(BitPat, BitPat)] = this.table, default: BitPat = this.default, sorted: Boolean = this.sorted) = TruthTable(table, default, sorted)
+  def copy(table: Seq[(BitPat, BitPat)] = this.table, default: BitPat = this.default, sort: Boolean = this.sort) = TruthTable(table, default, sort)
 
   override def equals(y: Any): Boolean = {
     y match {
@@ -28,7 +28,7 @@ sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: 
 
 object TruthTable {
   /** Convert a table and default output into a [[TruthTable]]. */
-  def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sorted: Boolean = true): TruthTable = {
+  def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = true): TruthTable = {
     require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
     require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
     val outputWidth = table.map(_._2.getWidth).head
@@ -47,7 +47,7 @@ object TruthTable {
       }")
     }.toSeq
 
-    new TruthTable(if(sorted) mergedTable.sorted else mergedTable, default, sorted)
+    new TruthTable(if(sort) mergedTable.sorted else mergedTable, default, sort)
   }
 
   /** Parse TruthTable from its string representation. */
