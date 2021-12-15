@@ -13,6 +13,7 @@ import _root_.firrtl.annotations.Annotation
 
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
+import scala.annotation.nowarn
 
 
 private[chisel3] case class PrimOp(name: String) {
@@ -789,6 +790,7 @@ private[chisel3] case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: 
 private[chisel3] case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
 private[chisel3] case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt, readUnderWrite: fir.ReadUnderWrite.Value) extends Definition
 private[chisel3] case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
+@nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
 private[chisel3] case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
 private[chisel3] case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
@@ -799,7 +801,9 @@ private[chisel3] case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2
 private[chisel3] case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 private[chisel3] case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 private[chisel3] case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
-private[chisel3] case class Port(id: Data, dir: SpecifiedDirection)
+// Note this is just deprecated which will cause deprecation warnings, use @nowarn
+@deprecated("This API should never have been public, for Module port reflection, use DataMirror.modulePorts", "Chisel 3.5")
+case class Port(id: Data, dir: SpecifiedDirection)
 private[chisel3] case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 private[chisel3] object Formal extends Enumeration {
   val Assert = Value("assert")
@@ -808,12 +812,15 @@ private[chisel3] object Formal extends Enumeration {
 }
 private[chisel3] case class Verification[T <: VerificationStatement](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
                         predicate: Arg, message: String) extends Definition
+@nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] abstract class Component extends Arg {
   def id: BaseModule
   def name: String
   def ports: Seq[Port]
 }
+@nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+@nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
 
 case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap) {
