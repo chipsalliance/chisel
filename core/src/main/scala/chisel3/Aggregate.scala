@@ -29,7 +29,26 @@ sealed abstract class Aggregate extends Data {
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
-      throw new AliasedAggregateFieldException(s"Aggregate $this contains aliased fields $duplicates")
+      this match {
+        case b: Bundle =>
+          // show groups of names of fields with duplicate id's
+          // sorts are to make order of fields shown, deterministic and matching order of occurrence in bundle
+          // it's a bit convoluted but happens rarely and makes error easier to understand for user
+          val dupNames = duplicates.toSeq.sortBy(_._id).map { duplicate =>
+            b.elements
+              .collect { case x if x._2._id == duplicate._id => x }
+              .toSeq.sortBy(_._2._id)
+              .map(_._1).reverse
+              .mkString("(", ",", ")")
+          }.mkString(",")
+          throw new AliasedAggregateFieldException(
+            s"Bundle $this contains aliased fields named ${dupNames}"
+          )
+        case _ =>
+          throw new AliasedAggregateFieldException(
+            s"Aggregate $this contains aliased fields $duplicates ${duplicates.mkString(",")}"
+          )
+      }
     }
     for (child <- getElements) {
       child.bind(ChildBinding(this), resolvedDirection)

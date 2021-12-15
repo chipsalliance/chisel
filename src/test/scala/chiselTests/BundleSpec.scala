@@ -117,11 +117,13 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
         val io = IO(Output(new Bundle {
           val a = UInt(8.W)
           val b = a
+          val c = SInt(8.W)
+          val d = c
         }))
         io.a := 0.U
         io.b := 1.U
       } }
-    }).getMessage should include("aliased fields")
+    }).getMessage should include("contains aliased fields named (a,b),(c,d)")
   }
 
   "Bundles" should "not have bound hardware" in {
