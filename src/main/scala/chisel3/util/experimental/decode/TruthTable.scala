@@ -4,8 +4,7 @@ package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
 
-sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat) {
-
+sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat, val sorted: Boolean) {
   def inputWidth = table.head._1.getWidth
 
   def outputWidth = table.head._2.getWidth
@@ -17,7 +16,7 @@ sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: 
     (table.map(writeRow) ++ Seq(s"${" "*(inputWidth + 2)}${default.rawString}")).mkString("\n")
   }
 
-  def copy(table: Seq[(BitPat, BitPat)] = this.table, default: BitPat = this.default) = new TruthTable(table, default)
+  def copy(table: Seq[(BitPat, BitPat)] = this.table, default: BitPat = this.default, sorted: Boolean = this.sorted) = TruthTable(table, default, sorted)
 
   override def equals(y: Any): Boolean = {
     y match {
@@ -33,7 +32,7 @@ object TruthTable {
     require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
     require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
     val outputWidth = table.map(_._2.getWidth).head
-    val tableIn = table.groupBy(_._1.toString).map { case (key, values) =>
+    val mergedTable = table.groupBy(_._1.toString).map { case (key, values) =>
       // merge same input inputs.
       values.head._1 -> BitPat(s"b${
         Seq.tabulate(outputWidth) { i =>
@@ -48,7 +47,7 @@ object TruthTable {
       }")
     }.toSeq
 
-    new TruthTable(if(sorted) tableIn.sorted else tableIn, default)
+    new TruthTable(if(sorted) mergedTable.sorted else mergedTable, default, sorted)
   }
 
   /** Parse TruthTable from its string representation. */
