@@ -46,7 +46,7 @@ object TruthTable {
         }.mkString
       }")
     }.toSeq
-
+    import BitPat.bitPatOrder
     new TruthTable(if(sort) mergedTable.sorted else mergedTable, default, sort)
   }
 
