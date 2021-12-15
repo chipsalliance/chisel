@@ -15,6 +15,11 @@ import chisel3._
 Chisel 3.5 was a major step forward. It added support for Scala 2.13 as well as dropped many long deprecated APIs.
 Some users may run into issues while upgrading so this page serves as a central location to describe solutions to common issues.
 
+
+### General Strategy for Upgrade
+
+Users are encouraged to first upgrade to the latest version of Chisel 3.4 (3.4.4 at the time of writing) and resolve all deprecation warnings. Doing so should enable a smoother transition to Chisel 3.5.
+
 ### Common Issues
 
 #### Value io is not a member of chisel3.Module
