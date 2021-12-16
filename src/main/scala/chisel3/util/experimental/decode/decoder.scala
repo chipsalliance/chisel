@@ -103,9 +103,9 @@ object decoder extends LazyLogging {
       chisel3.util.experimental.decode.TruthTable.fromString(
         {
           bitSets.zipWithIndex.flatMap {
-            case (family, i) =>
-              family.terms.map(bs =>
-                s"${bs.toString.replace("-", "?")}->${if (errorBit) "0"}${"0" * (bitSets.size - i - 1)}1${"0" * i}"
+            case (bs, i) =>
+              bs.terms.map(bp =>
+                s"${bp.rawString}->${if (errorBit) "0"}${"0" * (bitSets.size - i - 1)}1${"0" * i}"
               )
           } ++ Seq(s"${if (errorBit) "1"}${"?" * bitSets.size}")
         }.mkString("\n")

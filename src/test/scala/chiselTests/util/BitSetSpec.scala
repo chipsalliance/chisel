@@ -68,7 +68,7 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
     aBitSet.equals(aBitPat.union(bBitPat)) should be (true)
   }
 
-  it should "be generated from BitPat substraction" in {
+  it should "be generated from BitPat subtraction" in {
     val aBitSet = BitSet.fromString(
       """b001?0
         |b000??""".stripMargin)
@@ -90,6 +90,30 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
     )
     val cBitPat = BitPat("b0????")
     cBitPat.equals(aBitSet.union(bBitSet)) should be (true)
+  }
+
+  it should "be decoded" in {
+    import chisel3._
+    import chisel3.util.experimental.decode.decoder
+    // [0 - 256] part into: [0 - 31], [32 - 47, 64 - 127], [192 - 255]
+    // "0011????" "10??????" is empty to error
+    chisel3.stage.ChiselStage.emitSystemVerilog(new Module {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(4.W)))
+      out := decoder.bitset(in, Seq(
+        BitSet.fromString(
+          "b000?????"
+        ),
+        BitSet.fromString(
+          """b0010????
+            |b01??????
+            |""".stripMargin
+        ),
+        BitSet.fromString(
+          "b11??????"
+        )
+      ), true)
+    })
   }
 
 }
