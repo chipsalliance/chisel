@@ -95,7 +95,7 @@ Note that the RHS element must be readable so, one of these must hold:
 ### `BiConnect` Algorithm
 `BiConnect.connect`, or `<>`, executes a bidirectional connection element-wise. Note that the arguments are left and right (not source and sink) so the intent is for the operation to be commutative. The connect operation will recurse down the left `Data` (with the right `Data`). An exception will be thrown if a movement through the left cannot be matched in the right, or if the right side has extra fields.
 
-We can now compose two filters into a filter block as follows:
+Using the biconnect `<>` operator, we can now compose two filters into a filter block as follows:
 ```scala mdoc:silent
 class Block extends Module {
   val io = IO(new FilterIO)
@@ -106,7 +106,6 @@ class Block extends Module {
   f2.io.y <> io.y
 }
 ```
-where <> bulk connects interfaces of opposite gender between sibling modules or interfaces of the same gender between parent/child modules.
 
 The bidirectional bulk connection operator `<>` connects leaf ports of the same name to each other. The Scala types of the Bundles are not required to match. If one named signal is missing from either side, Chisel will give an error such as in the following example:
 
