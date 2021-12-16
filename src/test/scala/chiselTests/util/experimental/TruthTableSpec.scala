@@ -2,8 +2,9 @@
 
 package chiselTests.util.experimental
 
+import chisel3._
 import chisel3.util.BitPat
-import chisel3.util.experimental.decode.TruthTable
+import chisel3.util.experimental.decode.{TruthTable, decoder}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class TruthTableSpec extends AnyFlatSpec {
@@ -34,16 +35,16 @@ class TruthTableSpec extends AnyFlatSpec {
     assert(table.toString contains "     0")
   }
   "TruthTable" should "deserialize" in {
-    assert(TruthTable(str) == table)
+    assert(TruthTable.fromString(str) == table)
   }
   "TruthTable" should "merge same key" in {
     assert(
-      TruthTable(
+      TruthTable.fromString(
         """001100->??1
           |001100->1??
           |???
           |""".stripMargin
-      ) == TruthTable(
+      ) == TruthTable.fromString(
         """001100->1?1
           |???
           |""".stripMargin
@@ -52,12 +53,32 @@ class TruthTableSpec extends AnyFlatSpec {
   }
   "TruthTable" should "crash when merging 0 and 1" in {
     intercept[IllegalArgumentException] {
-      TruthTable(
+      TruthTable.fromString(
         """0->0
           |0->1
           |???
           |""".stripMargin
       )
     }
+  }
+  "TruthTable" should "be reproducible" in {
+    class Foo extends Module {
+
+      val io = IO(new Bundle{
+        val in = Input(UInt(4.W))
+        val out = Output(UInt(16.W))
+      })
+
+
+      val table = TruthTable(
+        (0 until 16).map{
+          i => BitPat(i.U(4.W)) -> BitPat((1<<i).U(16.W))
+        },
+        BitPat.dontCare(16)
+      )
+
+      io.out := decoder.qmc(io.in, table)
+    }
+    assert(chisel3.stage.ChiselStage.emitChirrtl(new Foo) == chisel3.stage.ChiselStage.emitChirrtl(new Foo))
   }
 }

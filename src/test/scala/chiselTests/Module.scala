@@ -9,6 +9,7 @@ import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Unserializable
 
 import scala.io.Source
+import scala.annotation.nowarn
 
 class SimpleIO extends Bundle {
   val in  = Input(UInt(32.W))
@@ -167,6 +168,71 @@ class ModuleSpec extends ChiselPropSpec with Utils {
           "a" -> m.a, "b" -> m.b))
     })
   }
+
+  property("DataMirror.modulePorts should replace deprecated <module>.getPorts") {
+    class MyModule extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(Vec(2, UInt(8.W)))
+      })
+      val extra = IO(Input(UInt(8.W)))
+      val delay = RegNext(io.in)
+      io.out(0) := delay
+      io.out(1) := delay + extra
+    }
+    var mod: MyModule = null
+    ChiselStage.elaborate {
+      mod = new MyModule
+      mod
+    }
+    // Note that this is just top-level ports, Aggregates are not flattened
+    DataMirror.modulePorts(mod) should contain theSameElementsInOrderAs Seq(
+      "clock" -> mod.clock,
+      "reset" -> mod.reset,
+      "io" -> mod.io,
+      "extra" -> mod.extra
+    )
+    // Delete this when the deprecated API is deleted
+    // Note this also uses deprecated Port
+    import chisel3.internal.firrtl.Port
+    import SpecifiedDirection.{Input => IN, Unspecified}
+    mod.getPorts should contain theSameElementsInOrderAs Seq(
+      Port(mod.clock, IN),
+      Port(mod.reset, IN),
+      Port(mod.io, Unspecified),
+      Port(mod.extra, IN)
+    ): @nowarn // delete when Port and getPorts become private
+  }
+
+  property("DataMirror.fullModulePorts should return all ports including children of Aggregates") {
+    class MyModule extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(Vec(2, UInt(8.W)))
+      })
+      val extra = IO(Input(UInt(8.W)))
+      val delay = RegNext(io.in)
+      io.out(0) := delay
+      io.out(1) := delay + extra
+    }
+    var mod: MyModule = null
+    ChiselStage.elaborate {
+      mod = new MyModule
+      mod
+    }
+    val expected = Seq(
+      "clock" -> mod.clock,
+      "reset" -> mod.reset,
+      "io" -> mod.io,
+      "io_out" -> mod.io.out,
+      "io_out_0" -> mod.io.out(0),
+      "io_out_1" -> mod.io.out(1),
+      "io_in" -> mod.io.in,
+      "extra" -> mod.extra
+    )
+    DataMirror.fullModulePorts(mod) should contain theSameElementsInOrderAs expected
+  }
+
   property("A desiredName parameterized by a submodule should work") {
     ChiselStage.elaborate(new ModuleWrapper(new ModuleWire)).name should be ("ModuleWireWrapper")
   }

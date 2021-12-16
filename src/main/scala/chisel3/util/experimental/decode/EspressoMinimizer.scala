@@ -55,7 +55,7 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
          |""".stripMargin ++ (if (defaultType == '1') invertRawTable else rawTable)
     }
 
-    def readTable(espressoTable: String): Map[BitPat, BitPat] = {
+    def readTable(espressoTable: String) = {
       def bitPat(espresso: String): BitPat = BitPat("b" + espresso.replace('-', '?'))
 
       espressoTable
@@ -63,7 +63,6 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
         .filterNot(_.startsWith("."))
         .map(_.split(' '))
         .map(row => bitPat(row(0)) -> bitPat(row(1)))
-        .toMap
     }
 
     val input = writeTable(table)

@@ -19,7 +19,7 @@ class DecodeTestModule(minimizer: Minimizer, table: TruthTable) extends Module {
   chisel3.experimental.verification.assert(
     // for each instruction, if input matches, output should match, not no matched, fallback to default
     (table.table.map { case (key, value) => (i === key) && (minimizedO === value) } ++
-      Seq(table.table.keys.map(i =/= _).reduce(_ && _) && minimizedO === table.default)).reduce(_ || _)
+      Seq(table.table.map(_._1).map(i =/= _).reduce(_ && _) && minimizedO === table.default)).reduce(_ || _)
   )
 }
 

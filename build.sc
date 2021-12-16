@@ -45,7 +45,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
   override def moduleDeps = super.moduleDeps ++ firrtlModule
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"com.lihaoyi::os-lib:0.7.8",
+    ivy"com.lihaoyi::os-lib:0.8.0",
   ) ++  firrtlIvyDeps
 
   def publishVersion = "3.5-SNAPSHOT"

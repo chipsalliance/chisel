@@ -5,7 +5,7 @@ package chisel3.util.experimental.decode
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, annotate}
 import chisel3.util.{BitPat, pla}
-import chisel3.util.experimental.getAnnotations
+import chisel3.util.experimental.{BitSet, getAnnotations}
 import firrtl.annotations.Annotation
 import logger.LazyLogging
 
@@ -19,7 +19,7 @@ object decoder extends LazyLogging {
     */
   def apply(minimizer: Minimizer, input: UInt, truthTable: TruthTable): UInt = {
     val minimizedTable = getAnnotations().collect {
-      case DecodeTableAnnotation(_, in, out) => TruthTable(in) -> TruthTable(out)
+      case DecodeTableAnnotation(_, in, out) => TruthTable.fromString(in) -> TruthTable.fromString(out)
     }.toMap.getOrElse(truthTable, minimizer.minimize(truthTable))
     if (minimizedTable.table.isEmpty) {
       val outputs = Wire(UInt(minimizedTable.default.getWidth.W))
@@ -80,4 +80,35 @@ object decoder extends LazyLogging {
         qmcFallBack(input, truthTable)
     }
   }
+
+
+  /** Generate a decoder circuit that matches the input to each bitSet.
+    *
+    * The resulting circuit functions like the following but is optimized with a logic minifier.
+    * {{{
+    *   when(input === bitSets(0)) { output := b000001 }
+    *   .elsewhen (input === bitSets(1)) { output := b000010 }
+    *   ....
+    *   .otherwise { if (errorBit) output := b100000 else output := DontCare }
+    * }}}
+    *
+    * @param input input to the decoder circuit, width should be equal to bitSets.width
+    * @param bitSets set of ports to be matched, all width should be the equal
+    * @param errorBit whether generate an additional decode error bit at MSB of output.
+    * @return decoded wire
+    */
+  def bitset(input: chisel3.UInt, bitSets: Seq[BitSet], errorBit: Boolean = false): chisel3.UInt =
+    chisel3.util.experimental.decode.decoder(
+      input,
+      chisel3.util.experimental.decode.TruthTable.fromString(
+        {
+          bitSets.zipWithIndex.flatMap {
+            case (bs, i) =>
+              bs.terms.map(bp =>
+                s"${bp.rawString}->${if (errorBit) "0"}${"0" * (bitSets.size - i - 1)}1${"0" * i}"
+              )
+          } ++ Seq(s"${if (errorBit) "1"}${"?" * bitSets.size}")
+        }.mkString("\n")
+      )
+    )
 }
