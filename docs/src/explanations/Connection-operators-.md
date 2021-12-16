@@ -312,7 +312,7 @@ Below we can see the resulting Verilog for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-The connection above went smoothly with no errors, this goes to show <> will work as long as there is at least one directioned thing (IO or submodule's IO) to "fix" the direction.
+The connection above went smoothly with no errors, this goes to show `<>` will work as long as there is at least one directioned thing (IO or submodule's IO) to "fix" the direction.
 
 
 ## Concept 7: <> and := connects signals by field name.
