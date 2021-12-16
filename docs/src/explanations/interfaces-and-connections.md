@@ -68,9 +68,9 @@ class CrossbarIo(n: Int) extends Bundle {
 where Vec takes a size as the first argument and a block returning a port as the second argument.
 
 ## Bulk Connections
-Once we have a defined Interface, we can connect to it via a monoConnect operator (:=) or biconnect operator (<>)
-### Monoconnect Algorithm
-MonoConnect.connect executes a mono-directional connection element-wise.
+Once we have a defined Interface, we can connect to it via a [`MonoConnect`](../../core/src/main/scala/chisel3/internal/MonoConnect.scala) operator (`:=`) or [`BiConnect`](../../core/src/main/scala/chisel3/internal/BiConnect.scala) operator (`<>`)
+### `MonoConnect` Algorithm
+`MonoConnect.connect`, or `:=`, executes a mono-directional connection element-wise.
 
 Note that this isn't commutative. There is an explicit source and sink
 already determined before this function is called.
@@ -80,19 +80,19 @@ An exception will be thrown if a movement through the left cannot be matched
 in the right. The right side is allowed to have extra Record fields.
 Vecs must still be exactly the same size.
 
-See elemConnect for details on how the root connections are issued.
-
-Note that a valid sink must be writable so, one of these must hold:- Is an internal writable node (Reg or Wire)
+Note that a valid sink must be writable so, one of these must hold:
+- Is an internal writable node (`Reg` or `Wire`)
 - Is an output of the current module
 - Is an input of a submodule of the current module
 
-Note that a valid source must be readable so, one of these must hold:- Is an internal readable node (Reg, Wire, Op)
+Note that a valid source must be readable so, one of these must hold:
+- Is an internal readable node (`Reg`, `Wire`, `Op`)
 - Is a literal
 - Is a port of the current module or submodule of the current module
 
 
-### Biconnect Algorithm
-BiConnect.connect executes a bidirectional connection element-wise. Note that the arguments are left and right (not source and sink) so the intent is for the operation to be commutative. The connect operation will recurse down the left Data (with the right Data). An exception will be thrown if a movement through the left cannot be matched in the right (or if the right side has extra fields). See elemConnect for details on how the root connections are issued.
+### `BiConnect` Algorithm
+`BiConnect.connect`, or `<>`, executes a bidirectional connection element-wise. Note that the arguments are left and right (not source and sink) so the intent is for the operation to be commutative. The connect operation will recurse down the left `Data` (with the right `Data`). An exception will be thrown if a movement through the left cannot be matched in the right (or if the right side has extra fields).
 
 We can now compose two filters into a filter block as follows:
 ```scala mdoc:silent
