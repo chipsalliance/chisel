@@ -315,7 +315,7 @@ ChiselStage.emitVerilog(new Wrapper)
 The connection above went smoothly with no errors, this goes to show `<>` will work as long as there is at least one directioned thing (IO or submodule's IO) to "fix" the direction.
 
 
-## Concept 7: <> and := connects signals by field name.
+## Concept 7: `<>` and `:=` connect signals by field name.
 This experiment creates a MockDecoupledIO which has the same fields by name as a DecoupledIO. Chisel lets us connect it and produces the same verilog, even though MockDecoupledIO and DecoupledIO are different types.
 ( Scastie link for the experiment:https://scastie.scala-lang.org/Uf4tQquvQYigZAW705NFIQ)
 
