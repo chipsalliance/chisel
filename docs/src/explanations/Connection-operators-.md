@@ -10,7 +10,7 @@ section: "chisel3"
 
 # Further Explanation for the := and  <> Operators
 
-Chisel contains two connection operators, `:=` and `<>`. This document provides a deeper explanation of the differences of the two and when to use one or the other. The differences are demonstrated with experiments using Scastie examples + DecoupledIO examples.
+Chisel contains two connection operators, `:=` and `<>`. This document provides a deeper explanation of the differences of the two and when to use one or the other. The differences are demonstrated with experiments using Scastie examples which use `DecoupledIO`.
 
 
 
@@ -53,13 +53,13 @@ Below we can see the resulting Verilog for this example:
 ```scala mdoc
 ChiselStage.emitVerilog(new Wrapper)
 ```
-## Concept 1: <> is Commutative
+## Concept 1: `<>` is Commutative
 
 
 
 This experiment is set up to test for the function of `<>` using the experiment above.
 
-Achieving this involves flipping the RHS and LHS of each arrow and seeing how '<>'  will react.
+Achieving this involves flipping the RHS and LHS of the `<>` operator and seeing how `<>`  will react.
 ( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/LVhlbkFQQnq7X3trHfgZZQ )
 
 
@@ -137,9 +137,9 @@ Below we can see the resulting error message for this example:
 ```scala mdoc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
-###Conclusion:
+### Conclusion:
 The := operator goes field-by-field and attempts to connect the RHS to the LHS. If something on the LHS is actually an Input, or something on the RHS is an Output, you will get an error as shown above.
-## Concept 3: Always Use := to assign DontCare to Wires
+## Concept 3: Always Use `:=` to assign DontCare to Wires
 
 When assigning `DontCare` to something that is not directioned, should you use `:=` or `<>`? 
 We will find out using the sample codes below:
@@ -186,7 +186,7 @@ But when `:=` was used to assign the wire to DontCare, no errors will occur.
 Thus, when assigning DontCare to a wire, always use `:=`.
 
 
-##  Concept 4: You can use <> or := to assign DontCare to directioned things (IOs)
+##  Concept 4: You can use `<>` or `:=` to assign `DontCare` to directioned things (IOs)
 When assigning `DontCare` to something that is directioned, should you use `:=` or `<>`? 
 We will find out using the sample codes below:
 ( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)
