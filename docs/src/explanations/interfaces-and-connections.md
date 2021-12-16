@@ -68,7 +68,8 @@ class CrossbarIo(n: Int) extends Bundle {
 where Vec takes a size as the first argument and a block returning a port as the second argument.
 
 ## Bulk Connections
-Once we have a defined Interface, we can connect to it via a [`MonoConnect`](../../core/src/main/scala/chisel3/internal/MonoConnect.scala) operator (`:=`) or [`BiConnect`](../../core/src/main/scala/chisel3/internal/BiConnect.scala) operator (`<>`)
+Once we have a defined Interface, we can connect to it via a [`MonoConnect`](../../core/src/main/scala/chisel3/internal/MonoConnect.scala) operator (`:=`) or [`BiConnect`](../../core/src/main/scala/chisel3/internal/BiConnect.scala) operator (`<>`).
+
 ### `MonoConnect` Algorithm
 `MonoConnect.connect`, or `:=`, executes a mono-directional connection element-wise.
 
@@ -77,15 +78,15 @@ already determined before this function is called.
 
 The connect operation will recurse down the left Data (with the right Data).
 An exception will be thrown if a movement through the left cannot be matched
-in the right. The right side is allowed to have extra Record fields.
+in the right. The right side is allowed to have extra fields.
 Vecs must still be exactly the same size.
 
-Note that a valid sink must be writable so, one of these must hold:
+Note that the LHS element must be writable so, one of these must hold:
 - Is an internal writable node (`Reg` or `Wire`)
 - Is an output of the current module
 - Is an input of a submodule of the current module
 
-Note that a valid source must be readable so, one of these must hold:
+Note that the RHS element must be readable so, one of these must hold:
 - Is an internal readable node (`Reg`, `Wire`, `Op`)
 - Is a literal
 - Is a port of the current module or submodule of the current module

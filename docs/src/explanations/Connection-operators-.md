@@ -353,12 +353,12 @@ class PipelineStage extends Module{
   io.a <> io.b
 }
 ```
-Below we can see the resulting Verilog for this example:
+Below we can see the resulting error for this example:
 ```scala mdoc:crash
 ChiselStage.emitVerilog(new Wrapper)
 ```
 This one fails because there is a field `bits` missing.
 
 ### Conclusion:
-It doesn't matter the order of the fields, they need to be the same.
-For `:=`, the Scala types do not need to match but all the signals on the LHS must be provided by the RHS or you will get a Chisel elaboration error. There may be additional signals on the RHS, these will be ignored.
+For `:=`, the Scala types do not need to match but all the signals on the LHS must be provided by the RHS or you will get a Chisel elaboration error. There may be additional signals on the RHS, these will be ignored. For `<>`, the Scala types do not need to match, but all signals must match exactly between LHS and RHS. In both cases, the order of the fields does not matter.
+
