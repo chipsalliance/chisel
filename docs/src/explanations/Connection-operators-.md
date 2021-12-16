@@ -138,7 +138,7 @@ Below we can see the resulting error message for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-The := operator goes field-by-field and attempts to connect the RHS to the LHS. If something on the LHS is actually an Input, or something on the RHS is an Output, you will get an error as shown above.
+The := operator goes field-by-field on the LHS and attempts to connect it to the same-named signal from the RHS. If something on the LHS is actually an Input, or the corresponding signal on the RHS is an Output, you will get an error as shown above.
 ## Concept 3: Always Use `:=` to assign DontCare to Wires
 
 When assigning `DontCare` to something that is not directioned, should you use `:=` or `<>`? 
