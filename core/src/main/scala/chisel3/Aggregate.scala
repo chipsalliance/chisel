@@ -30,7 +30,7 @@ sealed abstract class Aggregate extends Data {
     val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
       this match {
-        case b: Bundle =>
+        case b: Record =>
           // show groups of names of fields with duplicate id's
           // The sorts make the displayed order of fields deterministic and matching the order of occurrence in the Bundle.
           // It's a bit convoluted but happens rarely and makes the error message easier to understand
@@ -42,11 +42,11 @@ sealed abstract class Aggregate extends Data {
               .mkString("(", ",", ")")
           }.mkString(",")
           throw new AliasedAggregateFieldException(
-            s"Bundle $this contains aliased fields named ${dupNames}"
+            s"Bundle ${b.getClass} contains aliased fields named ${dupNames}"
           )
         case _ =>
           throw new AliasedAggregateFieldException(
-            s"Aggregate $this contains aliased fields $duplicates ${duplicates.mkString(",")}"
+            s"Aggregate ${this.getClass} contains aliased fields $duplicates ${duplicates.mkString(",")}"
           )
       }
     }

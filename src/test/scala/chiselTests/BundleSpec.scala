@@ -111,15 +111,17 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }
   }
 
-  "Bundles" should "not have aliased fields" in {
+  "Bundles" should "with aliased fields, should show a helpful error message" in {
+    class AliasedBundle extends Bundle {
+      val a = UInt(8.W)
+      val b = a
+      val c = SInt(8.W)
+      val d = c
+    }
+
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate { new Module {
-        val io = IO(Output(new Bundle {
-          val a = UInt(8.W)
-          val b = a
-          val c = SInt(8.W)
-          val d = c
-        }))
+        val io = IO(Output(new AliasedBundle))
         io.a := 0.U
         io.b := 1.U
       } }
