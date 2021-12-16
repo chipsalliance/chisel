@@ -33,7 +33,7 @@ sealed abstract class Aggregate extends Data {
         case b: Bundle =>
           // show groups of names of fields with duplicate id's
           // The sorts make the displayed order of fields deterministic and matching the order of occurrence in the Bundle.
-          // it's a bit convoluted but happens rarely and makes error easier to understand for user
+          // It's a bit convoluted but happens rarely and makes the error message easier to understand
           val dupNames = duplicates.toSeq.sortBy(_._id).map { duplicate =>
             b.elements
               .collect { case x if x._2._id == duplicate._id => x }
