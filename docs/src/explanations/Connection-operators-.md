@@ -102,7 +102,7 @@ The Verilog remained the same without incurring errors, showing that the `<>` op
 
 
 
-## Concept 2: := means assign ALL signals from the RHS to the LHS, regardless of their direction.
+## Concept 2: `:=` means assign ALL LHS signals from the RHS, regardless of the direction on the LHS.
 Using the same experiment code as above, we set to test for the function of `:=`
 To achieve this, `<>` is being replaced with `:=` in the sample code above.
 (Scastie link to the experiment:https://scastie.scala-lang.org/Shorla/o1ShdaY3RWKf0IIFwwQ1UQ)
