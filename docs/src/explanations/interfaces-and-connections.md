@@ -93,7 +93,7 @@ Note that the RHS element must be readable so, one of these must hold:
 
 
 ### `BiConnect` Algorithm
-`BiConnect.connect`, or `<>`, executes a bidirectional connection element-wise. Note that the arguments are left and right (not source and sink) so the intent is for the operation to be commutative. The connect operation will recurse down the left `Data` (with the right `Data`). An exception will be thrown if a movement through the left cannot be matched in the right (or if the right side has extra fields).
+`BiConnect.connect`, or `<>`, executes a bidirectional connection element-wise. Note that the arguments are left and right (not source and sink) so the intent is for the operation to be commutative. The connect operation will recurse down the left `Data` (with the right `Data`). An exception will be thrown if a movement through the left cannot be matched in the right, or if the right side has extra fields.
 
 We can now compose two filters into a filter block as follows:
 ```scala mdoc:silent
@@ -128,8 +128,7 @@ Below we can see the resulting error for this example:
 ```scala mdoc:crash
 ChiselStage.emitVerilog(new Block2)
 ```
-Caution: bulk connections should only be used with **directioned elements** (like IOs), and is not magical (e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically [chisel3#603](https://github.com/freechipsproject/chisel3/issues/603)).
-
+Bidirectional connections should only be used with **directioned elements** (like IOs), e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically.
 For example, putting two temporary wires and connecting them here will not work, even though the directions could be known from the endpoints:
 
 ```scala mdoc:silent
