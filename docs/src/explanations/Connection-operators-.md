@@ -183,7 +183,7 @@ Below we can see the resulting error for this example:
 ChiselStage.emitVerilog(new Wrapper)
 ```
 ### Conclusion:
-When `<>` was used to assign the unidrectioned wire `tmp` to DontCare, we got an error.
+If `<>` were used to assign the unidrectioned wire `tmp` to DontCare, we would get an error. But in the example above, we used `:=` and no errors occurred.
 But when `:=` was used to assign the wire to DontCare, no errors will occur.
 
 Thus, when assigning `DontCare` to a `Wire`, always use `:=`.
