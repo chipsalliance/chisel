@@ -257,7 +257,6 @@ class Wrapper extends Module{
   // connect intermediate wire
   tmp <> io.in
   p.io.a <> tmp
-  //p.io.a <> io.in
   // connect producer to consumer
   c.io.a <> p.io.b
   //connect consumer to IO
