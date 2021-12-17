@@ -70,7 +70,7 @@ object SMTLibSerializer {
     case BVOp(op, a, b) if a.width == 1     => toBool(s"(${serialize(op)} ${asBitVector(a)} ${asBitVector(b)})")
     case BVOp(op, a, b)                     => s"(${serialize(op)} ${serialize(a)} ${serialize(b)})"
     case BVConcat(a, b)                     => s"(concat ${asBitVector(a)} ${asBitVector(b)})"
-    case ArrayRead(array, index)            => s"(select ${serialize(array)} ${asBitVector(index)})"
+    case ArrayRead(array, index)            => s"(select ${serialize(array)} ${serialize(index)})"
     case BVIte(cond, tru, fals)             => s"(ite ${serialize(cond)} ${serialize(tru)} ${serialize(fals)})"
     case BVFunctionCall(name, args, _)      => args.map(serializeArg).mkString(s"($name ", " ", ")")
     case BVForall(variable, e)              => s"(forall ((${variable.name} ${serialize(variable.tpe)})) ${serialize(e)})"
