@@ -178,7 +178,7 @@ class PipelineStage extends Module{
   io.b <> io.a
 }
 ```
-Below we can see the resulting error for this example:
+Below we can see the resulting Verilog for this example:
 ```scala mdoc
 ChiselStage.emitVerilog(new Wrapper)
 ```
