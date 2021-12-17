@@ -45,7 +45,9 @@ abstract class AnnotationTests extends LowFirrtlTransformSpec with Matchers with
     r.annotations.toSeq should contain(ta)
   }
 
-  "Deleting annotations" should "create a DeletedAnnotation" in {
+  // This test is no longer true as of 1.5.0-RC2, see
+  // https://github.com/chipsalliance/firrtl/pull/2393
+  "Deleting annotations" should "create a DeletedAnnotation" ignore {
     val transform = Dependency[DeletingTransform]
     val compiler = makeVerilogCompiler(Seq(transform))
     val input =

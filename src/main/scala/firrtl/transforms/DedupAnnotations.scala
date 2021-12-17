@@ -95,7 +95,7 @@ class DedupAnnotationsTransform extends Transform with DependencyAPIMigration {
   def execute(state: CircuitState): CircuitState = CircuitState(
     state.circuit,
     state.form,
-    DedupAnnotationsTransform.dedupAnnotations(state.annotations.underlying, InstanceKeyGraph(state.circuit)),
+    DedupAnnotationsTransform.dedupAnnotations(state.annotations.toSeq, InstanceKeyGraph(state.circuit)),
     state.renames
   )
 }

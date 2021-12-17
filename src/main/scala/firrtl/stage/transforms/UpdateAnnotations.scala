@@ -15,7 +15,7 @@ class UpdateAnnotations(val underlying: Transform)
   def aToB(a: CircuitState): (CircuitState, CircuitState) = (a, a)
 
   def bToA(b: (CircuitState, CircuitState)): CircuitState = {
-    Transform.remapAnnotations(name, b._1, b._2, logger)
+    Transform.remapAnnotations(b._2, logger)
   }
 
   def internalTransform(b: (CircuitState, CircuitState)): (CircuitState, CircuitState) = {

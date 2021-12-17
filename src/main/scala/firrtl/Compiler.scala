@@ -6,6 +6,7 @@ import logger._
 import java.io.Writer
 
 import scala.collection.mutable
+import scala.collection.immutable.VectorBuilder
 import scala.util.Try
 import scala.util.control.NonFatal
 import firrtl.annotations._
@@ -17,11 +18,11 @@ import firrtl.stage.Forms
 import firrtl.transforms.DedupAnnotationsTransform
 
 /** Container of all annotations for a Firrtl compiler */
-class AnnotationSeq private (private[firrtl] val underlying: List[Annotation]) {
-  def toSeq: Seq[Annotation] = underlying.toSeq
+class AnnotationSeq private (underlying: Seq[Annotation]) {
+  def toSeq: Seq[Annotation] = underlying
 }
 object AnnotationSeq {
-  def apply(xs: Seq[Annotation]): AnnotationSeq = new AnnotationSeq(xs.toList)
+  def apply(xs: Seq[Annotation]): AnnotationSeq = new AnnotationSeq(xs)
 }
 
 /** Current State of the Circuit
@@ -211,8 +212,8 @@ final case object UnknownForm extends CircuitForm(-1) {
 // Internal utilities to keep code DRY, not a clean interface
 private[firrtl] object Transform {
 
-  def remapAnnotations(name: String, before: CircuitState, after: CircuitState, logger: Logger): CircuitState = {
-    val remappedAnnotations = propagateAnnotations(name, logger, before.annotations, after.annotations, after.renames)
+  def remapAnnotations(after: CircuitState, logger: Logger): CircuitState = {
+    val remappedAnnotations = propagateAnnotations(after.annotations, after.renames)
 
     logger.trace(s"Annotations:")
     logger.trace(JsonProtocol.serializeRecover(remappedAnnotations))
@@ -222,51 +223,34 @@ private[firrtl] object Transform {
     CircuitState(after.circuit, after.form, remappedAnnotations, None)
   }
 
-  /** Propagate annotations and update their names.
-    *
-    * @param inAnno input AnnotationSeq
-    * @param resAnno result AnnotationSeq
-    * @param renameOpt result RenameMap
-    * @return the updated annotations
-    */
+  // This function is *very* mutable but it is fairly performance critical
   def propagateAnnotations(
-    name:      String,
-    logger:    Logger,
-    inAnno:    AnnotationSeq,
     resAnno:   AnnotationSeq,
     renameOpt: Option[RenameMap]
   ): AnnotationSeq = {
-    val newAnnotations = {
-      val inSet = mutable.LinkedHashSet() ++ inAnno
-      val resSet = mutable.LinkedHashSet() ++ resAnno
-      val deleted = (inSet -- resSet).map {
-        case DeletedAnnotation(xFormName, delAnno) => DeletedAnnotation(s"$xFormName+$name", delAnno)
-        case anno                                  => DeletedAnnotation(name, anno)
-      }
-      val created = resSet -- inSet
-      val unchanged = resSet & inSet
-      (deleted ++ created ++ unchanged)
-    }
+    // We dedup/distinct the resulting annotations when renaming occurs
+    val seen = new mutable.HashSet[Annotation]
+    val result = new VectorBuilder[Annotation]
 
-    // For each annotation, rename all annotations.
-    val renames = renameOpt.getOrElse(RenameMap())
-    val remapped2original = mutable.LinkedHashMap[Annotation, mutable.LinkedHashSet[Annotation]]()
-    val keysOfNote = mutable.LinkedHashSet[Annotation]()
-    val finalAnnotations = newAnnotations.flatMap { anno =>
-      val remappedAnnos = anno.update(renames)
-      remappedAnnos.foreach { remapped =>
-        val set = remapped2original.getOrElseUpdate(remapped, mutable.LinkedHashSet.empty[Annotation])
-        set += anno
-        if (set.size > 1) keysOfNote += remapped
+    val hasRenames = renameOpt.isDefined
+    val renames = renameOpt.getOrElse(null) // Null is bad but saving the allocation is worth it
+
+    val it = resAnno.toSeq.iterator
+    while (it.hasNext) {
+      val anno = it.next()
+      if (hasRenames) {
+        val renamed = anno.update(renames)
+        for (annox <- renamed) {
+          if (!seen(annox)) {
+            seen += annox
+            result += annox
+          }
+        }
+      } else {
+        result += anno
       }
-      remappedAnnos
-    }.toSeq
-    keysOfNote.foreach { key =>
-      logger.debug(s"""The following original annotations are renamed to the same new annotation.""")
-      logger.debug(s"""Original Annotations:\n  ${remapped2original(key).mkString("\n  ")}""")
-      logger.debug(s"""New Annotation:\n  $key""")
     }
-    finalAnnotations
+    result.result()
   }
 }
 
@@ -363,7 +347,7 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
     */
   final def runTransform(state: CircuitState): CircuitState = {
     val result = execute(prepare(state))
-    Transform.remapAnnotations(name, state, result, logger)
+    Transform.remapAnnotations(result, logger)
   }
 
 }
