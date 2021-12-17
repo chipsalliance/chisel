@@ -154,13 +154,58 @@ package experimental {
       **/
     def checkTypeEquivalence(x: Data, y: Data): Boolean = x.typeEquivalent(y)
 
-    // Returns the top-level module ports
-    // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
-    // with compiled artifacts (vs. elaboration-time reflection)?
+    /** Returns the ports of a module
+      * {{{
+      * class MyModule extends Module {
+      *   val io = IO(new Bundle {
+      *     val in = Input(UInt(8.W))
+      *     val out = Output(Vec(2, UInt(8.W)))
+      *   })
+      *   val extra = IO(Input(UInt(8.W)))
+      *   val delay = RegNext(io.in)
+      *   io.out(0) := delay
+      *   io.out(1) := delay + extra
+      * }
+      * val mod = Module(new MyModule)
+      * DataMirror.modulePorts(mod)
+      * // returns: Seq(
+      * //   "clock" -> mod.clock,
+      * //   "reset" -> mod.reset,
+      * //   "io" -> mod.io,
+      * //   "extra" -> mod.extra
+      * // )
+      * }}}
+      */
     def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
 
-    /** Returns all module ports with underscore-qualified names
-      * return includes [[Module.clock]] and [[Module.reset]]
+    /** Returns a recursive representation of a module's ports with underscore-qualified names
+      * {{{
+      * class MyModule extends Module {
+      *   val io = IO(new Bundle {
+      *     val in = Input(UInt(8.W))
+      *     val out = Output(Vec(2, UInt(8.W)))
+      *   })
+      *   val extra = IO(Input(UInt(8.W)))
+      *   val delay = RegNext(io.in)
+      *   io.out(0) := delay
+      *   io.out(1) := delay + extra
+      * }
+      * val mod = Module(new MyModule)
+      * DataMirror.fullModulePorts(mod)
+      * // returns: Seq(
+      * //   "clock" -> mod.clock,
+      * //   "reset" -> mod.reset,
+      * //   "io" -> mod.io,
+      * //   "io_out" -> mod.io.out,
+      * //   "io_out_0" -> mod.io.out(0),
+      * //   "io_out_1" -> mod.io.out(1),
+      * //   "io_in" -> mod.io.in,
+      * //   "extra" -> mod.extra
+      * // )
+      * }}}
+      * @note The returned ports are redundant. An [[Aggregate]] port will be present along with all
+      *       of its children.
+      * @see [[DataMirror.modulePorts]] for a non-recursive representation of the ports.
       */
     def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
       def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
