@@ -27,7 +27,6 @@ read these documents in the following order:
 * [Sequential Circuits](sequential-circuits)
 * [Memories](memories)
 * [Interfaces and Connections](interfaces-and-connections)
-* [Deep Dive into Connection Operators](connection-operators)
 * [Black Boxes](blackboxes)
 * [Enumerations](chisel-enum)
 * [Functional Module Creation](functional-module-creation)
@@ -39,3 +38,4 @@ read these documents in the following order:
 * [Naming](naming)
 * [Unconnected Wires](unconnected-wires)
 * [Annotations](annotations)
+* [Deep Dive into Connection Operators](connection-operators)
