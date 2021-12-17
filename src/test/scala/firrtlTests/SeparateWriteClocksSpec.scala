@@ -58,7 +58,6 @@ class SeparateWriteClocksSpec extends FirrtlFlatSpec {
                               |    m.w_b.mask <= UInt(1)
                               |    m.w_b.data <= wdata_b""".stripMargin)
 
-    println(result.circuit.serialize)
     result should containLine("m.r.clk <= clk")
     result should containLine("m.w_a.clk <= m_w_a_clk")
     result should containLine("m.w_b.clk <= m_w_b_clk")

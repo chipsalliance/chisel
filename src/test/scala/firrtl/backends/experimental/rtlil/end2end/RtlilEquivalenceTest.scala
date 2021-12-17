@@ -40,10 +40,8 @@ class RtlilEquivalenceTest extends AnyFlatSpec with LazyLogging {
     val verilogFile = testDir.toString + "/" + fileName + ".v"
 
     val log = ProcessLogger(
-      msg => {
-        println(msg)
-      },
-      logger.error(_)
+      logger.info(_),
+      logger.warn(_)
     )
 
     val yosysArgs = Array(
@@ -67,7 +65,6 @@ class RtlilEquivalenceTest extends AnyFlatSpec with LazyLogging {
       "equiv_induct -seq 1 -undef;",
       "equiv_status -assert"
     )
-    println(yosysArgs.mkString(" "))
     val yosysRet = Process(Seq("yosys", "-p", yosysArgs.mkString(" "))).run(log).exitValue()
     assert(yosysRet == 0, s"Unable to prove equivalence of design ${name}.")
   }
