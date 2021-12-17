@@ -42,7 +42,7 @@ sealed abstract class Aggregate extends Data {
               .mkString("(", ",", ")")
           }.mkString(",")
           throw new AliasedAggregateFieldException(
-            s"Bundle ${b.getClass} contains aliased fields named ${dupNames}"
+            s"${b.className} contains aliased fields named ${dupNames}"
           )
         case _ =>
           throw new AliasedAggregateFieldException(
