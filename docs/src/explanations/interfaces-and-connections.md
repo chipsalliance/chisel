@@ -68,7 +68,7 @@ class CrossbarIo(n: Int) extends Bundle {
 where Vec takes a size as the first argument and a block returning a port as the second argument.
 
 ## Bulk Connections
-Once we have a defined Interface, we can connect to it via a [`MonoConnect`](../../core/src/main/scala/chisel3/internal/MonoConnect.scala) operator (`:=`) or [`BiConnect`](../../core/src/main/scala/chisel3/internal/BiConnect.scala) operator (`<>`).
+Once we have a defined Interface, we can connect to it via a [`MonoConnect`](https://www.chisel-lang.org/api/latest/chisel3/Data.html#:=) operator (`:=`) or [`BiConnect`](https://www.chisel-lang.org/api/latest/chisel3/Data.html#%3C%3E) operator (`<>`).
 
 ### `MonoConnect` Algorithm
 `MonoConnect.connect`, or `:=`, executes a mono-directional connection element-wise.
