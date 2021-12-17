@@ -234,7 +234,8 @@ Both `<>` and `:=` can be used to assign directioned things (IOs) to DontCare as
 
 
 ## Concept 5: `<>`  works between things with at least one known flow (An IO or child's IO). 
-If there is at least one known flow what will <> do? This will be showed using the experiment code.
+
+If there is at least one known flow what will `<>` do? This will be shown using the experiment code below:
 ( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/gKx9ReLVTTqDTk9vmw5ozg)
 
 ```scala mdoc:silent:reset
