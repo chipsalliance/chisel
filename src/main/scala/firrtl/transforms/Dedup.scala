@@ -13,6 +13,7 @@ import firrtl.Utils.{kind, splitRef, throwInternalError}
 import firrtl.annotations.transforms.DupedResult
 import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.options.{HasShellOptions, ShellOption}
+import firrtl.renamemap.MutableRenameMap
 import logger.LazyLogging
 
 import scala.annotation.tailrec
@@ -123,7 +124,7 @@ class DedupModules extends Transform with DependencyAPIMigration {
   ): (Circuit, RenameMap, AnnotationSeq) = {
 
     // RenameMap
-    val componentRenameMap = RenameMap()
+    val componentRenameMap = MutableRenameMap()
     componentRenameMap.setCircuit(c.main)
 
     // Maps module name to corresponding dedup module
@@ -161,12 +162,12 @@ class DedupModules extends Transform with DependencyAPIMigration {
         logger.debug(s"[Dedup] $from -> ${to.name}")
         ct.module(from).asInstanceOf[CompleteTarget] -> Seq(ct.module(to.name))
     }
-    val moduleRenameMap = RenameMap()
+    val moduleRenameMap = MutableRenameMap()
     moduleRenameMap.recordAll(map)
 
     // Build instanceify renaming map
     val instanceGraph = InstanceKeyGraph(c)
-    val instanceify = RenameMap()
+    val instanceify = MutableRenameMap()
     val moduleName2Index = c.modules
       .map(_.name)
       .zipWithIndex
@@ -337,6 +338,18 @@ object DedupModules extends LazyLogging {
     module.map(onPort).map(onStmt)
   }
 
+  @deprecated("Use version that accepts renamemap.MutableRenameMap", "FIRRTL 1.5")
+  def dedupInstances(
+    top:            CircuitTarget,
+    originalModule: String,
+    moduleMap:      Map[String, DefModule],
+    name2name:      Map[String, String],
+    renameMap:      RenameMap
+  ): DefModule =
+    // Cast is safe because RenameMap is sealed trait, MutableRenameMap is only concrete class that
+    // can be instantiated
+    dedupInstances(top, originalModule, moduleMap, name2name, renameMap.asInstanceOf[MutableRenameMap])
+
   /** Dedup a module's instances based on dedup map
     *
     * Will fixes up module if deduped instance's ports are differently named
@@ -353,7 +366,7 @@ object DedupModules extends LazyLogging {
     originalModule: String,
     moduleMap:      Map[String, DefModule],
     name2name:      Map[String, String],
-    renameMap:      RenameMap
+    renameMap:      MutableRenameMap
   ): DefModule = {
     val module = moduleMap(originalModule)
 
@@ -481,10 +494,21 @@ object DedupModules extends LazyLogging {
     }
 
     val tag2all = hashToNames.map { case (hash, names) => hashToTag(hash) -> names.toSet }
-    val tagMap = RenameMap()
+    val tagMap = MutableRenameMap()
     moduleNameToTag.foreach { case (name, tag) => tagMap.record(top.module(name), top.module(tag)) }
     (tag2all, tagMap)
   }
+
+  @deprecated("Use version that accepts renamemap.MutableRenameMap", "FIRRTL 1.5")
+  def deduplicate(
+    circuit:            Circuit,
+    noDedups:           Set[String],
+    previousDupResults: Map[String, String],
+    renameMap:          RenameMap
+  ): Map[String, DefModule] =
+    // Cast is safe because RenameMap is sealed trait, MutableRenameMap is only concrete class that
+    // can be instantiated
+    deduplicate(circuit, noDedups, previousDupResults, renameMap.asInstanceOf[MutableRenameMap])
 
   /** Deduplicate
     * @param circuit Circuit
@@ -496,7 +520,7 @@ object DedupModules extends LazyLogging {
     circuit:            Circuit,
     noDedups:           Set[String],
     previousDupResults: Map[String, String],
-    renameMap:          RenameMap
+    renameMap:          MutableRenameMap
   ): Map[String, DefModule] = {
 
     val (moduleMap, moduleLinearization) = {
@@ -587,10 +611,20 @@ object DedupModules extends LazyLogging {
     refs.toIndexedSeq
   }
 
+  @deprecated("Use version that accepts renamemap.MutableRenameMap", "FIRRTL 1.5")
   def computeRenameMap(
     originalNames: IndexedSeq[ReferenceTarget],
     dedupedNames:  IndexedSeq[ReferenceTarget],
     renameMap:     RenameMap
+  ): Unit =
+    // Cast is safe because RenameMap is sealed trait, MutableRenameMap is only concrete class that
+    // can be instantiated
+    computeRenameMap(originalNames, dedupedNames, renameMap.asInstanceOf[MutableRenameMap])
+
+  def computeRenameMap(
+    originalNames: IndexedSeq[ReferenceTarget],
+    dedupedNames:  IndexedSeq[ReferenceTarget],
+    renameMap:     MutableRenameMap
   ): Unit = {
 
     originalNames.zip(dedupedNames).foreach {

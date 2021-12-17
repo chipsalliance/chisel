@@ -5,6 +5,7 @@ package firrtl.transforms
 import firrtl._
 import firrtl.analyses.InstanceKeyGraph
 import firrtl.Mappers._
+import firrtl.renamemap.MutableRenameMap
 
 import firrtl.annotations.{
   CircuitTarget,
@@ -24,6 +25,7 @@ import scala.collection.mutable
 import scala.reflect.ClassTag
 
 /** Base trait for annotations that control the behavior of transforms that sub-class ManipulateNames
+  *
   * @see [[ManipulateNamesBlocklistAnnotation]]
   * @see [[ManipulateNamesAllowlistAnnotation]]
   * @define noteLocalTargets All targets must be local. Name modification in a non-local target (e.g., a node in a
@@ -141,7 +143,7 @@ case class ManipulateNamesAllowlistResultAnnotation[A <: ManipulateNames[_]](
   */
 private class RenameDataStructure(
   circuit:     ir.Circuit,
-  val renames: RenameMap,
+  val renames: MutableRenameMap,
   val block:   Target => Boolean,
   val allow:   Target => Boolean) {
 
@@ -399,6 +401,16 @@ abstract class ManipulateNames[A <: ManipulateNames[_]: ClassTag] extends Transf
         .map(onStatement(_: ir.Statement, r, moduleTarget))
   }
 
+  @deprecated("Use version that accepts renamemap.MutableRenameMap", "FIRRTL 1.5")
+  def run(
+    c:       ir.Circuit,
+    renames: RenameMap,
+    block:   Target => Boolean,
+    allow:   Target => Boolean
+  ): ir.Circuit =
+    // Cast is safe because RenameMap is sealed trait, MutableRenameMap is only subclass
+    run(c, renames.asInstanceOf[MutableRenameMap], block, allow)
+
   /** Manipulate all names in a circuit
     *
     * @param c an input circuit
@@ -409,7 +421,7 @@ abstract class ManipulateNames[A <: ManipulateNames[_]: ClassTag] extends Transf
     */
   def run(
     c:       ir.Circuit,
-    renames: RenameMap,
+    renames: MutableRenameMap,
     block:   Target => Boolean,
     allow:   Target => Boolean
   ): ir.Circuit = {
@@ -485,7 +497,7 @@ abstract class ManipulateNames[A <: ManipulateNames[_]: ClassTag] extends Transf
       }
     }
 
-    val renames = RenameMap()
+    val renames = MutableRenameMap()
     val circuitx = run(state.circuit, renames, block, allow)
 
     val annotationsx = state.annotations.flatMap {

@@ -11,6 +11,7 @@ import firrtl.analyses.InstanceKeyGraph
 import firrtl.graph.{DiGraph, MutableDiGraph}
 import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 import firrtl.options.{RegisteredTransform, ShellOption}
+import firrtl.renamemap.MutableRenameMap
 
 // Datastructures
 import scala.collection.mutable
@@ -184,7 +185,7 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
       prefix:        String,
       ns:            Namespace,
       renames:       mutable.HashMap[String, String],
-      renameMap:     RenameMap
+      renameMap:     MutableRenameMap
     )(s:             Statement
     ): Statement = {
       def onName(ofModuleOpt: Option[String])(name: String): String = {
@@ -276,10 +277,10 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
 
       indexMap match {
         case a if a.isEmpty =>
-          (Map.empty[(OfModule, Instance), RenameMap], Seq.empty[RenameMap])
+          (Map.empty[(OfModule, Instance), MutableRenameMap], Seq.empty[MutableRenameMap])
         case a =>
           val maxIdx = indexMap.values.max
-          val resultSeq = Seq.fill(maxIdx + 1)(RenameMap())
+          val resultSeq = Seq.fill(maxIdx + 1)(MutableRenameMap())
           val resultMap = indexMap.mapValues(idx => resultSeq(maxIdx - idx))
           (resultMap, resultSeq)
       }
@@ -367,7 +368,8 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
         Some(m.map(onStmt(ModuleName(m.name, CircuitName(c.main)))))
     })
 
-    val renames = renamesSeq.reduceLeftOption(_ andThen _)
+    // Upcast so reduce works (andThen returns RenameMap)
+    val renames = (renamesSeq: Seq[RenameMap]).reduceLeftOption(_ andThen _)
 
     val cleanedAnnos = annos.filterNot {
       case InlineAnnotation(_) => true

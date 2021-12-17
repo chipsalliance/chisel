@@ -5,6 +5,7 @@ package firrtl.passes
 import firrtl.PrimOps._
 import firrtl.ir._
 import firrtl._
+import firrtl.renamemap.MutableRenameMap
 import firrtl.Mappers._
 import firrtl.options.Dependency
 
@@ -143,7 +144,7 @@ object ZeroWidth extends Transform with DependencyAPIMigration {
         case _                        => e.map(onExp)
       }
   }
-  private def onStmt(renames: RenameMap)(s: Statement): Statement = s match {
+  private def onStmt(renames: MutableRenameMap)(s: Statement): Statement = s match {
     case d @ DefWire(info, name, tpe) =>
       renames.delete(getRemoved(d))
       removeZero(tpe) match {
@@ -181,7 +182,7 @@ object ZeroWidth extends Transform with DependencyAPIMigration {
       }
     case sx => sx.map(onStmt(renames)).map(onExp)
   }
-  private def onModule(renames: RenameMap)(m: DefModule): DefModule = {
+  private def onModule(renames: MutableRenameMap)(m: DefModule): DefModule = {
     renames.setModule(m.name)
     // For each port, record deleted subcomponents
     m.ports.foreach { p => renames.delete(getRemoved(p)) }
@@ -200,7 +201,7 @@ object ZeroWidth extends Transform with DependencyAPIMigration {
     // run executeEmptyMemStmt first to remove zero-width memories
     // then run InferTypes to update widths for addr, en, clk, etc
     val c = InferTypes.run(executeEmptyMemStmt(state).circuit)
-    val renames = RenameMap()
+    val renames = MutableRenameMap()
     renames.setCircuit(c.main)
     val result = c.copy(modules = c.modules.map(onModule(renames)))
     CircuitState(result, outputForm, state.annotations, Some(renames))

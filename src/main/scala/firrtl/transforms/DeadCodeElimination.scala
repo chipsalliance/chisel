@@ -11,6 +11,7 @@ import firrtl.analyses.InstanceKeyGraph
 import firrtl.Mappers._
 import firrtl.Utils.{kind, throwInternalError}
 import firrtl.MemoizedHash._
+import firrtl.renamemap.MutableRenameMap
 import firrtl.backends.experimental.smt.random.DefRandom
 import firrtl.options.{Dependency, RegisteredTransform, ShellOption}
 
@@ -213,7 +214,7 @@ class DeadCodeElimination extends Transform with RegisteredTransform with Depend
     instMap:        collection.Map[String, String],
     deadNodes:      collection.Set[LogicNode],
     moduleMap:      collection.Map[String, DefModule],
-    renames:        RenameMap,
+    renames:        MutableRenameMap,
     topName:        String,
     doTouchExtMods: Set[String]
   )(mod:            DefModule
@@ -346,7 +347,7 @@ class DeadCodeElimination extends Transform with RegisteredTransform with Depend
 
     val liveNodes = depGraph.reachableFrom(circuitSink) + circuitSink
     val deadNodes = depGraph.getVertices -- liveNodes
-    val renames = RenameMap()
+    val renames = MutableRenameMap()
     renames.setCircuit(c.main)
 
     // As we delete deadCode, we will delete ports from Modules and somtimes complete modules

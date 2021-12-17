@@ -28,6 +28,7 @@ import firrtl.{
 import firrtl.ir._
 import firrtl.options.Dependency
 import firrtl.stage.TransformManager.TransformDependency
+import firrtl.renamemap.MutableRenameMap
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -80,7 +81,7 @@ object LowerTypes extends Transform with DependencyAPIMigration {
     // writers. Unfortunately, when you have lots of renames, this is very expensive
     // performance-wise. We use a private internal API that does not run .distinct to improve
     // performance, but we must be careful to not insert any duplicates.
-    val refRenameMap = RenameMap.noDistinct()
+    val refRenameMap = MutableRenameMap.noDistinct()
     val resultAndRenames =
       state.circuit.modules.map(m => onModule(c, m, memInitByModule.getOrElse(m.name, Seq()), refRenameMap))
     val result = state.circuit.copy(modules = resultAndRenames.map(_._1))
@@ -100,7 +101,7 @@ object LowerTypes extends Transform with DependencyAPIMigration {
     c:          CircuitTarget,
     m:          DefModule,
     memoryInit: Seq[MemoryInitAnnotation],
-    renameMap:  RenameMap
+    renameMap:  MutableRenameMap
   ): (DefModule, Map[Instance, Instance], Seq[MemoryInitAnnotation]) = {
     val ref = c.module(m.name)
 
@@ -123,7 +124,7 @@ object LowerTypes extends Transform with DependencyAPIMigration {
   private def lowerPorts(
     ref:       ModuleTarget,
     m:         DefModule,
-    renameMap: RenameMap
+    renameMap: MutableRenameMap
   ): (DefModule, Seq[(String, Seq[Reference])]) = {
     val namespace = mutable.HashSet[String]() ++ m.ports.map(_.name)
     val loweredPortsAndRefs = m.ports.flatMap { p =>
@@ -225,7 +226,7 @@ private class LoweringSymbolTable extends SymbolTable {
 // Lowers types and keeps track of references to lowered types.
 private class LoweringTable(
   table:           LoweringSymbolTable,
-  renameMap:       RenameMap,
+  renameMap:       MutableRenameMap,
   m:               ModuleTarget,
   portNameToExprs: Seq[(String, Seq[Reference])]) {
   private val portNames: Set[String] = portNameToExprs.map(_._2.head.name).toSet
@@ -284,7 +285,7 @@ private object DestructTypes {
     m:         ModuleTarget,
     ref:       Field,
     namespace: Namespace,
-    renameMap: RenameMap,
+    renameMap: MutableRenameMap,
     reserved:  Set[String]
   ): Seq[(Field, String)] = {
     // field renames (uniquify) are computed bottom up
@@ -349,7 +350,7 @@ private object DestructTypes {
     m:         ModuleTarget,
     mem:       DefMemory,
     namespace: Namespace,
-    renameMap: RenameMap,
+    renameMap: MutableRenameMap,
     reserved:  Set[String]
   ): (Seq[DefMemory], Seq[(String, SubField)]) = {
     // Uniquify the lowered memory names: When memories get split up into ground types, the access order is changes.
@@ -425,7 +426,7 @@ private object DestructTypes {
 
   private def recordRenames(
     fieldToRefs: Seq[(Field, Seq[ReferenceTarget])],
-    renameMap:   RenameMap,
+    renameMap:   MutableRenameMap,
     parent:      ParentRef
   ): Unit = {
     // TODO: if we group by ReferenceTarget, we could reduce the number of calls to `record`. Is it worth it?

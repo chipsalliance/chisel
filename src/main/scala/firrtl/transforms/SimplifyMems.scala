@@ -10,6 +10,7 @@ import firrtl.options.Dependency
 import firrtl.passes._
 import firrtl.passes.memlib._
 import firrtl.stage.Forms
+import firrtl.renamemap.MutableRenameMap
 import scala.collection.mutable
 
 import AnalysisUtils._
@@ -29,7 +30,12 @@ class SimplifyMems extends Transform with DependencyAPIMigration {
     case _          => false
   }
 
-  def onModule(c: Circuit, renames: RenameMap)(m: DefModule): DefModule = {
+  @deprecated("Use version that accepts renamemap.MutableRenameMap", "FIRRTL 1.5")
+  def onModule(c: Circuit, renames: RenameMap)(m: DefModule): DefModule =
+    // Cast is safe because RenameMap is sealed trait and MutableRenameMap is only subclass
+    onModule(c, renames.asInstanceOf[MutableRenameMap])(m)
+
+  def onModule(c: Circuit, renames: MutableRenameMap)(m: DefModule): DefModule = {
     val moduleNS = Namespace(m)
     val connects = getConnects(m)
     val memAdapters = new mutable.LinkedHashMap[String, DefWire]
@@ -86,7 +92,7 @@ class SimplifyMems extends Transform with DependencyAPIMigration {
 
   override def execute(state: CircuitState): CircuitState = {
     val c = state.circuit
-    val renames = RenameMap()
+    val renames = MutableRenameMap()
     state.copy(circuit = c.map(onModule(c, renames)), renames = Some(renames))
   }
 }

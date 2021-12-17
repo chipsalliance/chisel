@@ -10,6 +10,7 @@ import firrtl.annotations.analysis.DuplicationHelper
 import firrtl.annotations._
 import firrtl.ir._
 import firrtl.{AnnotationSeq, CircuitState, DependencyAPIMigration, FirrtlInternalException, RenameMap, Transform}
+import firrtl.renamemap.MutableRenameMap
 import firrtl.stage.Forms
 import firrtl.transforms.DedupedResult
 import firrtl.transforms.DedupAnnotationsTransform
@@ -45,7 +46,12 @@ case class NoSuchTargetException(message: String) extends FirrtlInternalExceptio
 
 object EliminateTargetPaths {
 
-  def renameModules(c: Circuit, toRename: Map[String, String], renameMap: RenameMap): Circuit = {
+  @deprecated("Use version that accepts renamemap.MutableRenameMap", "FIRRTL 1.5")
+  def renameModules(c: Circuit, toRename: Map[String, String], renameMap: RenameMap): Circuit =
+    // Cast is safe because RenameMap is sealed trait, MutableRenameMap is only subclass
+    renameModules(c, toRename, renameMap.asInstanceOf[MutableRenameMap])
+
+  def renameModules(c: Circuit, toRename: Map[String, String], renameMap: MutableRenameMap): Circuit = {
     val ct = CircuitTarget(c.main)
     val cx = if (toRename.contains(c.main)) {
       renameMap.record(ct, CircuitTarget(toRename(c.main)))
@@ -159,7 +165,7 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
     lazy val finalModuleSet = finalModuleList.map { case a: DefModule => a.name }.toSet
 
     // Records how targets have been renamed
-    val renameMap = RenameMap()
+    val renameMap = MutableRenameMap()
 
     /* Foreach target, calculate the pathless version and only rename targets that are instantiated. Additionally, rename
      * module targets
@@ -264,7 +270,7 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
       val cache = mutable.Map.empty[String, Boolean]
       mod => cache.getOrElseUpdate(mod, iGraph.findInstancesInHierarchy(mod).size == 1)
     }
-    val firstRenameMap = RenameMap()
+    val firstRenameMap = MutableRenameMap()
     val nonSingletonTargets = targets.foldRight(Seq.empty[IsMember]) {
       case (t: IsComponent, acc) if t.asPath.nonEmpty =>
         val origPath = t.asPath
@@ -298,11 +304,13 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
 
     val (newCircuit, nextRenameMap, newAnnos) = run(state.circuit, nonSingletonTargets, iGraph)
 
-    val renameMap =
+    val renameMap: MutableRenameMap =
       if (firstRenameMap.hasChanges) {
-        firstRenameMap.andThen(nextRenameMap)
+        // Cast is safe because RenameMap is sealed trait, MutableRenameMap is only subclass
+        firstRenameMap.andThen(nextRenameMap).asInstanceOf[MutableRenameMap]
       } else {
-        nextRenameMap
+        // Cast is safe because RenameMap is sealed trait, MutableRenameMap is only subclass
+        nextRenameMap.asInstanceOf[MutableRenameMap]
       }
 
     val iGraphx = InstanceKeyGraph(newCircuit)

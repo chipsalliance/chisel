@@ -7,6 +7,7 @@ import firrtl.annotations.{CircuitTarget, ModuleTarget, MultiTargetAnnotation, R
 import firrtl.ir
 import firrtl.options.{Dependency, PreservesAll}
 import firrtl.traversals.Foreachers._
+import firrtl.renamemap.MutableRenameMap
 
 import scala.collection.immutable.{Set => ISet}
 
@@ -31,7 +32,7 @@ class CleanupNamedTargets extends Transform with DependencyAPIMigration {
     statement: ir.Statement
   )(
     implicit references: ISet[ReferenceTarget],
-    renameMap:           RenameMap,
+    renameMap:           MutableRenameMap,
     module:              ModuleTarget
   ): Unit = statement match {
     case ir.DefInstance(_, a, b, _) if references(module.instOf(a, b).asReference) =>
@@ -43,7 +44,7 @@ class CleanupNamedTargets extends Transform with DependencyAPIMigration {
     module: ir.DefModule
   )(
     implicit references: ISet[ReferenceTarget],
-    renameMap:           RenameMap,
+    renameMap:           MutableRenameMap,
     circuit:             CircuitTarget
   ): Unit = {
     implicit val mTarget = circuit.module(module.name)
@@ -60,7 +61,7 @@ class CleanupNamedTargets extends Transform with DependencyAPIMigration {
       case a: ReferenceTarget => a
     }.toSet
 
-    implicit val renameMap = RenameMap()
+    implicit val renameMap = MutableRenameMap()
 
     implicit val cTarget = CircuitTarget(state.circuit.main)
 

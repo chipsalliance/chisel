@@ -12,6 +12,7 @@ import firrtl.passes.MemPortUtils.{MemPortMap, Modules}
 import firrtl.passes.memlib.MemTransformUtils._
 import firrtl.passes.wiring._
 import firrtl.stage.Forms
+import firrtl.renamemap.MutableRenameMap
 
 import scala.collection.mutable.ListBuffer
 
@@ -244,7 +245,7 @@ class ReplaceMemMacros extends Transform with DependencyAPIMigration {
     memPortMap:              MemPortMap,
     memMods:                 Modules,
     annotatedMemoriesBuffer: ListBuffer[DefAnnotatedMemory],
-    renameMap:               RenameMap,
+    renameMap:               MutableRenameMap,
     circuit:                 String
   )(s:                       Statement
   ): Statement = s match {
@@ -282,7 +283,7 @@ class ReplaceMemMacros extends Transform with DependencyAPIMigration {
     nameMap:                 NameMap,
     memMods:                 Modules,
     annotatedMemoriesBuffer: ListBuffer[DefAnnotatedMemory],
-    renameMap:               RenameMap,
+    renameMap:               MutableRenameMap,
     circuit:                 String
   )(m:                       DefModule
   ) = {
@@ -299,7 +300,7 @@ class ReplaceMemMacros extends Transform with DependencyAPIMigration {
     val memMods = new Modules
     val nameMap = new NameMap
     c.modules.map(m => m.map(constructNameMap(namespace, nameMap, m.name)))
-    val renameMap = RenameMap()
+    val renameMap = MutableRenameMap()
     val modules = c.modules.map(updateMemMods(namespace, nameMap, memMods, annotatedMemoriesBuffer, renameMap, c.main))
     state.copy(
       circuit = c.copy(modules = modules ++ memMods),

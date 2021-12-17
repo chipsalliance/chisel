@@ -9,6 +9,7 @@ import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.options.Dependency
+import firrtl.renamemap.MutableRenameMap
 
 case class MPort(name: String, clk: Expression)
 case class MPorts(readers: ArrayBuffer[MPort], writers: ArrayBuffer[MPort], readwriters: ArrayBuffer[MPort])
@@ -78,6 +79,7 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
     s.map(collect_smems_and_mports(mports, smems))
   }
 
+  @deprecated("This should never have been public", "FIRRTL 1.5")
   def collect_refs(
     mports:  MPortMap,
     smems:   SeqMemSet,
@@ -85,6 +87,18 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
     refs:    DataRefMap,
     raddrs:  AddrMap,
     renames: RenameMap
+  )(s:       Statement
+  ): Statement =
+    // Cast is safe because RenameMap is sealed trait, MutableRenameMap is only subclass
+    collect_refs(mports, smems, types, refs, raddrs, renames.asInstanceOf[MutableRenameMap])(s)
+
+  private def collect_refs(
+    mports:  MPortMap,
+    smems:   SeqMemSet,
+    types:   MPortTypeMap,
+    refs:    DataRefMap,
+    raddrs:  AddrMap,
+    renames: MutableRenameMap
   )(s:       Statement
   ): Statement = s match {
     case sx: CDefMemory =>
@@ -285,7 +299,12 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
     }
   }
 
-  def remove_chirrtl_m(renames: RenameMap)(m: DefModule): DefModule = {
+  @deprecated("This should never have been public", "FIRRTL 1.5")
+  def remove_chirrtl_m(renames: RenameMap)(m: DefModule): DefModule =
+    // Cast is safe because RenameMap is sealed trait, MutableRenameMap is only subclass
+    remove_chirrtl_m(renames.asInstanceOf[MutableRenameMap])(m)
+
+  private def remove_chirrtl_m(renames: MutableRenameMap)(m: DefModule): DefModule = {
     val mports = new MPortMap
     val smems = new SeqMemSet
     val types = new MPortTypeMap
@@ -299,7 +318,7 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
 
   def execute(state: CircuitState): CircuitState = {
     val c = state.circuit
-    val renames = RenameMap()
+    val renames = MutableRenameMap()
     renames.setCircuit(c.main)
     val result = c.copy(modules = c.modules.map(remove_chirrtl_m(renames)))
     state.copy(circuit = result, renames = Some(renames))

@@ -19,6 +19,7 @@ import firrtl.stage.{FirrtlFileAnnotation, InfoModeAnnotation, RunFirrtlTransfor
 import firrtl.analyses.{GetNamespace, ModuleNamespaceAnnotation}
 import firrtl.annotations._
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation, RenameModules}
+import firrtl.renamemap.MutableRenameMap
 import firrtl.util.BackendCompilationUtilities
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -64,7 +65,7 @@ object RenameTop extends Transform {
       case m => m
     }
 
-    val renames = RenameMap()
+    val renames = MutableRenameMap()
     renames.record(CircuitTarget(c.main), CircuitTarget(newTopName))
     state.copy(circuit = c.copy(main = newTopName, modules = modulesx), renames = Some(renames))
   }

@@ -7,21 +7,15 @@ import firrtl.RenameMap.IllegalRenameException
 import firrtl.analyses.InstanceKeyGraph
 import firrtl.annotations.TargetToken.{Field, Index, Instance, OfModule}
 import TargetUtils.{instKeyPathToTarget, unfoldInstanceTargets}
+import firrtl.renamemap._
 
 import scala.collection.mutable
+import scala.annotation.nowarn
 
 object RenameMap {
-  def apply(map: collection.Map[Named, Seq[Named]]): RenameMap = {
-    val rm = new RenameMap
-    rm.addMap(map)
-    rm
-  }
+  def apply(map: collection.Map[Named, Seq[Named]]): RenameMap = MutableRenameMap.fromNamed(map)
 
-  def create(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): RenameMap = {
-    val rm = new RenameMap
-    rm.recordAll(map)
-    rm
-  }
+  def create(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): RenameMap = MutableRenameMap(map)
 
   /** RenameMap factory for simple renaming of instances
     *
@@ -72,16 +66,11 @@ object RenameMap {
         underlying(fromx) = List(tox)
       }
     }
-    new RenameMap(underlying)
+    new MutableRenameMap(underlying)
   }
 
   /** Initialize a new RenameMap */
-  def apply(): RenameMap = new RenameMap
-
-  // This is a private internal API for transforms where the .distinct operation is very expensive
-  // (eg. LowerTypes). The onus is on the user of this API to be very careful and not inject
-  // duplicates. This is a bad, hacky API that no one should use
-  private[firrtl] def noDistinct(): RenameMap = new RenameMap(doDistinct = false)
+  def apply(): RenameMap = new MutableRenameMap
 
   abstract class RenameTargetException(reason: String) extends Exception(reason)
   case class IllegalRenameException(reason: String) extends RenameTargetException(reason)
@@ -96,14 +85,22 @@ object RenameMap {
   * @define noteDistinct @note Rename to/tos will be made distinct
   */
 // TODO This should probably be refactored into immutable and mutable versions
-final class RenameMap private (
-  val underlying: mutable.HashMap[CompleteTarget, Seq[CompleteTarget]] =
-    mutable.HashMap[CompleteTarget, Seq[CompleteTarget]](),
-  val chained: Option[RenameMap] = None,
+sealed trait RenameMap {
+
+  protected def _underlying: mutable.HashMap[CompleteTarget, Seq[CompleteTarget]]
+
+  protected def _chained: Option[RenameMap]
+
   // This is a private internal API for transforms where the .distinct operation is very expensive
   // (eg. LowerTypes). The onus is on the user of this API to be very careful and not inject
   // duplicates. This is a bad, hacky API that no one should use
-  doDistinct: Boolean = true) {
+  protected def doDistinct: Boolean
+
+  @deprecated("This should never have been public", "FIRRTL 1.5")
+  def underlying: mutable.HashMap[CompleteTarget, Seq[CompleteTarget]] = _underlying
+
+  @deprecated("This should never have been public", "FIRRTL 1.5")
+  def chained: Option[RenameMap] = _chained
 
   /** Chain a [[RenameMap]] with this [[RenameMap]]
     * @param next the map to chain with this map
@@ -111,10 +108,10 @@ final class RenameMap private (
     * $noteDistinct
     */
   def andThen(next: RenameMap): RenameMap = {
-    if (next.chained.isEmpty) {
-      new RenameMap(next.underlying, chained = Some(this))
+    if (next._chained.isEmpty) {
+      new MutableRenameMap(next._underlying, Some(this))
     } else {
-      new RenameMap(next.underlying, chained = next.chained.map(this.andThen(_)))
+      new MutableRenameMap(next._underlying, next._chained.map(this.andThen(_)))
     }
   }
 
@@ -125,6 +122,7 @@ final class RenameMap private (
     * $noteSelfRename
     * $noteDistinct
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def record(from: CircuitTarget, to: CircuitTarget): Unit = completeRename(from, Seq(to))
 
   /** Record that the from [[firrtl.annotations.CircuitTarget CircuitTarget]] is renamed to another sequence of
@@ -134,6 +132,7 @@ final class RenameMap private (
     * $noteSelfRename
     * $noteDistinct
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def record(from: CircuitTarget, tos: Seq[CircuitTarget]): Unit = completeRename(from, tos)
 
   /** Record that the from [[firrtl.annotations.IsMember Member]] is renamed to another [[firrtl.annotations.IsMember
@@ -143,6 +142,7 @@ final class RenameMap private (
     * $noteSelfRename
     * $noteDistinct
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def record(from: IsMember, to: IsMember): Unit = completeRename(from, Seq(to))
 
   /** Record that the from [[firrtl.annotations.IsMember IsMember]] is renamed to another sequence of
@@ -152,6 +152,7 @@ final class RenameMap private (
     * $noteSelfRename
     * $noteDistinct
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def record(from: IsMember, tos: Seq[IsMember]): Unit = completeRename(from, tos)
 
   /** Records that the keys in map are also renamed to their corresponding value seqs. Only
@@ -162,7 +163,10 @@ final class RenameMap private (
     * $noteSelfRename
     * $noteDistinct
     */
-  def recordAll(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): Unit =
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
+  def recordAll(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): Unit = _recordAll(map)
+
+  protected def _recordAll(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): Unit =
     map.foreach {
       case (from: IsComponent, tos: Seq[_]) => completeRename(from, tos)
       case (from: IsModule, tos: Seq[_]) => completeRename(from, tos)
@@ -173,7 +177,8 @@ final class RenameMap private (
   /** Records that a [[firrtl.annotations.CompleteTarget CompleteTarget]] is deleted
     * @param name
     */
-  def delete(name: CompleteTarget): Unit = underlying(name) = Seq.empty
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
+  def delete(name: CompleteTarget): Unit = _underlying(name) = Seq.empty
 
   /** Renames a [[firrtl.annotations.CompleteTarget CompleteTarget]]
     * @param t target to rename
@@ -204,33 +209,38 @@ final class RenameMap private (
     * @return
     */
   def ++(renameMap: RenameMap): RenameMap = {
-    val newChained = if (chained.nonEmpty && renameMap.chained.nonEmpty) {
-      Some(chained.get ++ renameMap.chained.get)
+    val newChained = if (_chained.nonEmpty && renameMap._chained.nonEmpty) {
+      Some(_chained.get ++ renameMap._chained.get)
     } else {
-      chained.map(_.copy())
+      _chained.map(_._copy())
     }
-    new RenameMap(underlying = underlying ++ renameMap.getUnderlying, chained = newChained)
+    new MutableRenameMap(_underlying ++ renameMap._underlying, newChained)
   }
 
   /** Creates a deep copy of this [[RenameMap]]
     */
-  def copy(chained: Option[RenameMap] = chained): RenameMap = {
-    val ret = new RenameMap(chained = chained.map(_.copy()))
-    ret.recordAll(underlying)
+  @deprecated("RenameMap is becoming more function-like, this shouldn't be necessary", "FIRRTL 1.5")
+  def copy(chained: Option[RenameMap] = _chained): RenameMap = _copy(chained)
+
+  private def _copy(chained: Option[RenameMap] = _chained): RenameMap = {
+    val ret = new MutableRenameMap(_chained = _chained.map(_._copy()))
+    ret.recordAll(_underlying)
     ret
   }
 
   /** Returns the underlying map of rename information
     * @return
     */
-  def getUnderlying: collection.Map[CompleteTarget, Seq[CompleteTarget]] = underlying
+  @deprecated("This should never have been public", "FIRRTL 1.5")
+  def getUnderlying: collection.Map[CompleteTarget, Seq[CompleteTarget]] = _underlying
 
   /** @return Whether this [[RenameMap]] has collected any changes */
-  def hasChanges: Boolean = underlying.nonEmpty
+  def hasChanges: Boolean = _underlying.nonEmpty
 
+  @deprecated("RenameMap is becoming more function-like and is not invertible", "FIRRTL 1.5")
   def getReverseRenameMap: RenameMap = {
     val reverseMap = mutable.HashMap[CompleteTarget, Seq[CompleteTarget]]()
-    underlying.keysIterator.foreach { key =>
+    _underlying.keysIterator.foreach { key =>
       apply(key).foreach { v =>
         reverseMap(v) = key +: reverseMap.getOrElse(v, Nil)
       }
@@ -238,12 +248,12 @@ final class RenameMap private (
     RenameMap.create(reverseMap)
   }
 
-  def keys: Iterator[CompleteTarget] = underlying.keysIterator
+  @deprecated("This should never have been public", "FIRRTL 1.5")
+  def keys: Iterator[CompleteTarget] = _underlying.keysIterator
 
-  /** Serialize the underlying remapping of keys to new targets
-    * @return
+  /** Visualize the [[RenameMap]]
     */
-  def serialize: String = underlying.map {
+  def serialize: String = _underlying.map {
     case (k, v) =>
       k.serialize + "=>" + v.map(_.serialize).mkString(", ")
   }.mkString("\n")
@@ -280,8 +290,8 @@ final class RenameMap private (
     * @return Optionally return sequence of targets that key remaps to
     */
   private def completeGet(key: CompleteTarget): Option[Seq[CompleteTarget]] = {
-    if (chained.nonEmpty) {
-      val chainedRet = chained.get.completeGet(key).getOrElse(Seq(key))
+    if (_chained.nonEmpty) {
+      val chainedRet = _chained.get.completeGet(key).getOrElse(Seq(key))
       if (chainedRet.isEmpty) {
         Some(chainedRet)
       } else {
@@ -329,8 +339,8 @@ final class RenameMap private (
   private def referenceGet(errors: mutable.ArrayBuffer[String])(key: ReferenceTarget): Option[Seq[IsComponent]] = {
     def traverseTokens(key: ReferenceTarget): Option[Seq[IsComponent]] = traverseTokensCache.getOrElseUpdate(
       key, {
-        if (underlying.contains(key)) {
-          Some(underlying(key).flatMap {
+        if (_underlying.contains(key)) {
+          Some(_underlying(key).flatMap {
             case comp: IsComponent => Some(comp)
             case other =>
               errors += s"reference ${key.targetParent} cannot be renamed to a non-component ${other}"
@@ -402,7 +412,7 @@ final class RenameMap private (
   private def instanceGet(errors: mutable.ArrayBuffer[String])(key: InstanceTarget): Option[Seq[IsModule]] = {
     def traverseLeft(key: InstanceTarget): Option[Seq[IsModule]] = traverseLeftCache.getOrElseUpdate(
       key, {
-        val getOpt = underlying.get(key)
+        val getOpt = _underlying.get(key)
 
         if (getOpt.nonEmpty) {
           getOpt.map(_.flatMap {
@@ -447,7 +457,7 @@ final class RenameMap private (
   }
 
   private def circuitGet(errors: mutable.ArrayBuffer[String])(key: CircuitTarget): Seq[CircuitTarget] = {
-    underlying
+    _underlying
       .get(key)
       .map(_.flatMap {
         case c: CircuitTarget => Some(c)
@@ -459,7 +469,7 @@ final class RenameMap private (
   }
 
   private def moduleGet(errors: mutable.ArrayBuffer[String])(key: ModuleTarget): Option[Seq[IsModule]] = {
-    underlying
+    _underlying
       .get(key)
       .map(_.flatMap {
         case mod: IsModule => Some(mod)
@@ -668,14 +678,14 @@ final class RenameMap private (
     * @param from
     * @param tos
     */
-  private def completeRename(from: CompleteTarget, tos: Seq[CompleteTarget]): Unit = {
+  protected def completeRename(from: CompleteTarget, tos: Seq[CompleteTarget]): Unit = {
     tos.foreach { recordSensitivity(from, _) }
-    val existing = underlying.getOrElse(from, Vector.empty)
+    val existing = _underlying.getOrElse(from, Vector.empty)
     val updated = {
       val all = (existing ++ tos)
       if (doDistinct) all.distinct else all
     }
-    underlying(from) = updated
+    _underlying(from) = updated
     traverseTokensCache.clear()
     traverseHierarchyCache.clear()
     traverseLeftCache.clear()
@@ -684,20 +694,28 @@ final class RenameMap private (
 
   /* DEPRECATED ACCESSOR/SETTOR METHODS WITH [[firrtl.ir.Named Named]] */
 
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def rename(from: Named, to: Named): Unit = rename(from, Seq(to))
 
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def rename(from: Named, tos: Seq[Named]): Unit = recordAll(Map(from.toTarget -> tos.map(_.toTarget)))
 
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def rename(from: ComponentName, to: ComponentName): Unit = record(from, to)
 
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def rename(from: ComponentName, tos: Seq[ComponentName]): Unit = record(from, tos.map(_.toTarget))
 
-  def delete(name: CircuitName): Unit = underlying(name) = Seq.empty
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
+  def delete(name: CircuitName): Unit = _underlying(name) = Seq.empty
 
-  def delete(name: ModuleName): Unit = underlying(name) = Seq.empty
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
+  def delete(name: ModuleName): Unit = _underlying(name) = Seq.empty
 
-  def delete(name: ComponentName): Unit = underlying(name) = Seq.empty
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
+  def delete(name: ComponentName): Unit = _underlying(name) = Seq.empty
 
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def addMap(map: collection.Map[Named, Seq[Named]]): Unit =
     recordAll(map.map {
       case (key, values) => (Target.convertNamed2Target(key), values.map(Target.convertNamed2Target))
@@ -727,17 +745,20 @@ final class RenameMap private (
   /** Sets mutable state to record current module we are visiting
     * @param module
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def setModule(module: String): Unit = moduleName = module
 
   /** Sets mutable state to record current circuit we are visiting
     * @param circuit
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def setCircuit(circuit: String): Unit = circuitName = circuit
 
   /** Records how a reference maps to a new reference
     * @param from
     * @param to
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def rename(from: String, to: String): Unit = rename(from, Seq(to))
 
   /** Records how a reference maps to a new reference
@@ -745,6 +766,7 @@ final class RenameMap private (
     * @param from
     * @param tos
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def rename(from: String, tos: Seq[String]): Unit = {
     val mn = ModuleName(moduleName, CircuitName(circuitName))
     val fromName = ComponentName(from, mn).toTarget
@@ -756,6 +778,7 @@ final class RenameMap private (
     * The reference's root module and circuit are determined by whomever called setModule or setCircuit last
     * @param name
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def delete(name: String): Unit = {
     Target(Some(circuitName), Some(moduleName), AnnotationUtils.toSubComponents(name)).getComplete match {
       case Some(t: CircuitTarget) => delete(t)
@@ -768,5 +791,92 @@ final class RenameMap private (
     * The reference's root module and circuit are determined by whomever called setModule or setCircuit last
     * @param names
     */
+  @deprecated("Use firrtl.renamemap.MutableRenameMap for recording renames", "FIRRTL 1.5")
   def delete(names: Seq[String]): Unit = names.foreach(delete(_))
+}
+
+// This must be in same file as RenameMap because RenameMap is sealed
+package object renamemap {
+  object MutableRenameMap {
+    def fromNamed(map: collection.Map[Named, Seq[Named]]): MutableRenameMap = {
+      val rm = new MutableRenameMap
+      rm.addMap(map)
+      rm
+    }
+
+    def apply(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): MutableRenameMap = {
+      val rm = new MutableRenameMap
+      rm.recordAll(map)
+      rm
+    }
+
+    /** Initialize a new RenameMap */
+    def apply(): MutableRenameMap = new MutableRenameMap
+
+    // This is a private internal API for transforms where the .distinct operation is very expensive
+    // (eg. LowerTypes). The onus is on the user of this API to be very careful and not inject
+    // duplicates. This is a bad, hacky API that no one should use
+    private[firrtl] def noDistinct(): MutableRenameMap = new MutableRenameMap(doDistinct = false)
+  }
+
+  // Override deprecated methods so they aren't deprecated when using this class
+  final class MutableRenameMap private[firrtl] (
+    protected val _underlying: mutable.HashMap[CompleteTarget, Seq[CompleteTarget]] =
+      mutable.HashMap[CompleteTarget, Seq[CompleteTarget]](),
+    protected val _chained:   Option[RenameMap] = None,
+    protected val doDistinct: Boolean = true)
+      extends RenameMap {
+
+    override def record(from: CircuitTarget, to: CircuitTarget): Unit = completeRename(from, Seq(to))
+
+    override def record(from: CircuitTarget, tos: Seq[CircuitTarget]): Unit = completeRename(from, tos)
+
+    override def record(from: IsMember, to: IsMember): Unit = completeRename(from, Seq(to))
+
+    override def record(from: IsMember, tos: Seq[IsMember]): Unit = completeRename(from, tos)
+
+    override def recordAll(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): Unit =
+      super._recordAll(map)
+
+    override def delete(name: CompleteTarget): Unit = _underlying(name) = Seq.empty
+
+    override def rename(from: Named, to: Named): Unit = rename(from, Seq(to))
+
+    override def rename(from: Named, tos: Seq[Named]): Unit = recordAll(Map(from.toTarget -> tos.map(_.toTarget)))
+
+    override def rename(from: ComponentName, to: ComponentName): Unit = record(from, to)
+
+    override def rename(from: ComponentName, tos: Seq[ComponentName]): Unit = record(from, tos.map(_.toTarget))
+
+    override def delete(name: CircuitName): Unit = _underlying(name) = Seq.empty
+
+    override def delete(name: ModuleName): Unit = _underlying(name) = Seq.empty
+
+    override def delete(name: ComponentName): Unit = _underlying(name) = Seq.empty
+
+    override def addMap(map: collection.Map[Named, Seq[Named]]): Unit =
+      recordAll(map.map {
+        case (key, values) => (Target.convertNamed2Target(key), values.map(Target.convertNamed2Target))
+      })
+
+    // These are overridden to change the deprecation warning
+
+    @deprecated("Use type-safe rename methods instead", "FIRRTL 1.5")
+    override def setModule(module: String): Unit = super.setModule(module)
+
+    @deprecated("Use type-safe rename methods instead", "FIRRTL 1.5")
+    override def setCircuit(circuit: String): Unit = super.setCircuit(circuit)
+
+    @deprecated("Use type-safe rename methods instead", "FIRRTL 1.5")
+    override def rename(from: String, to: String): Unit = super.rename(from, to)
+
+    @deprecated("Use type-safe rename methods instead", "FIRRTL 1.5")
+    override def rename(from: String, tos: Seq[String]): Unit = super.rename(from, tos)
+
+    @deprecated("Use type-safe delete methods instead", "FIRRTL 1.5")
+    override def delete(name: String): Unit = super.delete(name)
+
+    @deprecated("Use type-safe delete methods instead", "FIRRTL 1.5")
+    override def delete(names: Seq[String]): Unit = super.delete(names)
+  }
 }

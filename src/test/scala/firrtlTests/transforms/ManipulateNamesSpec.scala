@@ -12,6 +12,7 @@ import firrtl.transforms.{
   ManipulateNamesAllowlistResultAnnotation,
   ManipulateNamesBlocklistAnnotation
 }
+import firrtl.renamemap.MutableRenameMap
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -210,7 +211,7 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
       oldTargets = Seq(Seq(`~Foo|Bar`))
     )
 
-    val r = RenameMap()
+    val r = MutableRenameMap()
     r.delete(`~Foo|prefix_Bar`)
 
     a.update(r) should be(empty)
@@ -228,7 +229,7 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
       oldTargets = Seq(Seq(`~Foo|Bar`), Seq(`~Foo|Baz`))
     )
 
-    val r = RenameMap()
+    val r = MutableRenameMap()
     r.delete(`~Foo|prefix_Bar`)
 
     val ax = a.update(r).collect {

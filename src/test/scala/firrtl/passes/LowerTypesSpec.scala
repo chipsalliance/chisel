@@ -5,6 +5,7 @@ import firrtl.annotations.{CircuitTarget, IsMember}
 import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.analyses.InstanceKeyGraph
 import firrtl.{CircuitState, RenameMap, Utils}
+import firrtl.renamemap.MutableRenameMap
 import firrtl.options.Dependency
 import firrtl.stage.TransformManager
 import firrtl.stage.TransformManager.TransformDependency
@@ -252,7 +253,7 @@ class LowerTypesOfInstancesSpec extends AnyFlatSpec with FirrtlMatchers {
     tpe:          String,
     module:       String,
     namespace:    Set[String],
-    otherRenames: RenameMap = RenameMap()
+    otherRenames: MutableRenameMap = MutableRenameMap()
   ): Lower = {
     val ref = firrtl.ir.DefInstance(firrtl.ir.NoInfo, n, module, parseType(tpe))
     val mutableSet = scala.collection.mutable.HashSet[String]() ++ namespace
@@ -298,8 +299,8 @@ class LowerTypesOfInstancesSpec extends AnyFlatSpec with FirrtlMatchers {
       // This is to accommodate the use-case where a port as well as an instance needs to be renames
       // thus requiring a two-stage translation process for reference to the port of the instance.
       // This two-stage translation is only supported through chaining rename maps.
-      val portRenames = RenameMap()
-      val otherRenames = RenameMap()
+      val portRenames = MutableRenameMap()
+      val otherRenames = MutableRenameMap()
 
       // The child module "c" which we assume has the following ports: b : { c : UInt<1>} and b_c : UInt<1>
       val c = CircuitTarget("m").module("c")
@@ -362,7 +363,7 @@ class LowerTypesOfMemorySpec extends AnyFlatSpec {
       writers = w,
       readwriters = rw
     )
-    val renames = RenameMap()
+    val renames = MutableRenameMap()
     val mutableSet = scala.collection.mutable.HashSet[String]() ++ namespace
     val (mems, refs) = DestructTypes.destructMemory(m, mem, mutableSet, renames, Set())
     Lower(mems, refs, renames)
@@ -655,10 +656,10 @@ private object LowerTypesSpecUtils {
     val c = CircuitState(firrtl.Parser.parse(src), Seq())
     typedCompiler.execute(c).circuit.modules.head.ports.head.tpe
   }
-  case class DestructResult(fields: Seq[String], renameMap: RenameMap)
+  case class DestructResult(fields: Seq[String], renameMap: MutableRenameMap)
   def destruct(n: String, tpe: String, namespace: Set[String]): DestructResult = {
     val ref = firrtl.ir.Field(n, firrtl.ir.Default, parseType(tpe))
-    val renames = RenameMap()
+    val renames = MutableRenameMap()
     val mutableSet = scala.collection.mutable.HashSet[String]() ++ namespace
     val res = DestructTypes.destruct(m, ref, mutableSet, renames, Set())
     DestructResult(resultToFieldSeq(res), renames)
