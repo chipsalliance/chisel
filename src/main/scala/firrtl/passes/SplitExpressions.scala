@@ -27,6 +27,14 @@ object SplitExpressions extends Pass {
     case _ => false
   }
 
+  private def isSignedArithmetic(e: Expression): Boolean = e match {
+    case DoPrim(PrimOps.Add, _, _, _: SIntType) => true
+    case DoPrim(PrimOps.Sub, _, _, _: SIntType) => true
+    case DoPrim(PrimOps.Mul, _, _, _: SIntType) => true
+    case DoPrim(PrimOps.Div, _, _, _: SIntType) => true
+    case _ => false
+  }
+
   private def onModule(m: Module): Module = {
     val namespace = Namespace(m)
     def onStmt(s: Statement): Statement = {
@@ -53,6 +61,10 @@ object SplitExpressions extends Pass {
       def onExp(e: Expression): Expression =
         e.map(onExp) match {
           case ex: DoPrim => ex.map(split)
+          // Arguably we should be splitting all Mux expressions but this has a negative impact on
+          // Verilog, instead this is a focused fix for
+          // https://github.com/chipsalliance/firrtl/issues/2439
+          case ex: Mux if isSignedArithmetic(ex.tval) || isSignedArithmetic(ex.fval) => ex.map(split)
           case ex => ex
         }
 

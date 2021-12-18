@@ -90,7 +90,10 @@ jobs:
         # By having this "if" here, this job returns success so that all_tests_passed will succeed too
         if: github.event_name == 'pull_request' &&
             ! contains(github.event.pull_request.labels.*.name, 'Skip Formal CI')
-        run: ./.run_formal_checks.sh ${{ matrix.design }}
+        run: |
+          echo ${{ github.event_name }}
+          echo ${{ github.event.pull_request.labels }}
+          ./.run_formal_checks.sh ${{ matrix.design }}
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
