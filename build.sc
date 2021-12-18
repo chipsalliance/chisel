@@ -45,7 +45,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
   override def moduleDeps = super.moduleDeps ++ firrtlModule
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"com.lihaoyi::os-lib:0.7.8",
+    ivy"com.lihaoyi::os-lib:0.8.0",
   ) ++  firrtlIvyDeps
 
   def publishVersion = "3.5.0-RC2"
@@ -107,7 +107,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def scalacPluginClasspath = m.scalacPluginClasspath
 
     override def ivyDeps = m.ivyDeps() ++ Agg(
-      ivy"org.scalatest::scalatest:3.2.9",
+      ivy"org.scalatest::scalatest:3.2.10",
       ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0",
     ) ++ m.treadleIvyDeps
 

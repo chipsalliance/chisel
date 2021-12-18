@@ -5,7 +5,8 @@ package chisel3
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.util.Try
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BaseSim}
+import scala.annotation.nowarn
+import chisel3.experimental.BaseModule
 import chisel3.internal._
 import chisel3.internal.BaseModule.{ModuleClone, InstanceClone}
 import chisel3.internal.Builder._
@@ -17,6 +18,7 @@ import _root_.firrtl.annotations.{IsModule, ModuleTarget}
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
   * multiple IO() declarations.
   */
+@nowarn("msg=class Port") // delete when Port becomes private
 abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     extends BaseModule {
   //
@@ -35,16 +37,16 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   //
   // Other Internal Functions
   //
-  // For debuggers/testers, TODO: refactor out into proper public API
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
-  @deprecated("Use DataMirror.fullModulePorts instead. this API will be removed in Chisel 3.6", "Chisel 3.5")
-  lazy val getPorts = _firrtlPorts.get
+
+  @deprecated("Use DataMirror.modulePorts instead. this API will be removed in Chisel 3.6", "Chisel 3.5")
+  lazy val getPorts: Seq[Port] = _firrtlPorts.get
 
   val compileOptions = moduleCompileOptions
 
   private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      port.computeName(None, None).orElse(names.get(port)) match {
+      port._computeName(None, None).orElse(names.get(port)) match {
         case Some(name) =>
           if (_namespace.contains(name)) {
             Builder.error(s"""Unable to name port $port to "$name" in $this,""" +
@@ -81,7 +83,11 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
         case id: InstanceClone[_] => id.setAsInstanceRef()
         case id: BaseModule => id.forceName(None, default=id.desiredName, _namespace)
         case id: MemBase[_] => id.forceName(None, default="MEM", _namespace)
-        case id: BaseSim => id.forceName(None, default="SIM", _namespace)
+        case id: stop.Stop => id.forceName(None, default="stop", _namespace)
+        case id: assert.Assert => id.forceName(None, default="assert", _namespace)
+        case id: assume.Assume => id.forceName(None, default="assume", _namespace)
+        case id: cover.Cover => id.forceName(None, default="cover", _namespace)
+        case id: printf.Printf => id.forceName(None, default="printf", _namespace)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {
@@ -195,7 +201,7 @@ package object internal {
 
     tryJavaReflect
       .orElse(tryScalaReflect)
-      .map(_.autoSeed("io"))
+      .map(_.forceFinalName("io"))
       .orElse {
         // Fallback if reflection fails, user can wrap in IO(...)
         self.findPort("io")

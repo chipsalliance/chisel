@@ -7,7 +7,6 @@ import java.io.File
 import chisel3._
 import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource, HasBlackBoxPath}
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import firrtl.FirrtlExecutionSuccess
 import firrtl.transforms.BlackBoxNotFoundException
 import org.scalacheck.Test.Failed
 import org.scalatest.Succeeded

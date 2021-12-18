@@ -8,6 +8,15 @@ import scala.annotation.tailrec
 import scala.math.Ordered.orderingToOrdered
 import scala.language.implicitConversions
 
+/** A [[Minimizer]] implementation to use Quine-Mccluskey algorithm to minimize the [[TruthTable]].
+  *
+  * This algorithm can always find the best solution, but is a NP-Complete algorithm,
+  * which means, for large-scale [[TruthTable]] minimization task, it will be really slow,
+  * and might run out of memory of JVM stack.
+  *
+  * In this situation, users should consider switch to [[EspressoMinimizer]],
+  * which uses heuristic algorithm providing a sub-optimized result.
+  */
 object QMCMinimizer extends Minimizer {
   private implicit def toImplicant(x: BitPat): Implicant = new Implicant(x)
 
@@ -225,11 +234,11 @@ object QMCMinimizer extends Minimizer {
       val outputBp = BitPat("b" + "?" * (m - i - 1) + "1" + "?" * i)
 
       // Minterms, implicants that makes the output to be 1
-      val mint: Seq[Implicant] = table.table.filter { case (_, t) => t.mask.testBit(i) && t.value.testBit(i) }.keys.map(toImplicant).toSeq
+      val mint: Seq[Implicant] = table.table.filter { case (_, t) => t.mask.testBit(i) && t.value.testBit(i) }.map(_._1).map(toImplicant)
       // Maxterms, implicants that makes the output to be 0
-      val maxt: Seq[Implicant] = table.table.filter { case (_, t) => t.mask.testBit(i) && !t.value.testBit(i) }.keys.map(toImplicant).toSeq
+      val maxt: Seq[Implicant] = table.table.filter { case (_, t) => t.mask.testBit(i) && !t.value.testBit(i) }.map(_._1).map(toImplicant)
       // Don't cares, implicants that can produce either 0 or 1 as output
-      val dc: Seq[Implicant] = table.table.filter { case (_, t) => !t.mask.testBit(i) }.keys.map(toImplicant).toSeq
+      val dc: Seq[Implicant] = table.table.filter { case (_, t) => !t.mask.testBit(i) }.map(_._1).map(toImplicant)
 
       val (implicants, defaultToDc) = table.default match {
         case x if x.mask.testBit(i) && !x.value.testBit(i) => // default to 0
@@ -282,7 +291,7 @@ object QMCMinimizer extends Minimizer {
       (essentialPrimeImplicants ++ getCover(nonessentialPrimeImplicants, uncoveredImplicants)).map(a => (a.bp, outputBp))
     })
 
-    minimized.tail.foldLeft(table.copy(table = Map(minimized.head))) { case (tb, t) =>
+    minimized.tail.foldLeft(table.copy(table = Seq(minimized.head))) { case (tb, t) =>
       if (tb.table.exists(x => x._1 == t._1)) {
         tb.copy(table = tb.table.map { case (k, v) =>
           if (k == t._1) {
@@ -291,7 +300,7 @@ object QMCMinimizer extends Minimizer {
           } else (k, v)
         })
       } else {
-        tb.copy(table = tb.table + t)
+        tb.copy(table = tb.table :+ t)
       }
     }
   }

@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.experimental.{InlineInstance, FlattenInstance}
-import firrtl.FirrtlExecutionSuccess
 import firrtl.passes.InlineAnnotation
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.transforms.FlattenAnnotation

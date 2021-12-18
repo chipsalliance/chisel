@@ -16,7 +16,7 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.5.0-RC2",
   autoAPIMappings := true,
-  scalaVersion := "2.13.6",
+  scalaVersion := "2.12.15",
   crossScalaVersions := Seq("2.13.6", "2.12.15"),
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -71,9 +71,9 @@ lazy val chiselSettings = Seq (
   name := "chisel3",
 
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.10" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "com.lihaoyi" %% "os-lib" % "0.7.8",
+    "com.lihaoyi" %% "os-lib" % "0.8.0",
   ),
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -113,7 +113,8 @@ lazy val pluginScalaVersions = Seq(
   "2.13.3",
   "2.13.4",
   "2.13.5",
-  "2.13.6"
+  "2.13.6",
+  "2.13.7"
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -220,15 +221,6 @@ lazy val chisel = (project in file(".")).
     )
   )
 
-lazy val noPluginTests = (project in file ("no-plugin-tests")).
-  dependsOn(chisel).
-  settings(commonSettings: _*).
-  settings(chiselSettings: _*).
-  settings(Seq(
-    // Totally don't know why GitHub Action won't introduce FIRRTL to dependency.
-    libraryDependencies += defaultVersions("firrtl"),
-  ))
-
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
 lazy val integrationTests = (project in file ("integration-tests")).
   dependsOn(chisel).
@@ -246,7 +238,11 @@ lazy val docs = project       // new documentation project
   .settings(usePluginSettings: _*)
   .settings(commonSettings)
   .settings(
-    scalacOptions += "-language:reflectiveCalls",
+    scalacOptions ++= Seq(
+      "-Xfatal-warnings",
+      "-language:reflectiveCalls",
+      "-language:implicitConversions"
+    ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
     // None of our links are hygienic because they're primarily used on the website with .html

@@ -7,11 +7,21 @@ import logger.LazyLogging
 
 case object EspressoNotFoundException extends Exception
 
+/** A [[Minimizer]] implementation to use espresso to minimize the [[TruthTable]].
+  *
+  * espresso uses heuristic algorithm providing a sub-optimized) result.
+  * For implementation details, please refer to:
+  * [[https://www.springerprofessional.de/en/logic-minimization-algorithms-for-vlsi-synthesis/13780088]]
+  *
+  * a espresso executable should be downloaded from [[https://github.com/chipsalliance/espresso]]
+  *
+  * If user want to user the this [[Minimizer]], a espresso executable should be added to system PATH environment.
+  */
 object EspressoMinimizer extends Minimizer with LazyLogging {
   def minimize(table: TruthTable): TruthTable =
     TruthTable.merge(TruthTable.split(table).map{case (table, indexes) => (espresso(table), indexes)})
 
-  def espresso(table: TruthTable): TruthTable = {
+  private def espresso(table: TruthTable): TruthTable = {
     def writeTable(table: TruthTable): String = {
       def invert(string: String) = string
         .replace('0', 't')
@@ -45,7 +55,7 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
          |""".stripMargin ++ (if (defaultType == '1') invertRawTable else rawTable)
     }
 
-    def readTable(espressoTable: String): Map[BitPat, BitPat] = {
+    def readTable(espressoTable: String) = {
       def bitPat(espresso: String): BitPat = BitPat("b" + espresso.replace('-', '?'))
 
       espressoTable
@@ -53,7 +63,6 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
         .filterNot(_.startsWith("."))
         .map(_.split(' '))
         .map(row => bitPat(row(0)) -> bitPat(row(1)))
-        .toMap
     }
 
     val input = writeTable(table)

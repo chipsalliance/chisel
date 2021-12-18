@@ -72,17 +72,18 @@ import EnumAnnotations._
 
 
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
+
+  // Use getSimpleName instead of enumTypeName because for debugging purposes
+  //   the fully qualified name isn't necessary (compared to for the
+  //  Enum annotation), and it's more consistent with Bundle printing.
   override def toString: String = {
-    val bindingString = litOption match {
+    litOption match {
       case Some(value) => factory.nameOfValue(value) match {
-        case Some(name) => s"($value=$name)"
-        case None => s"($value=(invalid))"
+        case Some(name) => s"${factory.getClass.getSimpleName.init}($value=$name)"
+        case None => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=(invalid))")
       }
-      case _ => bindingToString
+      case _ => stringAccessor(s"${factory.getClass.getSimpleName.init}")
     }
-    // Use getSimpleName instead of enumTypeName because for debugging purposes the fully qualified name isn't
-    // necessary (compared to for the Enum annotation), and it's more consistent with Bundle printing.
-    s"${factory.getClass.getSimpleName.init}$bindingString"
   }
 
   override def cloneType: this.type = factory().asInstanceOf[this.type]
@@ -246,7 +247,7 @@ abstract class EnumFactory {
   private val enumRecords = mutable.ArrayBuffer.empty[EnumRecord]
 
   private def enumNames = enumRecords.map(_.name).toSeq
-  private def enumValues = enumRecords.map(_.inst.litValue()).toSeq
+  private def enumValues = enumRecords.map(_.inst.litValue).toSeq
   private def enumInstances = enumRecords.map(_.inst).toSeq
 
   private[chisel3] val enumTypeName = getClass.getName.init
@@ -265,7 +266,7 @@ abstract class EnumFactory {
   def all: Seq[Type] = enumInstances
 
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
-    enumRecords.find(_.inst.litValue() == id).map(_.name)
+    enumRecords.find(_.inst.litValue == id).map(_.name)
   }
 
   protected def Value: Type = macro EnumMacros.ValImpl
@@ -291,11 +292,11 @@ abstract class EnumFactory {
     if (id.litOption.isEmpty) {
       throwException(s"$enumTypeName defined with a non-literal type")
     }
-    if (id.litValue() < this.id) {
+    if (id.litValue < this.id) {
       throwException(s"Enums must be strictly increasing: $enumTypeName")
     }
 
-    this.id = id.litValue()
+    this.id = id.litValue
     do_Value(name)
   }
 

@@ -17,7 +17,6 @@ jobs:
         system: ["ubuntu-20.04"]
         jvm: ["adopt@1.8"]
         scala: ["2.13.6", "2.12.15"]
-        verilator: ["4.204"]
         espresso: ["2.4"]
     runs-on: ${{ matrix.system }}
 
@@ -25,32 +24,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install Z3
-        if: matrix.system == 'ubuntu-20.04'
-        run: |
-          sudo apt-get install -y z3
-          z3 --version
-
-      - name: Cache Verilator ${{ matrix.verilator }}
-        uses: actions/cache@v2.1.6
-        id: cache-verilator
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
+        uses: YosysHQ/setup-oss-cad-suite@v1
         with:
-          path: verilator-${{ matrix.verilator }}
-          key: ${{ matrix.system }}-verilator-${{ matrix.verilator }}
-      - name: Compile Verilator ${{ matrix.verilator }}
-        if: steps.cache-verilator.outputs.cache-hit != 'true'
-        run: |
-          wget https://github.com/verilator/verilator/archive/refs/tags/v${{ matrix.verilator }}.tar.gz
-          tar xvf v${{ matrix.verilator }}.tar.gz
-          cd verilator-${{ matrix.verilator }}
-          autoconf
-          ./configure
-          make
-      - name: Install Verilator ${{ matrix.verilator }}
-        run: |
-          cd verilator-${{ matrix.verilator }}
-          sudo make install
-          verilator --version
+          osscadsuite-version: '2021-11-09'
 
       - name: Install Espresso
         run: |
@@ -70,7 +47,7 @@ jobs:
         if: startsWith(matrix.scala, '2.12')
         run: sbt ++${{ matrix.scala }} docs/mdoc
       - name: Test
-        run: sbt ++${{ matrix.scala }} test noPluginTests/test
+        run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 
@@ -80,11 +57,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Verilator and Z3
-        run: |
-          sudo apt-get install -y verilator z3
-          verilator --version
-          z3 --version
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
+        uses: YosysHQ/setup-oss-cad-suite@v1
+        with:
+          osscadsuite-version: '2021-11-09'
       - name: Install Espresso
         run: |
           cd /tmp

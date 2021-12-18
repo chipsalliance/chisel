@@ -89,7 +89,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i0.i1, "i0.i1")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddTwoMixedModules/i1:AddOne_2".it, "i0.i1"))
+      annos should contain (MarkAnnotation("~Top|Top/i0:AddTwoMixedModules/i1:AddOne_1".it, "i0.i1"))
     }
     it("1.5: should work on an instantiable container, annotating a wire") {
       class Top extends Module {
@@ -143,6 +143,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain (MarkAnnotation("~Top|AddOneWithAnnotation>innerWire".rt, "innerWire"))
+    }
+    it("1.11: should work on things with type parameters"){
+      class Top extends Module {
+        val definition = Definition(new HasTypeParams[UInt](UInt(3.W)))
+        val i0 = Instance(definition)
+        mark(i0.blah, "blah")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain (MarkAnnotation("~Top|Top/i0:HasTypeParams>blah".rt, "blah"))
     }
   }
   describe("2: Annotations on designs not in the same chisel compilation") {
@@ -353,7 +362,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         amark(i.i1.in, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|Top/i:AddTwoMixedModules/i1:AddOne_2>in".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|Top/i:AddTwoMixedModules/i1:AddOne_1>in".rt, "blah"))
     }
     it("5.3: toAbsoluteTarget on a submodule's data, in an aggregate, within an instance") {
       class Top() extends Module {
@@ -361,7 +370,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         amark(i.i1.x.head, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_2>x[0]".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_1>x[0]".rt, "blah"))
     }
     it("5.4: toAbsoluteTarget on a submodule's data, in an aggregate, within an instance, ILit") {
       class MyBundle extends Bundle { val x = UInt(3.W) }
@@ -379,7 +388,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         amark(i.i1.x.head.x, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_2>x[0].x".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_1>x[0].x".rt, "blah"))
     }
     it("5.5: toAbsoluteTarget on a subinstance") {
       class Top() extends Module {
@@ -620,7 +629,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
 
     it("7.3: should work with DataView + implicit conversion") {
-      import chiselTests.experimental.SeqToVec._
+      import chisel3.experimental.conversions._
       @instantiable
       class MyModule extends RawModule {
         private val a = IO(Input(UInt(8.W)))
@@ -703,6 +712,143 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       for (e <- expected.map(MarkAnnotation.tupled)) {
         annos should contain (e)
       }
+    }
+  }
+  describe("9: isA[..]") {
+    it("9.0: it should work on simple classes") {
+      class Top extends Module {
+        val d = Definition(new AddOne)
+        require(d.isA[AddOne])
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+    it("9.1: it should not work on inner classes") {
+      class InnerClass extends Module
+      class Top extends Module {
+        val d = Definition(new InnerClass)
+        "require(d.isA[Module])" should compile // ensures that the test below is checking something useful
+        "require(d.isA[InnerClass])" shouldNot compile
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+    it("9.2: it should work on super classes") {
+      class InnerClass extends Module
+      class Top extends Module {
+        val d = Definition(new InnerClass)
+        require(d.isA[Module])
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+    it("9.2: it should work after casts") {
+      class Top extends Module {
+        val d0: Definition[Module] = Definition(new AddOne)
+        require(d0.isA[AddOne])
+        val d1: Definition[Module] = Definition((new AddOne).asInstanceOf[Module])
+        require(d1.isA[AddOne])
+        val i0: Instance[Module] = Instance(d0)
+        require(i0.isA[AddOne])
+        val i1: Instance[Module] = Instance(d1)
+        require(i1.isA[AddOne])
+        val i2: Instance[Module] = Instance(Definition(new AddOne))
+        require(i2.isA[AddOne])
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+  }
+  describe("10: Select APIs") {
+    it("10.0: instancesOf") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
+        val targets = aop.Select.instancesOf[AddOne](m.toDefinition).map { i: Instance[AddOne] => i.toTarget }
+        targets should be (Seq(
+          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it,
+        ))
+      })
+      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+    }
+    it("10.1: instancesIn") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
+        val insts = aop.Select.instancesIn(m.toDefinition)
+        val abs = insts.map { i: Instance[BaseModule] => i.toAbsoluteTarget }
+        val rel = insts.map { i: Instance[BaseModule] => i.toTarget }
+        abs should be (Seq(
+          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it,
+        ))
+        rel should be (Seq(
+          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it,
+        ))
+      })
+      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+    }
+    it("10.2: allInstancesOf") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        val insts = aop.Select.allInstancesOf[AddOne](m.toDefinition)
+        val abs = insts.map { i: Instance[AddOne] => i.in.toAbsoluteTarget }
+        val rel = insts.map { i: Instance[AddOne] => i.in.toTarget }
+        rel should be (Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+        ))
+        abs should be (Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+        ))
+      })
+      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+    }
+    it("10.3: definitionsOf") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
+        val targets = aop.Select.definitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
+        targets should be (Seq(
+          "~AddTwoMixedModules|AddOne>in".rt,
+          "~AddTwoMixedModules|AddOne_1>in".rt,
+        ))
+      })
+      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+    }
+    it("10.4: definitionsIn") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
+        val targets = aop.Select.definitionsIn(m.toDefinition).map { i: Definition[BaseModule] => i.toTarget }
+        targets should be (Seq(
+          "~AddTwoMixedModules|AddOne".mt,
+          "~AddTwoMixedModules|AddOne_1".mt,
+        ))
+      })
+      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+    }
+    it("10.5: allDefinitionsOf") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        val targets = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
+        targets should be (Seq(
+          "~AddFour|AddOne>in".rt,
+          "~AddFour|AddOne_1>in".rt,
+        ))
+      })
+      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+    }
+    it("10.6: Select.collectDeep should fail when combined with hierarchy package") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        aop.Select.collectDeep(m) { case m: AddOne => m.toTarget }
+      })
+      intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
+    }
+    it("10.7: Select.getDeep should fail when combined with hierarchy package") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        aop.Select.getDeep(m) { m: BaseModule => Nil }
+      })
+      intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
+    }
+    it("10.8: Select.instances should fail when combined with hierarchy package") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        aop.Select.instances(m)
+      })
+      intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
     }
   }
 }

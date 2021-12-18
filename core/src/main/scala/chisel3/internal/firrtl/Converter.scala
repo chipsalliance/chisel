@@ -7,10 +7,11 @@ import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, Unloca
 import firrtl.{ir => fir}
 import chisel3.internal.{HasId, castToInt, throwException}
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.Queue
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
+@nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
   def unpack(pable: Printable, ctx: Component): (String, Seq[Arg]) = pable match {
@@ -142,8 +143,8 @@ private[chisel3] object Converter {
       Some(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
     case e @ DefInstance(info, id, _) =>
       Some(fir.DefInstance(convert(info), e.name, id.name))
-    case Stop(info, clock, ret) =>
-      Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one))
+    case e @ Stop(_, info, clock, ret) =>
+      Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name))
     case e @ Printf(_, info, clock, pable) =>
       val (fmt, args) = unpack(pable, ctx)
       Some(fir.Print(convert(info), fir.StringLit(fmt),

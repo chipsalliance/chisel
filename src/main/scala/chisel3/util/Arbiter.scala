@@ -10,6 +10,7 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
 
 /** IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs
   * (selects) at most one.
+  * @groupdesc Signals The actual hardware fields of the Bundle
   *
   * @param gen data type
   * @param n number of inputs
@@ -17,8 +18,20 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
 class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
   // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
 
+/** Input data, one per potential sender
+  * 
+  * @group Signals
+  */
   val in  = Flipped(Vec(n, Decoupled(gen)))
+/** Output data after arbitration
+  *
+  * @group Signals
+  */
   val out = Decoupled(gen)
+/** One-Hot vector indicating which output was chosen
+  *
+  * @group Signals
+  */
   val chosen = Output(UInt(log2Ceil(n).W))
 }
 
@@ -47,7 +60,7 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
     val locked = lockCount.value =/= 0.U
     val wantsLock = needsLock.map(_(io.out.bits)).getOrElse(true.B)
 
-    when (io.out.fire() && wantsLock) {
+    when (io.out.fire && wantsLock) {
       lockIdx := io.chosen
       lockCount.inc()
     }
@@ -63,7 +76,7 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
 
 class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
-  lazy val lastGrant = RegEnable(io.chosen, io.out.fire())
+  lazy val lastGrant = RegEnable(io.chosen, io.out.fire)
   lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
   lazy val validMask = io.in zip grantMask map { case (in, g) => in.valid && g }
 

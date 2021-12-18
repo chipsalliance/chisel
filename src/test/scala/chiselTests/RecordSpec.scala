@@ -8,11 +8,12 @@ import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import chisel3.experimental.DataMirror
 
+import scala.collection.immutable.SeqMap
+
 trait RecordSpecUtils {
   class MyBundle extends Bundle {
     val foo = UInt(32.W)
     val bar = UInt(32.W)
-    override def cloneType: this.type = (new MyBundle).asInstanceOf[this.type]
   }
   // Useful for constructing types from CustomBundle
   // This is a def because each call to this needs to return a new instance
@@ -65,6 +66,11 @@ trait RecordSpecUtils {
     }
   }
 
+  class AliasedRecord extends Module {
+    val field = UInt(32.W)
+    val io = IO(new CustomBundle("in" -> Input(field), "out" -> Output(field)))
+  }
+
   class RecordIOModule extends Module {
     val io = IO(new CustomBundle("in" -> Input(UInt(32.W)), "out" -> Output(UInt(32.W))))
     io("out") := io("in")
@@ -102,6 +108,23 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
 
   they should "bulk connect to Bundles" in {
     ChiselStage.elaborate { new MyModule(new MyBundle, fooBarType) }
+  }
+
+  they should "not allow aliased fields" in {
+    class AliasedFieldRecord extends Record {
+      val foo = UInt(8.W)
+      val elements = SeqMap("foo" -> foo, "bar" -> foo)
+      override def cloneType: AliasedFieldRecord.this.type = this
+    }
+
+    val e = intercept[AliasedAggregateFieldException] {
+      ChiselStage.elaborate {
+        new Module {
+          val io = IO(new AliasedFieldRecord)
+        }
+      }
+    }
+    e.getMessage should include ("contains aliased fields named (bar,foo)")
   }
 
   they should "follow UInt serialization/deserialization API" in {

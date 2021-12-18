@@ -15,7 +15,7 @@ import firrtl.passes.CheckTypes.InvalidConnect
 import firrtl.passes.CheckWidths.{DisjointSqueeze, InvalidRange}
 import firrtl.passes.{PassExceptions, WrapWithRemainder}
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation}
-import firrtl.{FIRRTLException, HighFirrtlCompiler, LowFirrtlCompiler, MiddleFirrtlCompiler, MinimumVerilogCompiler, NoneCompiler, SystemVerilogCompiler, VerilogCompiler}
+import firrtl.{HighFirrtlCompiler, LowFirrtlCompiler, MiddleFirrtlCompiler, MinimumVerilogCompiler, NoneCompiler, SystemVerilogCompiler, VerilogCompiler}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -405,6 +405,13 @@ class IntervalChainedSubTester extends BasicTester {
   assert(fixedResult.asUInt === 5.U)
   assert(intervalResult1 === 5.I)
   assert(intervalResult2 === 5.I)
+
+  val negativeInterval = (-3.5).I(4.BP)
+  val positiveInterval = 3.5.I(4.BP)
+
+  assert(negativeInterval =/= positiveInterval)
+  assert(-negativeInterval === positiveInterval)
+  assert(negativeInterval === -positiveInterval)
 
   stop()
 }

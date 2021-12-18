@@ -111,15 +111,24 @@ If you like a textbook to learn Chisel and also a bit of digital design in gener
 
 ### Build Your Own Chisel Projects
 
-See [the setup instructions](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
+See [the setup instructions](SETUP.md) for how to set up your environment to build Chisel locally.
 
-When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench. Follow the [chisel-template readme](https://github.com/freechipsproject/chisel-template) to get started.
+When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench.
+Follow the [chisel-template README](https://github.com/freechipsproject/chisel-template) to get started.
 
-If you insist on setting up your own project, the magic SBT lines are:
+If you insist on setting up your own project from scratch, your project needs to depend on both the chisel3-plugin (Scalac plugin) and the chisel3 library.
+For example, in SBT this could be expressed as:
 ```scala
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.0"
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.0" % "test"
+// build.sbt
+scalaVersion := "2.12.13"
+addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.4.4" cross CrossVersion.full)
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.4"
+scalacOptions += "-Xsource:2.11"
+// We also recommend using chiseltest for writing unit tests 
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.4" % "test"
 ```
+### Guide For New Contributors
+If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
 
 ### Design Verification
 
@@ -136,6 +145,8 @@ These simulation-based verification tools are available for Chisel:
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
+- [**Scastie (3.5.0-RC1)**](https://scastie.scala-lang.org/KtzZQ3nFTea9KoNh0tRqtg)
+- [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).
 
@@ -155,18 +166,11 @@ The [Useful Resources](#useful-resources) for users are also helpful for contrib
 
 ### Compiling and Testing Chisel
 
-First, clone and build the master branch of [FIRRTL](https://github.com/chipsalliance/firrtl) and [Treadle](https://github.com/chipsalliance/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
-
-```
-git clone https://github.com/chipsalliance/firrtl.git
-git clone https://github.com/chipsalliance/treadle.git
-pushd firrtl; sbt publishLocal; popd
-pushd treadle; sbt publishLocal; popd
-```
+You must first install required dependencies to build Chisel locally, please see [the setup instructions](SETUP.md).
 
 Clone and build the Chisel library:
 
-```
+```bash
 git clone https://github.com/chipsalliance/chisel3.git
 cd chisel3
 sbt compile
@@ -185,14 +189,6 @@ If the compilation succeeded and the dependencies noted above are installed, you
 sbt test
 ```
 
-
-
-If you would like to run the tests without the compiler plugin (less common), you can do so by first launching `sbt`,
-then running `noPluginTests / test`:
-```
-sbt
-> noPluginTests / test
-```
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.

@@ -10,25 +10,20 @@ trait BundleSpecUtils {
   class BundleFooBar extends Bundle {
     val foo = UInt(16.W)
     val bar = UInt(16.W)
-    override def cloneType: this.type = (new BundleFooBar).asInstanceOf[this.type]
   }
   class BundleBarFoo extends Bundle {
     val bar = UInt(16.W)
     val foo = UInt(16.W)
-    override def cloneType: this.type = (new BundleBarFoo).asInstanceOf[this.type]
   }
   class BundleFoo extends Bundle {
     val foo = UInt(16.W)
-    override def cloneType: this.type = (new BundleFoo).asInstanceOf[this.type]
   }
   class BundleBar extends Bundle {
     val bar = UInt(16.W)
-    override def cloneType: this.type = (new BundleBar).asInstanceOf[this.type]
   }
 
   class BadSeqBundle extends Bundle {
     val bar = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
-    override def cloneType: this.type = (new BadSeqBundle).asInstanceOf[this.type]
   }
 
   class MyModule(output: Bundle, input: Bundle) extends Module {
@@ -116,17 +111,21 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }
   }
 
-  "Bundles" should "not have aliased fields" in {
+  "Bundles" should "with aliased fields, should show a helpful error message" in {
+    class AliasedBundle extends Bundle {
+      val a = UInt(8.W)
+      val b = a
+      val c = SInt(8.W)
+      val d = c
+    }
+
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate { new Module {
-        val io = IO(Output(new Bundle {
-          val a = UInt(8.W)
-          val b = a
-        }))
+        val io = IO(Output(new AliasedBundle))
         io.a := 0.U
         io.b := 1.U
       } }
-    }).getMessage should include("aliased fields")
+    }).getMessage should include("contains aliased fields named (a,b),(c,d)")
   }
 
   "Bundles" should "not have bound hardware" in {
@@ -162,4 +161,16 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       }
     }
   }
+
+  // This tests the interaction of override def cloneType and the plugin.
+  // We are commenting it for now because although this code fails to compile
+  // as expected when just copied here, the test version is not seeing the failure.
+  // """
+  //     class BundleBaz(w: Int) extends Bundle {
+  //       val baz = UInt(w.W)
+  //       // This is a compiler error when using the plugin, which we test below.
+  //       override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
+  //     }
+  // """ shouldNot compile
+
 }

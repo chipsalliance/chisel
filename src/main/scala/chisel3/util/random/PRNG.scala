@@ -7,16 +7,23 @@ import chisel3.util.Valid
 
 /** Pseudo Random Number Generators (PRNG) interface
   * @param n the width of the LFSR
+  * @groupdesc Signals The actual hardware fields of the Bundle
   */
 class PRNGIO(val n: Int) extends Bundle {
 
-  /** A [[chisel3.util.Valid Valid]] interface that can be used to set the seed (internal PRNG state) */
+  /** A [[chisel3.util.Valid Valid]] interface that can be used to set the seed (internal PRNG state) 
+    * @group Signals
+    */
   val seed: Valid[Vec[Bool]] = Input(Valid(Vec(n, Bool())))
 
-  /** When asserted, the PRNG will increment by one */
+  /** When asserted, the PRNG will increment by one 
+    * @group Signals
+    */
   val increment: Bool = Input(Bool())
 
-  /** The current state of the PRNG */
+  /** The current state of the PRNG 
+    * @group Signals
+    */
   val out: Vec[Bool] = Output(Vec(n, Bool()))
 }
 
@@ -62,7 +69,7 @@ abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int = 1, upd
     state := nextState(state)
   }
 
-  when (io.seed.fire()) {
+  when (io.seed.fire) {
     state := (if (updateSeed) { nextState(io.seed.bits) } else { io.seed.bits })
   }
 

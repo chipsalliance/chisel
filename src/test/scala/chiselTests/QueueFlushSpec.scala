@@ -40,11 +40,11 @@ abstract class FlushQueueTesterBase(elements: Seq[Int], queueDepth: Int, bitWidt
   q.io.deq.ready := LFSR(16)(tap)
 
   q.io.enq.bits := elems(inCnt.value)
-  when(q.io.enq.fire()) {
+  when(q.io.enq.fire) {
     inCnt.inc()
     currQCnt := currQCnt + 1.U //counts how many items have been enqueued
   }
-  when(q.io.deq.fire()) {     
+  when(q.io.deq.fire) {
     assert(flushRegister === false.B) //check queue isn't flushed (can't dequeue an empty queue)
   }
   when(flushRegister) { //Internal signal maybe_full is a register so some signals update on the next cycle
@@ -70,18 +70,18 @@ class QueueGetsFlushedTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int,
   flush := LFSR(16)((tap + 3) % 16)  //testing a flush when flush is called randomly
   val halfCnt = (queueDepth + 1)/2
 
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     //ensure that what comes out is what comes in
     assert(currQCnt <= queueDepth.U)
     assert(elems(outCnt) === q.io.deq.bits)
     outCnt := outCnt + 1.U
     when (currQCnt > 0.U) {
-      currQCnt := Mux(q.io.enq.fire(), currQCnt, (currQCnt - 1.U))
+      currQCnt := Mux(q.io.enq.fire, currQCnt, (currQCnt - 1.U))
     }
   }
   when(flush) {
     assert(currQCnt === 0.U || q.io.deq.valid)
-    outCnt := outCnt + Mux(q.io.enq.fire(), (currQCnt + 1.U), currQCnt)
+    outCnt := outCnt + Mux(q.io.enq.fire, (currQCnt + 1.U), currQCnt)
     currQCnt := 0.U //resets the number of items currently inside queue
   }
 }
@@ -102,7 +102,7 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
   flush := (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued  
   q.io.enq.valid := (inCnt.value < elements.length.U) && !flush
 
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     assert(elems(outCnt) === q.io.deq.bits)
     outCnt := outCnt + 1.U
   }
@@ -124,7 +124,7 @@ class EnqueueEmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitW
   flush := (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued  
   cycleCounter.inc() //counts every cycle
 
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     //flush and enqueue were both active on the first cycle, 
     //so that element is flushed immediately which makes outCnt off by one
     assert(elems(outCounter.value + 1.U) === q.io.deq.bits) //ensure that what comes out is what comes in
@@ -145,7 +145,7 @@ class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidt
   //testing a flush when queue is full
   flush := (currQCnt === queueDepth.U)
 
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     //ensure that what comes out is what comes in
     assert(currQCnt <= queueDepth.U)
     assert(elems(outCnt) === q.io.deq.bits)
@@ -177,7 +177,7 @@ class DequeueFullQueueEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWi
   q.io.enq.valid := !flushRegister
   q.io.deq.ready := flush
 
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     //ensure that what comes out is what comes in
     assert(currQCnt <= queueDepth.U)
     assert(elems(outCnt) === q.io.deq.bits)
@@ -191,7 +191,7 @@ class DequeueFullQueueEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWi
   }
   when(flushRegister) {
     //check that queue gets flushed when queue is full
-    assert(q.io.deq.fire() === false.B)
+    assert(q.io.deq.fire === false.B)
   } 
 
 }

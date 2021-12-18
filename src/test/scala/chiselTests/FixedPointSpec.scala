@@ -60,6 +60,9 @@ class FixedPointFromBitsTester extends BasicTester {
   val negativefp = (-3.5).F(4.BP)
   val positivefp = 3.5.F(4.BP)
 
+  assert(- positivefp === negativefp)
+  assert(positivefp === -negativefp)
+
   assert(uint2fp === uint_result)
   assert(sint2fp === sint_result)
   assert(fp2fp   === fp_result)

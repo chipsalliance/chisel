@@ -195,11 +195,9 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
   class SmallBundle extends Bundle {
     val f1 = UInt(width = 4)
     val f2 = UInt(width = 5)
-    override def cloneType: this.type = (new SmallBundle).asInstanceOf[this.type]
   }
   class BigBundle extends SmallBundle {
     val f3 = UInt(width = 6)
-    override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
   "A Module with missing bundle fields when compiled with the Chisel compatibility package" should "not throw an exception" in {
@@ -538,6 +536,9 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
 
       info("toUInt works")
       s.toUInt shouldBe a [UInt]
+
+      info("toBools works")
+      s.toBools shouldBe a [Seq[Bool]]
     }
 
     ChiselStage.elaborate(new Foo)
@@ -564,6 +565,34 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     val verilog = ChiselStage.emitVerilog(new Foo)
     // Check that the names are correct (and that the FIRRTL is valid)
     verilog should include ("assign io_out_0 = io_in_0;")
+  }
+
+  it should "ignore .suggestName on field io" in {
+    class MyModule extends Module {
+      val io = new Bundle {
+        val foo = UInt(width = 8).asInput
+        val bar = UInt(width = 8).asOutput
+      }
+      io.suggestName("potato")
+      io.bar := io.foo
+    }
+    val verilog = ChiselStage.emitVerilog(new MyModule)
+    verilog should include ("input  [7:0] io_foo")
+    verilog should include ("output [7:0] io_bar")
+  }
+
+  it should "properly name field io" in {
+    class MyModule extends Module {
+      val io = new Bundle {
+        val foo = UInt(width = 8).asInput
+        val bar = UInt(width = 8).asOutput
+      }
+      val wire = Wire(init = io.foo)
+      io.bar := wire
+    }
+    val verilog = ChiselStage.emitVerilog(new MyModule)
+    verilog should include ("input  [7:0] io_foo")
+    verilog should include ("output [7:0] io_bar")
   }
 
 }
