@@ -456,6 +456,11 @@ private[chisel3] object Builder extends LazyLogging {
           // And name of the field if we have one, we don't for dynamic indexing of Vecs
           getSubName(data).map(p + "_" + _).getOrElse(p)
         }
+        // TODO: is this correct? should I modify ChildBinding ^ ?
+        case DynamicSelectedElementBinding(parent) => recData(parent).map { p =>
+          // And name of the field if we have one, we don't for dynamic indexing of Vecs
+          getSubName(data).map(p + "_" + _).getOrElse(p)
+        }
         case SampleElementBinding(parent) => recData(parent)
         case PortBinding(mod) if Builder.currentModule.contains(mod) => data.seedOpt
         case PortBinding(mod) => map2(mod.seedOpt, data.seedOpt)(_ + "_" + _)
