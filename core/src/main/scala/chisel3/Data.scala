@@ -443,16 +443,18 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   // Similar to topBindingOpt except it explicitly excludes SampleElements which are bound but not
   // hardware
-  private[chisel3] final def isSynthesizable: Boolean = _binding.map {
+  private[chisel3] final def isSynthesizable: Boolean = _binding.exists {
     case ChildBinding(parent) => parent.isSynthesizable
+    case DynamicSelectedElementBinding(parent) => parent.isSynthesizable
     case _: TopBinding => true
-    case (_: SampleElementBinding[_] | _: MemTypeBinding[_]) => false
-  }.getOrElse(false)
+    case _: SampleElementBinding[_] | _: MemTypeBinding[_] => false
+  }
 
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
     case SampleElementBinding(parent) => parent.topBindingOpt
+    case DynamicSelectedElementBinding(parent) => parent.topBindingOpt
     case _: MemTypeBinding[_] => None
   }
 
