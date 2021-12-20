@@ -218,7 +218,13 @@ lazy val chisel = (project in file(".")).
           }
         s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       }
-    )
+    ) ++
+    // Suppress compiler plugin for source files in core
+    // We don't need this in regular compile because we just don't add the chisel3-plugin to core's scalacOptions
+    // This works around an issue where unidoc uses the exact same arguments for all source files.
+    // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
+    // See https://github.com/sbt/sbt-unidoc/issues/107
+    (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
   )
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
