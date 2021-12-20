@@ -41,13 +41,13 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
                          additionalVResources: Seq[String] = Seq(),
                          annotations: AnnotationSeq = Seq()
                         ): Unit = {
-    assert(runTester(t, additionalVResources, annotations))
+    assert(runTester(t, additionalVResources, annotations ++ Seq(PrintFullStackTraceAnnotation)))
   }
   def assertTesterFails(t: => BasicTester,
                         additionalVResources: Seq[String] = Seq(),
                         annotations: Seq[chisel3.aop.Aspect[_]] = Seq()
                        ): Unit = {
-    assert(!runTester(t, additionalVResources, annotations))
+    assert(!runTester(t, additionalVResources, annotations ++ Seq(PrintFullStackTraceAnnotation)))
   }
 
   def assertKnownWidth(expected: Int)(gen: => Data): Unit = {
@@ -85,7 +85,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   def compile(t: => RawModule): String = {
     (new ChiselStage)
       .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
-               Seq(ChiselGeneratorAnnotation(() => t)))
+               Seq(ChiselGeneratorAnnotation(() => t), PrintFullStackTraceAnnotation))
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a.value
       }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
