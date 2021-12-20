@@ -27,7 +27,7 @@ read these documents in the following order:
 * [Memories](memories)
 * [Interfaces and Connections](interfaces-and-connections)
 * [Black Boxes](blackboxes)
-* [Enumerations](enumerations)
+* [Enumerations](chisel-enum)
 * [Functional Module Creation](functional-module-creation)
 * [Muxes and Input Selection](muxes-and-input-selection)
 * [Multiple Clock Domains](multi-clock)
@@ -37,3 +37,4 @@ read these documents in the following order:
 * [Naming](naming)
 * [Unconnected Wires](unconnected-wires)
 * [Annotations](annotations)
+* [Deep Dive into Connection Operators](connection-operators)
