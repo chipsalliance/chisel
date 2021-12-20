@@ -22,20 +22,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
   private class BundlePhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
-      // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
-      // instead we just check the version and if its an early Scala version, the plugin does nothing
-      val scalaVersion = scala.util.Properties.versionNumberString.split('.')
-      val scalaVersionOk = scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12
-      if (scalaVersionOk && arguments.useBundlePlugin) {
+      if (ChiselPlugin.runComponent(global, arguments)(unit)) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
-      } else {
-        val reason = if (!scalaVersionOk) {
-          s"invalid Scala version '${scala.util.Properties.versionNumberString}'"
-        } else {
-          s"not enabled via '${arguments.useBundlePluginFullOpt}'"
-        }
-        // Enable this with scalacOption '-Ylog:chiselbundlephase'
-        global.log(s"Skipping BundleComponent on account of $reason.")
       }
     }
   }

@@ -45,7 +45,7 @@ jobs:
         uses: coursier/cache-action@v5
       - name: Documentation (Scala 2.12 only)
         if: startsWith(matrix.scala, '2.12')
-        run: sbt ++${{ matrix.scala }} docs/mdoc
+        run: sbt ++${{ matrix.scala }} docs/mdoc unidoc
       - name: Test
         run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
