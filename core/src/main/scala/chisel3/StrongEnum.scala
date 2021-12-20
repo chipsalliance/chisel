@@ -7,7 +7,7 @@ import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{Binding, Builder, ConstrainedBinding, throwException}
+import chisel3.internal.{Binding, Builder, ChildBinding, ConstrainedBinding, DynamicSelectedElementBinding, InstanceId, SampleElementBinding, throwException}
 import firrtl.annotations._
 import firrtl.transforms.{CustomRadixApplyAnnotation, CustomRadixDefAnnotation}
 
@@ -122,8 +122,20 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   override private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit = {
     super.bind(target, parentDirection)
 
+    def isDynamicSel(p: Binding): Boolean = p match {
+      case _: DynamicSelectedElementBinding[_] => true
+      case ChildBinding(p) => p.binding match {
+        case Some(b) => isDynamicSel(b)
+        case _ => false
+      }
+      case SampleElementBinding(p) => p.binding match {
+        case Some(b) => isDynamicSel(b)
+        case _ => false
+      }
+      case _ => false
+    }
     // Make sure we only annotate hardware and not literals
-    if (selfAnnotating && isSynthesizable && topBindingOpt.get.isInstanceOf[ConstrainedBinding]) {
+    if (selfAnnotating && isSynthesizable && topBindingOpt.get.isInstanceOf[ConstrainedBinding] && !isDynamicSel(target)) {
       val defAnno = new ChiselAnnotation { def toFirrtl: Annotation = CustomRadixDefAnnotation(enumTypeName, factory.enumValues zip factory.enumNames, width.get) }
       val applyAnno = new ChiselAnnotation { def toFirrtl: Annotation = CustomRadixApplyAnnotation(toTarget, enumTypeName) }
       if(!Builder.annotations.contains(defAnno))
