@@ -26,14 +26,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       // instead we just check the version and if its an early Scala version, the plugin does nothing
       val scalaVersion = scala.util.Properties.versionNumberString.split('.')
       val scalaVersionOk = scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12
-      if (scalaVersionOk && arguments.useBundlePlugin) {
+      if (scalaVersionOk) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
       } else {
-        val reason = if (!scalaVersionOk) {
-          s"invalid Scala version '${scala.util.Properties.versionNumberString}'"
-        } else {
-          s"not enabled via '${arguments.useBundlePluginFullOpt}'"
-        }
+        val reason = s"invalid Scala version '${scala.util.Properties.versionNumberString}'"
         // Enable this with scalacOption '-Ylog:chiselbundlephase'
         global.log(s"Skipping BundleComponent on account of $reason.")
       }

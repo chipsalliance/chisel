@@ -7,14 +7,18 @@ import nsc.Global
 import nsc.plugins.{Plugin, PluginComponent}
 import scala.reflect.internal.util.NoPosition
 
-private[plugin] case class ChiselPluginArguments(var useBundlePlugin: Boolean = true) {
+private[plugin] case class ChiselPluginArguments() {
   def useBundlePluginOpt = "useBundlePlugin"
-  def useBundlePluginFullOpt = s"-P:chiselplugin:$useBundlePluginOpt"
+  def useBundlePluginFullOpt = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
+}
+
+object ChiselPlugin {
+  val name = "chiselplugin"
 }
 
 // The plugin to be run by the Scala compiler during compilation of Chisel code
 class ChiselPlugin(val global: Global) extends Plugin {
-  val name = "chiselplugin"
+  val name = ChiselPlugin.name
   val description = "Plugin for Chisel 3 Hardware Description Language"
   private val arguments = ChiselPluginArguments()
   val components: List[PluginComponent] = List[PluginComponent](
