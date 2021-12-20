@@ -27,6 +27,14 @@ options:
         url: chisel3/docs/cookbooks/troubleshooting.html
         menu_type: chisel3
         menu_section: troubleshooting
+      - title: DataView Cookbook
+        url: chisel3/docs/cookbooks/dataview.html
+        menu_type: chisel3
+        menu_section: dataview
+      - title: Hierarchy Cookbook
+        url: chisel3/docs/cookbooks/hierarchy.html
+        menu_type: chisel3
+        menu_section: hierarchy-cookbook
   - title: Explanations
     url: chisel3/docs/explanations/explanations.html
     menu_type: chisel3
@@ -44,6 +52,10 @@ options:
         url: chisel3/docs/explanations/data-types.html
         menu_type: chisel3
         menu_section: data-types
+      - title: Dataview
+        url: chisel3/docs/explanations/dataview.html
+        menu_type: chisel3
+        menu_section: dataview
       - title: Bundles and Vecs
         url: chisel3/docs/explanations/bundles-and-vecs.html
         menu_type: chisel3
