@@ -4,7 +4,6 @@ package chisel3.aop.injecting
 
 import chisel3.{Module, ModuleAspect, RawModule, withClockAndReset}
 import chisel3.aop._
-import chisel3.experimental.hierarchy.IsInstantiable
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
 import chisel3.stage.DesignAnnotation

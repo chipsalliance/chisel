@@ -16,7 +16,7 @@ import firrtl.annotations.IsModule
   *
   * @param underlying The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-final case class Instance[+A] private [chisel3] (private[chisel3] underlying: Underlying[A]) extends SealedHierarchy[A] {
+final case class Instance[+A] /*private [chisel3]*/ (private[chisel3] underlying: Underlying[A]) extends SealedHierarchy[A] {
   underlying match {
     case Proto(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Proto with a clone!")
     case other => //Ok

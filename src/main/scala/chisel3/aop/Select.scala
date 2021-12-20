@@ -253,12 +253,21 @@ object Select {
     }
   }
 
-  /** Selects all ios directly contained within given module
+  /** Selects all ios on a given module
     * @param module
     */
   def ios(module: BaseModule): Seq[Data] = {
     check(module)
     module._component.get.asInstanceOf[DefModule].ports.map(_.id)
+  }
+
+  /** Selects all ios directly on a given Instance or Definition of a module
+    * @param module
+    */
+  def ios[T <: BaseModule](parent: Hierarchy[T]): Seq[Data] = {
+    check(parent)
+    implicit val mg = new chisel3.internal.MacroGenerated{}
+    parent._lookup{ x=> parent.proto._component.get.asInstanceOf[DefModule].ports.map(_.id)}
   }
 
   /** Selects all SyncReadMems directly contained within given module
