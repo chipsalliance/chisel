@@ -13,7 +13,9 @@ private object FirrtlExpressionSemantics {
       case ir.DoPrim(op, args, consts, _) => onPrim(op, args, consts)
       case r: ir.RefLikeExpression => BVSymbol(r.serialize, getWidth(r))
       case ir.UIntLiteral(value, ir.IntWidth(width)) => BVLiteral(value, width.toInt)
-      case ir.SIntLiteral(value, ir.IntWidth(width)) => BVLiteral(value, width.toInt)
+      case ir.SIntLiteral(value, ir.IntWidth(width)) =>
+        val twosComplementValue = value & ((BigInt(1) << width.toInt) - 1)
+        BVLiteral(twosComplementValue, width.toInt)
       case ir.Mux(cond, tval, fval, _) =>
         val width = List(tval, fval).map(getWidth).max
         BVIte(toSMT(cond), toSMT(tval, width), toSMT(fval, width))
