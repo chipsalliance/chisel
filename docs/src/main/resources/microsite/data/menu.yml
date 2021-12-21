@@ -27,6 +27,14 @@ options:
         url: chisel3/docs/cookbooks/troubleshooting.html
         menu_type: chisel3
         menu_section: troubleshooting
+      - title: DataView Cookbook
+        url: chisel3/docs/cookbooks/dataview.html
+        menu_type: chisel3
+        menu_section: dataview
+      - title: Hierarchy Cookbook
+        url: chisel3/docs/cookbooks/hierarchy.html
+        menu_type: chisel3
+        menu_section: hierarchy-cookbook
   - title: Explanations
     url: chisel3/docs/explanations/explanations.html
     menu_type: chisel3
@@ -44,6 +52,10 @@ options:
         url: chisel3/docs/explanations/data-types.html
         menu_type: chisel3
         menu_section: data-types
+      - title: Dataview
+        url: chisel3/docs/explanations/dataview.html
+        menu_type: chisel3
+        menu_section: dataview
       - title: Bundles and Vecs
         url: chisel3/docs/explanations/bundles-and-vecs.html
         menu_type: chisel3
@@ -128,6 +140,10 @@ options:
         url: chisel3/docs/explanations/annotations.html
         menu_type: chisel3
         menu_section: annotations
+      - title: Deep Dive into Connection Operators
+        url: chisel3/docs/explanations/connection-operators.html
+        menu_type: chisel3
+        menu_section: deep-dive-into-connection-operators
   - title: Appendix
     url: chisel3/docs/appendix/appendix.html
     menu_type: chisel3
@@ -157,9 +173,11 @@ options:
     menu_type: chisel3
     nested_options:
       - title: Latest
-        url: api/latest/
+        url: api/SNAPSHOT/
+      - title: 3.5
+        url: api/SNAPSHOT/
       - title: 3.4
-        url: api/3.4.3/
+        url: api/3.4.4/
       - title: 3.3
         url: api/3.3.3/
       - title: 3.2
@@ -175,6 +193,8 @@ options:
     nested_options:
       - title: Latest
         url: api/chisel-testers/latest/
+      - title: 2.5
+        url: api/chisel-testers/2.5.0-RC2/
       - title: 1.5
         url: api/chisel-testers/1.5.3/
       - title: 1.4
@@ -192,8 +212,10 @@ options:
     nested_options:
       - title: Latest
         url: api/chiseltest/latest/
+      - title: 0.5
+        url: api/chiseltest/0.5.0-RC2/
       - title: 0.3
-        url: api/chiseltest/0.3.3/
+        url: api/chiseltest/0.3.4/
       - title: 0.2
         url: api/chiseltest/0.2.3/
       - title: 0.1
@@ -209,8 +231,10 @@ options:
     nested_options:
       - title: Latest
         url: api/firrtl/latest/
+      - title: 1.5
+        url: api/firrtl/1.5.0-RC2/
       - title: 1.4
-        url: api/firrtl/1.4.3/
+        url: api/firrtl/1.4.4/
       - title: 1.3
         url: api/firrtl/1.3.3/
       - title: 1.2
@@ -234,8 +258,10 @@ options:
     nested_options:
       - title: Latest
         url: api/treadle/latest/
+      - title: 1.5
+        url: api/treadle/1.5.0-RC2/
       - title: 1.3
-        url: api/treadle/1.3.3/
+        url: api/treadle/1.3.4/
       - title: 1.2
         url: api/treadle/1.2.3/
       - title: 1.1
@@ -251,8 +277,10 @@ options:
     nested_options:
       - title: Latest
         url: api/diagrammer/latest
+      - title: 1.5
+        url: api/diagrammer/1.5.0-RC2/
       - title: 1.3
-        url: api/diagrammer/1.3.3/
+        url: api/diagrammer/1.3.4/
       - title: 1.2
         url: api/diagrammer/1.2.3/
       - title: 1.1

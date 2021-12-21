@@ -22,41 +22,48 @@ firrtlTags = \
 	v1.1.7 \
 	v1.2.8 \
 	v1.3.3 \
-	v1.4.3
+	v1.4.4 \
+	v1.5.0-RC2
+# unidoc is broken on chisel3 v3.5.0-RC2
+# See addition of master pretending to be v3.5.0-RC2 below
 chiselTags = \
 	v3.0.2 \
 	v3.1.8 \
 	v3.2.8 \
 	v3.3.3 \
-	v3.4.3
+	v3.4.4
 testersTags = \
 	v1.1.2 \
 	v1.2.10 \
 	v1.3.8 \
 	v1.4.3 \
-	v1.5.3
+	v1.5.4 \
+	v2.5.0-RC2
 treadleTags = \
 	v1.0.5 \
 	v1.1.8 \
 	v1.2.3 \
-	v1.3.3
+	v1.3.3 \
+	v1.5.0-RC2
 diagrammerTags = \
 	v1.0.2 \
 	v1.1.8 \
 	v1.2.3 \
-	v1.3.3
+	v1.3.3 \
+	v1.5.0-RC2
 chiseltestTags = \
 	v0.1.7 \
 	v0.2.3 \
-	v0.3.3
+	v0.3.3 \
+	v0.5.0-RC2
 
 # Snapshot versions that will have their API published.
-firrtlSnapshot = v1.4.3
-chiselSnapshot = v3.4.3
-testersSnapshot = v1.5.3
-treadleSnapshot = v1.3.3
-diagrammerSnapshot = v1.3.3
-chiseltestSnapshot = v0.3.3
+firrtlSnapshot = v1.5.0-RC2
+chiselSnapshot = master
+testersSnapshot = v2.5.0-RC2
+treadleSnapshot = v1.5.0-RC2
+diagrammerSnapshot = v1.5.0-RC2
+chiseltestSnapshot = v0.5.0-RC2
 
 # Get the latest version of some sequence of version strings
 # Usage: $(call getTags,$(foo))
@@ -112,7 +119,7 @@ endif
 all: docs/target/site/index.html
 
 # Targets to build the legacy APIS of only a specific subproject
-apis-chisel3: $(chiselTags:%=$(apis)/chisel3/%/index.html) $(apis)/chisel3/$(chiselSnapshot)/index.html
+apis-chisel3: $(chiselTags:%=$(apis)/chisel3/%/index.html) $(apis)/chisel3/$(chiselSnapshot)/index.html $(apis)/chisel3/master/index.html
 apis-firrtl: $(firrtlTags:%=$(apis)/firrtl/%/index.html) $(apis)/firrtl/$(firrtlSnapshot)/index.html
 apis-chisel-testers: $(testersTags:%=$(apis)/chisel-testers/%/index.html) $(apis)/chisel-testers/$(testersSnapshot)/index.html
 apis-chiseltest: $(chiseltestTags:%=$(apis)/chiseltest/%/index.html)
