@@ -153,10 +153,12 @@ options:
         url: chisel3/docs/appendix/chisel3-vs-chisel2.html
       - title: Experimental Features
         url: chisel3/docs/appendix/experimental-features.html
-      - title: Upgrading From Scala 2.11
-        url: chisel3/docs/appendix/upgrading-from-scala-2-11.html
       - title: Versioning
         url: chisel3/docs/appendix/versioning.html
+      - title: Upgrading From Chisel 3.4 to 3.5
+        url: chisel3/docs/appendix/upgrading-from-chisel-3-4.html
+      - title: Upgrading From Scala 2.11
+        url: chisel3/docs/appendix/upgrading-from-scala-2-11.html
   - title: Developers
     url: chisel3/docs/developers/developers.html
     menu_type: chisel3
