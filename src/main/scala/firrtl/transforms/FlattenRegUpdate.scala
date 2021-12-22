@@ -171,7 +171,7 @@ class FlattenRegUpdate extends Transform with DependencyAPIMigration {
       Dependency[ReplaceTruncatingArithmetic],
       Dependency[InlineBitExtractionsTransform],
       Dependency[InlineAcrossCastsTransform],
-      Dependency[LegalizeClocksTransform]
+      Dependency[LegalizeClocksAndAsyncResetsTransform]
     )
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized

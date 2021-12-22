@@ -204,6 +204,6 @@ object ZeroWidth extends Transform with DependencyAPIMigration {
     val renames = MutableRenameMap()
     renames.setCircuit(c.main)
     val result = c.copy(modules = c.modules.map(onModule(renames)))
-    CircuitState(result, outputForm, state.annotations, Some(renames))
+    state.copy(circuit = result, renames = Some(renames))
   }
 }

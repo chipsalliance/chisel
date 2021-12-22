@@ -880,6 +880,8 @@ private[firrtl] class RtlilEmitter extends SeqTransform with Emitter with Depend
               println("Leaving memory uninitialized.")
             case MemoryFileInlineInit(_, _) =>
               throw EmitterException(s"Memory $name cannot be initialized from a file, RTLIL cannot express this.")
+            case MemoryNoInit =>
+            // No initialization to emit
           }
           for (r <- rd) {
             val data = memPortField(x, r, "data")

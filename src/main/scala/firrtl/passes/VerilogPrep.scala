@@ -29,7 +29,7 @@ object VerilogPrep extends Pass {
       Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
       Dependency[firrtl.transforms.InlineBitExtractionsTransform],
       Dependency[firrtl.transforms.InlineAcrossCastsTransform],
-      Dependency[firrtl.transforms.LegalizeClocksTransform],
+      Dependency[firrtl.transforms.LegalizeClocksAndAsyncResetsTransform],
       Dependency[firrtl.transforms.FlattenRegUpdate],
       Dependency(passes.VerilogModulusCleanup),
       Dependency[firrtl.transforms.VerilogRename]

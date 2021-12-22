@@ -336,13 +336,6 @@ class GroupComponents extends Transform with DependencyAPIMigration {
     }
     def onStmt(stmt: Statement): Unit = stmt match {
       case w: WDefInstance =>
-      case h: IsDeclaration =>
-        bidirGraph.addVertex(h.name)
-        h.map(onExpr(WRef(h.name)))
-      case Attach(_, exprs) => // Add edge between each expression
-        exprs.tail.map(onExpr(getWRef(exprs.head)))
-      case Connect(_, loc, expr) =>
-        onExpr(getWRef(loc))(expr)
       case q @ Stop(_, _, clk, en) =>
         val simName = simNamespace.newTemp
         simulations(simName) = q
@@ -351,6 +344,13 @@ class GroupComponents extends Transform with DependencyAPIMigration {
         val simName = simNamespace.newTemp
         simulations(simName) = q
         (args :+ clk :+ en).map(onExpr(WRef(simName)))
+      case h: IsDeclaration =>
+        bidirGraph.addVertex(h.name)
+        h.map(onExpr(WRef(h.name)))
+      case Attach(_, exprs) => // Add edge between each expression
+        exprs.tail.map(onExpr(getWRef(exprs.head)))
+      case Connect(_, loc, expr) =>
+        onExpr(getWRef(loc))(expr)
       case Block(stmts) => stmts.foreach(onStmt)
       case ignore @ (_: IsInvalid | EmptyStmt) => // do nothing
       case other => throw new Exception(s"Unexpected Statement $other")

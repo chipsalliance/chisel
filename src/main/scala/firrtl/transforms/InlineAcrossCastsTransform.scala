@@ -97,7 +97,7 @@ class InlineAcrossCastsTransform extends Transform with DependencyAPIMigration {
   override def optionalPrerequisiteOf = Seq.empty
 
   override def invalidates(a: Transform): Boolean = a match {
-    case _: LegalizeClocksTransform => true
+    case _: LegalizeClocksAndAsyncResetsTransform => true
     case _ => false
   }
 

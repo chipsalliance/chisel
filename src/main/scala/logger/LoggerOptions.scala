@@ -32,7 +32,7 @@ class LoggerOptions private[logger] (
   }
 
   /** Return the name of the log file, defaults to `a.log` if unspecified */
-  def getLogFileName(): Option[String] = if (!logToFile()) None else logFileName.orElse(Some("a.log"))
+  def getLogFileName(): Option[String] = logFileName.orElse(Some("a.log"))
 
   /** True if a [[Logger]] should be writing to a file */
   @deprecated("logToFile was removed, use logFileName.nonEmpty", "FIRRTL 1.2")
