@@ -116,7 +116,7 @@ class NotReallyAFilterIO extends Bundle {
   val y = new PLink
   val z = Output(new Bool())
 }
-class Block2 extends Module {
+class Block2 extends MultiIOModule {
   val io1 = IO(new FilterIO)
   val io2 = IO(Flipped(new NotReallyAFilterIO))
 
