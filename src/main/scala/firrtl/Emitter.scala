@@ -200,7 +200,7 @@ object EmitAllModulesAnnotation extends HasShellOptions {
         s.split(",")
           .map {
             case "disableMemRandomization" =>
-              CustomDefaultRegisterEmission(useInitAsPreset = true, disableRandomization = true)
+              CustomDefaultRegisterEmission(useInitAsPreset = false, disableRandomization = true)
             case "disableRegisterRandomization" => CustomDefaultMemoryEmission(MemoryNoInit)
             case a                              => throw new PhaseException(s"Unknown emission options '$a'! (Did you misspell it?)")
           }
