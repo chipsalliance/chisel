@@ -11,25 +11,29 @@
             <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
-    <td>
-<pre>
+<td>
+
+```
     module foo (
                     input  a,
                     output b
                 )
                 assign b = a;
             endmodule
-</pre>
-    </td>
+```
+
+</td>
     <td>
+
 ```scala mdoc
     class Foo extends Module {
     val a = Input(Bool())
     val b = Output(Bool())
     b := a
     }
-``
-    </td>
+```
+
+</td>
     <td>Text comes here</td>
          </tr>
     </table>
