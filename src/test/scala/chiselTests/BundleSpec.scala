@@ -157,6 +157,62 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       }
     }
   }
+  
+  "Bundles" should ("not emit FIRRTL bulk connects for Stringly-typed connections") in {
+    object Foo {
+      import Chisel._
+      // Chisel._ bundle
+      class BundleParent extends Bundle {
+        val foo = UInt(width = 8)
+      }
+      class BundleChild extends BundleParent {
+        val bar = UInt(width = 8)
+      }
+    }
+
+    import Foo._
+
+    // chisel3._ bundle
+    class MyBundle(child: Boolean) extends Bundle {
+      val fizz = UInt(8.W)
+      val buzz = if (child) new BundleChild else new BundleParent
+    }
+
+    val chirrtl = ChiselStage.emitChirrtl(new Module {
+      // Checking MonoConnect
+      val in = IO(Input(new MyBundle(true)))
+      val out = IO(Output(new MyBundle(false)))
+      out := in
+
+      // Checking BulkConnect (with Decoupled)
+      val enq = IO(Flipped(Decoupled(new BundleChild)))
+      val deq = IO(Decoupled(new BundleParent))
+      deq <> enq
+    })
+
+    chirrtl should include ("out.buzz.foo <= in.buzz.foo @[Vec.scala")
+    chirrtl shouldNot include ("deq <= enq")
+  }
+
+  "Bundles" should "not emit FIRRTL bulk connects between different FIRRTL types" in {
+    val chirrtl = ChiselStage.emitChirrtl(new Module {
+      val in = IO(Flipped(new Bundle {
+        val foo = Flipped(new Bundle {
+          val bar = Input(UInt(8.W))
+        })
+      }))
+      val out = IO(Output(new Bundle {
+        val foo = new Bundle {
+          val bar = UInt(8.W)
+        }
+      }))
+      // Both of these connections are legal in Chisel, but in and out do not have the same type
+      out := in
+      out <> in
+    })
+    // out <- in is illegal FIRRTL
+    chirrtl should include ("out.foo.bar <= in.foo.bar @[Vec.scala")
+  }
 
   // This tests the interaction of override def cloneType and the plugin.
   // We are commenting it for now because although this code fails to compile
