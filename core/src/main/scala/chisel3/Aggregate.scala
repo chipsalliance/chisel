@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.experimental.dataview.{InvalidViewException, isView}
+import chisel3.experimental.dataview.{InvalidViewException, isView, reifySingleData}
 
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
@@ -29,7 +29,26 @@ sealed abstract class Aggregate extends Data {
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
-      throw new AliasedAggregateFieldException(s"Aggregate $this contains aliased fields $duplicates")
+      this match {
+        case b: Record =>
+          // show groups of names of fields with duplicate id's
+          // The sorts make the displayed order of fields deterministic and matching the order of occurrence in the Bundle.
+          // It's a bit convoluted but happens rarely and makes the error message easier to understand
+          val dupNames = duplicates.toSeq.sortBy(_._id).map { duplicate =>
+            b.elements
+              .collect { case x if x._2._id == duplicate._id => x }
+              .toSeq.sortBy(_._2._id)
+              .map(_._1).reverse
+              .mkString("(", ",", ")")
+          }.mkString(",")
+          throw new AliasedAggregateFieldException(
+            s"${b.className} contains aliased fields named ${dupNames}"
+          )
+        case _ =>
+          throw new AliasedAggregateFieldException(
+            s"Aggregate ${this.getClass} contains aliased fields $duplicates ${duplicates.mkString(",")}"
+          )
+      }
     }
     for (child <- getElements) {
       child.bind(ChildBinding(this), resolvedDirection)
@@ -258,9 +277,20 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
     requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
+
+    // Special handling for views
     if (isView(this)) {
-      throw InvalidViewException("Dynamic indexing of Views is not yet supported")
+      reifySingleData(this) match {
+        // Views complicate things a bit, but views that correspond exactly to an identical Vec can just forward the
+        // dynamic indexing to the target Vec
+        // In theory, we could still do this forwarding if the sample element were different by deriving a DataView
+        case Some(target: Vec[T @unchecked]) if this.length == target.length &&
+                                                this.sample_element.typeEquivalent(target.sample_element) =>
+          return target.do_apply(p)
+        case _ => throw InvalidViewException("Dynamic indexing of Views is not yet supported")
+      }
     }
+
     val port = gen
 
     // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.
@@ -327,11 +357,11 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   def do_reduceTree(redOp: (T, T) => T, layerOp: (T) => T = (x: T) => x)
                    (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : T = {
     require(!isEmpty, "Cannot apply reduction on a vec of size 0")
-    var curLayer = this
+    var curLayer : Seq[T] = this
     while (curLayer.length > 1) {
-      curLayer = VecInit(curLayer.grouped(2).map( x =>
+      curLayer = curLayer.grouped(2).map( x =>
         if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))
-      ).toSeq)
+      ).toSeq
     }
     curLayer(0)
   }

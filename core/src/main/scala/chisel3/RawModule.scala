@@ -5,6 +5,7 @@ package chisel3
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.util.Try
 import scala.language.experimental.macros
+import scala.annotation.nowarn
 import chisel3.experimental.BaseModule
 import chisel3.internal._
 import chisel3.internal.BaseModule.{ModuleClone, InstanceClone}
@@ -17,6 +18,7 @@ import _root_.firrtl.annotations.{IsModule, ModuleTarget}
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
   * multiple IO() declarations.
   */
+@nowarn("msg=class Port") // delete when Port becomes private
 abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     extends BaseModule {
   //
@@ -35,10 +37,10 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   //
   // Other Internal Functions
   //
-  // For debuggers/testers, TODO: refactor out into proper public API
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
-  @deprecated("Use DataMirror.fullModulePorts instead. this API will be removed in Chisel 3.6", "Chisel 3.5")
-  lazy val getPorts = _firrtlPorts.get
+
+  @deprecated("Use DataMirror.modulePorts instead. this API will be removed in Chisel 3.6", "Chisel 3.5")
+  lazy val getPorts: Seq[Port] = _firrtlPorts.get
 
   val compileOptions = moduleCompileOptions
 

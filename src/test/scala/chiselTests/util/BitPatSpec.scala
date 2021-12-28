@@ -24,8 +24,16 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
     intercept[IllegalArgumentException]{BitPat("b")}
   }
 
-  it should "contact BitPat via ##" in {
+  it should "concat BitPat via ##" in {
     (BitPat.Y(4) ## BitPat.dontCare(3) ## BitPat.N(2)).toString should be (s"BitPat(1111???00)")
+  }
+
+  it should "throw when BitPat apply to a Hardware" in {
+    intercept[java.lang.IllegalArgumentException]{
+      chisel3.stage.ChiselStage.emitChirrtl(new chisel3.Module {
+        BitPat(chisel3.Reg(chisel3.Bool()))
+      })
+    }
   }
 
   it should "index and return new BitPat" in {

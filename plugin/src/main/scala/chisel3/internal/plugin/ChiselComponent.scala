@@ -11,7 +11,7 @@ import scala.tools.nsc.transform.TypingTransformers
 
 // The component of the chisel plugin. Not sure exactly what the difference is between
 //   a Plugin and a PluginComponent.
-class ChiselComponent(val global: Global) extends PluginComponent with TypingTransformers {
+class ChiselComponent(val global: Global, arguments: ChiselPluginArguments) extends PluginComponent with TypingTransformers {
   import global._
   val runsAfter: List[String] = List[String]("typer")
   val phaseName: String = "chiselcomponent"
@@ -19,10 +19,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
-      // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
-      // instead we just check the version and if its an early Scala version, the plugin does nothing
-      val scalaVersion = scala.util.Properties.versionNumberString.split('.')
-      if (scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12) {
+      if (ChiselPlugin.runComponent(global, arguments)(unit)) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
       }
     }

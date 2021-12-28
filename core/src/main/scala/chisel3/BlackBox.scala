@@ -8,6 +8,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.throwException
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import scala.annotation.nowarn
 
 package internal {
 
@@ -61,6 +62,7 @@ package experimental {
     * }}}
     * @note The parameters API is experimental and may change
     */
+  @nowarn("msg=class Port") // delete when Port becomes private
   abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
     private[chisel3] override def generateComponent(): Option[Component] = {
       require(!_closed, "Can't generate module more than once")
@@ -134,6 +136,7 @@ package experimental {
   * }}}
   * @note The parameters API is experimental and may change
   */
+@nowarn("msg=class Port") // delete when Port becomes private
 abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
 
   // Find a Record port named "io" for purposes of stripping the prefix

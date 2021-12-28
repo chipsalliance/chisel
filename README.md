@@ -19,7 +19,7 @@ Looking forward to CCC 2022! See you then!
 
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 ![CI](https://github.com/chipsalliance/chisel3/actions/workflows/test.yml/badge.svg)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/chipsalliance/chisel3.svg?label=release)](https://github.com/chipsalliance/chisel3/releases/latest)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel3.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel3/releases/latest)
 
 [**Chisel**](https://www.chisel-lang.org) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 Chisel adds hardware construction primitives to the [Scala](https://www.scala-lang.org) programming language, providing designers with the power of a modern programming language to write complex, parameterizable circuit generators that produce synthesizable Verilog.
@@ -93,7 +93,7 @@ import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
 
 Alternatively, you may generate some Verilog directly for inspection:
 ```scala
-val verilogString = (new chisel3.stage.ChiselStage).emitVerilog(new FirFilter(8, Seq(0.U, 1.U)))
+val verilogString = chisel3.emitVerilog(new FirFilter(8, Seq(0.U, 1.U)))
 println(verilogString)
 ```
 
@@ -120,12 +120,11 @@ If you insist on setting up your own project from scratch, your project needs to
 For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
-scalaVersion := "2.12.13"
-addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.4.4" cross CrossVersion.full)
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.4"
-scalacOptions += "-Xsource:2.11"
+scalaVersion := "2.13.7"
+addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.5.0-RC2" cross CrossVersion.full)
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5.0-RC2"
 // We also recommend using chiseltest for writing unit tests 
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.4" % "test"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.0-RC2" % "test"
 ```
 ### Guide For New Contributors
 If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
@@ -145,7 +144,7 @@ These simulation-based verification tools are available for Chisel:
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
-- [**Scastie (3.5.0-RC1)**](https://scastie.scala-lang.org/KtzZQ3nFTea9KoNh0tRqtg)
+- [**Scastie (3.5.0-RC2)**](https://scastie.scala-lang.org/R6wV80vUTr2CwhvouEdidg)
 - [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).
@@ -196,7 +195,7 @@ The repository version can be found in the [build.sbt](build.sbt) file.
 As of the time of writing it was:
 
 ```
-version := "3.4-SNAPSHOT"
+version := "3.5-SNAPSHOT"
 ```
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
@@ -211,7 +210,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to:
 
 ```
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5-SNAPSHOT"
 ```
 
 ### Building Chisel with FIRRTL in the same SBT Project
@@ -274,24 +273,15 @@ Code that touches lots of APIs that are private to the `chisel3` package should 
 
 ### Which version should I use?
 
-The chisel eco-system (`chisel3`, `firrtl`, `dsptools`, `firrtl-interpreter`, `treadle`, `diagrammer`) use a form of semantic versioning:
- major versions are identified by two leading numbers, separated by a dot (i.e., `3.2`), minor versions by a single number following the major version, separated by a dot.
- We maintain API compatibility within a major version (i.e., `3.2.12` should be API-compatible with `3.2.0`), but do not guarantee API compatibility between major versions
- (i.e., APIs may change between `3.1.8` and `3.2.0`).
- We may introduce new definitions or add additional parameters to existing definitions in a minor release, but we do our best to maintain compatibility with previous minor releases of a major release - code that worked in `3.2.0` should continue to work un-modified in `3.2.10`.
+We encourage Chisel users (as opposed to Chisel developers), to use the latest release version of Chisel.
+This [chisel-template](https://github.com/freechipsproject/chisel-template) repository is kept up-to-date, depending on the most recent version of Chisel.
+The recommended version is also captured near the top of this README, and in the [Github releases](https://github.com/chipsalliance/chisel3/releases) section of this repo.
+If you encounter an issue with a released version of Chisel, please file an issue on GitHub mentioning the Chisel version and provide a simple test case (if possible).
+Try to reproduce the issue with the associated latest minor release (to verify that the issue hasn't been addressed).
 
-We encourage chisel users (rather than chisel developers), to use release versions of chisel.
- The chisel web site (and GitHub repository) should indicate the current release version.
- If you encounter an issue with a released version of chisel, please file an issue on GitHub mentioning the chisel version and provide a simple test case (if possible).
- Try to reproduce the issue with the associated latest minor release (to verify that the issue hasn't been addressed).
+For more information on our versioning policy and what versions of the various Chisel ecosystem projects work together, see [Chisel Project Versioning](https://www.chisel-lang.org/chisel3/docs/appendix/versioning.html).
 
-If you're developing a chisel library (or `chisel` itself), you'll probably want to work closer to the tip of the development trunk.
- By default, the master branches of the chisel repositories are configured to build and publish their version of the code as `Z.Y-SNAPSHOT`.
- We try to publish an updated SNAPSHOT every two weeks.
- There is no guarantee of API compatibility between SNAPSHOT versions, but we publish date-stamped `Z.Y-yyyymmdd-SNAPSHOT` versions which will not change.
- The code in `Z.Y-SNAPSHOT` should match the code in the most recent `Z.Y-yyyymmdd-SNAPSHOT` version, the differences being the chisel library dependencies:
- `Z.Y-SNAPSHOT`s depend on `V.U-SNAPSHOT`s and `Z.Y-yyyymmdd-SNAPSHOT`s will depend on `V.U-yyyymmdd-SNAPSHOT`s.
- **NOTE**: Prior to the `v3.2-20191030-SNAPSHOT` version, we used `Z.Y-mmddyy-SNAPSHOT` to tag and name published SNAPSHOTs.
-
-If you're developing a library (or another chisel tool), you should probably work with date-stamped SNAPSHOTs until your library or tool is ready to be published (to ensure a consistent API).
- Prior to publishing, you should verify your code against generic (no date-stamp) SNAPSHOTs, or locally published clones of the current master branches of chisel dependencies.
+If you're developing a Chisel library (or `chisel3` itself), you'll probably want to work closer to the tip of the development trunk.
+By default, the master branches of the chisel repositories are configured to build and publish their version of the code as `Z.Y-SNAPSHOT`.
+Updated SNAPSHOTs are publised on every push to master.
+You are encouraged to do your development against the latest SNAPSHOT, but note that neither API nor ABI compatibility is guaranteed so your code may break at any time.

@@ -14,6 +14,8 @@ import chisel3._
 
 ## Upgrading From Scala 2.11 to 2.12
 
+**As of Chisel 3.5, support for Scala 2.11 has been dropped. This page is only relevant to Chisel versions 3.4 and earlier**
+
 As the latest (and probably last) release of Scala 2.11 (2.11.12) was released on 2 November 2017, the time has come to deprecate support for Scala 2.11.
 Chisel 3.4 is the last version of Chisel that will support Scala 2.11, so users should upgrade to Scala 2.12
 This document is intended to help guide Chisel users through this process; both the "Why?" and the "How?".
