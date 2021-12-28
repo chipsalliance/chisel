@@ -97,7 +97,7 @@ class ReduceTreeBalancedSpec extends ChiselPropSpec {
 
     // This test will fail for 5 nodes due to an unbalanced tree.
     // A fix is on the way.
-    for (n <- 1 to 4) {
+    for (n <- 1 to 5) {
       assertTesterPasses {
         new ReduceTreeBalancedTester(n)
       }
