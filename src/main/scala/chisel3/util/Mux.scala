@@ -16,7 +16,7 @@ import chisel3._
   *  io.selector(0) -> 2.U,
   *  io.selector(1) -> 4.U,
   *  io.selector(2) -> 8.U,
-  *  io.selector(4) -> 11.U,
+  *  io.selector(4) -> 16.U,
   * ))
   *
   * // or using ChiselEnum1H
@@ -31,7 +31,7 @@ import chisel3._
   *     2.U,
   *     4.U,
   *     8.U,
-  *     11.U,
+  *     16.U,
   *   ))
   * }}}
   *
@@ -54,7 +54,7 @@ object Mux1H {
   *  io.selector(0) -> 2.U,
   *  io.selector(1) -> 4.U,
   *  io.selector(2) -> 8.U,
-  *  io.selector(4) -> 11.U,
+  *  io.selector(4) -> 16.U,
   * ))
   * }}}
   * Returns the output of the Mux tree.

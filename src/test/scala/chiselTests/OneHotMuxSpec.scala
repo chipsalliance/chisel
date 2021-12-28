@@ -321,7 +321,7 @@ class OneHotEnumMux1HTester extends BasicTester {
        2.U,
        4.U,
        8.U,
-       11.U,
+       16.U,
      ))
     assert(hotValue === 4.U)
 
