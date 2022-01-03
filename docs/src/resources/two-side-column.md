@@ -36,6 +36,53 @@
 </td>
     <td>Text comes here</td>
          </tr>
+    <tr>
+<td>
+Text comes here
+</td>
+<td>
+
+```scala mdoc:invisible
+import Chisel.Queue
+import chisel3._
+import chisel3.util.DecoupledIO
+```
+
+```scala mdoc:silent
+class PassthroughGenerator(width: Int) extends Module {
+val io = IO(new Bundle {
+val in = Input(UInt(width.W))
+val out = Output(UInt(width.W))
+})
+io.out := io.in
+}
+println(getVerilogString(new PassthroughGenerator(10)))
+println(getVerilogString(new PassthroughGenerator(20)))
+```
+</td>
+<td>
+
+```
+module PassthroughGenerator(
+  input        clock,
+  input        reset,
+  input  [9:0] io_in,
+  output [9:0] io_out
+);
+  assign io_out = io_in; // @[main.scala 13:10]
+endmodule
+
+module PassthroughGenerator(
+input         clock,
+input         reset,
+input  [19:0] io_in,
+output [19:0] io_out
+);
+assign io_out = io_in; // @[main.scala 13:10]
+endmodule
+```
+</td>
+         </tr>
     </table>
 </body>
 </html>
@@ -107,6 +154,45 @@ val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
 </td>
              <td>Text comes here</td>
          </tr>
+ <tr>
+<td>
+Text comes here
+</td>
+<td>
+
+```scala mdoc:silent
+class MyModule extends Module {
+  val io = IO(new Bundle {
+    val in  = Input(UInt(4.W))
+    val out = Output(UInt(4.W))
+  })
+
+val two  = 1 + 1
+println(two)
+val utwo = 1.U + 1.U
+println(utwo)
+
+io.out := io.in
+}
+println(getVerilogString(new MyModule))
+```
+</td>
+<td>
+
+```
+2
+UInt<1>(OpResult in MyModule)
+module MyModule(
+  input        clock,
+  input        reset,
+  input  [3:0] io_in,
+  output [3:0] io_out
+);
+  assign io_out = io_in; // @[main.scala 19:10]
+endmodule
+```
+</td>
+         </tr>
     </table>
 <html>
 <body>
@@ -123,8 +209,44 @@ val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
          </tr>
          <tr>
 <td>Text comes here</td>
-            <td>chisel code comes here</td>
-             <td>Text comes here</td>
+<td>
+
+```scala mdoc:silent
+class MyModule extends Module {
+val io = IO(new Bundle {
+val in = Flipped(DecoupledIO(UInt(8.W)))
+val out = DecoupledIO(UInt(8.W))
+})
+
+val tmp = Wire(DecoupledIO(UInt(8.W)))
+tmp <> io.in
+io.out <> tmp
+io.out <> io.in
+}
+
+
+println(getVerilogString(new MyModule))
+```
+</td>
+<td>
+
+```
+module MyModule(
+  input        clock,
+  input        reset,
+  output       io_in_ready,
+  input        io_in_valid,
+  input  [7:0] io_in_bits,
+  input        io_out_ready,
+  output       io_out_valid,
+  output [7:0] io_out_bits
+);
+  assign io_in_ready = io_out_ready; // @[main.scala 17:12]
+  assign io_out_valid = io_in_valid; // @[main.scala 17:12]
+  assign io_out_bits = io_in_bits; // @[main.scala 17:12]
+endmodule
+```
+</td>
          </tr>
     </table>
 <html>
@@ -142,14 +264,94 @@ val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
          </tr>
          <tr>
 <td>Text comes here</td>
-            <td>chisel code comes here</td>
-             <td>Text comes here</td>
+<td>
+
+```scala mdoc:silent
+class RegisterModule extends Module {
+  val io = IO(new Bundle {
+    val in  = Input(UInt(12.W))
+    val out = Output(UInt(12.W))
+  })
+
+val register = Reg(UInt(12.W))
+register := io.in + 1.U
+io.out := register
+}
+
+println(getVerilogString(new RegisterModule))
+```
+</td>
+<td>
+
+```
+module RegisterModule(
+  input         clock,
+  input         reset,
+  input  [11:0] io_in,
+  output [11:0] io_out
+);
+`ifdef RANDOMIZE_REG_INIT
+  reg [31:0] _RAND_0;
+`endif // RANDOMIZE_REG_INIT
+  reg [11:0] register; // @[main.scala 14:21]
+  assign io_out = register; // @[main.scala 16:10]
+  always @(posedge clock) begin
+    register <= io_in + 12'h1; // @[main.scala 15:21]
+  end
+// Register and memory initialization
+`ifdef RANDOMIZE_GARBAGE_ASSIGN
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_INVALID_ASSIGN
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_REG_INIT
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_MEM_INIT
+`define RANDOMIZE
+`endif
+`ifndef RANDOM
+`define RANDOM $random
+`endif
+`ifdef RANDOMIZE_MEM_INIT
+  integer initvar;
+`endif
+`ifndef SYNTHESIS
+`ifdef FIRRTL_BEFORE_INITIAL
+`FIRRTL_BEFORE_INITIAL
+`endif
+initial begin
+  `ifdef RANDOMIZE
+    `ifdef INIT_RANDOM
+      `INIT_RANDOM
+    `endif
+    `ifndef VERILATOR
+      `ifdef RANDOMIZE_DELAY
+        #`RANDOMIZE_DELAY begin end
+      `else
+        #0.002 begin end
+      `endif
+    `endif
+`ifdef RANDOMIZE_REG_INIT
+  _RAND_0 = {1{`RANDOM}};
+  register = _RAND_0[11:0];
+`endif // RANDOMIZE_REG_INIT
+  `endif // RANDOMIZE
+end // initial
+`ifdef FIRRTL_AFTER_INITIAL
+`FIRRTL_AFTER_INITIAL
+`endif
+`endif // SYNTHESIS
+endmodule
+```
+</td>
          </tr>
     </table>
 <html>
 <body>
 
-#2-D assignment
+#Case statement
 
 <html>
 <body>
@@ -161,8 +363,156 @@ val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
          </tr>
          <tr>
 <td>Text comes here</td>
-            <td>chisel code comes here</td>
-             <td>Text comes here</td>
+<td>
+
+```scala mdoc:silent
+class DelayBy1(resetValue: Option[UInt] = None) extends Module {
+  val io = IO(new Bundle {
+    val in  = Input( UInt(16.W))
+    val out = Output(UInt(16.W))
+  })
+  val reg = resetValue match {
+    case Some(r) => RegInit(r)
+    case None    => Reg(UInt())
+  }
+  reg := io.in
+  io.out := reg
+}
+
+println(getVerilogString(new DelayBy1))
+println(getVerilogString(new DelayBy1(Some(3.U))))
+```
+</td>
+<td>
+
+```
+module DelayBy1(
+  input         clock,
+  input         reset,
+  input  [15:0] io_in,
+  output [15:0] io_out
+);
+`ifdef RANDOMIZE_REG_INIT
+  reg [31:0] _RAND_0;
+`endif // RANDOMIZE_REG_INIT
+  reg [15:0] reg_; // @[main.scala 15:24]
+  assign io_out = reg_; // @[main.scala 18:10]
+  always @(posedge clock) begin
+    reg_ <= io_in; // @[main.scala 17:7]
+  end
+// Register and memory initialization
+`ifdef RANDOMIZE_GARBAGE_ASSIGN
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_INVALID_ASSIGN
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_REG_INIT
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_MEM_INIT
+`define RANDOMIZE
+`endif
+`ifndef RANDOM
+`define RANDOM $random
+`endif
+`ifdef RANDOMIZE_MEM_INIT
+  integer initvar;
+`endif
+`ifndef SYNTHESIS
+`ifdef FIRRTL_BEFORE_INITIAL
+`FIRRTL_BEFORE_INITIAL
+`endif
+initial begin
+  `ifdef RANDOMIZE
+    `ifdef INIT_RANDOM
+      `INIT_RANDOM
+    `endif
+    `ifndef VERILATOR
+      `ifdef RANDOMIZE_DELAY
+        #`RANDOMIZE_DELAY begin end
+      `else
+        #0.002 begin end
+      `endif
+    `endif
+`ifdef RANDOMIZE_REG_INIT
+  _RAND_0 = {1{`RANDOM}};
+  reg_ = _RAND_0[15:0];
+`endif // RANDOMIZE_REG_INIT
+  `endif // RANDOMIZE
+end // initial
+`ifdef FIRRTL_AFTER_INITIAL
+`FIRRTL_AFTER_INITIAL
+`endif
+`endif // SYNTHESIS
+endmodule
+
+module DelayBy1(
+input         clock,
+input         reset,
+input  [15:0] io_in,
+output [15:0] io_out
+);
+`ifdef RANDOMIZE_REG_INIT
+reg [31:0] _RAND_0;
+`endif // RANDOMIZE_REG_INIT
+reg [15:0] reg_; // @[main.scala 14:28]
+assign io_out = reg_; // @[main.scala 18:10]
+always @(posedge clock) begin
+if (reset) begin // @[main.scala 14:28]
+reg_ <= 16'h3; // @[main.scala 14:28]
+end else begin
+reg_ <= io_in; // @[main.scala 17:7]
+end
+end
+// Register and memory initialization
+`ifdef RANDOMIZE_GARBAGE_ASSIGN
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_INVALID_ASSIGN
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_REG_INIT
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_MEM_INIT
+`define RANDOMIZE
+`endif
+`ifndef RANDOM
+`define RANDOM $random
+`endif
+`ifdef RANDOMIZE_MEM_INIT
+integer initvar;
+`endif
+`ifndef SYNTHESIS
+`ifdef FIRRTL_BEFORE_INITIAL
+`FIRRTL_BEFORE_INITIAL
+`endif
+initial begin
+`ifdef RANDOMIZE
+`ifdef INIT_RANDOM
+`INIT_RANDOM
+`endif
+`ifndef VERILATOR
+`ifdef RANDOMIZE_DELAY
+#`RANDOMIZE_DELAY begin end
+`else
+#0.002 begin end
+`endif
+`endif
+`ifdef RANDOMIZE_REG_INIT
+_RAND_0 = {1{`RANDOM}};
+reg_ = _RAND_0[15:0];
+`endif // RANDOMIZE_REG_INIT
+`endif // RANDOMIZE
+end // initial
+`ifdef FIRRTL_AFTER_INITIAL
+`FIRRTL_AFTER_INITIAL
+`endif
+`endif // SYNTHESIS
+endmodule
+```
+</td>
          </tr>
     </table>
 <html>
