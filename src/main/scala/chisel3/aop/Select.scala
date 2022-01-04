@@ -267,7 +267,7 @@ object Select {
   def ios[T <: BaseModule](parent: Hierarchy[T]): Seq[Data] = {
     check(parent)
     implicit val mg = new chisel3.internal.MacroGenerated{}
-    parent._lookup{ x=> parent.proto._component.get.asInstanceOf[DefModule].ports.map(_.id)}
+    parent._lookup { x => ios(parent.proto) }
   }
 
   /** Selects all SyncReadMems directly contained within given module
