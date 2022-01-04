@@ -208,43 +208,42 @@ endmodule
             <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
-<td>Text comes here</td>
+<td>
+
+```
+wire [31:0] 
+a = 32'd42; 
+wire [31:0] 
+b = 32'hbabecafe; 
+wire [15:0] c; 
+assign c = 16'b1;
+```
+
+</td>
 <td>
 
 ```scala mdoc:silent
-class MyModule extends Module {
-val io = IO(new Bundle {
-val in = Flipped(DecoupledIO(UInt(8.W)))
-val out = DecoupledIO(UInt(8.W))
-})
+class MyWireAssignment extends Module {
 
-val tmp = Wire(DecoupledIO(UInt(8.W)))
-tmp <> io.in
-io.out <> tmp
-io.out <> io.in
+ val a = WireInit(42.U(32.W))
+ val b = WireInit("hbabecafe".U(32.W)) 
+ val c = Wire(UInt(16.W)) 
+  c := "b1".U;
 }
+ 
 
-
-println(getVerilogString(new MyModule))
+println(getVerilogString(new MyWireAssignment))
 ```
 </td>
 <td>
 
 ```
 module MyModule(
-  input        clock,
-  input        reset,
-  output       io_in_ready,
-  input        io_in_valid,
-  input  [7:0] io_in_bits,
-  input        io_out_ready,
-  output       io_out_valid,
-  output [7:0] io_out_bits
+  input   clock,
+  input   reset
 );
-  assign io_in_ready = io_out_ready; // @[main.scala 17:12]
-  assign io_out_valid = io_in_valid; // @[main.scala 17:12]
-  assign io_out_bits = io_in_bits; // @[main.scala 17:12]
 endmodule
+
 ```
 </td>
          </tr>
@@ -510,6 +509,61 @@ end // initial
 `FIRRTL_AFTER_INITIAL
 `endif
 `endif // SYNTHESIS
+endmodule
+```
+</td>
+         </tr>
+    </table>
+<html>
+<body>
+
+#systemVerilog Interfaces
+
+<html>
+<body>
+    <table border ="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
+         </tr>
+         <tr>
+<td>Text comes here</td>
+<td>
+
+```scala mdoc:silent
+class MyModule extends Module {
+val io = IO(new Bundle {
+val in = Flipped(DecoupledIO(UInt(8.W)))
+val out = DecoupledIO(UInt(8.W))
+})
+
+val tmp = Wire(DecoupledIO(UInt(8.W)))
+tmp <> io.in
+io.out <> tmp
+io.out <> io.in
+}
+
+
+println(getVerilogString(new MyModule))
+```
+</td>
+<td>
+
+```
+module MyModule(
+  input        clock,
+  input        reset,
+  output       io_in_ready,
+  input        io_in_valid,
+  input  [7:0] io_in_bits,
+  input        io_out_ready,
+  output       io_out_valid,
+  output [7:0] io_out_bits
+);
+  assign io_in_ready = io_out_ready; // @[main.scala 17:12]
+  assign io_out_valid = io_in_valid; // @[main.scala 17:12]
+  assign io_out_bits = io_in_bits; // @[main.scala 17:12]
 endmodule
 ```
 </td>
