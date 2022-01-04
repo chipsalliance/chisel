@@ -212,7 +212,7 @@ endmodule
 <td>
 
 ```scala mdoc:silent
-class MyModule extends Module {
+class MyWireAssignmentModule extends Module {
 val io = IO(new Bundle {
 val in = Flipped(DecoupledIO(UInt(8.W)))
 val out = DecoupledIO(UInt(8.W))
