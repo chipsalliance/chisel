@@ -850,6 +850,90 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       })
       intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
     }
+    it("10.9: allInstancesOf.ios") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        val abs = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] => aop.Select.ios(i).map(_.toAbsoluteTarget) }
+        val rel = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] => aop.Select.ios(i).map(_.toTarget) }
+        println(s"abs is $abs")
+        abs should be (Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
+
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
+
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
+
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt,
+        ))
+
+        rel should be (Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
+
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
+
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
+             
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt,
+        ))
+      })
+      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+    }
+    it("10.10: allDefinitionsOf.ios") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] => aop.Select.ios(i).map(_.toAbsoluteTarget) }
+        val rel = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] => aop.Select.ios(i).map(_.toTarget) }
+        println(s"abs is $abs")
+        abs should be (Seq(
+          "~AddFour|AddOne>clock".rt,
+          "~AddFour|AddOne>reset".rt,
+          "~AddFour|AddOne>in".rt,
+          "~AddFour|AddOne>out".rt,
+
+          "~AddFour|AddOne_1>clock".rt,
+          "~AddFour|AddOne_1>reset".rt,
+          "~AddFour|AddOne_1>in".rt,
+          "~AddFour|AddOne_1>out".rt,
+        ))
+
+        rel should be (Seq(
+          "~AddFour|AddOne>clock".rt,
+          "~AddFour|AddOne>reset".rt,
+          "~AddFour|AddOne>in".rt,
+          "~AddFour|AddOne>out".rt,
+
+          "~AddFour|AddOne_1>clock".rt,
+          "~AddFour|AddOne_1>reset".rt,
+          "~AddFour|AddOne_1>in".rt,
+          "~AddFour|AddOne_1>out".rt,
+        ))
+        
+      })
+      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+    }
+
   }
 }
 
