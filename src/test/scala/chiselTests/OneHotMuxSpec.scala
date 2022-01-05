@@ -314,9 +314,9 @@ class OneHotEnumMux1HTester extends BasicTester {
    object selector extends ChiselEnum1H {
      val s0, s1, s2, s3 = Value
    }
-   val selectorVal = Wire(UInt(selector.getWidth.W))
-   selectorVal := selector.s1.asUInt
-   val hotValue = chisel3.util.Mux1H(selectorVal.asUInt,
+
+   val selectorVal = selector.s1
+   val hotValue = chisel3.util.Mux1H(selectorVal,
       Seq(
        2.U,
        4.U,

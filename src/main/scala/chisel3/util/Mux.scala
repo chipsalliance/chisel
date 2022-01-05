@@ -6,6 +6,8 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.experimental.ChiselEnum1H
+import chisel3.experimental.EnumType
 
 /** Builds a Mux tree out of the input signal vector using a one hot encoded
   * select signal. Returns the output of the Mux tree.
@@ -24,15 +26,15 @@ import chisel3._
   * object selector extends chisel3.experimental.ChiselEnum1H {
   *   val s0, s1, s2, s3 = Value
   * }
-  * val selectorVal = Wire(UInt(selector.getWidth.W))
-  * selectorVal := selector.s1.asUInt
-  * val hotValue = chisel3.util.Mux1H(selectorVal.asUInt,
+  * val selectorVal = selector.s1
+  * val hotValue = chisel3.util.Mux1H(selectorVal,
       Seq(
   *     2.U,
   *     4.U,
   *     8.U,
   *     16.U,
   *   ))
+  * // hotValue is 4.U
   * }}}
   *
   * @note results unspecified unless exactly one select signal is high
@@ -43,6 +45,8 @@ object Mux1H {
   def apply[T <: Data](in: Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
   def apply[T <: Data](sel: UInt, in: Seq[T]): T =
     apply((0 until in.size).map(sel(_)), in)
+  def apply[T <: Data](sel: EnumType, in: Seq[T]): T =
+    apply(sel.litValue.U(sel.getWidth.W), in)
   def apply(sel: UInt, in: UInt): Bool = (sel & in).orR
 }
 
