@@ -13,6 +13,7 @@ import chisel3.testers.BasicTester
 import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalactic.One
 
 object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
@@ -525,6 +526,16 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
       assert(enumVal.litValue === r)
       r = r << 1
     }
+  }
+
+  it should "check OneHot enum index" in {
+    object OneHotEnum extends ChiselEnum1H {
+	    val VAL1, VAL2, VAL3 = Value
+    }
+
+    assert(OneHotEnum.VAL1.toIndex === 0)
+    assert(OneHotEnum.VAL2.toIndex === 1)
+    assert(OneHotEnum.VAL3.toIndex === 2)
   }
 }
 

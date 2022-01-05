@@ -86,6 +86,10 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     }
   }
 
+  def toIndex: Int = {
+    factory.all.indexOf(this)
+  }
+
   override def cloneType: this.type = factory().asInstanceOf[this.type]
 
   private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
