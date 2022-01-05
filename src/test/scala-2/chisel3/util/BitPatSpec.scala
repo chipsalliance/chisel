@@ -124,8 +124,8 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert to BitPat from ChiselEnum" in {
-    val b = BitPat(BitPat.fromEnum(Enum.VAL1))
-    val c = BitPat(BitPat.fromEnum(Enum.VAL3))
+    val b = BitPat(Enum.VAL1)
+    val c = BitPat(Enum.VAL3)
     b should be(BitPat("b00"))
     c should be(BitPat("b10"))
   }

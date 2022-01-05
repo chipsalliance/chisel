@@ -88,13 +88,6 @@ object BitPat extends BitPat$Intf {
     x.value.asUInt(x.getWidth.W)
   }
 
-    /** Creates a [[BitPat]] from a [[ChiselEnum]] literal.
-    *
-    * @param n the [[ChiselEnum]]
-    */
-  def fromEnum[T <: Data](n: T): UInt =
-    n.litValue.U((n.getWidth).W)
-
   /** Allows UInts to be used where a BitPat is expected, useful for when an
     * interface is defined with BitPats but not all cases need the partial
     * matching capability.
@@ -106,6 +99,13 @@ object BitPat extends BitPat$Intf {
     val width = x.getWidth.max(1) // BitPat doesn't support zero-width
     val mask = (BigInt(1) << width) - 1
     new BitPat(x.litValue, mask, width)
+  }
+
+  /** Allows ChiselEnum to be used where a BitPat is expected.
+    */
+  def apply(x: EnumType): BitPat = {
+    val len = if (x.isWidthKnown) x.getWidth else 0
+    apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
   }
 }
 
