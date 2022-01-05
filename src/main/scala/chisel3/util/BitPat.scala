@@ -103,10 +103,7 @@ object BitPat extends BitPat$Intf {
 
   /** Allows ChiselEnum to be used where a BitPat is expected.
     */
-  def apply(x: EnumType): BitPat = {
-    val len = if (x.isWidthKnown) x.getWidth else 0
-    apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
-  }
+  def apply(x: EnumType): BitPat = apply(x.litValue.U((x.getWidth).W))
 }
 
 package experimental {
