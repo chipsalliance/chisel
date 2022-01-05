@@ -4,6 +4,7 @@ package chisel3.util
 
 import scala.language.experimental.macros
 import chisel3._
+import chisel3.experimental.EnumType
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 
@@ -88,13 +89,6 @@ object BitPat {
     x.value.asUInt(x.getWidth.W)
   }
 
-    /** Creates a [[BitPat]] from a [[ChiselEnum]] literal.
-    *
-    * @param n the [[ChiselEnum]]
-    */
-  def fromEnum[T <: Data](n: T): UInt =
-    n.litValue.U((n.getWidth).W)
-
   /** Allows UInts to be used where a BitPat is expected, useful for when an
     * interface is defined with BitPats but not all cases need the partial
     * matching capability.
@@ -103,6 +97,14 @@ object BitPat {
     */
   def apply(x: UInt): BitPat = {
     require(x.isLit, s"$x is not a literal, BitPat.apply(x: UInt) only accepts literals")
+    val len = if (x.isWidthKnown) x.getWidth else 0
+    apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
+  }
+
+    /**
+    * Allows [[ChiselEnum]] to be used where a BitPat is expected.
+    */
+  def apply(x: EnumType): BitPat = {
     val len = if (x.isWidthKnown) x.getWidth else 0
     apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
   }
