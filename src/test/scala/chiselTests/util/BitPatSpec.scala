@@ -3,9 +3,13 @@
 package chiselTests.util
 
 import chisel3.util.BitPat
+import chisel3.experimental.ChiselEnum
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+object Enum extends ChiselEnum {
+  val VAL1, VAL2, VAL3 = Value
+}
 
 class BitPatSpec extends AnyFlatSpec with Matchers {
   behavior of classOf[BitPat].toString
@@ -48,5 +52,12 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
     b(2, 0) should be(BitPat("b???"))
     b(4, 3) should be(BitPat("b01"))
     b(6, 6) should be(BitPat("b1"))
+  }
+
+  it should "convert to BitPat from ChiselEnum" in {
+    val b = BitPat(BitPat.fromEnum(Enum.VAL1))
+    val c = BitPat(BitPat.fromEnum(Enum.VAL3))
+    b should be(BitPat("b00"))
+    c should be(BitPat("b10"))
   }
 }
