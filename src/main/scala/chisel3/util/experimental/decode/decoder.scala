@@ -122,6 +122,28 @@ object decodeAs  {
       * @return bundle with the decode output.
       *
       * @note The bundle width must match the TruthTable width.
+      * @example
+      * {{{
+      * class OutputBundle extends Bundle {
+      *   val s1 = UInt(2.W)
+      *   val s2 = UInt(2.W)
+      *   val s3 = Bool()
+      * }
+      * val selector = "b001".U
+      * val signals = decodeAs(
+      *   (new OutputBundle),
+      *   selector,
+      *   TruthTable(
+      *     Array(
+      *     BitPat("b001")  -> BitPat(1.U(2.W)) ## BitPat(1.U(2.W)) ## BitPat.Y(),
+      *     BitPat("b?11")  -> BitPat(2.U(2.W)) ## BitPat(2.U(2.W)) ## BitPat.N(),
+      *     ),                 BitPat(0.U(2.W)) ## BitPat(0.U(2.W)) ## BitPat.dontCare(1) // Default values
+      *   )
+      * )
+      * val a = signals.s1 // Should be 1.U(2.W)
+      * val b = signals.s2 // Should be 1.U(2.W)
+      * val c = signals.s3 // Should be true.B
+      * }}}
       */
     def apply[T <: Bundle](b: T, input: UInt, truthTable: TruthTable): T =
     decoder(input, truthTable).asTypeOf(b)
