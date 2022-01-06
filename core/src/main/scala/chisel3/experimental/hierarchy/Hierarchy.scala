@@ -36,7 +36,8 @@ sealed trait Hierarchy[+A] {
     */
   def isA[B : TypeTag]: Boolean = {
     val tptag = implicitly[TypeTag[B]]
-    val name = tptag.tpe.toString
+    // drop any type information for the comparison, because the proto will not have that information.
+    val name = tptag.tpe.toString.takeWhile(_ != '[') 
     inBaseClasses(name)
   }
 
