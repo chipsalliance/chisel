@@ -112,3 +112,19 @@ object decoder extends LazyLogging {
       )
     )
 }
+
+object decodeAs  {
+    /** Decode signals using a [[Bundle]] as the output
+      *
+      * @param b          the output bundle to be used as the decoded signal
+      * @param input      input signal that contains decode table input
+      * @param truthTable [[TruthTable]] to decode user input.
+      * @return bundle with the decode output.
+      *
+      * @note The bundle width must match the TruthTable width.
+      */
+    def apply[T <: Bundle](b: T, input: UInt, truthTable: TruthTable): T =
+    decoder(input, truthTable).asTypeOf(b)
+    def apply[T <: Bundle](minimizer: Minimizer, b: T, input: UInt, truthTable: TruthTable): T =
+    decoder(minimizer, input, truthTable).asTypeOf(b)
+}
