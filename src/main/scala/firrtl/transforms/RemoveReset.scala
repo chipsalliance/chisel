@@ -50,6 +50,7 @@ object RemoveReset extends Transform with DependencyAPIMigration {
 
   private def onModule(m: DefModule, isPreset: String => Boolean): DefModule = {
     val resets = mutable.HashMap.empty[String, Reset]
+    val asyncResets = mutable.HashMap.empty[String, Reset]
     val invalids = computeInvalids(m)
     def onStmt(stmt: Statement): Statement = {
       stmt match {
@@ -77,12 +78,21 @@ object RemoveReset extends Transform with DependencyAPIMigration {
           // Add register reset to map
           resets(rname) = Reset(reset, init, info)
           reg.copy(reset = Utils.zero, init = WRef(reg))
+        case reg @ DefRegister(info, rname, _, _, reset, init) if reset.tpe == AsyncResetType =>
+          asyncResets(rname) = Reset(reset, init, info)
+          reg
         case Connect(info, ref @ WRef(rname, _, RegKind, _), expr) if resets.contains(rname) =>
           val reset = resets(rname)
           val muxType = Utils.mux_type_and_widths(reset.value, expr)
           // Use reg source locator for mux enable and true value since that's where they're defined
           val infox = MultiInfo(reset.info, reset.info, info)
           Connect(infox, ref, Mux(reset.cond, reset.value, expr, muxType))
+        case Connect(info, ref @ WRef(rname, _, RegKind, _), expr) if asyncResets.contains(rname) =>
+          val reset = asyncResets(rname)
+          // The `muxType` for async always blocks is located in [[VerilogEmitter.VerilogRender.regUpdate]]:
+          // addUpdate(info, Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), Seq.empty)
+          val infox = MultiInfo(reset.info, reset.info, info)
+          Connect(infox, ref, expr)
         case other => other.map(onStmt)
       }
     }

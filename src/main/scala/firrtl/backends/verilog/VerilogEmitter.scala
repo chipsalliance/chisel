@@ -787,13 +787,12 @@ class VerilogEmitter extends SeqTransform with Emitter {
       } else { // Asynchronous Reset
         assert(reset.tpe == AsyncResetType, "Error! Synchronous reset should have been removed!")
         val tv = init
-        val InfoExpr(finfo, fv) = netlist(r)
-        // TODO add register info argument and build a MultiInfo to pass
+        val InfoExpr(info, fv) = netlist(r)
         asyncResetAlwaysBlocks += (
           (
             clk,
             reset,
-            addUpdate(NoInfo, Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), Seq.empty)
+            addUpdate(info, Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), Seq.empty)
           )
         )
       }

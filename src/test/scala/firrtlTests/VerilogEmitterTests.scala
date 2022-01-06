@@ -717,6 +717,22 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     result should containLine("assign z = x == y;")
   }
 
+  it should "show line numbers for AsyncReset regUpdate" in {
+    val result = compileBody(
+      """input clock : Clock
+        |input reset : AsyncReset
+        |output io : { flip in : UInt<1>, out : UInt<1>}
+        |
+        |reg valid : UInt<1>, clock with :
+        |  reset => (reset, UInt<1>("h0")) @[Playground.scala 11:22]
+        |valid <= io.in @[Playground.scala 12:9]
+        |io.out <= valid @[Playground.scala 13:10]""".stripMargin
+    )
+    result should containLine("if (reset) begin // @[Playground.scala 11:22]")
+    result should containLine("valid <= 1'h0; // @[Playground.scala 11:22]")
+    result should containLine("valid <= io_in; // @[Playground.scala 12:9]")
+  }
+
   it should "subtract positive literals instead of adding negative literals" in {
     val compiler = new VerilogCompiler
     val result = compileBody(
