@@ -116,7 +116,7 @@ lazy val contributors =
           Seq( GitHubRepository("chipsalliance", "chisel3"),
                GitHubRepository("chipsalliance", "firrtl"),
                GitHubRepository("chipsalliance", "treadle"),
-               GitHubRepository("ucb-bar", "chisel-testers2"),
+               GitHubRepository("ucb-bar", "chiseltest"),
                GitHubRepository("ucb-bar", "chisel2-deprecated"),
                GitHubRepository("freechipsproject", "chisel-bootcamp"),
                GitHubRepository("freechipsproject", "chisel-template"),
