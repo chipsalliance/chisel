@@ -914,7 +914,6 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
         val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] => aop.Select.ios(i).map(_.toAbsoluteTarget) }
         val rel = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] => aop.Select.ios(i).map(_.toTarget) }
-        println(s"abs is $abs")
         abs should be (Seq(
           "~AddFour|AddOne>clock".rt,
           "~AddFour|AddOne>reset".rt,
