@@ -754,6 +754,16 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       getFirrtlAndAnnos(new Top)
     }
+    it("9.3 it should ignore type parameters (even though it would be nice if it didn't)") {
+      class Top extends Module {
+        val d0: Definition[Module] = Definition(new HasTypeParams(Bool()))
+        require(d0.isA[HasTypeParams[Bool]])
+        require(d0.isA[HasTypeParams[_]])
+        require(d0.isA[HasTypeParams[UInt]])
+        require(!d0.isA[HasBlah])
+      }
+      getFirrtlAndAnnos(new Top)
+    }
   }
   describe("10: Select APIs") {
     it("10.0: instancesOf") {
@@ -850,6 +860,122 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       })
       intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
     }
+    it("10.9: allInstancesOf.ios") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        val abs = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] => aop.Select.ios(i).map(_.toAbsoluteTarget) }
+        val rel = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] => aop.Select.ios(i).map(_.toTarget) }
+        abs should be (Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
+
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
+
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
+
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt,
+        ))
+
+        rel should be (Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
+
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
+
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
+             
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt,
+        ))
+      })
+      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+    }
+    it("10.10: allDefinitionsOf.ios") {
+      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
+        val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] => aop.Select.ios(i).map(_.toAbsoluteTarget) }
+        val rel = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] => aop.Select.ios(i).map(_.toTarget) }
+        abs should be (Seq(
+          "~AddFour|AddOne>clock".rt,
+          "~AddFour|AddOne>reset".rt,
+          "~AddFour|AddOne>in".rt,
+          "~AddFour|AddOne>out".rt,
+
+          "~AddFour|AddOne_1>clock".rt,
+          "~AddFour|AddOne_1>reset".rt,
+          "~AddFour|AddOne_1>in".rt,
+          "~AddFour|AddOne_1>out".rt,
+        ))
+
+        rel should be (Seq(
+          "~AddFour|AddOne>clock".rt,
+          "~AddFour|AddOne>reset".rt,
+          "~AddFour|AddOne>in".rt,
+          "~AddFour|AddOne>out".rt,
+
+          "~AddFour|AddOne_1>clock".rt,
+          "~AddFour|AddOne_1>reset".rt,
+          "~AddFour|AddOne_1>in".rt,
+          "~AddFour|AddOne_1>out".rt,
+        ))
+        
+      })
+      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+    }
+    it("10.11 Select.instancesIn for typed BaseModules") {
+      val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
+        val targets = aop.Select.instancesIn(m.toDefinition).map { i: Instance[BaseModule] => i.toTarget }
+        targets should be (Seq(
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it,
+        ))     
+      })
+      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
+    }
+    it("10.12 Select.instancesOf for typed BaseModules if type is ignored") {
+      val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
+        val targets = aop.Select.instancesOf[HasTypeParams[_]](m.toDefinition).map { i: Instance[HasTypeParams[_]] => i.toTarget }
+        targets should be (Seq(
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it,
+        ))       
+      })
+      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
+    }
+    it("10.13 Select.instancesOf for typed BaseModules even type is specified wrongly (should be ignored, even though we wish it weren't)") {
+      val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
+        val targets = aop.Select.instancesOf[HasTypeParams[SInt]](m.toDefinition).map { i: Instance[HasTypeParams[_]] => i.toTarget }
+        targets should be (Seq(
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it,
+        ))       
+      })
+      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect)) 
+    }
   }
 }
-

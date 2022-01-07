@@ -209,13 +209,14 @@ chisel3.stage.ChiselStage.emitVerilog(new AddTwo(Definition(new AddOne(10))))
 
 Select functions can be applied after a module has been elaborated, either in a Chisel Aspect or in a parent module applied to a child module.
 
-There are six hierarchy-specific functions, which either return `Instance`'s or `Definition`'s:
+There are seven hierarchy-specific functions, which (with the exception of `ios`) either return `Instance`'s or `Definition`'s:
  - `instancesIn(parent)`: Return all instances directly instantiated locally within `parent`
  - `instancesOf[type](parent)`: Return all instances of provided `type` directly instantiated locally within `parent`
  - `allInstancesOf[type](root)`: Return all instances of provided `type` directly and indirectly instantiated, locally and deeply, starting from `root`
  - `definitionsIn`: Return definitions of all instances directly instantiated locally within `parent`
  - `definitionsOf[type]`: Return definitions of all instances of provided `type` directly instantiated locally within `parent`
  - `allDefinitionsOf[type]`: Return all definitions of instances of provided `type` directly and indirectly instantiated, locally and deeply, starting from `root`
+ - `ios`: Returns all the I/Os of the provided definition or instance.
 
 To demonstrate this, consider the following. We mock up an example where we are using the `Select.allInstancesOf` and `Select.allDefinitionsOf` to annotate instances and the definition of `EmptyModule`. When converting the `ChiselAnnotation` to firrtl's `Annotation`, we print out the resulting `Target`. As shown, despite `EmptyModule` actually only being elaborated once, we still provide different targets depending on how the instance or definition is selected.
 
@@ -257,5 +258,53 @@ class Top extends Module {
 ```scala mdoc:passthrough
 println("```")
 val x = chisel3.stage.ChiselStage.emitFirrtl(new Top)
+println("```")
+```
+
+You can also use `Select.ios` on either a `Definition` or an `Instance` to annotate the I/Os appropriately:
+
+```scala mdoc
+case class MyIOAnnotation(m: Data, tag: String) extends experimental.ChiselAnnotation {
+  def toFirrtl = {
+    println(tag + ": " + m.toTarget)
+    EmptyAnnotation
+  }
+}
+
+@instantiable
+class InOutModule extends Module {
+  @public val in = IO(Input(Bool()))
+  @public val out = IO(Output(Bool()))
+  out := in
+}
+
+@instantiable
+class TwoInOutModules extends Module {
+  val in = IO(Input(Bool()))
+  val out = IO(Output(Bool()))
+  val definition = Definition(new InOutModule)
+  val i0         = Instance(definition)
+  val i1         = Instance(definition)
+  i0.in := in
+  i1.in := i0.out
+  out := i1.out
+}
+
+class InOutTop extends Module {
+  val definition = Definition(new TwoInOutModules)
+  val instance   = Instance(definition)
+  aop.Select.allInstancesOf[InOutModule](instance).foreach { i =>
+    aop.Select.ios(i).foreach { io =>
+      experimental.annotate(MyIOAnnotation(io, "instance io"))
+  }}
+  aop.Select.allDefinitionsOf[InOutModule](instance).foreach { d =>
+    aop.Select.ios(d).foreach {io =>
+      experimental.annotate(MyIOAnnotation(io, "definition io"))
+  }}
+}
+```
+```scala mdoc:passthrough
+println("```")
+val y = chisel3.stage.ChiselStage.emitFirrtl(new InOutTop)
 println("```")
 ```

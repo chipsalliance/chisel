@@ -236,4 +236,14 @@ object Examples {
   class HasTypeParams[D <: Data](d: D) extends Module {
     @public val blah = Wire(d)
   }
+
+  @instantiable
+  class HasMultipleTypeParamsInside extends Module {
+    val tpDef0 = Definition(new HasTypeParams(Bool()))
+    val tpDef1 = Definition(new HasTypeParams(UInt(4.W)))
+    val i00 = Instance(tpDef0)
+    val i01 = Instance(tpDef0)
+    val i10 = Instance(tpDef1)
+    val i11 = Instance(tpDef1)
+  }
 }

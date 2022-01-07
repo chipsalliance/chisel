@@ -65,6 +65,8 @@ object Select {
   /** Selects all Instances of instances/modules directly instantiated within given module, of provided type
     *
     * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    * @note IMPORTANT: this function ignores type parameters. E.g. instancesOf[List[Int]] would return List[String].
+    * 
     * @param parent hierarchy which instantiates the returned Definitions
     */
   def instancesOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
@@ -90,6 +92,8 @@ object Select {
   /** Selects all Instances directly and indirectly instantiated within given root hierarchy, of provided type
     *
     * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    * @note IMPORTANT: this function ignores type parameters. E.g. allInstancesOf[List[Int]] would return List[String].
+    *
     * @param root top of the hierarchy to search for instances/modules of given type
     */
   def allInstancesOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
@@ -128,6 +132,8 @@ object Select {
   /** Selects all Definitions of instances/modules directly instantiated within given module, of provided type
     *
     * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    * @note IMPORTANT: this function ignores type parameters. E.g. definitionsOf[List[Int]] would return List[String].
+    *
     * @param parent hierarchy which instantiates the returned Definitions
     */
   def definitionsOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
@@ -158,6 +164,8 @@ object Select {
     *
     * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class, i.e.
     *   a class defined within another class.
+    * @note IMPORTANT: this function ignores type parameters. E.g. allDefinitionsOf[List[Int]] would return List[String].
+    *
     * @param root top of the hierarchy to search for definitions of given type
     */
   def allDefinitionsOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
@@ -253,12 +261,21 @@ object Select {
     }
   }
 
-  /** Selects all ios directly contained within given module
+  /** Selects all ios on a given module
     * @param module
     */
   def ios(module: BaseModule): Seq[Data] = {
     check(module)
     module._component.get.asInstanceOf[DefModule].ports.map(_.id)
+  }
+
+  /** Selects all ios directly on a given Instance or Definition of a module
+    * @param parent the Definition or Instance to get the IOs of
+    */
+  def ios[T <: BaseModule](parent: Hierarchy[T]): Seq[Data] = {
+    check(parent)
+    implicit val mg = new chisel3.internal.MacroGenerated{}
+    parent._lookup { x => ios(parent.proto) }
   }
 
   /** Selects all SyncReadMems directly contained within given module
