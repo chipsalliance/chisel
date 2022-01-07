@@ -209,7 +209,7 @@ chisel3.stage.ChiselStage.emitVerilog(new AddTwo(Definition(new AddOne(10))))
 
 Select functions can be applied after a module has been elaborated, either in a Chisel Aspect or in a parent module applied to a child module.
 
-There are seven hierarchy-specific functions, which either return `Instance`'s or `Definition`'s:
+There are seven hierarchy-specific functions, which (with the exception of `ios`) either return `Instance`'s or `Definition`'s:
  - `instancesIn(parent)`: Return all instances directly instantiated locally within `parent`
  - `instancesOf[type](parent)`: Return all instances of provided `type` directly instantiated locally within `parent`
  - `allInstancesOf[type](root)`: Return all instances of provided `type` directly and indirectly instantiated, locally and deeply, starting from `root`

@@ -132,6 +132,8 @@ object Select {
   /** Selects all Definitions of instances/modules directly instantiated within given module, of provided type
     *
     * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    * @note IMPORTANT: this function ignores type parameters. E.g. definitionsOf[List[Int]] would return List[String].
+    *
     * @param parent hierarchy which instantiates the returned Definitions
     */
   def definitionsOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
@@ -162,6 +164,8 @@ object Select {
     *
     * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class, i.e.
     *   a class defined within another class.
+    * @note IMPORTANT: this function ignores type parameters. E.g. allDefinitionsOf[List[Int]] would return List[String].
+    *
     * @param root top of the hierarchy to search for definitions of given type
     */
   def allDefinitionsOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
@@ -247,7 +251,7 @@ object Select {
   }
 
   /** Selects all registers directly instantiated within given module
-    * @param module
+    * @param module the BaseModule to get the IOs of
     */
   def registers(module: BaseModule): Seq[Data] = {
     check(module)
@@ -266,7 +270,7 @@ object Select {
   }
 
   /** Selects all ios directly on a given Instance or Definition of a module
-    * @param module
+    * @param parent the Definition or Instance to get the IOs of
     */
   def ios[T <: BaseModule](parent: Hierarchy[T]): Seq[Data] = {
     check(parent)
@@ -371,8 +375,8 @@ object Select {
     * The when predicates surrounding each connection are included in the returned values
     *
     * E.g. if signal = io.foo.bar, connectionsTo will return all connections to io, io.foo, and io.bar
-    * @param module The module to look for connections within
-    * @param signal The signal to look for connections
+    * @param module
+    * @param signal
     */
   def connectionsTo(module: BaseModule)(signal: Data): Seq[PredicatedConnect] = {
     check(module)
@@ -406,19 +410,6 @@ object Select {
     predicatedConnects.toSeq
   }
 
-  /** Selects all connections to a signal or its parent signal(s) (if the signal is an element of an aggregate signal)
-    * The when predicates surrounding each connection are included in the returned values
-    *
-    * E.g. if signal = io.foo.bar, connectionsTo will return all connections to io, io.foo, and io.bar
-    * @param module
-    * @param signal
-    */
-  def connectionsTo[T <: BaseModule](parent: Hierarchy[T])(signal: Data): Seq[PredicatedConnect] = {
-    check(parent)
-    implicit val mg = new chisel3.internal.MacroGenerated{}
-    parent._lookup{ x => connectionsTo(parent.proto)(signal)}
-  }
-  
   /** Selects all stop statements, and includes the predicates surrounding the stop statement
     *
     * @param module
@@ -555,7 +546,7 @@ object Select {
     * @param exp
     * @param isBulk
     */
-  case class PredicatedConnect(preds: Seq[Predicate], loc: Data, exp: Data, isBulk: Boolean) extends Serializeable with IsLookupable {
+  case class PredicatedConnect(preds: Seq[Predicate], loc: Data, exp: Data, isBulk: Boolean) extends Serializeable {
     def serialize: String = {
       val moduleTarget = loc.toTarget.moduleTarget.serialize
       s"$moduleTarget: when(${preds.map(_.serialize).mkString(" & ")}): ${getName(loc)} ${if(isBulk) "<>" else ":="} ${getName(exp)}"

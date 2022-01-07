@@ -963,10 +963,9 @@ class InstanceSpec extends ChiselFunSpec with Utils {
           "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it,
         ))       
       })
-      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect)) 
-
-  }
-  it("10.13 Select.instancesOf for typed BaseModules even type is specified wrongly (should be ignored, even though we wish it weren't)") {
+      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
+    }
+    it("10.13 Select.instancesOf for typed BaseModules even type is specified wrongly (should be ignored, even though we wish it weren't)") {
       val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
         val targets = aop.Select.instancesOf[HasTypeParams[SInt]](m.toDefinition).map { i: Instance[HasTypeParams[_]] => i.toTarget }
         targets should be (Seq(
@@ -977,20 +976,6 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         ))       
       })
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect)) 
-
+    }
   }
-  it("10.14 Select.connectionsTo for Instances works") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        val targets = aop.Select.connectionsTo(m.i0.i0.toDefinition)(m.i0.i0.in)
-        targets should be (Seq(
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it,
-        ))       
-      })
-      getFirrtlAndAnnos(new AddFour, Seq(aspect)) 
-
-  }
-}
 }
