@@ -110,6 +110,29 @@ class SelectSpec extends ChiselFlatSpec {
     )
   }
 
+  "Test Definition" should "pass if selecting correct connections for a simple Definition" in {
+    execute(
+      () => new SelectTester(Seq(0, 1, 2)),
+      { dut: SelectTester => Select.connectionsTo(dut.toDefinition)(dut.counter) },
+      { dut: SelectTester =>
+        Seq(PredicatedConnect(Nil, dut.counter, dut.added, false),
+          PredicatedConnect(Seq(When(dut.overflow)), dut.counter, dut.zero, false))
+      }
+    )
+  }
+
+    "Test Instance" should "pass if selecting correct connections for a simple Instance" in {
+    execute(
+      () => new SelectTester(Seq(0, 1, 2)),
+      { dut: SelectTester => Select.connectionsTo(dut.toInstance)(dut.counter) },
+      { dut: SelectTester =>
+        Seq(PredicatedConnect(Nil, dut.counter, dut.added, false),
+          PredicatedConnect(Seq(When(dut.overflow)), dut.counter, dut.zero, false))
+      }
+    )
+  }
+
+
   "Test" should "pass if selecting ops by kind" in {
     execute(
       () => new SelectTester(Seq(0, 1, 2)),

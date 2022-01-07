@@ -371,8 +371,8 @@ object Select {
     * The when predicates surrounding each connection are included in the returned values
     *
     * E.g. if signal = io.foo.bar, connectionsTo will return all connections to io, io.foo, and io.bar
-    * @param module
-    * @param signal
+    * @param module The module to look for connections within
+    * @param signal The signal to look for connections
     */
   def connectionsTo(module: BaseModule)(signal: Data): Seq[PredicatedConnect] = {
     check(module)
@@ -406,6 +406,19 @@ object Select {
     predicatedConnects.toSeq
   }
 
+  /** Selects all connections to a signal or its parent signal(s) (if the signal is an element of an aggregate signal)
+    * The when predicates surrounding each connection are included in the returned values
+    *
+    * E.g. if signal = io.foo.bar, connectionsTo will return all connections to io, io.foo, and io.bar
+    * @param module
+    * @param signal
+    */
+  def connectionsTo[T <: BaseModule](parent: Hierarchy[T])(signal: Data): Seq[PredicatedConnect] = {
+    check(parent)
+    implicit val mg = new chisel3.internal.MacroGenerated{}
+    parent._lookup{ x => connectionsTo(parent.proto)(signal)}
+  }
+  
   /** Selects all stop statements, and includes the predicates surrounding the stop statement
     *
     * @param module
@@ -542,7 +555,7 @@ object Select {
     * @param exp
     * @param isBulk
     */
-  case class PredicatedConnect(preds: Seq[Predicate], loc: Data, exp: Data, isBulk: Boolean) extends Serializeable {
+  case class PredicatedConnect(preds: Seq[Predicate], loc: Data, exp: Data, isBulk: Boolean) extends Serializeable with IsLookupable {
     def serialize: String = {
       val moduleTarget = loc.toTarget.moduleTarget.serialize
       s"$moduleTarget: when(${preds.map(_.serialize).mkString(" & ")}): ${getName(loc)} ${if(isBulk) "<>" else ":="} ${getName(exp)}"
