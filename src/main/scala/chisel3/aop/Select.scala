@@ -69,7 +69,7 @@ object Select {
     * 
     * @param parent hierarchy which instantiates the returned Definitions
     */
-  def instancesOf[T <: BaseModule](parent: Hierarchy[BaseModule])(implicit tag: TypeTag[T]): Seq[Instance[T]] = {
+  def instancesOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
     check(parent)
     implicit val mg = new chisel3.internal.MacroGenerated{}
     parent.proto._component.get match {
