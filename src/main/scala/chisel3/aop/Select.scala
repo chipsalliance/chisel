@@ -251,7 +251,7 @@ object Select {
   }
 
   /** Selects all registers directly instantiated within given module
-    * @param module the BaseModule to get the IOs of
+    * @param module
     */
   def registers(module: BaseModule): Seq[Data] = {
     check(module)
