@@ -2,74 +2,18 @@
 
 package chisel3.experimental
 
-import scala.language.experimental.macros
-import scala.reflect.macros.blackbox.Context
-import scala.collection.mutable
 import chisel3._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId, throwException}
+import chisel3.internal.{Binding, Builder, ChildBinding, ConstrainedBinding, DynamicSelectedElementBinding, InstanceId, SampleElementBinding, throwException}
 import firrtl.annotations._
+import firrtl.transforms.{CustomRadixApplyAnnotation, CustomRadixDefAnnotation}
 
-
-object EnumAnnotations {
-  /** An annotation for strong enum instances that are ''not'' inside of Vecs
-    *
-    * @param target the enum instance being annotated
-    * @param enumTypeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
-    */
-  case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
-    def duplicate(n: Named): EnumComponentAnnotation = this.copy(target = n)
-  }
-
-  case class EnumComponentChiselAnnotation(target: InstanceId, enumTypeName: String) extends ChiselAnnotation {
-    def toFirrtl: EnumComponentAnnotation = EnumComponentAnnotation(target.toNamed, enumTypeName)
-  }
-
-  /** An annotation for Vecs of strong enums.
-    *
-    * The ''fields'' parameter deserves special attention, since it may be difficult to understand. Suppose you create a the following Vec:
-
-    *               {{{
-    *               VecInit(new Bundle {
-    *                 val e = MyEnum()
-    *                 val b = new Bundle {
-    *                   val inner_e = MyEnum()
-    *                 }
-    *                 val v = Vec(3, MyEnum())
-    *               }
-    *               }}}
-    *
-    *               Then, the ''fields'' parameter will be: ''Seq(Seq("e"), Seq("b", "inner_e"), Seq("v"))''. Note that for any Vec that doesn't contain Bundles, this field will simply be an empty Seq.
-    *
-    * @param target the Vec being annotated
-    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
-    * @param fields a list of all chains of elements leading from the Vec instance to its inner enum fields.
-    *
-    */
-  case class EnumVecAnnotation(target: Named, typeName: String, fields: Seq[Seq[String]]) extends SingleTargetAnnotation[Named] {
-    def duplicate(n: Named): EnumVecAnnotation = this.copy(target = n)
-  }
-
-  case class EnumVecChiselAnnotation(target: InstanceId, typeName: String, fields: Seq[Seq[String]]) extends ChiselAnnotation {
-    override def toFirrtl: EnumVecAnnotation = EnumVecAnnotation(target.toNamed, typeName, fields)
-  }
-
-  /** An annotation for enum types (rather than enum ''instances'').
-    *
-    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
-    * @param definition a map describing which integer values correspond to which enum names
-    */
-  case class EnumDefAnnotation(typeName: String, definition: Map[String, BigInt]) extends NoTargetAnnotation
-
-  case class EnumDefChiselAnnotation(typeName: String, definition: Map[String, BigInt]) extends ChiselAnnotation {
-    override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
-  }
-}
-import EnumAnnotations._
-
+import scala.collection.mutable
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
 
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
 
@@ -178,53 +122,25 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   override private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit = {
     super.bind(target, parentDirection)
 
-    // Make sure we only annotate hardware and not literals
-    if (selfAnnotating && isSynthesizable && topBindingOpt.get.isInstanceOf[ConstrainedBinding]) {
-      annotateEnum()
-    }
-  }
-
-  // This function conducts a depth-wise search to find all enum-type fields within a vector or bundle (or vector of bundles)
-  private def enumFields(d: Aggregate): Seq[Seq[String]] = d match {
-    case v: Vec[_] => v.sample_element match {
-      case b: Bundle => enumFields (b)
-      case _ => Seq ()
-    }
-    case b: Bundle =>
-      b.elements.collect {
-        case (name, e: EnumType) if this.typeEquivalent(e) => Seq(Seq(name))
-        case (name, v: Vec[_]) if this.typeEquivalent(v.sample_element) => Seq(Seq(name))
-        case (name, b2: Bundle) => enumFields(b2).map(name +: _)
-      }.flatten.toSeq
-  }
-
-  private def outerMostVec(d: Data = this): Option[Vec[_]] = {
-    val currentVecOpt = d match {
-      case v: Vec[_] => Some(v)
-      case _ => None
-    }
-
-    d.binding match {
-      case Some(ChildBinding(parent)) => outerMostVec(parent) match {
-        case outer @ Some(_) => outer
-        case None => currentVecOpt
+    def isDynamicSel(p: Binding): Boolean = p match {
+      case _: DynamicSelectedElementBinding[_] => true
+      case ChildBinding(p) => p.binding match {
+        case Some(b) => isDynamicSel(b)
+        case _ => false
       }
-      case _ => currentVecOpt
+      case SampleElementBinding(p) => p.binding match {
+        case Some(b) => isDynamicSel(b)
+        case _ => false
+      }
+      case _ => false
     }
-  }
-
-  private def annotateEnum(): Unit = {
-    val anno = outerMostVec() match {
-      case Some(v) => EnumVecChiselAnnotation(v, enumTypeName, enumFields(v))
-      case None => EnumComponentChiselAnnotation(this, enumTypeName)
-    }
-
-    if (!Builder.annotations.contains(anno)) {
-      annotate(anno)
-    }
-
-    if (!Builder.annotations.contains(factory.globalAnnotation)) {
-      annotate(factory.globalAnnotation)
+    // Make sure we only annotate hardware and not literals
+    if (selfAnnotating && isSynthesizable && topBindingOpt.get.isInstanceOf[ConstrainedBinding] && !isDynamicSel(target)) {
+      val defAnno = new ChiselAnnotation { def toFirrtl: Annotation = CustomRadixDefAnnotation(enumTypeName, factory.enumValues zip factory.enumNames, width.get) }
+      val applyAnno = new ChiselAnnotation { def toFirrtl: Annotation = CustomRadixApplyAnnotation(toTarget, enumTypeName) }
+      if(!Builder.annotations.contains(defAnno))
+        annotate(defAnno)
+      annotate(applyAnno)
     }
   }
 
@@ -246,9 +162,9 @@ abstract class EnumFactory {
   private case class EnumRecord(inst: Type, name: String)
   private val enumRecords = mutable.ArrayBuffer.empty[EnumRecord]
 
-  private def enumNames = enumRecords.map(_.name).toSeq
-  private def enumValues = enumRecords.map(_.inst.litValue).toSeq
-  private def enumInstances = enumRecords.map(_.inst).toSeq
+  private[chisel3] def enumNames = enumRecords.map(_.name).toSeq
+  private[chisel3] def enumValues = enumRecords.map(_.inst.litValue).toSeq
+  private[chisel3] def enumInstances = enumRecords.map(_.inst).toSeq
 
   private[chisel3] val enumTypeName = getClass.getName.init
 
@@ -257,9 +173,6 @@ abstract class EnumFactory {
     (this.getWidth < 31) && // guard against Integer overflow
       (enumRecords.size == (1 << this.getWidth))
   }
-
-  private[chisel3] def globalAnnotation: EnumDefChiselAnnotation =
-    EnumDefChiselAnnotation(enumTypeName, (enumNames, enumValues).zipped.toMap)
 
   def getWidth: Int = width.get
 

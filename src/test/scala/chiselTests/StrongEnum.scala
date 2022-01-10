@@ -6,10 +6,9 @@ import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.internal.naming.chiselName
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.util._
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, PrintFullStackTraceAnnotation}
 import chisel3.testers.BasicTester
-import org.scalatest.Assertion
+import chisel3.util._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -635,21 +634,31 @@ class StrongEnumAnnotatorWithChiselName extends Module {
 }
 
 class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
-  import chisel3.experimental.EnumAnnotations._
-  import firrtl.annotations.{ComponentName, Annotation}
+  import firrtl.annotations.Annotation
+  import firrtl.transforms.{CustomRadixApplyAnnotation, CustomRadixDefAnnotation}
 
   val enumExampleName = "EnumExample"
   val otherEnumName = "OtherEnum"
   val localEnumName = "LocalEnum"
 
-  case class CorrectDefAnno(typeName: String, definition: Map[String, BigInt])
-  case class CorrectCompAnno(targetName: String, typeName: String)
-  case class CorrectVecAnno(targetName: String, typeName: String, fields: Set[Seq[String]])
+  case class CorrectDefAnno(name: String, filters: Map[BigInt, String])
+  case class CorrectCompAnno(target: String, name: String)
 
   val correctDefAnnos = Seq(
-    CorrectDefAnno(otherEnumName, Map("otherEnum" -> 0)),
-    CorrectDefAnno(enumExampleName, Map("e0" -> 0, "e1" -> 1, "e2" -> 2, "e100" -> 100, "e101" -> 101)),
-    CorrectDefAnno(localEnumName, Map("le0" -> 0, "le1" -> 1, "le2" -> 2, "le100" -> 100))
+    CorrectDefAnno(otherEnumName, Map(
+      BigInt(0) -> "otherEnum"
+    )),
+    CorrectDefAnno(enumExampleName, Map(
+      BigInt(0) -> "e0",
+      BigInt(1) -> "e1",
+      BigInt(2) -> "e2",
+      BigInt(100) -> "e100",
+      BigInt(101) -> "e101")),
+    CorrectDefAnno(localEnumName, Map(
+      BigInt(0) -> "le0",
+      BigInt(1) -> "le1",
+      BigInt(2) -> "le2",
+      BigInt(100) -> "le100"))
   )
 
   val correctCompAnnos = Seq(
@@ -664,85 +673,50 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     CorrectCompAnno("bund.inner_bundle1.e", enumExampleName)
   )
 
-  val correctVecAnnos = Seq(
-    CorrectVecAnno("vec", enumExampleName, Set()),
-    CorrectVecAnno("vec_of_vecs", enumExampleName, Set()),
-    CorrectVecAnno("vec_of_bundles", enumExampleName, Set(Seq("field"), Seq("vec"), Seq("inner_bundle1", "e"), Seq("inner_bundle1", "v"))),
-    CorrectVecAnno("vec_of_bundles", otherEnumName, Set(Seq("other"))),
-    CorrectVecAnno("vec_of_bundles", localEnumName, Set(Seq("local"))),
-    CorrectVecAnno("bund.vec", enumExampleName, Set()),
-    CorrectVecAnno("bund.inner_bundle1.v", enumExampleName, Set())
-  )
 
   def printAnnos(annos: Seq[Annotation]) {
     println("Enum definitions:")
     annos.foreach {
-      case EnumDefAnnotation(enumTypeName, definition) => println(s"\t$enumTypeName: $definition")
+      case CustomRadixDefAnnotation(name, filters, _) => println(s"\t$name: $filters")
       case _ =>
     }
     println("Enum components:")
     annos.foreach{
-      case EnumComponentAnnotation(target, enumTypeName) => println(s"\t$target => $enumTypeName")
-      case _ =>
-    }
-    println("Enum vecs:")
-    annos.foreach{
-      case EnumVecAnnotation(target, enumTypeName, fields) => println(s"\t$target[$fields] => $enumTypeName")
+      case CustomRadixApplyAnnotation(target, name) => println(s"\t$target => $name")
       case _ =>
     }
   }
 
-  def isCorrect(anno: EnumDefAnnotation, correct: CorrectDefAnno): Boolean = {
-    (anno.typeName == correct.typeName ||
-      anno.typeName.endsWith("." + correct.typeName) ||
-      anno.typeName.endsWith("$" + correct.typeName)) &&
-      anno.definition == correct.definition
+  def isCorrect(anno: CustomRadixDefAnnotation, correct: CorrectDefAnno): Boolean = {
+    (anno.name == correct.name ||
+      anno.name.endsWith("." + correct.name) ||
+      anno.name.endsWith("$" + correct.name)) &&
+      anno.filters.toMap == correct.filters
   }
 
-  def isCorrect(anno: EnumComponentAnnotation, correct: CorrectCompAnno): Boolean = {
-    (anno.target match {
-      case ComponentName(name, _) => name == correct.targetName
-      case _ => throw new Exception("Unknown target type in EnumComponentAnnotation")
-    }) &&
-      (anno.enumTypeName == correct.typeName || anno.enumTypeName.endsWith("." + correct.typeName) ||
-        anno.enumTypeName.endsWith("$" + correct.typeName))
+  def isCorrect(anno: CustomRadixApplyAnnotation, correct: CorrectCompAnno): Boolean = {
+    anno.target.toString.contains(correct.target) &&
+    (anno.name == correct.name || anno.name.endsWith("." + correct.name) ||
+        anno.name.endsWith("$" + correct.name))
   }
 
-  def isCorrect(anno: EnumVecAnnotation, correct: CorrectVecAnno): Boolean = {
-    (anno.target match {
-      case ComponentName(name, _) => name == correct.targetName
-      case _ => throw new Exception("Unknown target type in EnumVecAnnotation")
-    }) &&
-      (anno.typeName == correct.typeName || anno.typeName.endsWith("." + correct.typeName) ||
-        anno.typeName.endsWith("$" + correct.typeName)) &&
-      anno.fields.map(_.toSeq).toSet == correct.fields
-  }
-
-  def allCorrectDefs(annos: Seq[EnumDefAnnotation], corrects: Seq[CorrectDefAnno]): Boolean = {
+  def allCorrectDefs(annos: Seq[CustomRadixDefAnnotation], corrects: Seq[CorrectDefAnno]): Boolean = {
     corrects.forall(c => annos.exists(isCorrect(_, c))) &&
       correctDefAnnos.length == annos.length
   }
 
-  // Because temporary variables might be formed and annotated, we do not check that every component or vector
-  // annotation is accounted for in the correct results listed above
-  def allCorrectComps(annos: Seq[EnumComponentAnnotation], corrects: Seq[CorrectCompAnno]): Boolean =
-    corrects.forall(c => annos.exists(isCorrect(_, c)))
-
-  def allCorrectVecs(annos: Seq[EnumVecAnnotation], corrects: Seq[CorrectVecAnno]): Boolean =
+  def allCorrectComps(annos: Seq[CustomRadixApplyAnnotation], corrects: Seq[CorrectCompAnno]): Boolean =
     corrects.forall(c => annos.exists(isCorrect(_, c)))
 
   def test(strongEnumAnnotatorGen: () => Module) {
     val annos = (new ChiselStage).execute(Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
-                                          Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen)))
+                                          Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen), PrintFullStackTraceAnnotation))
 
-    val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
-    val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
-    val enumVecAnnos = annos.collect { case a: EnumVecAnnotation => a }
+    val enumDefAnnos = annos.collect { case a: CustomRadixDefAnnotation => a }
+    val enumCompAnnos = annos.collect { case a: CustomRadixApplyAnnotation => a }
 
     allCorrectDefs(enumDefAnnos, correctDefAnnos) should be(true)
     allCorrectComps(enumCompAnnos, correctCompAnnos) should be(true)
-    allCorrectVecs(enumVecAnnos, correctVecAnnos) should be(true)
-
   }
 
   "Test that strong enums annotate themselves appropriately" in {
