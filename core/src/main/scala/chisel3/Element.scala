@@ -13,7 +13,6 @@ import chisel3.internal._
   * @define coll element
   */
 abstract class Element extends Data {
-  private[chisel3] final def allElements: Seq[Element] = Seq(this)
   def widthKnown: Boolean = width.known
   def name: String = getRef.name
 

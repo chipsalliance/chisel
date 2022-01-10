@@ -519,11 +519,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 
-  // Return ALL elements at root of this type.
-  // Contasts with flatten, which returns just Bits
-  // TODO: refactor away this, this is outside the scope of Data
-  private[chisel3] def allElements: Seq[Element]
-
   private[chisel3] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
   private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
