@@ -178,7 +178,49 @@ class MaskedRWSmem extends Module {
 
 ### Memory Initialization
 
-Chisel memories can be initialized from an external `binary` or `hex` file emitting proper Verilog for synthesis or simulation. There are multiple modes of initialization.
+Chisel supports multiple methods for annotating memories to be loaded from a text file containing hex or binary data. When using verilog simulation it uses the `$readmemh` or `$readmemb` verilog extension. The treadle simulator can also load memories using the same annotation.
 
-For more information, check the experimental docs on [Loading Memories](../appendix/experimental-features#loading-memories) feature.
+#### Inline initialization with external file
+
+Memories can be initialized by generating inline `readmemh` or `readmemb` statements in the output Verilog.
+
+The function `loadMemoryFromFile` from `chisel3.util` allows the memory to be initialized by the synthesis software from the specified file. Chisel does not validate the file contents nor its location. Both the memory initialization file and the Verilog source should be accessible for the toolchain.
+
+```scala mdoc:silent
+import chisel3._
+import chisel3.util.loadMemoryFromFile
+
+class InitMemInline(memoryFile: String = "") extends Module {
+  val width: Int = 32
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(width.W))
+    val dataOut = Output(UInt(width.W))
+  })
+
+  val mem = SyncReadMem(1024, UInt(width.W))
+  // Initialize memory
+  if (memoryFile.trim().nonEmpty) {
+    loadMemoryFromFile(mem, memoryFile)
+  }
+  io.dataOut := DontCare
+  when(io.enable) {
+    val rdwrPort = mem(io.addr)
+    when (io.write) { rdwrPort := io.dataIn }
+      .otherwise    { io.dataOut := rdwrPort }
+  }
+}
+```
+
+The default is to use `$readmemh` (which assumes all numbers in the file are in ascii hex),
+but to use ascii binary there is an optional `hexOrBinary` argument which can be set to `MemoryLoadFileType.Hex` or `MemoryLoadFileType.Binary`. You will need to add an additional import.
+
+By default, Chisel/Firrtl assumes an ASIC workflow and the inline initialization will generate the memory `readmem` statements inside an `ifndef SYNTHESIS` block which some synthesis tools (like Synplify and Yosys) define so the `readmem` statement is not read when inside this block.
+
+To use a workflow suited to FPGAs, pass the command line argument `--target:fpga` to Chisel so the correct annotation is passed on to Verilog generation and the `readmem` statements are correctly placed and picked by FPGA synthesis tools.
+
+
+There is also an experimental method to initialize memories by using an external SystemVerilog bind module. For more information, check the experimental docs on [Loading Memories](../appendix/experimental-features#loading-memories) feature.
 
