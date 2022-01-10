@@ -6,7 +6,6 @@ package chisel3.experimental.hierarchy
   * Instead, use the [[@instantiable]] annotation on your trait or class.
   *
   * This trait indicates whether a class can be returned from an Instance.
-  * 
   */
 trait IsInstantiable
 

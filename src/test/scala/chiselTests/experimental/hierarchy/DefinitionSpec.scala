@@ -5,7 +5,7 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, public}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -19,7 +19,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         val definition = Definition(new AddOne)
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("module AddOne :")
+      chirrtl.serialize should include("module AddOne :")
     }
     it("0.2: accessing internal fields through non-generated means is hard to do") {
       class Top extends Module {
@@ -29,7 +29,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         definition.in
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("module AddOne :")
+      chirrtl.serialize should include("module AddOne :")
     }
     it("0.2: reset inference is not defaulted to Bool for definitions") {
       class Top extends Module with RequireAsyncReset {
@@ -38,21 +38,27 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         i0.in := 0.U
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("inst i0 of HasUninferredReset")
+      chirrtl.serialize should include("inst i0 of HasUninferredReset")
     }
     it("0.3: module names of repeated definition should be sequential") {
       class Top extends Module {
-        val k = Module(new AddTwoParameterized(4, (x: Int) => Seq.tabulate(x){j =>
-          val addOneDef = Definition(new AddOneParameterized(x+j))
-          val addOne = Instance(addOneDef)
-          addOne
-        }))
+        val k = Module(
+          new AddTwoParameterized(
+            4,
+            (x: Int) =>
+              Seq.tabulate(x) { j =>
+                val addOneDef = Definition(new AddOneParameterized(x + j))
+                val addOne = Instance(addOneDef)
+                addOne
+              }
+          )
+        )
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("module AddOneParameterized :")
-      chirrtl.serialize should include ("module AddOneParameterized_1 :")
-      chirrtl.serialize should include ("module AddOneParameterized_2 :")
-      chirrtl.serialize should include ("module AddOneParameterized_3 :")
+      chirrtl.serialize should include("module AddOneParameterized :")
+      chirrtl.serialize should include("module AddOneParameterized_1 :")
+      chirrtl.serialize should include("module AddOneParameterized_2 :")
+      chirrtl.serialize should include("module AddOneParameterized_3 :")
     }
     it("0.4: multiple instantiations should have sequential names") {
       class Top extends Module {
@@ -61,22 +67,28 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         val otherAddOne = Module(new AddOneParameterized(4))
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("module AddOneParameterized :")
-      chirrtl.serialize should include ("module AddOneParameterized_1 :")
+      chirrtl.serialize should include("module AddOneParameterized :")
+      chirrtl.serialize should include("module AddOneParameterized_1 :")
     }
     it("0.5: nested definitions should have sequential names") {
       class Top extends Module {
-        val k = Module(new AddTwoWithNested(4, (x: Int) => Seq.tabulate(x){j =>
-          val addOneDef = Definition(new AddOneWithNested(x+j))
-          val addOne = Instance(addOneDef)
-          addOne
-        }))
+        val k = Module(
+          new AddTwoWithNested(
+            4,
+            (x: Int) =>
+              Seq.tabulate(x) { j =>
+                val addOneDef = Definition(new AddOneWithNested(x + j))
+                val addOne = Instance(addOneDef)
+                addOne
+              }
+          )
+        )
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("module AddOneWithNested :")
-      chirrtl.serialize should include ("module AddOneWithNested_1 :")
-      chirrtl.serialize should include ("module AddOneWithNested_2 :")
-      chirrtl.serialize should include ("module AddOneWithNested_3 :")
+      chirrtl.serialize should include("module AddOneWithNested :")
+      chirrtl.serialize should include("module AddOneWithNested_1 :")
+      chirrtl.serialize should include("module AddOneWithNested_2 :")
+      chirrtl.serialize should include("module AddOneWithNested_3 :")
     }
   }
   describe("1: Annotations on definitions in same chisel compilation") {
@@ -179,7 +191,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
     }
-    it("1.10: should work for targets on definition to have correct circuit name"){
+    it("1.10: should work for targets on definition to have correct circuit name") {
       class Top extends Module {
         val definition = Definition(new AddOneWithAnnotation)
       }
@@ -401,10 +413,12 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
-    it("6.1 An @instantiable Module that implements an @instantiable trait should be able to use extension methods from both") {
+    it(
+      "6.1 An @instantiable Module that implements an @instantiable trait should be able to use extension methods from both"
+    ) {
       class Top extends Module {
         val i: Definition[ModuleWithCommonIntf] = Definition(new ModuleWithCommonIntf)
         mark(i.io.in, "gotcha")
@@ -418,7 +432,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
     it("6.2 A BlackBox that implements an @instantiable trait should be instantiable as that trait") {
@@ -434,7 +448,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
     it("6.3 It should be possible to have Vectors of @instantiable traits mixing concrete subclasses") {
@@ -456,7 +470,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
   }
@@ -495,10 +509,10 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
       for (line <- expectedLines) {
-        text should include (line)
+        text should include(line)
       }
       for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
     ignore("7.1: should work on Aggregate Views that are mapped 1:1") {
@@ -523,7 +537,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       }
       val expectedAnnos = List(
         "~Top|MyModule>a".rt -> "in",
-        "~Top|MyModule>a.foo".rt -> "in_bar",
+        "~Top|MyModule>a.foo".rt -> "in_bar"
       )
       val expectedLines = List(
         "i.a <= foo",
@@ -532,10 +546,10 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
       for (line <- expectedLines) {
-        text should include (line)
+        text should include(line)
       }
       for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
   }

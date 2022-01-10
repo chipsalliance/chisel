@@ -6,9 +6,9 @@ import chisel3.stage.ChiselStage
 
 class EnableShiftRegister extends Module {
   val io = IO(new Bundle {
-    val in    = Input(UInt(4.W))
+    val in = Input(UInt(4.W))
     val shift = Input(Bool())
-    val out   = Output(UInt(4.W))
+    val out = Output(UInt(4.W))
   })
   val r0 = RegInit(0.U(4.W))
   val r1 = RegInit(0.U(4.W))
@@ -41,7 +41,7 @@ class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c) {
     expect(c.io.out, reg(3))
   }
 }
-*/
+ */
 
 class EnableShiftRegisterSpec extends ChiselPropSpec {
 
@@ -49,5 +49,5 @@ class EnableShiftRegisterSpec extends ChiselPropSpec {
     ChiselStage.elaborate { new EnableShiftRegister }
   }
 
-  ignore("EnableShiftRegisterTester should return the correct result") { }
+  ignore("EnableShiftRegisterTester should return the correct result") {}
 }

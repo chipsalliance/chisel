@@ -22,7 +22,9 @@ class AddSerializationAnnotations extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val chiselOptions = view[ChiselOptions](annotations)
     val circuit = chiselOptions.chiselCircuit.getOrElse {
-      throw new ChiselException(s"Unable to locate the elaborated circuit, did ${classOf[Elaborate].getName} run correctly")
+      throw new ChiselException(
+        s"Unable to locate the elaborated circuit, did ${classOf[Elaborate].getName} run correctly"
+      )
     }
     val baseFilename = chiselOptions.outputFile.getOrElse(circuit.name)
 

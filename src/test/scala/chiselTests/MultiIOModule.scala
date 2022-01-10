@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.testers.BasicTester
 
 class MultiIOPlusOne extends Module {
-  val in  = IO(Input(UInt(32.W)))
+  val in = IO(Input(UInt(32.W)))
   val out = IO(Output(UInt(32.W)))
 
   out := in + 1.asUInt
@@ -33,8 +33,7 @@ trait MultiIOTrait extends Module {
 
 // Composition of the two above traits, example of IO composition directly using multiple top-level
 // IOs rather than indirectly by constraining the type of the single .io field.
-class ComposedMultiIOModule extends Module
-    with LiteralOutputTrait with MultiIOTrait {
+class ComposedMultiIOModule extends Module with LiteralOutputTrait with MultiIOTrait {
   val topModuleIO = IO(Input(UInt(32.W)))
   myTraitIO := topModuleIO
 }

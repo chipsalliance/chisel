@@ -3,7 +3,15 @@
 package chisel3.stage
 
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{BufferedCustomFileEmission, CustomFileEmission, HasShellOptions, OptionsException, ShellOption, StageOptions, Unserializable}
+import firrtl.options.{
+  BufferedCustomFileEmission,
+  CustomFileEmission,
+  HasShellOptions,
+  OptionsException,
+  ShellOption,
+  StageOptions,
+  Unserializable
+}
 import firrtl.options.Viewer.view
 import chisel3.{ChiselException, Module}
 import chisel3.RawModule
@@ -29,7 +37,9 @@ case object NoRunFirrtlCompilerAnnotation
       longOption = "no-run-firrtl",
       toAnnotationSeq = _ => Seq(NoRunFirrtlCompilerAnnotation),
       helpText = "Do not run the FIRRTL compiler (generate FIRRTL IR from Chisel and exit)",
-      shortOption = Some("chnrf") ) )
+      shortOption = Some("chnrf")
+    )
+  )
 
 }
 
@@ -45,7 +55,9 @@ case object PrintFullStackTraceAnnotation
     new ShellOption[Unit](
       longOption = "full-stacktrace",
       toAnnotationSeq = _ => Seq(PrintFullStackTraceAnnotation),
-      helpText = "Show full stack trace when an exception is thrown" ) )
+      helpText = "Show full stack trace when an exception is thrown"
+    )
+  )
 
 }
 
@@ -68,15 +80,18 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
     * that Module is found
     */
   def apply(name: String): ChiselGeneratorAnnotation = {
-    val gen = () => try {
-      Class.forName(name).asInstanceOf[Class[_ <: RawModule]].newInstance()
-    } catch {
-      case e: ClassNotFoundException =>
-        throw new OptionsException(s"Unable to locate module '$name'! (Did you misspell it?)", e)
-      case e: InstantiationException =>
-        throw new OptionsException(
-          s"Unable to create instance of module '$name'! (Does this class take parameters?)", e)
-    }
+    val gen = () =>
+      try {
+        Class.forName(name).asInstanceOf[Class[_ <: RawModule]].newInstance()
+      } catch {
+        case e: ClassNotFoundException =>
+          throw new OptionsException(s"Unable to locate module '$name'! (Did you misspell it?)", e)
+        case e: InstantiationException =>
+          throw new OptionsException(
+            s"Unable to create instance of module '$name'! (Does this class take parameters?)",
+            e
+          )
+      }
     ChiselGeneratorAnnotation(gen)
   }
 
@@ -85,17 +100,16 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
       longOption = "module",
       toAnnotationSeq = (a: String) => Seq(ChiselGeneratorAnnotation(a)),
       helpText = "The name of a Chisel module to elaborate (module must be in the classpath)",
-      helpValueName = Some("<package>.<module>") ) )
+      helpValueName = Some("<package>.<module>")
+    )
+  )
 
 }
 
 /** Stores a Chisel Circuit
   * @param circuit a Chisel Circuit
   */
-case class ChiselCircuitAnnotation(circuit: Circuit)
-    extends NoTargetAnnotation
-    with ChiselOption
-    with Unserializable {
+case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption with Unserializable {
   /* Caching the hashCode for a large circuit is necessary due to repeated queries.
    * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
    */
@@ -135,8 +149,9 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
 
   override def getBytesBuffered: Iterable[Array[Byte]] = format match {
     case FirrtlFileFormat =>
-      OldEmitter.emitLazily(circuit)
-                .map(_.getBytes)
+      OldEmitter
+        .emitLazily(circuit)
+        .map(_.getBytes)
     // TODO Use lazy Iterables so that we don't have to materialize full intermediate data structures
     case ProtoBufFileFormat =>
       val ostream = new java.io.ByteArrayOutputStream
@@ -155,7 +170,9 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
       longOption = "chisel-output-file",
       toAnnotationSeq = (a: String) => Seq(ChiselOutputFileAnnotation(a)),
       helpText = "Write Chisel-generated FIRRTL to this file (default: <circuit-main>.fir)",
-      helpValueName = Some("<file>") ) )
+      helpValueName = Some("<file>")
+    )
+  )
 
 }
 

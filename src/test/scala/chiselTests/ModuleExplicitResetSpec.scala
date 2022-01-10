@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3.stage.ChiselStage
 
-class ModuleExplicitResetSpec extends ChiselFlatSpec  {
+class ModuleExplicitResetSpec extends ChiselFlatSpec {
 
   "A Module with an explicit reset in compatibility mode" should "elaborate" in {
     import Chisel._

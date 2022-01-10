@@ -44,44 +44,44 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     val stage = new ChiselStage
   }
 
-  behavior of "ChiselStage$.emitChirrtl"
+  behavior.of("ChiselStage$.emitChirrtl")
 
   it should "return a CHIRRTL string" in {
-    ChiselStage.emitChirrtl(new Foo) should include ("infer mport")
+    ChiselStage.emitChirrtl(new Foo) should include("infer mport")
   }
 
-  behavior of "ChiselStage$.emitFirrtl"
+  behavior.of("ChiselStage$.emitFirrtl")
 
   it should "return a High FIRRTL string" in {
-    ChiselStage.emitFirrtl(new Foo) should include ("mem memory")
+    ChiselStage.emitFirrtl(new Foo) should include("mem memory")
   }
 
   it should "return a flattened FIRRTL string with '-e high'" in {
     val args = Array("-e", "high", "-td", createTestDirectory(this.getClass.getSimpleName).toString)
     (new ChiselStage)
-      .emitFirrtl(new Foo, args) should include ("module Bar")
+      .emitFirrtl(new Foo, args) should include("module Bar")
   }
 
-  behavior of "ChiselStage$.emitVerilog"
+  behavior.of("ChiselStage$.emitVerilog")
 
   it should "return a Verilog string" in {
-    ChiselStage.emitVerilog(new Foo) should include ("endmodule")
+    ChiselStage.emitVerilog(new Foo) should include("endmodule")
   }
 
   it should "return a flattened Verilog string with '-e verilog'" in {
     val args = Array("-e", "verilog", "-td", createTestDirectory(this.getClass.getSimpleName).toString)
     (new ChiselStage)
-      .emitVerilog(new Foo, args) should include ("module Bar")
+      .emitVerilog(new Foo, args) should include("module Bar")
   }
 
-  behavior of "ChiselStage$.elaborate"
+  behavior.of("ChiselStage$.elaborate")
 
   ignore should "generate a Chisel circuit from a Chisel module" in {
     info("no files were written")
     catchWrites { ChiselStage.elaborate(new Foo) } shouldBe a[Right[_, _]]
   }
 
-  behavior of "ChiselStage$.convert"
+  behavior.of("ChiselStage$.convert")
 
   ignore should "generate a CHIRRTL circuit from a Chisel module" in {
     info("no files were written")
@@ -95,7 +95,7 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     } shouldBe a[Right[_, _]]
   }
 
-  behavior of "ChiselStage$.emitChirrtl"
+  behavior.of("ChiselStage$.emitChirrtl")
 
   ignore should "generate a CHIRRTL string from a Chisel module" in {
     val wrapped = catchWrites { ChiselStage.emitChirrtl(new Foo) }
@@ -104,10 +104,10 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     wrapped shouldBe a[Right[_, _]]
 
     info("returned string looks like FIRRTL")
-    wrapped.right.get should include ("circuit")
+    wrapped.right.get should include("circuit")
   }
 
-  behavior of "ChiselStage$.emitFirrtl"
+  behavior.of("ChiselStage$.emitFirrtl")
 
   ignore should "generate a FIRRTL string from a Chisel module" in {
     val wrapped = catchWrites { ChiselStage.emitFirrtl(new Foo) }
@@ -116,10 +116,10 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     wrapped shouldBe a[Right[_, _]]
 
     info("returned string looks like FIRRTL")
-    wrapped.right.get should include ("circuit")
+    wrapped.right.get should include("circuit")
   }
 
-  behavior of "ChiselStage$.emitVerilog"
+  behavior.of("ChiselStage$.emitVerilog")
 
   ignore should "generate a Verilog string from a Chisel module" in {
     val wrapped = catchWrites { ChiselStage.emitVerilog(new Foo) }
@@ -128,10 +128,10 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     wrapped shouldBe a[Right[_, _]]
 
     info("returned string looks like Verilog")
-    wrapped.right.get should include ("endmodule")
+    wrapped.right.get should include("endmodule")
   }
 
-  behavior of "ChiselStage$.emitSystemVerilog"
+  behavior.of("ChiselStage$.emitSystemVerilog")
 
   ignore should "generate a SystemvVerilog string from a Chisel module" in {
     val wrapped = catchWrites { ChiselStage.emitSystemVerilog(new Foo) }
@@ -139,10 +139,10 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     wrapped shouldBe a[Right[_, _]]
 
     info("returned string looks like Verilog")
-    wrapped.right.get should include ("endmodule")
+    wrapped.right.get should include("endmodule")
   }
 
-  behavior of "ChiselStage phase ordering"
+  behavior.of("ChiselStage phase ordering")
 
   it should "only run elaboration once" in new ChiselStageFixture {
     info("Phase order is:\n" + stage.phaseManager.prettyPrint("    "))
@@ -150,10 +150,10 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     val order = stage.phaseManager.flattenedTransformOrder.map(Dependency.fromTransform)
 
     info("Elaborate only runs once")
-    exactly (1, order) should be (Dependency[chisel3.stage.phases.Elaborate])
+    exactly(1, order) should be(Dependency[chisel3.stage.phases.Elaborate])
   }
 
-  behavior of "ChiselStage$ exception handling"
+  behavior.of("ChiselStage$ exception handling")
 
   it should "truncate a user exception" in {
     info("The user's java.lang.AssertionError was thrown")
@@ -163,13 +163,13 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
     val message = exception.getMessage
     info("The exception includes the user's message")
-    message should include ("User threw an exception")
+    message should include("User threw an exception")
 
     info("The stack trace is trimmed")
-    exception.getStackTrace.mkString("\n") should not include ("java")
+    (exception.getStackTrace.mkString("\n") should not).include("java")
   }
 
-  behavior of "ChiselStage exception handling"
+  behavior.of("ChiselStage exception handling")
 
   it should "truncate a user exception" in {
     info("The user's java.lang.AssertionError was thrown")
@@ -181,14 +181,14 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
     val message = exception.getMessage
     info("The exception includes the user's message")
-    message should include ("User threw an exception")
+    message should include("User threw an exception")
 
     val stackTrace = exception.getStackTrace.mkString("\n")
     info("The stack trace is trimmed")
-    stackTrace should not include ("java")
+    (stackTrace should not).include("java")
 
     info("The stack trace include information about running --full-stacktrace")
-    stackTrace should include ("--full-stacktrace")
+    stackTrace should include("--full-stacktrace")
   }
 
   it should """not truncate a user exception with "--full-stacktrace"""" in {
@@ -201,10 +201,10 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
     val message = exception.getMessage
     info("The exception includes the user's message")
-    message should include ("User threw an exception")
+    message should include("User threw an exception")
 
     info("The stack trace is not trimmed")
-    exception.getStackTrace.mkString("\n") should include ("java")
+    exception.getStackTrace.mkString("\n") should include("java")
   }
 
 }

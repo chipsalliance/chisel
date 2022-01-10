@@ -24,16 +24,16 @@ class AsyncResetTester extends BasicTester {
   }
   reg := 5.U // Normal connection
 
-  when (count === 3.U) {
+  when(count === 3.U) {
     assert(reg === 5.U)
   }
-  when (count >= 5.U && count < 7.U) {
+  when(count >= 5.U && count < 7.U) {
     assert(reg === 123.U)
-  } .elsewhen (count >= 7.U) {
+  }.elsewhen(count >= 7.U) {
     assert(reg === 5.U)
   }
 
-  when (done) {
+  when(done) {
     stop()
   }
 }
@@ -66,25 +66,25 @@ class AsyncResetAggregateTester extends BasicTester {
   reg(1).x := 7.U
   reg(1).y := 8.U
 
-  when (count === 3.U) {
+  when(count === 3.U) {
     assert(reg(0).x === 5.U)
     assert(reg(0).y === 6.U)
     assert(reg(1).x === 7.U)
     assert(reg(1).y === 8.U)
   }
-  when (count >= 5.U && count < 7.U) {
+  when(count >= 5.U && count < 7.U) {
     assert(reg(0).x === 0.U)
     assert(reg(0).y === 0.U)
     assert(reg(1).x === 0.U)
     assert(reg(1).y === 0.U)
-  } .elsewhen (count >= 7.U) {
+  }.elsewhen(count >= 7.U) {
     assert(reg(0).x === 5.U)
     assert(reg(0).y === 6.U)
     assert(reg(1).x === 7.U)
     assert(reg(1).y === 8.U)
   }
 
-  when (done) {
+  when(done) {
     stop()
   }
 }
@@ -98,7 +98,7 @@ class AsyncResetQueueTester extends BasicTester {
   val asyncResetNext = RegNext(false.B, false.B)
   val asyncReset = asyncResetNext.asAsyncReset
 
-  val queue = withClockAndReset (slowClk, asyncReset) {
+  val queue = withClockAndReset(slowClk, asyncReset) {
     Module(new Queue(UInt(8.W), 4))
   }
   queue.io.enq.valid := true.B
@@ -107,15 +107,15 @@ class AsyncResetQueueTester extends BasicTester {
   queue.io.deq.ready := false.B
 
   val doCheck = RegNext(false.B, false.B)
-  when (queue.io.count === 3.U) {
+  when(queue.io.count === 3.U) {
     asyncResetNext := true.B
     doCheck := true.B
   }
-  when (doCheck) {
+  when(doCheck) {
     assert(queue.io.count === 0.U)
   }
 
-  when (done) {
+  when(done) {
     stop()
   }
 }
@@ -140,7 +140,7 @@ class AsyncResetDontCareModule extends RawModule {
 
 class AsyncResetSpec extends ChiselFlatSpec with Utils {
 
-  behavior of "AsyncReset"
+  behavior.of("AsyncReset")
 
   it should "be able to be connected to DontCare" in {
     ChiselStage.elaborate(new AsyncResetDontCareModule)
@@ -153,7 +153,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "NOT be allowed with non-literal reset values" in {
-    a [NonLiteralAsyncResetValueException] should be thrownBy extractCause[NonLiteralAsyncResetValueException] {
+    a[NonLiteralAsyncResetValueException] should be thrownBy extractCause[NonLiteralAsyncResetValueException] {
       compile(new BasicTester {
         val x = WireInit(123.U + 456.U)
         withReset(reset.asAsyncReset)(RegInit(x))
@@ -162,7 +162,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "NOT be allowed to connect directly to a Bool" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new BasicTester {
         val bool = Wire(Bool())
         val areset = reset.asAsyncReset
@@ -199,12 +199,12 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
       val reg = withReset(reset.asAsyncReset)(RegNext(initValue, 27.S))
       initValue := -43.S
       val (count, done) = Counter(true.B, 4)
-      when (count === 0.U) {
+      when(count === 0.U) {
         chisel3.assert(reg === 27.S)
-      } .otherwise {
+      }.otherwise {
         chisel3.assert(reg === -43.S)
       }
-      when (done) { stop() }
+      when(done) { stop() }
     })
   }
 
@@ -212,12 +212,12 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new BasicTester {
       val reg = withReset(reset.asAsyncReset)(RegNext(-6.0.F(2.BP), 3.F(2.BP)))
       val (count, done) = Counter(true.B, 4)
-      when (count === 0.U) {
+      when(count === 0.U) {
         chisel3.assert(reg === 3.F(2.BP))
-      } .otherwise {
+      }.otherwise {
         chisel3.assert(reg === -6.0.F(2.BP))
       }
-      when (done) { stop() }
+      when(done) { stop() }
     })
   }
 
@@ -230,12 +230,12 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
         x
       }
       val (count, done) = Counter(true.B, 4)
-      when (count === 0.U) {
+      when(count === 0.U) {
         chisel3.assert(reg === 13.I)
-      } .otherwise {
+      }.otherwise {
         chisel3.assert(reg === 7.I)
       }
-      when (done) { stop() }
+      when(done) { stop() }
     })
   }
 
@@ -249,12 +249,12 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
         RegNext(0xbad0cad0L.U.asTypeOf(new MyBundle), 0xdeadbeefL.U.asTypeOf(new MyBundle))
       }
       val (count, done) = Counter(true.B, 4)
-      when (count === 0.U) {
+      when(count === 0.U) {
         chisel3.assert(reg.asUInt === 0xdeadbeefL.U)
-      } .otherwise {
+      }.otherwise {
         chisel3.assert(reg.asUInt === 0xbad0cad0L.U)
       }
-      when (done) { stop() }
+      when(done) { stop() }
     })
   }
   it should "allow literals cast to Vecs as reset values" in {
@@ -263,12 +263,12 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
         RegNext(0xbad0cad0L.U.asTypeOf(Vec(4, UInt(8.W))), 0xdeadbeefL.U.asTypeOf(Vec(4, UInt(8.W))))
       }
       val (count, done) = Counter(true.B, 4)
-      when (count === 0.U) {
+      when(count === 0.U) {
         chisel3.assert(reg.asUInt === 0xdeadbeefL.U)
-      } .otherwise {
+      }.otherwise {
         chisel3.assert(reg.asUInt === 0xbad0cad0L.U)
       }
-      when (done) { stop() }
+      when(done) { stop() }
     })
   }
 }

@@ -9,5 +9,4 @@ import firrtl.ir.{Closed, Open}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class RangeSpec extends AnyFreeSpec with Matchers {
-}
+class RangeSpec extends AnyFreeSpec with Matchers {}

@@ -11,7 +11,7 @@ object Examples {
   import Annotations._
   @instantiable
   class AddOne extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     @public val innerWire = Wire(UInt(32.W))
     innerWire := in + 1.U
@@ -19,7 +19,7 @@ object Examples {
   }
   @instantiable
   class AddOneWithAnnotation extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     @public val innerWire = Wire(UInt(32.W))
     mark(innerWire, "innerWire")
@@ -28,7 +28,7 @@ object Examples {
   }
   @instantiable
   class AddOneWithAbsoluteAnnotation extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     @public val innerWire = Wire(UInt(32.W))
     amark(innerWire, "innerWire")
@@ -37,12 +37,12 @@ object Examples {
   }
   @instantiable
   class AddOneParameterized(width: Int) extends Module {
-    @public val in  = IO(Input(UInt(width.W)))
+    @public val in = IO(Input(UInt(width.W)))
     @public val out = IO(Output(UInt(width.W)))
     out := in + 1.U
   }
   class AddOneWithNested(width: Int) extends Module {
-    @public val in  = IO(Input(UInt(width.W)))
+    @public val in = IO(Input(UInt(width.W)))
     @public val out = IO(Output(UInt(width.W)))
     val addOneDef = Seq.fill(3)(Definition(new AddOne))
     out := in + 1.U
@@ -50,7 +50,7 @@ object Examples {
 
   @instantiable
   class AddTwo extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     @public val definition = Definition(new AddOne)
     @public val i0: Instance[AddOne] = Instance(definition)
@@ -61,7 +61,7 @@ object Examples {
   }
   @instantiable
   class AddTwoMixedModules extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     val definition = Definition(new AddOne)
     @public val i0: Instance[AddOne] = Instance(definition)
@@ -71,24 +71,25 @@ object Examples {
     out := i1.out
   }
   @instantiable
-  class AddTwoParameterized(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneParameterized]]) extends Module {
-    val in  = IO(Input(UInt(width.W)))
+  class AddTwoParameterized(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneParameterized]])
+      extends Module {
+    val in = IO(Input(UInt(width.W)))
     val out = IO(Output(UInt(width.W)))
     val addOnes = makeParameterizedOnes(width)
     addOnes.head.in := in
     out := addOnes.last.out
-    addOnes.zip(addOnes.tail).foreach{ case (head, tail) => tail.in := head.out}
+    addOnes.zip(addOnes.tail).foreach { case (head, tail) => tail.in := head.out }
   }
   @instantiable
   class AddTwoWithNested(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneWithNested]]) extends Module {
-    val in  = IO(Input(UInt(width.W)))
+    val in = IO(Input(UInt(width.W)))
     val out = IO(Output(UInt(width.W)))
     val addOnes = makeParameterizedOnes(width)
   }
 
   @instantiable
   class AddFour extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     @public val definition = Definition(new AddTwoMixedModules)
     @public val i0 = Instance(definition)
@@ -111,7 +112,7 @@ object Examples {
   }
   @instantiable
   class AddOneWithInstantiableWire extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     @public val wireContainer = new WireContainer()
     wireContainer.innerWire := in + 1.U
@@ -123,7 +124,7 @@ object Examples {
   }
   @instantiable
   class AddOneWithInstantiableModule extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     @public val moduleContainer = new AddOneContainer()
     moduleContainer.i0.in := in
@@ -136,7 +137,7 @@ object Examples {
   }
   @instantiable
   class AddOneWithInstantiableInstance extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     @public val instanceContainer = new AddOneInstanceContainer()
     instanceContainer.i0.in := in
@@ -148,7 +149,7 @@ object Examples {
   }
   @instantiable
   class AddOneWithInstantiableInstantiable extends Module {
-    @public val in  = IO(Input(UInt(32.W)))
+    @public val in = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
     @public val containerContainer = new AddOneContainerContainer()
     containerContainer.container.i0.in := in
@@ -157,12 +158,12 @@ object Examples {
   @instantiable
   class Viewer(val y: AddTwo, markPlease: Boolean) {
     @public val x = y
-    if(markPlease) mark(x.i0.innerWire, "first")
+    if (markPlease) mark(x.i0.innerWire, "first")
   }
   @instantiable
   class ViewerParent(val x: AddTwo, markHere: Boolean, markThere: Boolean) extends Module {
     @public val viewer = new Viewer(x, markThere)
-    if(markHere) mark(viewer.x.i0.innerWire, "second")
+    if (markHere) mark(viewer.x.i0.innerWire, "second")
   }
   @instantiable
   class MultiVal() extends Module {

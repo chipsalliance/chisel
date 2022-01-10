@@ -12,8 +12,8 @@ import scala.util.matching.Regex
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object RangeTransform {
   val UnspecifiedNumber: Regex = """(\?).*""".r
-  val IntegerNumber: Regex = """(-?\d+).*""".r
-  val DecimalNumber: Regex = """(-?\d+\.\d+).*""".r
+  val IntegerNumber:     Regex = """(-?\d+).*""".r
+  val DecimalNumber:     Regex = """(-?\d+\.\d+).*""".r
 }
 
 /** Convert the string to IntervalRange, with unknown, open or closed endpoints and a binary point
@@ -48,8 +48,8 @@ class RangeTransform(val c: blackbox.Context) {
     }
 
     var nextStringIndex: Int = 1
-    var nextArgIndex: Int = 0
-    var currString: String = strings.head
+    var nextArgIndex:    Int = 0
+    var currString:      String = strings.head
 
     /** Mutably gets the next numeric value in the range specifier.
       */

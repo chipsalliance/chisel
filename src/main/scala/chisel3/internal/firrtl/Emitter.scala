@@ -20,4 +20,3 @@ private[chisel3] object Emitter {
     result ++ moduleStrings
   }
 }
-

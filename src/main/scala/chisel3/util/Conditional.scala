@@ -17,7 +17,13 @@ import chisel3.internal.sourceinfo.SourceInfo
   * @note DO NOT USE. This API is subject to change without warning.
   */
 class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt]) {
-  def is(v: Iterable[T])(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SwitchContext[T] = {
+  def is(
+    v:     Iterable[T]
+  )(block: => Any
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): SwitchContext[T] = {
     if (!v.isEmpty) {
       val newLits = v.map { w =>
         require(w.litOption.isDefined, "is condition must be literal")
@@ -26,17 +32,25 @@ class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lit
         value
       }
       // def instead of val so that logic ends up in legal place
-      def p = v.map(_.asUInt === cond.asUInt).reduce(_||_)
+      def p = v.map(_.asUInt === cond.asUInt).reduce(_ || _)
       whenContext match {
         case Some(w) => new SwitchContext(cond, Some(w.elsewhen(p)(block)), lits ++ newLits)
-        case None => new SwitchContext(cond, Some(when(p)(block)), lits ++ newLits)
+        case None    => new SwitchContext(cond, Some(when(p)(block)), lits ++ newLits)
       }
     } else {
       this
     }
   }
-  def is(v: T)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SwitchContext[T] = is(Seq(v))(block)
-  def is(v: T, vr: T*)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SwitchContext[T] = is(v :: vr.toList)(block)
+  def is(v: T)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SwitchContext[T] =
+    is(Seq(v))(block)
+  def is(
+    v:     T,
+    vr:    T*
+  )(block: => Any
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): SwitchContext[T] = is(v :: vr.toList)(block)
 }
 
 /** Use to specify cases in a [[switch]] block, equivalent to a [[when$ when]] block comparing to
@@ -84,15 +98,17 @@ object is {
   */
 object switch {
   def apply[T <: Element](cond: T)(x: => Any): Unit = macro impl
-  def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = { import c.universe._
+  def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = {
+    import c.universe._
     val q"..$body" = x
     val res = body.foldLeft(q"""new chisel3.util.SwitchContext($cond, None, Set.empty)""") {
-      case (acc, tree) => tree match {
-        // TODO: remove when Chisel compatibility package is removed
-        case q"Chisel.`package`.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
-        case q"chisel3.util.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
-        case b => throw new Exception(s"Cannot include blocks that do not begin with is() in switch.")
-      }
+      case (acc, tree) =>
+        tree match {
+          // TODO: remove when Chisel compatibility package is removed
+          case q"Chisel.`package`.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
+          case q"chisel3.util.is.apply( ..$params )( ..$body )"     => q"$acc.is( ..$params )( ..$body )"
+          case b                                                    => throw new Exception(s"Cannot include blocks that do not begin with is() in switch.")
+        }
     }
     q"""{ $res }"""
   }

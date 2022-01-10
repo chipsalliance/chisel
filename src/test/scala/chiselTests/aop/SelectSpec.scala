@@ -39,22 +39,35 @@ case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => 
   override def toAnnotation(top: T): AnnotationSeq = {
     val results = selector(top)
     val desiredSeq = desired(top)
-    assert(results.length == desiredSeq.length, s"Failure! Results $results have different length than desired $desiredSeq!")
+    assert(
+      results.length == desiredSeq.length,
+      s"Failure! Results $results have different length than desired $desiredSeq!"
+    )
     val mismatches = results.zip(desiredSeq).flatMap {
       case (res, des) if res != des => Seq((res, des))
-      case other => Nil
+      case other                    => Nil
     }
-    assert(mismatches.isEmpty,s"Failure! The following selected items do not match their desired item:\n" + mismatches.map{
-      case (res: Select.Serializeable, des: Select.Serializeable) => s"  ${res.serialize} does not match:\n  ${des.serialize}"
-      case (res, des) => s"  $res does not match:\n  $des"
-    }.mkString("\n"))
+    assert(
+      mismatches.isEmpty,
+      s"Failure! The following selected items do not match their desired item:\n" + mismatches.map {
+        case (res: Select.Serializeable, des: Select.Serializeable) =>
+          s"  ${res.serialize} does not match:\n  ${des.serialize}"
+        case (res, des) => s"  $res does not match:\n  $des"
+      }.mkString("\n")
+    )
     Nil
   }
 }
 
 class SelectSpec extends ChiselFlatSpec {
 
-  def execute[T <: RawModule, X](dut: () => T, selector: T => Seq[X], desired: T => Seq[X])(implicit tTag: TypeTag[T]): Unit = {
+  def execute[T <: RawModule, X](
+    dut:      () => T,
+    selector: T => Seq[X],
+    desired:  T => Seq[X]
+  )(
+    implicit tTag: TypeTag[T]
+  ): Unit = {
     val ret = new chisel3.stage.ChiselStage().run(
       Seq(
         new chisel3.stage.ChiselGeneratorAnnotation(dut),
@@ -85,16 +98,20 @@ class SelectSpec extends ChiselFlatSpec {
       () => new SelectTester(Seq(0, 1, 2)),
       { dut: SelectTester => Seq(Select.printfs(dut).last.toString) },
       { dut: SelectTester =>
-        Seq(Select.Printf(
-          dut.p,
-          Seq(
-            When(Select.ops("eq")(dut).last.asInstanceOf[Bool]),
-            When(dut.nreset),
-            WhenNot(dut.overflow)
-          ),
-          dut.p.pable,
-          dut.clock
-        ).toString)
+        Seq(
+          Select
+            .Printf(
+              dut.p,
+              Seq(
+                When(Select.ops("eq")(dut).last.asInstanceOf[Bool]),
+                When(dut.nreset),
+                WhenNot(dut.overflow)
+              ),
+              dut.p.pable,
+              dut.clock
+            )
+            .toString
+        )
       }
     )
   }
@@ -104,8 +121,10 @@ class SelectSpec extends ChiselFlatSpec {
       () => new SelectTester(Seq(0, 1, 2)),
       { dut: SelectTester => Select.connectionsTo(dut)(dut.counter) },
       { dut: SelectTester =>
-        Seq(PredicatedConnect(Nil, dut.counter, dut.added, false),
-          PredicatedConnect(Seq(When(dut.overflow)), dut.counter, dut.zero, false))
+        Seq(
+          PredicatedConnect(Nil, dut.counter, dut.added, false),
+          PredicatedConnect(Seq(When(dut.overflow)), dut.counter, dut.zero, false)
+        )
       }
     )
   }
@@ -121,7 +140,7 @@ class SelectSpec extends ChiselFlatSpec {
   "Test" should "pass if selecting ops" in {
     execute(
       () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Select.ops(dut).collect { case ("tail", d) => d} },
+      { dut: SelectTester => Select.ops(dut).collect { case ("tail", d) => d } },
       { dut: SelectTester => Seq(dut.added, dut.zero) }
     )
   }
@@ -131,20 +150,22 @@ class SelectSpec extends ChiselFlatSpec {
       () => new SelectTester(Seq(0, 1, 2)),
       { dut: SelectTester => Seq(Select.stops(dut).last) },
       { dut: SelectTester =>
-        Seq(Select.Stop(
-          Seq(
-            When(Select.ops("eq")(dut)(1).asInstanceOf[Bool]),
-            When(dut.overflow)
-          ),
-          0,
-          dut.clock
-        ))
+        Seq(
+          Select.Stop(
+            Seq(
+              When(Select.ops("eq")(dut)(1).asInstanceOf[Bool]),
+              When(dut.overflow)
+            ),
+            0,
+            dut.clock
+          )
+        )
       }
     )
   }
 
   "Blackboxes" should "be supported in Select.instances" in {
-    class BB extends ExtModule { }
+    class BB extends ExtModule {}
     class Top extends RawModule {
       val bb = Module(new BB)
     }
@@ -173,12 +194,10 @@ class SelectSpec extends ChiselFlatSpec {
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
-    }).elaborate
-      .collectFirst { case DesignAnnotation(design: Top) => design }
-      .get
-    Select.collectDeep(top) { case x => x } should equal (Seq(top, top.inst0))
-    Select.getDeep(top)(x => Seq(x)) should equal (Seq(top, top.inst0))
-    Select.instances(top) should equal (Seq(top.inst0))
+    }).elaborate.collectFirst { case DesignAnnotation(design: Top) => design }.get
+    Select.collectDeep(top) { case x => x } should equal(Seq(top, top.inst0))
+    Select.getDeep(top)(x => Seq(x)) should equal(Seq(top, top.inst0))
+    Select.instances(top) should equal(Seq(top.inst0))
   }
 
   "Using Definition/Instance with Injecting Aspects" should "throw an error" in {
@@ -202,13 +221,10 @@ class SelectSpec extends ChiselFlatSpec {
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
-    }).elaborate
-      .collectFirst { case DesignAnnotation(design: Top) => design }
-      .get
+    }).elaborate.collectFirst { case DesignAnnotation(design: Top) => design }.get
     intercept[Exception] { Select.collectDeep(top) { case x => x } }
     intercept[Exception] { Select.getDeep(top)(x => Seq(x)) }
     intercept[Exception] { Select.instances(top) }
   }
 
 }
-

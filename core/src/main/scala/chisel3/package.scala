@@ -3,7 +3,7 @@
 import chisel3.internal.firrtl.BinaryPoint
 
 /** This package contains the main chisel3 API.
- */
+  */
 package object chisel3 {
   import internal.firrtl.{Port, Width}
   import internal.Builder
@@ -28,22 +28,27 @@ package object chisel3 {
     * `0.asUInt(16)` (instead of `16.W`) compile without error and produce undesired results.
     */
   implicit class fromBigIntToLiteral(bigint: BigInt) {
+
     /** Int to Bool conversion, allowing compact syntax like 1.B and 0.B
       */
     def B: Bool = bigint match {
       case bigint if bigint == 0 => Bool.Lit(false)
       case bigint if bigint == 1 => Bool.Lit(true)
-      case bigint => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
+      case bigint                => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
     }
+
     /** Int to UInt conversion, recommended style for constants.
       */
     def U: UInt = UInt.Lit(bigint, Width())
+
     /** Int to SInt conversion, recommended style for constants.
       */
     def S: SInt = SInt.Lit(bigint, Width())
+
     /** Int to UInt conversion with specified width, recommended style for constants.
       */
     def U(width: Width): UInt = UInt.Lit(bigint, width)
+
     /** Int to SInt conversion with specified width, recommended style for constants.
       */
     def S(width: Width): SInt = SInt.Lit(bigint, width)
@@ -52,19 +57,26 @@ package object chisel3 {
       */
     def asUInt: UInt = UInt.Lit(bigint, Width())
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
     def asUInt(dummy: Int*): UInt = asUInt
 
     /** Int to SInt conversion, recommended style for variables.
       */
     def asSInt: SInt = SInt.Lit(bigint, Width())
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
     def asSInt(dummy: Int*): SInt = asSInt
 
     /** Int to UInt conversion with specified width, recommended style for variables.
       */
     def asUInt(width: Width): UInt = UInt.Lit(bigint, width)
+
     /** Int to SInt conversion with specified width, recommended style for variables.
       */
     def asSInt(width: Width): SInt = SInt.Lit(bigint, width)
@@ -74,9 +86,11 @@ package object chisel3 {
   implicit class fromLongToLiteral(long: Long) extends fromBigIntToLiteral(long)
 
   implicit class fromStringToLiteral(str: String) {
+
     /** String to UInt parse, recommended style for constants.
       */
     def U: UInt = str.asUInt
+
     /** String to UInt parse with specified width, recommended style for constants.
       */
     def U(width: Width): UInt = str.asUInt(width)
@@ -85,10 +99,13 @@ package object chisel3 {
       */
     def asUInt: UInt = {
       val bigInt = parse(str)
-      UInt.Lit(bigInt, Width(bigInt.bitLength max 1))
+      UInt.Lit(bigInt, Width(bigInt.bitLength.max(1)))
     }
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
     def asUInt(dummy: Int*): UInt = asUInt
 
     /** String to UInt parse with specified width, recommended style for variables.
@@ -99,10 +116,10 @@ package object chisel3 {
       val (base, num) = n.splitAt(1)
       val radix = base match {
         case "x" | "h" => 16
-        case "d" => 10
-        case "o" => 8
-        case "b" => 2
-        case _ => Builder.error(s"Invalid base $base"); 2
+        case "d"       => 10
+        case "o"       => 8
+        case "b"       => 2
+        case _         => Builder.error(s"Invalid base $base"); 2
       }
       BigInt(num.filterNot(_ == '_'), radix)
     }
@@ -113,6 +130,7 @@ package object chisel3 {
   }
 
   implicit class fromBooleanToLiteral(boolean: Boolean) {
+
     /** Boolean to Bool conversion, recommended style for constants.
       */
     def B: Bool = Bool.Lit(boolean)
@@ -121,34 +139,37 @@ package object chisel3 {
       */
     def asBool: Bool = Bool.Lit(boolean)
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
     def asBool(dummy: Int*): Bool = asBool
   }
 
   // Fixed Point is experimental for now, but we alias the implicit conversion classes here
   // to minimize disruption with existing code.
   implicit class fromDoubleToLiteral(double: Double)
-    extends experimental.FixedPoint.Implicits.fromDoubleToLiteral(double)
+      extends experimental.FixedPoint.Implicits.fromDoubleToLiteral(double)
 
   implicit class fromBigDecimalToLiteral(bigDecimal: BigDecimal)
-    extends experimental.FixedPoint.Implicits.fromBigDecimalToLiteral(bigDecimal)
+      extends experimental.FixedPoint.Implicits.fromBigDecimalToLiteral(bigDecimal)
 
   // Interval is experimental for now, but we alias the implicit conversion classes here
   //  to minimize disruption with existing code.
   implicit class fromIntToLiteralInterval(int: Int)
-    extends experimental.Interval.Implicits.fromIntToLiteralInterval(int)
+      extends experimental.Interval.Implicits.fromIntToLiteralInterval(int)
 
   implicit class fromLongToLiteralInterval(long: Long)
-    extends experimental.Interval.Implicits.fromLongToLiteralInterval(long)
+      extends experimental.Interval.Implicits.fromLongToLiteralInterval(long)
 
   implicit class fromBigIntToLiteralInterval(bigInt: BigInt)
-    extends experimental.Interval.Implicits.fromBigIntToLiteralInterval(bigInt)
+      extends experimental.Interval.Implicits.fromBigIntToLiteralInterval(bigInt)
 
   implicit class fromDoubleToLiteralInterval(double: Double)
-    extends experimental.Interval.Implicits.fromDoubleToLiteralInterval(double)
+      extends experimental.Interval.Implicits.fromDoubleToLiteralInterval(double)
 
   implicit class fromBigDecimalToLiteralInterval(bigDecimal: BigDecimal)
-    extends experimental.Interval.Implicits.fromBigDecimalToLiteralInterval(bigDecimal)
+      extends experimental.Interval.Implicits.fromBigDecimalToLiteralInterval(bigDecimal)
 
   implicit class fromIntToWidth(int: Int) {
     def W: Width = Width(int)
@@ -187,25 +208,27 @@ package object chisel3 {
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {
+
     /** Custom string interpolator for generating Printables: p"..."
       * Will call .toString on any non-Printable arguments (mimicking s"...")
       */
     def p(args: Any*): Printable = {
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
-      val pargs: Seq[Option[Printable]] = args map {
+      val pargs: Seq[Option[Printable]] = args.map {
         case p: Printable => Some(p)
-        case d: Data => Some(d.toPrintable)
-        case any => for {
-          v <- Option(any) // Handle null inputs
-          str = v.toString
-          if !str.isEmpty // Handle empty Strings
-        } yield PString(str)
+        case d: Data      => Some(d.toPrintable)
+        case any =>
+          for {
+            v <- Option(any) // Handle null inputs
+            str = v.toString
+            if !str.isEmpty // Handle empty Strings
+          } yield PString(str)
       }
-      val parts = sc.parts map StringContext.treatEscapes
+      val parts = sc.parts.map(StringContext.treatEscapes)
       // Zip sc.parts and pargs together ito flat Seq
       // eg. Seq(sc.parts(0), pargs(0), sc.parts(1), pargs(1), ...)
       val seq = for { // append None because sc.parts.size == pargs.size + 1
-        (literal, arg) <- parts zip (pargs :+ None)
+        (literal, arg) <- parts.zip(pargs :+ None)
         optPable <- Seq(Some(PString(literal)), arg)
         pable <- optPable // Remove Option[_]
       } yield pable
@@ -221,19 +244,26 @@ package object chisel3 {
   def getDataElements(a: Aggregate): Seq[Element] = {
     a.allElements
   }
-  @deprecated("duplicated with DataMirror.fullModulePorts, this returns an internal API, will be removed in Chisel 3.6", "Chisel 3.5")
+  @deprecated(
+    "duplicated with DataMirror.fullModulePorts, this returns an internal API, will be removed in Chisel 3.6",
+    "Chisel 3.5"
+  )
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
 
   class BindingException(message: String) extends ChiselException(message)
+
   /** A function expected a Chisel type but got a hardware object
     */
   case class ExpectedChiselTypeException(message: String) extends BindingException(message)
-  /**A function expected a hardware object but got a Chisel type
+
+  /** A function expected a hardware object but got a Chisel type
     */
   case class ExpectedHardwareException(message: String) extends BindingException(message)
+
   /** An aggregate had a mix of specified and unspecified directionality children
     */
   case class MixedDirectionAggregateException(message: String) extends BindingException(message)
+
   /** Attempted to re-bind an already bound (directionality or hardware) object
     */
   case class RebindingException(message: String) extends BindingException(message)

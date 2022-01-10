@@ -23,6 +23,7 @@ package experimental {
   case class IntParam(value: BigInt) extends Param
   case class DoubleParam(value: Double) extends Param
   case class StringParam(value: String) extends Param
+
   /** Unquoted String */
   case class RawParam(value: String) extends Param
 
@@ -85,7 +86,7 @@ package experimental {
 
       closeUnboundIds(names)
 
-      val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
+      val firrtlPorts = getModulePorts.map { port => Port(port, port.specifiedDirection) }
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
       _component
@@ -137,19 +138,24 @@ package experimental {
   * @note The parameters API is experimental and may change
   */
 @nowarn("msg=class Port") // delete when Port becomes private
-abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
+abstract class BlackBox(
+  val params: Map[String, Param] = Map.empty[String, Param]
+)(
+  implicit compileOptions: CompileOptions)
+    extends BaseBlackBox {
 
   // Find a Record port named "io" for purposes of stripping the prefix
   private[chisel3] lazy val _io: Record =
-    this.findPort("io")
-        .collect { case r: Record => r } // Must be a Record
-        .getOrElse(null) // null handling occurs in generateComponent
+    this
+      .findPort("io")
+      .collect { case r: Record => r } // Must be a Record
+      .getOrElse(null) // null handling occurs in generateComponent
 
   // Allow access to bindings from the compatibility package
   protected def _compatIoPortBound() = portsContains(_io)
 
   private[chisel3] override def generateComponent(): Option[Component] = {
-    _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
+    _compatAutoWrapPorts() // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
     require(_io != null, "BlackBox must have a port named 'io' of type Record!")
@@ -159,7 +165,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    val namedPorts = _io.elements.toSeq.reverse  // ListMaps are stored in reverse order
+    val namedPorts = _io.elements.toSeq.reverse // ListMaps are stored in reverse order
 
     // There is a risk of user improperly attempting to connect directly with io
     // Long term solution will be to define BlackBox IO differently as part of
@@ -179,7 +185,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
       id._onModuleClose
     }
 
-    val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.specifiedDirection)}
+    val firrtlPorts = namedPorts.map { namedPort => Port(namedPort._2, namedPort._2.specifiedDirection) }
     val component = DefBlackBox(this, name, firrtlPorts, _io.specifiedDirection, params)
     _component = Some(component)
     _component

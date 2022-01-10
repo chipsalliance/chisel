@@ -7,6 +7,7 @@ import chisel3.internal._
 import scala.language.experimental.macros
 
 object withClockAndReset {
+
   /** Creates a new Clock and Reset scope
     *
     * @param clock the new implicit Clock
@@ -32,13 +33,14 @@ object withClockAndReset {
 }
 
 object withClock {
+
   /** Creates a new Clock scope
     *
     * @param clock the new implicit Clock
     * @param block the block of code to run with new implicit Clock
     * @return the result of the block
     */
-  def apply[T](clock: Clock)(block: => T): T =  {
+  def apply[T](clock: Clock)(block: => T): T = {
     // Save parentScope
     val parentClock = Builder.currentClock
     Builder.currentClock = Some(clock)
@@ -50,6 +52,7 @@ object withClock {
 }
 
 object withReset {
+
   /** Creates a new Reset scope
     *
     * @param reset the new implicit Reset
@@ -67,4 +70,3 @@ object withReset {
   }
 
 }
-

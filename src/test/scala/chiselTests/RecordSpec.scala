@@ -50,18 +50,18 @@ trait RecordSpecUtils {
     queue.io.enq.valid := false.B
     val (cycle, done) = Counter(true.B, 4)
 
-    when (cycle === 0.U) {
+    when(cycle === 0.U) {
       queue.io.enq.bits("foo") := 1234.U
       queue.io.enq.bits("bar") := 5678.U
       queue.io.enq.valid := true.B
     }
-    when (cycle === 1.U) {
+    when(cycle === 1.U) {
       queue.io.deq.ready := true.B
       assert(queue.io.deq.valid === true.B)
       assert(queue.io.deq.bits("foo").asUInt === 1234.U)
       assert(queue.io.deq.bits("bar").asUInt === 5678.U)
     }
-    when (done) {
+    when(done) {
       stop()
     }
   }
@@ -91,16 +91,16 @@ trait RecordSpecUtils {
   }
 
   class RecordTypeTester extends BasicTester {
-    val wire0 = Wire(new CustomBundle("0"-> UInt(32.W)))
-    val wire1 = Reg(new CustomBundle("0"-> UInt(32.W)))
-    val wire2 = Wire(new CustomBundle("1"-> UInt(32.W)))
+    val wire0 = Wire(new CustomBundle("0" -> UInt(32.W)))
+    val wire1 = Reg(new CustomBundle("0" -> UInt(32.W)))
+    val wire2 = Wire(new CustomBundle("1" -> UInt(32.W)))
     require(DataMirror.checkTypeEquivalence(wire0, wire1))
     require(!DataMirror.checkTypeEquivalence(wire1, wire2))
   }
 }
 
 class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
-  behavior of "Records"
+  behavior.of("Records")
 
   they should "bulk connect similarly to Bundles" in {
     ChiselStage.elaborate { new MyModule(fooBarType, fooBarType) }
@@ -124,7 +124,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
         }
       }
     }
-    e.getMessage should include ("contains aliased fields named (bar,foo)")
+    e.getMessage should include("contains aliased fields named (bar,foo)")
   }
 
   they should "follow UInt serialization/deserialization API" in {
@@ -144,13 +144,13 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   "Bulk connect on Record" should "check that the fields match" in {
-    (the [ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate { new MyModule(fooBarType, new CustomBundle("bar" -> UInt(32.W))) }
-    }).getMessage should include ("Right Record missing field")
+    }).getMessage should include("Right Record missing field")
 
-    (the [ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate { new MyModule(new CustomBundle("bar" -> UInt(32.W)), fooBarType) }
-    }).getMessage should include ("Left Record missing field")
+    }).getMessage should include("Left Record missing field")
   }
 
   "CustomBundle" should "work like built-in aggregates" in {
