@@ -4,6 +4,7 @@ package chisel3.util
 
 import scala.language.experimental.macros
 import chisel3._
+import chisel3.experimental.EnumType
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 
@@ -99,6 +100,11 @@ object BitPat {
     val len = if (x.isWidthKnown) x.getWidth else 0
     apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
   }
+
+    /**
+    * Allows [[ChiselEnum]] to be used where a BitPat is expected.
+    */
+  def apply(x: EnumType): BitPat = apply(x.litValue.U((x.getWidth).W))
 
   implicit class fromUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
     import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
