@@ -86,6 +86,10 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     }
   }
 
+  def toIndex: Int = {
+    factory.all.indexOf(this)
+  }
+
   override def cloneType: this.type = factory().asInstanceOf[this.type]
 
   private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
@@ -233,6 +237,9 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
 }
 
+trait EnumFactory1H extends EnumFactory{
+  final override val oneHot: Boolean = true
+}
 
 abstract class EnumFactory {
   class Type extends EnumType(this)
@@ -242,6 +249,7 @@ abstract class EnumFactory {
 
   private var id: BigInt = 0
   private[chisel3] var width: Width = 0.W
+  private[chisel3] val oneHot: Boolean = false
 
   private case class EnumRecord(inst: Type, name: String)
   private val enumRecords = mutable.ArrayBuffer.empty[EnumRecord]
@@ -275,13 +283,13 @@ abstract class EnumFactory {
   protected def do_Value(name: String): Type = {
     val result = new Type
 
+    val resId = if (!oneHot) id else BigInt(1) << id.toInt
+
     // We have to use UnknownWidth here, because we don't actually know what the final width will be
-    result.bindToLiteral(id, UnknownWidth())
-
-    enumRecords.append(EnumRecord(result, name))
-
-    width = (1 max id.bitLength).W
+    result.bindToLiteral(resId, UnknownWidth())
+    width = (1 max resId.bitLength).W
     id += 1
+    enumRecords.append(EnumRecord(result, name))
 
     result
   }
@@ -343,7 +351,6 @@ abstract class EnumFactory {
     (t, t.isValid)
   }
 }
-
 
 private[chisel3] object EnumMacros {
   def ValImpl(c: Context) : c.Tree = {
