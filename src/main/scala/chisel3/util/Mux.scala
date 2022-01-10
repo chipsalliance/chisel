@@ -45,8 +45,9 @@ object Mux1H {
   def apply[T <: Data](in: Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
   def apply[T <: Data](sel: UInt, in: Seq[T]): T =
     apply((0 until in.size).map(sel(_)), in)
-  def apply[T <: Data](sel: EnumType, in: Seq[T]): T =
-    apply(sel.litValue.U(sel.getWidth.W), in)
+  def apply[T <: Data](sel: EnumType, in: Seq[T]): T = {
+    apply(sel.asUInt, in)
+  }
   def apply(sel: UInt, in: UInt): Bool = (sel & in).orR
 }
 
