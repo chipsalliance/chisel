@@ -113,7 +113,7 @@ class MultiClockMemTest extends BasicTester {
   when(done) { stop() }
 }
 
-class MultiClockSpec extends ChiselFlatSpec {
+class MultiClockSpec extends ChiselFlatSpec with Utils {
 
   "withClock" should "scope the clock of registers" in {
     assertTesterPasses(new ClockDividerTest)
@@ -127,6 +127,73 @@ class MultiClockSpec extends ChiselFlatSpec {
     ChiselStage.elaborate(new BasicTester {
       assert(withClock(this.clock) { 5 } == 5)
     })
+  }
+
+  "Differing clocks at memory and port instantiation" should "warn" in {
+    class MyModuleMemInstClock extends Module {
+      val myClock = IO(Input(Clock()))
+
+      val mem = withClock(myClock) {Mem(4, UInt(8.W))}
+      val port0 = mem(0.U)
+    }
+
+    class MyModulePortInstClock extends Module {
+      val myClock = IO(Input(Clock()))
+
+      val mem = Mem(4, UInt(8.W))
+      val port0 = mem(0.U, myClock)
+    }
+
+    class MyModuleNoWarn extends Module {
+      val myClock = IO(Input(Clock()))
+
+      val mem = withClock(myClock) {Mem(4, UInt(8.W))}
+      val port0 = mem(0.U, myClock)
+    }
+
+    val (logMemInst, _) = grabLog(ChiselStage.elaborate(new MyModuleMemInstClock))
+    logMemInst should include ("memory is different")
+
+    val (logPortInst, _) = grabLog(ChiselStage.elaborate(new MyModulePortInstClock))
+    logPortInst should not include ("memory is different")
+
+    val (logNoWarn, _) = grabLog(ChiselStage.elaborate(new MyModuleNoWarn))
+    logNoWarn should not include ("memory is different")
+  }
+
+  "Differing clocks at sync memory and port instantiation" should "warn" in {
+    class MyModuleMemInstClock extends Module {
+      val myClock = IO(Input(Clock()))
+
+      val mem = withClock(myClock) {SyncReadMem(4, UInt(8.W))}
+      val port0 = mem(0.U)
+      mem(1.U) := 1.U
+    }
+
+    class MyModulePortInstClock extends Module {
+      val myClock = IO(Input(Clock()))
+
+      val mem = SyncReadMem(4, UInt(8.W))
+      val port0 = mem(0.U, myClock)
+      mem(1.U, myClock) := 1.U
+    }
+
+    class MyModuleExplicitClk extends Module {
+      val myClock = IO(Input(Clock()))
+
+      val mem = withClock(myClock) {SyncReadMem(4, UInt(8.W))}
+      val port0 = mem(0.U, myClock)
+      mem(1.U, myClock) := 1.U
+    }
+
+    val (logMemInst, _) = grabLog(ChiselStage.elaborate(new MyModuleMemInstClock))
+    logMemInst should include ("memory is different")
+
+    val (logPortInst, _) = grabLog(ChiselStage.elaborate(new MyModulePortInstClock))
+    logPortInst should not include ("memory is different")
+
+    val (logExplicitClk, _) = grabLog(ChiselStage.elaborate(new MyModuleExplicitClk))
+    logExplicitClk should not include ("memory is different")
   }
 
   "withReset" should "scope the reset of registers" in {
