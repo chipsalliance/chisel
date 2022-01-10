@@ -3,16 +3,15 @@
 package chisel3
 
 import scala.language.experimental.macros
-
 import chisel3.experimental.{FixedPoint, Interval}
 import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
-  UIntTransform}
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
+import chisel3.internal.operators.{HasBitInv, HasDynamicLeftShift, HasDynamicRightShift, HasHead, HasPad, HasStaticLeftShift, HasStaticRightShift, HasTail}
 
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
@@ -42,7 +41,16 @@ private[chisel3] sealed trait ToBoolable extends Element {
   * @define sumWidth       @note The width of the returned $coll is `width of this` + `width of that`.
   * @define unchangedWidth @note The width of the returned $coll is unchanged, i.e., the `width of this`.
   */
-sealed abstract class Bits(private[chisel3] val width: Width) extends Element with ToBoolable {
+sealed abstract class Bits(private[chisel3] val width: Width) extends Element
+  with ToBoolable
+  with HasTail[Bits]
+  with HasHead[Bits]
+  with HasPad[Bits]
+  with HasBitInv[Bits]
+  with HasStaticLeftShift[Bits]
+  with HasDynamicLeftShift[Bits]
+  with HasStaticRightShift[Bits]
+  with HasDynamicRightShift[Bits] {
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -51,42 +59,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   private[chisel3] def cloneTypeWidth(width: Width): this.type
 
   def cloneType: this.type = cloneTypeWidth(width)
-
-  /** Tail operator
-    *
-    * @param n the number of bits to remove
-    * @return This $coll with the `n` most significant bits removed.
-    * @group Bitwise
-    */
-  final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
-
-  /** Head operator
-    *
-    * @param n the number of bits to take
-    * @return The `n` most significant bits of this $coll
-    * @group Bitwise
-    */
-  final def head(n: Int): UInt = macro SourceInfoTransform.nArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_tail(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
-    val w = width match {
-      case KnownWidth(x) =>
-        require(x >= n, s"Can't tail($n) for width $x < $n")
-        Width(x - n)
-      case UnknownWidth() => Width()
-    }
-    binop(sourceInfo, UInt(width = w), TailOp, n)
-  }
-
-  /** @group SourceInfoTransformMacro */
-  def do_head(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
-    width match {
-      case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
-      case UnknownWidth() =>
-    }
-    binop(sourceInfo, UInt(Width(n)), HeadOp, n)
-  }
 
   /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
     *
@@ -204,110 +176,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref))
   }
 
-  /** Pad operator
-    *
-    * @param that the width to pad to
-    * @return this @coll zero padded up to width `that`. If `that` is less than the width of the original component,
-    * this method returns the original component.
-    * @note For [[SInt]]s only, this will do sign extension.
-    * @group Bitwise
-    */
-  final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_pad(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = this.width match {
-    case KnownWidth(w) if w >= that => this
-    case _ => binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
-  }
-
-  /** Bitwise inversion operator
-    *
-    * @return this $coll with each bit inverted
-    * @group Bitwise
-    */
-  final def unary_~ : Bits = macro SourceInfoWhiteboxTransform.noArg
-
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
-  final def unary_~(dummy: Int*): Bits = macro SourceInfoWhiteboxTransform.noArgDummy
-
-  /** @group SourceInfoTransformMacro */
-  def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
-  /** Static left shift operator
-    *
-    * @param that an amount to shift by
-    * @return this $coll with `that` many zeros concatenated to its least significant end
-    * $sumWidthInt
-    * @group Bitwise
-    */
-  // REVIEW TODO: redundant
-  // REVIEW TODO: should these return this.type or Bits?
-  final def << (that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
-  /** Static left shift operator
-    *
-    * @param that an amount to shift by
-    * @return this $coll with `that` many zeros concatenated to its least significant end
-    * $sumWidthInt
-    * @group Bitwise
-    */
-  final def << (that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
-  /** Dynamic left shift operator
-    *
-    * @param that a hardware component
-    * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
-    * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
-    * @group Bitwise
-    */
-  final def << (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
-  /** Static right shift operator
-    *
-    * @param that an amount to shift by
-    * @return this $coll with `that` many least significant bits truncated
-    * $unchangedWidth
-    * @group Bitwise
-    */
-  // REVIEW TODO: redundant
-  final def >> (that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
-  /** Static right shift operator
-    *
-    * @param that an amount to shift by
-    * @return this $coll with `that` many least significant bits truncated
-    * $unchangedWidth
-    * @group Bitwise
-    */
-  final def >> (that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
-  /** Dynamic right shift operator
-    *
-    * @param that a hardware component
-    * @return this $coll dynamically shifted right by the value of `that` component, inserting zeros into the most
-    * significant bits.
-    * $unchangedWidth
-    * @group Bitwise
-    */
-  final def >> (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   final def asBools: Seq[Bool] = macro SourceInfoTransform.noArg
@@ -387,6 +255,53 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       Builder.error(s"Negative shift amounts are illegal (got $x)")
     x
   }
+
+  // chisel3.internal.operators implementation
+  override def tail(n: Int): Bits = macro SourceInfoTransform.nArg
+  private[chisel3] def do_tail(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits = {
+    val w = width match {
+      case KnownWidth(x) =>
+        require(x >= n, s"Can't tail($n) for width $x < $n")
+        Width(x - n)
+      case UnknownWidth() => Width()
+    }
+    binop(sourceInfo, UInt(width = w), TailOp, n)
+  }
+
+  override def head(n: Int): Bits = macro SourceInfoTransform.nArg
+  private[chisel3] def do_head(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits = {
+    width match {
+      case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
+      case UnknownWidth() =>
+    }
+    binop(sourceInfo, UInt(Width(n)), HeadOp, n)
+  }
+
+  override def pad(that: Int): Bits = macro SourceInfoTransform.thatArg
+  private[chisel3] def do_pad(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits = this.width match {
+    case KnownWidth(w) if w >= that => this
+    case _ => binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
+  }
+
+  override def unary_~ : Bits = macro SourceInfoWhiteboxTransform.noArg
+  override def unary_~(dummy: Int*): Bits = macro SourceInfoWhiteboxTransform.noArgDummy
+  private[chisel3] def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+
+  override def << (that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  private[chisel3] def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  override def << (that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  private[chisel3] def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+
+  override def << (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  private[chisel3] def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+
+  override def >> (that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  private[chisel3] def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  override def >> (that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  private[chisel3] def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+
+  override def >> (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  private[chisel3] def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 }
 
 /** A data type for unsigned integers, represented as a binary bitvector. Defines arithmetic operations between other
@@ -501,13 +416,13 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     binop(sourceInfo, UInt((this.width max that.width) + 1), AddOp, that)
   /** @group SourceInfoTransformMacro */
   def do_+% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    (this +& that).tail(1)
+    (this +& that).tail(1).asUInt
   /** @group SourceInfoTransformMacro */
   def do_-& (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     (this subtractAsSInt that).asUInt
   /** @group SourceInfoTransformMacro */
   def do_-% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    (this subtractAsSInt that).tail(1)
+    (this subtractAsSInt that).tail(1).asUInt
 
   /** Bitwise and operator
     *

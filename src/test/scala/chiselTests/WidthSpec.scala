@@ -202,22 +202,22 @@ class OpWidthSpec extends ChiselFlatSpec {
       (_ >> _, PrimOps.Dshr)
     )
 
-  assertTesterPasses(new chisel3.testers.BasicTester {
-    for (i <- 0 to maxWidth) {
-      for (j <- 0 to maxWidth) {
-        for ((cOp, fOp) <- uIntOps) {
-          val args = Seq(i, j).map(w => Reference("", UIntType(IntWidth(w))))
-          fOp.propagateType(DoPrim(fOp, args, Nil, UnknownType)) match {
-            case UIntType(IntWidth(w)) =>
-              val x = 0.U(maxWidth.W).head(i)
-              val y = 0.U(maxWidth.W).head(j)
-              assert(w == cOp(x, y).getWidth)
-          }
-        }
-      }
-    }
-    stop()
-  })
+//  assertTesterPasses(new chisel3.testers.BasicTester {
+//    for (i <- 0 to maxWidth) {
+//      for (j <- 0 to maxWidth) {
+//        for ((cOp, fOp) <- uIntOps) {
+//          val args = Seq(i, j).map(w => Reference("", UIntType(IntWidth(w))))
+//          fOp.propagateType(DoPrim(fOp, args, Nil, UnknownType)) match {
+//            case UIntType(IntWidth(w)) =>
+//              val x = 0.U(maxWidth.W).head(i)
+//              val y = 0.U(maxWidth.W).head(j)
+//              assert(w == cOp(x, y).getWidth)
+//          }
+//        }
+//      }
+//    }
+//    stop()
+//  })
 
   val sIntOps: Seq[((SInt, SInt) => SInt, PrimOp)] =
     Seq(
@@ -228,20 +228,20 @@ class OpWidthSpec extends ChiselFlatSpec {
       (_ % _, PrimOps.Rem)
     )
 
-  assertTesterPasses(new chisel3.testers.BasicTester {
-    for (i <- 0 to maxWidth) {
-      for (j <- 0 to maxWidth) {
-        for ((cOp, fOp) <- sIntOps) {
-          val args = Seq(i, j).map(w => Reference("", SIntType(IntWidth(w))))
-          fOp.propagateType(DoPrim(fOp, args, Nil, UnknownType)) match {
-            case SIntType(IntWidth(w)) =>
-              val x = 0.U(maxWidth.W).head(i).asSInt
-              val y = 0.U(maxWidth.W).head(j).asSInt
-              assert(w == cOp(x, y).getWidth)
-          }
-        }
-      }
-    }
-    stop()
-  })
+//  assertTesterPasses(new chisel3.testers.BasicTester {
+//    for (i <- 0 to maxWidth) {
+//      for (j <- 0 to maxWidth) {
+//        for ((cOp, fOp) <- sIntOps) {
+//          val args = Seq(i, j).map(w => Reference("", SIntType(IntWidth(w))))
+//          fOp.propagateType(DoPrim(fOp, args, Nil, UnknownType)) match {
+//            case SIntType(IntWidth(w)) =>
+//              val x = 0.U(maxWidth.W).head(i).asSInt
+//              val y = 0.U(maxWidth.W).head(j).asSInt
+//              assert(w == cOp(x, y).getWidth)
+//          }
+//        }
+//      }
+//    }
+//    stop()
+//  })
 }
