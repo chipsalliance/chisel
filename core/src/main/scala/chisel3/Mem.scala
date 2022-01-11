@@ -108,10 +108,20 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def do_read(idx: UInt, clock: Clock)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     do_apply_impl(idx, clock, MemPortDirection.READ, false)
 
-  protected def do_apply_impl(idx: UInt, clock: Clock, dir: MemPortDirection, warn: Boolean)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  protected def do_apply_impl(
+    idx:   UInt,
+    clock: Clock,
+    dir:   MemPortDirection,
+    warn:  Boolean
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
     if (warn && clock != clockInst) {
-      Builder.warning("The clock used to initialize the memory is different than the one used to initialize the port. " +
-        "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0")
+      Builder.warning(
+        "The clock used to initialize the memory is different than the one used to initialize the port. " +
+          "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0"
+      )
     }
     makePort(sourceInfo, idx, dir, clock)
   }
@@ -127,10 +137,19 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def write(idx: UInt, data: T, clock: Clock)(implicit compileOptions: CompileOptions): Unit =
     write_impl(idx, data, clock, false)
 
-  private def write_impl(idx: UInt, data: T, clock: Clock, warn: Boolean)(implicit compileOptions: CompileOptions): Unit = {
+  private def write_impl(
+    idx:   UInt,
+    data:  T,
+    clock: Clock,
+    warn:  Boolean
+  )(
+    implicit compileOptions: CompileOptions
+  ): Unit = {
     if (warn && clock != clockInst) {
-      Builder.warning("The clock used to initialize the memory is different than the one used to initialize the port. " +
-        "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0")
+      Builder.warning(
+        "The clock used to initialize the memory is different than the one used to initialize the port. " +
+          "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0"
+      )
     }
     implicit val sourceInfo = UnlocatableSourceInfo
     makePort(UnlocatableSourceInfo, idx, MemPortDirection.WRITE, clock) := data
@@ -146,23 +165,42 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def write(
-    idx: UInt,
+    idx:  UInt,
     data: T,
     mask: Seq[Bool]
   )(
     implicit evidence: T <:< Vec[_],
-    compileOptions: CompileOptions
+    compileOptions:    CompileOptions
   ): Unit =
     masked_write_impl(idx, data, mask, Builder.forcedClock, true)
 
-  def write(idx: UInt, data: T, mask: Seq[Bool], clock: Clock) (implicit evidence: T <:< Vec[_], compileOptions: CompileOptions): Unit =
+  def write(
+    idx:   UInt,
+    data:  T,
+    mask:  Seq[Bool],
+    clock: Clock
+  )(
+    implicit evidence: T <:< Vec[_],
+    compileOptions:    CompileOptions
+  ): Unit =
     masked_write_impl(idx, data, mask, clock, false)
 
-  private def masked_write_impl(idx: UInt, data: T, mask: Seq[Bool], clock: Clock, warn: Boolean) (implicit evidence: T <:< Vec[_], compileOptions: CompileOptions): Unit = {
+  private def masked_write_impl(
+    idx:   UInt,
+    data:  T,
+    mask:  Seq[Bool],
+    clock: Clock,
+    warn:  Boolean
+  )(
+    implicit evidence: T <:< Vec[_],
+    compileOptions:    CompileOptions
+  ): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
     if (warn && clock != clockInst) {
-      Builder.warning("The clock used to initialize the memory is different than the one used to initialize the port. " +
-        "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0")
+      Builder.warning(
+        "The clock used to initialize the memory is different than the one used to initialize the port. " +
+          "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0"
+      )
     }
     val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE, clock).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
@@ -178,9 +216,9 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
 
   private def makePort(
     sourceInfo: SourceInfo,
-    idx: UInt,
-    dir: MemPortDirection,
-    clock: Clock
+    idx:        UInt,
+    dir:        MemPortDirection,
+    clock:      Clock
   )(
     implicit compileOptions: CompileOptions
   ): T = {
@@ -290,7 +328,15 @@ sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite
   def read(x: UInt, y: Bool, z: Clock): T = macro SourceInfoTransform.xyzArg
 
   /** @group SourceInfoTransformMacro */
-  def do_read(addr: UInt, enable: Bool, clock: Clock, warn: Boolean)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_read(
+    addr:   UInt,
+    enable: Bool,
+    clock:  Clock,
+    warn:   Boolean
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
     val a = Wire(UInt())
     a := DontCare
     var port: Option[T] = None
@@ -301,13 +347,13 @@ sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite
     port.get
   }
 
-  /** @group SourceInfoTransformMacro*/
+  /** @group SourceInfoTransformMacro */
   override def do_read(idx: UInt, clock: Clock)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     do_read(addr = idx, enable = true.B, clock, false)
 
-  /** @group SourceInfoTransformMacro*/
+  /** @group SourceInfoTransformMacro */
   def do_read(idx: UInt, en: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-    do_read(addr=idx, enable = en, Builder.forcedClock, true)
+    do_read(addr = idx, enable = en, Builder.forcedClock, true)
   // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
   //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
 }
