@@ -224,6 +224,7 @@ assign c = 16'b1;
 
 ```scala mdoc:silent
 
+
 class MyWireAssignmentModule extends Module {
  val a = WireDefault(42.U(32.W))
  val b = WireDefault("hbabecafe".U(32.W))  
