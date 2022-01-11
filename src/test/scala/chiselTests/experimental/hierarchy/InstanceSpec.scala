@@ -230,7 +230,6 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|Top/i:HasOption>x".rt, "x"))
     }
-
     it("3.6: should work on vecs") {
       class Top() extends Module {
         val i = Instance(Definition(new HasVec()))
