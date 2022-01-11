@@ -14,8 +14,8 @@ import chisel3.internal._
   */
 abstract class Element extends Data {
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
-  def widthKnown: Boolean = width.known
-  def name: String = getRef.name
+  def widthKnown:                         Boolean = width.known
+  def name:                               String = getRef.name
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     _parent.foreach(_.addId(this))
@@ -26,27 +26,30 @@ abstract class Element extends Data {
 
   private[chisel3] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
     // Translate Bundle lit bindings to Element lit bindings
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => Some(ElementLitBinding(litArg))
-      case _ => Some(DontCareBinding())
-    }
-    case Some(VecLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => Some(ElementLitBinding(litArg))
-      case _ => Some(DontCareBinding())
-    }
-    case Some(b @ AggregateViewBinding(viewMap, _)) => viewMap.get(this) match {
-      case Some(elt) => Some(ViewBinding(elt))
-      case _ => throwException(s"Internal Error! $this missing from topBinding $b")
-    }
+    case Some(BundleLitBinding(litMap)) =>
+      litMap.get(this) match {
+        case Some(litArg) => Some(ElementLitBinding(litArg))
+        case _            => Some(DontCareBinding())
+      }
+    case Some(VecLitBinding(litMap)) =>
+      litMap.get(this) match {
+        case Some(litArg) => Some(ElementLitBinding(litArg))
+        case _            => Some(DontCareBinding())
+      }
+    case Some(b @ AggregateViewBinding(viewMap, _)) =>
+      viewMap.get(this) match {
+        case Some(elt) => Some(ViewBinding(elt))
+        case _         => throwException(s"Internal Error! $this missing from topBinding $b")
+      }
     case topBindingOpt => topBindingOpt
   }
 
   private[chisel3] def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case _ => None
+    case _                               => None
   }
 
-  override def litOption: Option[BigInt] = litArgOption.map(_.num)
+  override def litOption:                Option[BigInt] = litArgOption.map(_.num)
   private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
 
   private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {

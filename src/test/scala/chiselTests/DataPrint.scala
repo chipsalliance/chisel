@@ -29,30 +29,32 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   }
 
   "Data types" should "have a meaningful string representation" in {
-    ChiselStage.elaborate { new RawModule {
-      UInt().toString should be ("UInt")
-      UInt(8.W).toString should be ("UInt<8>")
-      SInt(15.W).toString should be ("SInt<15>")
-      Bool().toString should be ("Bool")
-      Clock().toString should be ("Clock")
-      FixedPoint(5.W, 3.BP).toString should be ("FixedPoint<5><<3>>")
-      Vec(3, UInt(2.W)).toString should be ("UInt<2>[3]")
-      EnumTest.Type().toString should be ("EnumTest")
-      (new BundleTest).toString should be ("BundleTest")
-      new Bundle { val a = UInt(8.W) }.toString should be ("AnonymousBundle")
-      new Bundle { val a = UInt(8.W) }.a.toString should be ("UInt<8>")
-    }}
+    ChiselStage.elaborate {
+      new RawModule {
+        UInt().toString should be("UInt")
+        UInt(8.W).toString should be("UInt<8>")
+        SInt(15.W).toString should be("SInt<15>")
+        Bool().toString should be("Bool")
+        Clock().toString should be("Clock")
+        FixedPoint(5.W, 3.BP).toString should be("FixedPoint<5><<3>>")
+        Vec(3, UInt(2.W)).toString should be("UInt<2>[3]")
+        EnumTest.Type().toString should be("EnumTest")
+        (new BundleTest).toString should be("BundleTest")
+        new Bundle { val a = UInt(8.W) }.toString should be("AnonymousBundle")
+        new Bundle { val a = UInt(8.W) }.a.toString should be("UInt<8>")
+      }
+    }
   }
 
-  class BoundDataModule extends Module {  // not in the test to avoid anon naming suffixes
+  class BoundDataModule extends Module { // not in the test to avoid anon naming suffixes
     Wire(UInt()).toString should be("BoundDataModule.?: Wire[UInt]")
     Reg(SInt()).toString should be("BoundDataModule.?: Reg[SInt]")
-    val io = IO(Output(Bool()))  // needs a name so elaboration doesn't fail
+    val io = IO(Output(Bool())) // needs a name so elaboration doesn't fail
     io.toString should be("BoundDataModule.io: IO[Bool]")
     val m = Mem(4, UInt(2.W))
     m(2).toString should be("BoundDataModule.?: MemPort[UInt<2>]")
     (2.U + 2.U).toString should be("BoundDataModule.?: OpResult[UInt<2>]")
-    Wire(Vec(3, UInt(2.W))).toString should be ("BoundDataModule.?: Wire[UInt<2>[3]]")
+    Wire(Vec(3, UInt(2.W))).toString should be("BoundDataModule.?: Wire[UInt<2>[3]]")
 
     class InnerModule extends Module {
       val io = IO(Output(new Bundle {
@@ -60,8 +62,8 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       }))
     }
     val inner = Module(new InnerModule)
-    inner.clock.toString should be ("InnerModule.clock: IO[Clock]")
-    inner.io.a.toString should be ("InnerModule.io.a: IO[UInt<4>]")
+    inner.clock.toString should be("InnerModule.clock: IO[Clock]")
+    inner.io.a.toString should be("InnerModule.io.a: IO[UInt<4>]")
 
     class FooTypeTest extends Bundle {
       val foo = Vec(2, UInt(8.W))
@@ -69,7 +71,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     }
     val tpe = new FooTypeTest
     val fooio: FooTypeTest = IO(Input(tpe))
-    fooio.foo(0).toString should be ("BoundDataModule.fooio.foo[0]: IO[UInt<8>]")
+    fooio.foo(0).toString should be("BoundDataModule.fooio.foo[0]: IO[UInt<8>]")
 
     class NestedBundle extends Bundle {
       val nestedFoo = UInt(8.W)
@@ -81,10 +83,8 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
 
     val nestedTpe = new NestedType
     val nestedio = IO(Input(nestedTpe))
-    (nestedio.foo.nestedFoo.toString should be
-      ("BoundDataModule.nestedio.foo.nestedFoo: IO[UInt<8>]"))
-    (nestedio.foo.nestedFooVec(0).toString should be
-      ("BoundDataModule.nestedio.foo.nestedFooVec[0]: IO[UInt<8>]"))
+    (nestedio.foo.nestedFoo.toString should be("BoundDataModule.nestedio.foo.nestedFoo: IO[UInt<8>]"))
+    (nestedio.foo.nestedFooVec(0).toString should be("BoundDataModule.nestedio.foo.nestedFooVec[0]: IO[UInt<8>]"))
   }
 
   "Bound data types" should "have a meaningful string representation" in {
@@ -92,21 +92,25 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   }
 
   "Literals" should "have a meaningful string representation" in {
-    ChiselStage.elaborate { new RawModule {
-      3.U.toString should be ("UInt<2>(3)")
-      3.U(5.W).toString should be ("UInt<5>(3)")
-      -1.S.toString should be ("SInt<1>(-1)")
-      false.B.toString should be ("Bool(false)")
-      true.B.toString should be ("Bool(true)")
-      2.25.F(6.W, 2.BP).toString should be ("FixedPoint<6><<2>>(2.25)")
-      -2.25.F(6.W, 2.BP).toString should be ("FixedPoint<6><<2>>(-2.25)")
-      Vec(3, UInt(4.W)).toString should be ("UInt<4>[3]")
-      EnumTest.sNone.toString should be ("EnumTest(0=sNone)")
-      EnumTest.sTwo.toString should be ("EnumTest(2=sTwo)")
-      EnumTest(1.U).toString should be ("EnumTest(1=sOne)")
-      (new BundleTest).Lit(_.a -> 2.U, _.b -> false.B).toString should be ("BundleTest(a=UInt<8>(2), b=Bool(false))")
-      (new PartialBundleTest).Lit().toString should be ("PartialBundleTest(a=UInt<8>(DontCare), b=Bool(DontCare), c=SInt<8>(DontCare), e=FixedPoint<5><<3>>(DontCare), f=EnumTest(DontCare))")
-      DontCare.toString should be ("DontCare()")
-    } }
+    ChiselStage.elaborate {
+      new RawModule {
+        3.U.toString should be("UInt<2>(3)")
+        3.U(5.W).toString should be("UInt<5>(3)")
+        -1.S.toString should be("SInt<1>(-1)")
+        false.B.toString should be("Bool(false)")
+        true.B.toString should be("Bool(true)")
+        2.25.F(6.W, 2.BP).toString should be("FixedPoint<6><<2>>(2.25)")
+        -2.25.F(6.W, 2.BP).toString should be("FixedPoint<6><<2>>(-2.25)")
+        Vec(3, UInt(4.W)).toString should be("UInt<4>[3]")
+        EnumTest.sNone.toString should be("EnumTest(0=sNone)")
+        EnumTest.sTwo.toString should be("EnumTest(2=sTwo)")
+        EnumTest(1.U).toString should be("EnumTest(1=sOne)")
+        (new BundleTest).Lit(_.a -> 2.U, _.b -> false.B).toString should be("BundleTest(a=UInt<8>(2), b=Bool(false))")
+        (new PartialBundleTest).Lit().toString should be(
+          "PartialBundleTest(a=UInt<8>(DontCare), b=Bool(DontCare), c=SInt<8>(DontCare), e=FixedPoint<5><<3>>(DontCare), f=EnumTest(DontCare))"
+        )
+        DontCare.toString should be("DontCare()")
+      }
+    }
   }
 }

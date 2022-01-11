@@ -11,7 +11,6 @@ import chisel3.ExplicitCompileOptions.Strict
 import scala.reflect.runtime.universe.WeakTypeTag
 import annotation.implicitNotFound
 
-
 /** Mapping between a target type `T` and a view type `V`
   *
   * Enables calling `.viewAs[T]` on instances of the target type.
@@ -41,9 +40,11 @@ import annotation.implicitNotFound
   * @see [[DataView$ object DataView]] for factory methods
   * @see [[PartialDataView object PartialDataView]] for defining non-total `DataViews`
   */
-@implicitNotFound("Could not find implicit value for DataView[${T}, ${V}].\n" +
-  "Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview")
-sealed class DataView[T : DataProduct, V <: Data] private[chisel3] (
+@implicitNotFound(
+  "Could not find implicit value for DataView[${T}, ${V}].\n" +
+    "Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview"
+)
+sealed class DataView[T: DataProduct, V <: Data] private[chisel3] (
   /** Function constructing an object of the View type from an object of the Target type */
   private[chisel3] val mkView: T => V,
   /** Function that returns corresponding fields of the target and view */
@@ -51,8 +52,8 @@ sealed class DataView[T : DataProduct, V <: Data] private[chisel3] (
   // Aliasing this with a def below to make the ScalaDoc show up for the field
   _total: Boolean
 )(
-  implicit private[chisel3] val sourceInfo: SourceInfo
-) {
+  implicit private[chisel3] val sourceInfo: SourceInfo) {
+
   /** Indicates if the mapping contains every field of the target */
   def total: Boolean = _total
 
@@ -89,15 +90,30 @@ sealed class DataView[T : DataProduct, V <: Data] private[chisel3] (
 object DataView {
 
   /** Default factory method, alias for [[pairs]] */
-  def apply[T : DataProduct, V <: Data](mkView: T => V, pairs: ((T, V) => (Data, Data))*)(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def apply[T: DataProduct, V <: Data](
+    mkView: T => V,
+    pairs:  ((T, V) => (Data, Data))*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     DataView.pairs(mkView, pairs: _*)
 
   /** Construct [[DataView]]s with pairs of functions from the target and view to corresponding fields */
-  def pairs[T : DataProduct, V <: Data](mkView: T => V, pairs: ((T, V) => (Data, Data))*)(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def pairs[T: DataProduct, V <: Data](
+    mkView: T => V,
+    pairs:  ((T, V) => (Data, Data))*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     mapping(mkView: T => V, swizzle(pairs))
 
   /** More general factory method for complex mappings */
-  def mapping[T : DataProduct, V <: Data](mkView: T => V, mapping: (T, V) => Iterable[(Data, Data)])(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def mapping[T: DataProduct, V <: Data](
+    mkView:  T => V,
+    mapping: (T, V) => Iterable[(Data, Data)]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     new DataView[T, V](mkView, mapping, _total = true)
 
   /** Provides `invert` for invertible [[DataView]]s
@@ -107,7 +123,7 @@ object DataView {
     *
     * @note [[PartialDataView]]s are **not** invertible and will result in an elaboration time exception
     */
-  implicit class InvertibleDataView[T <: Data : WeakTypeTag, V <: Data : WeakTypeTag](view: DataView[T, V]) {
+  implicit class InvertibleDataView[T <: Data: WeakTypeTag, V <: Data: WeakTypeTag](view: DataView[T, V]) {
     def invert(mkView: V => T): DataView[V, T] = {
       // It would've been nice to make this a compiler error, but it's unclear how to make that work.
       // We tried having separate TotalDataView and PartialDataView and only defining inversion for
@@ -143,7 +159,10 @@ object DataView {
     DataView[A, A](chiselTypeOf.apply, { case (x, y) => (x, y) })
 
   /** Provides `DataView[Seq[A], Vec[B]]` for all `A` such that there exists `DataView[A, B]` */
-  implicit def seqDataView[A : DataProduct, B <: Data](implicit dv: DataView[A, B], sourceInfo: SourceInfo): DataView[Seq[A], Vec[B]] = {
+  implicit def seqDataView[A: DataProduct, B <: Data](
+    implicit dv: DataView[A, B],
+    sourceInfo:  SourceInfo
+  ): DataView[Seq[A], Vec[B]] = {
     // TODO this would need a better way to determine the prototype for the Vec
     DataView.mapping[Seq[A], Vec[B]](
       xs => Vec(xs.size, chiselTypeClone(xs.head.viewAs[B]))(sourceInfo, Strict), // xs.head is not correct in general
@@ -151,223 +170,395 @@ object DataView {
     )
   }
 
-  /** Provides implementations of [[DataView]] for [[Tuple2]] to [[HWTuple2]]  */
-  implicit def tuple2DataView[T1 : DataProduct, T2 : DataProduct, V1 <: Data, V2 <: Data](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], sourceInfo: SourceInfo
+  /** Provides implementations of [[DataView]] for [[Tuple2]] to [[HWTuple2]] */
+  implicit def tuple2DataView[T1: DataProduct, T2: DataProduct, V1 <: Data, V2 <: Data](
+    implicit v1: DataView[T1, V1],
+    v2:          DataView[T2, V2],
+    sourceInfo:  SourceInfo
   ): DataView[(T1, T2), HWTuple2[V1, V2]] =
     DataView.mapping(
-      { case (a, b) => new HWTuple2(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType)},
-      { case ((a, b), hwt) =>
-        Seq(a.viewAs[V1] -> hwt._1,
-          b.viewAs[V2] -> hwt._2)
+      { case (a, b) => new HWTuple2(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType) },
+      {
+        case ((a, b), hwt) =>
+          Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2)
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple3]] to [[HWTuple3]]  */
-  implicit def tuple3DataView[
-    T1 : DataProduct, T2 : DataProduct, T3 : DataProduct,
-    V1 <: Data, V2 <: Data, V3 <: Data
-  ](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], v3: DataView[T3, V3], sourceInfo: SourceInfo
+  /** Provides implementations of [[DataView]] for [[Tuple3]] to [[HWTuple3]] */
+  implicit def tuple3DataView[T1: DataProduct, T2: DataProduct, T3: DataProduct, V1 <: Data, V2 <: Data, V3 <: Data](
+    implicit v1: DataView[T1, V1],
+    v2:          DataView[T2, V2],
+    v3:          DataView[T3, V3],
+    sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3), HWTuple3[V1, V2, V3]] =
     DataView.mapping(
-      { case (a, b, c) => new HWTuple3(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType)},
-      { case ((a, b, c), hwt) =>
-        Seq(a.viewAs[V1] -> hwt._1,
-            b.viewAs[V2] -> hwt._2,
-            c.viewAs[V3] -> hwt._3)
+      { case (a, b, c) => new HWTuple3(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType) },
+      {
+        case ((a, b, c), hwt) =>
+          Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2, c.viewAs[V3] -> hwt._3)
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple4]] to [[HWTuple4]]  */
+  /** Provides implementations of [[DataView]] for [[Tuple4]] to [[HWTuple4]] */
   implicit def tuple4DataView[
-    T1 : DataProduct, T2 : DataProduct, T3 : DataProduct, T4 : DataProduct,
-    V1 <: Data, V2 <: Data, V3 <: Data, V4 <: Data
+    T1: DataProduct,
+    T2: DataProduct,
+    T3: DataProduct,
+    T4: DataProduct,
+    V1 <: Data,
+    V2 <: Data,
+    V3 <: Data,
+    V4 <: Data
   ](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], v3: DataView[T3, V3], v4: DataView[T4, V4], sourceInfo: SourceInfo
+    implicit v1: DataView[T1, V1],
+    v2:          DataView[T2, V2],
+    v3:          DataView[T3, V3],
+    v4:          DataView[T4, V4],
+    sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4), HWTuple4[V1, V2, V3, V4]] =
     DataView.mapping(
-      { case (a, b, c, d) =>
-          new HWTuple4(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType
-      )},
-      { case ((a, b, c, d), hwt) =>
-        Seq(a.viewAs[V1] -> hwt._1,
-            b.viewAs[V2] -> hwt._2,
-            c.viewAs[V3] -> hwt._3,
-            d.viewAs[V4] -> hwt._4)
+      {
+        case (a, b, c, d) =>
+          new HWTuple4(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType)
+      },
+      {
+        case ((a, b, c, d), hwt) =>
+          Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2, c.viewAs[V3] -> hwt._3, d.viewAs[V4] -> hwt._4)
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple5]] to [[HWTuple5]]  */
+  /** Provides implementations of [[DataView]] for [[Tuple5]] to [[HWTuple5]] */
   implicit def tuple5DataView[
-    T1 : DataProduct, T2 : DataProduct, T3 : DataProduct, T4 : DataProduct, T5 : DataProduct,
-    V1 <: Data, V2 <: Data, V3 <: Data, V4 <: Data, V5 <: Data
+    T1: DataProduct,
+    T2: DataProduct,
+    T3: DataProduct,
+    T4: DataProduct,
+    T5: DataProduct,
+    V1 <: Data,
+    V2 <: Data,
+    V3 <: Data,
+    V4 <: Data,
+    V5 <: Data
   ](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], v3: DataView[T3, V3], v4: DataView[T4, V4], v5: DataView[T5, V5], sourceInfo: SourceInfo
+    implicit v1: DataView[T1, V1],
+    v2:          DataView[T2, V2],
+    v3:          DataView[T3, V3],
+    v4:          DataView[T4, V4],
+    v5:          DataView[T5, V5],
+    sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5), HWTuple5[V1, V2, V3, V4, V5]] = {
     DataView.mapping(
-      { case tup: Tuple5[T1, T2, T3, T4, T5] =>
-        val (a, b, c, d, e) = tup
-        new HWTuple5(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType,
-          e.viewAs[V5].cloneType
-        )
+      {
+        case tup: Tuple5[T1, T2, T3, T4, T5] =>
+          val (a, b, c, d, e) = tup
+          new HWTuple5(
+            a.viewAs[V1].cloneType,
+            b.viewAs[V2].cloneType,
+            c.viewAs[V3].cloneType,
+            d.viewAs[V4].cloneType,
+            e.viewAs[V5].cloneType
+          )
       },
-      { case ((a, b, c, d, e), hwt) =>
-        Seq(a.viewAs[V1] -> hwt._1,
-          b.viewAs[V2] -> hwt._2,
-          c.viewAs[V3] -> hwt._3,
-          d.viewAs[V4] -> hwt._4,
-          e.viewAs[V5] -> hwt._5)
+      {
+        case ((a, b, c, d, e), hwt) =>
+          Seq(
+            a.viewAs[V1] -> hwt._1,
+            b.viewAs[V2] -> hwt._2,
+            c.viewAs[V3] -> hwt._3,
+            d.viewAs[V4] -> hwt._4,
+            e.viewAs[V5] -> hwt._5
+          )
       }
     )
   }
 
-  /** Provides implementations of [[DataView]] for [[Tuple6]] to [[HWTuple6]]  */
+  /** Provides implementations of [[DataView]] for [[Tuple6]] to [[HWTuple6]] */
   implicit def tuple6DataView[
-    T1 : DataProduct, T2 : DataProduct, T3 : DataProduct, T4 : DataProduct, T5 : DataProduct,
-    T6 : DataProduct,
-    V1 <: Data, V2 <: Data, V3 <: Data, V4 <: Data, V5 <: Data,
+    T1: DataProduct,
+    T2: DataProduct,
+    T3: DataProduct,
+    T4: DataProduct,
+    T5: DataProduct,
+    T6: DataProduct,
+    V1 <: Data,
+    V2 <: Data,
+    V3 <: Data,
+    V4 <: Data,
+    V5 <: Data,
     V6 <: Data
   ](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], v3: DataView[T3, V3], v4: DataView[T4, V4],
-             v5: DataView[T5, V5], v6: DataView[T6, V6],
-             sourceInfo: SourceInfo
+    implicit v1: DataView[T1, V1],
+    v2:          DataView[T2, V2],
+    v3:          DataView[T3, V3],
+    v4:          DataView[T4, V4],
+    v5:          DataView[T5, V5],
+    v6:          DataView[T6, V6],
+    sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6), HWTuple6[V1, V2, V3, V4, V5, V6]] =
     DataView.mapping(
-      { case (a, b, c, d, e, f) =>
-        new HWTuple6(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType,
-          e.viewAs[V5].cloneType, f.viewAs[V6].cloneType
-        )
+      {
+        case (a, b, c, d, e, f) =>
+          new HWTuple6(
+            a.viewAs[V1].cloneType,
+            b.viewAs[V2].cloneType,
+            c.viewAs[V3].cloneType,
+            d.viewAs[V4].cloneType,
+            e.viewAs[V5].cloneType,
+            f.viewAs[V6].cloneType
+          )
       },
-      { case ((a, b, c, d, e, f), hwt) =>
-        Seq(a.viewAs[V1] -> hwt._1,
-          b.viewAs[V2] -> hwt._2,
-          c.viewAs[V3] -> hwt._3,
-          d.viewAs[V4] -> hwt._4,
-          e.viewAs[V5] -> hwt._5,
-          f.viewAs[V6] -> hwt._6)
+      {
+        case ((a, b, c, d, e, f), hwt) =>
+          Seq(
+            a.viewAs[V1] -> hwt._1,
+            b.viewAs[V2] -> hwt._2,
+            c.viewAs[V3] -> hwt._3,
+            d.viewAs[V4] -> hwt._4,
+            e.viewAs[V5] -> hwt._5,
+            f.viewAs[V6] -> hwt._6
+          )
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple7]] to [[HWTuple7]]  */
+  /** Provides implementations of [[DataView]] for [[Tuple7]] to [[HWTuple7]] */
   implicit def tuple7DataView[
-    T1 : DataProduct, T2 : DataProduct, T3 : DataProduct, T4 : DataProduct, T5 : DataProduct,
-    T6 : DataProduct, T7 : DataProduct,
-    V1 <: Data, V2 <: Data, V3 <: Data, V4 <: Data, V5 <: Data,
-    V6 <: Data, V7 <: Data
+    T1: DataProduct,
+    T2: DataProduct,
+    T3: DataProduct,
+    T4: DataProduct,
+    T5: DataProduct,
+    T6: DataProduct,
+    T7: DataProduct,
+    V1 <: Data,
+    V2 <: Data,
+    V3 <: Data,
+    V4 <: Data,
+    V5 <: Data,
+    V6 <: Data,
+    V7 <: Data
   ](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], v3: DataView[T3, V3], v4: DataView[T4, V4],
-             v5: DataView[T5, V5], v6: DataView[T6, V6], v7: DataView[T7, V7],
-             sourceInfo: SourceInfo
+    implicit v1: DataView[T1, V1],
+    v2:          DataView[T2, V2],
+    v3:          DataView[T3, V3],
+    v4:          DataView[T4, V4],
+    v5:          DataView[T5, V5],
+    v6:          DataView[T6, V6],
+    v7:          DataView[T7, V7],
+    sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7), HWTuple7[V1, V2, V3, V4, V5, V6, V7]] =
     DataView.mapping(
-      { case (a, b, c, d, e, f, g) =>
-        new HWTuple7(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType,
-          e.viewAs[V5].cloneType, f.viewAs[V6].cloneType, g.viewAs[V7].cloneType
-        )
+      {
+        case (a, b, c, d, e, f, g) =>
+          new HWTuple7(
+            a.viewAs[V1].cloneType,
+            b.viewAs[V2].cloneType,
+            c.viewAs[V3].cloneType,
+            d.viewAs[V4].cloneType,
+            e.viewAs[V5].cloneType,
+            f.viewAs[V6].cloneType,
+            g.viewAs[V7].cloneType
+          )
       },
-      { case ((a, b, c, d, e, f, g), hwt) =>
-        Seq(a.viewAs[V1] -> hwt._1,
-          b.viewAs[V2] -> hwt._2,
-          c.viewAs[V3] -> hwt._3,
-          d.viewAs[V4] -> hwt._4,
-          e.viewAs[V5] -> hwt._5,
-          f.viewAs[V6] -> hwt._6,
-          g.viewAs[V7] -> hwt._7)
+      {
+        case ((a, b, c, d, e, f, g), hwt) =>
+          Seq(
+            a.viewAs[V1] -> hwt._1,
+            b.viewAs[V2] -> hwt._2,
+            c.viewAs[V3] -> hwt._3,
+            d.viewAs[V4] -> hwt._4,
+            e.viewAs[V5] -> hwt._5,
+            f.viewAs[V6] -> hwt._6,
+            g.viewAs[V7] -> hwt._7
+          )
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple8]] to [[HWTuple8]]  */
+  /** Provides implementations of [[DataView]] for [[Tuple8]] to [[HWTuple8]] */
   implicit def tuple8DataView[
-    T1 : DataProduct, T2 : DataProduct, T3 : DataProduct, T4 : DataProduct, T5 : DataProduct,
-    T6 : DataProduct, T7 : DataProduct, T8 : DataProduct,
-    V1 <: Data, V2 <: Data, V3 <: Data, V4 <: Data, V5 <: Data,
-    V6 <: Data, V7 <: Data, V8 <: Data
+    T1: DataProduct,
+    T2: DataProduct,
+    T3: DataProduct,
+    T4: DataProduct,
+    T5: DataProduct,
+    T6: DataProduct,
+    T7: DataProduct,
+    T8: DataProduct,
+    V1 <: Data,
+    V2 <: Data,
+    V3 <: Data,
+    V4 <: Data,
+    V5 <: Data,
+    V6 <: Data,
+    V7 <: Data,
+    V8 <: Data
   ](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], v3: DataView[T3, V3], v4: DataView[T4, V4],
-    v5: DataView[T5, V5], v6: DataView[T6, V6], v7: DataView[T7, V7], v8: DataView[T8, V8],
-    sourceInfo: SourceInfo
+    implicit v1: DataView[T1, V1],
+    v2:          DataView[T2, V2],
+    v3:          DataView[T3, V3],
+    v4:          DataView[T4, V4],
+    v5:          DataView[T5, V5],
+    v6:          DataView[T6, V6],
+    v7:          DataView[T7, V7],
+    v8:          DataView[T8, V8],
+    sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7, T8), HWTuple8[V1, V2, V3, V4, V5, V6, V7, V8]] =
     DataView.mapping(
-      { case (a, b, c, d, e, f, g, h) =>
-        new HWTuple8(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType,
-          e.viewAs[V5].cloneType, f.viewAs[V6].cloneType, g.viewAs[V7].cloneType, h.viewAs[V8].cloneType
-        )
+      {
+        case (a, b, c, d, e, f, g, h) =>
+          new HWTuple8(
+            a.viewAs[V1].cloneType,
+            b.viewAs[V2].cloneType,
+            c.viewAs[V3].cloneType,
+            d.viewAs[V4].cloneType,
+            e.viewAs[V5].cloneType,
+            f.viewAs[V6].cloneType,
+            g.viewAs[V7].cloneType,
+            h.viewAs[V8].cloneType
+          )
       },
-      { case ((a, b, c, d, e, f, g, h), hwt) =>
-        Seq(a.viewAs[V1] -> hwt._1,
-          b.viewAs[V2] -> hwt._2,
-          c.viewAs[V3] -> hwt._3,
-          d.viewAs[V4] -> hwt._4,
-          e.viewAs[V5] -> hwt._5,
-          f.viewAs[V6] -> hwt._6,
-          g.viewAs[V7] -> hwt._7,
-          h.viewAs[V8] -> hwt._8)
+      {
+        case ((a, b, c, d, e, f, g, h), hwt) =>
+          Seq(
+            a.viewAs[V1] -> hwt._1,
+            b.viewAs[V2] -> hwt._2,
+            c.viewAs[V3] -> hwt._3,
+            d.viewAs[V4] -> hwt._4,
+            e.viewAs[V5] -> hwt._5,
+            f.viewAs[V6] -> hwt._6,
+            g.viewAs[V7] -> hwt._7,
+            h.viewAs[V8] -> hwt._8
+          )
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple9]] to [[HWTuple9]]  */
+  /** Provides implementations of [[DataView]] for [[Tuple9]] to [[HWTuple9]] */
   implicit def tuple9DataView[
-    T1 : DataProduct, T2 : DataProduct, T3 : DataProduct, T4 : DataProduct, T5 : DataProduct,
-    T6 : DataProduct, T7 : DataProduct, T8 : DataProduct, T9 : DataProduct,
-    V1 <: Data, V2 <: Data, V3 <: Data, V4 <: Data, V5 <: Data,
-    V6 <: Data, V7 <: Data, V8 <: Data, V9 <: Data
+    T1: DataProduct,
+    T2: DataProduct,
+    T3: DataProduct,
+    T4: DataProduct,
+    T5: DataProduct,
+    T6: DataProduct,
+    T7: DataProduct,
+    T8: DataProduct,
+    T9: DataProduct,
+    V1 <: Data,
+    V2 <: Data,
+    V3 <: Data,
+    V4 <: Data,
+    V5 <: Data,
+    V6 <: Data,
+    V7 <: Data,
+    V8 <: Data,
+    V9 <: Data
   ](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], v3: DataView[T3, V3], v4: DataView[T4, V4],
-    v5: DataView[T5, V5], v6: DataView[T6, V6], v7: DataView[T7, V7], v8: DataView[T8, V8],
-    v9: DataView[T9, V9],
-    sourceInfo: SourceInfo
+    implicit v1: DataView[T1, V1],
+    v2:          DataView[T2, V2],
+    v3:          DataView[T3, V3],
+    v4:          DataView[T4, V4],
+    v5:          DataView[T5, V5],
+    v6:          DataView[T6, V6],
+    v7:          DataView[T7, V7],
+    v8:          DataView[T8, V8],
+    v9:          DataView[T9, V9],
+    sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7, T8, T9), HWTuple9[V1, V2, V3, V4, V5, V6, V7, V8, V9]] =
     DataView.mapping(
-      { case (a, b, c, d, e, f, g, h, i) =>
-        new HWTuple9(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType,
-          e.viewAs[V5].cloneType, f.viewAs[V6].cloneType, g.viewAs[V7].cloneType, h.viewAs[V8].cloneType,
-          i.viewAs[V9].cloneType
-        )
+      {
+        case (a, b, c, d, e, f, g, h, i) =>
+          new HWTuple9(
+            a.viewAs[V1].cloneType,
+            b.viewAs[V2].cloneType,
+            c.viewAs[V3].cloneType,
+            d.viewAs[V4].cloneType,
+            e.viewAs[V5].cloneType,
+            f.viewAs[V6].cloneType,
+            g.viewAs[V7].cloneType,
+            h.viewAs[V8].cloneType,
+            i.viewAs[V9].cloneType
+          )
       },
-      { case ((a, b, c, d, e, f, g, h, i), hwt) =>
-        Seq(a.viewAs[V1] -> hwt._1,
-          b.viewAs[V2] -> hwt._2,
-          c.viewAs[V3] -> hwt._3,
-          d.viewAs[V4] -> hwt._4,
-          e.viewAs[V5] -> hwt._5,
-          f.viewAs[V6] -> hwt._6,
-          g.viewAs[V7] -> hwt._7,
-          h.viewAs[V8] -> hwt._8,
-          i.viewAs[V9] -> hwt._9)
+      {
+        case ((a, b, c, d, e, f, g, h, i), hwt) =>
+          Seq(
+            a.viewAs[V1] -> hwt._1,
+            b.viewAs[V2] -> hwt._2,
+            c.viewAs[V3] -> hwt._3,
+            d.viewAs[V4] -> hwt._4,
+            e.viewAs[V5] -> hwt._5,
+            f.viewAs[V6] -> hwt._6,
+            g.viewAs[V7] -> hwt._7,
+            h.viewAs[V8] -> hwt._8,
+            i.viewAs[V9] -> hwt._9
+          )
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple10]] to [[HWTuple10]]  */
+  /** Provides implementations of [[DataView]] for [[Tuple10]] to [[HWTuple10]] */
   implicit def tuple10DataView[
-    T1 : DataProduct, T2 : DataProduct, T3 : DataProduct, T4 : DataProduct, T5 : DataProduct,
-    T6 : DataProduct, T7 : DataProduct, T8 : DataProduct, T9 : DataProduct, T10 : DataProduct,
-    V1 <: Data, V2 <: Data, V3 <: Data, V4 <: Data, V5 <: Data,
-    V6 <: Data, V7 <: Data, V8 <: Data, V9 <: Data, V10 <: Data
+    T1:  DataProduct,
+    T2:  DataProduct,
+    T3:  DataProduct,
+    T4:  DataProduct,
+    T5:  DataProduct,
+    T6:  DataProduct,
+    T7:  DataProduct,
+    T8:  DataProduct,
+    T9:  DataProduct,
+    T10: DataProduct,
+    V1 <: Data,
+    V2 <: Data,
+    V3 <: Data,
+    V4 <: Data,
+    V5 <: Data,
+    V6 <: Data,
+    V7 <: Data,
+    V8 <: Data,
+    V9 <: Data,
+    V10 <: Data
   ](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2], v3: DataView[T3, V3], v4: DataView[T4, V4],
-    v5: DataView[T5, V5], v6: DataView[T6, V6], v7: DataView[T7, V7], v8: DataView[T8, V8],
-    v9: DataView[T9, V9], v10: DataView[T10, V10],
-    sourceInfo: SourceInfo
+    implicit v1: DataView[T1, V1],
+    v2:          DataView[T2, V2],
+    v3:          DataView[T3, V3],
+    v4:          DataView[T4, V4],
+    v5:          DataView[T5, V5],
+    v6:          DataView[T6, V6],
+    v7:          DataView[T7, V7],
+    v8:          DataView[T8, V8],
+    v9:          DataView[T9, V9],
+    v10:         DataView[T10, V10],
+    sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10), HWTuple10[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10]] =
     DataView.mapping(
-      { case (a, b, c, d, e, f, g, h, i, j) =>
-        new HWTuple10(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType,
-          e.viewAs[V5].cloneType, f.viewAs[V6].cloneType, g.viewAs[V7].cloneType, h.viewAs[V8].cloneType,
-          i.viewAs[V9].cloneType, j.viewAs[V10].cloneType
-        )
+      {
+        case (a, b, c, d, e, f, g, h, i, j) =>
+          new HWTuple10(
+            a.viewAs[V1].cloneType,
+            b.viewAs[V2].cloneType,
+            c.viewAs[V3].cloneType,
+            d.viewAs[V4].cloneType,
+            e.viewAs[V5].cloneType,
+            f.viewAs[V6].cloneType,
+            g.viewAs[V7].cloneType,
+            h.viewAs[V8].cloneType,
+            i.viewAs[V9].cloneType,
+            j.viewAs[V10].cloneType
+          )
       },
-      { case ((a, b, c, d, e, f, g, h, i, j), hwt) =>
-        Seq(a.viewAs[V1] -> hwt._1,
-          b.viewAs[V2] -> hwt._2,
-          c.viewAs[V3] -> hwt._3,
-          d.viewAs[V4] -> hwt._4,
-          e.viewAs[V5] -> hwt._5,
-          f.viewAs[V6] -> hwt._6,
-          g.viewAs[V7] -> hwt._7,
-          h.viewAs[V8] -> hwt._8,
-          i.viewAs[V9] -> hwt._9,
-          j.viewAs[V10] -> hwt._10)
+      {
+        case ((a, b, c, d, e, f, g, h, i, j), hwt) =>
+          Seq(
+            a.viewAs[V1] -> hwt._1,
+            b.viewAs[V2] -> hwt._2,
+            c.viewAs[V3] -> hwt._3,
+            d.viewAs[V4] -> hwt._4,
+            e.viewAs[V5] -> hwt._5,
+            f.viewAs[V6] -> hwt._6,
+            g.viewAs[V7] -> hwt._7,
+            h.viewAs[V8] -> hwt._8,
+            i.viewAs[V9] -> hwt._9,
+            j.viewAs[V10] -> hwt._10
+          )
       }
     )
 }
@@ -376,14 +567,29 @@ object DataView {
 object PartialDataView {
 
   /** Default factory method, alias for [[pairs]] */
-  def apply[T: DataProduct, V <: Data](mkView: T => V, pairs: ((T, V) => (Data, Data))*)(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def apply[T: DataProduct, V <: Data](
+    mkView: T => V,
+    pairs:  ((T, V) => (Data, Data))*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     PartialDataView.pairs(mkView, pairs: _*)
 
   /** Construct [[DataView]]s with pairs of functions from the target and view to corresponding fields */
-  def pairs[T: DataProduct, V <: Data](mkView: T => V, pairs: ((T, V) => (Data, Data))*)(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def pairs[T: DataProduct, V <: Data](
+    mkView: T => V,
+    pairs:  ((T, V) => (Data, Data))*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     mapping(mkView, DataView.swizzle(pairs))
 
   /** More general factory method for complex mappings */
-  def mapping[T: DataProduct, V <: Data](mkView: T => V, mapping: (T, V) => Iterable[(Data, Data)])(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def mapping[T: DataProduct, V <: Data](
+    mkView:  T => V,
+    mapping: (T, V) => Iterable[(Data, Data)]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     new DataView[T, V](mkView, mapping, _total = false)
 }

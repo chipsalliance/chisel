@@ -5,7 +5,7 @@ package chiselTests.experimental
 import chisel3._
 import chisel3.experimental.{BaseModule, ExtModule}
 import chisel3.experimental.dataview._
-import chisel3.util.{Decoupled, DecoupledIO, Queue, QueueIO, log2Ceil}
+import chisel3.util.{log2Ceil, Decoupled, DecoupledIO, Queue, QueueIO}
 import chiselTests.ChiselFlatSpec
 import firrtl.transforms.DontTouchAnnotation
 
@@ -52,6 +52,6 @@ class DataViewIntegrationSpec extends ChiselFlatSpec {
   "Users" should "be able to view and annotate Modules" in {
     val (_, annos) = getFirrtlAndAnnos(new MyModule)
     val ts = annos.collect { case DontTouchAnnotation(t) => t.serialize }
-    ts should equal (Seq("~MyModule|Queue>enq_ptr_value"))
+    ts should equal(Seq("~MyModule|Queue>enq_ptr_value"))
   }
 }

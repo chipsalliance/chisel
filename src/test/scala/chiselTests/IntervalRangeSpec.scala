@@ -186,7 +186,6 @@ class IntervalRangeSpec extends AnyFreeSpec with Matchers {
         checkRange(range"[-8,7].2", C(-8), C(7), 2.BP)
         checkRange(range"[-8,7].2" >> 3, C(-1), C(0.75), 2.BP)
 
-
         checkRange(range"(0,7).0", O(0), O(7), 0.BP)
         checkRange(range"(0,7).0" >> 1, O(0), O(3), 0.BP)
 
@@ -219,19 +218,19 @@ class IntervalRangeSpec extends AnyFreeSpec with Matchers {
 
     "get possible values should return all values from high to low" in {
       var range = range"[0,4]"
-      range.getLowestPossibleValue should be (Some(0))
-      range.getHighestPossibleValue should be (Some(4))
-      range.getPossibleValues should be (Seq(0, 1, 2, 3, 4))
+      range.getLowestPossibleValue should be(Some(0))
+      range.getHighestPossibleValue should be(Some(4))
+      range.getPossibleValues should be(Seq(0, 1, 2, 3, 4))
 
       range = range"(0,4)"
-      range.getLowestPossibleValue should be (Some(1))
-      range.getHighestPossibleValue should be (Some(3))
-      range.getPossibleValues should be (Seq(1, 2, 3))
+      range.getLowestPossibleValue should be(Some(1))
+      range.getHighestPossibleValue should be(Some(3))
+      range.getPossibleValues should be(Seq(1, 2, 3))
 
       range = range"(-1,4).1"
-      range.getLowestPossibleValue should be (Some(-0.5))
-      range.getHighestPossibleValue should be (Some(3.5))
-      range.getPossibleValues should be (Seq(-0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5))
+      range.getLowestPossibleValue should be(Some(-0.5))
+      range.getHighestPossibleValue should be(Some(3.5))
+      range.getPossibleValues should be(Seq(-0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5))
     }
   }
 

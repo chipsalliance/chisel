@@ -11,12 +11,12 @@ class Coord extends Bundle {
 
 class BundleWire(n: Int) extends Module {
   val io = IO(new Bundle {
-    val in   = Input(new Coord)
+    val in = Input(new Coord)
     val outs = Output(Vec(n, new Coord))
   })
   val coords = Wire(Vec(n, new Coord))
   for (i <- 0 until n) {
-    coords(i)  := io.in
+    coords(i) := io.in
     io.outs(i) := coords(i)
   }
 }
@@ -57,14 +57,13 @@ class BundleWireSpec extends ChiselPropSpec {
 
   property("All vec elems should match the inputs") {
     forAll(vecSizes, safeUInts, safeUInts) { (n: Int, x: Int, y: Int) =>
-      assertTesterPasses{ new BundleWireTester(n, x, y) }
+      assertTesterPasses { new BundleWireTester(n, x, y) }
     }
   }
 }
 
 class BundleToUIntSpec extends ChiselPropSpec {
   property("Bundles with same data but different, underlying elements should compare as UInt") {
-    assertTesterPasses( new BundleToUnitTester )
+    assertTesterPasses(new BundleToUnitTester)
   }
 }
-

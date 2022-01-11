@@ -24,7 +24,7 @@ class Bundle2UInt extends CookbookTester(1) {
   assert(uint === 0xc3.U)
 }
 
-class Bundle2UIntSpec  extends CookbookSpec {
+class Bundle2UIntSpec extends CookbookSpec {
   "Bundle2UInt" should "work" in {
     assertTesterPasses { new Bundle2UInt }
   }

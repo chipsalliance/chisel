@@ -12,7 +12,7 @@ import scala.io.Source
 import scala.annotation.nowarn
 
 class SimpleIO extends Bundle {
-  val in  = Input(UInt(32.W))
+  val in = Input(UInt(32.W))
   val out = Output(UInt(32.W))
 }
 
@@ -23,13 +23,13 @@ class PlusOne extends Module {
 
 class ModuleVec(val n: Int) extends Module {
   val io = IO(new Bundle {
-    val ins  = Input(Vec(n, UInt(32.W)))
+    val ins = Input(Vec(n, UInt(32.W)))
     val outs = Output(Vec(n, UInt(32.W)))
   })
-  val pluses = VecInit(Seq.fill(n){ Module(new PlusOne).io })
+  val pluses = VecInit(Seq.fill(n) { Module(new PlusOne).io })
   for (i <- 0 until n) {
     pluses(i).in := io.ins(i)
-    io.outs(i)   := pluses(i).out
+    io.outs(i) := pluses(i).out
   }
 }
 
@@ -49,7 +49,7 @@ class ModuleWhen extends Module {
     val inc = Module(new PlusOne).io
     inc.in := io.s.in
     io.s.out := inc.out
-  } otherwise { io.s.out := io.s.in }
+  }.otherwise { io.s.out := io.s.in }
 }
 
 class ModuleForgetWrapper extends Module {
@@ -69,13 +69,13 @@ class ModuleRewrap extends Module {
 }
 
 class ModuleWrapper(gen: => Module) extends Module {
-  val io = IO(new Bundle{})
+  val io = IO(new Bundle {})
   val child = Module(gen)
   override val desiredName = s"${child.desiredName}Wrapper"
 }
 
 class NullModuleWrapper extends Module {
-  val io = IO(new Bundle{})
+  val io = IO(new Bundle {})
   override lazy val desiredName = s"${child.desiredName}Wrapper"
   println(s"My name is ${name}")
   val child = Module(new ModuleWire)
@@ -87,34 +87,34 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     ChiselStage.elaborate { new ModuleVec(2) }
   }
 
-  ignore("ModuleVecTester should return the correct result") { }
+  ignore("ModuleVecTester should return the correct result") {}
 
   property("ModuleWire should elaborate") {
     ChiselStage.elaborate { new ModuleWire }
   }
 
-  ignore("ModuleWireTester should return the correct result") { }
+  ignore("ModuleWireTester should return the correct result") {}
 
   property("ModuleWhen should elaborate") {
     ChiselStage.elaborate { new ModuleWhen }
   }
 
-  ignore("ModuleWhenTester should return the correct result") { }
+  ignore("ModuleWhenTester should return the correct result") {}
 
   property("Forgetting a Module() wrapper should result in an error") {
-    (the [ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate { new ModuleForgetWrapper }
     }).getMessage should include("attempted to instantiate a Module without wrapping it")
   }
 
   property("Double wrapping a Module should result in an error") {
-    (the [ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate { new ModuleDoubleWrap }
     }).getMessage should include("Called Module() twice without instantiating a Module")
   }
 
   property("Rewrapping an already instantiated Module should result in an error") {
-    (the [ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate { new ModuleRewrap }
     }).getMessage should include("This is probably due to rewrapping a Module instance")
   }
@@ -140,7 +140,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   property("object Module.currentModule should return an Option reference to the current Module") {
     def checkModule(mod: Module): Boolean = Module.currentModule.map(_ eq mod).getOrElse(false)
     ChiselStage.elaborate(new Module {
-      val io = IO(new Bundle { })
+      val io = IO(new Bundle {})
       assert(Module.currentModule.get eq this)
       assert(checkModule(this))
     })
@@ -148,24 +148,27 @@ class ModuleSpec extends ChiselPropSpec with Utils {
 
   property("object chisel3.util.experimental.getAnnotations should return current annotations.") {
     case class DummyAnnotation() extends NoTargetAnnotation with Unserializable
-    (new ChiselStage).transform(Seq(
-      ChiselGeneratorAnnotation(() => new RawModule {
-        assert(chisel3.util.experimental.getAnnotations().contains(DummyAnnotation()))
-      }),
-      DummyAnnotation(),
-      NoRunFirrtlCompilerAnnotation))
+    (new ChiselStage).transform(
+      Seq(
+        ChiselGeneratorAnnotation(() =>
+          new RawModule {
+            assert(chisel3.util.experimental.getAnnotations().contains(DummyAnnotation()))
+          }
+        ),
+        DummyAnnotation(),
+        NoRunFirrtlCompilerAnnotation
+      )
+    )
   }
 
   property("DataMirror.modulePorts should work") {
     ChiselStage.elaborate(new Module {
-      val io = IO(new Bundle { })
+      val io = IO(new Bundle {})
       val m = Module(new chisel3.Module {
         val a = IO(UInt(8.W))
         val b = IO(Bool())
       })
-      assert(DataMirror.modulePorts(m) == Seq(
-          "clock" -> m.clock, "reset" -> m.reset,
-          "a" -> m.a, "b" -> m.b))
+      assert(DataMirror.modulePorts(m) == Seq("clock" -> m.clock, "reset" -> m.reset, "a" -> m.a, "b" -> m.b))
     })
   }
 
@@ -186,21 +189,25 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       mod
     }
     // Note that this is just top-level ports, Aggregates are not flattened
-    DataMirror.modulePorts(mod) should contain theSameElementsInOrderAs Seq(
-      "clock" -> mod.clock,
-      "reset" -> mod.reset,
-      "io" -> mod.io,
-      "extra" -> mod.extra
+    (DataMirror.modulePorts(mod) should contain).theSameElementsInOrderAs(
+      Seq(
+        "clock" -> mod.clock,
+        "reset" -> mod.reset,
+        "io" -> mod.io,
+        "extra" -> mod.extra
+      )
     )
     // Delete this when the deprecated API is deleted
     // Note this also uses deprecated Port
     import chisel3.internal.firrtl.Port
     import SpecifiedDirection.{Input => IN, Unspecified}
-    mod.getPorts should contain theSameElementsInOrderAs Seq(
-      Port(mod.clock, IN),
-      Port(mod.reset, IN),
-      Port(mod.io, Unspecified),
-      Port(mod.extra, IN)
+    (mod.getPorts should contain).theSameElementsInOrderAs(
+      Seq(
+        Port(mod.clock, IN),
+        Port(mod.reset, IN),
+        Port(mod.io, Unspecified),
+        Port(mod.extra, IN)
+      )
     ): @nowarn // delete when Port and getPorts become private
   }
 
@@ -230,15 +237,16 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       "io_in" -> mod.io.in,
       "extra" -> mod.extra
     )
-    DataMirror.fullModulePorts(mod) should contain theSameElementsInOrderAs expected
+    (DataMirror.fullModulePorts(mod) should contain).theSameElementsInOrderAs(expected)
   }
 
   property("A desiredName parameterized by a submodule should work") {
-    ChiselStage.elaborate(new ModuleWrapper(new ModuleWire)).name should be ("ModuleWireWrapper")
+    ChiselStage.elaborate(new ModuleWrapper(new ModuleWire)).name should be("ModuleWireWrapper")
   }
   property("A name generating a null pointer exception should provide a good error message") {
-    (the [ChiselException] thrownBy extractCause[ChiselException] (ChiselStage.elaborate(new NullModuleWrapper)))
-      .getMessage should include ("desiredName of chiselTests.NullModuleWrapper is null")
+    (the[ChiselException] thrownBy extractCause[ChiselException](
+      ChiselStage.elaborate(new NullModuleWrapper)
+    )).getMessage should include("desiredName of chiselTests.NullModuleWrapper is null")
   }
   property("The name of a module in a function should be sane") {
     def foo = {
@@ -262,7 +270,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   }
 
   property("emitVerilog((new PlusOne()..) shall produce a valid Verilog file in a subfolder") {
-   emitVerilog(new PlusOne(), Array("--target-dir", "generated"))
+    emitVerilog(new PlusOne(), Array("--target-dir", "generated"))
     val s = Source.fromFile("generated/PlusOne.v").mkString("")
     assert(s.contains("assign io_out = io_in + 32'h1"))
   }

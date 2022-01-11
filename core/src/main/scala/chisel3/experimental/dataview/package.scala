@@ -39,27 +39,39 @@ package object dataview {
   }
 
   // This private type alias lets us provide a custom error message for misuing the .viewAs for upcasting Bundles
-  @implicitNotFound("${A} is not a subtype of ${B}! Did you mean .viewAs[${B}]? " +
-    "Please see https://www.chisel-lang.org/chisel3/docs/cookbooks/dataview")
+  @implicitNotFound(
+    "${A} is not a subtype of ${B}! Did you mean .viewAs[${B}]? " +
+      "Please see https://www.chisel-lang.org/chisel3/docs/cookbooks/dataview"
+  )
   private type SubTypeOf[A, B] = A <:< B
 
   /** Provides `viewAsSupertype` for subclasses of [[Bundle]] */
   implicit class BundleUpcastable[T <: Bundle](target: T) {
+
     /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
     def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: SubTypeOf[T, V], sourceInfo: SourceInfo): V = {
-      implicit val dataView = PartialDataView.mapping[T, V](_ => proto, {
-        case (a, b) =>
-          val aElts = a.elements
-          val bElts = b.elements
-          val bKeys = bElts.keySet
-          val keys = aElts.keysIterator.filter(bKeys.contains)
-          keys.map(k => aElts(k) -> bElts(k)).toSeq
-      })
+      implicit val dataView = PartialDataView.mapping[T, V](
+        _ => proto,
+        {
+          case (a, b) =>
+            val aElts = a.elements
+            val bElts = b.elements
+            val bKeys = bElts.keySet
+            val keys = aElts.keysIterator.filter(bKeys.contains)
+            keys.map(k => aElts(k) -> bElts(k)).toSeq
+        }
+      )
       target.viewAs[V]
     }
   }
 
-  private def nonTotalViewException(dataView: DataView[_, _], target: Any, view: Data, targetFields: Seq[String], viewFields: Seq[String]) = {
+  private def nonTotalViewException(
+    dataView:     DataView[_, _],
+    target:       Any,
+    view:         Data,
+    targetFields: Seq[String],
+    viewFields:   Seq[String]
+  ) = {
     def missingMsg(name: String, fields: Seq[String]): Option[String] = {
       val str = fields.mkString(", ")
       fields.size match {
@@ -77,18 +89,17 @@ package object dataview {
   }
 
   // TODO should this be moved to class Aggregate / can it be unified with Aggregate.bind?
-  private def doBind[T : DataProduct, V <: Data](target: T, view: V, dataView: DataView[T, V]): Unit = {
+  private def doBind[T: DataProduct, V <: Data](target: T, view: V, dataView: DataView[T, V]): Unit = {
     val mapping = dataView.mapping(target, view)
     val total = dataView.total
     // Lookups to check the mapping results
     val viewFieldLookup: Map[Data, String] = getRecursiveFields(view, "_").toMap
-    val targetContains: Data => Boolean = implicitly[DataProduct[T]].dataSet(target)
+    val targetContains:  Data => Boolean = implicitly[DataProduct[T]].dataSet(target)
 
     // Resulting bindings for each Element of the View
     val childBindings =
       new mutable.HashMap[Data, mutable.ListBuffer[Element]] ++
-        viewFieldLookup.view
-          .collect { case (elt: Element, _) => elt }
+        viewFieldLookup.view.collect { case (elt: Element, _) => elt }
           .map(_ -> new mutable.ListBuffer[Element])
 
     def viewFieldName(d: Data): String =
@@ -115,7 +126,9 @@ package object dataview {
         val fieldName = viewFieldName(vex)
         val vwidth = widthAsString(vex)
         val twidth = widthAsString(tex)
-        throw InvalidViewException(s"View field $fieldName has width ${vwidth} that is incompatible with target value $tex's width ${twidth}")
+        throw InvalidViewException(
+          s"View field $fieldName has width ${vwidth} that is incompatible with target value $tex's width ${twidth}"
+        )
       }
       childBindings(vex) += tex
     }
@@ -137,23 +150,24 @@ package object dataview {
     }
 
     // Errors in totality of the View, use var List to keep fast path cheap (no allocation)
-    var viewNonTotalErrors: List[Data] = Nil
+    var viewNonTotalErrors:   List[Data] = Nil
     var targetNonTotalErrors: List[String] = Nil
 
     val targetSeen: Option[mutable.Set[Data]] = if (total) Some(mutable.Set.empty[Data]) else None
 
-    val resultBindings = childBindings.map { case (data, targets) =>
-      val targetsx = targets match {
-        case collection.Seq(target: Element) => target
-        case collection.Seq() =>
-          viewNonTotalErrors = data :: viewNonTotalErrors
-          data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
-        case x =>
-          throw InvalidViewException(s"Got $x, expected Seq(_: Direct)")
-      }
-      // TODO record and report aliasing errors
-      targetSeen.foreach(_ += targetsx)
-      data -> targetsx
+    val resultBindings = childBindings.map {
+      case (data, targets) =>
+        val targetsx = targets match {
+          case collection.Seq(target: Element) => target
+          case collection.Seq() =>
+            viewNonTotalErrors = data :: viewNonTotalErrors
+            data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
+          case x =>
+            throw InvalidViewException(s"Got $x, expected Seq(_: Direct)")
+        }
+        // TODO record and report aliasing errors
+        targetSeen.foreach(_ += targetsx)
+        data -> targetsx
     }.toMap
 
     // Check for totality of Target
@@ -169,7 +183,7 @@ package object dataview {
     }
 
     view match {
-      case elt: Element => view.bind(ViewBinding(resultBindings(elt)))
+      case elt: Element   => view.bind(ViewBinding(resultBindings(elt)))
       case agg: Aggregate =>
         // We record total Data mappings to provide a better .toTarget
         val topt = target match {
@@ -221,31 +235,31 @@ package object dataview {
   @tailrec private[chisel3] def reify(elt: Element, topBinding: TopBinding): Element =
     topBinding match {
       case ViewBinding(target) => reify(target, elt.topBinding)
-      case _ => elt
+      case _                   => elt
     }
 
-    /** Determine the target of a View if it is a single Target
-      *
-      * @note An Aggregate may be a view of unrelated [[Data]] (eg. like a Seq or tuple) and thus this
-      *       there is no single Data representing the Target and this function will return None
-      * @return The single Data target of this view or None if a single Data doesn't exist
-      */
-    private[chisel3] def reifySingleData(data: Data): Option[Data] = {
-      val candidate: Option[Data] =
-        data.binding.collect { // First check if this is a total mapping of an Aggregate
-          case AggregateViewBinding(_, Some(t)) => t
-        }.orElse { // Otherwise look via top binding
-          data.topBindingOpt match {
-            case None => None
-            case Some(ViewBinding(target)) => Some(target)
-            case Some(AggregateViewBinding(lookup, _)) => lookup.get(data)
-            case Some(_) => None
-          }
+  /** Determine the target of a View if it is a single Target
+    *
+    * @note An Aggregate may be a view of unrelated [[Data]] (eg. like a Seq or tuple) and thus this
+    *       there is no single Data representing the Target and this function will return None
+    * @return The single Data target of this view or None if a single Data doesn't exist
+    */
+  private[chisel3] def reifySingleData(data: Data): Option[Data] = {
+    val candidate: Option[Data] =
+      data.binding.collect { // First check if this is a total mapping of an Aggregate
+        case AggregateViewBinding(_, Some(t)) => t
+      }.orElse { // Otherwise look via top binding
+        data.topBindingOpt match {
+          case None                                  => None
+          case Some(ViewBinding(target))             => Some(target)
+          case Some(AggregateViewBinding(lookup, _)) => lookup.get(data)
+          case Some(_)                               => None
         }
-      candidate.flatMap { d =>
-        // Candidate may itself be a view, keep tracing in those cases
-        if (isView(d)) reifySingleData(d) else Some(d)
       }
+    candidate.flatMap { d =>
+      // Candidate may itself be a view, keep tracing in those cases
+      if (isView(d)) reifySingleData(d) else Some(d)
     }
+  }
 
 }

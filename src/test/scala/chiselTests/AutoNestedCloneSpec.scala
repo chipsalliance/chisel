@@ -14,7 +14,7 @@ class BundleWithAnonymousInner(val w: Int) extends Bundle {
 
 class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
 
-  behavior of "autoCloneType of inner Bundle in Chisel3"
+  behavior.of("autoCloneType of inner Bundle in Chisel3")
 
   it should "clone a doubly-nested inner bundle successfully" in {
     elaborate {
@@ -36,7 +36,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
     elaborate {
       class TestTop(val w: Int) extends Module {
         val io = IO(new Bundle {})
-        val myWire = Wire(new Bundle{ val a = UInt(w.W) })
+        val myWire = Wire(new Bundle { val a = UInt(w.W) })
       }
       new TestTop(2)
     }
@@ -45,13 +45,13 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   it should "pick the correct $outer instance for an anonymous inner bundle" in {
     elaborate {
       class Inner(val w: Int) extends Module {
-        val io = IO(new Bundle{
+        val io = IO(new Bundle {
           val in = Input(UInt(w.W))
           val out = Output(UInt(w.W))
         })
       }
       class Outer(val w: Int) extends Module {
-        val io = IO(new Bundle{
+        val io = IO(new Bundle {
           val in = Input(UInt(w.W))
           val out = Output(UInt(w.W))
         })
@@ -125,7 +125,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
         val foo = new Bundle {
           val x = Input(Vec(n, gen))
         }
-        val bar = Output(Option(new { def mkBundle = new Bundle { val x = Vec(n, gen) }}).get.mkBundle)
+        val bar = Output(Option(new { def mkBundle = new Bundle { val x = Vec(n, gen) } }).get.mkBundle)
       }
       val io = IO(new MyBundle(4, UInt(8.W)))
       val myWire = WireInit(io.foo)

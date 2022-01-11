@@ -16,7 +16,7 @@ abstract class CookbookTester(length: Int) extends BasicTester {
   require(length >= 0, "Simulation length must be non-negative!")
 
   val (cycle, done) = Counter(true.B, length + 1) // + 1 cycle because done is actually wrap
-  when (done) { stop() }
+  when(done) { stop() }
 }
 
 abstract class CookbookSpec extends ChiselFlatSpec

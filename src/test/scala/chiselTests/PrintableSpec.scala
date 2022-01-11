@@ -20,6 +20,7 @@ case class PrintfAnnotation(target: ReferenceTarget) extends SingleTargetAnnotat
 }
 
 object PrintfAnnotation {
+
   /** Create annotation for a given [[printf]].
     * @param c component to be annotated
     */
@@ -38,7 +39,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
   private case class Printf(str: String, args: Seq[String])
   private def getPrintfs(firrtl: String): Seq[Printf] = {
     def processArgs(str: String): Seq[String] =
-      str split "," map (_.trim) filter (_.nonEmpty)
+      str.split(",").map(_.trim).filter(_.nonEmpty)
     def processBody(str: String): (String, Seq[String]) = {
       str match {
         case StringRegex(_, fmt, args) =>
@@ -47,14 +48,14 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       }
     }
 
-    firrtl split "\n" collect {
+    firrtl.split("\n").collect {
       case PrintfRegex(matched) =>
         val (str, args) = processBody(matched)
         Printf(str, args)
     }
   }
 
-  behavior of "Printable & Custom Interpolator"
+  behavior.of("Printable & Custom Interpolator")
 
   it should "pass exact strings through" in {
     class MyModule extends BasicTester {
@@ -63,7 +64,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("An exact string", Seq())) =>
-      case e => fail()
+      case e                                     => fail()
     }
   }
   it should "handle Printable and String concatination" in {
@@ -73,7 +74,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("First Second Third", Seq())) =>
-      case e => fail()
+      case e                                        => fail()
     }
   }
   it should "call toString on non-Printable objects" in {
@@ -84,7 +85,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("myInt = 1234", Seq())) =>
-      case e => fail()
+      case e                                  => fail()
     }
   }
   it should "generate proper printf for simple Decimal printing" in {
@@ -95,7 +96,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("myWire = %d", Seq("myWire"))) =>
-      case e => fail()
+      case e                                         => fail()
     }
   }
   it should "handle printing literals" in {
@@ -116,7 +117,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%%", Seq())) =>
-      case e => fail()
+      case e                        => fail()
     }
   }
   it should "correctly emit tab" in {
@@ -126,7 +127,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("\\t", Seq())) =>
-      case e => fail()
+      case e                         => fail()
     }
   }
   it should "support names of circuit elements including submodule IO" in {
@@ -150,10 +151,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     }
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
-      case Seq(Printf("foo", Seq()),
-               Printf("myWire.foo", Seq()),
-               Printf("myInst.io.fizz", Seq())) =>
-      case e => fail()
+      case Seq(Printf("foo", Seq()), Printf("myWire.foo", Seq()), Printf("myInst.io.fizz", Seq())) =>
+      case e                                                                                       => fail()
     }
   }
   it should "handle printing ports of submodules" in {
@@ -169,7 +168,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%d", Seq("myInst.io.fizz"))) =>
-      case e => fail()
+      case e                                        => fail()
     }
   }
   it should "print UInts and SInts as Decimal by default" in {
@@ -181,20 +180,19 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%d & %d", Seq("myUInt", "mySInt"))) =>
-      case e => fail()
+      case e                                               => fail()
     }
   }
   it should "print Vecs like Scala Seqs by default" in {
     class MyModule extends BasicTester {
       val myVec = Wire(Vec(4, UInt(32.W)))
-      myVec foreach (_ := 0.U)
+      myVec.foreach(_ := 0.U)
       printf(p"$myVec")
     }
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
-      case Seq(Printf("Vec(%d, %d, %d, %d)",
-               Seq("myVec[0]", "myVec[1]", "myVec[2]", "myVec[3]"))) =>
-      case e => fail()
+      case Seq(Printf("Vec(%d, %d, %d, %d)", Seq("myVec[0]", "myVec[1]", "myVec[2]", "myVec[3]"))) =>
+      case e                                                                                       => fail()
     }
   }
   it should "print Bundles like Scala Maps by default" in {
@@ -209,9 +207,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     }
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
-      case Seq(Printf("AnonymousBundle(foo -> %d, bar -> %d)",
-               Seq("myBun.foo", "myBun.bar"))) =>
-      case e => fail()
+      case Seq(Printf("AnonymousBundle(foo -> %d, bar -> %d)", Seq("myBun.foo", "myBun.bar"))) =>
+      case e                                                                                   => fail()
     }
   }
   it should "get emitted with a name and annotated" in {
@@ -243,10 +240,10 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
 
     // check for expected annotations
-    exactly(3, annoLines) should include ("chiselTests.PrintfAnnotation")
-    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>farewell")
-    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>printf")
-    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>howdy")
+    exactly(3, annoLines) should include("chiselTests.PrintfAnnotation")
+    exactly(1, annoLines) should include("~PrintfAnnotationTest|PrintfAnnotationTest>farewell")
+    exactly(1, annoLines) should include("~PrintfAnnotationTest|PrintfAnnotationTest>printf")
+    exactly(1, annoLines) should include("~PrintfAnnotationTest|PrintfAnnotationTest>howdy")
 
     // read in FIRRTL file
     val firFile = new File(testDir, "PrintfAnnotationTest.fir")
@@ -254,8 +251,14 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firLines = scala.io.Source.fromFile(firFile).getLines.toList
 
     // check that verification components have expected names
-    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "hello AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : howdy""")
-    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "goodbye AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : printf""")
-    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "adieu AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : farewell""")
+    exactly(1, firLines) should include(
+      """printf(clock, UInt<1>("h1"), "hello AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : howdy"""
+    )
+    exactly(1, firLines) should include(
+      """printf(clock, UInt<1>("h1"), "goodbye AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : printf"""
+    )
+    exactly(1, firLines) should include(
+      """printf(clock, UInt<1>("h1"), "adieu AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : farewell"""
+    )
   }
 }

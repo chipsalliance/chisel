@@ -9,7 +9,14 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 import chisel3.util.random.LFSR
 
-class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean, hasFlush: Boolean) extends BasicTester {
+class ThingsPassThroughTester(
+  elements:       Seq[Int],
+  queueDepth:     Int,
+  bitWidth:       Int,
+  tap:            Int,
+  useSyncReadMem: Boolean,
+  hasFlush:       Boolean)
+    extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem, hasFlush = hasFlush))
   val elems = VecInit(elements.map {
     _.asUInt()
@@ -34,7 +41,8 @@ class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int
   }
 }
 
-class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
+    extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt()
@@ -62,7 +70,8 @@ class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: I
   }
 }
 
-class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
+    extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt(bitWidth.W)
@@ -115,7 +124,8 @@ class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int, useSync
   }
 }
 
-class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
+    extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, pipe = true, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt(bitWidth.W)
@@ -141,8 +151,9 @@ class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
   }
 }
 
-class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, flow = true,  useSyncReadMem = useSyncReadMem))
+class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
+    extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, flow = true, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt()
   })
@@ -169,7 +180,8 @@ class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
   }
 }
 
-class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
+    extends BasicTester {
   val enq = Wire(Decoupled(UInt(bitWidth.W)))
   val deq = Queue(enq, queueDepth, useSyncReadMem = useSyncReadMem)
 
@@ -276,6 +288,7 @@ class QueueSpec extends ChiselPropSpec {
       val in = Wire(Decoupled(Bool()))
       val iQueue = Queue.irrevocable(in, 1)
     }
-    (new chisel3.stage.phases.Elaborate).transform(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new IrrevocableQueue)))
+    (new chisel3.stage.phases.Elaborate)
+      .transform(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new IrrevocableQueue)))
   }
 }

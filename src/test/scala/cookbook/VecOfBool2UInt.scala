@@ -21,7 +21,7 @@ class VecOfBool2UInt extends CookbookTester(1) {
   assert(0xd.U === uint)
 }
 
-class VecOfBool2UIntSpec  extends CookbookSpec {
+class VecOfBool2UIntSpec extends CookbookSpec {
   "VecOfBool2UInt" should "work" in {
     assertTesterPasses { new VecOfBool2UInt }
   }

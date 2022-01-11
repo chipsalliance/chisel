@@ -11,13 +11,13 @@ import org.scalatest.matchers.should.Matchers
 import java.io.File
 
 class SimpleTest extends Module {
-  val io = IO(new Bundle{
+  val io = IO(new Bundle {
     val in = Input(UInt(8.W))
     val out = Output(UInt(8.W))
   })
   io.out := io.in
   cover(io.in === 3.U)
-  when (io.in === 3.U) {
+  when(io.in === 3.U) {
     assume(io.in =/= 2.U)
     assert(io.out === io.in)
   }
@@ -31,6 +31,7 @@ case class VerifAnnotation(target: ReferenceTarget) extends SingleTargetAnnotati
 }
 
 object VerifAnnotation {
+
   /** Create annotation for a given verification component.
     * @param c component to be annotated
     */
@@ -64,9 +65,10 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
   }
 
   property("annotation of verification constructs should work") {
+
     /** Circuit that contains and annotates verification nodes. */
     class AnnotationTest extends Module {
-      val io = IO(new Bundle{
+      val io = IO(new Bundle {
         val in = Input(UInt(8.W))
         val out = Output(UInt(8.W))
       })
@@ -92,10 +94,10 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
 
     // check for expected verification annotations
-    exactly(3, annoLines) should include ("chiselTests.VerifAnnotation")
-    exactly(1, annoLines) should include ("~AnnotationTest|AnnotationTest>asst")
-    exactly(1, annoLines) should include ("~AnnotationTest|AnnotationTest>assm")
-    exactly(1, annoLines) should include ("~AnnotationTest|AnnotationTest>cov")
+    exactly(3, annoLines) should include("chiselTests.VerifAnnotation")
+    exactly(1, annoLines) should include("~AnnotationTest|AnnotationTest>asst")
+    exactly(1, annoLines) should include("~AnnotationTest|AnnotationTest>assm")
+    exactly(1, annoLines) should include("~AnnotationTest|AnnotationTest>cov")
 
     // read in FIRRTL file
     val firFile = new File(testDir, "AnnotationTest.fir")
@@ -103,15 +105,16 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     val firLines = scala.io.Source.fromFile(firFile).getLines.toList
 
     // check that verification components have expected names
-    exactly(1, firLines) should include ("cover(clock, _T, UInt<1>(\"h1\"), \"\") : cov")
-    exactly(1, firLines) should include ("assume(clock, _T_3, UInt<1>(\"h1\"), \"\") : assm")
-    exactly(1, firLines) should include ("assert(clock, _T_7, UInt<1>(\"h1\"), \"\") : asst")
+    exactly(1, firLines) should include("cover(clock, _T, UInt<1>(\"h1\"), \"\") : cov")
+    exactly(1, firLines) should include("assume(clock, _T_3, UInt<1>(\"h1\"), \"\") : assm")
+    exactly(1, firLines) should include("assert(clock, _T_7, UInt<1>(\"h1\"), \"\") : asst")
   }
 
   property("annotation of verification constructs with suggested name should work") {
+
     /** Circuit that annotates a renamed verification nodes. */
     class AnnotationRenameTest extends Module {
-      val io = IO(new Bundle{
+      val io = IO(new Bundle {
         val in = Input(UInt(8.W))
         val out = Output(UInt(8.W))
       })
@@ -137,9 +140,9 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
 
     // check for expected verification annotations
-    exactly(2, annoLines) should include ("chiselTests.VerifAnnotation")
-    exactly(1, annoLines) should include ("~AnnotationRenameTest|AnnotationRenameTest>hello")
-    exactly(1, annoLines) should include ("~AnnotationRenameTest|AnnotationRenameTest>howdy")
+    exactly(2, annoLines) should include("chiselTests.VerifAnnotation")
+    exactly(1, annoLines) should include("~AnnotationRenameTest|AnnotationRenameTest>hello")
+    exactly(1, annoLines) should include("~AnnotationRenameTest|AnnotationRenameTest>howdy")
 
     // read in FIRRTL file
     val firFile = new File(testDir, "AnnotationRenameTest.fir")
@@ -147,7 +150,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     val firLines = scala.io.Source.fromFile(firFile).getLines.toList
 
     // check that verification components have expected names
-    exactly(1, firLines) should include ("assert(clock, _T, UInt<1>(\"h1\"), \"\") : hello")
-    exactly(1, firLines) should include ("assume(clock, _T_4, UInt<1>(\"h1\"), \"\") : howdy")
+    exactly(1, firLines) should include("assert(clock, _T, UInt<1>(\"h1\"), \"\") : hello")
+    exactly(1, firLines) should include("assume(clock, _T_4, UInt<1>(\"h1\"), \"\") : howdy")
   }
 }

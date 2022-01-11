@@ -15,6 +15,7 @@ import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
   * Defines a conversion to a corresponding FIRRTL Annotation
   */
 trait ChiselAnnotation {
+
   /** Conversion to FIRRTL Annotation */
   def toFirrtl: Annotation
 }
@@ -54,7 +55,7 @@ object annotate {
   *    m.io.out
   *  }
   *
-  *class AdderTester extends Module
+  * class AdderTester extends Module
   *  with ConstantPropagationTest {
   *  val io = IO(new Bundle {
   *    val a = Input(UInt(32.W))
@@ -73,12 +74,13 @@ object annotate {
   */
 
 object doNotDedup {
+
   /** Marks a module to be ignored in Dedup Transform in Firrtl
     *
     * @param module The module to be marked
     * @return Unmodified signal `module`
     */
-   def apply[T <: RawModule](module: T)(implicit compileOptions: CompileOptions): Unit = {
+  def apply[T <: RawModule](module: T)(implicit compileOptions: CompileOptions): Unit = {
     annotate(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(module.toNamed) })
   }
 }

@@ -15,6 +15,7 @@ import chisel3._
   * }}}
   */
 object Cat {
+
   /** Concatenates the argument data elements, in argument order, together. The first argument
     * forms the most significant bits, while the last argument forms the least significant bits.
     */

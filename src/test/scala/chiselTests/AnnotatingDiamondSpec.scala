@@ -3,17 +3,12 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
+import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.internal.InstanceId
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers.BasicTester
 import firrtl.{CircuitForm, CircuitState, DependencyAPIMigration, LowForm, Transform}
-import firrtl.annotations.{
-  CircuitName,
-  CircuitTarget,
-  SingleTargetAnnotation,
-  Target
-}
+import firrtl.annotations.{CircuitName, CircuitTarget, SingleTargetAnnotation, Target}
 import firrtl.stage.Forms
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
@@ -25,10 +20,12 @@ import org.scalatest.matchers.should.Matchers
 case class IdentityAnnotation(target: Target, value: String) extends SingleTargetAnnotation[Target] {
   def duplicate(n: Target): IdentityAnnotation = this.copy(target = n)
 }
+
 /** ChiselAnnotation that corresponds to the above FIRRTL annotation */
 case class IdentityChiselAnnotation(target: InstanceId, value: String)
-    extends ChiselAnnotation with RunFirrtlTransform {
-  def toFirrtl: IdentityAnnotation = IdentityAnnotation(target.toNamed, value)
+    extends ChiselAnnotation
+    with RunFirrtlTransform {
+  def toFirrtl:       IdentityAnnotation = IdentityAnnotation(target.toNamed, value)
   def transformClass: Class[IdentityTransform] = classOf[IdentityTransform]
 }
 object identify {
@@ -47,7 +44,7 @@ class IdentityTransform extends Transform with DependencyAPIMigration {
   def execute(state: CircuitState): CircuitState = {
     val annosx = state.annotations.map {
       case IdentityAnnotation(t, value) => IdentityAnnotation(t, value + ":seen")
-      case other => other
+      case other                        => other
     }
     state.copy(annotations = annosx)
   }
@@ -109,8 +106,8 @@ class ModB(widthB: Int) extends Module {
 
 class TopOfDiamond extends Module {
   val io = IO(new Bundle {
-    val in   = Input(UInt(32.W))
-    val out  = Output(UInt(32.W))
+    val in = Input(UInt(32.W))
+    val out = Output(UInt(32.W))
   })
   val x = Reg(UInt(32.W))
   val y = Reg(UInt(32.W))
@@ -146,21 +143,24 @@ class AnnotatingDiamondSpec extends AnyFreeSpec with Matchers {
        |that happens only after emit has been called on circuit""".stripMargin in {
 
       val annos = (new ChiselStage)
-        .execute(Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
-                 Seq(ChiselGeneratorAnnotation(() => new TopOfDiamond)))
+        .execute(
+          Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
+          Seq(ChiselGeneratorAnnotation(() => new TopOfDiamond))
+        )
         .filter {
           case _: IdentityAnnotation => true
-          case _                     => false
-        }.toSeq
+          case _ => false
+        }
+        .toSeq
 
       info("Found ten (10) 'IdentityAnnotation's")
-      annos should have length (10)
+      (annos should have).length(10)
 
       info("Found IdentityAnnotation targeting '~*|ModC' with value 'ModC(16)'")
-      annos should contain (IdentityAnnotation(CircuitTarget("TopOfDiamond").module("ModC"), "ModC(16)"))
+      annos should contain(IdentityAnnotation(CircuitTarget("TopOfDiamond").module("ModC"), "ModC(16)"))
 
       info("Found IdentityAnnotation targeting '~*|ModC_1:seen' with value 'ModC(32)'")
-      annos should contain (IdentityAnnotation(CircuitTarget("TopOfDiamond").module("ModC_1"), "ModC(32)"))
+      annos should contain(IdentityAnnotation(CircuitTarget("TopOfDiamond").module("ModC_1"), "ModC(32)"))
     }
   }
 }

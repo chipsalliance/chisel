@@ -8,8 +8,7 @@ object getVerilogString {
 }
 
 object emitVerilog {
-  def apply(gen: => RawModule, args: Array[String] = Array.empty,
-                  annotations: AnnotationSeq = Seq.empty): Unit = {
+  def apply(gen: => RawModule, args: Array[String] = Array.empty, annotations: AnnotationSeq = Seq.empty): Unit = {
     (new ChiselStage).emitVerilog(gen, args, annotations)
   }
 }

@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.util.{Decoupled, Queue, EnqIO, DeqIO, QueueIO, log2Ceil}
+import chisel3.util.{log2Ceil, Decoupled, DeqIO, EnqIO, Queue, QueueIO}
 import chisel3.experimental.{CloneModuleAsRecord, IO}
 import chisel3.testers.BasicTester
 
@@ -51,7 +51,7 @@ class QueueCloneTester(x: Int, multiIO: Boolean = false) extends BasicTester {
   dut.io.enq.bits := x.U
   dut.io.enq.valid := start
   dut.io.deq.ready := accept
-  when (dut.io.deq.fire) {
+  when(dut.io.deq.fire) {
     assert(dut.io.deq.bits === x.U)
     stop()
   }
@@ -80,14 +80,15 @@ class CloneModuleAsRecordAnnotate extends Module {
 class CloneModuleSpec extends ChiselPropSpec {
 
   val xVals = Table(
-    ("x"),  // First tuple defines column names
-    (42),   // Subsequent tuples define the data
+    ("x"), // First tuple defines column names
+    (42), // Subsequent tuples define the data
     (63),
-    (99))
+    (99)
+  )
 
   property("QueueCloneTester should return the correct result") {
-    forAll (xVals) { (x: Int) =>
-      assertTesterPasses{ new QueueCloneTester(x) }
+    forAll(xVals) { (x: Int) =>
+      assertTesterPasses { new QueueCloneTester(x) }
     }
   }
 
@@ -97,13 +98,13 @@ class CloneModuleSpec extends ChiselPropSpec {
   }
 
   property("Clone of MultiIOModule should simulate correctly") {
-    forAll (xVals) { (x: Int) =>
-      assertTesterPasses{ new QueueCloneTester(x, multiIO=true) }
+    forAll(xVals) { (x: Int) =>
+      assertTesterPasses { new QueueCloneTester(x, multiIO = true) }
     }
   }
 
   property("Clones of MultiIOModules should share the same module") {
-    val c = ChiselStage.convert(new QueueClone(multiIO=true))
+    val c = ChiselStage.convert(new QueueClone(multiIO = true))
     assert(c.modules.length == 3)
   }
 
@@ -116,39 +117,39 @@ class CloneModuleSpec extends ChiselPropSpec {
     }
     // ********** Checking the output of CloneModuleAsRecord **********
     // Note that we overrode desiredName so that Top is named "Top"
-    mod.q1.io.enq.toTarget.serialize should be ("~Top|Queue>io.enq")
-    mod.q2_io.deq.toTarget.serialize should be ("~Top|Queue>io.deq")
-    mod.q1.io.enq.toAbsoluteTarget.serialize should be ("~Top|Top/q1:Queue>io.enq")
-    mod.q2_io.deq.toAbsoluteTarget.serialize should be ("~Top|Top/q2:Queue>io.deq")
+    mod.q1.io.enq.toTarget.serialize should be("~Top|Queue>io.enq")
+    mod.q2_io.deq.toTarget.serialize should be("~Top|Queue>io.deq")
+    mod.q1.io.enq.toAbsoluteTarget.serialize should be("~Top|Top/q1:Queue>io.enq")
+    mod.q2_io.deq.toAbsoluteTarget.serialize should be("~Top|Top/q2:Queue>io.deq")
     // Legacy APIs that nevertheless were tricky to get right
-    mod.q1.io.enq.toNamed.serialize should be ("Top.Queue.io.enq")
-    mod.q2_io.deq.toNamed.serialize should be ("Top.Queue.io.deq")
-    mod.q1.io.enq.instanceName should be ("io.enq")
-    mod.q2_io.deq.instanceName should be ("io.deq")
-    mod.q1.io.enq.pathName should be ("Top.q1.io.enq")
-    mod.q2_io.deq.pathName should be ("Top.q2.io.deq")
-    mod.q1.io.enq.parentPathName should be ("Top.q1")
-    mod.q2_io.deq.parentPathName should be ("Top.q2")
-    mod.q1.io.enq.parentModName should be ("Queue")
-    mod.q2_io.deq.parentModName should be ("Queue")
+    mod.q1.io.enq.toNamed.serialize should be("Top.Queue.io.enq")
+    mod.q2_io.deq.toNamed.serialize should be("Top.Queue.io.deq")
+    mod.q1.io.enq.instanceName should be("io.enq")
+    mod.q2_io.deq.instanceName should be("io.deq")
+    mod.q1.io.enq.pathName should be("Top.q1.io.enq")
+    mod.q2_io.deq.pathName should be("Top.q2.io.deq")
+    mod.q1.io.enq.parentPathName should be("Top.q1")
+    mod.q2_io.deq.parentPathName should be("Top.q2")
+    mod.q1.io.enq.parentModName should be("Queue")
+    mod.q2_io.deq.parentModName should be("Queue")
 
     // ********** Checking the wire cloned from the output of CloneModuleAsRecord **********
     val wire_io = mod.q2_wire("io").asInstanceOf[QueueIO[UInt]]
-    mod.q2_wire.toTarget.serialize should be ("~Top|Top>q2_wire")
-    wire_io.enq.toTarget.serialize should be ("~Top|Top>q2_wire.io.enq")
-    mod.q2_wire.toAbsoluteTarget.serialize should be ("~Top|Top>q2_wire")
-    wire_io.enq.toAbsoluteTarget.serialize should be ("~Top|Top>q2_wire.io.enq")
+    mod.q2_wire.toTarget.serialize should be("~Top|Top>q2_wire")
+    wire_io.enq.toTarget.serialize should be("~Top|Top>q2_wire.io.enq")
+    mod.q2_wire.toAbsoluteTarget.serialize should be("~Top|Top>q2_wire")
+    wire_io.enq.toAbsoluteTarget.serialize should be("~Top|Top>q2_wire.io.enq")
     // Legacy APIs
-    mod.q2_wire.toNamed.serialize should be ("Top.Top.q2_wire")
-    wire_io.enq.toNamed.serialize should be ("Top.Top.q2_wire.io.enq")
-    mod.q2_wire.instanceName should be ("q2_wire")
-    wire_io.enq.instanceName should be ("q2_wire.io.enq")
-    mod.q2_wire.pathName should be ("Top.q2_wire")
-    wire_io.enq.pathName should be ("Top.q2_wire.io.enq")
-    mod.q2_wire.parentPathName should be ("Top")
-    wire_io.enq.parentPathName should be ("Top")
-    mod.q2_wire.parentModName should be ("Top")
-    wire_io.enq.parentModName should be ("Top")
+    mod.q2_wire.toNamed.serialize should be("Top.Top.q2_wire")
+    wire_io.enq.toNamed.serialize should be("Top.Top.q2_wire.io.enq")
+    mod.q2_wire.instanceName should be("q2_wire")
+    wire_io.enq.instanceName should be("q2_wire.io.enq")
+    mod.q2_wire.pathName should be("Top.q2_wire")
+    wire_io.enq.pathName should be("Top.q2_wire.io.enq")
+    mod.q2_wire.parentPathName should be("Top")
+    wire_io.enq.parentPathName should be("Top")
+    mod.q2_wire.parentModName should be("Top")
+    wire_io.enq.parentModName should be("Top")
   }
 
 }

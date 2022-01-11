@@ -31,10 +31,14 @@ class IterableNaming extends NamedModuleTester {
   val seq = Seq.tabulate(3) { i =>
     Seq.tabulate(2) { j => expectName(WireDefault((i * j).U), s"seq_${i}_${j}") }
   }
-  val optSet = Some(Set(expectName(WireDefault(0.U), "optSet_0"),
-                        expectName(WireDefault(1.U), "optSet_1"),
-                        expectName(WireDefault(2.U), "optSet_2"),
-                        expectName(WireDefault(3.U), "optSet_3")))
+  val optSet = Some(
+    Set(
+      expectName(WireDefault(0.U), "optSet_0"),
+      expectName(WireDefault(1.U), "optSet_1"),
+      expectName(WireDefault(2.U), "optSet_2"),
+      expectName(WireDefault(3.U), "optSet_3")
+    )
+  )
 
   val stack = {
     val s = mutable.Stack[Module]()
@@ -62,7 +66,7 @@ class DigitFieldNamesInRecord extends NamedModuleTester {
  */
 class BetterNamingTests extends ChiselFlatSpec {
 
-  behavior of "Better Naming"
+  behavior.of("Better Naming")
 
   it should "provide unique counters for each name" in {
     var module: PerNameIndexing = null
@@ -77,7 +81,7 @@ class BetterNamingTests extends ChiselFlatSpec {
   }
 
   it should "allow digits to be field names in Records" in {
-    var module: DigitFieldNamesInRecord  = null
+    var module: DigitFieldNamesInRecord = null
     ChiselStage.elaborate { module = new DigitFieldNamesInRecord; module }
     assert(module.getNameFailures() == Nil)
   }
@@ -92,6 +96,6 @@ class BetterNamingTests extends ChiselFlatSpec {
     }
     val withLits = ChiselStage.emitChirrtl(new MyModule(true))
     val noLits = ChiselStage.emitChirrtl(new MyModule(false))
-    withLits should equal (noLits)
+    withLits should equal(noLits)
   }
 }

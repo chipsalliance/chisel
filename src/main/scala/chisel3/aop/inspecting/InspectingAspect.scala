@@ -13,7 +13,6 @@ import firrtl.AnnotationSeq
   */
 case class InspectingAspect[T <: RawModule](inspect: T => Unit) extends InspectorAspect[T](inspect)
 
-
 /** Extend to make custom inspections of an elaborated design and printing out results
   *
   * @param inspect Given top-level design, print things and return nothing

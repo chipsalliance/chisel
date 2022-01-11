@@ -12,7 +12,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class FixedPointLiteralSpec extends AnyFlatSpec with Matchers {
-  behavior of "fixed point utilities"
+  behavior.of("fixed point utilities")
 
   they should "allow conversion between doubles and the bigints needed to represent them" in {
     val initialDouble = 0.125
@@ -25,11 +25,11 @@ class FixedPointLiteralSpec extends AnyFlatSpec with Matchers {
   they should "have their literals support to double and to BigDecimal" in {
     val d = -7.125
     val lit1 = d.F(3.BP)
-    lit1.litToDouble should be (d)
+    lit1.litToDouble should be(d)
 
     val d2 = BigDecimal("1232123213131123.125")
     val lit2 = d2.F(3.BP)
-    lit2.litToBigDecimal should be (d2)
+    lit2.litToBigDecimal should be(d2)
 
     // Numbers that are too big will throw exception
     intercept[ChiselException] {
@@ -43,33 +43,33 @@ class FixedPointFromBitsTester extends BasicTester {
   val uint = 3.U(4.W)
   val sint = (-3).S
 
-  val fp   = FixedPoint.fromDouble(3.0, 4.W, 0.BP)
+  val fp = FixedPoint.fromDouble(3.0, 4.W, 0.BP)
   val fp_tpe = FixedPoint(4.W, 1.BP)
   val uint_result = FixedPoint.fromDouble(1.5, 4.W, 1.BP)
   val sint_result = FixedPoint.fromDouble(-1.5, 4.W, 1.BP)
-  val fp_result   = FixedPoint.fromDouble(1.5, 4.W, 1.BP)
+  val fp_result = FixedPoint.fromDouble(1.5, 4.W, 1.BP)
 
   val uint2fp = uint.asTypeOf(fp_tpe)
   val sint2fp = sint.asTypeOf(fp_tpe)
-  val fp2fp   = fp.asTypeOf(fp_tpe)
+  val fp2fp = fp.asTypeOf(fp_tpe)
 
   val uintToFp = uint.asFixedPoint(1.BP)
   val sintToFp = sint.asFixedPoint(1.BP)
-  val fpToFp   = fp.asFixedPoint(1.BP)
+  val fpToFp = fp.asFixedPoint(1.BP)
 
   val negativefp = (-3.5).F(4.BP)
   val positivefp = 3.5.F(4.BP)
 
-  assert(- positivefp === negativefp)
+  assert(-positivefp === negativefp)
   assert(positivefp === -negativefp)
 
   assert(uint2fp === uint_result)
   assert(sint2fp === sint_result)
-  assert(fp2fp   === fp_result)
+  assert(fp2fp === fp_result)
 
   assert(uintToFp === uint_result)
   assert(sintToFp === sint_result)
-  assert(fpToFp   === fp_result)
+  assert(fpToFp === fp_result)
 
   assert(positivefp.abs() === positivefp)
   assert(negativefp.abs() === positivefp)
@@ -94,7 +94,6 @@ class FixedPointFromBitsTester extends BasicTester {
   assert(f6bp0shiftright2 === 1.0.F(0.BP))
   assert(f6bp2shiftright2 === 1.5.F(2.BP))
 
-
   stop()
 }
 
@@ -115,7 +114,7 @@ class FixedPointMuxTester extends BasicTester {
 
 class SBP extends Module {
   val io = IO(new Bundle {
-    val in =  Input(FixedPoint(6.W, 2.BP))
+    val in = Input(FixedPoint(6.W, 2.BP))
     val out = Output(FixedPoint(4.W, 0.BP))
   })
   io.out := io.in.setBinaryPoint(0)
@@ -162,7 +161,7 @@ class FixedPointSpec extends ChiselPropSpec with Utils {
     assertTesterPasses { new FixedPointMuxTester }
   }
   property("Negative shift amounts are invalid") {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new NegativeShift(FixedPoint(1.W, 0.BP)))
     }
   }

@@ -20,18 +20,19 @@ class Elaborate extends Phase {
   override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
-    case ChiselGeneratorAnnotation(gen) => try {
-          val (circuit, dut) = Builder.build(Module(gen()), new DynamicContext(annotations))
-          Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
-    } catch {
-      /* if any throwable comes back and we're in "stack trace trimming" mode, then print an error and trim the stack trace
-       */
-      case scala.util.control.NonFatal(a) =>
-        if (!view[ChiselOptions](annotations).printFullStackTrace) {
-          a.trimStackTraceToUserCode()
-        }
-        throw(a)
-    }
+    case ChiselGeneratorAnnotation(gen) =>
+      try {
+        val (circuit, dut) = Builder.build(Module(gen()), new DynamicContext(annotations))
+        Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
+      } catch {
+        /* if any throwable comes back and we're in "stack trace trimming" mode, then print an error and trim the stack trace
+         */
+        case scala.util.control.NonFatal(a) =>
+          if (!view[ChiselOptions](annotations).printFullStackTrace) {
+            a.trimStackTraceToUserCode()
+          }
+          throw (a)
+      }
     case a => Some(a)
   }
 

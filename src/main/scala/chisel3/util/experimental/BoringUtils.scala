@@ -3,11 +3,11 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
+import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.internal.{InstanceId, NamedComponent, Namespace}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
-import firrtl.annotations.{ModuleName, ComponentName}
+import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
+import firrtl.annotations.{ComponentName, ModuleName}
 
 import scala.concurrent.SyncVar
 
@@ -122,20 +122,25 @@ object BoringUtils {
     * @note if a uniqueName is not specified, the returned name may differ from the user-provided name
     */
   def addSource(
-    component: NamedComponent,
-    name: String,
+    component:    NamedComponent,
+    name:         String,
     disableDedup: Boolean = false,
-    uniqueName: Boolean = false): String = {
+    uniqueName:   Boolean = false
+  ): String = {
 
-    val id = if (uniqueName) { newName(name) } else { name }
+    val id = if (uniqueName) { newName(name) }
+    else { name }
     val maybeDedup =
       if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(component.toNamed.module) }) }
-      else              { Seq[ChiselAnnotation]()                                                                  }
+      else { Seq[ChiselAnnotation]() }
     val annotations =
-      Seq(new ChiselAnnotation with RunFirrtlTransform {
-            def toFirrtl = SourceAnnotation(component.toNamed, id)
-            def transformClass = classOf[WiringTransform] },
-          new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(component.toNamed) } ) ++ maybeDedup
+      Seq(
+        new ChiselAnnotation with RunFirrtlTransform {
+          def toFirrtl = SourceAnnotation(component.toNamed, id)
+          def transformClass = classOf[WiringTransform]
+        },
+        new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(component.toNamed) }
+      ) ++ maybeDedup
 
     annotations.foreach(annotate(_))
     id
@@ -150,25 +155,28 @@ object BoringUtils {
     * @throws BoringUtilsException if name is expected to exist and it doesn't
     */
   def addSink(
-    component: InstanceId,
-    name: String,
+    component:    InstanceId,
+    name:         String,
     disableDedup: Boolean = false,
-    forceExists: Boolean = false): Unit = {
+    forceExists:  Boolean = false
+  ): Unit = {
 
     if (forceExists && !checkName(name)) {
-      throw new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace") }
+      throw new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace")
+    }
     def moduleName = component.toNamed match {
-      case c: ModuleName => c
+      case c: ModuleName    => c
       case c: ComponentName => c.module
       case _ => throw new ChiselException("Can only add a Module or Component sink", null)
     }
     val maybeDedup =
       if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(moduleName) }) }
-      else              { Seq[ChiselAnnotation]()                                                    }
+      else { Seq[ChiselAnnotation]() }
     val annotations =
       Seq(new ChiselAnnotation with RunFirrtlTransform {
-            def toFirrtl = SinkAnnotation(component.toNamed, name)
-            def transformClass = classOf[WiringTransform] }) ++ maybeDedup
+        def toFirrtl = SinkAnnotation(component.toNamed, name)
+        def transformClass = classOf[WiringTransform]
+      }) ++ maybeDedup
     annotations.foreach(annotate(_))
   }
 
@@ -181,11 +189,12 @@ object BoringUtils {
     * component
     */
   def bore(source: Data, sinks: Seq[Data]): String = {
-    val boringName = try {
-      source.instanceName
-    } catch {
-      case _: Exception => "bore"
-    }
+    val boringName =
+      try {
+        source.instanceName
+      } catch {
+        case _: Exception => "bore"
+      }
     val genName = addSource(source, boringName, true, true)
     sinks.foreach(addSink(_, genName, true, true))
     genName

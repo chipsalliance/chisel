@@ -38,21 +38,21 @@ import chisel3._
   * $paramUpdateSeed
   */
 class GaloisLFSR(
-  width: Int,
-  taps: Set[Int],
-  seed: Option[BigInt] = Some(1),
+  width:         Int,
+  taps:          Set[Int],
+  seed:          Option[BigInt] = Some(1),
   val reduction: LFSRReduce = XOR,
-  step: Int = 1,
-  updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR {
+  step:          Int = 1,
+  updateSeed:    Boolean = false)
+    extends PRNG(width, seed, step, updateSeed)
+    with LFSR {
 
   def delta(s: Seq[Bool]): Seq[Bool] = {
     val first = s.head
-    (s.tail :+ first)
-      .zipWithIndex
-      .map {
-        case (a, i) if taps(i + 1) && (i + 1 != s.size) => reduction(a, first)
-        case (a, _)                                     => a
-      }
+    (s.tail :+ first).zipWithIndex.map {
+      case (a, i) if taps(i + 1) && (i + 1 != s.size) => reduction(a, first)
+      case (a, _)                                     => a
+    }
   }
 
 }
@@ -93,11 +93,12 @@ object GaloisLFSR {
     * $paramReduction
     */
   def apply(
-    width: Int,
-    taps: Set[Int],
+    width:     Int,
+    taps:      Set[Int],
     increment: Bool = true.B,
-    seed: Option[BigInt] = Some(1),
-    reduction: LFSRReduce = XOR): UInt = PRNG(new GaloisLFSR(width, taps, seed, reduction), increment)
+    seed:      Option[BigInt] = Some(1),
+    reduction: LFSRReduce = XOR
+  ): UInt = PRNG(new GaloisLFSR(width, taps, seed, reduction), increment)
 
   /** Return a pseudorandom [[UInt]] generated using a maximal period [[GaloisLFSR]]
     * $paramWidth
@@ -106,9 +107,10 @@ object GaloisLFSR {
     * $paramReduction
     */
   def maxPeriod(
-    width: Int,
+    width:     Int,
     increment: Bool = true.B,
-    seed: Option[BigInt] = Some(1),
-    reduction: LFSRReduce = XOR): UInt = PRNG(new MaxPeriodGaloisLFSR(width, seed, reduction), increment)
+    seed:      Option[BigInt] = Some(1),
+    reduction: LFSRReduce = XOR
+  ): UInt = PRNG(new MaxPeriodGaloisLFSR(width, seed, reduction), increment)
 
 }

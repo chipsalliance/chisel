@@ -23,7 +23,7 @@ class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
 
   val (_, wrap) = Counter(started, math.pow(2.0, rv.getWidth).toInt - 1)
 
-  when (rv === seed && started) {
+  when(rv === seed && started) {
     chisel3.assert(wrap)
     stop()
   }
@@ -49,7 +49,7 @@ class LFSRDistribution(gen: => UInt, cycles: Int = 10000) extends BasicTester {
 
   val (trial, done) = Counter(true.B, cycles)
 
-  val rollValue = die0 +& die1  // Note +& is critical because sum will need an extra bit.
+  val rollValue = die0 +& die1 // Note +& is critical because sum will need an extra bit.
 
   bins(rollValue) := bins(rollValue) + 1.U
 
@@ -88,17 +88,17 @@ class LFSRResetTester(gen: => LFSR, lockUpValue: BigInt) extends BasicTester {
   lfsr.io.seed.bits := lockUpValue.U(lfsr.width.W).asBools
   lfsr.io.increment := true.B
 
-  when (count === 2.U) {
+  when(count === 2.U) {
     assert(lfsr.io.out.asUInt === lockUpValue.U, "LFSR is NOT locked up, but should be!")
   }
 
   lfsr.reset := count === 3.U
 
-  when (count === 4.U) {
+  when(count === 4.U) {
     assert(lfsr.io.out.asUInt =/= lockUpValue.U, "LFSR is locked up, but should not be after reset!")
   }
 
-  when (done) {
+  when(done) {
     stop()
   }
 
@@ -110,29 +110,34 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
     val testName = s"have a maximal period over a range of widths (${range.head} to ${range.last})" +
       s" using ${reduction.getClass}"
     it should testName in {
-      range
-        .foreach{ width =>
-          LFSR.tapsMaxPeriod(width).foreach{ taps =>
-            info(s"""width $width okay using taps: ${taps.mkString(", ")}""")
-            assertTesterPasses(new LFSRMaxPeriod(PRNG(gen(width, taps, reduction))),
-              annotations = TesterDriver.verilatorOnly)
-          }
+      range.foreach { width =>
+        LFSR.tapsMaxPeriod(width).foreach { taps =>
+          info(s"""width $width okay using taps: ${taps.mkString(", ")}""")
+          assertTesterPasses(
+            new LFSRMaxPeriod(PRNG(gen(width, taps, reduction))),
+            annotations = TesterDriver.verilatorOnly
+          )
         }
+      }
     }
   }
 
-  behavior of "LFSR"
+  behavior.of("LFSR")
 
   it should "throw an exception if initialized to a seed of zero for XOR configuration" in {
-    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-       ChiselStage.elaborate(new FooLFSR(XOR, Some(0))) }
-    }.getMessage should include ("Seed cannot be zero")
+    {
+      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+        ChiselStage.elaborate(new FooLFSR(XOR, Some(0)))
+      }
+    }.getMessage should include("Seed cannot be zero")
   }
 
   it should "throw an exception if initialized to a seed of all ones for XNOR configuration" in {
-    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-       ChiselStage.elaborate(new FooLFSR(XNOR, Some(15))) }
-    }.getMessage should include ("Seed cannot be all ones")
+    {
+      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+        ChiselStage.elaborate(new FooLFSR(XNOR, Some(15)))
+      }
+    }.getMessage should include("Seed cannot be all ones")
   }
 
   it should "reset correctly without a seed for XOR configuration" in {
@@ -143,34 +148,35 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new LFSRResetTester(new FooLFSR(XNOR, None), 15))
   }
 
-  behavior of "MaximalPeriodGaloisLFSR"
+  behavior.of("MaximalPeriodGaloisLFSR")
 
   it should "throw an exception if no LFSR taps are known" in {
-    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-       ChiselStage.elaborate(new MaxPeriodGaloisLFSR(787)) }
-    }.getMessage should include ("No max period LFSR taps stored for requested width")
+    {
+      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+        ChiselStage.elaborate(new MaxPeriodGaloisLFSR(787))
+      }
+    }.getMessage should include("No max period LFSR taps stored for requested width")
   }
 
-  periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new GaloisLFSR(w, t, reduction=r), XOR, 2 to 16)
-  periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new GaloisLFSR(w, t, reduction=r), XNOR, 2 to 16)
+  periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new GaloisLFSR(w, t, reduction = r), XOR, 2 to 16)
+  periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new GaloisLFSR(w, t, reduction = r), XNOR, 2 to 16)
 
   ignore should "have a sane distribution for larger widths" in {
-    ((17 to 32) ++ Seq(64, 128, 256, 512, 1024, 2048, 4096))
-      .foreach{ width =>
-        info(s"width $width okay!")
-        assertTesterPasses(new LFSRDistribution(LFSR(width), math.pow(2, 22).toInt))
-      }
+    ((17 to 32) ++ Seq(64, 128, 256, 512, 1024, 2048, 4096)).foreach { width =>
+      info(s"width $width okay!")
+      assertTesterPasses(new LFSRDistribution(LFSR(width), math.pow(2, 22).toInt))
+    }
   }
 
-  behavior of "MaximalPeriodFibonacciLFSR"
+  behavior.of("MaximalPeriodFibonacciLFSR")
 
-  periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new FibonacciLFSR(w, t, reduction=r), XOR, 2 to 16)
-  periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new FibonacciLFSR(w, t, reduction=r), XNOR, 2 to 16)
+  periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new FibonacciLFSR(w, t, reduction = r), XOR, 2 to 16)
+  periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new FibonacciLFSR(w, t, reduction = r), XNOR, 2 to 16)
 
-  behavior of "LFSR maximal period taps"
+  behavior.of("LFSR maximal period taps")
 
   it should "contain all the expected widths" in {
-    ((2 to 786) ++ Seq(1024, 2048, 4096)).foreach(LFSR.tapsMaxPeriod.keys should contain (_))
+    ((2 to 786) ++ Seq(1024, 2048, 4096)).foreach(LFSR.tapsMaxPeriod.keys should contain(_))
   }
 
 }
