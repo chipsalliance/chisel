@@ -223,10 +223,10 @@ assign c = 16'b1;
 <td>
 
 ```scala mdoc:silent
-class MyWireAssignment extends Module {
 
- val a = WireInit(42.U(32.W))
- val b = WireInit("hbabecafe".U(32.W)) 
+class MyWireAssignmentModule extends Module {
+ val a = WireDefault(42.U(32.W))
+ val b = WireDefault("hbabecafe".U(32.W))  
  val c = Wire(UInt(16.W)) 
   c := "b1".U;
 }
@@ -238,7 +238,7 @@ println(getVerilogString(new MyWireAssignment))
 <td>
 
 ```
-module MyModule(
+module MyWireAssignmentModule(
   input   clock,
   input   reset
 );
@@ -272,9 +272,9 @@ class RegisterModule extends Module {
     val out = Output(UInt(12.W))
   })
 
-val register = Reg(UInt(12.W))
-register := io.in + 1.U
-io.out := register
+  val registerWithInit = RegInit(42.U(12.W))
+    registerWithInit := registerWithInit - 1.U
+    io.out := io.in
 }
 
 println(getVerilogString(new RegisterModule))
@@ -289,59 +289,7 @@ module RegisterModule(
   input  [11:0] io_in,
   output [11:0] io_out
 );
-`ifdef RANDOMIZE_REG_INIT
-  reg [31:0] _RAND_0;
-`endif // RANDOMIZE_REG_INIT
-  reg [11:0] register; // @[main.scala 14:21]
-  assign io_out = register; // @[main.scala 16:10]
-  always @(posedge clock) begin
-    register <= io_in + 12'h1; // @[main.scala 15:21]
-  end
-// Register and memory initialization
-`ifdef RANDOMIZE_GARBAGE_ASSIGN
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_INVALID_ASSIGN
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_REG_INIT
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-`define RANDOMIZE
-`endif
-`ifndef RANDOM
-`define RANDOM $random
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-  integer initvar;
-`endif
-`ifndef SYNTHESIS
-`ifdef FIRRTL_BEFORE_INITIAL
-`FIRRTL_BEFORE_INITIAL
-`endif
-initial begin
-  `ifdef RANDOMIZE
-    `ifdef INIT_RANDOM
-      `INIT_RANDOM
-    `endif
-    `ifndef VERILATOR
-      `ifdef RANDOMIZE_DELAY
-        #`RANDOMIZE_DELAY begin end
-      `else
-        #0.002 begin end
-      `endif
-    `endif
-`ifdef RANDOMIZE_REG_INIT
-  _RAND_0 = {1{`RANDOM}};
-  register = _RAND_0[11:0];
-`endif // RANDOMIZE_REG_INIT
-  `endif // RANDOMIZE
-end // initial
-`ifdef FIRRTL_AFTER_INITIAL
-`FIRRTL_AFTER_INITIAL
-`endif
-`endif // SYNTHESIS
+  assign io_out = io_in; // @[main.scala 18:10]
 endmodule
 ```
 </td>
