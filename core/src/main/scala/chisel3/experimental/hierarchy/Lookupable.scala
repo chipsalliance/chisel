@@ -18,8 +18,8 @@ import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBin
   * Sealed.
   */
 @implicitNotFound(
-  "@public is only legal within a class marked @instantiable and only on vals of type" +
-    " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable or Option"
+  "@public is only legal within a class or trait marked @instantiable, and only on vals of type" +
+    " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, or Either"
 )
 trait Lookupable[-B] {
   type C // Return type of the lookup
