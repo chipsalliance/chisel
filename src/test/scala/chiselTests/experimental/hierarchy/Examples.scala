@@ -195,6 +195,11 @@ object Examples {
     @public val x: Option[UInt] = Some(Wire(UInt(3.W)))
   }
   @instantiable
+  class HasEither() extends Module {
+    @public val x: Either[Bool, UInt] = Right(Wire(UInt(3.W)).suggestName("x"))
+    @public val y: Either[Bool, UInt] = Left(Wire(Bool()).suggestName("y"))
+  }
+  @instantiable
   class HasVec() extends Module {
     @public val x = VecInit(1.U, 2.U, 3.U)
   }

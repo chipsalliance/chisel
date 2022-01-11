@@ -381,6 +381,27 @@ object Lookupable {
       ret.map { x: B => lookupable.instanceLookup[A](_ => x, instance) }
     }
   }
+  implicit def lookupEither[B, Beta](
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions,
+    lookupableB:         Lookupable[B],
+    lookupableBeta:      Lookupable[Beta]
+  ) = new Lookupable[Either[B, Beta]] {
+    type C = Either[lookupableB.C, lookupableBeta.C]
+    def definitionLookup[A](that: A => Either[B, Beta], definition: Definition[A]): C = {
+      val ret = that(definition.proto)
+      ret.map { x: Beta => lookupableBeta.definitionLookup[A](_ => x, definition) }.left.map { x: B =>
+        lookupableB.definitionLookup[A](_ => x, definition)
+      }
+    }
+    def instanceLookup[A](that: A => Either[B, Beta], instance: Instance[A]): C = {
+      import instance._
+      val ret = that(proto)
+      ret.map { x: Beta => lookupableBeta.instanceLookup[A](_ => x, instance) }.left.map { x: B =>
+        lookupableB.instanceLookup[A](_ => x, instance)
+      }
+    }
+  }
   implicit def lookupIsInstantiable[B <: IsInstantiable](
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
