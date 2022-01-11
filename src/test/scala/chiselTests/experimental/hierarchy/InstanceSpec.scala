@@ -288,6 +288,16 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|Top/i:HasPublicConstructorArgs>x".rt, "10"))
     }
+    it("3.11: should work on eithers") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasEither()))
+        i.x.map(x => mark(x, "xright")).left.map(x => mark(x, "xleft"))
+        i.y.map(x => mark(x, "yright")).left.map(x => mark(x, "yleft"))
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|Top/i:HasEither>x".rt, "xright"))
+      annos should contain(MarkAnnotation("~Top|Top/i:HasEither>y".rt, "yleft"))
+    }
   }
   describe("4: toInstance") {
     it("4.0: should work on modules") {
