@@ -37,106 +37,106 @@ trait Num[T <: Data] {
 
   /** Addition operator
     *
-    * @param that a $numType
+    * @param x a $numType
     * @return the sum of this $coll and `that`
     * $maxWidth
     * @group Arithmetic
     */
-  final def +(that: T): T = macro SourceInfoTransform.thatArg
+  final def +(x: T): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_+(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
   /** Multiplication operator
     *
-    * @param that a $numType
+    * @param x a $numType
     * @return the product of this $coll and `that`
     * $sumWidth
     * $singleCycleMul
     * @group Arithmetic
     */
-  final def *(that: T): T = macro SourceInfoTransform.thatArg
+  final def *(x: T): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_*(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
   /** Division operator
     *
-    * @param that a $numType
+    * @param x a $numType
     * @return the quotient of this $coll divided by `that`
     * $singleCycleDiv
     * @todo full rules
     * @group Arithmetic
     */
-  final def /(that: T): T = macro SourceInfoTransform.thatArg
+  final def /(x: T): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_/(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
   /** Modulo operator
     *
-    * @param that a $numType
+    * @param x a $numType
     * @return the remainder of this $coll divided by `that`
     * $singleCycleDiv
     * @group Arithmetic
     */
-  final def %(that: T): T = macro SourceInfoTransform.thatArg
+  final def %(x: T): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_%(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
   /** Subtraction operator
     *
-    * @param that a $numType
+    * @param x a $numType
     * @return the difference of this $coll less `that`
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  final def -(that: T): T = macro SourceInfoTransform.thatArg
+  final def -(x: T): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_-(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
   /** Less than operator
     *
-    * @param that a $numType
+    * @param x a $numType
     * @return a hardware [[Bool]] asserted if this $coll is less than `that`
     * @group Comparison
     */
-  final def <(that: T): Bool = macro SourceInfoTransform.thatArg
+  final def <(x: T): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_<(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
   /** Less than or equal to operator
     *
-    * @param that a $numType
+    * @param x a $numType
     * @return a hardware [[Bool]] asserted if this $coll is less than or equal to `that`
     * @group Comparison
     */
-  final def <=(that: T): Bool = macro SourceInfoTransform.thatArg
+  final def <=(x: T): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_<=(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
   /** Greater than operator
     *
-    * @param that a hardware component
+    * @param x a hardware component
     * @return a hardware [[Bool]] asserted if this $coll is greater than `that`
     * @group Comparison
     */
-  final def >(that: T): Bool = macro SourceInfoTransform.thatArg
+  final def >(x: T): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_>(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
   /** Greater than or equal to operator
     *
-    * @param that a hardware component
+    * @param x a hardware component
     * @return a hardware [[Bool]] asserted if this $coll is greather than or equal to `that`
     * @group Comparison
     */
-  final def >=(that: T): Bool = macro SourceInfoTransform.thatArg
+  final def >=(x: T): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_>=(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
@@ -160,12 +160,12 @@ trait Num[T <: Data] {
 
   /** Minimum operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return a $numType with a value equal to the minimum value of this $coll and `that`
     * $maxWidth
     * @group Arithmetic
     */
-  final def min(that: T): T = macro SourceInfoTransform.thatArg
+  final def min(x: T): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_min(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
@@ -173,12 +173,12 @@ trait Num[T <: Data] {
 
   /** Maximum operator
     *
-    * @param that a $numType
+    * @param x a $numType
     * @return a $numType with a value equal to the minimum value of this $coll and `that`
     * $maxWidth
     * @group Arithmetic
     */
-  final def max(that: T): T = macro SourceInfoTransform.thatArg
+  final def max(x: T): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_max(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =

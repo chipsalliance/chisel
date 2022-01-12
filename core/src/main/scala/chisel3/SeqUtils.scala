@@ -18,7 +18,7 @@ private[chisel3] object SeqUtils {
     * Equivalent to r(n-1) ## ... ## r(1) ## r(0).
     * @note This returns a `0.U` if applied to a zero-element `Vec`.
     */
-  def asUInt[T <: Bits](x: Seq[T]): UInt = macro SourceInfoTransform.xArg
+  def asUInt[T <: Bits](x: Seq[T]): UInt = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacros */
   def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -39,7 +39,7 @@ private[chisel3] object SeqUtils {
 
   /** Outputs the number of elements that === true.B.
     */
-  def count(x: Seq[Bool]): UInt = macro SourceInfoTransform.xArg
+  def count(x: Seq[Bool]): UInt = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacros */
   def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = in.size match {
@@ -52,7 +52,7 @@ private[chisel3] object SeqUtils {
 
   /** Returns the data value corresponding to the first true predicate.
     */
-  def priorityMux[T <: Data](x: Seq[(Bool, T)]): T = macro SourceInfoTransform.xArg
+  def priorityMux[T <: Data](x: Seq[(Bool, T)]): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacros */
   def do_priorityMux[T <: Data](
@@ -74,7 +74,7 @@ private[chisel3] object SeqUtils {
     * @note assumes exactly one true predicate, results undefined otherwise
     *       FixedPoint values or aggregates containing FixedPoint values cause this optimized structure to be lost
     */
-  def oneHotMux[T <: Data](x: Iterable[(Bool, T)]): T = macro SourceInfoTransform.xArg
+  def oneHotMux[T <: Data](x: Iterable[(Bool, T)]): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacros */
   def do_oneHotMux[T <: Data](

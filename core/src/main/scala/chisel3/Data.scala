@@ -811,7 +811,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @note bit widths are NOT checked, may pad or drop bits from input
     * @note that should have known widths
     */
-  def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
+  def asTypeOf[T <: Data](x: T): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {

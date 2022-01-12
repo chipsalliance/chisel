@@ -114,12 +114,12 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     this := factory.apply(that.asUInt)
   }
 
-  final def ===(that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def =/=(that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def <(that:   EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def <=(that:  EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def >(that:   EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def >=(that:  EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def ===(x: EnumType): Bool = macro SourceInfoTransform.oneArg
+  final def =/=(x: EnumType): Bool = macro SourceInfoTransform.oneArg
+  final def <(x:   EnumType): Bool = macro SourceInfoTransform.oneArg
+  final def <=(x:  EnumType): Bool = macro SourceInfoTransform.oneArg
+  final def >(x:   EnumType): Bool = macro SourceInfoTransform.oneArg
+  final def >=(x:  EnumType): Bool = macro SourceInfoTransform.oneArg
 
   def do_===(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     compop(sourceInfo, EqualOp, that)

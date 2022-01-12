@@ -61,12 +61,12 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def apply(x: BigInt): T = macro SourceInfoTransform.xArg
+  def apply(x: BigInt): T = macro SourceInfoTransform.oneArg
 
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def apply(x: Int): T = macro SourceInfoTransform.xArg
+  def apply(x: Int): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_apply(idx: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
@@ -81,7 +81,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
     */
-  def apply(x: UInt): T = macro SourceInfoTransform.xArg
+  def apply(x: UInt): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_apply(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
@@ -90,7 +90,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   /** Creates a read accessor into the memory with dynamic addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def read(x: UInt): T = macro SourceInfoTransform.xArg
+  def read(x: UInt): T = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
@@ -244,7 +244,7 @@ object SyncReadMem {
   */
 sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
     extends MemBase[T](t, n) {
-  def read(x: UInt, y: Bool): T = macro SourceInfoTransform.xyArg
+  def read(x: UInt, y: Bool): T = macro SourceInfoTransform.twoArg
 
   /** @group SourceInfoTransformMacro */
   def do_read(addr: UInt, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {

@@ -59,7 +59,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @return This $coll with the `x` most significant bits removed.
     * @group Bitwise
     */
-  final def tail(x: Int): UInt = macro SourceInfoTransform.xArg
+  final def tail(x: Int): UInt = macro SourceInfoTransform.oneArg
 
   /** Head operator
     *
@@ -67,7 +67,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @return The `x` most significant bits of this $coll
     * @group Bitwise
     */
-  final def head(x: Int): UInt = macro SourceInfoTransform.xArg
+  final def head(x: Int): UInt = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_tail(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -94,7 +94,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param x an index
     * @return the specified bit
     */
-  final def apply(x: BigInt): Bool = macro SourceInfoTransform.xArg
+  final def apply(x: BigInt): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
@@ -117,7 +117,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @return the specified bit
     * @note convenience method allowing direct use of [[scala.Int]] without implicits
     */
-  final def apply(x: Int): Bool = macro SourceInfoTransform.xArg
+  final def apply(x: Int): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = apply(BigInt(x))
@@ -127,7 +127,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param x a hardware component whose value will be used for dynamic addressing
     * @return the specified bit
     */
-  final def apply(x: UInt): Bool = macro SourceInfoTransform.xArg
+  final def apply(x: UInt): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
@@ -146,7 +146,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param y the low bit
     * @return a hardware component contain the requested bits
     */
-  final def apply(x: Int, y: Int): UInt = macro SourceInfoTransform.xyArg
+  final def apply(x: Int, y: Int): UInt = macro SourceInfoTransform.twoArg
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -176,7 +176,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param y the low bit
     * @return a hardware component contain the requested bits
     */
-  final def apply(x: BigInt, y: BigInt): UInt = macro SourceInfoTransform.xyArg
+  final def apply(x: BigInt, y: BigInt): UInt = macro SourceInfoTransform.twoArg
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: BigInt, y: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -207,13 +207,13 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** Pad operator
     *
-    * @param that the width to pad to
+    * @param x the width to pad to
     * @return this @coll zero padded up to width `that`. If `that` is less than the width of the original component,
     * this method returns the original component.
     * @note For [[SInt]]s only, this will do sign extension.
     * @group Bitwise
     */
-  final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
+  final def pad(x: Int): this.type = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_pad(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = this.width match {
@@ -239,76 +239,76 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** Static left shift operator
     *
-    * @param that an amount to shift by
+    * @param x an amount to shift by
     * @return this $coll with `that` many zeros concatenated to its least significant end
     * $sumWidthInt
     * @group Bitwise
     */
   // REVIEW TODO: redundant
   // REVIEW TODO: should these return this.type or Bits?
-  final def <<(that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def <<(x: BigInt): Bits = macro SourceInfoWhiteboxTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Static left shift operator
     *
-    * @param that an amount to shift by
+    * @param x an amount to shift by
     * @return this $coll with `that` many zeros concatenated to its least significant end
     * $sumWidthInt
     * @group Bitwise
     */
-  final def <<(that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def <<(x: Int): Bits = macro SourceInfoWhiteboxTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_<<(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Dynamic left shift operator
     *
-    * @param that a hardware component
+    * @param x a hardware component
     * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
     * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
     * @group Bitwise
     */
-  final def <<(that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def <<(x: UInt): Bits = macro SourceInfoWhiteboxTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Static right shift operator
     *
-    * @param that an amount to shift by
+    * @param x an amount to shift by
     * @return this $coll with `that` many least significant bits truncated
     * $unchangedWidth
     * @group Bitwise
     */
   // REVIEW TODO: redundant
-  final def >>(that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def >>(x: BigInt): Bits = macro SourceInfoWhiteboxTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Static right shift operator
     *
-    * @param that an amount to shift by
+    * @param x an amount to shift by
     * @return this $coll with `that` many least significant bits truncated
     * $unchangedWidth
     * @group Bitwise
     */
-  final def >>(that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def >>(x: Int): Bits = macro SourceInfoWhiteboxTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Dynamic right shift operator
     *
-    * @param that a hardware component
+    * @param x a hardware component
     * @return this $coll dynamically shifted right by the value of `that` component, inserting zeros into the most
     * significant bits.
     * $unchangedWidth
     * @group Bitwise
     */
-  final def >>(that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def >>(x: UInt): Bits = macro SourceInfoWhiteboxTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_>>(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
@@ -348,7 +348,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * become a [[FixedPoint]] with value -1. The interpretation of the number is also affected by the specified binary
     * point. '''Caution is advised!'''
     */
-  final def asFixedPoint(that: BinaryPoint): FixedPoint = macro SourceInfoTransform.thatArg
+  final def asFixedPoint(x: BinaryPoint): FixedPoint = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_asFixedPoint(
@@ -366,7 +366,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * 3 and value 7 (0b111) would become a FixedInt with value -1, the interpretation
     * of the number is also affected by the specified binary point.  Caution advised
     */
-  final def asInterval(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+  final def asInterval(x: IntervalRange): Interval = macro SourceInfoTransform.oneArg
 
   def do_asInterval(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     throwException(s"Cannot call .asInterval on $this")
@@ -381,12 +381,12 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** Concatenation operator
     *
-    * @param that a hardware component
+    * @param x a hardware component
     * @return this $coll concatenated to the most significant end of `that`
     * $sumWidth
     * @group Bitwise
     */
-  final def ##(that: Bits): UInt = macro SourceInfoTransform.thatArg
+  final def ##(x: Bits): UInt = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_##(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -472,52 +472,52 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   /** Multiplication operator
     *
-    * @param that a hardware [[SInt]]
+    * @param x a hardware [[SInt]]
     * @return the product of this $coll and `that`
     * $sumWidth
     * $singleCycleMul
     * @group Arithmetic
     */
-  final def *(that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def *(x: SInt): SInt = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_*(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = that * this
 
   /** Addition operator (expanding width)
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the sum of this $coll and `that`
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  final def +&(that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def +&(x: UInt): UInt = macro SourceInfoTransform.oneArg
 
   /** Addition operator (constant width)
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the sum of this $coll and `that`
     * $maxWidth
     * @group Arithmetic
     */
-  final def +%(that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def +%(x: UInt): UInt = macro SourceInfoTransform.oneArg
 
   /** Subtraction operator (increasing width)
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the difference of this $coll less `that`
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  final def -&(that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def -&(x: UInt): UInt = macro SourceInfoTransform.oneArg
 
   /** Subtraction operator (constant width)
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the difference of this $coll less `that`
     * $maxWidth
     * @group Arithmetic
     */
-  final def -%(that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def -%(x: UInt): UInt = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_+&(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -537,30 +537,30 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   /** Bitwise and operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the bitwise and of  this $coll and `that`
     * $maxWidth
     * @group Bitwise
     */
-  final def &(that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def &(x: UInt): UInt = macro SourceInfoTransform.oneArg
 
   /** Bitwise or operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the bitwise or of this $coll and `that`
     * $maxWidth
     * @group Bitwise
     */
-  final def |(that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def |(x: UInt): UInt = macro SourceInfoTransform.oneArg
 
   /** Bitwise exclusive or (xor) operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the bitwise xor of this $coll and `that`
     * $maxWidth
     * @group Bitwise
     */
-  final def ^(that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def ^(x: UInt): UInt = macro SourceInfoTransform.oneArg
 
   //  override def abs: UInt = macro SourceInfoTransform.noArgDummy
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this
@@ -641,19 +641,19 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   /** Dynamic not equals operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
     * @group Comparison
     */
-  final def =/=(that: UInt): Bool = macro SourceInfoTransform.thatArg
+  final def =/=(x: UInt): Bool = macro SourceInfoTransform.oneArg
 
   /** Dynamic equals operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
     * @group Comparison
     */
-  final def ===(that: UInt): Bool = macro SourceInfoTransform.thatArg
+  final def ===(x: UInt): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_=/=(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
@@ -694,10 +694,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   /**
     * Circular shift to the left
-    * @param that number of bits to rotate
+    * @param x number of bits to rotate
     * @return UInt of same width rotated left n bits
     */
-  final def rotateLeft(that: Int): UInt = macro SourceInfoWhiteboxTransform.thatArg
+  final def rotateLeft(x: Int): UInt = macro SourceInfoWhiteboxTransform.oneArg
 
   def do_rotateLeft(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
     case _ if (n == 0)             => this
@@ -709,10 +709,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   /**
     * Circular shift to the right
-    * @param that number of bits to rotate
+    * @param x number of bits to rotate
     * @return UInt of same width rotated right n bits
     */
-  final def rotateRight(that: Int): UInt = macro SourceInfoWhiteboxTransform.thatArg
+  final def rotateRight(x: Int): UInt = macro SourceInfoWhiteboxTransform.oneArg
 
   def do_rotateRight(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
     case _ if (n <= 0)             => do_rotateLeft(-n)
@@ -721,7 +721,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     case _                         => this(n - 1, 0) ## (this >> n)
   }
 
-  final def rotateRight(that: UInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
+  final def rotateRight(x: UInt): UInt = macro SourceInfoWhiteboxTransform.oneArg
 
   private def dynamicShift(
     n:           UInt,
@@ -737,7 +737,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   def do_rotateRight(n: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     dynamicShift(n, _ rotateRight _)
 
-  final def rotateLeft(that: UInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
+  final def rotateLeft(x: UInt): UInt = macro SourceInfoWhiteboxTransform.oneArg
 
   def do_rotateLeft(n: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     dynamicShift(n, _ rotateLeft _)
@@ -905,13 +905,13 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
   /** Multiplication operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the product of this $coll and `that`
     * $sumWidth
     * $singleCycleMul
     * @group Arithmetic
     */
-  final def *(that: UInt): SInt = macro SourceInfoTransform.thatArg
+  final def *(x: UInt): SInt = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_*(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
@@ -922,39 +922,39 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
   /** Addition operator (expanding width)
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the sum of this $coll and `that`
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  final def +&(that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def +&(x: SInt): SInt = macro SourceInfoTransform.oneArg
 
   /** Addition operator (constant width)
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the sum of this $coll and `that` shifted right by one
     * $maxWidth
     * @group Arithmetic
     */
-  final def +%(that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def +%(x: SInt): SInt = macro SourceInfoTransform.oneArg
 
   /** Subtraction operator (increasing width)
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the difference of this $coll less `that`
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  final def -&(that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def -&(x: SInt): SInt = macro SourceInfoTransform.oneArg
 
   /** Subtraction operator (constant width)
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the difference of this $coll less `that` shifted right by one
     * $maxWidth
     * @group Arithmetic
     */
-  final def -%(that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def -%(x: SInt): SInt = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_+&(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
@@ -974,30 +974,30 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
   /** Bitwise and operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the bitwise and of  this $coll and `that`
     * $maxWidth
     * @group Bitwise
     */
-  final def &(that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def &(x: SInt): SInt = macro SourceInfoTransform.oneArg
 
   /** Bitwise or operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the bitwise or of this $coll and `that`
     * $maxWidth
     * @group Bitwise
     */
-  final def |(that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def |(x: SInt): SInt = macro SourceInfoTransform.oneArg
 
   /** Bitwise exclusive or (xor) operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the bitwise xor of this $coll and `that`
     * $maxWidth
     * @group Bitwise
     */
-  final def ^(that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def ^(x: SInt): SInt = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_&(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
@@ -1026,19 +1026,19 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
   /** Dynamic not equals operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
     * @group Comparison
     */
-  final def =/=(that: SInt): Bool = macro SourceInfoTransform.thatArg
+  final def =/=(x: SInt): Bool = macro SourceInfoTransform.oneArg
 
   /** Dynamic equals operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
     * @group Comparison
     */
-  final def ===(that: SInt): Bool = macro SourceInfoTransform.thatArg
+  final def ===(x: SInt): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_=/=(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
@@ -1270,27 +1270,27 @@ sealed class Bool() extends UInt(1.W) with Reset {
 
   /** Bitwise and operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the bitwise and of  this $coll and `that`
     * @group Bitwise
     */
-  final def &(that: Bool): Bool = macro SourceInfoTransform.thatArg
+  final def &(x: Bool): Bool = macro SourceInfoTransform.oneArg
 
   /** Bitwise or operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the bitwise or of this $coll and `that`
     * @group Bitwise
     */
-  final def |(that: Bool): Bool = macro SourceInfoTransform.thatArg
+  final def |(x: Bool): Bool = macro SourceInfoTransform.oneArg
 
   /** Bitwise exclusive or (xor) operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the bitwise xor of this $coll and `that`
     * @group Bitwise
     */
-  final def ^(that: Bool): Bool = macro SourceInfoTransform.thatArg
+  final def ^(x: Bool): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_&(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
@@ -1310,24 +1310,24 @@ sealed class Bool() extends UInt(1.W) with Reset {
 
   /** Logical or operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the lgocial or of this $coll and `that`
     * @note this is equivalent to [[Bool!.|(that:chisel3\.Bool)* Bool.|)]]
     * @group Logical
     */
-  def ||(that: Bool): Bool = macro SourceInfoTransform.thatArg
+  def ||(x: Bool): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_||(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this | that
 
   /** Logical and operator
     *
-    * @param that a hardware $coll
+    * @param x a hardware $coll
     * @return the lgocial and of this $coll and `that`
     * @note this is equivalent to [[Bool!.&(that:chisel3\.Bool)* Bool.&]]
     * @group Logical
     */
-  def &&(that: Bool): Bool = macro SourceInfoTransform.thatArg
+  def &&(x: Bool): Bool = macro SourceInfoTransform.oneArg
 
   /** @group SourceInfoTransformMacro */
   def do_&&(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this & that
@@ -1486,13 +1486,13 @@ package experimental {
 
     /** Multiplication operator
       *
-      * @param that a hardware [[UInt]]
+      * @param x a hardware [[UInt]]
       * @return the product of this $coll and `that`
       *         $sumWidth
       *         $singleCycleMul
       * @group Arithmetic
       */
-    final def *(that: UInt): FixedPoint = macro SourceInfoTransform.thatArg
+    final def *(x: UInt): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** @group SourceInfoTransformMacro */
     def do_*(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
@@ -1500,13 +1500,13 @@ package experimental {
 
     /** Multiplication operator
       *
-      * @param that a hardware [[SInt]]
+      * @param x a hardware [[SInt]]
       * @return the product of this $coll and `that`
       *         $sumWidth
       *         $singleCycleMul
       * @group Arithmetic
       */
-    final def *(that: SInt): FixedPoint = macro SourceInfoTransform.thatArg
+    final def *(x: SInt): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** @group SourceInfoTransformMacro */
     def do_*(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
@@ -1514,39 +1514,39 @@ package experimental {
 
     /** Addition operator (expanding width)
       *
-      * @param that a hardware $coll
+      * @param x a hardware $coll
       * @return the sum of this $coll and `that`
       *         $maxWidthPlusOne
       * @group Arithmetic
       */
-    final def +&(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def +&(x: FixedPoint): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** Addition operator (constant width)
       *
-      * @param that a hardware $coll
+      * @param x a hardware $coll
       * @return the sum of this $coll and `that` shifted right by one
       *         $maxWidth
       * @group Arithmetic
       */
-    final def +%(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def +%(x: FixedPoint): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** Subtraction operator (increasing width)
       *
-      * @param that a hardware $coll
+      * @param x a hardware $coll
       * @return the difference of this $coll less `that`
       *         $maxWidthPlusOne
       * @group Arithmetic
       */
-    final def -&(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def -&(x: FixedPoint): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** Subtraction operator (constant width)
       *
-      * @param that a hardware $coll
+      * @param x a hardware $coll
       * @return the difference of this $coll less `that` shifted right by one
       *         $maxWidth
       * @group Arithmetic
       */
-    final def -%(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def -%(x: FixedPoint): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** @group SourceInfoTransformMacro */
     def do_+&(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
@@ -1588,30 +1588,30 @@ package experimental {
 
     /** Bitwise and operator
       *
-      * @param that a hardware $coll
+      * @param x a hardware $coll
       * @return the bitwise and of  this $coll and `that`
       *         $maxWidth
       * @group Bitwise
       */
-    final def &(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def &(x: FixedPoint): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** Bitwise or operator
       *
-      * @param that a hardware $coll
+      * @param x a hardware $coll
       * @return the bitwise or of this $coll and `that`
       *         $maxWidth
       * @group Bitwise
       */
-    final def |(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def |(x: FixedPoint): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** Bitwise exclusive or (xor) operator
       *
-      * @param that a hardware $coll
+      * @param x a hardware $coll
       * @return the bitwise xor of this $coll and `that`
       *         $maxWidth
       * @group Bitwise
       */
-    final def ^(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def ^(x: FixedPoint): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** @group SourceInfoTransformMacro */
     def do_&(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
@@ -1625,7 +1625,7 @@ package experimental {
     def do_^(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       throwException(s"Xor is illegal between $this and $that")
 
-    final def setBinaryPoint(that: Int): FixedPoint = macro SourceInfoTransform.thatArg
+    final def setBinaryPoint(x: Int): FixedPoint = macro SourceInfoTransform.oneArg
 
     /** @group SourceInfoTransformMacro */
     def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
@@ -1649,23 +1649,23 @@ package experimental {
     override def do_>=(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
       compop(sourceInfo, GreaterEqOp, that)
 
-    final def !=(that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
+    final def !=(x: FixedPoint): Bool = macro SourceInfoTransform.oneArg
 
     /** Dynamic not equals operator
       *
-      * @param that a hardware $coll
+      * @param x a hardware $coll
       * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
       * @group Comparison
       */
-    final def =/=(that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
+    final def =/=(x: FixedPoint): Bool = macro SourceInfoTransform.oneArg
 
     /** Dynamic equals operator
       *
-      * @param that a hardware $coll
+      * @param x a hardware $coll
       * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
       * @group Comparison
       */
-    final def ===(that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
+    final def ===(x: FixedPoint): Bool = macro SourceInfoTransform.oneArg
 
     /** @group SourceInfoTransformMacro */
     def do_!=(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
@@ -1988,16 +1988,16 @@ package experimental {
       throwException(s"mod is illegal on Interval types")
 
     /** add (width +1) operator */
-    final def +&(that: Interval): Interval = macro SourceInfoTransform.thatArg
+    final def +&(x: Interval): Interval = macro SourceInfoTransform.oneArg
 
     /** add (no growth) operator */
-    final def +%(that: Interval): Interval = macro SourceInfoTransform.thatArg
+    final def +%(x: Interval): Interval = macro SourceInfoTransform.oneArg
 
     /** subtract (width +1) operator */
-    final def -&(that: Interval): Interval = macro SourceInfoTransform.thatArg
+    final def -&(x: Interval): Interval = macro SourceInfoTransform.oneArg
 
     /** subtract (no growth) operator */
-    final def -%(that: Interval): Interval = macro SourceInfoTransform.thatArg
+    final def -%(x: Interval): Interval = macro SourceInfoTransform.oneArg
 
     def do_+&(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       binop(sourceInfo, Interval(this.range +& that.range), AddOp, that)
@@ -2015,9 +2015,9 @@ package experimental {
       throwException(s"Non-growing subtraction is not supported on Intervals: ${sourceInfo}, try squeeze")
     }
 
-    final def &(that: Interval): Interval = macro SourceInfoTransform.thatArg
-    final def |(that: Interval): Interval = macro SourceInfoTransform.thatArg
-    final def ^(that: Interval): Interval = macro SourceInfoTransform.thatArg
+    final def &(x: Interval): Interval = macro SourceInfoTransform.oneArg
+    final def |(x: Interval): Interval = macro SourceInfoTransform.oneArg
+    final def ^(x: Interval): Interval = macro SourceInfoTransform.oneArg
 
     def do_&(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       throwException(s"And is illegal between $this and $that")
@@ -2026,7 +2026,7 @@ package experimental {
     def do_^(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       throwException(s"Xor is illegal between $this and $that")
 
-    final def setPrecision(that: Int): Interval = macro SourceInfoTransform.thatArg
+    final def setPrecision(x: Int): Interval = macro SourceInfoTransform.oneArg
 
     // Precision change changes range -- see firrtl PrimOps (requires floor)
     // aaa.bbb -> aaa.bb for sbp(2)
@@ -2038,10 +2038,10 @@ package experimental {
 
     /** Increase the precision of this Interval, moves the binary point to the left.
       * aaa.bbb -> aaa.bbb00
-      * @param that    how many bits to shift binary point
+      * @param x    how many bits to shift binary point
       * @return
       */
-    final def increasePrecision(that: Int): Interval = macro SourceInfoTransform.thatArg
+    final def increasePrecision(x: Int): Interval = macro SourceInfoTransform.oneArg
 
     def do_increasePrecision(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       assert(that > 0, s"Must increase precision by an integer greater than zero.")
@@ -2053,10 +2053,10 @@ package experimental {
     /** Decrease the precision of this Interval, moves the binary point to the right.
       * aaa.bbb -> aaa.b
       *
-      * @param that    number of bits to move binary point
+      * @param x    number of bits to move binary point
       * @return
       */
-    final def decreasePrecision(that: Int): Interval = macro SourceInfoTransform.thatArg
+    final def decreasePrecision(x: Int): Interval = macro SourceInfoTransform.oneArg
 
     def do_decreasePrecision(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       assert(that > 0, s"Must decrease precision by an integer greater than zero.")
@@ -2078,9 +2078,9 @@ package experimental {
     override def do_>=(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
       compop(sourceInfo, GreaterEqOp, that)
 
-    final def !=(that:  Interval): Bool = macro SourceInfoTransform.thatArg
-    final def =/=(that: Interval): Bool = macro SourceInfoTransform.thatArg
-    final def ===(that: Interval): Bool = macro SourceInfoTransform.thatArg
+    final def !=(x:  Interval): Bool = macro SourceInfoTransform.oneArg
+    final def =/=(x: Interval): Bool = macro SourceInfoTransform.oneArg
+    final def ===(x: Interval): Bool = macro SourceInfoTransform.oneArg
 
     def do_!=(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
       compop(sourceInfo, NotEqualOp, that)
@@ -2121,10 +2121,10 @@ package experimental {
       * Ignores binary point of argument
       * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
       * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
-      * @param that
+      * @param x
       * @return
       */
-    final def squeeze(that: Interval): Interval = macro SourceInfoTransform.thatArg
+    final def squeeze(x: Interval): Interval = macro SourceInfoTransform.oneArg
     def do_squeeze(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       val other = that
       requireIsHardware(this, s"'this' ($this)")
@@ -2137,10 +2137,10 @@ package experimental {
       * Currently, that must have a defined width
       * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
       * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
-      * @param that an UInt whose properties determine the squeezing
+      * @param x an UInt whose properties determine the squeezing
       * @return
       */
-    final def squeeze(that: UInt): Interval = macro SourceInfoTransform.thatArg
+    final def squeeze(x: UInt): Interval = macro SourceInfoTransform.oneArg
     def do_squeeze(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       that.widthOption match {
         case Some(w) =>
@@ -2155,10 +2155,10 @@ package experimental {
       * Currently, that must have a defined width
       * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
       * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
-      * @param that an SInt whose properties determine the squeezing
+      * @param x an SInt whose properties determine the squeezing
       * @return
       */
-    final def squeeze(that: SInt): Interval = macro SourceInfoTransform.thatArg
+    final def squeeze(x: SInt): Interval = macro SourceInfoTransform.oneArg
     def do_squeeze(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       that.widthOption match {
         case Some(w) =>
@@ -2173,10 +2173,10 @@ package experimental {
       * Ignores binary point of argument
       * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
       * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
-      * @param that an Interval whose properties determine the squeezing
+      * @param x an Interval whose properties determine the squeezing
       * @return
       */
-    final def squeeze(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+    final def squeeze(x: IntervalRange): Interval = macro SourceInfoTransform.oneArg
     def do_squeeze(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       val intervalLitOpt = Interval.getSmallestLegalLit(that)
       val intervalLit = intervalLitOpt.getOrElse(
@@ -2189,10 +2189,10 @@ package experimental {
       * Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
       * Ignores binary point of argument
       * Errors if requires wrapping more than once
-      * @param that
+      * @param x
       * @return
       */
-    final def wrap(that: Interval): Interval = macro SourceInfoTransform.thatArg
+    final def wrap(x: Interval): Interval = macro SourceInfoTransform.oneArg
 
     def do_wrap(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       val other = that
@@ -2204,10 +2204,10 @@ package experimental {
     /**
       * Wrap this interval into the range determined by that UInt
       * Errors if requires wrapping more than once
-      * @param that an UInt whose properties determine the wrap
+      * @param x an UInt whose properties determine the wrap
       * @return
       */
-    final def wrap(that: UInt): Interval = macro SourceInfoTransform.thatArg
+    final def wrap(x: UInt): Interval = macro SourceInfoTransform.oneArg
     def do_wrap(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       that.widthOption match {
         case Some(w) =>
@@ -2221,10 +2221,10 @@ package experimental {
     /**
       * Wrap this interval into the range determined by an SInt
       * Errors if requires wrapping more than once
-      * @param that an SInt whose properties determine the bounds of the wrap
+      * @param x an SInt whose properties determine the bounds of the wrap
       * @return
       */
-    final def wrap(that: SInt): Interval = macro SourceInfoTransform.thatArg
+    final def wrap(x: SInt): Interval = macro SourceInfoTransform.oneArg
     def do_wrap(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       that.widthOption match {
         case Some(w) =>
@@ -2241,10 +2241,10 @@ package experimental {
       * Adds hardware to change values outside of wrapped range to be at the boundary
       * Errors if requires wrapping more than once
       * Ignores binary point of argument
-      * @param that an Interval whose properties determine the bounds of the wrap
+      * @param x an Interval whose properties determine the bounds of the wrap
       * @return
       */
-    final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+    final def wrap(x: IntervalRange): Interval = macro SourceInfoTransform.oneArg
     def do_wrap(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       (that.lowerBound, that.upperBound) match {
         case (lower: firrtlconstraint.IsKnown, upperBound: firrtlconstraint.IsKnown) =>
@@ -2258,10 +2258,10 @@ package experimental {
       * Clip this interval into the range determined by argument's range
       * Adds hardware to change values outside of clipped range to be at the boundary
       * Ignores binary point of argument
-      * @param that an Interval whose properties determine the clipping
+      * @param x an Interval whose properties determine the clipping
       * @return
       */
-    final def clip(that: Interval): Interval = macro SourceInfoTransform.thatArg
+    final def clip(x: Interval): Interval = macro SourceInfoTransform.oneArg
     def do_clip(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       binop(sourceInfo, Interval(this.range.clip(that.range)), ClipOp, that)
     }
@@ -2269,10 +2269,10 @@ package experimental {
     /**
       * Clip this interval into the range determined by argument's range
       * Adds hardware to change values outside of clipped range to be at the boundary
-      * @param that an UInt whose width determines the clipping
+      * @param x an UInt whose width determines the clipping
       * @return
       */
-    final def clip(that: UInt): Interval = macro SourceInfoTransform.thatArg
+    final def clip(x: UInt): Interval = macro SourceInfoTransform.oneArg
     def do_clip(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       require(that.widthKnown, "UInt clip width must be known")
       val u = BigDecimal(BigInt(1) << that.getWidth) - 1
@@ -2282,10 +2282,10 @@ package experimental {
     /**
       * Clip this interval into the range determined by argument's range
       * Adds hardware to move values outside of clipped range to the boundary
-      * @param that   an SInt whose width determines the clipping
+      * @param x an SInt whose width determines the clipping
       * @return
       */
-    final def clip(that: SInt): Interval = macro SourceInfoTransform.thatArg
+    final def clip(x: SInt): Interval = macro SourceInfoTransform.oneArg
     def do_clip(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       require(that.widthKnown, "SInt clip width must be known")
       val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
@@ -2297,10 +2297,10 @@ package experimental {
       * Clip this interval into the range determined by argument's range
       * Adds hardware to move values outside of clipped range to the boundary
       * Ignores binary point of argument
-      * @param that   an SInt whose width determines the clipping
+      * @param x an SInt whose width determines the clipping
       * @return
       */
-    final def clip(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+    final def clip(x: IntervalRange): Interval = macro SourceInfoTransform.oneArg
     def do_clip(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       (that.lowerBound, that.upperBound) match {
         case (lower: firrtlconstraint.IsKnown, upperBound: firrtlconstraint.IsKnown) =>

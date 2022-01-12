@@ -176,15 +176,11 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
   }
 
-  def xArg(x: c.Tree): c.Tree = {
+  def oneArg(x: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($x)($implicitSourceInfo, $implicitCompileOptions)"
   }
 
-  def thatArg(that: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
-  }
-
-  def xyArg(x: c.Tree, y: c.Tree): c.Tree = {
+  def twoArg(x: c.Tree, y: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($x, $y)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
@@ -194,7 +190,7 @@ object CompileOptionsTransform
 class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
-  def xArg(x: c.Tree): c.Tree = {
+  def oneArg(x: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($x)($implicitCompileOptions)"
   }
 }
@@ -217,7 +213,7 @@ class SourceInfoWhiteboxTransform(val c: whitebox.Context) extends AutoSourceTra
     q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
   }
 
-  def thatArg(that: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
+  def oneArg(x: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($x)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
