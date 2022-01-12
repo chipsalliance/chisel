@@ -87,7 +87,7 @@ endmodule
 </body>
 </html>
 
-#Parameterizing a Module
+# Parameterizing a Module
 
 <html>
 <body>
@@ -197,7 +197,7 @@ endmodule
 <html>
 <body>
 
-#Wire assignment
+# Wire assignment
 
 <html>
 <body>
@@ -252,7 +252,7 @@ endmodule
 <html>
 <body>
 
-#Register assignment
+# Register assignment
 
 <html>
 <body>
@@ -299,7 +299,7 @@ endmodule
 <html>
 <body>
 
-#Case statement
+# Case statement
 
 <html>
 <body>
@@ -314,39 +314,190 @@ endmodule
 <td>
 
 ```scala mdoc:silent
-class DelayBy1(resetValue: Option[UInt] = None) extends Module {
-  val io = IO(new Bundle {
-    val in  = Input( UInt(16.W))
-    val out = Output(UInt(16.W))
-  })
-  val reg = resetValue match {
-    case Some(r) => RegInit(r)
-    case None    => Reg(UInt())
-  }
-  reg := io.in
-  io.out := reg
-}
+cclass CaseStatementModule extends Module {
+  
+   val a, b, c= IO(Input(UInt(3.W)))
+    val sel = IO(Input(UInt(2.W)))
 
-println(getVerilogString(new DelayBy1))
-println(getVerilogString(new DelayBy1(Some(3.U))))
+  val out = IO(Output(UInt(3.W)))
+    out := 0.U
+  
+  switch (sel) {
+  is ("b00".U) {
+    
+   out := a
+    
+  }
+  is ("b01".U) {
+    
+   out := b
+  }
+  is ("b10".U) {
+    
+   out := c
+  }
+}
+  };
+
+println(getVerilogString(new CaseStatementModule))
 ```
 </td>
 <td>
 
 ```
-module DelayBy1(
-  input         clock,
-  input         reset,
-  input  [15:0] io_in,
-  output [15:0] io_out
+module CaseStatementModule(
+  input        clock,
+  input        reset,
+  input  [2:0] a,
+  input  [2:0] b,
+  input  [2:0] c,
+  input  [1:0] sel,
+  output [2:0] out
+);
+  wire [2:0] _GEN_0 = 2'h2 == sel ? c : 3'h0; // @[main.scala 16:16 28:8 14:9]
+  wire [2:0] _GEN_1 = 2'h1 == sel ? b : _GEN_0; // @[main.scala 16:16 24:8]
+  assign out = 2'h0 == sel ? a : _GEN_1; // @[main.scala 16:16 19:8]
+endmodule
+```
+</td>
+         </tr>
+    </table>
+<html>
+<body>
+
+# ChiselEnum
+
+<html>
+<body>
+    <table border ="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
+         </tr>
+         <tr>
+<td>Text comes here</td>
+<td>
+
+```scala mdoc:
+import Chisel.Queue
+import chisel3._
+import chisel3.util.DecoupledIO
+import chisel3.util.{switch,is}
+import chisel3.experimental.ChiselEnum
+```
+
+```scala mdoc:silent
+class CaseStatementModule extends Module {
+  
+  object AluMux1Sel extends ChiselEnum {
+  val selectRS1, selectPC = Value
+  }
+import AluMux1Sel._
+   val a, b = IO(Input(UInt(3.W)))
+    val sel = IO(Input(AluMux1Sel()))
+  val out = IO(Output(UInt(3.W)))
+    out := 0.U
+  switch (sel) {
+  is (selectRS1) {
+   out := a
+  }
+  is (selectPC) {
+   out := b
+  }
+}
+  };
+
+println(getVerilogString(new CaseStatementModule))
+```
+</td>
+<td>
+
+```
+module CaseStatementModule(
+  input        clock,
+  input        reset,
+  input  [2:0] a,
+  input  [2:0] b,
+  input        sel,
+  output [2:0] out
+);
+  wire [2:0] _GEN_0 = sel ? b : 3'h0; // @[main.scala 22:16 30:8 20:9]
+  assign out = ~sel ? a : _GEN_0; // @[main.scala 22:16 25:8]
+endmodule
+```
+</td>
+         </tr>
+  <tr>
+<td>Text comes here</td>
+<td>
+
+```scala mdoc:silent
+class CaseStatementModule extends Module {
+  
+  object AluMux1Sel extends ChiselEnum {
+   val INIT  = Value(0x03.U) 
+    val IDLE  = Value(0x13.U) 
+    val START = Value(0x17.U) 
+    val READY = Value(0x23.U) 
+    
+  }
+   import AluMux1Sel._
+  
+    val state = RegInit(INIT)
+  val nextState = IO(Output(AluMux1Sel()))
+  nextState := state
+
+  
+  switch (state) {
+  is (INIT) {
+    
+   state := IDLE 
+    
+  }
+  is (IDLE) {
+    
+   state := START
+  }
+  is (START) {
+    
+   state := READY
+  }
+ is (READY) {
+    
+   state := IDLE
+  }
+  }
+}
+println(getVerilogString(new CaseStatementModule))
+```
+</td>
+<td>
+
+```
+module CaseStatementModule(
+  input        clock,
+  input        reset,
+  output [5:0] nextState
 );
 `ifdef RANDOMIZE_REG_INIT
   reg [31:0] _RAND_0;
 `endif // RANDOMIZE_REG_INIT
-  reg [15:0] reg_; // @[main.scala 15:24]
-  assign io_out = reg_; // @[main.scala 18:10]
+  reg [5:0] state; // @[main.scala 20:24]
+  wire [5:0] _GEN_0 = 6'h23 == state ? 6'h13 : state; // @[main.scala 25:18 41:10 20:24]
+  assign nextState = state; // @[main.scala 22:13]
   always @(posedge clock) begin
-    reg_ <= io_in; // @[main.scala 17:7]
+    if (reset) begin // @[main.scala 20:24]
+      state <= 6'h3; // @[main.scala 20:24]
+    end else if (6'h3 == state) begin // @[main.scala 25:18]
+      state <= 6'h13; // @[main.scala 28:10]
+    end else if (6'h13 == state) begin // @[main.scala 25:18]
+      state <= 6'h17; // @[main.scala 33:10]
+    end else if (6'h17 == state) begin // @[main.scala 25:18]
+      state <= 6'h23; // @[main.scala 37:10]
+    end else begin
+      state <= _GEN_0;
+    end
   end
 // Register and memory initialization
 `ifdef RANDOMIZE_GARBAGE_ASSIGN
@@ -385,7 +536,7 @@ initial begin
     `endif
 `ifdef RANDOMIZE_REG_INIT
   _RAND_0 = {1{`RANDOM}};
-  reg_ = _RAND_0[15:0];
+  state = _RAND_0[5:0];
 `endif // RANDOMIZE_REG_INIT
   `endif // RANDOMIZE
 end // initial
@@ -394,23 +545,159 @@ end // initial
 `endif
 `endif // SYNTHESIS
 endmodule
+```
+</td>
+         </tr>
+    </table>
+<html>
+<body>
 
-module DelayBy1(
+# SystemVerilog Interfaces
+
+<html>
+<body>
+    <table border ="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
+         </tr>
+         <tr>
+<td>Text comes here</td>
+<td>
+
+```scala mdoc:silent
+class MyModule extends Module {
+val io = IO(new Bundle {
+val in = Flipped(DecoupledIO(UInt(8.W)))
+val out = DecoupledIO(UInt(8.W))
+})
+
+val tmp = Wire(DecoupledIO(UInt(8.W)))
+tmp <> io.in
+io.out <> tmp
+io.out <> io.in
+}
+println(getVerilogString(new MyModule))
+```
+</td>
+<td>
+
+```
+module MyModule(
+  input        clock,
+  input        reset,
+  output       io_in_ready,
+  input        io_in_valid,
+  input  [7:0] io_in_bits,
+  input        io_out_ready,
+  output       io_out_valid,
+  output [7:0] io_out_bits
+);
+  assign io_in_ready = io_out_ready; // @[main.scala 17:12]
+  assign io_out_valid = io_in_valid; // @[main.scala 17:12]
+  assign io_out_bits = io_in_bits; // @[main.scala 17:12]
+endmodule
+```
+</td>
+         </tr>
+    </table>
+<html>
+<body>
+
+# Memory Modules
+
+<html>
+<body>
+    <table border ="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
+         </tr>
+         <tr>
+<td>Text comes here</td>
+
+<td>
+
+```scala mdoc:silent
+class ReadWriteSmem extends Module {
+  val width: Int = 32
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(width.W))
+    val dataOut = Output(UInt(width.W))
+  })
+  val mem = SyncReadMem(1024, UInt(width.W))
+  // Create one write port and one read port
+  mem.write(io.addr, io.dataIn)
+  io.dataOut := mem.read(io.addr, io.enable)
+}
+class ReadWriteMem extends Module {
+  val width: Int = 32
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(width.W))
+    val dataOut = Output(UInt(width.W))
+  })
+  val mem = Mem(1024, UInt(width.W))
+  // Create one write port and one read port
+  mem.write(io.addr, io.dataIn)
+  io.dataOut := mem.read(io.addr)
+}
+println(getVerilogString(new ReadWriteSmem))
+println(getVerilogString(new ReadWriteMem))
+```
+</td>
+
+<td>
+
+```
+module ReadWriteSmem(
 input         clock,
 input         reset,
-input  [15:0] io_in,
-output [15:0] io_out
+input         io_enable,
+input         io_write,
+input  [9:0]  io_addr,
+input  [31:0] io_dataIn,
+output [31:0] io_dataOut
 );
-`ifdef RANDOMIZE_REG_INIT
+`ifdef RANDOMIZE_MEM_INIT
 reg [31:0] _RAND_0;
+`endif // RANDOMIZE_MEM_INIT
+`ifdef RANDOMIZE_REG_INIT
+reg [31:0] _RAND_1;
+reg [31:0] _RAND_2;
 `endif // RANDOMIZE_REG_INIT
-reg [15:0] reg_; // @[main.scala 14:28]
-assign io_out = reg_; // @[main.scala 18:10]
+reg [31:0] mem [0:1023]; // @[main.scala 15:24]
+wire  mem_io_dataOut_MPORT_en; // @[main.scala 15:24]
+wire [9:0] mem_io_dataOut_MPORT_addr; // @[main.scala 15:24]
+wire [31:0] mem_io_dataOut_MPORT_data; // @[main.scala 15:24]
+wire [31:0] mem_MPORT_data; // @[main.scala 15:24]
+wire [9:0] mem_MPORT_addr; // @[main.scala 15:24]
+wire  mem_MPORT_mask; // @[main.scala 15:24]
+wire  mem_MPORT_en; // @[main.scala 15:24]
+reg  mem_io_dataOut_MPORT_en_pipe_0;
+reg [9:0] mem_io_dataOut_MPORT_addr_pipe_0;
+assign mem_io_dataOut_MPORT_en = mem_io_dataOut_MPORT_en_pipe_0;
+assign mem_io_dataOut_MPORT_addr = mem_io_dataOut_MPORT_addr_pipe_0;
+assign mem_io_dataOut_MPORT_data = mem[mem_io_dataOut_MPORT_addr]; // @[main.scala 15:24]
+assign mem_MPORT_data = io_dataIn;
+assign mem_MPORT_addr = io_addr;
+assign mem_MPORT_mask = 1'h1;
+assign mem_MPORT_en = 1'h1;
+assign io_dataOut = mem_io_dataOut_MPORT_data; // @[main.scala 18:14]
 always @(posedge clock) begin
-if (reset) begin // @[main.scala 14:28]
-reg_ <= 16'h3; // @[main.scala 14:28]
-end else begin
-reg_ <= io_in; // @[main.scala 17:7]
+if (mem_MPORT_en & mem_MPORT_mask) begin
+mem[mem_MPORT_addr] <= mem_MPORT_data; // @[main.scala 15:24]
+end
+mem_io_dataOut_MPORT_en_pipe_0 <= io_enable;
+if (io_enable) begin
+mem_io_dataOut_MPORT_addr_pipe_0 <= io_addr;
 end
 end
 // Register and memory initialization
@@ -448,9 +735,16 @@ initial begin
 #0.002 begin end
 `endif
 `endif
-`ifdef RANDOMIZE_REG_INIT
+`ifdef RANDOMIZE_MEM_INIT
 _RAND_0 = {1{`RANDOM}};
-reg_ = _RAND_0[15:0];
+for (initvar = 0; initvar < 1024; initvar = initvar+1)
+mem[initvar] = _RAND_0[31:0];
+`endif // RANDOMIZE_MEM_INIT
+`ifdef RANDOMIZE_REG_INIT
+_RAND_1 = {1{`RANDOM}};
+mem_io_dataOut_MPORT_en_pipe_0 = _RAND_1[0:0];
+_RAND_2 = {1{`RANDOM}};
+mem_io_dataOut_MPORT_addr_pipe_0 = _RAND_2[9:0];
 `endif // RANDOMIZE_REG_INIT
 `endif // RANDOMIZE
 end // initial
@@ -459,60 +753,85 @@ end // initial
 `endif
 `endif // SYNTHESIS
 endmodule
-```
-</td>
-         </tr>
-    </table>
-<html>
-<body>
-
-#systemVerilog Interfaces
-
-<html>
-<body>
-    <table border ="0">
-          <tr>
-            <td><b style="font-size:30px">Verilog</b></td>
-            <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
-         </tr>
-         <tr>
-<td>Text comes here</td>
-<td>
-
-```scala mdoc:silent
-class MyModule extends Module {
-val io = IO(new Bundle {
-val in = Flipped(DecoupledIO(UInt(8.W)))
-val out = DecoupledIO(UInt(8.W))
-})
-
-val tmp = Wire(DecoupledIO(UInt(8.W)))
-tmp <> io.in
-io.out <> tmp
-io.out <> io.in
-}
-
-
-println(getVerilogString(new MyModule))
-```
-</td>
-<td>
-
-```
-module MyModule(
-  input        clock,
-  input        reset,
-  output       io_in_ready,
-  input        io_in_valid,
-  input  [7:0] io_in_bits,
-  input        io_out_ready,
-  output       io_out_valid,
-  output [7:0] io_out_bits
+module ReadWriteMem(
+input         clock,
+input         reset,
+input         io_enable,
+input         io_write,
+input  [9:0]  io_addr,
+input  [31:0] io_dataIn,
+output [31:0] io_dataOut
 );
-  assign io_in_ready = io_out_ready; // @[main.scala 17:12]
-  assign io_out_valid = io_in_valid; // @[main.scala 17:12]
-  assign io_out_bits = io_in_bits; // @[main.scala 17:12]
+`ifdef RANDOMIZE_MEM_INIT
+reg [31:0] _RAND_0;
+`endif // RANDOMIZE_MEM_INIT
+reg [31:0] mem [0:1023]; // @[main.scala 32:16]
+wire  mem_io_dataOut_MPORT_en; // @[main.scala 32:16]
+wire [9:0] mem_io_dataOut_MPORT_addr; // @[main.scala 32:16]
+wire [31:0] mem_io_dataOut_MPORT_data; // @[main.scala 32:16]
+wire [31:0] mem_MPORT_data; // @[main.scala 32:16]
+wire [9:0] mem_MPORT_addr; // @[main.scala 32:16]
+wire  mem_MPORT_mask; // @[main.scala 32:16]
+wire  mem_MPORT_en; // @[main.scala 32:16]
+assign mem_io_dataOut_MPORT_en = 1'h1;
+assign mem_io_dataOut_MPORT_addr = io_addr;
+assign mem_io_dataOut_MPORT_data = mem[mem_io_dataOut_MPORT_addr]; // @[main.scala 32:16]
+assign mem_MPORT_data = io_dataIn;
+assign mem_MPORT_addr = io_addr;
+assign mem_MPORT_mask = 1'h1;
+assign mem_MPORT_en = 1'h1;
+assign io_dataOut = mem_io_dataOut_MPORT_data; // @[main.scala 35:14]
+always @(posedge clock) begin
+if (mem_MPORT_en & mem_MPORT_mask) begin
+mem[mem_MPORT_addr] <= mem_MPORT_data; // @[main.scala 32:16]
+end
+end
+// Register and memory initialization
+`ifdef RANDOMIZE_GARBAGE_ASSIGN
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_INVALID_ASSIGN
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_REG_INIT
+`define RANDOMIZE
+`endif
+`ifdef RANDOMIZE_MEM_INIT
+`define RANDOMIZE
+`endif
+`ifndef RANDOM
+`define RANDOM $random
+`endif
+`ifdef RANDOMIZE_MEM_INIT
+integer initvar;
+`endif
+`ifndef SYNTHESIS
+`ifdef FIRRTL_BEFORE_INITIAL
+`FIRRTL_BEFORE_INITIAL
+`endif
+initial begin
+`ifdef RANDOMIZE
+`ifdef INIT_RANDOM
+`INIT_RANDOM
+`endif
+`ifndef VERILATOR
+`ifdef RANDOMIZE_DELAY
+#`RANDOMIZE_DELAY begin end
+`else
+#0.002 begin end
+`endif
+`endif
+`ifdef RANDOMIZE_MEM_INIT
+_RAND_0 = {1{`RANDOM}};
+for (initvar = 0; initvar < 1024; initvar = initvar+1)
+mem[initvar] = _RAND_0[31:0];
+`endif // RANDOMIZE_MEM_INIT
+`endif // RANDOMIZE
+end // initial
+`ifdef FIRRTL_AFTER_INITIAL
+`FIRRTL_AFTER_INITIAL
+`endif
+`endif // SYNTHESIS
 endmodule
 ```
 </td>
