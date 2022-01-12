@@ -3,7 +3,7 @@ package chiselTests.util.experimental
 import chisel3._
 import chisel3.stage.PrintFullStackTraceAnnotation
 import chisel3.testers.BasicTester
-import chisel3.util.{BitPat, pla}
+import chisel3.util.{pla, BitPat}
 import chiselTests.ChiselFlatSpec
 
 class PlaSpec extends ChiselFlatSpec {
@@ -17,12 +17,17 @@ class PlaSpec extends ChiselFlatSpec {
         (BitPat("b100"), BitPat("b00010000")),
         (BitPat("b101"), BitPat("b00100000")),
         (BitPat("b110"), BitPat("b01000000")),
-        (BitPat("b111"), BitPat("b10000000")),
+        (BitPat("b111"), BitPat("b10000000"))
       )
-      table.foreach { case (i, o) =>
-        val (plaIn, plaOut) = pla(table)
-        plaIn := WireDefault(i.value.U(3.W))
-        chisel3.assert(plaOut === o.value.U(8.W), "Input " + i.toString + " produced incorrect output BitPat(%b)", plaOut)
+      table.foreach {
+        case (i, o) =>
+          val (plaIn, plaOut) = pla(table)
+          plaIn := WireDefault(i.value.U(3.W))
+          chisel3.assert(
+            plaOut === o.value.U(8.W),
+            "Input " + i.toString + " produced incorrect output BitPat(%b)",
+            plaOut
+          )
       }
       stop()
     })
@@ -38,12 +43,17 @@ class PlaSpec extends ChiselFlatSpec {
         (BitPat("b100"), BitPat("b00010000")),
         (BitPat("b101"), BitPat("b00100000")),
         (BitPat("b110"), BitPat("b01000000")),
-        (BitPat("b111"), BitPat("b10000000")),
+        (BitPat("b111"), BitPat("b10000000"))
       )
-      table.foreach { case (i, o) =>
-        val (plaIn, plaOut) = pla(table, BitPat("b11111111"))
-        plaIn := WireDefault(i.value.U(3.W))
-        chisel3.assert(plaOut === ~o.value.U(8.W), "Input " + i.toString + " produced incorrect output BitPat(%b)", plaOut)
+      table.foreach {
+        case (i, o) =>
+          val (plaIn, plaOut) = pla(table, BitPat("b11111111"))
+          plaIn := WireDefault(i.value.U(3.W))
+          chisel3.assert(
+            plaOut === ~o.value.U(8.W),
+            "Input " + i.toString + " produced incorrect output BitPat(%b)",
+            plaOut
+          )
       }
       stop()
     })
@@ -53,12 +63,13 @@ class PlaSpec extends ChiselFlatSpec {
     assertTesterPasses(new BasicTester {
       val table = Seq(
         (BitPat("b000"), BitPat("b?01")),
-        (BitPat("b111"), BitPat("b?01")),
+        (BitPat("b111"), BitPat("b?01"))
       )
-      table.foreach { case (i, o) =>
-        val (plaIn, plaOut) = pla(table)
-        plaIn := WireDefault(i.value.U(3.W))
-        chisel3.assert(o === plaOut, "Input " + i.toString + " produced incorrect output BitPat(%b)", plaOut)
+      table.foreach {
+        case (i, o) =>
+          val (plaIn, plaOut) = pla(table)
+          plaIn := WireDefault(i.value.U(3.W))
+          chisel3.assert(o === plaOut, "Input " + i.toString + " produced incorrect output BitPat(%b)", plaOut)
       }
       stop()
     })
@@ -82,12 +93,17 @@ class PlaSpec extends ChiselFlatSpec {
         (BitPat("b1100"), BitPat("b0")),
         (BitPat("b1101"), BitPat("b1")),
         (BitPat("b1110"), BitPat("b1")),
-        (BitPat("b1111"), BitPat("b1")),
+        (BitPat("b1111"), BitPat("b1"))
       )
-      table.foreach { case (i, o) =>
-        val (plaIn, plaOut) = pla(table)
-        plaIn := WireDefault(i.value.U(4.W))
-        chisel3.assert(plaOut === o.value.U(1.W), "Input " + i.toString + " produced incorrect output BitPat(%b)", plaOut)
+      table.foreach {
+        case (i, o) =>
+          val (plaIn, plaOut) = pla(table)
+          plaIn := WireDefault(i.value.U(4.W))
+          chisel3.assert(
+            plaOut === o.value.U(1.W),
+            "Input " + i.toString + " produced incorrect output BitPat(%b)",
+            plaOut
+          )
       }
       stop()
     })

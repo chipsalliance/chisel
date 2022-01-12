@@ -25,14 +25,14 @@ class PassthroughRawModule extends RawModule with AbstractPassthroughModule
 
 case class ScalaIntervalSimulator(intervalRange: IntervalRange) {
   val binaryPoint: Int = intervalRange.binaryPoint.asInstanceOf[KnownBinaryPoint].value
-  val epsilon: Double = 1.0 / math.pow(2.0, binaryPoint.toDouble)
+  val epsilon:     Double = 1.0 / math.pow(2.0, binaryPoint.toDouble)
 
   val (lower, upper) = (intervalRange.lowerBound, intervalRange.upperBound) match {
 
     case (firrtlir.Closed(lower1), firrtlir.Closed(upper1)) => (lower1, upper1)
     case (firrtlir.Closed(lower1), firrtlir.Open(upper1))   => (lower1, upper1 - epsilon)
-    case (firrtlir.Open(lower1),   firrtlir.Closed(upper1)) => (lower1 + epsilon, upper1)
-    case (firrtlir.Open(lower1),   firrtlir.Open(upper1))   => (lower1 + epsilon, upper1 - epsilon)
+    case (firrtlir.Open(lower1), firrtlir.Closed(upper1))   => (lower1 + epsilon, upper1)
+    case (firrtlir.Open(lower1), firrtlir.Open(upper1))     => (lower1 + epsilon, upper1 - epsilon)
     case _ =>
       throw new Exception(s"lower and upper bounds must be defined, range here is $intervalRange")
   }
@@ -41,11 +41,9 @@ case class ScalaIntervalSimulator(intervalRange: IntervalRange) {
 
     if (value < lower) {
       lower
-    }
-    else if (value > upper) {
+    } else if (value > upper) {
       upper
-    }
-    else {
+    } else {
       value
     }
   }
@@ -54,11 +52,9 @@ case class ScalaIntervalSimulator(intervalRange: IntervalRange) {
 
     if (value < lower) {
       upper + (value - lower) + epsilon
-    }
-    else if (value > upper) {
+    } else if (value > upper) {
       ((value - upper) - epsilon) + lower
-    }
-    else {
+    } else {
       value
     }
   }
@@ -71,5 +67,3 @@ case class ScalaIntervalSimulator(intervalRange: IntervalRange) {
     Interval.fromDouble(value.toDouble, width = Width(), binaryPoint = binaryPoint.BP)
   }
 }
-
-

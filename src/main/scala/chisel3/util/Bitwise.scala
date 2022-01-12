@@ -19,6 +19,7 @@ import chisel3._
   * }}}
   */
 object FillInterleaved {
+
   /** Creates n repetitions of each bit of x in order.
     *
     * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
@@ -58,6 +59,7 @@ object PopCount {
   * }}}
   */
 object Fill {
+
   /** Create n repetitions of x using a tree fanout topology.
     *
     * Output data-equivalent to x ## x ## ... ## x (n repetitions).
@@ -66,8 +68,8 @@ object Fill {
   def apply(n: Int, x: UInt): UInt = {
     n match {
       case _ if n < 0 => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
-      case 0 => UInt(0.W)
-      case 1 => x
+      case 0          => UInt(0.W)
+      case 1          => x
       case _ if x.isWidthKnown && x.getWidth == 1 =>
         Mux(x.asBool, ((BigInt(1) << n) - 1).asUInt(n.W), 0.U(n.W))
       case _ =>
@@ -75,7 +77,7 @@ object Fill {
         val p2 = Array.ofDim[UInt](nBits)
         p2(0) = x
         for (i <- 1 until p2.length)
-          p2(i) = Cat(p2(i-1), p2(i-1))
+          p2(i) = Cat(p2(i - 1), p2(i - 1))
         Cat((0 until nBits).filter(i => (n & (1 << i)) != 0).map(p2(_)))
     }
   }
@@ -91,22 +93,22 @@ object Fill {
   */
 object Reverse {
   private def doit(in: UInt, length: Int): UInt = length match {
-    case _ if length < 0 => throw new IllegalArgumentException(s"length (=$length) must be nonnegative integer.")
-    case _ if length <= 1 => in
+    case _ if length < 0                                    => throw new IllegalArgumentException(s"length (=$length) must be nonnegative integer.")
+    case _ if length <= 1                                   => in
     case _ if isPow2(length) && length >= 8 && length <= 64 =>
       // This esoterica improves simulation performance
       var res = in
       var shift = length >> 1
       var mask = ((BigInt(1) << length) - 1).asUInt(length.W)
       do {
-        mask = mask ^ (mask(length-shift-1,0) << shift)
-        res = ((res >> shift) & mask) | ((res(length-shift-1,0) << shift) & ~mask)
+        mask = mask ^ (mask(length - shift - 1, 0) << shift)
+        res = ((res >> shift) & mask) | ((res(length - shift - 1, 0) << shift) & ~mask)
         shift = shift >> 1
       } while (shift > 0)
       res
     case _ =>
-      val half = (1 << log2Ceil(length))/2
-      Cat(doit(in(half-1,0), half), doit(in(length-1,half), length-half))
+      val half = (1 << log2Ceil(length)) / 2
+      Cat(doit(in(half - 1, 0), half), doit(in(length - 1, half), length - half))
   }
 
   def apply(in: UInt): UInt = doit(in, in.getWidth)

@@ -9,7 +9,6 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.reflect.macros.whitebox
 
-
 /** Transforms a function call so that it can both provide implicit-style source information and
   * have a chained apply call. Without macros, only one is possible, since having a implicit
   * argument in the definition will cause the compiler to interpret a chained apply as an
@@ -64,7 +63,6 @@ class DefinitionWrapTransform(val c: Context) extends SourceInfoTransformMacro {
     q"$thisObj.do_wrap($proto)($implicitSourceInfo)"
   }
 }
-
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object InstanceTransform
@@ -138,7 +136,7 @@ class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   def reduceTree(redOp: c.Tree, layerOp: c.Tree): c.Tree = {
     q"$thisObj.do_reduceTree($redOp,$layerOp)($implicitSourceInfo, $implicitCompileOptions)"
   }
-  def reduceTreeDefault(redOp: c.Tree ): c.Tree = {
+  def reduceTreeDefault(redOp: c.Tree): c.Tree = {
     q"$thisObj.do_reduceTree($redOp)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
@@ -148,13 +146,17 @@ class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   */
 abstract class AutoSourceTransform extends SourceInfoTransformMacro {
   import c.universe._
+
   /** Returns the TermName of the transformed function, which is the applied function name with do_
     * prepended.
     */
   def doFuncTerm: TermName = {
     val funcName = c.macroApplication match {
       case q"$_.$funcName[..$_](...$_)" => funcName
-      case _ => throw new Exception(s"Chisel Internal Error: Could not resolve function name from macro application: ${showCode(c.macroApplication)}")
+      case _ =>
+        throw new Exception(
+          s"Chisel Internal Error: Could not resolve function name from macro application: ${showCode(c.macroApplication)}"
+        )
     }
     TermName("do_" + funcName)
   }
@@ -223,6 +225,7 @@ class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object SourceInfoWhiteboxTransform
+
 /** Special whitebox version of the blackbox SourceInfoTransform, used when fun things need to
   * happen to satisfy the type system while preventing the use of macro overrides.
   */

@@ -6,12 +6,11 @@ import scala.language.experimental.macros
 import chisel3._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
-
 object BitPat {
 
   private[chisel3] implicit val bitPatOrder = new Ordering[BitPat] {
     import scala.math.Ordered.orderingToOrdered
-    def compare(x: BitPat, y: BitPat): Int = (x.getWidth, x.value, x.mask) compare (y.getWidth, y.value, y.mask)
+    def compare(x: BitPat, y: BitPat): Int = (x.getWidth, x.value, x.mask).compare(y.getWidth, y.value, y.mask)
   }
 
   /** Parses a bit pattern string into (bits, mask, width).
@@ -33,7 +32,7 @@ object BitPat {
     var mask = BigInt(0)
     var count = 0
     for (d <- x.tail) {
-      if (! (d == '_' || d.isWhitespace)) {
+      if (!(d == '_' || d.isWhitespace)) {
         require("01?".contains(d), "Literal: " + x + " contains illegal character: " + d)
         mask = (mask << 1) + (if (d == '?') 0 else 1)
         bits = (bits << 1) + (if (d == '1') 1 else 0)
@@ -105,15 +104,14 @@ object BitPat {
 
     import scala.language.experimental.macros
 
-    final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-    final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+    final def ===(that: BitPat): Bool = macro SourceInfoTransform.thatArg
+    final def =/=(that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
     /** @group SourceInfoTransformMacro */
-    def do_=== (that: BitPat)
-               (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
+    def do_===(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
+
     /** @group SourceInfoTransformMacro */
-    def do_=/= (that: BitPat)
-               (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
+    def do_=/=(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
   }
 }
 
@@ -148,6 +146,7 @@ package experimental {
 
   /** A Set of [[BitPat]] represents a set of bit vector with mask. */
   sealed trait BitSet { outer =>
+
     /** all [[BitPat]] elements in [[terms]] make up this [[BitSet]].
       * all [[terms]] should be have the same width.
       */
@@ -229,7 +228,6 @@ package experimental {
 
 }
 
-
 /** Bit patterns are literals with masks, used to represent values with don't
   * care bits. Equality comparisons will ignore don't care bits.
   *
@@ -239,7 +237,9 @@ package experimental {
   * "b10001".U === BitPat("b101??") // evaluates to false.B
   * }}}
   */
-sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends util.experimental.BitSet with SourceInfoDoc {
+sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
+    extends util.experimental.BitSet
+    with SourceInfoDoc {
   import chisel3.util.experimental.BitSet
   def terms = Set(this)
 
@@ -247,11 +247,11 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends
     * Get specified width of said BitPat
     */
   override def getWidth: Int = width
-  def apply(x: Int): BitPat = macro SourceInfoTransform.xArg
-  def apply(x: Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
-  def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  def ## (that: BitPat): BitPat = macro SourceInfoTransform.thatArg
+  def apply(x:  Int): BitPat = macro SourceInfoTransform.xArg
+  def apply(x:  Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
+  def ===(that: UInt):   Bool = macro SourceInfoTransform.thatArg
+  def =/=(that: UInt):   Bool = macro SourceInfoTransform.thatArg
+  def ##(that:  BitPat): BitPat = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
@@ -266,15 +266,15 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends
   }
 
   /** @group SourceInfoTransformMacro */
-  def do_=== (that: UInt)
-      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def do_===(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     value.asUInt === (that & mask.asUInt)
   }
+
   /** @group SourceInfoTransformMacro */
-  def do_=/= (that: UInt)
-      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def do_=/=(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     !(this === that)
   }
+
   /** @group SourceInfoTransformMacro */
   def do_##(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
     new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)

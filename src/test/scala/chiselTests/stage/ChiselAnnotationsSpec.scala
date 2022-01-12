@@ -27,41 +27,41 @@ class ChiselAnnotation
 
 class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {
 
-  behavior of "ChiselGeneratorAnnotation elaboration"
+  behavior.of("ChiselGeneratorAnnotation elaboration")
 
   it should "elaborate to a ChiselCircuitAnnotation" in {
     val annotation = ChiselGeneratorAnnotation(() => new ChiselAnnotationsSpecFoo)
     val res = annotation.elaborate
-    res(0) shouldBe a [ChiselCircuitAnnotation]
-    res(1) shouldBe a [DesignAnnotation[ChiselAnnotationsSpecFoo]]
+    res(0) shouldBe a[ChiselCircuitAnnotation]
+    res(1) shouldBe a[DesignAnnotation[ChiselAnnotationsSpecFoo]]
   }
 
   it should "throw an exception if elaboration fails" in {
     val annotation = ChiselGeneratorAnnotation(() => new ChiselAnnotationsSpecQux)
-    intercept [ChiselException] { annotation.elaborate }
+    intercept[ChiselException] { annotation.elaborate }
   }
 
-  behavior of "ChiselGeneratorAnnotation when stringly constructing from Module names"
+  behavior.of("ChiselGeneratorAnnotation when stringly constructing from Module names")
 
   it should "elaborate from a String" in {
     val annotation = ChiselGeneratorAnnotation("chiselTests.stage.ChiselAnnotationsSpecFoo")
     val res = annotation.elaborate
-    res(0) shouldBe a [ChiselCircuitAnnotation]
-    res(1) shouldBe a [DesignAnnotation[ChiselAnnotationsSpecFoo]]
+    res(0) shouldBe a[ChiselCircuitAnnotation]
+    res(1) shouldBe a[DesignAnnotation[ChiselAnnotationsSpecFoo]]
   }
 
   it should "throw an exception if elaboration from a String refers to nonexistant class" in {
     val bar = "chiselTests.stage.ChiselAnnotationsSpecBar"
     val annotation = ChiselGeneratorAnnotation(bar)
-    intercept [OptionsException] { annotation.elaborate }
-      .getMessage should startWith (s"Unable to locate module '$bar'")
+    intercept[OptionsException] { annotation.elaborate }.getMessage should startWith(s"Unable to locate module '$bar'")
   }
 
   it should "throw an exception if elaboration from a String refers to an anonymous class" in {
     val baz = "chiselTests.stage.ChiselAnnotationsSpecBaz"
     val annotation = ChiselGeneratorAnnotation(baz)
-    intercept [OptionsException] { annotation.elaborate }
-      .getMessage should startWith (s"Unable to create instance of module '$baz'")
+    intercept[OptionsException] { annotation.elaborate }.getMessage should startWith(
+      s"Unable to create instance of module '$baz'"
+    )
   }
 
 }

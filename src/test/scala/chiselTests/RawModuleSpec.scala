@@ -7,7 +7,7 @@ import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 class UnclockedPlusOne extends RawModule {
-  val in  = IO(Input(UInt(32.W)))
+  val in = IO(Input(UInt(32.W)))
   val out = IO(Output(UInt(32.W)))
 
   out := in + 1.asUInt
@@ -22,14 +22,14 @@ class RawModuleTester extends BasicTester {
 
 class PlusOneModule extends Module {
   val io = IO(new Bundle {
-    val in  = Input(UInt(32.W))
+    val in = Input(UInt(32.W))
     val out = Output(UInt(32.W))
   })
   io.out := io.in + 1.asUInt
 }
 
 class RawModuleWithImplicitModule extends RawModule {
-  val in  = IO(Input(UInt(32.W)))
+  val in = IO(Input(UInt(32.W)))
   val out = IO(Output(UInt(32.W)))
   val clk = IO(Input(Clock()))
   val rst = IO(Input(Bool()))
@@ -71,7 +71,6 @@ class RawModuleSpec extends ChiselFlatSpec with Utils {
   "ImplicitModule in a withClock block in a RawModule" should "work" in {
     assertTesterPasses({ new ImplicitModuleInRawModuleTester })
   }
-
 
   "ImplicitModule directly in a RawModule" should "fail" in {
     intercept[chisel3.internal.ChiselException] {

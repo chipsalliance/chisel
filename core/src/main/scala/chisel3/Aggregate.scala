@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.experimental.dataview.{InvalidViewException, isView, reifySingleData}
+import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewException}
 
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
@@ -34,13 +34,16 @@ sealed abstract class Aggregate extends Data {
           // show groups of names of fields with duplicate id's
           // The sorts make the displayed order of fields deterministic and matching the order of occurrence in the Bundle.
           // It's a bit convoluted but happens rarely and makes the error message easier to understand
-          val dupNames = duplicates.toSeq.sortBy(_._id).map { duplicate =>
-            b.elements
-              .collect { case x if x._2._id == duplicate._id => x }
-              .toSeq.sortBy(_._2._id)
-              .map(_._1).reverse
-              .mkString("(", ",", ")")
-          }.mkString(",")
+          val dupNames = duplicates.toSeq
+            .sortBy(_._id)
+            .map { duplicate =>
+              b.elements.collect { case x if x._2._id == duplicate._id => x }.toSeq
+                .sortBy(_._2._id)
+                .map(_._1)
+                .reverse
+                .mkString("(", ",", ")")
+            }
+            .mkString(",")
           throw new AliasedAggregateFieldException(
             s"${b.className} contains aliased fields named ${dupNames}"
           )
@@ -59,9 +62,10 @@ sealed abstract class Aggregate extends Data {
     direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
       case Some(dir) => dir
       case None =>
-        val childWithDirections = getElements zip getElements.map(_.direction)
+        val childWithDirections = getElements.zip(getElements.map(_.direction))
         throw MixedDirectionAggregateException(
-            s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
+          s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections"
+        )
     }
   }
 
@@ -76,7 +80,7 @@ sealed abstract class Aggregate extends Data {
       (accumulator, elt.litOption) match {
         case (Some(accumulator), Some(eltLit)) =>
           val width = elt.width.get
-          val masked = ((BigInt(1) << width) - 1) & eltLit  // also handles the negative case with two's complement
+          val masked = ((BigInt(1) << width) - 1) & eltLit // also handles the negative case with two's complement
           Some((accumulator << width) + masked)
         case (None, _) => None
         case (_, None) => None
@@ -85,8 +89,7 @@ sealed abstract class Aggregate extends Data {
 
     topBindingOpt match {
       case Some(BundleLitBinding(_)) | Some(VecLitBinding(_)) =>
-        getElements
-          .reverse
+        getElements.reverse
           .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
       case _ => None
     }
@@ -112,8 +115,12 @@ sealed abstract class Aggregate extends Data {
     SeqUtils.do_asUInt(flatten.map(_.asUInt()))
   }
 
-  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-                                                            compileOptions: CompileOptions): Unit = {
+  private[chisel3] override def connectFromBits(
+    that: Bits
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Unit = {
     var i = 0
     val bits = if (that.isLit) that else WireDefault(UInt(this.width), that) // handles width padding
     for (x <- flatten) {
@@ -132,6 +139,7 @@ sealed abstract class Aggregate extends Data {
 }
 
 trait VecFactory extends SourceInfoDoc {
+
   /** Creates a new [[Vec]] with `n` entries of the specified data type.
     *
     * @note elements are NOT assigned by default and have no value
@@ -144,12 +152,18 @@ trait VecFactory extends SourceInfoDoc {
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
-  private[chisel3] def truncateIndex(idx: UInt, n: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
-    val w = (n-1).bitLength
+  private[chisel3] def truncateIndex(
+    idx: UInt,
+    n:   BigInt
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): UInt = {
+    val w = (n - 1).bitLength
     if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
-    else if (idx.width.known) idx(w-1,0)
-    else (idx | 0.U(w.W))(w-1,0)
+    else if (idx.width.known) idx(w - 1, 0)
+    else (idx | 0.U(w.W))(w - 1, 0)
   }
 }
 
@@ -179,14 +193,14 @@ trait VecFactory extends SourceInfoDoc {
   *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
-sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
-    extends Aggregate with VecLike[T] {
+sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extends Aggregate with VecLike[T] {
 
   override def toString: String = {
     topBindingOpt match {
       case Some(VecLitBinding(vecLitBinding)) =>
-        val contents = vecLitBinding.zipWithIndex.map { case ((data, lit), index) =>
-          s"$index=$lit"
+        val contents = vecLitBinding.zipWithIndex.map {
+          case ((data, lit), index) =>
+            s"$index=$lit"
         }.mkString(", ")
         s"${sample_element.cloneType}[$length]($contents)"
       case _ => stringAccessor(s"${sample_element.cloneType}[$length]")
@@ -196,7 +210,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
       this.length == that.length &&
-      (this.sample_element typeEquivalent that.sample_element)
+        (this.sample_element.typeEquivalent(that.sample_element))
     case _ => false
   }
 
@@ -206,7 +220,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     sample_element.bind(SampleElementBinding(this), resolvedDirection)
-    for (child <- getElements) {  // assume that all children are the same
+    for (child <- getElements) { // assume that all children are the same
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
@@ -226,12 +240,12 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   }
 
   /**
-  * sample_element 'tracks' all changes to the elements.
-  * For consistency, sample_element is always used for creating dynamically
-  * indexed ports and outputing the FIRRTL type.
-  *
-  * Needed specifically for the case when the Vec is length 0.
-  */
+    * sample_element 'tracks' all changes to the elements.
+    * For consistency, sample_element is always used for creating dynamically
+    * indexed ports and outputing the FIRRTL type.
+    *
+    * Needed specifically for the case when the Vec is length 0.
+    */
   private[chisel3] val sample_element: T = gen
 
   // allElements current includes sample_element
@@ -245,29 +259,33 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     *
     * @note the length of this Vec must match the length of the input Seq
     */
-  def <> (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
+  def <>(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     if (this.length != that.length) {
       Builder.error("Vec and Seq being bulk connected have different lengths!")
     }
-    for ((a, b) <- this zip that)
+    for ((a, b) <- this.zip(that))
       a <> b
   }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def <> (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this bulkConnect that.asInstanceOf[Data]
+  def <>(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit =
+    this.bulkConnect(that.asInstanceOf[Data])
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
     * @note the length of this Vec must match the length of the input Seq
     */
-  def := (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    require(this.length == that.length, s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}")
-    for ((a, b) <- this zip that)
+  def :=(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
+    require(
+      this.length == that.length,
+      s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}"
+    )
+    for ((a, b) <- this.zip(that))
       a := b
   }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def := (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this connect that
+  def :=(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this.connect(that)
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
@@ -284,8 +302,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
         // Views complicate things a bit, but views that correspond exactly to an identical Vec can just forward the
         // dynamic indexing to the target Vec
         // In theory, we could still do this forwarding if the sample element were different by deriving a DataView
-        case Some(target: Vec[T @unchecked]) if this.length == target.length &&
-                                                this.sample_element.typeEquivalent(target.sample_element) =>
+        case Some(target: Vec[T @unchecked])
+            if this.length == target.length &&
+              this.sample_element.typeEquivalent(target.sample_element) =>
           return target.do_apply(p)
         case _ => throw InvalidViewException("Dynamic indexing of Views is not yet supported")
       }
@@ -296,7 +315,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.
     // It may not be exactly equal to that value, but the results are the same.
     val reconstructedResolvedDirection = direction match {
-      case ActualDirection.Input => SpecifiedDirection.Input
+      case ActualDirection.Input  => SpecifiedDirection.Input
       case ActualDirection.Output => SpecifiedDirection.Output
       case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
         SpecifiedDirection.Unspecified
@@ -331,7 +350,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   def toPrintable: Printable = {
     val elts =
       if (length == 0) List.empty[Printable]
-      else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
+      else self.flatMap(e => List(e.toPrintable, PString(", "))).dropRight(1)
     PString("Vec(") + Printables(elts) + PString(")")
   }
 
@@ -354,14 +373,17 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     */
   def reduceTree(redOp: (T, T) => T, layerOp: (T) => T): T = macro VecTransform.reduceTree
 
-  def do_reduceTree(redOp: (T, T) => T, layerOp: (T) => T = (x: T) => x)
-                   (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : T = {
+  def do_reduceTree(
+    redOp:   (T, T) => T,
+    layerOp: (T) => T = (x: T) => x
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
     require(!isEmpty, "Cannot apply reduction on a vec of size 0")
-    var curLayer : Seq[T] = this
+    var curLayer: Seq[T] = this
     while (curLayer.length > 1) {
-      curLayer = curLayer.grouped(2).map( x =>
-        if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))
-      ).toSeq
+      curLayer = curLayer.grouped(2).map(x => if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))).toSeq
     }
     curLayer(0)
   }
@@ -380,16 +402,21 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * )
     * }}}
     */
-  private[chisel3] def _makeLit(elementInitializers: (Int, T)*)(implicit sourceInfo: SourceInfo,
-                                                                compileOptions: CompileOptions): this.type = {
+  private[chisel3] def _makeLit(
+    elementInitializers: (Int, T)*
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): this.type = {
 
     def checkLiteralConstruction(): Unit = {
-      val dupKeys = elementInitializers.map { x => x._1 }.groupBy(x => x).flatMap { case (k, v) =>
-        if (v.length > 1) {
-          Some(k, v.length)
-        } else {
-          None
-        }
+      val dupKeys = elementInitializers.map { x => x._1 }.groupBy(x => x).flatMap {
+        case (k, v) =>
+          if (v.length > 1) {
+            Some(k, v.length)
+          } else {
+            None
+          }
       }
       if (dupKeys.nonEmpty) {
         throw new VecLiteralException(
@@ -438,79 +465,96 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 
     // Create the Vec literal binding from litArgs of arguments
     val vecLitLinkedMap = new mutable.LinkedHashMap[Data, LitArg]()
-    elementInitializers.sortBy { case (a, _) => a }.foreach { case (fieldIndex, value) =>
-      val field = clone.apply(fieldIndex)
-      val fieldName = cloneFields.getOrElse(field,
-        throw new VecLiteralException(s"field $field (with value $value) is not a field," +
-          s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
-          s" eg '_.a' to select hypothetical bundle field 'a'")
-      )
+    elementInitializers.sortBy { case (a, _) => a }.foreach {
+      case (fieldIndex, value) =>
+        val field = clone.apply(fieldIndex)
+        val fieldName = cloneFields.getOrElse(
+          field,
+          throw new VecLiteralException(
+            s"field $field (with value $value) is not a field," +
+              s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
+              s" eg '_.a' to select hypothetical bundle field 'a'"
+          )
+        )
 
-      val valueBinding = value.topBindingOpt match {
-        case Some(litBinding: LitBinding) => litBinding
-        case _ => throw new VecLiteralException(s"field $fieldIndex specified with non-literal value $value")
-      }
-
-      field match { // Get the litArg(s) for this field
-        case bitField: Bits =>
-          if (!field.typeEquivalent(bitField)) {
-            throw new VecLiteralException(
-              s"VecLit: Literal specified at index $fieldIndex ($value) does not match Vec type $sample_element"
-            )
-          }
-          if (bitField.getWidth > field.getWidth) {
-            throw new VecLiteralException(
-              s"VecLit: Literal specified at index $fieldIndex ($value) is too wide for Vec type $sample_element"
-            )
-          }
-          val litArg = valueBinding match {
-            case ElementLitBinding(litArg) => litArg
-            case BundleLitBinding(litMap) => litMap.getOrElse(value,
-              throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
-            )
-            case VecLitBinding(litMap) => litMap.getOrElse(value,
-              throw new VecLiteralException(s"Field $fieldIndex specified with unspecified value"))
-          }
-          val adjustedLitArg = litArg.cloneWithWidth(sample_element.width)
-          vecLitLinkedMap(bitField) = adjustedLitArg
-
-        case recordField: Record =>
-          if (!(recordField.typeEquivalent(value))) {
-            throw new VecLiteralException(s"field $fieldIndex $recordField specified with non-type-equivalent value $value")
-          }
-          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
-          val remap = getMatchedFields(value, recordField).toMap
-          valueBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
-            vecLitLinkedMap(remap(valueField)) = valueValue
-          }
-
-        case vecField: Vec[_] =>
-          if (!(vecField typeEquivalent value)) {
-            throw new VecLiteralException(s"field $fieldIndex $vecField specified with non-type-equivalent value $value")
-          }
-          // Copy the source VecLitBinding with vecFields (keys) remapped to the clone
-          val remap = getMatchedFields(value, vecField).toMap
-          value.topBinding.asInstanceOf[VecLitBinding].litMap.map { case (valueField, valueValue) =>
-            vecLitLinkedMap(remap(valueField)) = valueValue
-          }
-
-        case enumField: EnumType => {
-          if (!(enumField typeEquivalent value)) {
-            throw new VecLiteralException(s"field $fieldIndex $enumField specified with non-type-equivalent enum value $value")
-          }
-          val litArg = valueBinding match {
-            case ElementLitBinding(litArg) => litArg
-            case _ =>
-              throw new VecLiteralException(s"field $fieldIndex $enumField could not bematched with $valueBinding")
-          }
-          vecLitLinkedMap(field) = litArg
+        val valueBinding = value.topBindingOpt match {
+          case Some(litBinding: LitBinding) => litBinding
+          case _ => throw new VecLiteralException(s"field $fieldIndex specified with non-literal value $value")
         }
 
-        case _ => throw new VecLiteralException(s"unsupported field $fieldIndex of type $field")
-      }
+        field match { // Get the litArg(s) for this field
+          case bitField: Bits =>
+            if (!field.typeEquivalent(bitField)) {
+              throw new VecLiteralException(
+                s"VecLit: Literal specified at index $fieldIndex ($value) does not match Vec type $sample_element"
+              )
+            }
+            if (bitField.getWidth > field.getWidth) {
+              throw new VecLiteralException(
+                s"VecLit: Literal specified at index $fieldIndex ($value) is too wide for Vec type $sample_element"
+              )
+            }
+            val litArg = valueBinding match {
+              case ElementLitBinding(litArg) => litArg
+              case BundleLitBinding(litMap) =>
+                litMap.getOrElse(
+                  value,
+                  throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
+                )
+              case VecLitBinding(litMap) =>
+                litMap.getOrElse(
+                  value,
+                  throw new VecLiteralException(s"Field $fieldIndex specified with unspecified value")
+                )
+            }
+            val adjustedLitArg = litArg.cloneWithWidth(sample_element.width)
+            vecLitLinkedMap(bitField) = adjustedLitArg
+
+          case recordField: Record =>
+            if (!(recordField.typeEquivalent(value))) {
+              throw new VecLiteralException(
+                s"field $fieldIndex $recordField specified with non-type-equivalent value $value"
+              )
+            }
+            // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+            val remap = getMatchedFields(value, recordField).toMap
+            valueBinding.asInstanceOf[BundleLitBinding].litMap.map {
+              case (valueField, valueValue) =>
+                vecLitLinkedMap(remap(valueField)) = valueValue
+            }
+
+          case vecField: Vec[_] =>
+            if (!(vecField.typeEquivalent(value))) {
+              throw new VecLiteralException(
+                s"field $fieldIndex $vecField specified with non-type-equivalent value $value"
+              )
+            }
+            // Copy the source VecLitBinding with vecFields (keys) remapped to the clone
+            val remap = getMatchedFields(value, vecField).toMap
+            value.topBinding.asInstanceOf[VecLitBinding].litMap.map {
+              case (valueField, valueValue) =>
+                vecLitLinkedMap(remap(valueField)) = valueValue
+            }
+
+          case enumField: EnumType => {
+            if (!(enumField.typeEquivalent(value))) {
+              throw new VecLiteralException(
+                s"field $fieldIndex $enumField specified with non-type-equivalent enum value $value"
+              )
+            }
+            val litArg = valueBinding match {
+              case ElementLitBinding(litArg) => litArg
+              case _ =>
+                throw new VecLiteralException(s"field $fieldIndex $enumField could not bematched with $valueBinding")
+            }
+            vecLitLinkedMap(field) = litArg
+          }
+
+          case _ => throw new VecLiteralException(s"unsupported field $fieldIndex of type $field")
+        }
     }
 
-    clone.bind(VecLitBinding(VectorMap(vecLitLinkedMap.toSeq:_*)))
+    clone.bind(VecLitBinding(VectorMap(vecLitLinkedMap.toSeq: _*)))
     clone
   }
 }
@@ -519,7 +563,12 @@ object VecInit extends SourceInfoDoc {
 
   /** Gets the correct connect operation (directed hardware assign or bulk connect) for element in Vec.
     */
-  private def getConnectOpFromDirectionality[T <: Data](proto: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): (T, T) => Unit = proto.direction match {
+  private def getConnectOpFromDirectionality[T <: Data](
+    proto: T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): (T, T) => Unit = proto.direction match {
     case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
       // When internal wires are involved, driver / sink must be specified explicitly, otherwise
       // the system is unable to infer which is driver / sink
@@ -557,8 +606,8 @@ object VecInit extends SourceInfoDoc {
 
     val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
     val op = getConnectOpFromDirectionality(vec.head)
-    
-    (vec zip elts).foreach{ x => 
+
+    (vec.zip(elts)).foreach { x =>
       op(x._1, x._2)
     }
     vec
@@ -589,7 +638,13 @@ object VecInit extends SourceInfoDoc {
   def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
 
   /** @group SourceInfoTransformMacro */
-  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+  def do_tabulate[T <: Data](
+    n:   Int
+  )(gen: (Int) => T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Vec[T] =
     apply((0 until n).map(i => gen(i)))
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the results of the given
@@ -604,24 +659,31 @@ object VecInit extends SourceInfoDoc {
   def tabulate[T <: Data](n: Int, m: Int)(gen: (Int, Int) => T): Vec[Vec[T]] = macro VecTransform.tabulate2D
 
   /** @group SourceInfoTransformMacro */
-  def do_tabulate[T <: Data](n: Int, m: Int)(gen: (Int, Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[T]] = {    
+  def do_tabulate[T <: Data](
+    n:   Int,
+    m:   Int
+  )(gen: (Int, Int) => T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Vec[Vec[T]] = {
     // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
     val elts = Seq.tabulate(n, m)(gen)
     val flatElts = elts.flatten
 
     require(flatElts.nonEmpty, "Vec hardware values are not allowed to be empty")
     flatElts.foreach(requireIsHardware(_, "vec element"))
-  
+
     val tpe = cloneSupertype(flatElts, "Vec.tabulate")
     val myVec = Wire(Vec(n, Vec(m, tpe)))
     val op = getConnectOpFromDirectionality(myVec.head.head)
-    for (
-      (xs1D, ys1D) <- myVec zip elts;
-      (x, y) <- xs1D zip ys1D
-    ) { 
-      op(x, y) 
+    for {
+      (xs1D, ys1D) <- myVec.zip(elts)
+      (x, y) <- xs1D.zip(ys1D)
+    } {
+      op(x, y)
     }
-    myVec 
+    myVec
   }
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the results of the given
@@ -633,39 +695,48 @@ object VecInit extends SourceInfoDoc {
     * @param gen function that takes in an Int (the index) and returns a
     * [[Data]] that becomes the output element
     */
-  def tabulate[T <: Data](n: Int, m: Int, p: Int)(gen: (Int, Int, Int) => T): Vec[Vec[Vec[T]]] = macro VecTransform.tabulate3D
+  def tabulate[T <: Data](n: Int, m: Int, p: Int)(gen: (Int, Int, Int) => T): Vec[Vec[Vec[T]]] =
+    macro VecTransform.tabulate3D
 
   /** @group SourceInfoTransformMacro */
-  def do_tabulate[T <: Data](n: Int, m: Int, p: Int)(gen: (Int, Int, Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[T]]] = {
-     // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
+  def do_tabulate[T <: Data](
+    n:   Int,
+    m:   Int,
+    p:   Int
+  )(gen: (Int, Int, Int) => T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Vec[Vec[Vec[T]]] = {
+    // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
     val elts = Seq.tabulate(n, m, p)(gen)
     val flatElts = elts.flatten.flatten
 
     require(flatElts.nonEmpty, "Vec hardware values are not allowed to be empty")
     flatElts.foreach(requireIsHardware(_, "vec element"))
-    
+
     val tpe = cloneSupertype(flatElts, "Vec.tabulate")
     val myVec = Wire(Vec(n, Vec(m, Vec(p, tpe))))
     val op = getConnectOpFromDirectionality(myVec.head.head.head)
-    
-    for (
-      (xs2D, ys2D) <- myVec zip elts;
-      (xs1D, ys1D) <- xs2D zip ys2D;
-      (x, y) <- xs1D zip ys1D
-    ) { 
-      op(x, y) 
+
+    for {
+      (xs2D, ys2D) <- myVec.zip(elts)
+      (xs1D, ys1D) <- xs2D.zip(ys2D)
+      (x, y) <- xs1D.zip(ys1D)
+    } {
+      op(x, y)
     }
 
     myVec
   }
 
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
-   * function applied to an element of data type T.
-   * 
-   * @param n number of elements in the vector
-   * @param gen function that takes in an element T and returns an output 
-   * element of the same type
-   */
+    * function applied to an element of data type T.
+    *
+    * @param n number of elements in the vector
+    * @param gen function that takes in an element T and returns an output
+    * element of the same type
+    */
   def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
 
   /** @group SourceInfoTransformMacro */
@@ -673,49 +744,71 @@ object VecInit extends SourceInfoDoc {
     apply(Seq.fill(n)(gen))
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
-   * function applied to an element of data type T.
-   * 
-   * @param n number of inner vectors (rows) in the outer vector
-   * @param m number of elements in each inner vector (column)
-   * @param gen function that takes in an element T and returns an output 
-   * element of the same type
-   */
+    * function applied to an element of data type T.
+    *
+    * @param n number of inner vectors (rows) in the outer vector
+    * @param m number of elements in each inner vector (column)
+    * @param gen function that takes in an element T and returns an output
+    * element of the same type
+    */
   def fill[T <: Data](n: Int, m: Int)(gen: => T): Vec[Vec[T]] = macro VecTransform.fill2D
 
   /** @group SourceInfoTransformMacro */
-  def do_fill[T <: Data](n: Int, m: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[T]] = {
+  def do_fill[T <: Data](
+    n:   Int,
+    m:   Int
+  )(gen: => T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Vec[Vec[T]] = {
     do_tabulate(n, m)((_, _) => gen)
   }
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the result of the given
-   * function applied to an element of data type T.
-   * 
-   * @param n number of 2D vectors inside outer vector
-   * @param m number of 1D vectors in each 2D vector
-   * @param p number of elements in each 1D vector
-   * @param gen function that takes in an element T and returns an output 
-   * element of the same type
-   */
+    * function applied to an element of data type T.
+    *
+    * @param n number of 2D vectors inside outer vector
+    * @param m number of 1D vectors in each 2D vector
+    * @param p number of elements in each 1D vector
+    * @param gen function that takes in an element T and returns an output
+    * element of the same type
+    */
   def fill[T <: Data](n: Int, m: Int, p: Int)(gen: => T): Vec[Vec[Vec[T]]] = macro VecTransform.fill3D
 
   /** @group SourceInfoTransformMacro */
-  def do_fill[T <: Data](n: Int, m: Int, p: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[T]]] = {
+  def do_fill[T <: Data](
+    n:   Int,
+    m:   Int,
+    p:   Int
+  )(gen: => T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Vec[Vec[Vec[T]]] = {
     do_tabulate(n, m, p)((_, _, _) => gen)
   }
-  
+
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
-   * function applied to an element of data type T.
-   * 
-   * @param start First element in the Vec
-   * @param len Lenth of elements in the Vec
-   * @param f Function that applies the element T from previous index and returns the output 
-   * element to the next index
-   */
+    * function applied to an element of data type T.
+    *
+    * @param start First element in the Vec
+    * @param len Lenth of elements in the Vec
+    * @param f Function that applies the element T from previous index and returns the output
+    * element to the next index
+    */
   def iterate[T <: Data](start: T, len: Int)(f: (T) => T): Vec[T] = macro VecTransform.iterate
-  
+
   /** @group SourceInfoTransformMacro */
-  def do_iterate[T <: Data](start: T, len: Int)(f: (T) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = 
-    apply(Seq.iterate(start, len)(f)) 
+  def do_iterate[T <: Data](
+    start: T,
+    len:   Int
+  )(f:     (T) => T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Vec[T] =
+    apply(Seq.iterate(start, len)(f))
 }
 
 /** A trait for [[Vec]]s containing common hardware generators for collection
@@ -737,7 +830,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
-    (this map p).fold(true.B)(_ && _)
+    (this.map(p)).fold(true.B)(_ && _)
 
   /** Outputs true if p outputs true for at least one element.
     */
@@ -745,7 +838,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
-    (this map p).fold(false.B)(_ || _)
+    (this.map(p)).fold(false.B)(_ || _)
 
   /** Outputs true if the vector contains at least one element equal to x (using
     * the === operator).
@@ -762,12 +855,12 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    SeqUtils.count(this map p)
+    SeqUtils.count(this.map(p))
 
   /** Helper function that appends an index (literal value) to each element,
     * useful for hardware generators which output an index.
     */
-  private def indexWhereHelper(p: T => Bool) = this map p zip (0 until length).map(i => i.asUInt)
+  private def indexWhereHelper(p: T => Bool) = this.map(p).zip((0 until length).map(i => i.asUInt))
 
   /** Outputs the index of the first element for which p outputs true.
     */
@@ -816,19 +909,19 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
     val _namespace = Namespace.empty
-    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk=true)) }
+    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk = true)) }
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     try {
       super.bind(target, parentDirection)
-    } catch {  // nasty compatibility mode shim, where anything flies
+    } catch { // nasty compatibility mode shim, where anything flies
       case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
         val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
         direction = resolvedDirection match {
           case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
+          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
         }
     }
     setElementRefs()
@@ -861,67 +954,85 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     val cloneFields = getRecursiveFields(clone, "(bundle root)").toMap
 
     // Create the Bundle literal binding from litargs of arguments
-    val bundleLitMap = elems.map { fn => fn(clone) }.flatMap { case (field, value) =>
-      val fieldName = cloneFields.getOrElse(field,
-        throw new BundleLiteralException(s"field $field (with value $value) is not a field," +
-          s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
-          s" eg '_.a' to select hypothetical bundle field 'a'")
-      )
-      val valueBinding = value.topBindingOpt match {
-        case Some(litBinding: LitBinding) => litBinding
-        case _ => throw new BundleLiteralException(s"field $fieldName specified with non-literal value $value")
-      }
-
-      field match {  // Get the litArg(s) for this field
-        case field: Bits =>
-          if (field.getClass != value.getClass) {  // TODO typeEquivalent is too strict because it checks width
-            throw new BundleLiteralException(s"Field $fieldName $field specified with non-type-equivalent value $value")
-          }
-          val litArg = valueBinding match {
-            case ElementLitBinding(litArg) => litArg
-            case BundleLitBinding(litMap) => litMap.getOrElse(value,
-                throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
-            )
-            case VecLitBinding(litMap) => litMap.getOrElse(value,
-              throw new VecLiteralException(s"Vec literal $fieldName specified with out literal values")
-            )
-
-          }
-          Seq(field -> litArg)
-
-        case field: Record =>
-          if (!(field typeEquivalent value)) {
-            throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent value $value")
-          }
-          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
-          val remap = getMatchedFields(value, field).toMap
-          value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
-            remap(valueField) -> valueValue
-          }
-
-        case vecField: Vec[_] =>
-          if (!(vecField typeEquivalent value)) {
-            throw new BundleLiteralException(s"field $fieldName $vecField specified with non-type-equivalent value $value")
-          }
-          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
-          val remap = getMatchedFields(value, vecField).toMap
-          value.topBinding.asInstanceOf[VecLitBinding].litMap.map { case (valueField, valueValue) =>
-            remap(valueField) -> valueValue
-          }
-
-        case field: EnumType => {
-          if (!(field typeEquivalent value)) {
-            throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent enum value $value")
-          }
-          val litArg = valueBinding match {
-            case ElementLitBinding(litArg) => litArg
-            case _ =>
-              throw new BundleLiteralException(s"field $fieldName $field could not be matched with $valueBinding")
-          }
-          Seq(field -> litArg)
+    val bundleLitMap = elems.map { fn => fn(clone) }.flatMap {
+      case (field, value) =>
+        val fieldName = cloneFields.getOrElse(
+          field,
+          throw new BundleLiteralException(
+            s"field $field (with value $value) is not a field," +
+              s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
+              s" eg '_.a' to select hypothetical bundle field 'a'"
+          )
+        )
+        val valueBinding = value.topBindingOpt match {
+          case Some(litBinding: LitBinding) => litBinding
+          case _ => throw new BundleLiteralException(s"field $fieldName specified with non-literal value $value")
         }
-        case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
-      }
+
+        field match { // Get the litArg(s) for this field
+          case field: Bits =>
+            if (field.getClass != value.getClass) { // TODO typeEquivalent is too strict because it checks width
+              throw new BundleLiteralException(
+                s"Field $fieldName $field specified with non-type-equivalent value $value"
+              )
+            }
+            val litArg = valueBinding match {
+              case ElementLitBinding(litArg) => litArg
+              case BundleLitBinding(litMap) =>
+                litMap.getOrElse(
+                  value,
+                  throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
+                )
+              case VecLitBinding(litMap) =>
+                litMap.getOrElse(
+                  value,
+                  throw new VecLiteralException(s"Vec literal $fieldName specified with out literal values")
+                )
+
+            }
+            Seq(field -> litArg)
+
+          case field: Record =>
+            if (!(field.typeEquivalent(value))) {
+              throw new BundleLiteralException(
+                s"field $fieldName $field specified with non-type-equivalent value $value"
+              )
+            }
+            // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+            val remap = getMatchedFields(value, field).toMap
+            value.topBinding.asInstanceOf[BundleLitBinding].litMap.map {
+              case (valueField, valueValue) =>
+                remap(valueField) -> valueValue
+            }
+
+          case vecField: Vec[_] =>
+            if (!(vecField.typeEquivalent(value))) {
+              throw new BundleLiteralException(
+                s"field $fieldName $vecField specified with non-type-equivalent value $value"
+              )
+            }
+            // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+            val remap = getMatchedFields(value, vecField).toMap
+            value.topBinding.asInstanceOf[VecLitBinding].litMap.map {
+              case (valueField, valueValue) =>
+                remap(valueField) -> valueValue
+            }
+
+          case field: EnumType => {
+            if (!(field.typeEquivalent(value))) {
+              throw new BundleLiteralException(
+                s"field $fieldName $field specified with non-type-equivalent enum value $value"
+              )
+            }
+            val litArg = valueBinding match {
+              case ElementLitBinding(litArg) => litArg
+              case _ =>
+                throw new BundleLiteralException(s"field $fieldName $field could not be matched with $valueBinding")
+            }
+            Seq(field -> litArg)
+          }
+          case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
+        }
     }
 
     // don't convert to a Map yet to preserve duplicate keys
@@ -952,8 +1063,9 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   override def toString: String = {
     topBindingOpt match {
       case Some(BundleLitBinding(_)) =>
-        val contents = elements.toList.reverse.map { case (name, data) =>
-          s"$name=$data"
+        val contents = elements.toList.reverse.map {
+          case (name, data) =>
+            s"$name=$data"
         }.mkString(", ")
         s"$className($contents)"
       case _ => stringAccessor(s"$className")
@@ -968,10 +1080,12 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>
       this.getClass == that.getClass &&
-      this.elements.size == that.elements.size &&
-      this.elements.forall{case (name, model) =>
-        that.elements.contains(name) &&
-        (that.elements(name) typeEquivalent model)}
+        this.elements.size == that.elements.size &&
+        this.elements.forall {
+          case (name, model) =>
+            that.elements.contains(name) &&
+              (that.elements(name).typeEquivalent(model))
+        }
     case _ => false
   }
 
@@ -990,11 +1104,14 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
     val xs =
       if (elts.isEmpty) List.empty[Printable] // special case because of dropRight below
-      else elts flatMap { case (name, data) =>
-             List(PString(s"$name -> "), data.toPrintable, PString(", "))
-           } dropRight 1 // Remove trailing ", "
+      else
+        elts.flatMap {
+          case (name, data) =>
+            List(PString(s"$name -> "), data.toPrintable, PString(", "))
+        }.dropRight(1) // Remove trailing ", "
     PString(s"$className(") + Printables(xs) + PString(")")
   }
+
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
     * Results in "`\$className(elt0.name -> elt0.value, ...)`"
@@ -1060,15 +1177,18 @@ package experimental {
   * }}}
   */
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
-  assert(_usingPlugin, "The Chisel compiler plugin is now required for compiling Chisel code. " +
-    "Please see https://github.com/chipsalliance/chisel3#build-your-own-chisel-projects."
+  assert(
+    _usingPlugin,
+    "The Chisel compiler plugin is now required for compiling Chisel code. " +
+      "Please see https://github.com/chipsalliance/chisel3#build-your-own-chisel-projects."
   )
 
   override def className: String = this.getClass.getSimpleName match {
-    case name if name.startsWith("$anon$") => "AnonymousBundle"  // fallback for anonymous Bundle case
-    case "" => "AnonymousBundle"  // ditto, but on other platforms
-    case name => name
+    case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
+    case ""                                => "AnonymousBundle" // ditto, but on other platforms
+    case name                              => name
   }
+
   /** The collection of [[Data]]
     *
     * Elements defined earlier in the Bundle are higher order upon
@@ -1093,7 +1213,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       getBundleField(m) match {
         case Some(d: Data) =>
           requireIsChiselType(d)
-          
+
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
           } else {
@@ -1102,21 +1222,25 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
         case None =>
           if (!ignoreSeq) {
             m.invoke(this) match {
-              case s: scala.collection.Seq[Any] if s.nonEmpty => s.head match {
-                // Ignore empty Seq()
-                case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
-                  s"(found public Seq member '${m.getName}'). " +
-                  "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
-                  "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
-                  "IgnoreSeqInBundle.")
-                case _ => // don't care about non-Data Seq
-              }
+              case s: scala.collection.Seq[Any] if s.nonEmpty =>
+                s.head match {
+                  // Ignore empty Seq()
+                  case d: Data =>
+                    throwException(
+                      "Public Seq members cannot be used to define Bundle elements " +
+                        s"(found public Seq member '${m.getName}'). " +
+                        "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
+                        "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
+                        "IgnoreSeqInBundle."
+                    )
+                  case _ => // don't care about non-Data Seq
+                }
               case _ => // not a Seq
             }
           }
       }
     }
-    VectorMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
+    VectorMap(nameMap.toSeq.sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
   }
 
   /**
@@ -1145,10 +1269,10 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       if (clone.elements(name) eq field) {
         throw new AutoClonetypeException(
           s"Automatically cloned $clone has field '$name' aliased with base $this." +
-          " In the future, this will be solved automatically by the compiler plugin." +
-          " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
-          " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate." +
-          " As a last resort, you can override cloneType manually."
+            " In the future, this will be solved automatically by the compiler plugin." +
+            " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
+            " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate." +
+            " As a last resort, you can override cloneType manually."
         )
       }
     }
@@ -1166,7 +1290,9 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     * @note This is overridden by the compiler plugin (this implementation is never called)
     */
   protected def _cloneTypeImpl: Bundle = {
-    throwException(s"Internal Error! This should have been implemented by the chisel3-plugin. Please file an issue against chisel3")
+    throwException(
+      s"Internal Error! This should have been implemented by the chisel3-plugin. Please file an issue against chisel3"
+    )
   }
 
   /** Default "pretty-print" implementation
@@ -1177,4 +1303,3 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     */
   override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
 }
-

@@ -12,7 +12,7 @@ class StopTester() extends BasicTester {
 class StopImmediatelyTester extends BasicTester {
   val cycle = RegInit(0.asUInt(4.W))
   cycle := cycle + 1.U
-  when (cycle === 4.U) {
+  when(cycle === 4.U) {
     stop()
   }
   assert(cycle =/= 5.U, "Simulation did not exit upon executing stop()")

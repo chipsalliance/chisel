@@ -142,21 +142,21 @@ class StrongEnumFSM extends Module {
   io.out := (state === sTwo1s)
   io.state := state
 
-  switch (state) {
-    is (sNone) {
-      when (io.in) {
+  switch(state) {
+    is(sNone) {
+      when(io.in) {
         state := sOne1
       }
     }
-    is (sOne1) {
-      when (io.in) {
+    is(sOne1) {
+      when(io.in) {
         state := sTwo1s
-      } .otherwise {
+      }.otherwise {
         state := sNone
       }
     }
-    is (sTwo1s) {
-      when (!io.in) {
+    is(sTwo1s) {
+      when(!io.in) {
         state := sNone
       }
     }
@@ -164,7 +164,7 @@ class StrongEnumFSM extends Module {
 }
 
 class CastToUIntTester extends BasicTester {
-  for ((enum,lit) <- EnumExample.all zip EnumExample.litValues) {
+  for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastToUInt)
     mod.io.in := enum
     assert(mod.io.out === lit)
@@ -173,7 +173,7 @@ class CastToUIntTester extends BasicTester {
 }
 
 class CastFromLitTester extends BasicTester {
-  for ((enum,lit) <- EnumExample.all zip EnumExample.litValues) {
+  for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastFromLit(lit))
     assert(mod.io.out === enum)
     assert(mod.io.valid === true.B)
@@ -182,16 +182,15 @@ class CastFromLitTester extends BasicTester {
 }
 
 class CastFromNonLitTester extends BasicTester {
-  for ((enum,lit) <- EnumExample.all zip EnumExample.litValues) {
+  for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastFromNonLit)
     mod.io.in := lit
     assert(mod.io.out === enum)
     assert(mod.io.valid === true.B)
   }
 
-  val invalid_values = (1 until (1 << EnumExample.getWidth)).
-    filter(!EnumExample.litValues.map(_.litValue).contains(_)).
-    map(_.U)
+  val invalid_values =
+    (1 until (1 << EnumExample.getWidth)).filter(!EnumExample.litValues.map(_.litValue).contains(_)).map(_.U)
 
   for (invalid_val <- invalid_values) {
     val mod = Module(new CastFromNonLit)
@@ -204,16 +203,15 @@ class CastFromNonLitTester extends BasicTester {
 }
 
 class SafeCastFromNonLitTester extends BasicTester {
-  for ((enum,lit) <- EnumExample.all zip EnumExample.litValues) {
+  for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new SafeCastFromNonLit)
     mod.io.in := lit
     assert(mod.io.out === enum)
     assert(mod.io.valid === true.B)
   }
 
-  val invalid_values = (1 until (1 << EnumExample.getWidth)).
-    filter(!EnumExample.litValues.map(_.litValue).contains(_)).
-    map(_.U)
+  val invalid_values =
+    (1 until (1 << EnumExample.getWidth)).filter(!EnumExample.litValues.map(_.litValue).contains(_)).map(_.U)
 
   for (invalid_val <- invalid_values) {
     val mod = Module(new SafeCastFromNonLit)
@@ -231,8 +229,10 @@ class CastToInvalidEnumTester extends BasicTester {
 }
 
 class EnumOpsTester extends BasicTester {
-  for (x <- EnumExample.all;
-       y <- EnumExample.all) {
+  for {
+    x <- EnumExample.all
+    y <- EnumExample.all
+  } {
     val mod = Module(new EnumOps(EnumExample, EnumExample))
     mod.io.x := x
     mod.io.y := y
@@ -264,7 +264,7 @@ class IsLitTester extends BasicTester {
 }
 
 class NextTester extends BasicTester {
-  for ((e,n) <- EnumExample.all.zip(EnumExample.litValues.tail :+ EnumExample.litValues.head)) {
+  for ((e, n) <- EnumExample.all.zip(EnumExample.litValues.tail :+ EnumExample.litValues.head)) {
     assert(e.next.litValue == n.litValue)
     val w = WireDefault(e)
     assert(w.next === EnumExample(n))
@@ -275,7 +275,7 @@ class NextTester extends BasicTester {
 class WidthTester extends BasicTester {
   assert(EnumExample.getWidth == EnumExample.litValues.last.getWidth)
   assert(EnumExample.all.forall(_.getWidth == EnumExample.litValues.last.getWidth))
-  assert(EnumExample.all.forall{e =>
+  assert(EnumExample.all.forall { e =>
     val w = WireDefault(e)
     w.getWidth == EnumExample.litValues.last.getWidth
   })
@@ -289,7 +289,8 @@ class StrongEnumFSMTester extends BasicTester {
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
-  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected: Vec[Bool] =
+    VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
   val expected_state = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
 
   val cntr = Counter(inputs.length)
@@ -342,16 +343,16 @@ class IsOneOfTester extends BasicTester {
 class StrongEnumSpec extends ChiselFlatSpec with Utils {
   import chisel3.internal.ChiselException
 
-  behavior of "Strong enum tester"
+  behavior.of("Strong enum tester")
 
   it should "fail to instantiate non-literal enums with the Value function" in {
-    an [ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError] {
+    an[ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError] {
       ChiselStage.elaborate(new SimpleConnector(NonLiteralEnumType(), NonLiteralEnumType()))
     }
   }
 
   it should "fail to instantiate non-increasing enums with the Value function" in {
-    an [ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError]  {
+    an[ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError] {
       ChiselStage.elaborate(new SimpleConnector(NonIncreasingEnum(), NonIncreasingEnum()))
     }
   }
@@ -362,17 +363,17 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "fail to connect a strong enum to a UInt" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new SimpleConnector(EnumExample(), UInt()))
     }
   }
 
   it should "fail to connect enums of different types" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new SimpleConnector(EnumExample(), OtherEnum()))
     }
 
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new SimpleConnector(EnumExample.Type(), OtherEnum.Type()))
     }
   }
@@ -394,7 +395,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "prevent illegal literal casts to enums" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new CastToInvalidEnumTester)
     }
   }
@@ -403,12 +404,12 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
     for (w <- 0 to EnumExample.getWidth)
       ChiselStage.elaborate(new CastFromNonLitWidth(Some(w)))
 
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new CastFromNonLitWidth)
     }
 
     for (w <- (EnumExample.getWidth + 1) to (EnumExample.getWidth + 100)) {
-      a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      a[ChiselException] should be thrownBy extractCause[ChiselException] {
         ChiselStage.elaborate(new CastFromNonLitWidth(Some(w)))
       }
     }
@@ -419,7 +420,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "fail to compare enums of different types" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new InvalidEnumOpsTester)
     }
   }
@@ -462,8 +463,8 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
       out := MyEnum(in)
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
-    log should include ("warn")
-    log should include ("Casting non-literal UInt")
+    log should include("warn")
+    log should include("Casting non-literal UInt")
   }
 
   it should "NOT warn if the Enum is total" in {
@@ -477,7 +478,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
       out := TotalEnum(in)
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
-    log should not include ("warn")
+    (log should not).include("warn")
   }
 
   "Casting a UInt to an Enum with .safe" should "NOT warn" in {
@@ -491,7 +492,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
       out := MyEnum.safe(in)._1
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
-    log should not include ("warn")
+    (log should not).include("warn")
   }
 
   it should "NOT generate any validity logic if the Enum is total" in {
@@ -507,7 +508,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
       out := res
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
-    log should not include ("warn")
+    (log should not).include("warn")
   }
 
   it should "correctly check if the enumeration is one of the values in a given sequence" in {
@@ -524,7 +525,7 @@ class StrongEnumAnnotator extends Module {
     val le100 = Value(100.U)
   }
 
-  val io = IO(new Bundle{
+  val io = IO(new Bundle {
     val in = Input(EnumExample())
     val out = Output(EnumExample())
     val other = Output(OtherEnum())
@@ -584,7 +585,7 @@ class StrongEnumAnnotatorWithChiselName extends Module {
     val le100 = Value(100.U)
   }
 
-  val io = IO(new Bundle{
+  val io = IO(new Bundle {
     val in = Input(EnumExample())
     val out = Output(EnumExample())
     val other = Output(OtherEnum())
@@ -636,7 +637,7 @@ class StrongEnumAnnotatorWithChiselName extends Module {
 
 class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
   import chisel3.experimental.EnumAnnotations._
-  import firrtl.annotations.{ComponentName, Annotation}
+  import firrtl.annotations.{Annotation, ComponentName}
 
   val enumExampleName = "EnumExample"
   val otherEnumName = "OtherEnum"
@@ -667,7 +668,11 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
   val correctVecAnnos = Seq(
     CorrectVecAnno("vec", enumExampleName, Set()),
     CorrectVecAnno("vec_of_vecs", enumExampleName, Set()),
-    CorrectVecAnno("vec_of_bundles", enumExampleName, Set(Seq("field"), Seq("vec"), Seq("inner_bundle1", "e"), Seq("inner_bundle1", "v"))),
+    CorrectVecAnno(
+      "vec_of_bundles",
+      enumExampleName,
+      Set(Seq("field"), Seq("vec"), Seq("inner_bundle1", "e"), Seq("inner_bundle1", "v"))
+    ),
     CorrectVecAnno("vec_of_bundles", otherEnumName, Set(Seq("other"))),
     CorrectVecAnno("vec_of_bundles", localEnumName, Set(Seq("local"))),
     CorrectVecAnno("bund.vec", enumExampleName, Set()),
@@ -678,49 +683,49 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     println("Enum definitions:")
     annos.foreach {
       case EnumDefAnnotation(enumTypeName, definition) => println(s"\t$enumTypeName: $definition")
-      case _ =>
+      case _                                           =>
     }
     println("Enum components:")
-    annos.foreach{
+    annos.foreach {
       case EnumComponentAnnotation(target, enumTypeName) => println(s"\t$target => $enumTypeName")
-      case _ =>
+      case _                                             =>
     }
     println("Enum vecs:")
-    annos.foreach{
+    annos.foreach {
       case EnumVecAnnotation(target, enumTypeName, fields) => println(s"\t$target[$fields] => $enumTypeName")
-      case _ =>
+      case _                                               =>
     }
   }
 
   def isCorrect(anno: EnumDefAnnotation, correct: CorrectDefAnno): Boolean = {
     (anno.typeName == correct.typeName ||
-      anno.typeName.endsWith("." + correct.typeName) ||
-      anno.typeName.endsWith("$" + correct.typeName)) &&
-      anno.definition == correct.definition
+    anno.typeName.endsWith("." + correct.typeName) ||
+    anno.typeName.endsWith("$" + correct.typeName)) &&
+    anno.definition == correct.definition
   }
 
   def isCorrect(anno: EnumComponentAnnotation, correct: CorrectCompAnno): Boolean = {
     (anno.target match {
       case ComponentName(name, _) => name == correct.targetName
-      case _ => throw new Exception("Unknown target type in EnumComponentAnnotation")
+      case _                      => throw new Exception("Unknown target type in EnumComponentAnnotation")
     }) &&
-      (anno.enumTypeName == correct.typeName || anno.enumTypeName.endsWith("." + correct.typeName) ||
-        anno.enumTypeName.endsWith("$" + correct.typeName))
+    (anno.enumTypeName == correct.typeName || anno.enumTypeName.endsWith("." + correct.typeName) ||
+    anno.enumTypeName.endsWith("$" + correct.typeName))
   }
 
   def isCorrect(anno: EnumVecAnnotation, correct: CorrectVecAnno): Boolean = {
     (anno.target match {
       case ComponentName(name, _) => name == correct.targetName
-      case _ => throw new Exception("Unknown target type in EnumVecAnnotation")
+      case _                      => throw new Exception("Unknown target type in EnumVecAnnotation")
     }) &&
-      (anno.typeName == correct.typeName || anno.typeName.endsWith("." + correct.typeName) ||
-        anno.typeName.endsWith("$" + correct.typeName)) &&
-      anno.fields.map(_.toSeq).toSet == correct.fields
+    (anno.typeName == correct.typeName || anno.typeName.endsWith("." + correct.typeName) ||
+    anno.typeName.endsWith("$" + correct.typeName)) &&
+    anno.fields.map(_.toSeq).toSet == correct.fields
   }
 
   def allCorrectDefs(annos: Seq[EnumDefAnnotation], corrects: Seq[CorrectDefAnno]): Boolean = {
     corrects.forall(c => annos.exists(isCorrect(_, c))) &&
-      correctDefAnnos.length == annos.length
+    correctDefAnnos.length == annos.length
   }
 
   // Because temporary variables might be formed and annotated, we do not check that every component or vector
@@ -732,8 +737,10 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     corrects.forall(c => annos.exists(isCorrect(_, c)))
 
   def test(strongEnumAnnotatorGen: () => Module) {
-    val annos = (new ChiselStage).execute(Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
-                                          Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen)))
+    val annos = (new ChiselStage).execute(
+      Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
+      Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))
+    )
 
     val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
     val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }

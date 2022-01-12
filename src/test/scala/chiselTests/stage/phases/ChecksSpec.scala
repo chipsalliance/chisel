@@ -2,7 +2,6 @@
 
 package chiselTests.stage.phases
 
-
 import chisel3.stage.{ChiselOutputFileAnnotation, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.stage.phases.Checks
 
@@ -15,15 +14,15 @@ import org.scalatest.matchers.should.Matchers
 class ChecksSpec extends AnyFlatSpec with Matchers {
 
   def checkExceptionMessage(phase: Phase, annotations: AnnotationSeq, messageStart: String): Unit =
-    intercept[OptionsException]{ phase.transform(annotations) }.getMessage should startWith(messageStart)
+    intercept[OptionsException] { phase.transform(annotations) }.getMessage should startWith(messageStart)
 
   class Fixture { val phase: Phase = new Checks }
 
-  behavior of classOf[Checks].toString
+  behavior.of(classOf[Checks].toString)
 
   it should "do nothing on sane annotation sequences" in new Fixture {
     val a = Seq(NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation)
-    phase.transform(a).toSeq should be (a)
+    phase.transform(a).toSeq should be(a)
   }
 
   it should "throw an OptionsException if more than one NoRunFirrtlCompilerAnnotation is specified" in new Fixture {

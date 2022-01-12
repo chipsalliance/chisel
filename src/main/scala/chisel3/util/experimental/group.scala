@@ -3,7 +3,7 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
+import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.internal.requireIsHardware
 import firrtl.Transform
 import firrtl.transforms.{GroupAnnotation, GroupComponents}
@@ -46,12 +46,14 @@ object group {
     * @tparam T Parent type of input components
     */
   def apply[T <: Data](
-      components: Seq[T],
-      newModule: String,
-      newInstance: String,
-      outputSuffix: Option[String] = None,
-      inputSuffix: Option[String] = None
-  )(implicit compileOptions: CompileOptions): Unit = {
+    components:   Seq[T],
+    newModule:    String,
+    newInstance:  String,
+    outputSuffix: Option[String] = None,
+    inputSuffix:  Option[String] = None
+  )(
+    implicit compileOptions: CompileOptions
+  ): Unit = {
     if (compileOptions.checkSynthesizable) {
       components.foreach { data =>
         requireIsHardware(data, s"Component ${data.toString} is marked to group, but is not bound.")
@@ -64,4 +66,3 @@ object group {
     })
   }
 }
-

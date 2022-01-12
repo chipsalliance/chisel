@@ -9,8 +9,7 @@ import firrtl.{ir => fir}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, MemTransform}
-
+import chisel3.internal.sourceinfo.{MemTransform, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 object Mem {
 
@@ -29,11 +28,17 @@ object Mem {
   def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](size: BigInt, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Mem[T] = {
+  def do_apply[T <: Data](
+    size: BigInt,
+    t:    T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Mem[T] = {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "memory type")
     }
-    val mt  = t.cloneTypeFull
+    val mt = t.cloneTypeFull
     val mem = new Mem(mt, size)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
@@ -45,7 +50,10 @@ object Mem {
     do_apply(BigInt(size), t)(sourceInfo, compileOptions)
 }
 
-sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt) extends HasId with NamedComponent with SourceInfoDoc {
+sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
+    extends HasId
+    with NamedComponent
+    with SourceInfoDoc {
   _parent.foreach(_.addId(this))
 
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
@@ -107,7 +115,14 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt) extends H
     *
     * @note this is only allowed if the memory's element data type is a Vec
     */
-  def write(idx: UInt, data: T, mask: Seq[Bool]) (implicit evidence: T <:< Vec[_], compileOptions: CompileOptions): Unit = {
+  def write(
+    idx:  UInt,
+    data: T,
+    mask: Seq[Bool]
+  )(
+    implicit evidence: T <:< Vec[_],
+    compileOptions:    CompileOptions
+  ): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
     val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
@@ -117,17 +132,22 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt) extends H
     if (accessor.length != mask.length) {
       Builder.error(s"Mem write mask must contain ${accessor.length} elements (found ${mask.length})")
     }
-    for (((cond, port), datum) <- mask zip accessor zip dataVec)
-      when (cond) { port := datum }
+    for (((cond, port), datum) <- mask.zip(accessor).zip(dataVec))
+      when(cond) { port := datum }
   }
 
-  private def makePort(sourceInfo: SourceInfo, idx: UInt, dir: MemPortDirection)(implicit compileOptions: CompileOptions): T = {
+  private def makePort(
+    sourceInfo: SourceInfo,
+    idx:        UInt,
+    dir:        MemPortDirection
+  )(
+    implicit compileOptions: CompileOptions
+  ): T = {
     requireIsHardware(idx, "memory port index")
     val i = Vec.truncateIndex(idx, length)(sourceInfo, compileOptions)
 
     val port = pushCommand(
-      DefMemPort(sourceInfo,
-       t.cloneTypeFull, Node(this), dir, i.ref, Builder.forcedClock.ref)
+      DefMemPort(sourceInfo, t.cloneTypeFull, Node(this), dir, i.ref, Builder.forcedClock.ref)
     ).id
     // Bind each element of port to being a MemoryPort
     port.bind(MemoryPortBinding(Builder.forcedUserModule, Builder.currentWhen))
@@ -147,7 +167,6 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt) extends H
 sealed class Mem[T <: Data] private (t: T, length: BigInt) extends MemBase(t, length)
 
 object SyncReadMem {
-
 
   type ReadUnderWrite = fir.ReadUnderWrite.Value
   val Undefined = fir.ReadUnderWrite.Undefined
@@ -171,11 +190,18 @@ object SyncReadMem {
   def apply[T <: Data](size: Int, t: T, ruw: ReadUnderWrite): SyncReadMem[T] = macro MemTransform.apply_ruw[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](size: BigInt, t: T, ruw: ReadUnderWrite = Undefined)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = {
+  def do_apply[T <: Data](
+    size: BigInt,
+    t:    T,
+    ruw:  ReadUnderWrite = Undefined
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): SyncReadMem[T] = {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "memory type")
     }
-    val mt  = t.cloneTypeFull
+    val mt = t.cloneTypeFull
     val mem = new SyncReadMem(mt, size, ruw)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
@@ -184,12 +210,25 @@ object SyncReadMem {
 
   /** @group SourceInfoTransformMacro */
   // Alternate signatures can't use default parameter values
-  def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] =
+  def do_apply[T <: Data](
+    size: Int,
+    t:    T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): SyncReadMem[T] =
     do_apply(BigInt(size), t)(sourceInfo, compileOptions)
 
   /** @group SourceInfoTransformMacro */
   // Alternate signatures can't use default parameter values
-  def do_apply[T <: Data](size: Int, t: T, ruw: ReadUnderWrite)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] =
+  def do_apply[T <: Data](
+    size: Int,
+    t:    T,
+    ruw:  ReadUnderWrite
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): SyncReadMem[T] =
     do_apply(BigInt(size), t, ruw)(sourceInfo, compileOptions)
 }
 
@@ -203,7 +242,8 @@ object SyncReadMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite) extends MemBase[T](t, n) {
+sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
+    extends MemBase[T](t, n) {
   def read(x: UInt, en: Bool): T = macro SourceInfoTransform.xEnArg
 
   /** @group SourceInfoTransformMacro */
@@ -211,14 +251,14 @@ sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite
     val a = Wire(UInt())
     a := DontCare
     var port: Option[T] = None
-    when (enable) {
+    when(enable) {
       a := addr
       port = Some(super.do_read(a))
     }
     port.get
   }
 
-  /** @group SourceInfoTransformMacro*/
+  /** @group SourceInfoTransformMacro */
   override def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
     do_read(addr = idx, enable = true.B)
   // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that

@@ -22,20 +22,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
   private class BundlePhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
-      // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
-      // instead we just check the version and if its an early Scala version, the plugin does nothing
-      val scalaVersion = scala.util.Properties.versionNumberString.split('.')
-      val scalaVersionOk = scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12
-      if (scalaVersionOk && arguments.useBundlePlugin) {
+      if (ChiselPlugin.runComponent(global, arguments)(unit)) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
-      } else {
-        val reason = if (!scalaVersionOk) {
-          s"invalid Scala version '${scala.util.Properties.versionNumberString}'"
-        } else {
-          s"not enabled via '${arguments.useBundlePluginFullOpt}'"
-        }
-        // Enable this with scalacOption '-Ylog:chiselbundlephase'
-        global.log(s"Skipping BundleComponent on account of $reason.")
       }
     }
   }
@@ -82,11 +70,9 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       (primaryConstructor, paramAccessors.toList)
     }
 
-
     override def transform(tree: Tree): Tree = tree match {
 
       case bundle: ClassDef if isBundle(bundle.symbol) && !bundle.mods.hasFlag(Flag.ABSTRACT) =>
-
         // ==================== Generate _cloneTypeImpl ====================
         val (con, params) = getConstructorAndParams(bundle.impl.body)
         if (con.isEmpty) {
@@ -111,13 +97,14 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             if (isData(vp.symbol)) cloneTypeFull(select) else select
           })
 
-        val tparamList = bundle.tparams.map{ t => Ident(t.symbol) }
-        val ttpe = if(tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
+        val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
+        val ttpe = if (tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
         val newUntyped = New(ttpe, conArgs)
         val neww = localTyper.typed(newUntyped)
 
         // Create the symbol for the method and have it be associated with the Bundle class
-        val cloneTypeSym =  bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+        val cloneTypeSym =
+          bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
         // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
         cloneTypeSym.resetFlag(Flags.METHOD)
         // Need to set the type to chisel3.Bundle for the override to work

@@ -82,7 +82,7 @@ class SIntOpsTester(c: SIntOps) extends Tester(c) {
     expect(c.io.greateqout, int(test_a >= test_b))
   }
 }
-*/
+ */
 
 class SIntLitExtractTester extends BasicTester {
   assert(-5.S(1) === true.B)
@@ -105,12 +105,12 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
   }
 
   property("Negative shift amounts are invalid") {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new NegativeShift(SInt()))
     }
   }
 
-  ignore("SIntOpsTester should return the correct result") { }
+  ignore("SIntOpsTester should return the correct result") {}
 
   property("Bit extraction on literals should work for all non-negative indices") {
     assertTesterPasses(new SIntLitExtractTester)

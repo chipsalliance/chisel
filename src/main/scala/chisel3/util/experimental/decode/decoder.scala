@@ -3,13 +3,14 @@
 package chisel3.util.experimental.decode
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, annotate}
-import chisel3.util.{BitPat, pla}
-import chisel3.util.experimental.{BitSet, getAnnotations}
+import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.util.{pla, BitPat}
+import chisel3.util.experimental.{getAnnotations, BitSet}
 import firrtl.annotations.Annotation
 import logger.LazyLogging
 
 object decoder extends LazyLogging {
+
   /** Use a specific [[Minimizer]] to generated decoded signals.
     *
     * @param minimizer  specific [[Minimizer]], can be [[QMCMinimizer]] or [[EspressoMinimizer]].
@@ -71,7 +72,8 @@ object decoder extends LazyLogging {
       qmc(input, truthTable)
     }
 
-    try espresso(input, truthTable) catch {
+    try espresso(input, truthTable)
+    catch {
       case EspressoNotFoundException =>
         logger.error(s"espresso is not found in your PATH:\n${sys.env("PATH").split(":").mkString("\n")}".stripMargin)
         qmcFallBack(input, truthTable)
@@ -80,7 +82,6 @@ object decoder extends LazyLogging {
         qmcFallBack(input, truthTable)
     }
   }
-
 
   /** Generate a decoder circuit that matches the input to each bitSet.
     *
@@ -104,9 +105,7 @@ object decoder extends LazyLogging {
         {
           bitSets.zipWithIndex.flatMap {
             case (bs, i) =>
-              bs.terms.map(bp =>
-                s"${bp.rawString}->${if (errorBit) "0"}${"0" * (bitSets.size - i - 1)}1${"0" * i}"
-              )
+              bs.terms.map(bp => s"${bp.rawString}->${if (errorBit) "0"}${"0" * (bitSets.size - i - 1)}1${"0" * i}")
           } ++ Seq(s"${if (errorBit) "1"}${"?" * bitSets.size}")
         }.mkString("\n")
       )

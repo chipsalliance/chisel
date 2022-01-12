@@ -11,7 +11,9 @@ import scala.tools.nsc.transform.TypingTransformers
 
 // The component of the chisel plugin. Not sure exactly what the difference is between
 //   a Plugin and a PluginComponent.
-class ChiselComponent(val global: Global) extends PluginComponent with TypingTransformers {
+class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
+    extends PluginComponent
+    with TypingTransformers {
   import global._
   val runsAfter: List[String] = List[String]("typer")
   val phaseName: String = "chiselcomponent"
@@ -19,17 +21,13 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
-      // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
-      // instead we just check the version and if its an early Scala version, the plugin does nothing
-      val scalaVersion = scala.util.Properties.versionNumberString.split('.')
-      if (scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12) {
+      if (ChiselPlugin.runComponent(global, arguments)(unit)) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
       }
     }
   }
 
-  class MyTypingTransformer(unit: CompilationUnit)
-    extends TypingTransformer(unit) {
+  class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
     private def shouldMatchGen(bases: Tree*): Type => Boolean = {
       val cache = mutable.HashMap.empty[Type, Boolean]
@@ -54,7 +52,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
           recShouldMatch(s.typeArgs.head, seen + s)
         } else {
           // This is the standard inheritance hierarchy, Scalac catches loops here
-          s.parents.exists( p => recShouldMatch(p, seen) )
+          s.parents.exists(p => recShouldMatch(p, seen))
         }
       }
 
@@ -65,24 +63,25 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
 
       // Return function so that it captures the cache
       { q: Type =>
-        cache.getOrElseUpdate(q, {
-          // First check if a match, then check early exit, then recurse
-          if(terminate(q)){
-            true
-          } else if(earlyExit(q)) {
-            false
-          } else {
-            recShouldMatch(q, Set.empty)
+        cache.getOrElseUpdate(
+          q, {
+            // First check if a match, then check early exit, then recurse
+            if (terminate(q)) {
+              true
+            } else if (earlyExit(q)) {
+              false
+            } else {
+              recShouldMatch(q, Set.empty)
+            }
           }
-        })
+        )
       }
     }
 
-
-    private val shouldMatchData      : Type => Boolean = shouldMatchGen(tq"chisel3.Data")
-    private val shouldMatchDataOrMem : Type => Boolean = shouldMatchGen(tq"chisel3.Data", tq"chisel3.MemBase[_]")
-    private val shouldMatchModule    : Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
-    private val shouldMatchInstance  : Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
+    private val shouldMatchData:      Type => Boolean = shouldMatchGen(tq"chisel3.Data")
+    private val shouldMatchDataOrMem: Type => Boolean = shouldMatchGen(tq"chisel3.Data", tq"chisel3.MemBase[_]")
+    private val shouldMatchModule:    Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
+    private val shouldMatchInstance:  Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
 
     // Given a type tree, infer the type and return it
     private def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
@@ -100,13 +99,13 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
           Flags.CASEACCESSOR,
           Flags.PARAMACCESSOR
         )
-        badFlags.forall{ x => !mods.hasFlag(x)}
+        badFlags.forall { x => !mods.hasFlag(x) }
       }
 
       // Ensure expression isn't null, as you can't call `null.autoName("myname")`
       val isNull = dd.rhs match {
         case Literal(Constant(null)) => true
-        case _ => false
+        case _                       => false
       }
 
       okFlags(dd.mods) && !isNull && dd.rhs != EmptyTree
@@ -133,7 +132,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       // Ensure expression isn't null, as you can't call `null.autoName("myname")`
       val isNull = dd.rhs match {
         case Literal(Constant(null)) => true
-        case _ => false
+        case _                       => false
       }
       val tpe = inferType(dd.tpt)
       definitions.isTupleType(tpe) && okFlags(dd.mods) && !isNull && dd.rhs != EmptyTree
@@ -142,7 +141,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     private def findUnapplyNames(tree: Tree): Option[List[String]] = {
       val applyArgs: Option[List[Tree]] = tree match {
         case Match(_, List(CaseDef(_, _, Apply(_, args)))) => Some(args)
-        case _ => None
+        case _                                             => None
       }
       applyArgs.flatMap { args =>
         var ok = true
@@ -150,7 +149,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         args.foreach {
           case Ident(TermName(name)) => result += name
           // Anything unexpected and we abort
-          case _                     => ok = false
+          case _ => ok = false
         }
         if (ok) Some(result.toList) else None
       }
@@ -172,9 +171,9 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         // If a Data and in a Bundle, just get the name but not a prefix
         if (shouldMatchData(tpe) && inBundle(dd)) {
           val str = stringFromTermName(name)
-          val newRHS = transform(rhs)  // chisel3.internal.plugin.autoNameRecursively
+          val newRHS = transform(rhs) // chisel3.internal.plugin.autoNameRecursively
           val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
-          treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+          treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
         }
         // If a Data or a Memory, get the name and a prefix
         else if (shouldMatchDataOrMem(tpe)) {
@@ -182,18 +181,18 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
           val newRHS = transform(rhs)
           val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
           val named = q"chisel3.internal.plugin.autoNameRecursively($str)($prefixed)"
-          treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+          treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
           // If an instance, just get a name but no prefix
         } else if (shouldMatchModule(tpe)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs)
           val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
-          treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+          treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
         } else if (shouldMatchInstance(tpe)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs)
           val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
-          treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+          treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
         } else {
           // Otherwise, continue
           super.transform(tree)
@@ -205,9 +204,10 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         if (fieldsOfInterest.reduce(_ || _)) {
           findUnapplyNames(rhs) match {
             case Some(names) =>
-              val onames: List[Option[String]] = fieldsOfInterest.zip(names).map { case (ok, name) => if (ok) Some(name) else None }
+              val onames: List[Option[String]] =
+                fieldsOfInterest.zip(names).map { case (ok, name) => if (ok) Some(name) else None }
               val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($rhs)"
-              treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+              treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
             case None => // It's not clear how this could happen but we don't want to crash
               super.transform(tree)
           }

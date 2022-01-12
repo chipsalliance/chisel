@@ -20,7 +20,7 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
   }
 
   "A Module with missing bundle fields when compiled with implicit Strict.CompileOption " should "throw an exception" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       import chisel3.ExplicitCompileOptions.Strict
 
       class ConnectFieldMismatchModule extends Module {
@@ -48,7 +48,7 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
   }
 
   "A Module in which a Reg is created with a bound type when compiled with implicit Strict.CompileOption " should "throw an exception" in {
-    a [BindingException] should be thrownBy extractCause[BindingException] {
+    a[BindingException] should be thrownBy extractCause[BindingException] {
       import chisel3.ExplicitCompileOptions.Strict
 
       class CreateRegFromBoundTypeModule extends Module {
@@ -89,7 +89,7 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
   }
 
   "A Module with unwrapped IO when compiled with implicit Strict.CompileOption " should "throw an exception" in {
-    a [BindingException] should be thrownBy extractCause[BindingException] {
+    a[BindingException] should be thrownBy extractCause[BindingException] {
       import chisel3.ExplicitCompileOptions.Strict
 
       class RequireIOWrapModule extends Module {
@@ -106,7 +106,7 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
   }
 
   "A Module connecting output as source to input as sink when compiled with implicit Strict.CompileOption " should "throw an exception" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       import chisel3.ExplicitCompileOptions.Strict
 
       class SimpleModule extends Module {
@@ -140,7 +140,7 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
   }
 
   "A Module with directionless connections when compiled with implicit Strict.CompileOption " should "throw an exception" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       // Verify we can suppress the inclusion of default compileOptions
       import Chisel.{defaultCompileOptions => _}
       import chisel3.ExplicitCompileOptions.Strict

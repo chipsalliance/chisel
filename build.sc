@@ -1,6 +1,7 @@
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
+import mill.scalalib.scalafmt._
 import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
@@ -29,7 +30,7 @@ def getTestVersion(dep: String, org: String = "edu.berkeley.cs") = {
 }
 
 // Since chisel contains submodule core and macros, a CommonModule is needed
-trait CommonModule extends CrossSbtModule with PublishModule {
+trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule {
   def firrtlModule: Option[PublishModule] = None
 
   def firrtlIvyDeps = if (firrtlModule.isEmpty) Agg(

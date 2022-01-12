@@ -12,7 +12,7 @@ import chiselTests.ChiselFlatSpec
 object CatSpec {
 
   class JackIsATypeSystemGod extends Module {
-    val in  = IO(Input (Vec(0, UInt(8.W))))
+    val in = IO(Input(Vec(0, UInt(8.W))))
     val out = IO(Output(UInt(8.W)))
 
     out := Cat(in)
@@ -24,7 +24,7 @@ class CatSpec extends ChiselFlatSpec {
 
   import CatSpec._
 
-  behavior of "util.Cat"
+  behavior.of("util.Cat")
 
   it should "not fail to elaborate a zero-element Vec" in {
 
@@ -41,7 +41,7 @@ class CatSpec extends ChiselFlatSpec {
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     for (name <- Seq("a", "b", "c", "d")) {
-      chirrtl should include (s"input $name : UInt<8>")
+      chirrtl should include(s"input $name : UInt<8>")
     }
   }
 
@@ -54,11 +54,10 @@ class CatSpec extends ChiselFlatSpec {
       out := noPrefix(Cat(in))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include ("node lo_lo = cat(in[6], in[7])")
-    chirrtl should include ("node lo_hi = cat(in[4], in[5])")
-    chirrtl should include ("node hi_lo = cat(in[2], in[3])")
-    chirrtl should include ("node hi_hi = cat(in[0], in[1])")
+    chirrtl should include("node lo_lo = cat(in[6], in[7])")
+    chirrtl should include("node lo_hi = cat(in[4], in[5])")
+    chirrtl should include("node hi_lo = cat(in[2], in[3])")
+    chirrtl should include("node hi_hi = cat(in[0], in[1])")
   }
-
 
 }
