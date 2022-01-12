@@ -244,7 +244,7 @@ object SyncReadMem {
   */
 sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
     extends MemBase[T](t, n) {
-  def read(x: UInt, en: Bool): T = macro SourceInfoTransform.xEnArg
+  def read(x: UInt, y: Bool): T = macro SourceInfoTransform.xyArg
 
   /** @group SourceInfoTransformMacro */
   def do_read(addr: UInt, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {

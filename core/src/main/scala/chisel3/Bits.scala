@@ -55,19 +55,19 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** Tail operator
     *
-    * @param n the number of bits to remove
-    * @return This $coll with the `n` most significant bits removed.
+    * @param x the number of bits to remove
+    * @return This $coll with the `x` most significant bits removed.
     * @group Bitwise
     */
-  final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
+  final def tail(x: Int): UInt = macro SourceInfoTransform.xArg
 
   /** Head operator
     *
-    * @param n the number of bits to take
-    * @return The `n` most significant bits of this $coll
+    * @param x the number of bits to take
+    * @return The `x` most significant bits of this $coll
     * @group Bitwise
     */
-  final def head(n: Int): UInt = macro SourceInfoTransform.nArg
+  final def head(x: Int): UInt = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_tail(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {

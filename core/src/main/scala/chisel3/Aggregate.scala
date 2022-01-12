@@ -289,7 +289,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
-  override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
+  override def apply(x: UInt): T = macro CompileOptionsTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
@@ -815,7 +815,7 @@ object VecInit extends SourceInfoDoc {
   * operations.
   */
 trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
-  def apply(p: UInt): T = macro CompileOptionsTransform.pArg
+  def apply(x: UInt): T = macro CompileOptionsTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T
@@ -826,7 +826,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
 
   /** Outputs true if p outputs true for every element.
     */
-  def forall(p: T => Bool): Bool = macro SourceInfoTransform.pArg
+  def forall(x: T => Bool): Bool = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
@@ -834,7 +834,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
 
   /** Outputs true if p outputs true for at least one element.
     */
-  def exists(p: T => Bool): Bool = macro SourceInfoTransform.pArg
+  def exists(x: T => Bool): Bool = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
@@ -851,7 +851,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
 
   /** Outputs the number of elements for which p is true.
     */
-  def count(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def count(x: T => Bool): UInt = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -864,7 +864,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
 
   /** Outputs the index of the first element for which p outputs true.
     */
-  def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def indexWhere(x: T => Bool): UInt = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -872,7 +872,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
 
   /** Outputs the index of the last element for which p outputs true.
     */
-  def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def lastIndexWhere(x: T => Bool): UInt = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -888,7 +888,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
     * true is NOT checked (useful in cases where the condition doesn't always
     * hold, but the results are not used in those cases)
     */
-  def onlyIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def onlyIndexWhere(x: T => Bool): UInt = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =

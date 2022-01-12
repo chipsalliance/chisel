@@ -176,32 +176,16 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
   }
 
-  def thatArg(that: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
-  }
-
-  def nArg(n: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($n)($implicitSourceInfo, $implicitCompileOptions)"
-  }
-
-  def pArg(p: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($p)($implicitSourceInfo, $implicitCompileOptions)"
-  }
-
-  def inArg(in: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in)($implicitSourceInfo, $implicitCompileOptions)"
-  }
-
   def xArg(x: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($x)($implicitSourceInfo, $implicitCompileOptions)"
   }
 
-  def xyArg(x: c.Tree, y: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($x, $y)($implicitSourceInfo, $implicitCompileOptions)"
+  def thatArg(that: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
   }
 
-  def xEnArg(x: c.Tree, en: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($x, $en)($implicitSourceInfo, $implicitCompileOptions)"
+  def xyArg(x: c.Tree, y: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($x, $y)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
 
@@ -210,16 +194,8 @@ object CompileOptionsTransform
 class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
-  def thatArg(that: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($that)($implicitCompileOptions)"
-  }
-
-  def inArg(in: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in)($implicitCompileOptions)"
-  }
-
-  def pArg(p: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($p)($implicitCompileOptions)"
+  def xArg(x: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($x)($implicitCompileOptions)"
   }
 }
 
