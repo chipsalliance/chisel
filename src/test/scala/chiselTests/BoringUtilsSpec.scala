@@ -132,4 +132,41 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be(true)
   }
 
+  it should "use single underscores with BoringUtils" in {
+    class FooBundle extends Bundle {
+      val blah = Input(Bool())
+      val blahout = Output(Bool())
+    }
+
+    class Foo extends Module {
+      val io = IO(new FooBundle)
+      io.blahout := io.blah
+    }
+
+    class Thingy extends Module {
+      val io = IO(new FooBundle)
+
+      val foo = Module(new Foo)
+      foo.io <> io
+
+      val fooBlah = WireInit(io.blah)
+      foo.io.blah := fooBlah
+    }
+
+    class Bar extends Module {
+      val dut = IO(new FooBundle)
+      val actual = IO(new FooBundle)
+      val injected = IO(Flipped(new FooBundle))
+
+      val thingy = Module(new Thingy)
+      thingy.io <> dut
+
+      injected.blah := DontCare
+      actual.blahout := DontCare
+      BoringUtils.bore(actual.blah, Seq(thingy.fooBlah))
+      BoringUtils.bore(thingy.io.blahout, Seq(actual.blahout))
+    }
+
+    assert(!(compile { new Bar } contains "__"))
+  }
 }
