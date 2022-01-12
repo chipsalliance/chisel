@@ -44,7 +44,7 @@ Text from here to the end of the body will be considered for inclusion in the re
 
 ### Reviewer Checklist (only modified by reviewer)
 - [ ] Did you add the appropriate labels?
-- [ ] Did you mark the proper milestone (Bug fix: `3.3.x`, [small] API extension: `3.4.x`, API modification or big change: `3.5.0`)?
+- [ ] Did you mark the proper milestone (Bug fix: `3.4.x`, [small] API extension: `3.5.x`, API modification or big change: `3.6.0`)?
 - [ ] Did you review?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
 - [ ] Did you mark as `Please Merge`?
