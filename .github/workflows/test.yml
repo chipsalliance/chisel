@@ -59,7 +59,7 @@ jobs:
         if: startsWith(matrix.scala, '2.12')
         run: sbt ++${{ matrix.scala }} docs/mdoc unidoc
       - name: Test
-        run: sbt ++${{ matrix.scala }} test
+        run: sbt ++${{ matrix.scala }} "testOnly * -- -oD"
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 

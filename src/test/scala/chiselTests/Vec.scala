@@ -6,7 +6,7 @@ import org.scalacheck._
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import org.scalacheck.Shrink
 import scala.annotation.tailrec
@@ -456,7 +456,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Infering widths on huge Vecs should not cause a stack overflow") {
-    assertTesterPasses { new HugeVecTester(10000) }
+    assertTesterPasses(new HugeVecTester(10000), annotations = TesterDriver.verilatorOnly)
   }
 
   property("A Reg of a Vec of a single 1 bit element should compile and work") {
