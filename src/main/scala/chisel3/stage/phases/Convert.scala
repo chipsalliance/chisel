@@ -28,8 +28,8 @@ class Convert extends Phase {
         Some(FirrtlCircuitAnnotation(Converter.convert(a.circuit))) ++
         /* Convert all Chisel Annotations to FIRRTL Annotations */
         a.circuit.firrtlAnnotations ++
-        a.circuit.annotations.collect {
-          case anno: RunFirrtlTransform => anno.transformClass
+        a.circuit.annotations.collect { case anno: RunFirrtlTransform =>
+          anno.transformClass
         }.distinct.map { c: Class[_ <: Transform] => RunFirrtlTransformAnnotation(c.newInstance()) }
     case a => Some(a)
   }

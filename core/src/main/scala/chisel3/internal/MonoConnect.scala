@@ -11,8 +11,7 @@ import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.SourceInfo
 
-/**
-  * MonoConnect.connect executes a mono-directional connection element-wise.
+/** MonoConnect.connect executes a mono-directional connection element-wise.
   *
   * Note that this isn't commutative. There is an explicit source and sink
   * already determined before this function is called.

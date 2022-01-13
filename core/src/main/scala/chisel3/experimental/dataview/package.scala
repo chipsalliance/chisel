@@ -52,13 +52,12 @@ package object dataview {
     def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: SubTypeOf[T, V], sourceInfo: SourceInfo): V = {
       implicit val dataView = PartialDataView.mapping[T, V](
         _ => proto,
-        {
-          case (a, b) =>
-            val aElts = a.elements
-            val bElts = b.elements
-            val bKeys = bElts.keySet
-            val keys = aElts.keysIterator.filter(bKeys.contains)
-            keys.map(k => aElts(k) -> bElts(k)).toSeq
+        { case (a, b) =>
+          val aElts = a.elements
+          val bElts = b.elements
+          val bKeys = bElts.keySet
+          val keys = aElts.keysIterator.filter(bKeys.contains)
+          keys.map(k => aElts(k) -> bElts(k)).toSeq
         }
       )
       target.viewAs[V]
@@ -155,19 +154,18 @@ package object dataview {
 
     val targetSeen: Option[mutable.Set[Data]] = if (total) Some(mutable.Set.empty[Data]) else None
 
-    val resultBindings = childBindings.map {
-      case (data, targets) =>
-        val targetsx = targets match {
-          case collection.Seq(target: Element) => target
-          case collection.Seq() =>
-            viewNonTotalErrors = data :: viewNonTotalErrors
-            data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
-          case x =>
-            throw InvalidViewException(s"Got $x, expected Seq(_: Direct)")
-        }
-        // TODO record and report aliasing errors
-        targetSeen.foreach(_ += targetsx)
-        data -> targetsx
+    val resultBindings = childBindings.map { case (data, targets) =>
+      val targetsx = targets match {
+        case collection.Seq(target: Element) => target
+        case collection.Seq() =>
+          viewNonTotalErrors = data :: viewNonTotalErrors
+          data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
+        case x =>
+          throw InvalidViewException(s"Got $x, expected Seq(_: Direct)")
+      }
+      // TODO record and report aliasing errors
+      targetSeen.foreach(_ += targetsx)
+      data -> targetsx
     }.toMap
 
     // Check for totality of Target

@@ -56,8 +56,7 @@ class IdentityTransform extends Transform with DependencyAPIMigration {
   *
   * This is currently not much of a test, read the printout to see what annotations look like
   */
-/**
-  * This class has parameterizable widths, it will generate different hardware
+/** This class has parameterizable widths, it will generate different hardware
   * @param widthC io width
   */
 class ModC(widthC: Int) extends Module {
@@ -72,8 +71,7 @@ class ModC(widthC: Int) extends Module {
   identify(io.out, s"ModC(ignore param)")
 }
 
-/**
-  * instantiates a C of a particular size, ModA does not generate different hardware
+/** instantiates a C of a particular size, ModA does not generate different hardware
   * based on it's parameter
   * @param annoParam  parameter is only used in annotation not in circuit
   */

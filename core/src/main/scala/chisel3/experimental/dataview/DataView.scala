@@ -147,8 +147,8 @@ object DataView {
     case (a, b) => fs.map(f => f(a, b))
   }
 
-  private def swapArgs[A, B, C, D](f: (A, B) => Iterable[(C, D)]): (B, A) => Iterable[(D, C)] = {
-    case (b, a) => f(a, b).map(_.swap)
+  private def swapArgs[A, B, C, D](f: (A, B) => Iterable[(C, D)]): (B, A) => Iterable[(D, C)] = { case (b, a) =>
+    f(a, b).map(_.swap)
   }
 
   // ****************************** Built-in Implementations of DataView ******************************
@@ -178,9 +178,8 @@ object DataView {
   ): DataView[(T1, T2), HWTuple2[V1, V2]] =
     DataView.mapping(
       { case (a, b) => new HWTuple2(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType) },
-      {
-        case ((a, b), hwt) =>
-          Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2)
+      { case ((a, b), hwt) =>
+        Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2)
       }
     )
 
@@ -193,9 +192,8 @@ object DataView {
   ): DataView[(T1, T2, T3), HWTuple3[V1, V2, V3]] =
     DataView.mapping(
       { case (a, b, c) => new HWTuple3(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType) },
-      {
-        case ((a, b, c), hwt) =>
-          Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2, c.viewAs[V3] -> hwt._3)
+      { case ((a, b, c), hwt) =>
+        Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2, c.viewAs[V3] -> hwt._3)
       }
     )
 
@@ -217,13 +215,11 @@ object DataView {
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4), HWTuple4[V1, V2, V3, V4]] =
     DataView.mapping(
-      {
-        case (a, b, c, d) =>
-          new HWTuple4(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType)
+      { case (a, b, c, d) =>
+        new HWTuple4(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType)
       },
-      {
-        case ((a, b, c, d), hwt) =>
-          Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2, c.viewAs[V3] -> hwt._3, d.viewAs[V4] -> hwt._4)
+      { case ((a, b, c, d), hwt) =>
+        Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2, c.viewAs[V3] -> hwt._3, d.viewAs[V4] -> hwt._4)
       }
     )
 
@@ -248,26 +244,24 @@ object DataView {
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5), HWTuple5[V1, V2, V3, V4, V5]] = {
     DataView.mapping(
-      {
-        case tup: Tuple5[T1, T2, T3, T4, T5] =>
-          val (a, b, c, d, e) = tup
-          new HWTuple5(
-            a.viewAs[V1].cloneType,
-            b.viewAs[V2].cloneType,
-            c.viewAs[V3].cloneType,
-            d.viewAs[V4].cloneType,
-            e.viewAs[V5].cloneType
-          )
+      { case tup: Tuple5[T1, T2, T3, T4, T5] =>
+        val (a, b, c, d, e) = tup
+        new HWTuple5(
+          a.viewAs[V1].cloneType,
+          b.viewAs[V2].cloneType,
+          c.viewAs[V3].cloneType,
+          d.viewAs[V4].cloneType,
+          e.viewAs[V5].cloneType
+        )
       },
-      {
-        case ((a, b, c, d, e), hwt) =>
-          Seq(
-            a.viewAs[V1] -> hwt._1,
-            b.viewAs[V2] -> hwt._2,
-            c.viewAs[V3] -> hwt._3,
-            d.viewAs[V4] -> hwt._4,
-            e.viewAs[V5] -> hwt._5
-          )
+      { case ((a, b, c, d, e), hwt) =>
+        Seq(
+          a.viewAs[V1] -> hwt._1,
+          b.viewAs[V2] -> hwt._2,
+          c.viewAs[V3] -> hwt._3,
+          d.viewAs[V4] -> hwt._4,
+          e.viewAs[V5] -> hwt._5
+        )
       }
     )
   }
@@ -296,27 +290,25 @@ object DataView {
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6), HWTuple6[V1, V2, V3, V4, V5, V6]] =
     DataView.mapping(
-      {
-        case (a, b, c, d, e, f) =>
-          new HWTuple6(
-            a.viewAs[V1].cloneType,
-            b.viewAs[V2].cloneType,
-            c.viewAs[V3].cloneType,
-            d.viewAs[V4].cloneType,
-            e.viewAs[V5].cloneType,
-            f.viewAs[V6].cloneType
-          )
+      { case (a, b, c, d, e, f) =>
+        new HWTuple6(
+          a.viewAs[V1].cloneType,
+          b.viewAs[V2].cloneType,
+          c.viewAs[V3].cloneType,
+          d.viewAs[V4].cloneType,
+          e.viewAs[V5].cloneType,
+          f.viewAs[V6].cloneType
+        )
       },
-      {
-        case ((a, b, c, d, e, f), hwt) =>
-          Seq(
-            a.viewAs[V1] -> hwt._1,
-            b.viewAs[V2] -> hwt._2,
-            c.viewAs[V3] -> hwt._3,
-            d.viewAs[V4] -> hwt._4,
-            e.viewAs[V5] -> hwt._5,
-            f.viewAs[V6] -> hwt._6
-          )
+      { case ((a, b, c, d, e, f), hwt) =>
+        Seq(
+          a.viewAs[V1] -> hwt._1,
+          b.viewAs[V2] -> hwt._2,
+          c.viewAs[V3] -> hwt._3,
+          d.viewAs[V4] -> hwt._4,
+          e.viewAs[V5] -> hwt._5,
+          f.viewAs[V6] -> hwt._6
+        )
       }
     )
 
@@ -347,29 +339,27 @@ object DataView {
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7), HWTuple7[V1, V2, V3, V4, V5, V6, V7]] =
     DataView.mapping(
-      {
-        case (a, b, c, d, e, f, g) =>
-          new HWTuple7(
-            a.viewAs[V1].cloneType,
-            b.viewAs[V2].cloneType,
-            c.viewAs[V3].cloneType,
-            d.viewAs[V4].cloneType,
-            e.viewAs[V5].cloneType,
-            f.viewAs[V6].cloneType,
-            g.viewAs[V7].cloneType
-          )
+      { case (a, b, c, d, e, f, g) =>
+        new HWTuple7(
+          a.viewAs[V1].cloneType,
+          b.viewAs[V2].cloneType,
+          c.viewAs[V3].cloneType,
+          d.viewAs[V4].cloneType,
+          e.viewAs[V5].cloneType,
+          f.viewAs[V6].cloneType,
+          g.viewAs[V7].cloneType
+        )
       },
-      {
-        case ((a, b, c, d, e, f, g), hwt) =>
-          Seq(
-            a.viewAs[V1] -> hwt._1,
-            b.viewAs[V2] -> hwt._2,
-            c.viewAs[V3] -> hwt._3,
-            d.viewAs[V4] -> hwt._4,
-            e.viewAs[V5] -> hwt._5,
-            f.viewAs[V6] -> hwt._6,
-            g.viewAs[V7] -> hwt._7
-          )
+      { case ((a, b, c, d, e, f, g), hwt) =>
+        Seq(
+          a.viewAs[V1] -> hwt._1,
+          b.viewAs[V2] -> hwt._2,
+          c.viewAs[V3] -> hwt._3,
+          d.viewAs[V4] -> hwt._4,
+          e.viewAs[V5] -> hwt._5,
+          f.viewAs[V6] -> hwt._6,
+          g.viewAs[V7] -> hwt._7
+        )
       }
     )
 
@@ -403,31 +393,29 @@ object DataView {
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7, T8), HWTuple8[V1, V2, V3, V4, V5, V6, V7, V8]] =
     DataView.mapping(
-      {
-        case (a, b, c, d, e, f, g, h) =>
-          new HWTuple8(
-            a.viewAs[V1].cloneType,
-            b.viewAs[V2].cloneType,
-            c.viewAs[V3].cloneType,
-            d.viewAs[V4].cloneType,
-            e.viewAs[V5].cloneType,
-            f.viewAs[V6].cloneType,
-            g.viewAs[V7].cloneType,
-            h.viewAs[V8].cloneType
-          )
+      { case (a, b, c, d, e, f, g, h) =>
+        new HWTuple8(
+          a.viewAs[V1].cloneType,
+          b.viewAs[V2].cloneType,
+          c.viewAs[V3].cloneType,
+          d.viewAs[V4].cloneType,
+          e.viewAs[V5].cloneType,
+          f.viewAs[V6].cloneType,
+          g.viewAs[V7].cloneType,
+          h.viewAs[V8].cloneType
+        )
       },
-      {
-        case ((a, b, c, d, e, f, g, h), hwt) =>
-          Seq(
-            a.viewAs[V1] -> hwt._1,
-            b.viewAs[V2] -> hwt._2,
-            c.viewAs[V3] -> hwt._3,
-            d.viewAs[V4] -> hwt._4,
-            e.viewAs[V5] -> hwt._5,
-            f.viewAs[V6] -> hwt._6,
-            g.viewAs[V7] -> hwt._7,
-            h.viewAs[V8] -> hwt._8
-          )
+      { case ((a, b, c, d, e, f, g, h), hwt) =>
+        Seq(
+          a.viewAs[V1] -> hwt._1,
+          b.viewAs[V2] -> hwt._2,
+          c.viewAs[V3] -> hwt._3,
+          d.viewAs[V4] -> hwt._4,
+          e.viewAs[V5] -> hwt._5,
+          f.viewAs[V6] -> hwt._6,
+          g.viewAs[V7] -> hwt._7,
+          h.viewAs[V8] -> hwt._8
+        )
       }
     )
 
@@ -464,33 +452,31 @@ object DataView {
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7, T8, T9), HWTuple9[V1, V2, V3, V4, V5, V6, V7, V8, V9]] =
     DataView.mapping(
-      {
-        case (a, b, c, d, e, f, g, h, i) =>
-          new HWTuple9(
-            a.viewAs[V1].cloneType,
-            b.viewAs[V2].cloneType,
-            c.viewAs[V3].cloneType,
-            d.viewAs[V4].cloneType,
-            e.viewAs[V5].cloneType,
-            f.viewAs[V6].cloneType,
-            g.viewAs[V7].cloneType,
-            h.viewAs[V8].cloneType,
-            i.viewAs[V9].cloneType
-          )
+      { case (a, b, c, d, e, f, g, h, i) =>
+        new HWTuple9(
+          a.viewAs[V1].cloneType,
+          b.viewAs[V2].cloneType,
+          c.viewAs[V3].cloneType,
+          d.viewAs[V4].cloneType,
+          e.viewAs[V5].cloneType,
+          f.viewAs[V6].cloneType,
+          g.viewAs[V7].cloneType,
+          h.viewAs[V8].cloneType,
+          i.viewAs[V9].cloneType
+        )
       },
-      {
-        case ((a, b, c, d, e, f, g, h, i), hwt) =>
-          Seq(
-            a.viewAs[V1] -> hwt._1,
-            b.viewAs[V2] -> hwt._2,
-            c.viewAs[V3] -> hwt._3,
-            d.viewAs[V4] -> hwt._4,
-            e.viewAs[V5] -> hwt._5,
-            f.viewAs[V6] -> hwt._6,
-            g.viewAs[V7] -> hwt._7,
-            h.viewAs[V8] -> hwt._8,
-            i.viewAs[V9] -> hwt._9
-          )
+      { case ((a, b, c, d, e, f, g, h, i), hwt) =>
+        Seq(
+          a.viewAs[V1] -> hwt._1,
+          b.viewAs[V2] -> hwt._2,
+          c.viewAs[V3] -> hwt._3,
+          d.viewAs[V4] -> hwt._4,
+          e.viewAs[V5] -> hwt._5,
+          f.viewAs[V6] -> hwt._6,
+          g.viewAs[V7] -> hwt._7,
+          h.viewAs[V8] -> hwt._8,
+          i.viewAs[V9] -> hwt._9
+        )
       }
     )
 
@@ -530,35 +516,33 @@ object DataView {
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10), HWTuple10[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10]] =
     DataView.mapping(
-      {
-        case (a, b, c, d, e, f, g, h, i, j) =>
-          new HWTuple10(
-            a.viewAs[V1].cloneType,
-            b.viewAs[V2].cloneType,
-            c.viewAs[V3].cloneType,
-            d.viewAs[V4].cloneType,
-            e.viewAs[V5].cloneType,
-            f.viewAs[V6].cloneType,
-            g.viewAs[V7].cloneType,
-            h.viewAs[V8].cloneType,
-            i.viewAs[V9].cloneType,
-            j.viewAs[V10].cloneType
-          )
+      { case (a, b, c, d, e, f, g, h, i, j) =>
+        new HWTuple10(
+          a.viewAs[V1].cloneType,
+          b.viewAs[V2].cloneType,
+          c.viewAs[V3].cloneType,
+          d.viewAs[V4].cloneType,
+          e.viewAs[V5].cloneType,
+          f.viewAs[V6].cloneType,
+          g.viewAs[V7].cloneType,
+          h.viewAs[V8].cloneType,
+          i.viewAs[V9].cloneType,
+          j.viewAs[V10].cloneType
+        )
       },
-      {
-        case ((a, b, c, d, e, f, g, h, i, j), hwt) =>
-          Seq(
-            a.viewAs[V1] -> hwt._1,
-            b.viewAs[V2] -> hwt._2,
-            c.viewAs[V3] -> hwt._3,
-            d.viewAs[V4] -> hwt._4,
-            e.viewAs[V5] -> hwt._5,
-            f.viewAs[V6] -> hwt._6,
-            g.viewAs[V7] -> hwt._7,
-            h.viewAs[V8] -> hwt._8,
-            i.viewAs[V9] -> hwt._9,
-            j.viewAs[V10] -> hwt._10
-          )
+      { case ((a, b, c, d, e, f, g, h, i, j), hwt) =>
+        Seq(
+          a.viewAs[V1] -> hwt._1,
+          b.viewAs[V2] -> hwt._2,
+          c.viewAs[V3] -> hwt._3,
+          d.viewAs[V4] -> hwt._4,
+          e.viewAs[V5] -> hwt._5,
+          f.viewAs[V6] -> hwt._6,
+          g.viewAs[V7] -> hwt._7,
+          h.viewAs[V8] -> hwt._8,
+          i.viewAs[V9] -> hwt._9,
+          j.viewAs[V10] -> hwt._10
+        )
       }
     )
 }

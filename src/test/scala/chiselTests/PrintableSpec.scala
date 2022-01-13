@@ -48,10 +48,9 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       }
     }
 
-    firrtl.split("\n").collect {
-      case PrintfRegex(matched) =>
-        val (str, args) = processBody(matched)
-        Printf(str, args)
+    firrtl.split("\n").collect { case PrintfRegex(matched) =>
+      val (str, args) = processBody(matched)
+      Printf(str, args)
     }
   }
 

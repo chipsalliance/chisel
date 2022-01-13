@@ -33,8 +33,8 @@ class GroupSpec extends ChiselFlatSpec {
   def lower[T <: RawModule](gen: () => T): fir.Circuit = {
     (new ChiselStage)
       .execute(Array("--compiler", "low", "--target-dir", "test_run_dir"), Seq(ChiselGeneratorAnnotation(gen)))
-      .collectFirst {
-        case firrtl.stage.FirrtlCircuitAnnotation(circuit) => circuit
+      .collectFirst { case firrtl.stage.FirrtlCircuitAnnotation(circuit) =>
+        circuit
       }
       .get
   }

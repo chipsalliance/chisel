@@ -56,8 +56,8 @@ object when {
     implicit val compileOptions = ExplicitCompileOptions.Strict
     implicit val sourceInfo = UnlocatableSourceInfo
     val whens = Builder.whenStack
-    whens.foldRight(true.B) {
-      case (ctx, acc) => acc && ctx.localCond
+    whens.foldRight(true.B) { case (ctx, acc) =>
+      acc && ctx.localCond
     }
   }
 }
@@ -90,8 +90,8 @@ final class WhenContext private[chisel3] (
   private[chisel3] def localCond: Bool = {
     implicit val compileOptions = ExplicitCompileOptions.Strict
     implicit val sourceInfo = UnlocatableSourceInfo
-    val alt = altConds.foldRight(true.B) {
-      case (c, acc) => acc & !c()
+    val alt = altConds.foldRight(true.B) { case (c, acc) =>
+      acc & !c()
     }
     cond
       .map(alt && _())

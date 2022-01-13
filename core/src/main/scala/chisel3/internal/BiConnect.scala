@@ -13,8 +13,7 @@ import chisel3.internal.sourceinfo._
 
 import scala.annotation.tailrec
 
-/**
-  * BiConnect.connect executes a bidirectional connection element-wise.
+/** BiConnect.connect executes a bidirectional connection element-wise.
   *
   * Note that the arguments are left and right (not source and sink) so the
   * intent is for the operation to be commutative.

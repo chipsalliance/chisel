@@ -233,9 +233,8 @@ package experimental {
         case r: Record  => r.elements.toSeq.flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
         case v: Vec[_]  => v.zipWithIndex.flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
       })
-      modulePorts(target).flatMap {
-        case (name, data) =>
-          getPortNames(name, data).toList
+      modulePorts(target).flatMap { case (name, data) =>
+        getPortNames(name, data).toList
       }
     }
 
@@ -320,16 +319,14 @@ private[chisel3] object cloneSupertype {
 private[chisel3] object getRecursiveFields {
   def apply(data: Data, path: String): Seq[(Data, String)] = data match {
     case data: Record =>
-      data.elements.map {
-        case (fieldName, fieldData) =>
-          getRecursiveFields(fieldData, s"$path.$fieldName")
+      data.elements.map { case (fieldName, fieldData) =>
+        getRecursiveFields(fieldData, s"$path.$fieldName")
       }.fold(Seq(data -> path)) {
         _ ++ _
       }
     case data: Vec[_] =>
-      data.getElements.zipWithIndex.map {
-        case (fieldData, fieldIndex) =>
-          getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
+      data.getElements.zipWithIndex.map { case (fieldData, fieldIndex) =>
+        getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
       }.fold(Seq(data -> path)) {
         _ ++ _
       }
@@ -339,15 +336,13 @@ private[chisel3] object getRecursiveFields {
   def lazily(data: Data, path: String): Seq[(Data, String)] = data match {
     case data: Record =>
       LazyList(data -> path) ++
-        data.elements.view.flatMap {
-          case (fieldName, fieldData) =>
-            getRecursiveFields(fieldData, s"$path.$fieldName")
+        data.elements.view.flatMap { case (fieldName, fieldData) =>
+          getRecursiveFields(fieldData, s"$path.$fieldName")
         }
     case data: Vec[_] =>
       LazyList(data -> path) ++
-        data.getElements.view.zipWithIndex.flatMap {
-          case (fieldData, fieldIndex) =>
-            getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
+        data.getElements.view.zipWithIndex.flatMap { case (fieldData, fieldIndex) =>
+          getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
         }
     case data: Element => LazyList(data -> path)
   }
@@ -363,10 +358,9 @@ private[chisel3] object getMatchedFields {
     case (x: Record, y: Record) =>
       (x.elements
         .zip(y.elements))
-        .map {
-          case ((xName, xElt), (yName, yElt)) =>
-            require(xName == yName) // assume fields returned in same, deterministic order
-            getMatchedFields(xElt, yElt)
+        .map { case ((xName, xElt), (yName, yElt)) =>
+          require(xName == yName) // assume fields returned in same, deterministic order
+          getMatchedFields(xElt, yElt)
         }
         .fold(Seq(x -> y)) {
           _ ++ _
@@ -374,9 +368,8 @@ private[chisel3] object getMatchedFields {
     case (x: Vec[_], y: Vec[_]) =>
       (x.getElements
         .zip(y.getElements))
-        .map {
-          case (xElt, yElt) =>
-            getMatchedFields(xElt, yElt)
+        .map { case (xElt, yElt) =>
+          getMatchedFields(xElt, yElt)
         }
         .fold(Seq(x -> y)) {
           _ ++ _
@@ -393,8 +386,7 @@ object chiselTypeOf {
   }
 }
 
-/**
-  * Input, Output, and Flipped are used to define the directions of Module IOs.
+/** Input, Output, and Flipped are used to define the directions of Module IOs.
   *
   * Note that they currently clone their source argument, including its bindings.
   *
@@ -770,8 +762,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   )
   def isLit(dummy: Int*): Boolean = isLit
 
-  /**
-    * If this is a literal that is representable as bits, returns the value as a BigInt.
+  /** If this is a literal that is representable as bits, returns the value as a BigInt.
     * If not a literal, or not representable as bits (for example, is or contains Analog), returns None.
     */
   def litOption: Option[BigInt]
@@ -782,8 +773,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   )
   def litOption(dummy: Int*): Option[BigInt] = litOption
 
-  /**
-    * Returns the literal value if this is a literal that is representable as bits, otherwise crashes.
+  /** Returns the literal value if this is a literal that is representable as bits, otherwise crashes.
     */
   def litValue: BigInt = litOption.get
 

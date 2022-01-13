@@ -97,9 +97,8 @@ private[chisel3] object SeqUtils {
         case _: SInt =>
           // SInt's have to be managed carefully so sign extension works
 
-          val sInts: Iterable[(Bool, SInt)] = in.collect {
-            case (s: Bool, f: SInt) =>
-              (s, f.asTypeOf(output).asInstanceOf[SInt])
+          val sInts: Iterable[(Bool, SInt)] = in.collect { case (s: Bool, f: SInt) =>
+            (s, f.asTypeOf(output).asInstanceOf[SInt])
           }
 
           val masked = for ((s, i) <- sInts) yield Mux(s, i, 0.S)
@@ -108,11 +107,10 @@ private[chisel3] object SeqUtils {
         case _: FixedPoint =>
           val (sels, possibleOuts) = in.toSeq.unzip
 
-          val (intWidths, binaryPoints) = in.toSeq.map {
-            case (_, o) =>
-              val fo = o.asInstanceOf[FixedPoint]
-              require(fo.binaryPoint.known, "Mux1H requires width/binary points to be defined")
-              (fo.getWidth - fo.binaryPoint.get, fo.binaryPoint.get)
+          val (intWidths, binaryPoints) = in.toSeq.map { case (_, o) =>
+            val fo = o.asInstanceOf[FixedPoint]
+            require(fo.binaryPoint.known, "Mux1H requires width/binary points to be defined")
+            (fo.getWidth - fo.binaryPoint.get, fo.binaryPoint.get)
           }.unzip
 
           if (intWidths.distinct.length == 1 && binaryPoints.distinct.length == 1) {
@@ -132,9 +130,8 @@ private[chisel3] object SeqUtils {
             val (sel, inData) = in.unzip
             val inElts = inData.map(_.asInstanceOf[Aggregate].getElements)
             // We want to iterate on the columns of inElts, so we transpose
-            out.getElements.zip(inElts.transpose).foreach {
-              case (outElt, elts) =>
-                outElt := oneHotMux(sel.zip(elts))
+            out.getElements.zip(inElts.transpose).foreach { case (outElt, elts) =>
+              outElt := oneHotMux(sel.zip(elts))
             }
             out.asInstanceOf[T]
           } else {

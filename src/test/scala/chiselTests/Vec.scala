@@ -352,40 +352,35 @@ class VecSpec extends ChiselPropSpec with Utils {
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Vecs should be assignable") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses { new ValueTester(w, v) }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses { new ValueTester(w, v) }
     }
   }
 
   property("Vecs should be passed through vec IO") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses { new IOTester(w, v) }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses { new IOTester(w, v) }
     }
   }
 
   property("Vec.fill with a pure type should generate an exception") {
     // We don't really need a sequence of random widths here, since any should throw an exception.
-    forAll(safeUIntWidth) {
-      case (w: Int) =>
-        an[BindingException] should be thrownBy extractCause[BindingException] {
-          ChiselStage.elaborate(new IOTesterModFill(w))
-        }
+    forAll(safeUIntWidth) { case (w: Int) =>
+      an[BindingException] should be thrownBy extractCause[BindingException] {
+        ChiselStage.elaborate(new IOTesterModFill(w))
+      }
     }
   }
 
   property("A Reg of a Vec should operate correctly") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses { new RegTester(w, v) }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses { new RegTester(w, v) }
     }
   }
 
   property("A Vec of lit should operate correctly") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses { new LitTester(w, v) }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses { new LitTester(w, v) }
     }
   }
 

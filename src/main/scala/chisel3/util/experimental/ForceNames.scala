@@ -188,8 +188,8 @@ private object ForceNamesTransform {
           }
         case _ =>
       }
-      allNameMaps.map {
-        case (isModule, nameMap) => Target.referringModule(isModule).module -> nameMap
+      allNameMaps.map { case (isModule, nameMap) =>
+        Target.referringModule(isModule).module -> nameMap
       }.toMap
     }
     if (renames.nonEmpty) Some(renames) else None

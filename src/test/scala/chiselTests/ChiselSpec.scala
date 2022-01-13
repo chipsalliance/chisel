@@ -96,8 +96,8 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
         Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
         Seq(ChiselGeneratorAnnotation(() => t))
       )
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a.value
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a.value
       }
       .getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
@@ -124,8 +124,8 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       "--full-stacktrace"
     )
     val annos = (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => t)) ++ providedAnnotations)
-    val circuit = annos.collectFirst {
-      case FirrtlCircuitAnnotation(c) => c
+    val circuit = annos.collectFirst { case FirrtlCircuitAnnotation(c) =>
+      c
     }.getOrElse(fail("No FIRRTL Circuit found!!"))
     (circuit, annos)
   }

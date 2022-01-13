@@ -50,14 +50,13 @@ object Select {
     implicit val mg = new chisel3.internal.MacroGenerated {}
     parent.proto._component.get match {
       case d: DefModule =>
-        d.commands.collect {
-          case d: DefInstance =>
-            d.id match {
-              case p: chisel3.internal.BaseModule.IsClone[_] =>
-                parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
-              case other: BaseModule =>
-                parent._lookup { x => other }
-            }
+        d.commands.collect { case d: DefInstance =>
+          d.id match {
+            case p: chisel3.internal.BaseModule.IsClone[_] =>
+              parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
+            case other: BaseModule =>
+              parent._lookup { x => other }
+          }
         }
       case other => Nil
     }
@@ -114,14 +113,13 @@ object Select {
     check(parent)
     val defs = parent.proto._component.get match {
       case d: DefModule =>
-        d.commands.collect {
-          case i: DefInstance =>
-            i.id match {
-              case p: chisel3.internal.BaseModule.IsClone[_] =>
-                parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
-              case other: BaseModule =>
-                parent._lookup { x => other.toDefinition }
-            }
+        d.commands.collect { case i: DefInstance =>
+          i.id match {
+            case p: chisel3.internal.BaseModule.IsClone[_] =>
+              parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
+            case other: BaseModule =>
+              parent._lookup { x => other.toDefinition }
+          }
         }
       case other => Nil
     }
@@ -292,8 +290,8 @@ object Select {
     */
   def syncReadMems(module: BaseModule): Seq[SyncReadMem[_]] = {
     check(module)
-    module._component.get.asInstanceOf[DefModule].commands.collect {
-      case r: DefSeqMemory => r.id.asInstanceOf[SyncReadMem[_]]
+    module._component.get.asInstanceOf[DefModule].commands.collect { case r: DefSeqMemory =>
+      r.id.asInstanceOf[SyncReadMem[_]]
     }
   }
 
@@ -302,8 +300,8 @@ object Select {
     */
   def mems(module: BaseModule): Seq[Mem[_]] = {
     check(module)
-    module._component.get.asInstanceOf[DefModule].commands.collect {
-      case r: DefMemory => r.id.asInstanceOf[Mem[_]]
+    module._component.get.asInstanceOf[DefModule].commands.collect { case r: DefMemory =>
+      r.id.asInstanceOf[Mem[_]]
     }
   }
 
@@ -312,8 +310,8 @@ object Select {
     */
   def ops(module: BaseModule): Seq[(String, Data)] = {
     check(module)
-    module._component.get.asInstanceOf[DefModule].commands.collect {
-      case d: DefPrim[_] => (d.op.name, d.id)
+    module._component.get.asInstanceOf[DefModule].commands.collect { case d: DefPrim[_] =>
+      (d.op.name, d.id)
     }
   }
 
@@ -334,8 +332,8 @@ object Select {
     */
   def wires(module: BaseModule): Seq[Data] = {
     check(module)
-    module._component.get.asInstanceOf[DefModule].commands.collect {
-      case r: DefWire => r.id
+    module._component.get.asInstanceOf[DefModule].commands.collect { case r: DefWire =>
+      r.id
     }
   }
 
@@ -344,8 +342,8 @@ object Select {
     */
   def memPorts(module: BaseModule): Seq[(Data, MemPortDirection, MemBase[_])] = {
     check(module)
-    module._component.get.asInstanceOf[DefModule].commands.collect {
-      case r: DefMemPort[_] => (r.id, r.dir, r.source.id.asInstanceOf[MemBase[_ <: Data]])
+    module._component.get.asInstanceOf[DefModule].commands.collect { case r: DefMemPort[_] =>
+      (r.id, r.dir, r.source.id.asInstanceOf[MemBase[_ <: Data]])
     }
   }
 
@@ -365,8 +363,8 @@ object Select {
     */
   def invalids(module: BaseModule): Seq[Data] = {
     check(module)
-    module._component.get.asInstanceOf[DefModule].commands.collect {
-      case DefInvalid(_, arg) => getData(arg)
+    module._component.get.asInstanceOf[DefModule].commands.collect { case DefInvalid(_, arg) =>
+      getData(arg)
     }
   }
 

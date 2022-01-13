@@ -7,8 +7,7 @@ import chisel3.internal.requireIsChiselType
 
 import scala.collection.immutable.ListMap
 
-/**
-  * Create a MixedVec wire with default values as specified, and type of each element inferred from
+/** Create a MixedVec wire with default values as specified, and type of each element inferred from
   * those default values.
   *
   * This is analogous to [[VecInit]].
@@ -20,8 +19,7 @@ import scala.collection.immutable.ListMap
   */
 object MixedVecInit {
 
-  /**
-    * Create a MixedVec wire from a Seq of values.
+  /** Create a MixedVec wire from a Seq of values.
     */
   def apply[T <: Data](vals: Seq[T]): MixedVec[T] = {
     // Create a wire of this type.
@@ -33,37 +31,31 @@ object MixedVecInit {
     hetVecWire
   }
 
-  /**
-    * Create a MixedVec wire from a varargs list of values.
+  /** Create a MixedVec wire from a varargs list of values.
     */
   def apply[T <: Data](val0: T, vals: T*): MixedVec[T] = apply(val0 +: vals.toSeq)
 }
 
-/**
-  * Create a MixedVec type, given element types. Inputs must be Chisel types which have no value
+/** Create a MixedVec type, given element types. Inputs must be Chisel types which have no value
   * (not hardware types).
   *
   * @return MixedVec with the given types.
   */
 object MixedVec {
 
-  /**
-    * Create a MixedVec type from a Seq of Chisel types.
+  /** Create a MixedVec type from a Seq of Chisel types.
     */
   def apply[T <: Data](eltsIn: Seq[T]): MixedVec[T] = new MixedVec(eltsIn)
 
-  /**
-    * Create a MixedVec type from a varargs list of Chisel types.
+  /** Create a MixedVec type from a varargs list of Chisel types.
     */
   def apply[T <: Data](val0: T, vals: T*): MixedVec[T] = new MixedVec(val0 +: vals.toSeq)
 
-  /**
-    * Create a new MixedVec type from an unbound MixedVec type.
+  /** Create a new MixedVec type from an unbound MixedVec type.
     */
   def apply[T <: Data](mixedVec: MixedVec[T]): MixedVec[T] = new MixedVec(mixedVec.elts)
 
-  /**
-    * Create a MixedVec type from the type of the given Vec.
+  /** Create a MixedVec type from the type of the given Vec.
     *
     * @example {{{
     * MixedVec(Vec(2, UInt(8.W))) = MixedVec(Seq.fill(2){UInt(8.W)})
@@ -74,8 +66,7 @@ object MixedVec {
   }
 }
 
-/**
-  * A hardware array of elements that can hold values of different types/widths,
+/** A hardware array of elements that can hold values of different types/widths,
   * unlike Vec which can only hold elements of the same type/width.
   *
   * @param eltsIn Element types. Must be Chisel types.
@@ -100,8 +91,7 @@ final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with 
   // Clone the inputs so that we have our own references.
   private val elts: IndexedSeq[T] = eltsIn.map(_.cloneTypeFull).toIndexedSeq
 
-  /**
-    * Statically (elaboration-time) retrieve the element at the given index.
+  /** Statically (elaboration-time) retrieve the element at the given index.
     * @param index Index with which to retrieve.
     * @return Retrieved index.
     */
@@ -117,8 +107,7 @@ final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with 
       a := b
   }
 
-  /**
-    * Get the length of this MixedVec.
+  /** Get the length of this MixedVec.
     * @return Number of elements in this MixedVec.
     */
   def length: Int = elts.length

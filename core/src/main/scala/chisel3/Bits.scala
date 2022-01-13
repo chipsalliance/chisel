@@ -692,8 +692,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that)
 
-  /**
-    * Circular shift to the left
+  /** Circular shift to the left
     * @param that number of bits to rotate
     * @return UInt of same width rotated left n bits
     */
@@ -707,8 +706,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     case _                         => tail(n) ## head(n)
   }
 
-  /**
-    * Circular shift to the right
+  /** Circular shift to the right
     * @param that number of bits to rotate
     * @return UInt of same width rotated right n bits
     */
@@ -730,8 +728,8 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): UInt =
-    n.asBools().zipWithIndex.foldLeft(this) {
-      case (in, (en, sh)) => Mux(en, staticShift(in, 1 << sh), in)
+    n.asBools().zipWithIndex.foldLeft(this) { case (in, (en, sh)) =>
+      Mux(en, staticShift(in, 1 << sh), in)
     }
 
   def do_rotateRight(n: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -1780,8 +1778,7 @@ package experimental {
   sealed trait PrivateType
   private case object PrivateObject extends PrivateType
 
-  /**
-    * Factory and convenience methods for the FixedPoint class
+  /** Factory and convenience methods for the FixedPoint class
     * IMPORTANT: The API provided here is experimental and may change in the future.
     */
   object FixedPoint extends NumObject {
@@ -1872,8 +1869,7 @@ package experimental {
     }
   }
 
-  /**
-    * A sealed class representing a fixed point number that has a range, an additional
+  /** A sealed class representing a fixed point number that has a range, an additional
     * parameter that can determine a minimum and maximum supported value.
     * The range can be used to reduce the required widths particularly in primitive
     * operations with other Intervals, the canonical example being
@@ -2116,8 +2112,7 @@ package experimental {
       binop(sourceInfo, Interval(this.range >> that), DynamicShiftRightOp, that)
     }
 
-    /**
-      * Squeeze returns the intersection of the ranges this interval and that Interval
+    /** Squeeze returns the intersection of the ranges this interval and that Interval
       * Ignores binary point of argument
       * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
       * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
@@ -2132,8 +2127,7 @@ package experimental {
       pushOp(DefPrim(sourceInfo, Interval(this.range.squeeze(that.range)), SqueezeOp, this.ref, other.ref))
     }
 
-    /**
-      * Squeeze returns the intersection of the ranges this interval and that UInt
+    /** Squeeze returns the intersection of the ranges this interval and that UInt
       * Currently, that must have a defined width
       * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
       * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
@@ -2150,8 +2144,7 @@ package experimental {
       }
     }
 
-    /**
-      * Squeeze returns the intersection of the ranges this interval and that SInt
+    /** Squeeze returns the intersection of the ranges this interval and that SInt
       * Currently, that must have a defined width
       * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
       * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
@@ -2168,8 +2161,7 @@ package experimental {
       }
     }
 
-    /**
-      * Squeeze returns the intersection of the ranges this interval and that IntervalRange
+    /** Squeeze returns the intersection of the ranges this interval and that IntervalRange
       * Ignores binary point of argument
       * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
       * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
@@ -2185,8 +2177,7 @@ package experimental {
       do_squeeze(intervalLit)
     }
 
-    /**
-      * Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
+    /** Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
       * Ignores binary point of argument
       * Errors if requires wrapping more than once
       * @param that
@@ -2201,8 +2192,7 @@ package experimental {
       pushOp(DefPrim(sourceInfo, Interval(this.range.wrap(that.range)), WrapOp, this.ref, other.ref))
     }
 
-    /**
-      * Wrap this interval into the range determined by that UInt
+    /** Wrap this interval into the range determined by that UInt
       * Errors if requires wrapping more than once
       * @param that an UInt whose properties determine the wrap
       * @return
@@ -2218,8 +2208,7 @@ package experimental {
       }
     }
 
-    /**
-      * Wrap this interval into the range determined by an SInt
+    /** Wrap this interval into the range determined by an SInt
       * Errors if requires wrapping more than once
       * @param that an SInt whose properties determine the bounds of the wrap
       * @return
@@ -2236,8 +2225,7 @@ package experimental {
       }
     }
 
-    /**
-      * Wrap this interval into the range determined by an IntervalRange
+    /** Wrap this interval into the range determined by an IntervalRange
       * Adds hardware to change values outside of wrapped range to be at the boundary
       * Errors if requires wrapping more than once
       * Ignores binary point of argument
@@ -2254,8 +2242,7 @@ package experimental {
       }
     }
 
-    /**
-      * Clip this interval into the range determined by argument's range
+    /** Clip this interval into the range determined by argument's range
       * Adds hardware to change values outside of clipped range to be at the boundary
       * Ignores binary point of argument
       * @param that an Interval whose properties determine the clipping
@@ -2266,8 +2253,7 @@ package experimental {
       binop(sourceInfo, Interval(this.range.clip(that.range)), ClipOp, that)
     }
 
-    /**
-      * Clip this interval into the range determined by argument's range
+    /** Clip this interval into the range determined by argument's range
       * Adds hardware to change values outside of clipped range to be at the boundary
       * @param that an UInt whose width determines the clipping
       * @return
@@ -2279,8 +2265,7 @@ package experimental {
       do_clip(Wire(Interval(IntervalRange(firrtlir.Closed(0), firrtlir.Closed(u), BinaryPoint(0)))))
     }
 
-    /**
-      * Clip this interval into the range determined by argument's range
+    /** Clip this interval into the range determined by argument's range
       * Adds hardware to move values outside of clipped range to the boundary
       * @param that   an SInt whose width determines the clipping
       * @return
@@ -2293,8 +2278,7 @@ package experimental {
       do_clip(Wire(Interval(IntervalRange(firrtlir.Closed(l), firrtlir.Closed(u), BinaryPoint(0)))))
     }
 
-    /**
-      * Clip this interval into the range determined by argument's range
+    /** Clip this interval into the range determined by argument's range
       * Adds hardware to move values outside of clipped range to the boundary
       * Ignores binary point of argument
       * @param that   an SInt whose width determines the clipping
@@ -2364,8 +2348,7 @@ package experimental {
   /** Use PrivateObject to force users to specify width and binaryPoint by name
     */
 
-  /**
-    * Factory and convenience methods for the Interval class
+  /** Factory and convenience methods for the Interval class
     * IMPORTANT: The API provided here is experimental and may change in the future.
     */
   object Interval extends NumObject {
@@ -2488,8 +2471,7 @@ package experimental {
       lit.bindLitArg(result)
     }
 
-    /**
-      * This returns the smallest Interval literal that can legally fit in range, if possible
+    /** This returns the smallest Interval literal that can legally fit in range, if possible
       * If the lower bound or binary point is not known then return None
       *
       * @param range use to figure low number
@@ -2507,8 +2489,7 @@ package experimental {
       }
     }
 
-    /**
-      * This returns the largest Interval literal that can legally fit in range, if possible
+    /** This returns the largest Interval literal that can legally fit in range, if possible
       * If the upper bound or binary point is not known then return None
       *
       * @param range use to figure low number

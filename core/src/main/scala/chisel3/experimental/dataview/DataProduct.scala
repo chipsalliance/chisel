@@ -85,9 +85,8 @@ object DataProduct extends LowPriorityDataProduct {
   implicit def seqDataProduct[A: DataProduct]: DataProduct[Seq[A]] = new DataProduct[Seq[A]] {
     def dataIterator(a: Seq[A], path: String): Iterator[(Data, String)] = {
       val dpa = implicitly[DataProduct[A]]
-      a.iterator.zipWithIndex.flatMap {
-        case (elt, idx) =>
-          dpa.dataIterator(elt, s"$path[$idx]")
+      a.iterator.zipWithIndex.flatMap { case (elt, idx) =>
+        dpa.dataIterator(elt, s"$path[$idx]")
       }
     }
   }

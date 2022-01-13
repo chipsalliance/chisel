@@ -43,8 +43,8 @@ final class AspectLibrary() extends RegisteredLibrary {
   val options = Seq(
     new ShellOption[String](
       longOption = "with-aspect",
-      toAnnotationSeq = {
-        case aspectName: String => Seq(apply(aspectName))
+      toAnnotationSeq = { case aspectName: String =>
+        Seq(apply(aspectName))
       },
       helpText = "The name/class of an aspect to compile with (must be a class/object without arguments!)",
       helpValueName = Some("<package>.<aspect>")

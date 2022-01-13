@@ -243,8 +243,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
   import chisel3.util.experimental.BitSet
   def terms = Set(this)
 
-  /**
-    * Get specified width of said BitPat
+  /** Get specified width of said BitPat
     */
   override def getWidth: Int = width
   def apply(x:  Int): BitPat = macro SourceInfoTransform.xArg

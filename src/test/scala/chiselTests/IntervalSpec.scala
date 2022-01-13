@@ -174,8 +174,7 @@ class MoreIntervalShiftTester extends BasicTester {
   stop()
 }
 
-/**
-  * This is a reality check not a test. Makes it easier to figure out
+/** This is a reality check not a test. Makes it easier to figure out
   * what is going on in other places
   * @param range        a range for inputs
   * @param targetRange  a range for outputs
@@ -252,8 +251,7 @@ class SqueezeFunctionalityTester(range: IntervalRange, startNum: BigDecimal, end
   )
 }
 
-/**
-  * Demonstrate a simple counter register with an Interval type
+/** Demonstrate a simple counter register with an Interval type
   */
 class IntervalRegisterTester extends BasicTester {
 

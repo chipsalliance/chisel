@@ -56,8 +56,8 @@ class InlineSpec extends AnyFreeSpec with ChiselRunners with Matchers {
       val instanceNames =
         firrtlStage
           .execute(Array("-X", "low"), chiselAnnotations)
-          .collectFirst {
-            case FirrtlCircuitAnnotation(circuit) => circuit
+          .collectFirst { case FirrtlCircuitAnnotation(circuit) =>
+            circuit
           }
           .map(collectInstances(_, Some("Top")))
           .getOrElse(fail)
@@ -84,8 +84,8 @@ class InlineSpec extends AnyFreeSpec with ChiselRunners with Matchers {
       val instanceNames =
         firrtlStage
           .execute(Array("-X", "low"), chiselAnnotations)
-          .collectFirst {
-            case FirrtlCircuitAnnotation(circuit) => circuit
+          .collectFirst { case FirrtlCircuitAnnotation(circuit) =>
+            circuit
           }
           .map(collectInstances(_, Some("Top")))
           .getOrElse(fail)

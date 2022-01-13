@@ -217,14 +217,13 @@ class LoadMemoryTransform extends Transform {
   def run(circuit: Circuit, annotations: AnnotationSeq): Circuit = {
     val groups = annotations.collect { case m: LoadMemoryAnnotation => m }
       .groupBy(_.target.serialize)
-    val memoryAnnotations = groups.map {
-      case (key, annos) =>
-        if (annos.size > 1) {
-          throw new Exception(
-            s"Multiple (${annos.size} found for memory $key one LoadMemoryAnnotation is allowed per memory"
-          )
-        }
-        key -> annos.head
+    val memoryAnnotations = groups.map { case (key, annos) =>
+      if (annos.size > 1) {
+        throw new Exception(
+          s"Multiple (${annos.size} found for memory $key one LoadMemoryAnnotation is allowed per memory"
+        )
+      }
+      key -> annos.head
     }
 
     val modulesByName = circuit.modules.collect { case module: firrtl.ir.Module => module.name -> module }.toMap

@@ -566,8 +566,7 @@ package experimental {
       }
     }
 
-    /**
-      * Internal API. Returns a list of this module's generated top-level ports as a map of a String
+    /** Internal API. Returns a list of this module's generated top-level ports as a map of a String
       * (FIRRTL name) to the IO object. Only valid after the module is closed.
       *
       * Note: for BlackBoxes (but not ExtModules), this returns the contents of the top-level io
@@ -671,8 +670,7 @@ package experimental {
     /** Private accessor for _bindIoInPlace */
     private[chisel3] def bindIoInPlace(iodef: Data): Unit = _bindIoInPlace(iodef)
 
-    /**
-      * This must wrap the datatype used to set the io field of any Module.
+    /** This must wrap the datatype used to set the io field of any Module.
       * i.e. All concrete modules must have defined io in this form:
       * [lazy] val io[: io type] = IO(...[: io type])
       *

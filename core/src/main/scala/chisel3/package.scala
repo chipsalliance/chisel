@@ -10,8 +10,7 @@ package object chisel3 {
 
   import scala.language.implicitConversions
 
-  /**
-    * These implicit classes allow one to convert [[scala.Int]] or [[scala.BigInt]] to
+  /** These implicit classes allow one to convert [[scala.Int]] or [[scala.BigInt]] to
     * Chisel.UInt|Chisel.SInt by calling .asUInt|.asSInt on them, respectively.
     * The versions .asUInt(width)|.asSInt(width) are also available to explicitly
     * mark a width for the new literal.

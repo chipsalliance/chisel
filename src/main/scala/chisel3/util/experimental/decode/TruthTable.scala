@@ -36,24 +36,23 @@ object TruthTable {
     val outputWidth = table.map(_._2.getWidth).head
     val mergedTable = table
       .groupBy(_._1.toString)
-      .map {
-        case (key, values) =>
-          // merge same input inputs.
-          values.head._1 -> BitPat(s"b${Seq
-            .tabulate(outputWidth) { i =>
-              val outputSet = values
-                .map(_._2)
-                .map(_.rawString)
-                .map(_(i))
-                .toSet
-                .filterNot(_ == '?')
-              require(
-                outputSet.size != 2,
-                s"TruthTable conflict in :\n${values.map { case (i, o) => s"${i.rawString}->${o.rawString}" }.mkString("\n")}"
-              )
-              outputSet.headOption.getOrElse('?')
-            }
-            .mkString}")
+      .map { case (key, values) =>
+        // merge same input inputs.
+        values.head._1 -> BitPat(s"b${Seq
+          .tabulate(outputWidth) { i =>
+            val outputSet = values
+              .map(_._2)
+              .map(_.rawString)
+              .map(_(i))
+              .toSet
+              .filterNot(_ == '?')
+            require(
+              outputSet.size != 2,
+              s"TruthTable conflict in :\n${values.map { case (i, o) => s"${i.rawString}->${o.rawString}" }.mkString("\n")}"
+            )
+            outputSet.headOption.getOrElse('?')
+          }
+          .mkString}")
       }
       .toSeq
     import BitPat.bitPatOrder

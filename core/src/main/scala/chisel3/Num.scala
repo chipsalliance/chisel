@@ -196,8 +196,7 @@ trait NumObject {
   val MaxBitsBigIntToBigDecimal = 108
   val MaxBitsBigIntToDouble = 53
 
-  /**
-    * How to create a bigint from a double with a specific binaryPoint
+  /** How to create a bigint from a double with a specific binaryPoint
     * @param x           a double value
     * @param binaryPoint a binaryPoint that you would like to use
     * @return
@@ -208,8 +207,7 @@ trait NumObject {
     result
   }
 
-  /**
-    * How to create a bigint from a big decimal with a specific binaryPoint
+  /** How to create a bigint from a big decimal with a specific binaryPoint
     * @param x           a BigDecimal value
     * @param binaryPoint a binaryPoint that you would like to use
     * @return
@@ -222,8 +220,7 @@ trait NumObject {
     }
   }
 
-  /**
-    * How to create a bigint from a big decimal with a specific binaryPoint (int)
+  /** How to create a bigint from a big decimal with a specific binaryPoint (int)
     * @param x           a BigDecimal value
     * @param binaryPoint a binaryPoint that you would like to use
     * @return
@@ -234,8 +231,7 @@ trait NumObject {
     result
   }
 
-  /**
-    * How to create a bigint from a big decimal with a specific binaryPoint
+  /** How to create a bigint from a big decimal with a specific binaryPoint
     * @param value           a BigDecimal value
     * @param binaryPoint a binaryPoint that you would like to use
     * @return
@@ -248,8 +244,7 @@ trait NumObject {
     }
   }
 
-  /**
-    * converts a bigInt with the given binaryPoint into the double representation
+  /** converts a bigInt with the given binaryPoint into the double representation
     * @param i           a bigint
     * @param binaryPoint the implied binaryPoint of @i
     * @return
@@ -265,8 +260,7 @@ trait NumObject {
     result
   }
 
-  /**
-    * converts a bigInt with the given binaryPoint into the double representation
+  /** converts a bigInt with the given binaryPoint into the double representation
     * @param value       a bigint
     * @param binaryPoint the implied binaryPoint of @i
     * @return
@@ -279,8 +273,7 @@ trait NumObject {
     }
   }
 
-  /**
-    * converts a bigInt with the given binaryPoint into the BigDecimal representation
+  /** converts a bigInt with the given binaryPoint into the BigDecimal representation
     * @param value           a bigint
     * @param binaryPoint the implied binaryPoint of @i
     * @return
@@ -296,8 +289,7 @@ trait NumObject {
     result
   }
 
-  /**
-    * converts a bigInt with the given binaryPoint into the BigDecimal representation
+  /** converts a bigInt with the given binaryPoint into the BigDecimal representation
     * @param value           a bigint
     * @param binaryPoint the implied binaryPoint of @i
     * @return

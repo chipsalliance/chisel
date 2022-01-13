@@ -717,8 +717,7 @@ sealed class IntervalRange(
     doFirrtlDynamicShift(that, isLeft = false)
   }
 
-  /**
-    * Squeeze returns the intersection of the ranges this interval and that Interval
+  /** Squeeze returns the intersection of the ranges this interval and that Interval
     * @param that
     * @return
     */
@@ -726,8 +725,7 @@ sealed class IntervalRange(
     doFirrtlOp(PrimOps.Squeeze, that)
   }
 
-  /**
-    * Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
+  /** Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
     * @param that
     * @return
     */
@@ -735,8 +733,7 @@ sealed class IntervalRange(
     doFirrtlOp(PrimOps.Wrap, that)
   }
 
-  /**
-    * Clip the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
+  /** Clip the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
     * @param that
     * @return
     */

@@ -196,9 +196,8 @@ private[chisel3] class ErrorLog {
 
   /** Throw an exception if any errors have yet occurred. */
   def checkpoint(logger: Logger): Unit = {
-    deprecations.foreach {
-      case ((message, sourceLoc), count) =>
-        logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
+    deprecations.foreach { case ((message, sourceLoc), count) =>
+      logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
     errors.foreach(e => logger.error(e.toString))
 

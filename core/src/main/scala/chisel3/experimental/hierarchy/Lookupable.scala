@@ -182,9 +182,8 @@ object Lookupable {
               case Some(singleTarget) => // It is 1:1!
                 // This is a little tricky because the values in newMap need to point to Elements of newTarget
                 val newTarget = lookupData(singleTarget)
-                val newMap = coiterate(result, data).map {
-                  case (res, from) =>
-                    (res: Data) -> mapRootAndExtractSubField(map(from), _ => newTarget)
+                val newMap = coiterate(result, data).map { case (res, from) =>
+                  (res: Data) -> mapRootAndExtractSubField(map(from), _ => newTarget)
                 }.toMap
                 AggregateViewBinding(newMap, Some(newTarget))
 

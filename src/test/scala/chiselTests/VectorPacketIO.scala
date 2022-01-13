@@ -6,8 +6,7 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
 
-/**
-  * This test used to fail when assignment statements were
+/** This test used to fail when assignment statements were
   * contained in DeqIO and EnqIO constructors.
   * The symptom is creation of a firrtl file
   * with missing declarations, the problem is exposed by
@@ -22,8 +21,7 @@ class Packet extends Bundle {
   val header = UInt(1.W)
 }
 
-/**
-  * The problem occurs with just the ins or the outs
+/** The problem occurs with just the ins or the outs
   * lines also.
   * The problem does not occur if the Vec is taken out
   */
@@ -32,8 +30,7 @@ class VectorPacketIO(val n: Int) extends Bundle {
   val outs = Vec(n, chisel3.util.EnqIO(new Packet()))
 }
 
-/**
-  * a module uses the vector based IO bundle
+/** a module uses the vector based IO bundle
   * the value of n does not affect the error
   */
 class BrokenVectorPacketModule extends Module {
@@ -64,8 +61,8 @@ class VectorPacketIOUnitTester extends BasicTester {
 class VectorPacketIOUnitTesterSpec extends ChiselFlatSpec {
   "a circuit using an io containing a vector of EnqIO wrapped packets" should
     "compile and run" in {
-    assertTesterPasses {
-      new VectorPacketIOUnitTester
+      assertTesterPasses {
+        new VectorPacketIOUnitTester
+      }
     }
-  }
 }

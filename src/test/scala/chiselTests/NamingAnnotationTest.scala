@@ -115,9 +115,8 @@ class NamedModule extends NamedModuleTester {
   }
 
   // Test that contents of anonymous functions are named
-  Seq((0, "anonInner"), (1, "anonInner_1"), (2, "anonInner_2")).foreach {
-    case (in, name) =>
-      val anonInner = expectName(test3 + in.U, name)
+  Seq((0, "anonInner"), (1, "anonInner_1"), (2, "anonInner_2")).foreach { case (in, name) =>
+    val anonInner = expectName(test3 + in.U, name)
   }
 
   NoReturnFunction()

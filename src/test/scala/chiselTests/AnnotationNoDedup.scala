@@ -49,8 +49,8 @@ class AnnotationNoDedup extends AnyFreeSpec with Matchers {
           Array("-X", "low", "--target-dir", "test_run_dir"),
           Seq(ChiselGeneratorAnnotation(() => new UsesMuchUsedModule(addAnnos = true)))
         )
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit) => circuit.serialize
+        .collectFirst { case FirrtlCircuitAnnotation(circuit) =>
+          circuit.serialize
         }
         .getOrElse(fail)
       lowFirrtl should include("module MuchUsedModule :")
@@ -65,8 +65,8 @@ class AnnotationNoDedup extends AnyFreeSpec with Matchers {
           Array("-X", "low", "--target-dir", "test_run_dir"),
           Seq(ChiselGeneratorAnnotation(() => new UsesMuchUsedModule(addAnnos = false)))
         )
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit) => circuit.serialize
+        .collectFirst { case FirrtlCircuitAnnotation(circuit) =>
+          circuit.serialize
         }
         .getOrElse(fail)
       lowFirrtl should include("module MuchUsedModule :")

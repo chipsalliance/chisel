@@ -58,8 +58,8 @@ class ChiselStage extends Stage {
 
     val annos = execute(Array("--no-run-firrtl") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
 
-    annos.collectFirst {
-      case a: ChiselCircuitAnnotation => CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat).getBytes
+    annos.collectFirst { case a: ChiselCircuitAnnotation =>
+      CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat).getBytes
     }.get
       .map(_.toChar)
       .mkString
@@ -142,8 +142,8 @@ object ChiselStage {
 
     phase
       .transform(Seq(ChiselGeneratorAnnotation(() => gen), NoRunFirrtlCompilerAnnotation))
-      .collectFirst {
-        case ChiselCircuitAnnotation(a) => a
+      .collectFirst { case ChiselCircuitAnnotation(a) =>
+        a
       }
       .get
   }
@@ -165,8 +165,8 @@ object ChiselStage {
 
     phase
       .transform(Seq(ChiselGeneratorAnnotation(() => gen)))
-      .collectFirst {
-        case FirrtlCircuitAnnotation(a) => a
+      .collectFirst { case FirrtlCircuitAnnotation(a) =>
+        a
       }
       .get
   }
@@ -186,8 +186,8 @@ object ChiselStage {
 
     phase
       .transform(Seq(ChiselCircuitAnnotation(chirrtl)))
-      .collectFirst {
-        case FirrtlCircuitAnnotation(a) => a
+      .collectFirst { case FirrtlCircuitAnnotation(a) =>
+        a
       }
       .get
   }
@@ -215,8 +215,8 @@ object ChiselStage {
 
     phase
       .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new HighFirrtlEmitter)))
-      .collectFirst {
-        case EmittedFirrtlCircuitAnnotation(a) => a
+      .collectFirst { case EmittedFirrtlCircuitAnnotation(a) =>
+        a
       }
       .get
       .value
@@ -241,8 +241,8 @@ object ChiselStage {
 
     phase
       .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new VerilogEmitter)))
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a
       }
       .get
       .value
@@ -266,8 +266,8 @@ object ChiselStage {
 
     phase
       .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new SystemVerilogEmitter)))
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a
       }
       .get
       .value

@@ -11,10 +11,9 @@ import scala.collection.immutable.ListMap
 //   it is a possible implementation of a programmatic "Bundle"
 //   (and can by connected to MyBundle below)
 final class CustomBundle(elts: (String, Data)*) extends Record {
-  val elements = ListMap(elts.map {
-    case (field, elt) =>
-      requireIsChiselType(elt)
-      field -> elt
+  val elements = ListMap(elts.map { case (field, elt) =>
+    requireIsChiselType(elt)
+    field -> elt
   }: _*)
   def apply(elt: String): Data = elements(elt)
   override def cloneType: this.type = {

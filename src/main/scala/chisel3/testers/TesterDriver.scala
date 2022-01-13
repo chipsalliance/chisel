@@ -114,8 +114,7 @@ object TesterDriver extends BackendCompilationUtilities {
     backendAnnotation.execute(t, additionalVResources, annotations, nameHint)
   }
 
-  /**
-    * Calls the finish method of an BasicTester or a class that extends it.
+  /** Calls the finish method of an BasicTester or a class that extends it.
     * The finish method is a hook for code that augments the circuit built in the constructor.
     */
   def finishWrapper(test: () => BasicTester): () => BasicTester = { () =>

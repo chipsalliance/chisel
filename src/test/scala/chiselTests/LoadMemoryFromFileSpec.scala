@@ -143,8 +143,7 @@ class HasBinarySupport(memoryDepth: Int, memoryType: Data) extends Module {
   io.value := memory(io.address)
 }
 
-/**
-  * The following tests are a bit incomplete and check that the output verilog is properly constructed
+/** The following tests are a bit incomplete and check that the output verilog is properly constructed
   * For more complete working examples
   * @see <a href="https://github.com/freechipsproject/chisel-testers">Chisel Testers</a> LoadMemoryFromFileSpec.scala
   */
