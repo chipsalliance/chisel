@@ -91,7 +91,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def apply(x: UInt, y: Clock): T = macro SourceInfoTransform.xyArg
 
   def do_apply(idx: UInt, clock: Clock)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-    do_apply_impl(idx, Builder.forcedClock, MemPortDirection.INFER, false)
+    do_apply_impl(idx, clock, MemPortDirection.INFER, false)
 
   /** Creates a read accessor into the memory with dynamic addressing. See the
     * class documentation of the memory for more detailed information.
