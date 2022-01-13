@@ -323,9 +323,24 @@ object SyncReadMem {
   */
 sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
     extends MemBase[T](t, n) {
+
+  override def read(x: UInt): T = macro SourceInfoTransform.xArg
+
+  /** @group SourceInfoTransformMacro */
+  override def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    do_read(idx = idx, en = true.B)
+
   def read(x: UInt, en: Bool): T = macro SourceInfoTransform.xEnArg
 
+  /** @group SourceInfoTransformMacro */
+  def do_read(idx: UInt, en: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    do_read(idx, en, Builder.forcedClock, true)
+
   def read(x: UInt, y: Bool, z: Clock): T = macro SourceInfoTransform.xyzArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_read(idx: UInt, en: Bool, clock: Clock)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    do_read(idx, en, clock, false)
 
   /** @group SourceInfoTransformMacro */
   def do_read(
@@ -346,14 +361,6 @@ sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite
     }
     port.get
   }
-
-  /** @group SourceInfoTransformMacro */
-  override def do_read(idx: UInt, clock: Clock)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-    do_read(addr = idx, enable = true.B, clock, false)
-
-  /** @group SourceInfoTransformMacro */
-  def do_read(idx: UInt, en: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-    do_read(addr = idx, enable = en, Builder.forcedClock, true)
   // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
   //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
 }
