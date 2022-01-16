@@ -20,5 +20,6 @@ lazy val root = (project in file("."))
   .settings(
     name := "chisel-circt",
     libraryDependencies += scalaTest % Test,
-    libraryDependencies += chisel3
+    libraryDependencies += chisel3,
+    addCompilerPlugin(chiselCompilerPlugin cross CrossVersion.full)
   )

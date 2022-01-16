@@ -6,4 +6,6 @@ target/
 project/target/
 .bsp/
 
+out/
+
 test_run_dir/
