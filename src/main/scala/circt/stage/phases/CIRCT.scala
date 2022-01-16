@@ -58,12 +58,12 @@ class CIRCT extends Phase {
 
     val cmd =
       Seq(binary, "-format=fir") ++
-        (!circtOptions.disableLowerTypes).option("-lower-types") ++
+        (circtOptions.disableLowerTypes).option("-lower-types=0") ++
         (circtOptions.target match {
-           case Some(CIRCTTarget.FIRRTL) => None
-           case Some(CIRCTTarget.HW) => Seq("-lower-to-hw")
-           case Some(CIRCTTarget.Verilog) => Seq("-lower-to-hw", "-verilog")
-           case Some(CIRCTTarget.SystemVerilog) => Seq("-lower-to-hw", "-verilog")
+           case Some(CIRCTTarget.FIRRTL) => Seq("-ir-fir")
+           case Some(CIRCTTarget.HW) => Seq("-ir-hw")
+           case Some(CIRCTTarget.Verilog) => None
+           case Some(CIRCTTarget.SystemVerilog) => None
            case None => throw new Exception(
              "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
            )
