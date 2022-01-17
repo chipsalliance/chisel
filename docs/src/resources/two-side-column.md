@@ -365,7 +365,7 @@ endmodule
 <html>
 <body>
 
-# ChiselEnum
+# Case statement Enum Module 
 
 <html>
 <body>
@@ -388,7 +388,7 @@ import chisel3.experimental.ChiselEnum
 ```
 
 ```scala mdoc:silent
-class CaseStatementModule extends Module {
+class CaseStatementEnumModule1 extends Module {
   
   object AluMux1Sel extends ChiselEnum {
   val selectRS1, selectPC = Value
@@ -429,7 +429,24 @@ endmodule
 </td>
          </tr>
   <tr>
-<td>Text comes here</td>
+<td>
+
+```
+module CaseStatementEnumModule2 (input clk);
+    typedef enum {INIT, IDLE, START, READY} t_state;
+    t_state state;
+
+    always @(posedge clk) begin
+        case (state)
+            IDLE    : state = START;
+            START   : state = READY;
+            READY   : state = IDLE ;
+            default : state = IDLE ;
+        endcase
+    end
+endmodule
+```
+</td>
 <td>
 
 ```scala mdoc:silent
