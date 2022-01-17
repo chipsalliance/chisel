@@ -414,8 +414,8 @@ private class InstrumentMems(
 
   private def isInBounds(depth: BigInt, addr: Expression): Expression = {
     val width = getWidth(addr)
-    // depth >= addr
-    DoPrim(PrimOps.Geq, List(UIntLiteral(depth, width), addr), List(), BoolType)
+    // depth > addr (e.g. if the depth is 3, then the address must be in {0, 1, 2})
+    DoPrim(PrimOps.Gt, List(UIntLiteral(depth, width), addr), List(), BoolType)
   }
 
   private def isPow2(v: BigInt): Boolean = ((v - 1) & v) == 0

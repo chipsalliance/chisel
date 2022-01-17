@@ -91,7 +91,7 @@ class UndefinedMemoryBehaviorSpec extends LeanTransformSpec(Seq(Dependency(Undef
 
     assert(
       result.contains(
-        """assert(m_a_clk, geq(UInt<5>("h1e"), m_a_addr), UInt<1>("h1"), "out of bounds read")"""
+        """assert(m_a_clk, gt(UInt<5>("h1e"), m_a_addr), UInt<1>("h1"), "out of bounds read")"""
       )
     )
   }
@@ -102,7 +102,7 @@ class UndefinedMemoryBehaviorSpec extends LeanTransformSpec(Seq(Dependency(Undef
     val result = circuit.serialize.split('\n').map(_.trim)
 
     // an out of bounds read happens if the depth is not greater or equal to the address
-    assert(result.contains("node m_r_oob = not(geq(UInt<5>(\"h1e\"), m_r_addr))"))
+    assert(result.contains("node m_r_oob = not(gt(UInt<5>(\"h1e\"), m_r_addr))"))
 
     // the source of randomness needs to be triggered when there is an out of bounds read
     assert(result.contains("rand m_r_rand_data : UInt<32>, m_r_clk when m_r_oob"))
@@ -137,7 +137,7 @@ class UndefinedMemoryBehaviorSpec extends LeanTransformSpec(Seq(Dependency(Undef
     assert(result.contains("node m_r_disabled = not(m_r_en)"))
 
     // an out of bounds read happens if the depth is not greater or equal to the address and the memory is enabled
-    assert(result.contains("node m_r_oob = and(m_r_en, not(geq(UInt<5>(\"h1e\"), m_r_addr)))"))
+    assert(result.contains("node m_r_oob = and(m_r_en, not(gt(UInt<5>(\"h1e\"), m_r_addr)))"))
 
     // the two possible issues are combined into a single signal
     assert(result.contains("node m_r_do_rand = or(m_r_disabled, m_r_oob)"))
