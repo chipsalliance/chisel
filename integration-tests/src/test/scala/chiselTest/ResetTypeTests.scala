@@ -34,12 +34,12 @@ class ResetTypeTests extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "behave correctly with a reset as init" in {
-    test(new SimpleResetTestCircuit(true) with RequireResetIsInit) { _ => }
+  it should "behave correctly with a reset as initial value" in {
+    test(new SimpleResetTestCircuit(true) with RequireResetIsInitialValue) { _ => }
   }
 
-  it should "not trigger the assertion when using withResetIsInit" in {
-    test(new SimpleWithInitResetTestCircuit) { _ => }
+  it should "not trigger the assertion when using withResetIsInitialValue" in {
+    test(new SimpleWithInitialValueResetTestCircuit) { _ => }
   }
 }
 
@@ -58,8 +58,8 @@ class SimpleResetTestCircuit(enableAssertion: Boolean) extends Module {
 }
 
 
-class SimpleWithInitResetTestCircuit extends Module {
-  val reg = withResetIsInit { RegInit(123.U(8.W)) }
+class SimpleWithInitialValueResetTestCircuit extends Module {
+  val reg = withResetIsInitialValue { RegInit(123.U(8.W)) }
   val in = IO(Input(UInt(8.W)))
   reg := in
   val out = IO(Output(UInt(8.W)))
@@ -69,3 +69,4 @@ class SimpleWithInitResetTestCircuit extends Module {
     assert(reg === 123.U, "reg is %d not 123", reg)
   }
 }
+
