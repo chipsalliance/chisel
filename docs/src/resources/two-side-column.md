@@ -1,6 +1,15 @@
 <!Doctype html>
 <html>
 <title> Two side column </title>
+
+```scala mdoc:invisible
+import Chisel.Queue
+import chisel3._
+import chisel3.util.{DecoupledIO, switch, is}
+import chisel3.stage.ChiselStage
+import chisel3.experimental.ChiselEnum
+```
+
 <body>
     <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
     <table border ="0">
@@ -42,11 +51,7 @@ Text comes here
 </td>
 <td>
 
-```scala mdoc:invisible
-import Chisel.Queue
-import chisel3._
-import chisel3.util.DecoupledIO
-```
+
 
 ```scala mdoc:silent
 class PassthroughGenerator(width: Int) extends Module {
@@ -56,8 +61,10 @@ val out = Output(UInt(width.W))
 })
 io.out := io.in
 }
-println(getVerilogString(new PassthroughGenerator(10)))
-println(getVerilogString(new PassthroughGenerator(20)))
+```
+```scala mdoc
+ChiselStage.emitVerilog(new PassthroughGenerator(10))
+ChiselStage.emitVerilog(new PassthroughGenerator(20))
 ```
 </td>
 <td>
@@ -174,7 +181,9 @@ println(utwo)
 
 io.out := io.in
 }
-println(getVerilogString(new MyModule))
+```
+```scala mdoc
+ChiselStage.emitVerilog(new MyModule)
 ```
 </td>
 <td>
@@ -231,9 +240,9 @@ class MyWireAssignmentModule extends Module {
  val c = Wire(UInt(16.W)) 
   c := "b1".U;
 }
- 
-
-println(getVerilogString(new MyWireAssignment))
+```
+```scala mdoc
+ChiselStage.emitVerilog(new MyWireAssignmentModule)
 ```
 </td>
 <td>
@@ -277,8 +286,9 @@ class RegisterModule extends Module {
     registerWithInit := registerWithInit - 1.U
     io.out := io.in
 }
-
-println(getVerilogString(new RegisterModule))
+```
+```scala mdoc
+ChiselStage.emitVerilog(new RegisterModule)
 ```
 </td>
 <td>
@@ -314,7 +324,7 @@ endmodule
 <td>
 
 ```scala mdoc:silent
-cclass CaseStatementModule extends Module {
+class CaseStatementModule extends Module {
   
    val a, b, c= IO(Input(UInt(3.W)))
     val sel = IO(Input(UInt(2.W)))
@@ -338,8 +348,9 @@ cclass CaseStatementModule extends Module {
   }
 }
   };
-
-println(getVerilogString(new CaseStatementModule))
+```
+```scala mdoc
+ChiselStage.emitVerilog(new CaseStatementModule)
 ```
 </td>
 <td>
@@ -379,13 +390,6 @@ endmodule
 <td>Text comes here</td>
 <td>
 
-```scala mdoc:
-import Chisel.Queue
-import chisel3._
-import chisel3.util.DecoupledIO
-import chisel3.util.{switch,is}
-import chisel3.experimental.ChiselEnum
-```
 
 ```scala mdoc:silent
 class CaseStatementEnumModule1 extends Module {
@@ -407,8 +411,9 @@ import AluMux1Sel._
   }
 }
   };
-
-println(getVerilogString(new CaseStatementModule))
+```
+```scala mdoc
+ChiselStage.emitVerilog(new CaseStatementEnumModule1)
 ```
 </td>
 <td>
@@ -450,7 +455,7 @@ endmodule
 <td>
 
 ```scala mdoc:silent
-class CaseStatementModule extends Module {
+class CaseStatementEnumModule2 extends Module {
   
   object AluMux1Sel extends ChiselEnum {
    val INIT  = Value(0x03.U) 
@@ -486,7 +491,9 @@ class CaseStatementModule extends Module {
   }
   }
 }
-println(getVerilogString(new CaseStatementModule))
+```
+```scala mdoc
+ChiselStage.emitVerilog(new CaseStatementEnumModule2)
 ```
 </td>
 <td>
@@ -584,7 +591,7 @@ endmodule
 <td>
 
 ```scala mdoc:silent
-class MyModule extends Module {
+class MyInterfaceModule extends Module {
 val io = IO(new Bundle {
 val in = Flipped(DecoupledIO(UInt(8.W)))
 val out = DecoupledIO(UInt(8.W))
@@ -595,13 +602,15 @@ tmp <> io.in
 io.out <> tmp
 io.out <> io.in
 }
-println(getVerilogString(new MyModule))
+```
+```scala mdoc
+ChiselStage.emitVerilog(new MyInterfaceModule)
 ```
 </td>
 <td>
 
 ```
-module MyModule(
+module MyInterfaceModule(
   input        clock,
   input        reset,
   output       io_in_ready,
@@ -666,8 +675,10 @@ class ReadWriteMem extends Module {
   mem.write(io.addr, io.dataIn)
   io.dataOut := mem.read(io.addr)
 }
-println(getVerilogString(new ReadWriteSmem))
-println(getVerilogString(new ReadWriteMem))
+```
+```scala mdoc
+ChiselStage.emitVerilog(new ReadWriteSmem)
+ChiselStage.emitVerilog(new ReadWriteMem)
 ```
 </td>
 
