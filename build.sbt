@@ -15,7 +15,7 @@ lazy val isAtLeastScala213 = Def.setting {
 
 lazy val firrtlSettings = Seq(
   name := "firrtl",
-  version := "1.5-SNAPSHOT",
+  version := "1.6-SNAPSHOT",
   addCompilerPlugin(scalafixSemanticdb),
   scalacOptions := Seq(
     "-deprecation",
