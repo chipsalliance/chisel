@@ -18,8 +18,7 @@ object GrayToBinary {
   /** Inverts the [[BinaryToGray]] operation. */
   def apply(in: UInt): UInt = if (in.getWidth < 2) { in }
   else {
-    var prev = in.head(1)
     val bits = in.getWidth - 2 to 0 by -1
-    prev ## Cat(bits.map { ii => prev = prev ^ in(ii); prev })
+    Cat(bits.scanLeft(in.head(1)) { case (prev, ii) => prev ^ in(ii) })
   }
 }
