@@ -7,7 +7,7 @@ import chisel3._
 object BinaryToGray {
 
   /** Turns a binary number into gray code. */
-  def apply(in: UInt): UInt = in ^ (in >> 1.U)
+  def apply(in: UInt): UInt = in ^ (in >> 1)
 }
 
 object GrayToBinary {
