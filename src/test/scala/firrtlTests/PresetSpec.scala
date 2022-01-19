@@ -6,15 +6,15 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
+import logger.{LogLevel, LogLevelAnnotation, Logger}
 
-class PresetSpec extends FirrtlFlatSpec {
+class PresetSpec extends VerilogTransformSpec {
   type Mod = Seq[String]
   type ModuleSeq = Seq[Mod]
-  def compile(input: String, annos: AnnotationSeq): CircuitState =
-    (new VerilogCompiler).compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos), List.empty)
+
   def compileBody(modules: ModuleSeq) = {
     val annos =
-      Seq(new PresetAnnotation(CircuitTarget("Test").module("Test").ref("reset")), firrtl.transforms.NoDCEAnnotation)
+      Seq(PresetAnnotation(CircuitTarget("Test").module("Test").ref("reset")), firrtl.transforms.NoDCEAnnotation)
     var str = """
                 |circuit Test :
                 |""".stripMargin
@@ -25,7 +25,10 @@ class PresetSpec extends FirrtlFlatSpec {
       str += """
                |""".stripMargin
     })
-    compile(str, annos)
+    val logLevel = LogLevel.Warn
+    Logger.makeScope(Seq(LogLevelAnnotation(logLevel))) {
+      compile(str, annos)
+    }
   }
 
   "Preset" should """behave properly given a `Preset` annotated `AsyncReset` INPUT reset:
@@ -74,6 +77,7 @@ class PresetSpec extends FirrtlFlatSpec {
         )
       )
     )
+
     result shouldNot containLine("always @(posedge clock or posedge reset) begin")
     result shouldNot containLines("if (reset) begin", "r = 1'h0;", "end")
     result should containLine("always @(posedge clock) begin")
@@ -82,31 +86,31 @@ class PresetSpec extends FirrtlFlatSpec {
     result shouldNot containLine("wire  reset;")
     result shouldNot containLine("assign reset = 1'h0;")
   }
-  it should "raise TreeCleanUpOrphantException on cast of annotated AsyncReset" in {
-    an[firrtl.transforms.PropagatePresetAnnotations.TreeCleanUpOrphanException] shouldBe thrownBy {
-      compileBody(
+  it should "replace usages of the preset reset with the constant 0 since the reset is never active" in {
+    val result = compileBody(
+      Seq(
         Seq(
-          Seq(
-            "Test",
-            s"""
-               |input clock : Clock
-               |input x : UInt<1>
-               |output z : UInt<1>
-               |output sz : UInt<1>
-               |wire reset : AsyncReset
-               |reset <= asAsyncReset(UInt(0))
-               |reg r : UInt<1>, clock with : (reset => (reset, UInt(0)))
-               |wire sreset : UInt<1>
-               |sreset <= asUInt(reset) ; this is FORBIDDEN
-               |reg s : UInt<1>, clock with : (reset => (sreset, UInt(0)))
-               |r <= x
-               |s <= x
-               |z <= r
-               |sz <= s""".stripMargin
-          )
+          "Test",
+          s"""
+             |input clock : Clock
+             |input x : UInt<1>
+             |output z : UInt<1>
+             |output sz : UInt<1>
+             |wire reset : AsyncReset
+             |reset <= asAsyncReset(UInt(0))
+             |reg r : UInt<1>, clock with : (reset => (reset, UInt(0)))
+             |wire sreset : UInt<1>
+             |sreset <= asUInt(reset) ; this is ok, essentially like assigning zero to the wire
+             |reg s : UInt<1>, clock with : (reset => (sreset, UInt(0)))
+             |r <= x
+             |s <= x
+             |z <= r
+             |sz <= s""".stripMargin
         )
       )
-    }
+    )
+
+    result should containLine("wire  sreset = 1'h0;")
   }
 
   it should "propagate through bundles" in {
@@ -235,6 +239,31 @@ class PresetSpec extends FirrtlFlatSpec {
     result should containLine("reg  r = 1'h0;")
   }
 
+  it should "propagate zeros for all other uses of an async reset" in {
+    val result = compileBody(
+      Seq(
+        Seq(
+          "Test",
+          s"""
+             |input clock : Clock
+             |input reset : AsyncReset
+             |output a : UInt<2>
+             |output b : UInt<2>
+             |
+             |node t = reset
+             |node not_t = not(asUInt(reset))
+             |a <= cat(asUInt(t), not_t)
+             |node t2 = asUInt(t)
+             |node t3 = asAsyncReset(t2)
+             |b <= cat(asUInt(asSInt(reset)), asUInt(t3))
+             |""".stripMargin
+        )
+      )
+    )
+
+    result should containLine("assign b = {1'h0,1'h0};")
+  }
+
   it should "propagate even through disordonned statements" in {
     val result = compileBody(
       Seq(
@@ -259,6 +288,32 @@ class PresetSpec extends FirrtlFlatSpec {
     result shouldNot containLines("if (reset) begin", "r = 1'h0;", "end")
     result should containLine("always @(posedge clock) begin")
     result should containLine("reg  r = 1'h0;")
+  }
+
+  it should "work with verification statements that are guarded by a preset reset" in {
+    val result = compileBody(
+      Seq(
+        Seq(
+          "Test",
+          s"""
+             |input clock : Clock
+             |input in : UInt<4>
+             |input reset : AsyncReset
+             |
+             |node _T = eq(in, UInt<2>("h3")) @[main.scala 19:15]
+             |node _T_1 = asUInt(reset) @[main.scala 19:11]
+             |node _T_2 = eq(_T_1, UInt<1>("h0")) @[main.scala 19:11]
+             |when _T_2 : @[main.scala 19:11]
+             |  assert(clock, _T, UInt<1>("h1"), "") : assert @[main.scala 19:11]
+             |  node _T_3 = eq(_T, UInt<1>("h0")) @[main.scala 19:11]
+             |  when _T_3 : @[main.scala 19:11]
+             |    printf(clock, UInt<1>("h1"), "Assertion failed") : printf @[main.scala 19:11]
+             |
+             |""".stripMargin
+        )
+      )
+    )
+    // just getting here without falling over the fact that `reset` gets removed is great!
   }
 
 }

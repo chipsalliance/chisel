@@ -11,8 +11,10 @@ import firrtl.options.Dependency
 import scala.collection.mutable
 
 object PropagatePresetAnnotations {
+  @deprecated("This message will be removed in the next release.", "FIRRTL 1.5")
   val advice =
     "Please Note that a Preset-annotated AsyncReset shall NOT be casted to other types with any of the following functions: asInterval, asUInt, asSInt, asClock, asFixedPoint, asAsyncReset."
+  @deprecated("This exception will no longer be thrown.", "FIRRTL 1.5")
   case class TreeCleanUpOrphanException(message: String)
       extends FirrtlUserException(s"Node left an orphan during tree cleanup: $message $advice")
 }
@@ -366,15 +368,22 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
         }
       }
 
+      // replaces all references to removed (clean up) preset signals with zero
+      def replaceCleanUpRefs(e: ir.Expression): ir.Expression = e match {
+        case r: ir.RefLikeExpression =>
+          getRef(r) match {
+            case rt: ReferenceTarget if toCleanUp.contains(rt) =>
+              Utils.getGroundZero(r.tpe.asInstanceOf[ir.GroundType])
+            case _ => r.mapExpr(replaceCleanUpRefs)
+          }
+        case other => other.mapExpr(replaceCleanUpRefs)
+      }
+
       def processNode(n: DefNode): Statement = {
         if (toCleanUp.contains(moduleTarget.ref(n.name))) {
           EmptyStmt
         } else {
-          getRef(n.value) match {
-            case rt: ReferenceTarget if (toCleanUp.contains(rt)) =>
-              throw TreeCleanUpOrphanException(s"Orphan (${moduleTarget.ref(n.name)}) the way.")
-            case _ => n
-          }
+          n
         }
       }
 
@@ -383,7 +392,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
           case rhs: ReferenceTarget if (toCleanUp.contains(rhs)) =>
             getRef(c.loc) match {
               case lhs: ReferenceTarget if (!toCleanUp.contains(lhs)) =>
-                throw TreeCleanUpOrphanException(s"Orphan ${lhs} connected deleted node $rhs.")
+                c
               case _ => EmptyStmt
             }
           case _ => c
@@ -402,14 +411,14 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
       }
 
       def processStatements(statement: Statement): Statement = {
-        statement match {
+        (statement match {
           case i: WDefInstance => processInstance(i)
           case r: DefRegister  => processRegister(r)
           case w: DefWire      => processWire(w)
           case n: DefNode      => processNode(n)
           case c: Connect      => processConnect(c)
           case s => s.mapStmt(processStatements)
-        }
+        }).mapExpr(replaceCleanUpRefs)
       }
 
       m match {
