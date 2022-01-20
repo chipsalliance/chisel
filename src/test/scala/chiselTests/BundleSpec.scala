@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util.Decoupled
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
@@ -190,7 +191,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       deq <> enq
     })
 
-    chirrtl should include ("out.buzz.foo <= in.buzz.foo @[Vec.scala")
+    chirrtl should include ("out.buzz.foo <= in.buzz.foo @[BundleSpec.scala")
     chirrtl shouldNot include ("deq <= enq")
   }
 
@@ -211,7 +212,24 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       out <> in
     })
     // out <- in is illegal FIRRTL
-    chirrtl should include ("out.foo.bar <= in.foo.bar @[Vec.scala")
+    chirrtl should include ("out.foo.bar <= in.foo.bar @[BundleSpec.scala")
+  }
+
+  "Bundles" should "not emit a FIRRTL bulk connect for a bidirectional MonoConnect" in {
+    val chirrtl = ChiselStage.emitChirrtl(new Module {
+      val enq = IO(Flipped(Decoupled(UInt(8.W))))
+      val deq = IO(Decoupled(UInt(8.W)))
+
+      // Implicitly create a MonoConnect from enq to a wire
+      // enq is a Decoupled and so has input/output signals
+      // We should not bulk connect in this case
+      val wire = WireDefault(enq)
+      dontTouch(wire)
+      deq <> enq
+    })
+
+    chirrtl shouldNot include ("wire <= enq")
+    chirrtl should include ("deq <= enq")
   }
 
   // This tests the interaction of override def cloneType and the plugin.

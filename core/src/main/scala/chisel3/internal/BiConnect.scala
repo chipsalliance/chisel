@@ -6,10 +6,11 @@ import chisel3._
 import chisel3.experimental.dataview.reify
 import chisel3.experimental.{Analog, BaseModule, attach}
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, DefInvalid}
+import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
+import _root_.firrtl.passes.CheckTypes
 
 /**
 * BiConnect.connect executes a bidirectional connection element-wise.
@@ -84,7 +85,7 @@ private[chisel3] object BiConnect {
         if (left_v.length != right_v.length) {
           throw MismatchedVecException
         }
-        if (MonoConnect.canBulkConnectAggregates(left_v, right_v, sourceInfo, connectCompileOptions, context_mod)) {
+        if (canBulkConnectAggregates(left_v, right_v, sourceInfo, connectCompileOptions, context_mod)) {
           pushCommand(Connect(sourceInfo, left_v.lref, right_v.lref))
         } else {
           for (idx <- 0 until left_v.length) {
@@ -130,7 +131,7 @@ private[chisel3] object BiConnect {
         val (newLeft, newRight) = if (flipConnection) (right_r, left_r) else (left_r, right_r)
 
         // Check whether Records can be bulk connected (all elements can be connected)
-        if (MonoConnect.canBulkConnectAggregates(newLeft, newRight, sourceInfo, connectCompileOptions, context_mod)) {
+        if (canBulkConnectAggregates(newLeft, newRight, sourceInfo, connectCompileOptions, context_mod)) {
           pushCommand(Connect(sourceInfo, newLeft.lref, newRight.lref))
         } else if (notStrict) {
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
@@ -204,6 +205,53 @@ private[chisel3] object BiConnect {
     }
   }
 
+  /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. From the
+    * FIRRTL specification, the following must hold for bulk connection:
+    *
+    *   1. The types of the left-hand and right-hand side expressions must be
+    *       equivalent.
+    *   2. The bit widths of the two expressions must allow for data to always
+    *        flow from a smaller bit width to an equal size or larger bit width.
+    *   3. The flow of the left-hand side expression must be sink or duplex
+    *   4. Either the flow of the right-hand side expression is source or duplex,
+    *      or the right-hand side expression has a passive type.
+    */
+  private[chisel3] def canBulkConnectAggregates(sink: Aggregate,
+                                                source: Aggregate,
+                                                sourceInfo: SourceInfo,
+                                                connectCompileOptions: CompileOptions,
+                                                context_mod: RawModule): Boolean = {
+
+    // check that the aggregates have the same types
+    val typeCheck = CheckTypes.validConnect(
+      Converter.extractType(sink, sourceInfo),
+      Converter.extractType(source, sourceInfo),
+    )
+    // TODO do we need elementwise check for bundles?
+//    val elemsMatch = if(sink.elements.size == source.elements.size) {
+//      val elemValidConnect = sink.elements.zip(source.elements).map {
+//        case (sink, source) => CheckTypes.validConnect(
+//          Converter.extractType(sink._2, sourceInfo),
+//          Converter.extractType(source._2, sourceInfo))
+//        case _ => false
+//      }
+//      elemValidConnect.foldLeft(true)(_ && _)
+//    } else false
+
+    // check records live in appropriate contexts
+    val contextCheck = MonoConnect.aggregateConnectContextCheck(sourceInfo, connectCompileOptions, sink, source, context_mod)
+
+    // sink must be writable
+    val bindingCheck = sink.topBinding match {
+      case _: ReadOnlyBinding => false
+      case _ => true
+    }
+
+    // check data can flow between provided aggregates
+    val flow_check = MonoConnect.canBeSink(sink, context_mod) && MonoConnect.canBeSource(source, context_mod)
+
+    typeCheck && contextCheck && bindingCheck && flow_check
+  }
 
   // These functions (finally) issue the connection operation
   // Issue with right as sink, left as source

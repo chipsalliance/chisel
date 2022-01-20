@@ -189,7 +189,7 @@ private[chisel3] object MonoConnect {
     }
 
   /** Check [[Aggregate]] visibility. */
-  private def aggregateConnectContextCheck(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions,
+  private[chisel3] def aggregateConnectContextCheck(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions,
                                    sink: Aggregate, source: Aggregate, context_mod: RawModule): Boolean = {
     import ActualDirection.{Input, Output}
     // If source has no location, assume in context module
@@ -271,52 +271,28 @@ private[chisel3] object MonoConnect {
   def canBeSink(data: Data, context_mod: RawModule): Boolean = traceFlow(true, data, context_mod)
   def canBeSource(data: Data, context_mod: RawModule): Boolean = traceFlow(false, data, context_mod)
 
-  /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. From the
-    * FIRRTL specification, the following must hold for bulk connection:
-    *
-    *   1. The types of the left-hand and right-hand side expressions must be
-    *       equivalent.
-    *   2. The bit widths of the two expressions must allow for data to always
-    *        flow from a smaller bit width to an equal size or larger bit width.
-    *   3. The flow of the left-hand side expression must be sink or duplex
-    *   4. Either the flow of the right-hand side expression is source or duplex,
-    *      or the right-hand side expression has a passive type.
-    */
+  /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. (MonoConnect case)
+   *
+   * Mono-directional bulk connects only work if all signals of the sink are only inputs
+   * In the case of a sink aggregate with bidirectional signals, e.g. `Decoupled`,
+   * a `BiConnect` is necessary.
+   */
   private[chisel3] def canBulkConnectAggregates(sink: Aggregate,
                                                 source: Aggregate,
                                                 sourceInfo: SourceInfo,
                                                 connectCompileOptions: CompileOptions,
                                                 context_mod: RawModule): Boolean = {
+    // Assuming we're using a <>, check if a bulk connect is valid in that case
+    val biConnectCheck = BiConnect.canBulkConnectAggregates(sink, source, sourceInfo, connectCompileOptions, context_mod)
 
-    // check that the aggregates have the same types
-    val typeCheck = CheckTypes.validConnect(
-      Converter.extractType(sink, sourceInfo),
-      Converter.extractType(source, sourceInfo),
-    )
-    // TODO do we need elementwise check for bundles?
-//    val elemsMatch = if(sink.elements.size == source.elements.size) {
-//      val elemValidConnect = sink.elements.zip(source.elements).map {
-//        case (sink, source) => CheckTypes.validConnect(
-//          Converter.extractType(sink._2, sourceInfo),
-//          Converter.extractType(source._2, sourceInfo))
-//        case _ => false
-//      }
-//      elemValidConnect.foldLeft(true)(_ && _)
-//    } else false
-
-    // check records live in appropriate contexts
-    val contextCheck = aggregateConnectContextCheck(sourceInfo, connectCompileOptions, sink, source, context_mod)
-
-    // sink must be writable
-    val bindingCheck = sink.topBinding match {
-      case _: ReadOnlyBinding => false
-      case _ => true
+    // Check that the Aggregate's child signals are only inputs
+    val childDirections = sink.getElements.map(_.direction).toSet - ActualDirection.Empty
+    val monoSinkCheck: Boolean = ActualDirection.fromChildren(childDirections, SpecifiedDirection.Unspecified) match {
+      case Some(dir) => dir == ActualDirection.Input
+      case other => false
     }
 
-    // check data can flow between provided aggregates
-    val flow_check =  canBeSink(sink, context_mod) && canBeSource(source, context_mod)
-
-    typeCheck && contextCheck && bindingCheck && flow_check
+    biConnectCheck && monoSinkCheck
   }
 
   // This function (finally) issues the connection operation
