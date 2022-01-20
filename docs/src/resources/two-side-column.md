@@ -8,6 +8,7 @@ import chisel3._
 import chisel3.util.{DecoupledIO, switch, is}
 import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
+import chisel3.util.{Cat, Fill, DecoupledIO}
 ```
 
 <body>
@@ -109,7 +110,6 @@ endmodule
 
 ```
 module ParameterizedWidthAdder(
-
 input [in0Width-1:0] in0,
 input [in1Width-1:0] in1,
 output [sumWidth-1:0] sum
@@ -182,7 +182,7 @@ println(utwo)
 io.out := io.in
 }
 ```
-```scala mdoc
+```scala mdoc:invisible
 ChiselStage.emitVerilog(new MyModule)
 ```
 </td>
@@ -241,7 +241,7 @@ class MyWireAssignmentModule extends Module {
   c := "b1".U;
 }
 ```
-```scala mdoc
+```scala mdoc:invisible
 ChiselStage.emitVerilog(new MyWireAssignmentModule)
 ```
 </td>
@@ -257,6 +257,36 @@ endmodule
 ```
 </td>
          </tr>
+<tr>
+<td>text here</td>
+<td>
+
+```scala mdoc:silent
+class MyWireAssignmentModule2 extends Module {
+ val a = WireDefault(42.U(32.W))
+ val aa = 42.U(32.W)
+ val b = WireDefault("hbabecafe".U(32.W))  
+ val c = Wire(UInt(16.W)) 
+ val d = Wire(Bool())
+ val e = Wire(UInt())
+ val f = WireDefault("hdead".U)
+ val g = Wire(SInt(64.W))
+ val h = WireDefault(5.asSInt(32.W))
+ val i = WireDefault((3.S(16.W)))
+
+c := "b1".U;
+d := true.B
+e := "b1".U(3.W);
+g := -5.S
+}
+```
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new MyWireAssignmentModule2)
+```
+
+</td>
+<td>text here</td>
+</tr>
     </table>
 <html>
 <body>
@@ -287,7 +317,7 @@ class RegisterModule extends Module {
     io.out := io.in
 }
 ```
-```scala mdoc
+```scala mdoc:invisible
 ChiselStage.emitVerilog(new RegisterModule)
 ```
 </td>
@@ -325,31 +355,27 @@ endmodule
 
 ```scala mdoc:silent
 class CaseStatementModule extends Module {
-  
    val a, b, c= IO(Input(UInt(3.W)))
     val sel = IO(Input(UInt(2.W)))
-
   val out = IO(Output(UInt(3.W)))
     out := 0.U
-  
+    
   switch (sel) {
   is ("b00".U) {
-    
-   out := a
-    
+   out := a 
   }
-  is ("b01".U) {
-    
+  
+  is ("b01".U) { 
    out := b
   }
+  
   is ("b10".U) {
-    
    out := c
   }
 }
   };
 ```
-```scala mdoc
+```scala mdoc:invisible
 ChiselStage.emitVerilog(new CaseStatementModule)
 ```
 </td>
@@ -397,11 +423,13 @@ class CaseStatementEnumModule1 extends Module {
   object AluMux1Sel extends ChiselEnum {
   val selectRS1, selectPC = Value
   }
+  
 import AluMux1Sel._
    val a, b = IO(Input(UInt(3.W)))
     val sel = IO(Input(AluMux1Sel()))
   val out = IO(Output(UInt(3.W)))
     out := 0.U
+    
   switch (sel) {
   is (selectRS1) {
    out := a
@@ -412,7 +440,7 @@ import AluMux1Sel._
 }
   };
 ```
-```scala mdoc
+```scala mdoc:invisible
 ChiselStage.emitVerilog(new CaseStatementEnumModule1)
 ```
 </td>
@@ -438,8 +466,12 @@ endmodule
 
 ```
 module CaseStatementEnumModule2 (input clk);
-    typedef enum {INIT, IDLE, START, READY} t_state;
+ 
+  typedef enum {INIT, IDLE, START, READY} t_state;
     t_state state;
+    
+    
+    
 
     always @(posedge clk) begin
         case (state)
@@ -449,6 +481,7 @@ module CaseStatementEnumModule2 (input clk);
             default : state = IDLE ;
         endcase
     end
+    
 endmodule
 ```
 </td>
@@ -462,10 +495,8 @@ class CaseStatementEnumModule2 extends Module {
     val IDLE  = Value(0x13.U) 
     val START = Value(0x17.U) 
     val READY = Value(0x23.U) 
-    
   }
    import AluMux1Sel._
-  
     val state = RegInit(INIT)
   val nextState = IO(Output(AluMux1Sel()))
   nextState := state
@@ -473,26 +504,21 @@ class CaseStatementEnumModule2 extends Module {
   
   switch (state) {
   is (INIT) {
-    
-   state := IDLE 
-    
+   state := IDLE   
   }
-  is (IDLE) {
-    
+  is (IDLE) {  
    state := START
   }
-  is (START) {
-    
+  is (START) { 
    state := READY
   }
- is (READY) {
-    
+ is (READY) { 
    state := IDLE
   }
   }
 }
 ```
-```scala mdoc
+```scala mdoc:invisible
 ChiselStage.emitVerilog(new CaseStatementEnumModule2)
 ```
 </td>
@@ -603,7 +629,7 @@ io.out <> tmp
 io.out <> io.in
 }
 ```
-```scala mdoc
+```scala mdoc:invisible
 ChiselStage.emitVerilog(new MyInterfaceModule)
 ```
 </td>
@@ -676,7 +702,7 @@ class ReadWriteMem extends Module {
   io.dataOut := mem.read(io.addr)
 }
 ```
-```scala mdoc
+```scala mdoc:invisible
 ChiselStage.emitVerilog(new ReadWriteSmem)
 ChiselStage.emitVerilog(new ReadWriteMem)
 ```
@@ -860,6 +886,158 @@ end // initial
 `FIRRTL_AFTER_INITIAL
 `endif
 `endif // SYNTHESIS
+endmodule
+```
+</td>
+         </tr>
+    </table>
+<html>
+<body>
+
+# Operators
+
+<html>
+<body>
+    <table border ="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
+         </tr>
+         <tr>
+<td>text here
+</td>
+<td>
+
+```scala mdoc:silent
+class OperatorExampleModule extends Module {
+
+  val x, y = IO(Input(UInt(32.W)))
+
+  val a, b, c, d , e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, xx, yy,  z, zz, zzz, zzzz, zzzzz = IO(Output(UInt(32.W)))
+  val aa, bb= IO(Output(Bool()))
+  
+  a := x + y
+  b := x - y 
+  c := x % y
+  d := x * y
+  e := x / y
+  f := x % y
+  g := x +% y
+  h := x -% y
+  i := x -& y
+  j := x === y
+  k := DontCare//x != y This one is a bit nonsensical -- this is a Scala comparison. This might be a bug in the cheat sheet.
+  l := x =/= y 
+  m := x & y
+  n := x | y
+  o := x ^ y
+  p :=  ~x
+  q := !x
+  r := x(0) && y(0) // Must be a Bool type
+  s := x(0) || y(0) // Must be a Bool type
+  t := Cat(x, y)
+  u := Mux(c(0), x, y)  // Selector must be a Bool type
+  v := x >> y(2, 0)
+  w := x << y(2, 0) // Can't do a 32-bit shift operator
+  xx := x > y
+  yy := x >= y
+  z := x <= y
+  zz := x(1) 
+  zzz := x(1, 0) 
+  zzzz:= Fill(3,x)
+  zzzzz := x.andR
+  aa := x.orR
+  bb := x.xorR
+} 
+```
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new OperatorExampleModule)
+```
+</td>
+<td>
+
+```
+module OperatorExampleModule(
+  input         clock,
+  input         reset,
+  input  [31:0] x,
+  input  [31:0] y,
+  output [31:0] a,
+  output [31:0] b,
+  output [31:0] c,
+  output [31:0] d,
+  output [31:0] e,
+  output [31:0] f,
+  output [31:0] g,
+  output [31:0] h,
+  output [31:0] i,
+  output [31:0] j,
+  output [31:0] k,
+  output [31:0] l,
+  output [31:0] m,
+  output [31:0] n,
+  output [31:0] o,
+  output [31:0] p,
+  output [31:0] q,
+  output [31:0] r,
+  output [31:0] s,
+  output [31:0] t,
+  output [31:0] u,
+  output [31:0] v,
+  output [31:0] w,
+  output [31:0] xx,
+  output [31:0] yy,
+  output [31:0] z,
+  output [31:0] zz,
+  output [31:0] zzz,
+  output [31:0] zzzz,
+  output [31:0] zzzzz,
+  output        aa,
+  output        bb
+);
+  wire [32:0] _b_T = x - y; // @[main.scala 16:10]
+  wire [63:0] _d_T = x * y; // @[main.scala 18:10]
+  wire  _r_T_2 = x[0] & y[0]; // @[main.scala 32:13]
+  wire  _s_T_2 = x[0] | y[0]; // @[main.scala 33:13]
+  wire [63:0] _t_T = {x,y}; // @[Cat.scala 30:58]
+  wire [38:0] _GEN_0 = {{7'd0}, x}; // @[main.scala 37:10]
+  wire [38:0] _w_T_1 = _GEN_0 << y[2:0]; // @[main.scala 37:10]
+  wire [95:0] _zzzz_T_1 = {x,x,x}; // @[Cat.scala 30:58]
+  wire [31:0] _GEN_1 = x % y; // @[main.scala 17:10]
+  wire [31:0] _GEN_2 = x % y; // @[main.scala 20:10]
+  assign a = x + y; // @[main.scala 15:10]
+  assign b = x - y; // @[main.scala 16:10]
+  assign c = _GEN_1[31:0]; // @[main.scala 17:10]
+  assign d = _d_T[31:0]; // @[main.scala 18:5]
+  assign e = x / y; // @[main.scala 19:10]
+  assign f = _GEN_2[31:0]; // @[main.scala 20:10]
+  assign g = x + y; // @[main.scala 21:10]
+  assign h = x - y; // @[main.scala 22:10]
+  assign i = _b_T[31:0]; // @[main.scala 23:5]
+  assign j = {{31'd0}, x == y}; // @[main.scala 24:5]
+  assign k = 32'h0;
+  assign l = {{31'd0}, x != y}; // @[main.scala 26:5]
+  assign m = x & y; // @[main.scala 27:10]
+  assign n = x | y; // @[main.scala 28:10]
+  assign o = x ^ y; // @[main.scala 29:10]
+  assign p = ~x; // @[main.scala 30:9]
+  assign q = {{31'd0}, x == 32'h0}; // @[main.scala 31:5]
+  assign r = {{31'd0}, _r_T_2}; // @[main.scala 32:5]
+  assign s = {{31'd0}, _s_T_2}; // @[main.scala 33:5]
+  assign t = _t_T[31:0]; // @[main.scala 34:5]
+  assign u = c[0] ? x : y; // @[main.scala 35:11]
+  assign v = x >> y[2:0]; // @[main.scala 36:10]
+  assign w = _w_T_1[31:0]; // @[main.scala 37:5]
+  assign xx = {{31'd0}, x > y}; // @[main.scala 38:6]
+  assign yy = {{31'd0}, x >= y}; // @[main.scala 39:6]
+  assign z = {{31'd0}, x <= y}; // @[main.scala 40:5]
+  assign zz = {{31'd0}, x[1]}; // @[main.scala 41:6]
+  assign zzz = {{30'd0}, x[1:0]}; // @[main.scala 42:7]
+  assign zzzz = _zzzz_T_1[31:0]; // @[main.scala 43:7]
+  assign zzzzz = {{31'd0}, &x}; // @[main.scala 44:9]
+  assign aa = |x; // @[main.scala 45:11]
+  assign bb = ^x; // @[main.scala 46:11]
 endmodule
 ```
 </td>
