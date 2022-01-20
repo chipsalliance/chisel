@@ -471,8 +471,7 @@ module CaseStatementEnumModule2 (input clk);
     t_state state;
     
     
-    
-
+ 
     always @(posedge clk) begin
         case (state)
             IDLE    : state = START;
