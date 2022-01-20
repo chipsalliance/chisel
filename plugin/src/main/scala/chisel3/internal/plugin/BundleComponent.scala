@@ -134,18 +134,19 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
               if (isData(vp.symbol)) cloneTypeFull(select.asInstanceOf[Tree]) else select
             })
 
-        val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
-        val ttpe = if (tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
-        val newUntyped = New(ttpe, conArgs)
-        val neww = localTyper.typed(newUntyped)
+          val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
+          val ttpe =
+            if (tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
+          val newUntyped = New(ttpe, conArgs)
+          val neww = localTyper.typed(newUntyped)
 
-        // Create the symbol for the method and have it be associated with the Bundle class
-        val cloneTypeSym =
-          bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
-        // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
-        cloneTypeSym.resetFlag(Flags.METHOD)
-        // Need to set the type to chisel3.Bundle for the override to work
-        cloneTypeSym.setInfo(NullaryMethodType(bundleTpe))
+          // Create the symbol for the method and have it be associated with the Bundle class
+          val cloneTypeSym =
+            bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+          // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
+          cloneTypeSym.resetFlag(Flags.METHOD)
+          // Need to set the type to chisel3.Bundle for the override to work
+          cloneTypeSym.setInfo(NullaryMethodType(bundleTpe))
 
           Some(localTyper.typed(DefDef(cloneTypeSym, neww)))
         } else {
