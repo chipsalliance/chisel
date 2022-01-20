@@ -68,7 +68,8 @@ object pla {
 
     val inverterMask = invert.value & invert.mask
     if (inverterMask.bitCount != 0)
-      require(invert.getWidth == numberOfOutputs,
+      require(
+        invert.getWidth == numberOfOutputs,
         "non-zero inverter mask must have the same width as the output part of specified PLA table"
       )
 
@@ -99,28 +100,28 @@ object pla {
 
     // the OR matrix
     val orMatrixOutputs: UInt = Cat(
-        Seq
-          .tabulate(numberOfOutputs) { i =>
-            val andMatrixLines = table
-              // OR matrix composed by input terms which makes this output bit a `1`
-              .filter {
-                case (_, or) => or.mask.testBit(i) && or.value.testBit(i)
-              }.map {
-                case (inputTerm, _) =>
-                  andMatrixOutputs(inputTerm.toString)
-              }
-            if (andMatrixLines.isEmpty) false.B
-            else Cat(andMatrixLines).orR()
-          }
-          .reverse
-      )
+      Seq
+        .tabulate(numberOfOutputs) { i =>
+          val andMatrixLines = table
+            // OR matrix composed by input terms which makes this output bit a `1`
+            .filter {
+              case (_, or) => or.mask.testBit(i) && or.value.testBit(i)
+            }.map {
+              case (inputTerm, _) =>
+                andMatrixOutputs(inputTerm.toString)
+            }
+          if (andMatrixLines.isEmpty) false.B
+          else Cat(andMatrixLines).orR()
+        }
+        .reverse
+    )
 
     // the INV matrix, useful for decoders
     val invMatrixOutputs: UInt = Cat(
       Seq
         .tabulate(numberOfOutputs) { i =>
           if (inverterMask.testBit(i)) ~orMatrixOutputs(i)
-          else                          orMatrixOutputs(i)
+          else orMatrixOutputs(i)
         }
         .reverse
     )

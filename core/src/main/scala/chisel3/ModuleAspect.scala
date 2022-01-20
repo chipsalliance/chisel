@@ -12,8 +12,9 @@ import chisel3.internal.{Builder, PseudoModule}
   * @param module Module for which this object is an aspect of
   * @param moduleCompileOptions
   */
-abstract class ModuleAspect private[chisel3] (module: RawModule)
-                                             (implicit moduleCompileOptions: CompileOptions) extends RawModule with PseudoModule {
+abstract class ModuleAspect private[chisel3] (module: RawModule)(implicit moduleCompileOptions: CompileOptions)
+    extends RawModule
+    with PseudoModule {
 
   Builder.addAspect(module, this)
 
@@ -23,4 +24,3 @@ abstract class ModuleAspect private[chisel3] (module: RawModule)
 
   override val _namespace = module._namespace
 }
-

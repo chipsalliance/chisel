@@ -16,15 +16,16 @@ class AddImplicitOutputAnnotationFile extends Phase {
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
 
-  def transform(annotations: AnnotationSeq): AnnotationSeq = annotations
-    .collectFirst{ case _: OutputAnnotationFileAnnotation => annotations }
-    .getOrElse{
+  def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.collectFirst {
+    case _: OutputAnnotationFileAnnotation => annotations
+  }.getOrElse {
 
-      val x: Option[AnnotationSeq] = annotations
-        .collectFirst{ case a: ChiselCircuitAnnotation =>
-          OutputAnnotationFileAnnotation(a.circuit.name) +: annotations }
-
-      x.getOrElse(annotations)
+    val x: Option[AnnotationSeq] = annotations.collectFirst {
+      case a: ChiselCircuitAnnotation =>
+        OutputAnnotationFileAnnotation(a.circuit.name) +: annotations
     }
+
+    x.getOrElse(annotations)
+  }
 
 }

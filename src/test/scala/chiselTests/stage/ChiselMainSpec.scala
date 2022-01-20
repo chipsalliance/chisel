@@ -44,13 +44,15 @@ object ChiselMainSpec {
   }
 }
 
-case class TestClassAspect() extends InspectorAspect[RawModule] ({
-  _: RawModule => println("Ran inspectingAspect")
-})
+case class TestClassAspect()
+    extends InspectorAspect[RawModule]({ _: RawModule =>
+      println("Ran inspectingAspect")
+    })
 
-case object TestObjectAspect extends InspectorAspect[RawModule] ({
-  _: RawModule => println("Ran inspectingAspect")
-})
+case object TestObjectAspect
+    extends InspectorAspect[RawModule]({ _: RawModule =>
+      println("Ran inspectingAspect")
+    })
 
 class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers with chiselTests.Utils {
 
@@ -68,14 +70,14 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
   }
 
   case class ChiselMainTest(
-    args: Array[String],
-    generator: Option[Class[_ <: RawModule]] = None,
-    files: Seq[String] = Seq.empty,
-    stdout: Seq[Either[String, String]] = Seq.empty,
-    stderr: Seq[Either[String, String]] = Seq.empty,
-    result: Int = 0,
+    args:       Array[String],
+    generator:  Option[Class[_ <: RawModule]] = None,
+    files:      Seq[String] = Seq.empty,
+    stdout:     Seq[Either[String, String]] = Seq.empty,
+    stderr:     Seq[Either[String, String]] = Seq.empty,
+    result:     Int = 0,
     fileChecks: Map[String, File => Unit] = Map.empty) {
-    def testName: String = "args" + args.mkString("_")
+    def testName:   String = "args" + args.mkString("_")
     def argsString: String = args.mkString(" ")
   }
 
@@ -89,14 +91,13 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
     * @tparam the type of exception that should occur
     */
   case class ChiselMainExceptionTest[A <: Throwable](
-    args: Array[String],
-    generator: Option[Class[_ <: RawModule]] = None,
-    message: Seq[Either[String, String]] = Seq.empty,
-    stdout: Seq[Either[String, String]] = Seq.empty,
-    stderr: Seq[Either[String, String]] = Seq.empty,
-    stackTrace: Seq[Either[String, String]] = Seq.empty
-  ) {
-    def testName: String = "args" + args.mkString("_")
+    args:       Array[String],
+    generator:  Option[Class[_ <: RawModule]] = None,
+    message:    Seq[Either[String, String]] = Seq.empty,
+    stdout:     Seq[Either[String, String]] = Seq.empty,
+    stderr:     Seq[Either[String, String]] = Seq.empty,
+    stackTrace: Seq[Either[String, String]] = Seq.empty) {
+    def testName:   String = "args" + args.mkString("_")
     def argsString: String = args.mkString(" ")
   }
 
@@ -105,12 +106,12 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       val f = new ChiselMainFixture
       val td = new TargetDirectoryFixture(p.testName)
 
-      p.files.foreach( f => new File(td.buildDir + s"/$f").delete() )
+      p.files.foreach(f => new File(td.buildDir + s"/$f").delete())
 
       When(s"""the user tries to compile with '${p.argsString}'""")
       val module: Array[String] =
         (if (p.generator.nonEmpty) { Array("--module", p.generator.get.getName) }
-         else                      { Array.empty[String]                        })
+         else { Array.empty[String] })
       f.stage.main(Array("-td", td.buildDir.toString) ++ module ++ p.args)
       val (stdout, stderr, result) =
         grabStdOutErr {
@@ -122,25 +123,25 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       p.stdout.foreach {
         case Right(a) =>
           Then(s"""STDOUT should include "$a"""")
-          stdout should include (a)
+          stdout should include(a)
         case Left(a) =>
           Then(s"""STDOUT should not include "$a"""")
-          stdout should not include (a)
+          (stdout should not).include(a)
       }
 
       p.stderr.foreach {
         case Right(a) =>
           Then(s"""STDERR should include "$a"""")
-          stderr should include (a)
+          stderr should include(a)
         case Left(a) =>
           Then(s"""STDERR should not include "$a"""")
-          stderr should not include (a)
+          (stderr should not).include(a)
       }
 
       p.result match {
         case 0 =>
           And(s"the exit code should be 0")
-          result shouldBe a [Right[_,_]]
+          result shouldBe a[Right[_, _]]
         case a =>
           And(s"the exit code should be $a")
           result shouldBe (Left(a))
@@ -167,7 +168,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       When(s"""the user tries to compile with '${p.argsString}'""")
       val module: Array[String] =
         (if (p.generator.nonEmpty) { Array("--module", p.generator.get.getName) }
-         else                      { Array.empty[String]                        })
+         else { Array.empty[String] })
       val (stdout, stderr, result) =
         grabStdOutErr {
           catchStatus {
@@ -178,7 +179,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
         }
 
       Then("the expected exception was thrown")
-      result should be a ('right)
+      (result should be).a('right)
       val exception = result.right.get
       info(s"""  - Exception was a "${exception.getClass.getName}"""")
 
@@ -186,38 +187,38 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       p.message.foreach {
         case Right(a) =>
           Then(s"""STDOUT should include "$a"""")
-          message should include (a)
+          message should include(a)
         case Left(a) =>
           Then(s"""STDOUT should not include "$a"""")
-          message should not include (a)
+          (message should not).include(a)
       }
 
       p.stdout.foreach {
         case Right(a) =>
           Then(s"""STDOUT should include "$a"""")
-          stdout should include (a)
+          stdout should include(a)
         case Left(a) =>
           Then(s"""STDOUT should not include "$a"""")
-          stdout should not include (a)
+          (stdout should not).include(a)
       }
 
       p.stderr.foreach {
         case Right(a) =>
           Then(s"""STDERR should include "$a"""")
-          stderr should include (a)
+          stderr should include(a)
         case Left(a) =>
           Then(s"""STDERR should not include "$a"""")
-          stderr should not include (a)
+          (stderr should not).include(a)
       }
 
       val stackTraceString = exception.getStackTrace.mkString("\n")
       p.stackTrace.foreach {
         case Left(a) =>
           And(s"""the stack does not include "$a"""")
-          stackTraceString should not include (a)
+          (stackTraceString should not).include(a)
         case Right(a) =>
           And(s"""the stack trace includes "$a"""")
-          stackTraceString should include (a)
+          stackTraceString should include(a)
       }
 
     }
@@ -227,9 +228,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
   info("I compile a design")
   Feature("show elaborating message") {
     runStageExpectFiles(
-      ChiselMainTest(args = Array("-X", "high"),
-        generator = Some(classOf[SameTypesModule])
-      )
+      ChiselMainTest(args = Array("-X", "high"), generator = Some(classOf[SameTypesModule]))
     )
   }
 
@@ -268,46 +267,58 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
         args = Array("-X", "low"),
         generator = Some(classOf[BuilderErrorModule]),
         message = Seq(Right("Fatal errors during hardware elaboration")),
-        stdout = Seq(Right("ChiselMainSpec.scala:43: Invalid bit range (3,-1) in class chiselTests.stage.ChiselMainSpec$BuilderErrorModule"))
+        stdout = Seq(
+          Right(
+            "ChiselMainSpec.scala:43: Invalid bit range (3,-1) in class chiselTests.stage.ChiselMainSpec$BuilderErrorModule"
+          )
+        )
       )
     ).foreach(runStageExpectException)
   }
 
   Feature("Specifying a custom output file") {
-    runStageExpectFiles(ChiselMainTest(
-      args = Array("--chisel-output-file", "Foo", "--no-run-firrtl"),
-      generator = Some(classOf[SameTypesModule]),
-      files = Seq("Foo.fir"),
-      fileChecks = Map(
-        "Foo.fir" -> { file =>
-          And("It should be valid FIRRTL")
-          Parser.parse(Source.fromFile(file).mkString)
-        }
+    runStageExpectFiles(
+      ChiselMainTest(
+        args = Array("--chisel-output-file", "Foo", "--no-run-firrtl"),
+        generator = Some(classOf[SameTypesModule]),
+        files = Seq("Foo.fir"),
+        fileChecks = Map(
+          "Foo.fir" -> { file =>
+            And("It should be valid FIRRTL")
+            Parser.parse(Source.fromFile(file).mkString)
+          }
+        )
       )
-    ))
-    runStageExpectFiles(ChiselMainTest(
-      args = Array("--chisel-output-file", "Foo.pb", "--no-run-firrtl"),
-      generator = Some(classOf[SameTypesModule]),
-      files = Seq("Foo.pb"),
-      fileChecks = Map(
-        "Foo.pb" -> { file =>
-          And("It should be valid ProtoBuf")
-          firrtl.proto.FromProto.fromFile(file.toString)
-        }
+    )
+    runStageExpectFiles(
+      ChiselMainTest(
+        args = Array("--chisel-output-file", "Foo.pb", "--no-run-firrtl"),
+        generator = Some(classOf[SameTypesModule]),
+        files = Seq("Foo.pb"),
+        fileChecks = Map(
+          "Foo.pb" -> { file =>
+            And("It should be valid ProtoBuf")
+            firrtl.proto.FromProto.fromFile(file.toString)
+          }
+        )
       )
-    ))
+    )
   }
 
   info("As an aspect writer")
   info("I write an aspect")
   Feature("Running aspects via the command line") {
     Seq(
-      ChiselMainTest(args = Array( "-X", "high", "--with-aspect", "chiselTests.stage.TestClassAspect" ),
+      ChiselMainTest(
+        args = Array("-X", "high", "--with-aspect", "chiselTests.stage.TestClassAspect"),
         generator = Some(classOf[SameTypesModule]),
-        stdout = Seq(Right("Ran inspectingAspect"))),
-      ChiselMainTest(args = Array( "-X", "high", "--with-aspect", "chiselTests.stage.TestObjectAspect" ),
+        stdout = Seq(Right("Ran inspectingAspect"))
+      ),
+      ChiselMainTest(
+        args = Array("-X", "high", "--with-aspect", "chiselTests.stage.TestObjectAspect"),
         generator = Some(classOf[SameTypesModule]),
-        stdout = Seq(Right("Ran inspectingAspect")))
+        stdout = Seq(Right("Ran inspectingAspect"))
+      )
     ).foreach(runStageExpectFiles)
   }
 

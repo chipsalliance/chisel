@@ -21,7 +21,11 @@ object ChiselPlugin {
   val name = "chiselplugin"
 
   // Also logs why the compoennt was not run
-  private[plugin] def runComponent(global: Global, arguments: ChiselPluginArguments)(unit: global.CompilationUnit): Boolean = {
+  private[plugin] def runComponent(
+    global:    Global,
+    arguments: ChiselPluginArguments
+  )(unit:      global.CompilationUnit
+  ): Boolean = {
     // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
     // instead we just check the version and if its an early Scala version, the plugin does nothing
     val scalaVersion = scala.util.Properties.versionNumberString.split('.')
@@ -70,6 +74,4 @@ class ChiselPlugin(val global: Global) extends Plugin {
     true
   }
 
-
 }
-

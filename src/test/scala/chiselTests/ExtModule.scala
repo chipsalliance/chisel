@@ -61,19 +61,16 @@ class MultiExtModuleTester extends BasicTester {
 
 class ExtModuleSpec extends ChiselFlatSpec {
   "A ExtModule inverter" should "work" in {
-    assertTesterPasses({ new ExtModuleTester },
-        Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new ExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
   }
   "Multiple ExtModules" should "work" in {
-    assertTesterPasses({ new MultiExtModuleTester },
-        Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new MultiExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
   }
   "DataMirror.modulePorts" should "work with ExtModule" in {
     ChiselStage.elaborate(new Module {
-      val io = IO(new Bundle { })
+      val io = IO(new Bundle {})
       val m = Module(new extmoduletests.BlackBoxPassthrough)
-      assert(DataMirror.modulePorts(m) == Seq(
-          "in" -> m.in, "out" -> m.out))
+      assert(DataMirror.modulePorts(m) == Seq("in" -> m.in, "out" -> m.out))
     })
   }
 }

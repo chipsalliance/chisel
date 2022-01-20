@@ -11,7 +11,7 @@ class FailingAssertTester() extends BasicTester {
   assert(false.B)
   // Wait to come out of reset
   val (_, done) = Counter(!reset.asBool, 4)
-  when (done) {
+  when(done) {
     stop()
   }
 }
@@ -20,13 +20,13 @@ class SucceedingAssertTester() extends BasicTester {
   assert(true.B)
   // Wait to come out of reset
   val (_, done) = Counter(!reset.asBool, 4)
-  when (done) {
+  when(done) {
     stop()
   }
 }
 
 class PipelinedResetModule extends Module {
-  val io = IO(new Bundle { })
+  val io = IO(new Bundle {})
   val a = RegInit(0xbeef.U)
   val b = RegInit(0xbeef.U)
   assert(a === b)
@@ -39,7 +39,7 @@ class PipelinedResetTester extends BasicTester {
   module.reset := RegNext(RegNext(RegNext(reset)))
 
   val (_, done) = Counter(!reset.asBool, 4)
-  when (done) {
+  when(done) {
     stop()
   }
 }
@@ -63,22 +63,22 @@ class BadUnescapedPercentAssertTester extends BasicTester {
 
 class AssertSpec extends ChiselFlatSpec with Utils {
   "A failing assertion" should "fail the testbench" in {
-    assert(!runTester{ new FailingAssertTester })
+    assert(!runTester { new FailingAssertTester })
   }
   "A succeeding assertion" should "not fail the testbench" in {
-    assertTesterPasses{ new SucceedingAssertTester }
+    assertTesterPasses { new SucceedingAssertTester }
   }
   "An assertion" should "not assert until we come out of reset" in {
-    assertTesterPasses{ new PipelinedResetTester }
+    assertTesterPasses { new PipelinedResetTester }
   }
   "Assertions" should "allow the modulo operator % in the message" in {
-    assertTesterPasses{ new ModuloAssertTester }
+    assertTesterPasses { new ModuloAssertTester }
   }
   they should "allow printf-style format strings with arguments" in {
-    assertTesterPasses{ new FormattedAssertTester }
+    assertTesterPasses { new FormattedAssertTester }
   }
   they should "not allow unescaped % in the message" in {
-    a [java.util.UnknownFormatConversionException] should be thrownBy {
+    a[java.util.UnknownFormatConversionException] should be thrownBy {
       extractCause[java.util.UnknownFormatConversionException] {
         ChiselStage.elaborate { new BadUnescapedPercentAssertTester }
       }

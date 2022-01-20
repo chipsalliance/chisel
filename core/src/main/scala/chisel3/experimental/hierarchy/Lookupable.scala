@@ -11,18 +11,20 @@ import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifySingleData}
 import chisel3.internal.firrtl.{Arg, ILit, Index, Slot, ULit}
-import chisel3.internal.{AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent, throwException}
+import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
   *   should be tweaked to return the Instance's version
   * Sealed.
   */
-@implicitNotFound("@public is only legal within a class marked @instantiable and only on vals of type" +
-  " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable or Option")
+@implicitNotFound(
+  "@public is only legal within a class marked @instantiable and only on vals of type" +
+    " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable or Option"
+)
 trait Lookupable[-B] {
   type C // Return type of the lookup
   /** Function called to modify the returned value of type B from A, into C
-    * 
+    *
     * @param that function that selects B from A
     * @param instance Instance of A, used to determine C's context
     * @return
@@ -35,8 +37,8 @@ trait Lookupable[-B] {
     * @param definition Definition of A, used to determine C's context
     * @return
     */
-  def definitionLookup[A](that: A => B, definition: Definition[A]): C
-  protected def getProto[A](h: Hierarchy[A]): A = h.proto
+  def definitionLookup[A](that:     A => B, definition: Definition[A]): C
+  protected def getProto[A](h:      Hierarchy[A]): A = h.proto
   protected def getUnderlying[A](h: Hierarchy[A]): Underlying[A] = h.underlying
 }
 
@@ -48,8 +50,13 @@ object Lookupable {
     * @param context new context
     * @return
     */
-  private[chisel3] def cloneDataToContext[T <: Data](data: T, context: BaseModule)
-                                           (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  private[chisel3] def cloneDataToContext[T <: Data](
+    data:    T,
+    context: BaseModule
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
     internal.requireIsHardware(data, "cross module reference type")
     data._parent match {
       case None => data
@@ -68,11 +75,18 @@ object Lookupable {
   }
   // The business logic of lookupData
   // Also called by cloneViewToContext which potentially needs to lookup stuff from ioMap or the cache
-  private[chisel3] def doLookupData[A, B <: Data](data: B, cache: HashMap[Data, Data], ioMap: Option[Map[Data, Data]], context: Option[BaseModule])
-                                        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): B = {
+  private[chisel3] def doLookupData[A, B <: Data](
+    data:    B,
+    cache:   HashMap[Data, Data],
+    ioMap:   Option[Map[Data, Data]],
+    context: Option[BaseModule]
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): B = {
     def impl[C <: Data](d: C): C = d match {
       case x: Data if ioMap.nonEmpty && ioMap.get.contains(x) => ioMap.get(x).asInstanceOf[C]
-      case x: Data if cache.contains(x) => cache(x).asInstanceOf[C]
+      case x: Data if cache.contains(x)                       => cache(x).asInstanceOf[C]
       case _ =>
         assert(context.nonEmpty) // TODO is this even possible? Better error message here
         val ret = cloneDataToContext(d, context.get)
@@ -105,12 +119,13 @@ object Lookupable {
     * Invariants that elt is a Child of something of the type of data is dynamically checked as we traverse
     */
   private def mapRootAndExtractSubField[A <: Data](arg: A, f: Data => Data): A = {
-    def err(msg: String) = throwException(s"Internal Error! $msg")
+    def err(msg:               String) = throwException(s"Internal Error! $msg")
     def unrollCoordinates(res: List[Arg], d: Data): (List[Arg], Data) = d.binding.get match {
-      case ChildBinding(parent) => d.getRef match {
-        case arg @ (_: Slot | _: Index) => unrollCoordinates(arg :: res, parent)
-        case other => err(s"Unroll coordinates failed for '$arg'! Unexpected arg '$other'")
-      }
+      case ChildBinding(parent) =>
+        d.getRef match {
+          case arg @ (_: Slot | _: Index) => unrollCoordinates(arg :: res, parent)
+          case other => err(s"Unroll coordinates failed for '$arg'! Unexpected arg '$other'")
+        }
       case _ => (res, d)
     }
     def applyCoordinates(fullCoor: List[Arg], start: Data): Data = {
@@ -133,15 +148,22 @@ object Lookupable {
     try {
       result.asInstanceOf[A]
     } catch {
-        case _: ClassCastException => err(s"Applying '$coor' to '$newRoot' somehow resulted in '$result'")
+      case _: ClassCastException => err(s"Applying '$coor' to '$newRoot' somehow resulted in '$result'")
     }
   }
 
   // TODO this logic is complicated, can any of it be unified with viewAs?
   // If `.viewAs` would capture its arguments, we could potentially use it
   // TODO Describe what this is doing at a high level
-  private[chisel3] def cloneViewToContext[A, B <: Data](data: B, cache: HashMap[Data, Data], ioMap: Option[Map[Data, Data]], context: Option[BaseModule])
-                                           (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): B = {
+  private[chisel3] def cloneViewToContext[A, B <: Data](
+    data:    B,
+    cache:   HashMap[Data, Data],
+    ioMap:   Option[Map[Data, Data]],
+    context: Option[BaseModule]
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): B = {
     // alias to shorten lookups
     def lookupData[C <: Data](d: C) = doLookupData(d, cache, ioMap, context)
 
@@ -150,29 +172,31 @@ object Lookupable {
     // We have to lookup the target(s) of the view since they may need to be underlying into the current context
     val newBinding = data.topBinding match {
       case ViewBinding(target) => ViewBinding(lookupData(reify(target)))
-      case avb @ AggregateViewBinding(map, targetOpt) => data match {
-        case _: Element => ViewBinding(lookupData(reify(map(data))))
-        case _: Aggregate =>
-          // Provide a 1:1 mapping if possible
-          val singleTargetOpt = targetOpt.filter(_ => avb == data.binding.get).flatMap(reifySingleData)
-          singleTargetOpt match {
-            case Some(singleTarget) => // It is 1:1!
-              // This is a little tricky because the values in newMap need to point to Elements of newTarget
-              val newTarget = lookupData(singleTarget)
-              val newMap = coiterate(result, data).map { case (res, from) =>
-                (res: Data) -> mapRootAndExtractSubField(map(from), _ => newTarget)
-              }.toMap
-              AggregateViewBinding(newMap, Some(newTarget))
+      case avb @ AggregateViewBinding(map, targetOpt) =>
+        data match {
+          case _: Element   => ViewBinding(lookupData(reify(map(data))))
+          case _: Aggregate =>
+            // Provide a 1:1 mapping if possible
+            val singleTargetOpt = targetOpt.filter(_ => avb == data.binding.get).flatMap(reifySingleData)
+            singleTargetOpt match {
+              case Some(singleTarget) => // It is 1:1!
+                // This is a little tricky because the values in newMap need to point to Elements of newTarget
+                val newTarget = lookupData(singleTarget)
+                val newMap = coiterate(result, data).map {
+                  case (res, from) =>
+                    (res: Data) -> mapRootAndExtractSubField(map(from), _ => newTarget)
+                }.toMap
+                AggregateViewBinding(newMap, Some(newTarget))
 
-            case None => // No 1:1 mapping so we have to do a flat binding
-              // Just remap each Element of this aggregate
-              val newMap = coiterate(result, data).map {
-                // Upcast res to Data since Maps are invariant in the Key type parameter
-                case (res, from) => (res: Data) -> lookupData(reify(map(from)))
-              }.toMap
-              AggregateViewBinding(newMap, None)
-          }
-      }
+              case None => // No 1:1 mapping so we have to do a flat binding
+                // Just remap each Element of this aggregate
+                val newMap = coiterate(result, data).map {
+                  // Upcast res to Data since Maps are invariant in the Key type parameter
+                  case (res, from) => (res: Data) -> lookupData(reify(map(from)))
+                }.toMap
+                AggregateViewBinding(newMap, None)
+            }
+        }
     }
 
     // TODO Unify the following with `.viewAs`
@@ -188,7 +212,7 @@ object Lookupable {
           case (agg: Aggregate, _) if agg != result =>
             Builder.unnamedViews += agg
           case _ => // Do nothing
-          }
+        }
     }
 
     result.bind(newBinding)
@@ -196,6 +220,7 @@ object Lookupable {
     result.forceName(None, "view", Builder.viewNamespace)
     result
   }
+
   /** Given a module (either original or a clone), clone it to a new context
     *
     * This function effectively recurses up the parents of module to find whether:
@@ -208,8 +233,13 @@ object Lookupable {
     * @param context new context
     * @return original or clone in the new context
     */
-  private[chisel3] def cloneModuleToContext[T <: BaseModule](module: Underlying[T], context: BaseModule)
-      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Underlying[T] = {
+  private[chisel3] def cloneModuleToContext[T <: BaseModule](
+    module:  Underlying[T],
+    context: BaseModule
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Underlying[T] = {
     // Recursive call
     def rec[A <: BaseModule](m: A): Underlying[A] = {
       def clone(x: A, p: Option[BaseModule], name: () => String): Underlying[A] = {
@@ -221,7 +251,7 @@ object Lookupable {
         case (c, ctx) if ctx == c => Proto(c)
         case (c, ctx: IsClone[_]) if ctx.hasSameProto(c) => Clone(ctx.asInstanceOf[IsClone[A]])
         case (c, ctx) if c._parent.isEmpty => Proto(c)
-        case (_, _) => 
+        case (_, _) =>
           cloneModuleToContext(Proto(m._parent.get), context) match {
             case Proto(p) => Proto(m)
             case Clone(p: BaseModule) =>
@@ -254,93 +284,107 @@ object Lookupable {
     type B = X
     type C = X
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = that(definition.proto)
-    def instanceLookup[A](that: A => B, instance: Instance[A]): C = that(instance.proto)
+    def instanceLookup[A](that:   A => B, instance:   Instance[A]):   C = that(instance.proto)
   }
 
-  implicit def lookupInstance[B <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[Instance[B]] {
-    type C = Instance[B]
-    def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): C = {
-      val ret = that(definition.proto)
-      new Instance(cloneModuleToContext(ret.underlying, definition.getInnerDataContext.get))
-    }
-    def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): C = {
-      val ret = that(instance.proto)
-      instance.underlying match {
-        // If instance is just a normal module, no changing of context is necessary
-        case Proto(_)  => new Instance(ret.underlying)
-        case Clone(_) => new Instance(cloneModuleToContext(ret.underlying, instance.getInnerDataContext.get))
+  implicit def lookupInstance[B <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    new Lookupable[Instance[B]] {
+      type C = Instance[B]
+      def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): C = {
+        val ret = that(definition.proto)
+        new Instance(cloneModuleToContext(ret.underlying, definition.getInnerDataContext.get))
+      }
+      def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): C = {
+        val ret = that(instance.proto)
+        instance.underlying match {
+          // If instance is just a normal module, no changing of context is necessary
+          case Proto(_) => new Instance(ret.underlying)
+          case Clone(_) => new Instance(cloneModuleToContext(ret.underlying, instance.getInnerDataContext.get))
+        }
       }
     }
-  }
 
-  implicit def lookupModule[B <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[B] {
-    type C = Instance[B]
-    def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
-      val ret = that(definition.proto)
-      new Instance(cloneModuleToContext(Proto(ret), definition.getInnerDataContext.get))
-    }
-    def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
-      val ret = that(instance.proto)
-      instance.underlying match {
-        // If instance is just a normal module, no changing of context is necessary
-        case Proto(_)  => new Instance(Proto(ret))
-        case Clone(_) => new Instance(cloneModuleToContext(Proto(ret), instance.getInnerDataContext.get))
+  implicit def lookupModule[B <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    new Lookupable[B] {
+      type C = Instance[B]
+      def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
+        val ret = that(definition.proto)
+        new Instance(cloneModuleToContext(Proto(ret), definition.getInnerDataContext.get))
+      }
+      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+        val ret = that(instance.proto)
+        instance.underlying match {
+          // If instance is just a normal module, no changing of context is necessary
+          case Proto(_) => new Instance(Proto(ret))
+          case Clone(_) => new Instance(cloneModuleToContext(Proto(ret), instance.getInnerDataContext.get))
+        }
       }
     }
-  }
 
-  implicit def lookupData[B <: Data](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[B] {
-    type C = B
-    def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
-      val ret = that(definition.proto)
-      if (isView(ret)) {
-        ???  // TODO!!!!!!  cloneViewToContext(ret, instance, ioMap, instance.getInnerDataContext)
-      } else {
-        doLookupData(ret, definition.cache, None, definition.getInnerDataContext)
+  implicit def lookupData[B <: Data](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    new Lookupable[B] {
+      type C = B
+      def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
+        val ret = that(definition.proto)
+        if (isView(ret)) {
+          ??? // TODO!!!!!!  cloneViewToContext(ret, instance, ioMap, instance.getInnerDataContext)
+        } else {
+          doLookupData(ret, definition.cache, None, definition.getInnerDataContext)
+        }
       }
-    }
-    def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
-      val ret = that(instance.proto)
-      val ioMap: Option[Map[Data, Data]] = instance.underlying match {
-        case Clone(x: ModuleClone[_]) => Some(x.ioMap)
-        case Proto(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
-        case _ => None
-      }
-      if (isView(ret)) {
-        cloneViewToContext(ret, instance.cache, ioMap, instance.getInnerDataContext)
-      } else {
-        doLookupData(ret, instance.cache, ioMap, instance.getInnerDataContext)
-      }
+      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+        val ret = that(instance.proto)
+        val ioMap: Option[Map[Data, Data]] = instance.underlying match {
+          case Clone(x: ModuleClone[_]) => Some(x.ioMap)
+          case Proto(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
+          case _ => None
+        }
+        if (isView(ret)) {
+          cloneViewToContext(ret, instance.cache, ioMap, instance.getInnerDataContext)
+        } else {
+          doLookupData(ret, instance.cache, ioMap, instance.getInnerDataContext)
+        }
 
+      }
     }
-  }
 
   import scala.language.higherKinds // Required to avoid warning for lookupIterable type parameter
-  implicit def lookupIterable[B, F[_] <: Iterable[_]](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions, lookupable: Lookupable[B]) = new Lookupable[F[B]] {
+  implicit def lookupIterable[B, F[_] <: Iterable[_]](
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions,
+    lookupable:          Lookupable[B]
+  ) = new Lookupable[F[B]] {
     type C = F[lookupable.C]
     def definitionLookup[A](that: A => F[B], definition: Definition[A]): C = {
       val ret = that(definition.proto).asInstanceOf[Iterable[B]]
-      ret.map{ x: B => lookupable.definitionLookup[A](_ => x, definition) }.asInstanceOf[C]
+      ret.map { x: B => lookupable.definitionLookup[A](_ => x, definition) }.asInstanceOf[C]
     }
     def instanceLookup[A](that: A => F[B], instance: Instance[A]): C = {
       import instance._
       val ret = that(proto).asInstanceOf[Iterable[B]]
-      ret.map{ x: B => lookupable.instanceLookup[A](_ => x, instance) }.asInstanceOf[C]
+      ret.map { x: B => lookupable.instanceLookup[A](_ => x, instance) }.asInstanceOf[C]
     }
   }
-  implicit def lookupOption[B](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions, lookupable: Lookupable[B]) = new Lookupable[Option[B]] {
+  implicit def lookupOption[B](
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions,
+    lookupable:          Lookupable[B]
+  ) = new Lookupable[Option[B]] {
     type C = Option[lookupable.C]
     def definitionLookup[A](that: A => Option[B], definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      ret.map{ x: B => lookupable.definitionLookup[A](_ => x, definition) }
+      ret.map { x: B => lookupable.definitionLookup[A](_ => x, definition) }
     }
     def instanceLookup[A](that: A => Option[B], instance: Instance[A]): C = {
       import instance._
       val ret = that(proto)
-      ret.map{ x: B => lookupable.instanceLookup[A](_ => x, instance) }
+      ret.map { x: B => lookupable.instanceLookup[A](_ => x, instance) }
     }
   }
-  implicit def lookupIsInstantiable[B <: IsInstantiable](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[B] {
+  implicit def lookupIsInstantiable[B <: IsInstantiable](
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ) = new Lookupable[B] {
     type C = Instance[B]
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
       val ret = that(definition.proto)
@@ -360,8 +404,9 @@ object Lookupable {
     }
   }
 
-  implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new SimpleLookupable[B]()
-  
+  implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    new SimpleLookupable[B]()
+
   implicit val lookupInt = new SimpleLookupable[Int]()
   implicit val lookupByte = new SimpleLookupable[Byte]()
   implicit val lookupShort = new SimpleLookupable[Short]()

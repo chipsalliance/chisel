@@ -2,7 +2,7 @@
 
 package chisel3.aop.injecting
 
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, Transform, ir}
+import firrtl.{ir, ChirrtlForm, CircuitForm, CircuitState, Transform}
 
 import scala.collection.mutable
 
@@ -11,7 +11,7 @@ import scala.collection.mutable
   * Implemented with Chisel Aspects and the [[chisel3.aop.injecting]] library
   */
 class InjectingTransform extends Transform {
-  override def inputForm: CircuitForm = ChirrtlForm
+  override def inputForm:  CircuitForm = ChirrtlForm
   override def outputForm: CircuitForm = ChirrtlForm
 
   override def execute(state: CircuitState): CircuitState = {

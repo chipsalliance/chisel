@@ -11,16 +11,16 @@ class Complex[T <: Data](val re: T, val im: T) extends Bundle
 
 class ComplexAssign(w: Int) extends Module {
   val io = IO(new Bundle {
-    val e   = Input(Bool())
-    val in  = Input(new Complex(UInt(w.W), UInt(w.W)))
+    val e = Input(Bool())
+    val in = Input(new Complex(UInt(w.W), UInt(w.W)))
     val out = Output(new Complex(UInt(w.W), UInt(w.W)))
   })
-  when (io.e) {
+  when(io.e) {
     val tmp = Wire(new Complex(UInt(w.W), UInt(w.W)))
     tmp := io.in
     io.out.re := tmp.re
     io.out.im := tmp.im
-  } .otherwise {
+  }.otherwise {
     io.out.re := 0.U
     io.out.im := 0.U
   }
@@ -46,7 +46,7 @@ class ComplexAssignSpec extends ChiselPropSpec {
     implicit val noShrinkListVal = Shrink[List[Boolean]](_ => Stream.empty)
     implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
     forAll(enSequence(2), safeUInts, safeUInts) { (en: List[Boolean], re: Int, im: Int) =>
-      assertTesterPasses{ new ComplexAssignTester(en, re, im) }
+      assertTesterPasses { new ComplexAssignTester(en, re, im) }
     }
   }
 }

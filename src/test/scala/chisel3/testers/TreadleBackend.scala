@@ -17,10 +17,12 @@ import java.io.File
 case object TreadleBackend extends TesterDriver.Backend {
   val MaxTreadleCycles = 10000L
 
-  def execute(t:                    () => BasicTester,
-              additionalVResources: Seq[String] = Seq(),
-              annotations:          AnnotationSeq = Seq(),
-              nameHint:             Option[String] = None): Boolean = {
+  def execute(
+    t:                    () => BasicTester,
+    additionalVResources: Seq[String] = Seq(),
+    annotations:          AnnotationSeq = Seq(),
+    nameHint:             Option[String] = None
+  ): Boolean = {
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(t)
 
     // This provides an opportunity to translate from top level generic flags to backend specific annos
@@ -37,7 +39,7 @@ case object TreadleBackend extends TesterDriver.Backend {
     if (!annotationSeq.exists(_.isInstanceOf[NoTargetAnnotation])) {
       annotationSeq = annotationSeq :+ TargetDirAnnotation(targetName.getPath)
     }
-    if (!annotationSeq.exists { case CallResetAtStartupAnnotation => true ; case _ => false }) {
+    if (!annotationSeq.exists { case CallResetAtStartupAnnotation => true; case _ => false }) {
       annotationSeq = annotationSeq :+ CallResetAtStartupAnnotation
     }
 

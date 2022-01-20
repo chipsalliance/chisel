@@ -2,7 +2,7 @@
 
 package chisel3.aop.injecting
 
-import chisel3.{Module, ModuleAspect, RawModule, withClockAndReset}
+import chisel3.{withClockAndReset, Module, ModuleAspect, RawModule}
 import chisel3.aop._
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
@@ -22,12 +22,12 @@ import scala.collection.mutable
   * @tparam M Type of root module (join point)
   */
 case class InjectingAspect[T <: RawModule, M <: RawModule](
-    selectRoots: T => Iterable[M],
-    injection: M => Unit
-) extends InjectorAspect[T, M](
-    selectRoots,
-    injection
-)
+  selectRoots: T => Iterable[M],
+  injection:   M => Unit)
+    extends InjectorAspect[T, M](
+      selectRoots,
+      injection
+    )
 
 /** Extend to inject Chisel code into a module of type M
   *
@@ -38,11 +38,12 @@ case class InjectingAspect[T <: RawModule, M <: RawModule](
   * @tparam M Type of root module (join point)
   */
 abstract class InjectorAspect[T <: RawModule, M <: RawModule](
-    selectRoots: T => Iterable[M],
-    injection: M => Unit
-) extends Aspect[T] {
+  selectRoots: T => Iterable[M],
+  injection:   M => Unit)
+    extends Aspect[T] {
   final def toAnnotation(top: T): AnnotationSeq = {
-    val moduleNames = Select.allDefinitionsOf[chisel3.experimental.BaseModule](top.toDefinition).map{i => i.toTarget.module }.toSeq
+    val moduleNames =
+      Select.allDefinitionsOf[chisel3.experimental.BaseModule](top.toDefinition).map { i => i.toTarget.module }.toSeq
     toAnnotation(selectRoots(top), top.name, moduleNames)
   }
 
@@ -62,22 +63,26 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         dynamicContext.globalNamespace.name(n)
       }
 
-      val (chiselIR, _) = Builder.build(Module(new ModuleAspect(module) {
-        module match {
-          case x: Module => withClockAndReset(x.clock, x.reset) { injection(module) }
-          case x: RawModule => injection(module)
-        }
-      }), dynamicContext)
+      val (chiselIR, _) = Builder.build(
+        Module(new ModuleAspect(module) {
+          module match {
+            case x: Module    => withClockAndReset(x.clock, x.reset) { injection(module) }
+            case x: RawModule => injection(module)
+          }
+        }),
+        dynamicContext
+      )
 
       val comps = chiselIR.components.map {
         case x: DefModule if x.name == module.name => x.copy(id = module)
         case other => other
       }
 
-      val annotations = chiselIR.annotations.map(_.toFirrtl).filterNot{ a => a.isInstanceOf[DesignAnnotation[_]] }
+      val annotations = chiselIR.annotations.map(_.toFirrtl).filterNot { a => a.isInstanceOf[DesignAnnotation[_]] }
 
       /** Statements to be injected via aspect. */
       val stmts = mutable.ArrayBuffer[ir.Statement]()
+
       /** Modules to be injected via aspect. */
       val modules = Aspect.getFirrtl(chiselIR.copy(components = comps)).modules.flatMap {
         // for "container" modules, inject their statements
@@ -93,4 +98,3 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     }.toSeq
   }
 }
-

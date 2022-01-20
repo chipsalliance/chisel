@@ -23,7 +23,7 @@ object CompatibilityCustomCompileOptions {
 class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
   import Chisel._
 
-  behavior of "Chisel compatibility layer"
+  behavior.of("Chisel compatibility layer")
 
   it should "accept direction arguments" in {
     ChiselStage.elaborate(new Module {
@@ -39,10 +39,10 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
         val b = Bool(directionArgument)
         val u = UInt(directionArgument, width)
       }
-      io.b shouldBe a [Bool]
+      io.b shouldBe a[Bool]
       io.b.getWidth shouldEqual 1
       io.b.dir shouldEqual (expectedDirection)
-      io.u shouldBe a [UInt]
+      io.u shouldBe a[UInt]
       io.u.getWidth shouldEqual width
       io.u.dir shouldEqual (expectedDirection)
     })
@@ -52,7 +52,7 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     // Choose a random value
     val value: Int = Gen.choose(0, Int.MaxValue).sample.get
     val l = UInt(value)
-    l shouldBe a [UInt]
+    l shouldBe a[UInt]
     l shouldBe 'lit
     l.getWidth shouldEqual BigInt(value).bitLength
     l.litValue() shouldEqual value
@@ -60,9 +60,10 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
 
   it should "map utility objects into the package object" in {
     val value: Int = Gen.choose(2, 2048).sample.get
-    log2Up(value) shouldBe (1 max BigInt(value - 1).bitLength)
+    log2Up(value) shouldBe (1.max(BigInt(value - 1).bitLength))
     log2Ceil(value) shouldBe (BigInt(value - 1).bitLength)
-    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
+    log2Down(value) shouldBe ((1.max(BigInt(value - 1).bitLength)) - (if (value > 0 && ((value & (value - 1)) == 0)) 0
+                                                                      else 1))
     log2Floor(value) shouldBe (BigInt(value - 1).bitLength - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
     isPow2(BigInt(1) << value) shouldBe true
     isPow2((BigInt(1) << value) - 1) shouldBe false
@@ -76,7 +77,7 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     bs(maskPosition) = '?'
     val bitPatString = bs.toString
     val bp = BitPat("b" + bitPatString)
-    bp shouldBe a [BitPat]
+    bp shouldBe a[BitPat]
     bp.getWidth shouldEqual binaryString.length
 
   }
@@ -87,92 +88,92 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       val io = new Bundle {}
       val data = UInt(width = 3)
       val wire = Wire(data)
-      new ArbiterIO(data, 2) shouldBe a [ArbiterIO[UInt]]
-      Module(new LockingRRArbiter(data, 2, 2, None)) shouldBe a [LockingRRArbiter[UInt]]
-      Module(new RRArbiter(data, 2)) shouldBe a [RRArbiter[UInt]]
-      Module(new Arbiter(data, 2)) shouldBe a [Arbiter[UInt]]
-      new Counter(2) shouldBe a [Counter]
-      new ValidIO(data) shouldBe a [ValidIO[UInt]]
-      new DecoupledIO(data) shouldBe a [DecoupledIO[UInt]]
-      new QueueIO(data, 2) shouldBe a [QueueIO[UInt]]
-      Module(new Pipe(data, 2)) shouldBe a [Pipe[UInt]]
+      new ArbiterIO(data, 2) shouldBe a[ArbiterIO[UInt]]
+      Module(new LockingRRArbiter(data, 2, 2, None)) shouldBe a[LockingRRArbiter[UInt]]
+      Module(new RRArbiter(data, 2)) shouldBe a[RRArbiter[UInt]]
+      Module(new Arbiter(data, 2)) shouldBe a[Arbiter[UInt]]
+      new Counter(2) shouldBe a[Counter]
+      new ValidIO(data) shouldBe a[ValidIO[UInt]]
+      new DecoupledIO(data) shouldBe a[DecoupledIO[UInt]]
+      new QueueIO(data, 2) shouldBe a[QueueIO[UInt]]
+      Module(new Pipe(data, 2)) shouldBe a[Pipe[UInt]]
 
-      FillInterleaved(2, wire) shouldBe a [UInt]
-      PopCount(wire) shouldBe a [UInt]
-      Fill(2, wire) shouldBe a [UInt]
-      Reverse(wire) shouldBe a [UInt]
-      Cat(wire, wire) shouldBe a [UInt]
-      Log2(wire) shouldBe a [UInt]
+      FillInterleaved(2, wire) shouldBe a[UInt]
+      PopCount(wire) shouldBe a[UInt]
+      Fill(2, wire) shouldBe a[UInt]
+      Reverse(wire) shouldBe a[UInt]
+      Cat(wire, wire) shouldBe a[UInt]
+      Log2(wire) shouldBe a[UInt]
       // 'switch' and 'is' are tested below in Risc
-      Counter(2) shouldBe a [Counter]
-      DecoupledIO(wire) shouldBe a [DecoupledIO[UInt]]
+      Counter(2) shouldBe a[Counter]
+      DecoupledIO(wire) shouldBe a[DecoupledIO[UInt]]
       val dcd = Wire(Decoupled(data))
-      dcd shouldBe a [DecoupledIO[UInt]]
-      Queue(dcd) shouldBe a [DecoupledIO[UInt]]
-      Queue(dcd, 0) shouldBe a [DecoupledIO[UInt]]
-      Enum(UInt(), 2) shouldBe a [List[UInt]]
-      ListLookup(wire, List(wire), Array((BitPat("b1"), List(wire)))) shouldBe a [List[UInt]]
-      Lookup(wire, wire, Seq((BitPat("b1"), wire))) shouldBe a [UInt]
-      Mux1H(wire, Seq(wire)) shouldBe a [UInt]
-      PriorityMux(Seq(Bool(false)), Seq(data)) shouldBe a [UInt]
-      MuxLookup(wire, wire, Seq((wire, wire))) shouldBe a [UInt]
-      MuxCase(wire, Seq((Bool(true), wire))) shouldBe a [UInt]
-      OHToUInt(wire) shouldBe a [UInt]
-      PriorityEncoder(wire) shouldBe a [UInt]
-      UIntToOH(wire) shouldBe a [UInt]
-      PriorityEncoderOH(wire) shouldBe a [UInt]
-      RegNext(wire) shouldBe a [UInt]
-      RegInit(wire) shouldBe a [UInt]
-      RegEnable(wire, Bool(true)) shouldBe a [UInt]
-      ShiftRegister(wire, 2) shouldBe a [UInt]
-      Valid(data) shouldBe a [ValidIO[UInt]]
-      Pipe(Wire(Valid(data)), 2) shouldBe a [ValidIO[UInt]]
+      dcd shouldBe a[DecoupledIO[UInt]]
+      Queue(dcd) shouldBe a[DecoupledIO[UInt]]
+      Queue(dcd, 0) shouldBe a[DecoupledIO[UInt]]
+      Enum(UInt(), 2) shouldBe a[List[UInt]]
+      ListLookup(wire, List(wire), Array((BitPat("b1"), List(wire)))) shouldBe a[List[UInt]]
+      Lookup(wire, wire, Seq((BitPat("b1"), wire))) shouldBe a[UInt]
+      Mux1H(wire, Seq(wire)) shouldBe a[UInt]
+      PriorityMux(Seq(Bool(false)), Seq(data)) shouldBe a[UInt]
+      MuxLookup(wire, wire, Seq((wire, wire))) shouldBe a[UInt]
+      MuxCase(wire, Seq((Bool(true), wire))) shouldBe a[UInt]
+      OHToUInt(wire) shouldBe a[UInt]
+      PriorityEncoder(wire) shouldBe a[UInt]
+      UIntToOH(wire) shouldBe a[UInt]
+      PriorityEncoderOH(wire) shouldBe a[UInt]
+      RegNext(wire) shouldBe a[UInt]
+      RegInit(wire) shouldBe a[UInt]
+      RegEnable(wire, Bool(true)) shouldBe a[UInt]
+      ShiftRegister(wire, 2) shouldBe a[UInt]
+      Valid(data) shouldBe a[ValidIO[UInt]]
+      Pipe(Wire(Valid(data)), 2) shouldBe a[ValidIO[UInt]]
     }
     ChiselStage.elaborate { new Dummy }
   }
   // Verify we can elaborate a design expressed in Chisel2
   class Chisel2CompatibleRisc extends Module {
     val io = new Bundle {
-      val isWr   = Bool(INPUT)
+      val isWr = Bool(INPUT)
       val wrAddr = UInt(INPUT, 8)
       val wrData = Bits(INPUT, 32)
-      val boot   = Bool(INPUT)
-      val valid  = Bool(OUTPUT)
-      val out    = Bits(OUTPUT, 32)
+      val boot = Bool(INPUT)
+      val valid = Bool(OUTPUT)
+      val out = Bits(OUTPUT, 32)
     }
     val file = Mem(256, Bits(width = 32))
     val code = Mem(256, Bits(width = 32))
-    val pc   = Reg(init=UInt(0, 8))
+    val pc = Reg(init = UInt(0, 8))
 
     val add_op :: imm_op :: Nil = Enum(2)
 
     val inst = code(pc)
-    val op   = inst(31,24)
-    val rci  = inst(23,16)
-    val rai  = inst(15, 8)
-    val rbi  = inst( 7, 0)
+    val op = inst(31, 24)
+    val rci = inst(23, 16)
+    val rai = inst(15, 8)
+    val rbi = inst(7, 0)
 
     val ra = Mux(rai === Bits(0), Bits(0), file(rai))
     val rb = Mux(rbi === Bits(0), Bits(0), file(rbi))
     val rc = Wire(Bits(width = 32))
 
     io.valid := Bool(false)
-    io.out   := Bits(0)
-    rc       := Bits(0)
+    io.out := Bits(0)
+    rc := Bits(0)
 
-    when (io.isWr) {
+    when(io.isWr) {
       code(io.wrAddr) := io.wrData
-    } .elsewhen (io.boot) {
+    }.elsewhen(io.boot) {
       pc := UInt(0)
-    } .otherwise {
+    }.otherwise {
       switch(op) {
         is(add_op) { rc := ra +% rb }
         is(imm_op) { rc := (rai << 8) | rbi }
       }
       io.out := rc
-      when (rci === UInt(255)) {
+      when(rci === UInt(255)) {
         io.valid := Bool(true)
-      } .otherwise {
+      }.otherwise {
         file(rci) := rc
       }
       pc := pc +% UInt(1)
@@ -190,7 +191,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       }
     })
   }
-
 
   class SmallBundle extends Bundle {
     val f1 = UInt(width = 4)
@@ -219,7 +219,7 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
         val in = (new SmallBundle).asInput
         val out = (new BigBundle).asOutput
       }
-      val badReg = Reg(UInt(7, width=4))
+      val badReg = Reg(UInt(7, width = 4))
     }
     ChiselStage.elaborate { new CreateRegFromBoundTypeModule() }
   }
@@ -302,9 +302,9 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
   // Note: This is a regression (see https://github.com/freechipsproject/chisel3/issues/668)
   it should "fail for Chisel types" in {
     import Chisel._
-    an [chisel3.ExpectedHardwareException] should be thrownBy extractCause[chisel3.ExpectedHardwareException] {
+    an[chisel3.ExpectedHardwareException] should be thrownBy extractCause[chisel3.ExpectedHardwareException] {
       ChiselStage.elaborate(new Module {
-        val io = new Bundle { }
+        val io = new Bundle {}
         UInt(INPUT).dir
       })
     }
@@ -342,11 +342,11 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     })
   }
 
-  behavior of "BitPat"
+  behavior.of("BitPat")
 
   it should "support old operators" in {
     class Foo extends Module {
-      val io = IO(new Bundle{})
+      val io = IO(new Bundle {})
 
       info("Deprecated method DC hasn't been removed")
       val bp = BitPat.DC(4)
@@ -355,34 +355,34 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     ChiselStage.elaborate(new Foo)
   }
 
-  behavior of "Enum"
+  behavior.of("Enum")
 
   it should "support apply[T <: Bits](nodeType: T, n: Int): List[T]" in {
     class Foo extends Module {
-      val io = IO(new Bundle{})
+      val io = IO(new Bundle {})
 
       info("works for a UInt")
-      Enum(UInt(), 4) shouldBe a [List[UInt]]
+      Enum(UInt(), 4) shouldBe a[List[UInt]]
 
       info("throw an exception for non-UInt types")
-      intercept [IllegalArgumentException] {
+      intercept[IllegalArgumentException] {
         Enum(SInt(), 4)
-      }.getMessage should include ("Only UInt supported for enums")
+      }.getMessage should include("Only UInt supported for enums")
 
       info("throw an exception if the bit width is specified")
-      intercept [IllegalArgumentException] {
+      intercept[IllegalArgumentException] {
         Enum(UInt(width = 8), 4)
-      }.getMessage should include ("Bit width may no longer be specified for enums")
+      }.getMessage should include("Bit width may no longer be specified for enums")
     }
 
     ChiselStage.elaborate(new Foo)
   }
 
-  behavior of "Queue"
+  behavior.of("Queue")
 
   it should "support deprecated constructors" in {
     class Foo extends Module {
-      val io = IO(new Bundle{})
+      val io = IO(new Bundle {})
 
       info("reset: Option[Bool] constructor works")
       val option = Module(new Queue(UInt(), 4, false, false, Some(Bool(true))))
@@ -394,56 +394,56 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     ChiselStage.elaborate(new Foo)
   }
 
-  behavior of "LFSR16"
+  behavior.of("LFSR16")
 
   it should "still exist" in {
     class Foo extends Module {
-      val io = IO(new Bundle{})
+      val io = IO(new Bundle {})
 
       info("Still exists")
       val lfsr = LFSR16()
 
       info("apply method returns a UInt")
-      lfsr shouldBe a [UInt]
+      lfsr shouldBe a[UInt]
 
       info("returned UInt has a width of 16")
-      lfsr.getWidth should be (16)
+      lfsr.getWidth should be(16)
     }
 
     ChiselStage.elaborate(new Foo)
   }
 
-  behavior of "Mem"
+  behavior.of("Mem")
 
   it should "support deprecated apply methods" in {
     class Foo extends Module {
-      val io = IO(new Bundle{})
+      val io = IO(new Bundle {})
 
       info("apply[T <: Data](t: T, size: BigInt): Mem[T] works")
       val memBigInt = Mem(UInt(), 8: BigInt)
-      memBigInt shouldBe a [Mem[UInt]]
+      memBigInt shouldBe a[Mem[UInt]]
 
       info("apply[T <: Data](t: T, size: Int): Mem[T] works")
       val memInt = Mem(SInt(), 16: Int)
-      memInt shouldBe a [Mem[SInt]]
+      memInt shouldBe a[Mem[SInt]]
     }
 
     ChiselStage.elaborate(new Foo)
   }
 
-  behavior of "SeqMem"
+  behavior.of("SeqMem")
 
   it should "support deprecated apply methods" in {
     class Foo extends Module {
-      val io = IO(new Bundle{})
+      val io = IO(new Bundle {})
 
       info("apply[T <: Data](t: T, size: BigInt): SeqMem[T] works")
       val seqMemBigInt = SeqMem(UInt(), 8: BigInt)
-      seqMemBigInt shouldBe a [SeqMem[UInt]]
+      seqMemBigInt shouldBe a[SeqMem[UInt]]
 
       info("apply[T <: Data](t: T, size: Int): SeqMem[T] works")
       val seqMemInt = SeqMem(UInt(), 16: Int)
-      seqMemInt shouldBe a [SeqMem[UInt]]
+      seqMemInt shouldBe a[SeqMem[UInt]]
     }
 
     ChiselStage.elaborate(new Foo)
@@ -461,11 +461,11 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     ChiselStage.elaborate((new Foo))
   }
 
-  behavior of "debug"
+  behavior.of("debug")
 
   it should "still exist" in {
     class Foo extends Module {
-      val io = IO(new Bundle{})
+      val io = IO(new Bundle {})
 
       val data = UInt(width = 2)
       debug(data)
@@ -474,35 +474,35 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     ChiselStage.elaborate(new Foo)
   }
 
-  behavior of "Data methods"
+  behavior.of("Data methods")
 
-  behavior of "Wire"
+  behavior.of("Wire")
 
   it should "support legacy methods" in {
     class Foo extends Module {
-      val io = IO(new Bundle{})
+      val io = IO(new Bundle {})
 
       info("apply[T <: Data](dummy: Int = 0, init: T): T works")
-      val first = Wire(init=UInt("hdeadbeef"))
-      first shouldBe a [UInt]
+      val first = Wire(init = UInt("hdeadbeef"))
+      first shouldBe a[UInt]
 
       info("apply[T <: Data](t: T, init: T): T works")
       val second = Wire(SInt(), SInt(-100))
-      second shouldBe a [SInt]
+      second shouldBe a[SInt]
 
       info("apply[T <: Data](t: T, init: DontCare.type): T works")
       val third = Wire(UInt(), chisel3.DontCare)
-      third shouldBe a [UInt]
+      third shouldBe a[UInt]
     }
 
     ChiselStage.elaborate(new Foo)
   }
 
-  behavior of "Vec"
+  behavior.of("Vec")
 
   it should "support legacy methods" in {
     class Foo extends BasicTester {
-      val seq = Seq(Wire(UInt(0, width=4)), Wire(UInt(1, width=4)), Wire(UInt(2, width=4)))
+      val seq = Seq(Wire(UInt(0, width = 4)), Wire(UInt(1, width = 4)), Wire(UInt(2, width = 4)))
       val vec = Vec(seq)
 
       info("read works")
@@ -513,32 +513,32 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       chisel3.assert(vec.read(UInt(1)) === UInt(3))
 
       val (_, done) = Counter(Bool(true), 4)
-      when (done) { stop }
+      when(done) { stop }
     }
 
     assertTesterPasses(new Foo)
   }
 
-  behavior of "Bits methods"
+  behavior.of("Bits methods")
 
   it should "support legacy methods" in {
     class Foo extends Module {
-      val io = new Bundle{}
+      val io = new Bundle {}
 
       val u = UInt(8)
       val s = SInt(-4)
 
       info("asBits works")
-      s.asBits shouldBe a [Bits]
+      s.asBits shouldBe a[Bits]
 
       info("toSInt works")
-      u.toSInt shouldBe a [SInt]
+      u.toSInt shouldBe a[SInt]
 
       info("toUInt works")
-      s.toUInt shouldBe a [UInt]
+      s.toUInt shouldBe a[UInt]
 
       info("toBools works")
-      s.toBools shouldBe a [Seq[Bool]]
+      s.toBools shouldBe a[Seq[Bool]]
     }
 
     ChiselStage.elaborate(new Foo)
@@ -547,8 +547,8 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
   it should "properly propagate custom compileOptions in Chisel.Module" in {
     import CompatibilityCustomCompileOptions._
     var result: Foo = null
-    ChiselStage.elaborate({result = new Foo; result})
-    result.compileOptions should be theSameInstanceAs (customCompileOptions)
+    ChiselStage.elaborate({ result = new Foo; result })
+    (result.compileOptions should be).theSameInstanceAs(customCompileOptions)
   }
 
   it should "properly set the refs of Records" in {
@@ -564,7 +564,7 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     }
     val verilog = ChiselStage.emitVerilog(new Foo)
     // Check that the names are correct (and that the FIRRTL is valid)
-    verilog should include ("assign io_out_0 = io_in_0;")
+    verilog should include("assign io_out_0 = io_in_0;")
   }
 
   it should "ignore .suggestName on field io" in {
@@ -577,8 +577,8 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       io.bar := io.foo
     }
     val verilog = ChiselStage.emitVerilog(new MyModule)
-    verilog should include ("input  [7:0] io_foo")
-    verilog should include ("output [7:0] io_bar")
+    verilog should include("input  [7:0] io_foo")
+    verilog should include("output [7:0] io_bar")
   }
 
   it should "properly name field io" in {
@@ -591,8 +591,8 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       io.bar := wire
     }
     val verilog = ChiselStage.emitVerilog(new MyModule)
-    verilog should include ("input  [7:0] io_foo")
-    verilog should include ("output [7:0] io_bar")
+    verilog should include("input  [7:0] io_foo")
+    verilog should include("output [7:0] io_bar")
   }
 
 }

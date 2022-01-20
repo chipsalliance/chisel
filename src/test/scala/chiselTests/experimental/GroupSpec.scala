@@ -16,9 +16,9 @@ import scala.collection.mutable
 
 class GroupSpec extends ChiselFlatSpec {
 
-  def collectInstances(c: fir.Circuit, top: Option[String] = None): Seq[String] = new InstanceGraph(c)
-    .fullHierarchy.values.flatten.toSeq
-    .map( v => (top.getOrElse(v.head.name) +: v.tail.map(_.name)).mkString(".") )
+  def collectInstances(c: fir.Circuit, top: Option[String] = None): Seq[String] =
+    new InstanceGraph(c).fullHierarchy.values.flatten.toSeq
+      .map(v => (top.getOrElse(v.head.name) +: v.tail.map(_.name)).mkString("."))
 
   def collectDeclarations(m: fir.DefModule): Set[String] = {
     val decs = mutable.HashSet[String]()
@@ -32,17 +32,16 @@ class GroupSpec extends ChiselFlatSpec {
 
   def lower[T <: RawModule](gen: () => T): fir.Circuit = {
     (new ChiselStage)
-      .execute(Array("--compiler", "low",
-                     "--target-dir", "test_run_dir"),
-               Seq(ChiselGeneratorAnnotation(gen)))
+      .execute(Array("--compiler", "low", "--target-dir", "test_run_dir"), Seq(ChiselGeneratorAnnotation(gen)))
       .collectFirst {
         case firrtl.stage.FirrtlCircuitAnnotation(circuit) => circuit
-      }.get
+      }
+      .get
   }
 
   "Module Grouping" should "compile to low FIRRTL" in {
     class MyModule extends Module {
-      val io = IO(new Bundle{
+      val io = IO(new Bundle {
         val a = Input(Bool())
         val b = Output(Bool())
       })
@@ -56,17 +55,17 @@ class GroupSpec extends ChiselFlatSpec {
     val firrtlCircuit = lower(() => new MyModule)
     firrtlCircuit.modules.collect {
       case m: fir.Module if m.name == "MyModule" =>
-        Set("doubleReg") should be (collectDeclarations(m))
+        Set("doubleReg") should be(collectDeclarations(m))
       case m: fir.Module if m.name == "DosRegisters" =>
-        Set("reg1", "reg2") should be (collectDeclarations(m))
+        Set("reg1", "reg2") should be(collectDeclarations(m))
     }
     val instances = collectInstances(firrtlCircuit, Some("MyModule")).toSet
-    Set("MyModule", "MyModule.doubleReg") should be (instances)
+    Set("MyModule", "MyModule.doubleReg") should be(instances)
   }
 
   "Module Grouping" should "not include intermediate registers" in {
     class MyModule extends Module {
-      val io = IO(new Bundle{
+      val io = IO(new Bundle {
         val a = Input(Bool())
         val b = Output(Bool())
       })
@@ -81,17 +80,17 @@ class GroupSpec extends ChiselFlatSpec {
     val firrtlCircuit = lower(() => new MyModule)
     firrtlCircuit.modules.collect {
       case m: fir.Module if m.name == "MyModule" =>
-        Set("reg2", "doubleReg") should be (collectDeclarations(m))
+        Set("reg2", "doubleReg") should be(collectDeclarations(m))
       case m: fir.Module if m.name == "DosRegisters" =>
-        Set("reg1", "reg3") should be (collectDeclarations(m))
+        Set("reg1", "reg3") should be(collectDeclarations(m))
     }
     val instances = collectInstances(firrtlCircuit, Some("MyModule")).toSet
-    Set("MyModule", "MyModule.doubleReg") should be (instances)
+    Set("MyModule", "MyModule.doubleReg") should be(instances)
   }
 
   "Module Grouping" should "include intermediate wires" in {
     class MyModule extends Module {
-      val io = IO(new Bundle{
+      val io = IO(new Bundle {
         val a = Input(Bool())
         val b = Output(Bool())
       })
@@ -106,11 +105,11 @@ class GroupSpec extends ChiselFlatSpec {
     val firrtlCircuit = lower(() => new MyModule)
     firrtlCircuit.modules.collect {
       case m: fir.Module if m.name == "MyModule" =>
-        Set("doubleReg") should be (collectDeclarations(m))
+        Set("doubleReg") should be(collectDeclarations(m))
       case m: fir.Module if m.name == "DosRegisters" =>
-        Set("reg1", "reg3", "wire") should be (collectDeclarations(m))
+        Set("reg1", "reg3", "wire") should be(collectDeclarations(m))
     }
     val instances = collectInstances(firrtlCircuit, Some("MyModule")).toSet
-    Set("MyModule", "MyModule.doubleReg") should be (instances)
+    Set("MyModule", "MyModule.doubleReg") should be(instances)
   }
 }

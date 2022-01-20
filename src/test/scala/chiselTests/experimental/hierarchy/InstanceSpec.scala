@@ -5,9 +5,8 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, public}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.util.{DecoupledIO, Valid}
-
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -22,7 +21,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0 = Instance(definition)
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("inst i0 of AddOne")
+      chirrtl.serialize should include("inst i0 of AddOne")
     }
     it("0.1: name of an instanceclone should not error") {
       class Top extends Module {
@@ -31,7 +30,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i = i0.i0 // This should not error
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("inst i0 of AddTwo")
+      chirrtl.serialize should include("inst i0 of AddTwo")
     }
     it("0.2: accessing internal fields through non-generated means is hard to do") {
       class Top extends Module {
@@ -42,63 +41,63 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         i0.in
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("inst i0 of AddOne")
+      chirrtl.serialize should include("inst i0 of AddOne")
     }
   }
   describe("1: Annotations on instances in same chisel compilation") {
     it("1.0: should work on a single instance, annotating the instance") {
       class Top extends Module {
         val definition: Definition[AddOne] = Definition(new AddOne)
-        val i0: Instance[AddOne] = Instance(definition)
+        val i0:         Instance[AddOne] = Instance(definition)
         mark(i0, "i0")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddOne".it, "i0"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddOne".it, "i0"))
     }
     it("1.1: should work on a single instance, annotating an inner wire") {
       class Top extends Module {
         val definition: Definition[AddOne] = Definition(new AddOne)
-        val i0: Instance[AddOne] = Instance(definition)
+        val i0:         Instance[AddOne] = Instance(definition)
         mark(i0.innerWire, "i0.innerWire")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddOne>innerWire".rt, "i0.innerWire"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddOne>innerWire".rt, "i0.innerWire"))
     }
     it("1.2: should work on a two nested instances, annotating the instance") {
       class Top extends Module {
         val definition: Definition[AddTwo] = Definition(new AddTwo)
-        val i0: Instance[AddTwo] = Instance(definition)
+        val i0:         Instance[AddTwo] = Instance(definition)
         mark(i0.i0, "i0.i0")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddTwo/i0:AddOne".it, "i0.i0"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddTwo/i0:AddOne".it, "i0.i0"))
     }
     it("1.3: should work on a two nested instances, annotating the inner wire") {
       class Top extends Module {
         val definition: Definition[AddTwo] = Definition(new AddTwo)
-        val i0: Instance[AddTwo] = Instance(definition)
+        val i0:         Instance[AddTwo] = Instance(definition)
         mark(i0.i0.innerWire, "i0.i0.innerWire")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddTwo/i0:AddOne>innerWire".rt, "i0.i0.innerWire"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddTwo/i0:AddOne>innerWire".rt, "i0.i0.innerWire"))
     }
     it("1.4: should work on a nested module in an instance, annotating the module") {
       class Top extends Module {
         val definition: Definition[AddTwoMixedModules] = Definition(new AddTwoMixedModules)
-        val i0: Instance[AddTwoMixedModules] = Instance(definition)
+        val i0:         Instance[AddTwoMixedModules] = Instance(definition)
         mark(i0.i1, "i0.i1")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddTwoMixedModules/i1:AddOne_1".it, "i0.i1"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddTwoMixedModules/i1:AddOne_1".it, "i0.i1"))
     }
     it("1.5: should work on an instantiable container, annotating a wire") {
       class Top extends Module {
         val definition: Definition[AddOneWithInstantiableWire] = Definition(new AddOneWithInstantiableWire)
-        val i0: Instance[AddOneWithInstantiableWire] = Instance(definition)
+        val i0:         Instance[AddOneWithInstantiableWire] = Instance(definition)
         mark(i0.wireContainer.innerWire, "i0.innerWire")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableWire>innerWire".rt, "i0.innerWire"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableWire>innerWire".rt, "i0.innerWire"))
     }
     it("1.6: should work on an instantiable container, annotating a module") {
       class Top extends Module {
@@ -107,7 +106,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i0.moduleContainer.i0, "i0.i0")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableModule/i0:AddOne".it, "i0.i0"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableModule/i0:AddOne".it, "i0.i0"))
     }
     it("1.7: should work on an instantiable container, annotating an instance") {
       class Top extends Module {
@@ -116,7 +115,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i0.instanceContainer.i0, "i0.i0")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableInstance/i0:AddOne".it, "i0.i0"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableInstance/i0:AddOne".it, "i0.i0"))
     }
     it("1.8: should work on an instantiable container, annotating an instantiable container's module") {
       class Top extends Module {
@@ -125,7 +124,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i0.containerContainer.container.i0, "i0.i0")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
     }
     it("1.9: should work on public member which references public member of another instance") {
       class Top extends Module {
@@ -134,24 +133,24 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i0.containerContainer.container.i0, "i0.i0")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
     }
-    it("1.10: should work for targets on definition to have correct circuit name"){
+    it("1.10: should work for targets on definition to have correct circuit name") {
       class Top extends Module {
         val definition = Definition(new AddOneWithAnnotation)
         val i0 = Instance(definition)
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|AddOneWithAnnotation>innerWire".rt, "innerWire"))
+      annos should contain(MarkAnnotation("~Top|AddOneWithAnnotation>innerWire".rt, "innerWire"))
     }
-    it("1.11: should work on things with type parameters"){
+    it("1.11: should work on things with type parameters") {
       class Top extends Module {
         val definition = Definition(new HasTypeParams[UInt](UInt(3.W)))
         val i0 = Instance(definition)
         mark(i0.blah, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/i0:HasTypeParams>blah".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|Top/i0:HasTypeParams>blah".rt, "blah"))
     }
   }
   describe("2: Annotations on designs not in the same chisel compilation") {
@@ -161,7 +160,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val parent = Instance(Definition(new ViewerParent(x, false, true)))
       }
       val (_, annos) = getFirrtlAndAnnos(new Top(first))
-      annos should contain (MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "first"))
+      annos should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "first"))
     }
     it("2.1: should work on an innerWire, marked in a different compilation, in instanced instantiable") {
       val first = elaborateAndGetModule(new AddTwo)
@@ -169,7 +168,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val parent = Instance(Definition(new ViewerParent(x, true, false)))
       }
       val (_, annos) = getFirrtlAndAnnos(new Top(first))
-      annos should contain (MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "second"))
+      annos should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "second"))
     }
     it("2.2: should work on an innerWire, marked in a different compilation, in instanced module") {
       val first = elaborateAndGetModule(new AddTwo)
@@ -178,7 +177,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(parent.viewer.x.i0.innerWire, "third")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top(first))
-      annos should contain (MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "third"))
+      annos should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "third"))
     }
   }
   describe("3: @public") {
@@ -188,7 +187,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(mv.x, "mv.x")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/mv:MultiVal>x".rt, "mv.x"))
+      annos should contain(MarkAnnotation("~Top|Top/mv:MultiVal>x".rt, "mv.x"))
     }
     it("3.1: should work on lazy vals") {
       class Top() extends Module {
@@ -196,7 +195,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(lv.x, lv.y)
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain (MarkAnnotation("~Top|Top/lv:LazyVal>x".rt, "Hi"))
+      annos should contain(MarkAnnotation("~Top|Top/lv:LazyVal>x".rt, "Hi"))
     }
     it("3.2: should work on islookupables") {
       class Top() extends Module {
@@ -275,10 +274,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
       for (line <- lines) {
-        text should include (line)
+        text should include(line)
       }
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
     ignore("3.10: should work on vals in constructor arguments") {
@@ -398,7 +397,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|Top/i:AddTwo/i1:AddOne".it, "blah"))
     }
-    it("5.6: should work for absolute targets on definition to have correct circuit name"){
+    it("5.6: should work for absolute targets on definition to have correct circuit name") {
       class Top extends Module {
         val definition = Definition(new AddOneWithAbsoluteAnnotation)
         val i0 = Instance(definition)
@@ -437,10 +436,12 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
-    it("6.1 An @instantiable Module that implements an @instantiable trait should be able to use extension methods from both") {
+    it(
+      "6.1 An @instantiable Module that implements an @instantiable trait should be able to use extension methods from both"
+    ) {
       class Top extends Module {
         val i: Instance[ModuleWithCommonIntf] = Instance(Definition(new ModuleWithCommonIntf))
         mark(i.io.in, "gotcha")
@@ -454,7 +455,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
     it("6.2 A BlackBox that implements an @instantiable trait should be instantiable as that trait") {
@@ -469,7 +470,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
     it("6.3 It should be possible to have Vectors of @instantiable traits mixing concrete subclasses") {
@@ -491,7 +492,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
   }
@@ -530,10 +531,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
       for (line <- expectedLines) {
-        text should include (line)
+        text should include(line)
       }
       for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
 
@@ -578,15 +579,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         "bar.valid <= i.b.valid",
         "i.b.ready <= bar.ready",
         "bar.bits.fizz <= i.b.fizz",
-        "bar.bits.buzz <= i.b.buzz",
+        "bar.bits.buzz <= i.b.buzz"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
       for (line <- expectedLines) {
-        text should include (line)
+        text should include(line)
       }
       for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
 
@@ -612,7 +613,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       val expected = List(
         "~Top|Top/i:MyModule>a".rt -> "in",
-        "~Top|Top/i:MyModule>b.foo".rt -> "out_bar",
+        "~Top|Top/i:MyModule>b.foo".rt -> "out_bar"
       )
       val lines = List(
         "i.a <= foo",
@@ -621,10 +622,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
       for (line <- lines) {
-        text should include (line)
+        text should include(line)
       }
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
 
@@ -647,7 +648,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val expected = List(
         // Not 1:1 so will get split out
         "~Top|Top/i:MyModule>a".rt -> "i.ports",
-        "~Top|Top/i:MyModule>b".rt -> "i.ports",
+        "~Top|Top/i:MyModule>b".rt -> "i.ports"
       )
       val lines = List(
         "i.a <= foo",
@@ -656,10 +657,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
       for (line <- lines) {
-        text should include (line)
+        text should include(line)
       }
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
   }
@@ -682,11 +683,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val expected = List(
         "~Top|HasCMAR/c:AggregatePortModule>io".rt -> "c.io",
         "~Top|HasCMAR/c:AggregatePortModule>io.out".rt -> "c.io.out"
-
       )
       val (_, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
     it("8.1: it should support @public on a CMAR Record in Instances") {
@@ -706,11 +706,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val expected = List(
         "~Top|Top/i:HasCMAR/c:AggregatePortModule>io".rt -> "i.c.io",
         "~Top|Top/i:HasCMAR/c:AggregatePortModule>io.out".rt -> "i.c.io.out"
-
       )
       val (_, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
   }
@@ -769,10 +768,12 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     it("10.0: instancesOf") {
       val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
         val targets = aop.Select.instancesOf[AddOne](m.toDefinition).map { i: Instance[AddOne] => i.toTarget }
-        targets should be (Seq(
-          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
-          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it,
-        ))
+        targets should be(
+          Seq(
+            "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+            "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
+          )
+        )
       })
       getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
     }
@@ -781,14 +782,18 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val insts = aop.Select.instancesIn(m.toDefinition)
         val abs = insts.map { i: Instance[BaseModule] => i.toAbsoluteTarget }
         val rel = insts.map { i: Instance[BaseModule] => i.toTarget }
-        abs should be (Seq(
-          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
-          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it,
-        ))
-        rel should be (Seq(
-          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
-          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it,
-        ))
+        abs should be(
+          Seq(
+            "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+            "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
+          )
+        )
+        rel should be(
+          Seq(
+            "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+            "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
+          )
+        )
       })
       getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
     }
@@ -797,48 +802,58 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val insts = aop.Select.allInstancesOf[AddOne](m.toDefinition)
         val abs = insts.map { i: Instance[AddOne] => i.in.toAbsoluteTarget }
         val rel = insts.map { i: Instance[AddOne] => i.in.toTarget }
-        rel should be (Seq(
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
-        ))
-        abs should be (Seq(
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
-        ))
+        rel should be(
+          Seq(
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt
+          )
+        )
+        abs should be(
+          Seq(
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt
+          )
+        )
       })
       getFirrtlAndAnnos(new AddFour, Seq(aspect))
     }
     it("10.3: definitionsOf") {
       val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
         val targets = aop.Select.definitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
-        targets should be (Seq(
-          "~AddTwoMixedModules|AddOne>in".rt,
-          "~AddTwoMixedModules|AddOne_1>in".rt,
-        ))
+        targets should be(
+          Seq(
+            "~AddTwoMixedModules|AddOne>in".rt,
+            "~AddTwoMixedModules|AddOne_1>in".rt
+          )
+        )
       })
       getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
     }
     it("10.4: definitionsIn") {
       val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
         val targets = aop.Select.definitionsIn(m.toDefinition).map { i: Definition[BaseModule] => i.toTarget }
-        targets should be (Seq(
-          "~AddTwoMixedModules|AddOne".mt,
-          "~AddTwoMixedModules|AddOne_1".mt,
-        ))
+        targets should be(
+          Seq(
+            "~AddTwoMixedModules|AddOne".mt,
+            "~AddTwoMixedModules|AddOne_1".mt
+          )
+        )
       })
       getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
     }
     it("10.5: allDefinitionsOf") {
       val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
         val targets = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
-        targets should be (Seq(
-          "~AddFour|AddOne>in".rt,
-          "~AddFour|AddOne_1>in".rt,
-        ))
+        targets should be(
+          Seq(
+            "~AddFour|AddOne>in".rt,
+            "~AddFour|AddOne_1>in".rt
+          )
+        )
       })
       getFirrtlAndAnnos(new AddFour, Seq(aspect))
     }
@@ -862,120 +877,139 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
     it("10.9: allInstancesOf.ios") {
       val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        val abs = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] => aop.Select.ios(i).map(_.toAbsoluteTarget) }
-        val rel = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] => aop.Select.ios(i).map(_.toTarget) }
-        abs should be (Seq(
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
+        val abs = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] =>
+          aop.Select.ios(i).map(_.toAbsoluteTarget)
+        }
+        val rel = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] =>
+          aop.Select.ios(i).map(_.toTarget)
+        }
+        abs should be(
+          Seq(
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt
+          )
+        )
 
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
-
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
-
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt,
-        ))
-
-        rel should be (Seq(
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
-
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
-          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
-
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
-             
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
-          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt,
-        ))
+        rel should be(
+          Seq(
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt
+          )
+        )
       })
       getFirrtlAndAnnos(new AddFour, Seq(aspect))
     }
     it("10.10: allDefinitionsOf.ios") {
       val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] => aop.Select.ios(i).map(_.toAbsoluteTarget) }
-        val rel = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] => aop.Select.ios(i).map(_.toTarget) }
-        abs should be (Seq(
-          "~AddFour|AddOne>clock".rt,
-          "~AddFour|AddOne>reset".rt,
-          "~AddFour|AddOne>in".rt,
-          "~AddFour|AddOne>out".rt,
+        val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] =>
+          aop.Select.ios(i).map(_.toAbsoluteTarget)
+        }
+        val rel = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] =>
+          aop.Select.ios(i).map(_.toTarget)
+        }
+        abs should be(
+          Seq(
+            "~AddFour|AddOne>clock".rt,
+            "~AddFour|AddOne>reset".rt,
+            "~AddFour|AddOne>in".rt,
+            "~AddFour|AddOne>out".rt,
+            "~AddFour|AddOne_1>clock".rt,
+            "~AddFour|AddOne_1>reset".rt,
+            "~AddFour|AddOne_1>in".rt,
+            "~AddFour|AddOne_1>out".rt
+          )
+        )
 
-          "~AddFour|AddOne_1>clock".rt,
-          "~AddFour|AddOne_1>reset".rt,
-          "~AddFour|AddOne_1>in".rt,
-          "~AddFour|AddOne_1>out".rt,
-        ))
+        rel should be(
+          Seq(
+            "~AddFour|AddOne>clock".rt,
+            "~AddFour|AddOne>reset".rt,
+            "~AddFour|AddOne>in".rt,
+            "~AddFour|AddOne>out".rt,
+            "~AddFour|AddOne_1>clock".rt,
+            "~AddFour|AddOne_1>reset".rt,
+            "~AddFour|AddOne_1>in".rt,
+            "~AddFour|AddOne_1>out".rt
+          )
+        )
 
-        rel should be (Seq(
-          "~AddFour|AddOne>clock".rt,
-          "~AddFour|AddOne>reset".rt,
-          "~AddFour|AddOne>in".rt,
-          "~AddFour|AddOne>out".rt,
-
-          "~AddFour|AddOne_1>clock".rt,
-          "~AddFour|AddOne_1>reset".rt,
-          "~AddFour|AddOne_1>in".rt,
-          "~AddFour|AddOne_1>out".rt,
-        ))
-        
       })
       getFirrtlAndAnnos(new AddFour, Seq(aspect))
     }
     it("10.11 Select.instancesIn for typed BaseModules") {
       val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
         val targets = aop.Select.instancesIn(m.toDefinition).map { i: Instance[BaseModule] => i.toTarget }
-        targets should be (Seq(
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it,
-        ))     
+        targets should be(
+          Seq(
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it
+          )
+        )
       })
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
     it("10.12 Select.instancesOf for typed BaseModules if type is ignored") {
       val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
-        val targets = aop.Select.instancesOf[HasTypeParams[_]](m.toDefinition).map { i: Instance[HasTypeParams[_]] => i.toTarget }
-        targets should be (Seq(
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it,
-        ))       
+        val targets =
+          aop.Select.instancesOf[HasTypeParams[_]](m.toDefinition).map { i: Instance[HasTypeParams[_]] => i.toTarget }
+        targets should be(
+          Seq(
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it
+          )
+        )
       })
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
-    it("10.13 Select.instancesOf for typed BaseModules even type is specified wrongly (should be ignored, even though we wish it weren't)") {
+    it(
+      "10.13 Select.instancesOf for typed BaseModules even type is specified wrongly (should be ignored, even though we wish it weren't)"
+    ) {
       val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
-        val targets = aop.Select.instancesOf[HasTypeParams[SInt]](m.toDefinition).map { i: Instance[HasTypeParams[_]] => i.toTarget }
-        targets should be (Seq(
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
-          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it,
-        ))       
+        val targets = aop.Select.instancesOf[HasTypeParams[SInt]](m.toDefinition).map { i: Instance[HasTypeParams[_]] =>
+          i.toTarget
+        }
+        targets should be(
+          Seq(
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
+            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it
+          )
+        )
       })
-      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect)) 
+      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
   }
 }

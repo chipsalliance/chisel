@@ -11,7 +11,6 @@ import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-
 class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
   "simple one hot mux with uint should work" in {
     assertTesterPasses(new SimpleOneHotTester)
@@ -32,7 +31,7 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
     assertTesterPasses(new ParameterizedAggregateOneHotTester)
   }
   "simple one hot mux with all aggregates containing inferred width fixed values should NOT work" in {
-    intercept [ChiselException] {
+    intercept[ChiselException] {
       assertTesterPasses(new InferredWidthAggregateOneHotTester)
     }
   }
@@ -56,12 +55,14 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
 
 class SimpleOneHotTester extends BasicTester {
   val out = Wire(UInt())
-  out := Mux1H(Seq(
-    false.B -> 2.U,
-    false.B -> 4.U,
-    true.B  -> 8.U,
-    false.B -> 11.U
-  ))
+  out := Mux1H(
+    Seq(
+      false.B -> 2.U,
+      false.B -> 4.U,
+      true.B -> 8.U,
+      false.B -> 11.U
+    )
+  )
 
   assert(out === 8.U)
 
@@ -70,12 +71,14 @@ class SimpleOneHotTester extends BasicTester {
 
 class SIntOneHotTester extends BasicTester {
   val out = Wire(SInt())
-  out := Mux1H(Seq(
-    false.B -> (-3).S,
-    true.B  -> (-5).S,
-    false.B -> (-7).S,
-    false.B -> (-11).S
-  ))
+  out := Mux1H(
+    Seq(
+      false.B -> (-3).S,
+      true.B -> (-5).S,
+      false.B -> (-7).S,
+      false.B -> (-11).S
+    )
+  )
 
   assert(out === (-5).S)
 
@@ -85,12 +88,14 @@ class SIntOneHotTester extends BasicTester {
 class FixedPointOneHotTester extends BasicTester {
   val out = Wire(FixedPoint(8.W, 4.BP))
 
-  out := Mux1H(Seq(
-    false.B -> (-1.5).F(1.BP),
-    true.B  -> (-2.25).F(2.BP),
-    false.B -> (-4.125).F(3.BP),
-    false.B -> (-11.625).F(3.BP)
-  ))
+  out := Mux1H(
+    Seq(
+      false.B -> (-1.5).F(1.BP),
+      true.B -> (-2.25).F(2.BP),
+      false.B -> (-4.125).F(3.BP),
+      false.B -> (-11.625).F(3.BP)
+    )
+  )
 
   assert(out === (-2.25).F(4.BP))
 
@@ -100,12 +105,14 @@ class FixedPointOneHotTester extends BasicTester {
 class AllSameFixedPointOneHotTester extends BasicTester {
   val out = Wire(FixedPoint(12.W, 3.BP))
 
-  out := Mux1H(Seq(
-    false.B -> (-1.5).F(12.W, 3.BP),
-    true.B  -> (-2.25).F(12.W, 3.BP),
-    false.B -> (-4.125).F(12.W, 3.BP),
-    false.B -> (-11.625).F(12.W, 3.BP)
-  ))
+  out := Mux1H(
+    Seq(
+      false.B -> (-1.5).F(12.W, 3.BP),
+      true.B -> (-2.25).F(12.W, 3.BP),
+      false.B -> (-4.125).F(12.W, 3.BP),
+      false.B -> (-11.625).F(12.W, 3.BP)
+    )
+  )
 
   assert(out === (-2.25).F(14.W, 4.BP))
 
@@ -199,7 +206,6 @@ class ParameterizedAggregateOneHot[T <: Data](valGen: HasMakeLit[T], outGen: T) 
     val out = Output(outGen)
   })
 
-
   val values = (0 until 4).map { n => valGen.makeLit(n) }
   val terms = io.selectors.zip(values)
   io.out := Mux1H(terms)
@@ -229,22 +235,26 @@ class InferredWidthAggregateOneHotTester extends BasicTester {
   b3.a := -0.0078125.F(7.BP)
   b3.b.c := -0.00390625.F(8.BP)
 
-  val o1 = Mux1H(Seq(
-    false.B -> b0,
-    false.B -> b1,
-    true.B -> b2,
-    false.B -> b3
-  ))
+  val o1 = Mux1H(
+    Seq(
+      false.B -> b0,
+      false.B -> b1,
+      true.B -> b2,
+      false.B -> b3
+    )
+  )
 
   assert(o1.a === -0.015625.F(5.BP))
   assert(o1.b.c === -0.0078125.F(6.BP))
 
-  val o2 = Mux1H(Seq(
-    false.B -> b0,
-    true.B -> b1,
-    false.B -> b2,
-    false.B -> b3
-  ))
+  val o2 = Mux1H(
+    Seq(
+      false.B -> b0,
+      true.B -> b1,
+      false.B -> b2,
+      false.B -> b3
+    )
+  )
 
   assert(o2.a === -0.0625.F(3.BP))
   assert(o2.b.c === -0.03125.F(4.BP))
@@ -283,12 +293,14 @@ class DifferentBundleOneHotTester extends BasicTester {
   b3.a := -0.0078125.F(7.BP)
   b3.b.c := -0.00390625.F(8.BP)
 
-  val o1 = Mux1H(Seq(
-    false.B -> b0,
-    false.B -> b1,
-    true.B -> b2,
-    false.B -> b3
-  ))
+  val o1 = Mux1H(
+    Seq(
+      false.B -> b0,
+      false.B -> b1,
+      true.B -> b2,
+      false.B -> b3
+    )
+  )
 
   stop()
 }

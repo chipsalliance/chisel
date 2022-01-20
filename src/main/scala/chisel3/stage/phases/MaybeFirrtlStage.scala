@@ -17,8 +17,8 @@ class MaybeFirrtlStage extends Phase {
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
 
-  def transform(annotations: AnnotationSeq): AnnotationSeq = annotations
-    .collectFirst { case NoRunFirrtlCompilerAnnotation => annotations }
-    .getOrElse    { (new FirrtlStage).transform(annotations)          }
+  def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.collectFirst {
+    case NoRunFirrtlCompilerAnnotation => annotations
+  }.getOrElse { (new FirrtlStage).transform(annotations) }
 
 }

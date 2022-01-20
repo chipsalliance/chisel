@@ -14,14 +14,15 @@ class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
   assert((a | b) === (_a | _b).asUInt)
   assert((a ^ b) === (_a ^ _b).asUInt)
   assert((a.orR) === (_a != 0).asBool)
-  assert((a.andR) === (s"%${w}s".format(BigInt(_a).toString(2)).foldLeft(true)(_ && _ == '1') ).asBool)
+  assert((a.andR) === (s"%${w}s".format(BigInt(_a).toString(2)).foldLeft(true)(_ && _ == '1')).asBool)
   stop()
 }
 
 class BitwiseOpsSpec extends ChiselPropSpec {
   property("All bit-wise ops should return the correct result") {
-    forAll(safeUIntPair) { case(w: Int, a: Int, b: Int) =>
-      assertTesterPasses{ new BitwiseOpsTester(w, a, b) }
+    forAll(safeUIntPair) {
+      case (w: Int, a: Int, b: Int) =>
+        assertTesterPasses { new BitwiseOpsTester(w, a, b) }
     }
   }
 }

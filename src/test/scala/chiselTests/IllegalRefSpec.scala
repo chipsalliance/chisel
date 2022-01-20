@@ -39,7 +39,7 @@ object IllegalRefSpec {
       val o = Output(Bool())
     })
     private var tmp: Option[Bool] = None
-    when (io.i) {
+    when(io.i) {
       val x = io.i & io.i
       tmp = Some(x)
     }
@@ -60,13 +60,13 @@ class IllegalRefSpec extends ChiselFlatSpec with Utils {
   variants.foreach {
     case (k, v) =>
       s"Illegal cross-module references in ${k}" should "fail" in {
-        a [ChiselException] should be thrownBy extractCause[ChiselException] {
+        a[ChiselException] should be thrownBy extractCause[ChiselException] {
           ChiselStage.elaborate { new IllegalRefOuter(v) }
         }
       }
 
       s"Using a signal that has escaped its enclosing when scope in ${k}" should "fail" in {
-        a [ChiselException] should be thrownBy extractCause[ChiselException] {
+        a[ChiselException] should be thrownBy extractCause[ChiselException] {
           ChiselStage.elaborate { new CrossWhenConnect(v) }
         }
       }

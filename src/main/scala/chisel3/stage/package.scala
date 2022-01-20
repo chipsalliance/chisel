@@ -12,14 +12,13 @@ package object stage {
 
   implicit object ChiselOptionsView extends OptionsView[ChiselOptions] {
 
-    def view(options: AnnotationSeq): ChiselOptions = options
-      .collect { case a: ChiselOption => a }
-      .foldLeft(new ChiselOptions()){ (c, x) =>
+    def view(options: AnnotationSeq): ChiselOptions = options.collect { case a: ChiselOption => a }
+      .foldLeft(new ChiselOptions()) { (c, x) =>
         x match {
           case _: NoRunFirrtlCompilerAnnotation.type => c.copy(runFirrtlCompiler = false)
           case _: PrintFullStackTraceAnnotation.type => c.copy(printFullStackTrace = true)
-          case ChiselOutputFileAnnotation(f)         => c.copy(outputFile = Some(f))
-          case ChiselCircuitAnnotation(a)            => c.copy(chiselCircuit = Some(a))
+          case ChiselOutputFileAnnotation(f) => c.copy(outputFile = Some(f))
+          case ChiselCircuitAnnotation(a)    => c.copy(chiselCircuit = Some(a))
         }
       }
 

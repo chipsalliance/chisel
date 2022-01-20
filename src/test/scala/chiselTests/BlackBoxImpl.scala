@@ -5,7 +5,7 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource, HasBlackBoxPath}
+import chisel3.util.{HasBlackBoxInline, HasBlackBoxPath, HasBlackBoxResource}
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import firrtl.transforms.BlackBoxNotFoundException
 import org.scalacheck.Test.Failed
@@ -13,22 +13,23 @@ import org.scalatest.Succeeded
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-
-class BlackBoxAdd(n : Int) extends HasBlackBoxInline {
+class BlackBoxAdd(n: Int) extends HasBlackBoxInline {
   val io = IO(new Bundle {
     val in = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
 
-  setInline("BlackBoxAdd.v",
+  setInline(
+    "BlackBoxAdd.v",
     s"""
-      |module BlackBoxAdd(
-      |    input  [15:0] in,
-      |    output [15:0] out
-      |);
-      |  assign out = in + $n;
-      |endmodule
-    """.stripMargin)
+       |module BlackBoxAdd(
+       |    input  [15:0] in,
+       |    output [15:0] out
+       |);
+       |  assign out = in + $n;
+       |endmodule
+    """.stripMargin
+  )
 }
 
 class UsesBlackBoxAddViaInline extends Module {
@@ -89,7 +90,7 @@ class UsesBlackBoxMinusViaPath extends Module {
 }
 
 class BlackBoxResourceNotFound extends HasBlackBoxResource {
-  val io = IO(new Bundle{})
+  val io = IO(new Bundle {})
   addResource("/missing.resource")
 }
 
@@ -102,29 +103,35 @@ class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
   val stage = new ChiselStage
   "BlackBox can have verilator source implementation" - {
     "Implementations can be contained in-line" in {
-      stage.execute(Array("-X", "verilog", "--target-dir", targetDir),
-                    Seq(ChiselGeneratorAnnotation(() => new UsesBlackBoxAddViaInline)))
+      stage.execute(
+        Array("-X", "verilog", "--target-dir", targetDir),
+        Seq(ChiselGeneratorAnnotation(() => new UsesBlackBoxAddViaInline))
+      )
       val verilogOutput = new File(targetDir, "BlackBoxAdd.v")
-      verilogOutput.exists() should be (true)
+      verilogOutput.exists() should be(true)
       verilogOutput.delete()
     }
     "Implementations can be contained in resource files" in {
-      stage.execute(Array("-X", "low", "--target-dir", targetDir),
-                    Seq(ChiselGeneratorAnnotation(() => new UsesBlackBoxMinusViaResource)))
+      stage.execute(
+        Array("-X", "low", "--target-dir", targetDir),
+        Seq(ChiselGeneratorAnnotation(() => new UsesBlackBoxMinusViaResource))
+      )
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
-      verilogOutput.exists() should be (true)
+      verilogOutput.exists() should be(true)
       verilogOutput.delete()
     }
     "Implementations can be contained in arbitrary files" in {
-      stage.execute(Array("-X", "low", "--target-dir", targetDir),
-                    Seq(ChiselGeneratorAnnotation(() => new UsesBlackBoxMinusViaPath)))
+      stage.execute(
+        Array("-X", "low", "--target-dir", targetDir),
+        Seq(ChiselGeneratorAnnotation(() => new UsesBlackBoxMinusViaPath))
+      )
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
-      verilogOutput.exists() should be (true)
+      verilogOutput.exists() should be(true)
       verilogOutput.delete()
       Succeeded
     }
     "Resource files that do not exist produce Chisel errors" in {
-      assertThrows[BlackBoxNotFoundException]{
+      assertThrows[BlackBoxNotFoundException] {
         ChiselStage.emitChirrtl(new UsesMissingBlackBoxResource)
       }
     }
