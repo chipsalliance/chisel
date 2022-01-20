@@ -285,7 +285,18 @@ ChiselStage.emitVerilog(new MyWireAssignmentModule2)
 ```
 
 </td>
-<td>text here</td>
+<td>
+
+```
+module MyWireAssignmentModule(
+  input   clock,
+  input   reset
+);
+endmodule
+```
+
+
+</td>
 </tr>
     </table>
 <html>
