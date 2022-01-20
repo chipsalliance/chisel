@@ -5,7 +5,9 @@ package chiselTests.experimental
 import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.experimental.dataview._
+import chisel3.experimental.conversions._
 import chisel3.experimental.DataMirror.internal.chiselTypeClone
+import chisel3.experimental.HWTuple2
 import chisel3.stage.ChiselStage
 import chisel3.util.{Decoupled, DecoupledIO}
 
@@ -48,69 +50,6 @@ object FlatDecoupledDataView {
     _.buzz -> _.bits.buzz
   )
   implicit val view2 = view.invert(_ => new FlatDecoupled)
-}
-
-// This should become part of Chisel in a later PR
-object Tuple2DataProduct {
-  implicit def tuple2DataProduct[A : DataProduct, B : DataProduct] = new DataProduct[(A, B)] {
-    def dataIterator(tup: (A, B), path: String): Iterator[(Data, String)] = {
-      val dpa = implicitly[DataProduct[A]]
-      val dpb = implicitly[DataProduct[B]]
-      val (a, b) = tup
-      dpa.dataIterator(a, s"$path._1") ++ dpb.dataIterator(b, s"$path._2")
-    }
-  }
-}
-
-// This should become part of Chisel in a later PR
-object HWTuple {
-  import Tuple2DataProduct._
-
-  class HWTuple2[A <: Data, B <: Data](val _1: A, val _2: B) extends Bundle
-
-  implicit def view[T1 : DataProduct, T2 : DataProduct, V1 <: Data, V2 <: Data](
-    implicit v1: DataView[T1, V1], v2: DataView[T2, V2]
-  ): DataView[(T1, T2), HWTuple2[V1, V2]] =
-    DataView.mapping(
-      { case (a, b) => new HWTuple2(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType)},
-      { case ((a, b), hwt) =>
-          Seq(a.viewAs[V1] -> hwt._1,
-              b.viewAs[V2] -> hwt._2)
-      }
-    )
-
-  implicit def tuple2hwtuple[T1 : DataProduct, T2 : DataProduct, V1 <: Data, V2 <: Data](
-    tup: (T1, T2))(implicit v1: DataView[T1, V1], v2: DataView[T2, V2]
-  ): HWTuple2[V1, V2] = tup.viewAs[HWTuple2[V1, V2]]
-}
-
-// This should become part of Chisel in a later PR
-object SeqDataProduct {
-  // Should we special case Seq[Data]?
-  implicit def seqDataProduct[A : DataProduct]: DataProduct[Seq[A]] = new DataProduct[Seq[A]] {
-    def dataIterator(a: Seq[A], path: String): Iterator[(Data, String)] = {
-      val dpa = implicitly[DataProduct[A]]
-      a.iterator
-        .zipWithIndex
-        .flatMap { case (elt, idx) =>
-          dpa.dataIterator(elt, s"$path[$idx]")
-        }
-    }
-  }
-}
-
-object SeqToVec {
-  import SeqDataProduct._
-
-  // TODO this would need a better way to determine the prototype for the Vec
-  implicit def seqVec[A : DataProduct, B <: Data](implicit dv: DataView[A, B]): DataView[Seq[A], Vec[B]] =
-    DataView.mapping[Seq[A], Vec[B]](
-      xs => Vec(xs.size, chiselTypeClone(xs.head.viewAs[B])), // xs.head is not correct in general
-      { case (s, v) => s.zip(v).map { case (a, b) => a.viewAs[B] -> b } }
-    )
-
-  implicit def seq2Vec[A : DataProduct, B <: Data](xs: Seq[A])(implicit dv: DataView[A, B]): Vec[B] =
-    xs.viewAs[Vec[B]]
 }
 
 class DataViewSpec extends ChiselFlatSpec {
@@ -327,15 +266,14 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include ("z.fizz <= b.foo")
   }
 
-  // This example should be turned into a built-in feature
-  it should "enable implementing \"HardwareTuple\"" in {
-    import HWTuple._
-
+  it should "enable using Seq like Data" in {
     class MyModule extends Module {
       val a, b, c, d = IO(Input(UInt(8.W)))
       val sel = IO(Input(Bool()))
       val y, z = IO(Output(UInt(8.W)))
-      (y, z) := Mux(sel, (a, b), (c, d))
+      // Unclear why the implicit conversion does not work in this case for Seq
+      // That being said, it's easy enough to cast via `.viewAs` with or without
+      Seq(y, z) := Mux(sel, Seq(a, b).viewAs, Seq(c, d).viewAs[Vec[UInt]])
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
     val verilog = ChiselStage.emitVerilog(new MyModule)
@@ -343,25 +281,8 @@ class DataViewSpec extends ChiselFlatSpec {
     verilog should include ("assign z = sel ? b : d;")
   }
 
-  it should "support nesting of tuples" in {
-    import Tuple2DataProduct._
-    import HWTuple._
-
-    class MyModule extends Module {
-      val a, b, c, d = IO(Input(UInt(8.W)))
-      val w, x, y, z = IO(Output(UInt(8.W)))
-      ((w, x), (y, z)) := ((a, b), (c, d))
-    }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include ("w <= a")
-    chirrtl should include ("x <= b")
-    chirrtl should include ("y <= c")
-    chirrtl should include ("z <= d")
-  }
-
   // This example should be turned into a built-in feature
   it should "enable viewing Seqs as Vecs" in {
-    import SeqToVec._
 
     class MyModule extends Module {
       val a, b, c = IO(Input(UInt(8.W)))
@@ -376,11 +297,6 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "support recursive composition of views" in {
-    import Tuple2DataProduct._
-    import SeqDataProduct._
-    import SeqToVec._
-    import HWTuple._
-
     class MyModule extends Module {
       val a, b, c, d = IO(Input(UInt(8.W)))
       val w, x, y, z = IO(Output(UInt(8.W)))
@@ -397,12 +313,26 @@ class DataViewSpec extends ChiselFlatSpec {
     verilog should include ("assign z = d;")
   }
 
-  it should "error if you try to dynamically index a Vec view" in {
-    import SeqDataProduct._
-    import SeqToVec._
-    import Tuple2DataProduct._
-    import HWTuple._
+  it should "support dynamic indexing for Vec identity views" in {
+    class MyModule extends Module {
+      val dataIn = IO(Input(UInt(8.W)))
+      val addr = IO(Input(UInt(2.W)))
+      val dataOut = IO(Output(UInt(8.W)))
 
+      val vec = RegInit(0.U.asTypeOf(Vec(4, UInt(8.W))))
+      val view = vec.viewAs[Vec[UInt]]
+      // Dynamic indexing is more of a "generator" in Chisel3 than an individual node
+      // This style is not recommended, this is just testing the behavior
+      val selected = view(addr)
+      selected := dataIn
+      dataOut := selected
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include ("vec[addr] <= dataIn")
+    chirrtl should include ("dataOut <= vec[addr]")
+  }
+
+  it should "error if you try to dynamically index a Vec view that does not correspond to a Vec target" in {
     class MyModule extends Module {
       val inA, inB = IO(Input(UInt(8.W)))
       val outA, outB = IO(Output(UInt(8.W)))
@@ -411,6 +341,7 @@ class DataViewSpec extends ChiselFlatSpec {
       val a, b, c, d = RegInit(0.U)
 
       // Dynamic indexing is more of a "generator" in Chisel3 than an individual node
+      // This style is not recommended, this is just testing the behavior
       val selected = Seq((a, b), (c, d)).apply(idx)
       selected := (inA, inB)
       (outA, outB) := selected
@@ -434,7 +365,6 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "error if the mapping is non-total in the target" in {
-    import Tuple2DataProduct._
     implicit val dv = DataView[(UInt, UInt), UInt](_ => UInt(), _._1 -> _)
     class MyModule extends Module {
       val a, b = IO(Input(UInt(8.W)))
@@ -533,7 +463,6 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "NOT error if the mapping is non-total in the target" in {
-    import Tuple2DataProduct._
     implicit val dv = PartialDataView[(UInt, UInt), UInt](_ => UInt(), _._2 -> _)
     class MyModule extends Module {
       val a, b = IO(Input(UInt(8.W)))

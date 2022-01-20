@@ -40,6 +40,44 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       chirrtl.serialize should include ("inst i0 of HasUninferredReset")
     }
+    it("0.3: module names of repeated definition should be sequential") {
+      class Top extends Module {
+        val k = Module(new AddTwoParameterized(4, (x: Int) => Seq.tabulate(x){j =>
+          val addOneDef = Definition(new AddOneParameterized(x+j))
+          val addOne = Instance(addOneDef)
+          addOne
+        }))
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include ("module AddOneParameterized :")
+      chirrtl.serialize should include ("module AddOneParameterized_1 :")
+      chirrtl.serialize should include ("module AddOneParameterized_2 :")
+      chirrtl.serialize should include ("module AddOneParameterized_3 :")
+    }
+    it("0.4: multiple instantiations should have sequential names") {
+      class Top extends Module {
+        val addOneDef = Definition(new AddOneParameterized(4))
+        val addOne = Instance(addOneDef)
+        val otherAddOne = Module(new AddOneParameterized(4))
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include ("module AddOneParameterized :")
+      chirrtl.serialize should include ("module AddOneParameterized_1 :")
+    }
+    it("0.5: nested definitions should have sequential names") {
+      class Top extends Module {
+        val k = Module(new AddTwoWithNested(4, (x: Int) => Seq.tabulate(x){j =>
+          val addOneDef = Definition(new AddOneWithNested(x+j))
+          val addOne = Instance(addOneDef)
+          addOne
+        }))
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include ("module AddOneWithNested :")
+      chirrtl.serialize should include ("module AddOneWithNested_1 :")
+      chirrtl.serialize should include ("module AddOneWithNested_2 :")
+      chirrtl.serialize should include ("module AddOneWithNested_3 :")
+    }
   }
   describe("1: Annotations on definitions in same chisel compilation") {
     it("1.0: should work on a single definition, annotating the definition") {
@@ -97,7 +135,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         mark(definition.i1, "i0.i1")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_2".it, "i0.i1"))
+      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_1".it, "i0.i1"))
     }
     // Can you define an instantiable container? I think not.
     // Instead, we can test the instantiable container in a definition
@@ -322,7 +360,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         amark(i.i1.in, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_2>in".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_1>in".rt, "blah"))
     }
     it("5.3: toAbsoluteTarget on a submodule's data, in an aggregate, within a definition") {
       class Top() extends Module {
@@ -330,7 +368,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         amark(i.i1.x.head, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|InstantiatesHasVec/i1:HasVec_2>x[0]".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|InstantiatesHasVec/i1:HasVec_1>x[0]".rt, "blah"))
     }
   }
   describe("6: @instantiable traits should work as expected") {

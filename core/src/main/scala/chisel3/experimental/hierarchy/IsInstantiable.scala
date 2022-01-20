@@ -12,6 +12,6 @@ trait IsInstantiable
 
 object IsInstantiable {
   implicit class IsInstantiableExtensions[T <: IsInstantiable](i: T) {
-    def toInstance: Instance[T] = new Instance(Left(i))
+    def toInstance: Instance[T] = new Instance(Proto(i))
   }
 }

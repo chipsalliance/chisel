@@ -154,13 +154,58 @@ package experimental {
       **/
     def checkTypeEquivalence(x: Data, y: Data): Boolean = x.typeEquivalent(y)
 
-    // Returns the top-level module ports
-    // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
-    // with compiled artifacts (vs. elaboration-time reflection)?
+    /** Returns the ports of a module
+      * {{{
+      * class MyModule extends Module {
+      *   val io = IO(new Bundle {
+      *     val in = Input(UInt(8.W))
+      *     val out = Output(Vec(2, UInt(8.W)))
+      *   })
+      *   val extra = IO(Input(UInt(8.W)))
+      *   val delay = RegNext(io.in)
+      *   io.out(0) := delay
+      *   io.out(1) := delay + extra
+      * }
+      * val mod = Module(new MyModule)
+      * DataMirror.modulePorts(mod)
+      * // returns: Seq(
+      * //   "clock" -> mod.clock,
+      * //   "reset" -> mod.reset,
+      * //   "io" -> mod.io,
+      * //   "extra" -> mod.extra
+      * // )
+      * }}}
+      */
     def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
 
-    /** Returns all module ports with underscore-qualified names
-      * return includes [[Module.clock]] and [[Module.reset]]
+    /** Returns a recursive representation of a module's ports with underscore-qualified names
+      * {{{
+      * class MyModule extends Module {
+      *   val io = IO(new Bundle {
+      *     val in = Input(UInt(8.W))
+      *     val out = Output(Vec(2, UInt(8.W)))
+      *   })
+      *   val extra = IO(Input(UInt(8.W)))
+      *   val delay = RegNext(io.in)
+      *   io.out(0) := delay
+      *   io.out(1) := delay + extra
+      * }
+      * val mod = Module(new MyModule)
+      * DataMirror.fullModulePorts(mod)
+      * // returns: Seq(
+      * //   "clock" -> mod.clock,
+      * //   "reset" -> mod.reset,
+      * //   "io" -> mod.io,
+      * //   "io_out" -> mod.io.out,
+      * //   "io_out_0" -> mod.io.out(0),
+      * //   "io_out_1" -> mod.io.out(1),
+      * //   "io_in" -> mod.io.in,
+      * //   "extra" -> mod.extra
+      * // )
+      * }}}
+      * @note The returned ports are redundant. An [[Aggregate]] port will be present along with all
+      *       of its children.
+      * @see [[DataMirror.modulePorts]] for a non-recursive representation of the ports.
       */
     def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
       def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
@@ -435,27 +480,44 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     _direction = Some(actualDirection)
   }
 
+  private[chisel3] def stringAccessor(chiselType: String): String = {
+    topBindingOpt match {
+      case None => chiselType
+      // Handle DontCares specially as they are "literal-like" but not actually literals
+      case Some(DontCareBinding()) => s"$chiselType(DontCare)"
+      case Some(topBinding) =>
+        val binding: String = _bindingToString(topBinding)
+        val name = earlyName
+        val mod = parentNameOpt.map(_ + ".").getOrElse("")
+
+        s"$mod$name: $binding[$chiselType]"
+    }
+  }
+
   // User-friendly representation of the binding as a helper function for toString.
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
   // TODO Is this okay for sample_element? It *shouldn't* be visible to users
-  protected def bindingToString: String = Try(topBindingOpt match {
-    case None => ""
-    case Some(OpBinding(enclosure, _)) => s"(OpResult in ${enclosure.desiredName})"
-    case Some(MemoryPortBinding(enclosure, _)) => s"(MemPort in ${enclosure.desiredName})"
-    case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
-    case Some(PortBinding(enclosure)) if enclosure.isClosed =>
-      DataMirror.fullModulePorts(enclosure).find(_._2 eq this) match {
-        case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
-        case None => s"(IO (unknown) in ${enclosure.desiredName})"
-      }
-    case Some(RegBinding(enclosure, _)) => s"(Reg in ${enclosure.desiredName})"
-    case Some(WireBinding(enclosure, _)) => s"(Wire in ${enclosure.desiredName})"
-    case Some(DontCareBinding()) => s"(DontCare)"
-    case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
-    case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
-    case Some(VecLitBinding(litMap)) => s"(unhandled vec literal)"
-  }).getOrElse("")
+  @deprecated("This was never intended to be visible to user-defined types", "Chisel 3.5.0")
+  protected def bindingToString: String = _bindingToString(topBinding)
+
+  private[chisel3] def _bindingToString(topBindingOpt: TopBinding): String =
+    topBindingOpt match {
+      case OpBinding(_, _) => "OpResult"
+      case MemoryPortBinding(_, _) => "MemPort"
+      case PortBinding(_) => "IO"
+      case RegBinding(_, _) => "Reg"
+      case WireBinding(_, _) => "Wire"
+      case DontCareBinding() => "(DontCare)"
+      case ElementLitBinding(litArg) => "(unhandled literal)"
+      case BundleLitBinding(litMap) => "(unhandled bundle literal)"
+      case VecLitBinding(litMap) => "(unhandled vec literal)"
+      case _ => ""
+    }
+
+  private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
+
+  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
@@ -477,7 +539,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       } catch {
         case MonoConnectException(message) =>
           throwException(
-            s"Connection between sink ($this) and source ($that) failed @$message"
+            s"Connection between sink ($this) and source ($that) failed @: $message"
           )
       }
     } else {

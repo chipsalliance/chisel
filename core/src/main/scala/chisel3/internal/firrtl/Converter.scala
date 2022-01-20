@@ -7,10 +7,11 @@ import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, Unloca
 import firrtl.{ir => fir}
 import chisel3.internal.{HasId, castToInt, throwException}
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.Queue
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
+@nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
   def unpack(pable: Printable, ctx: Component): (String, Seq[Arg]) = pable match {

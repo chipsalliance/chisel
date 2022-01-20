@@ -27,9 +27,7 @@ import scala.collection.mutable
 final class Analog private (private[chisel3] val width: Width) extends Element {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
-  override def toString: String = {
-    s"Analog$width$bindingToString"
-  }
+  override def toString: String = stringAccessor(s"Analog$width")
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width

@@ -4,7 +4,6 @@ package chisel3.aop.injecting
 
 import chisel3.{Module, ModuleAspect, RawModule, withClockAndReset}
 import chisel3.aop._
-import chisel3.experimental.hierarchy.IsInstantiable
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
 import chisel3.stage.DesignAnnotation
@@ -43,7 +42,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     injection: M => Unit
 ) extends Aspect[T] {
   final def toAnnotation(top: T): AnnotationSeq = {
-    val moduleNames = Select.collectDeep(top) { case i => i.name }.toSeq
+    val moduleNames = Select.allDefinitionsOf[chisel3.experimental.BaseModule](top.toDefinition).map{i => i.toTarget.module }.toSeq
     toAnnotation(selectRoots(top), top.name, moduleNames)
   }
 

@@ -13,6 +13,7 @@ import _root_.firrtl.annotations.Annotation
 
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
+import scala.annotation.nowarn
 
 
 case class PrimOp(name: String) {
@@ -64,7 +65,7 @@ object PrimOp {
   val AsAsyncResetOp = PrimOp("asAsyncReset")
 }
 
-abstract class Arg {
+sealed abstract class Arg {
   def localName: String = name
   def contextualName(ctx: Component): String = name
   def fullName(ctx: Component): String = contextualName(ctx)
@@ -83,6 +84,19 @@ case class Node(id: HasId) extends Arg {
   def name: String = id.getOptionRef match {
     case Some(arg) => arg.name
     case None => id.instanceName
+  }
+}
+
+object Arg {
+  def earlyLocalName(id: HasId): String = id.getOptionRef match {
+    case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
+    case Some(Index(Node(imm), arg)) => s"${earlyLocalName(imm)}[${arg.localName}]"
+    case Some(Slot(Node(imm), name)) => s"${earlyLocalName(imm)}.$name"
+    case Some(arg) => arg.name
+    case None => id match {
+      case data: Data => data._computeName(None, Some("?")).get
+      case _ => "?"
+    }
   }
 }
 
@@ -196,6 +210,7 @@ case class Slot(imm: Node, name: String) extends Arg {
     if (immName.isEmpty) name else s"$immName.$name"
   }
 }
+
 case class Index(imm: Arg, value: Arg) extends Arg {
   def name: String = s"[$value]"
   override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
@@ -775,6 +790,7 @@ case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, 
 case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
 case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt, readUnderWrite: fir.ReadUnderWrite.Value) extends Definition
 case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
+@nowarn("msg=class Port") // delete when Port becomes private
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
 case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
@@ -785,6 +801,8 @@ case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends C
 case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
+// Note this is just deprecated which will cause deprecation warnings, use @nowarn
+@deprecated("This API should never have been public, for Module port reflection, use DataMirror.modulePorts", "Chisel 3.5")
 case class Port(id: Data, dir: SpecifiedDirection)
 case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 object Formal extends Enumeration {
@@ -794,12 +812,15 @@ object Formal extends Enumeration {
 }
 case class Verification[T <: VerificationStatement](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
                         predicate: Arg, message: String) extends Definition
+@nowarn("msg=class Port") // delete when Port becomes private
 abstract class Component extends Arg {
   def id: BaseModule
   def name: String
   def ports: Seq[Port]
 }
+@nowarn("msg=class Port") // delete when Port becomes private
 case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+@nowarn("msg=class Port") // delete when Port becomes private
 case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
 
 case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap) {

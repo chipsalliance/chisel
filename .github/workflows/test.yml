@@ -25,12 +25,9 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        run: |
-          cd /home/runner/work/
-          wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2021-09-23/oss-cad-suite-linux-x64-20210923.tgz
-          tar -xf oss-cad-suite-linux-x64-20210923.tgz
-          ls /home/runner/work/oss-cad-suite/bin
-          echo "/home/runner/work/oss-cad-suite/bin" >> $GITHUB_PATH
+        uses: YosysHQ/setup-oss-cad-suite@v1
+        with:
+          osscadsuite-version: '2021-11-09'
 
       - name: Install Espresso
         run: |
@@ -48,9 +45,9 @@ jobs:
         uses: coursier/cache-action@v5
       - name: Documentation (Scala 2.12 only)
         if: startsWith(matrix.scala, '2.12')
-        run: sbt ++${{ matrix.scala }} docs/mdoc
+        run: sbt ++${{ matrix.scala }} docs/mdoc unidoc
       - name: Test
-        run: sbt ++${{ matrix.scala }} test noPluginTests/test
+        run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 
@@ -61,12 +58,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        run: |
-          cd /home/runner/work/
-          wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2021-09-23/oss-cad-suite-linux-x64-20210923.tgz
-          tar -xf oss-cad-suite-linux-x64-20210923.tgz
-          ls /home/runner/work/oss-cad-suite/bin
-          echo "/home/runner/work/oss-cad-suite/bin" >> $GITHUB_PATH
+        uses: YosysHQ/setup-oss-cad-suite@v1
+        with:
+          osscadsuite-version: '2021-11-09'
       - name: Install Espresso
         run: |
           cd /tmp

@@ -73,7 +73,7 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.10" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "com.lihaoyi" %% "os-lib" % "0.7.8",
+    "com.lihaoyi" %% "os-lib" % "0.8.0",
   ),
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -113,7 +113,8 @@ lazy val pluginScalaVersions = Seq(
   "2.13.3",
   "2.13.4",
   "2.13.5",
-  "2.13.6"
+  "2.13.6",
+  "2.13.7"
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -217,17 +218,14 @@ lazy val chisel = (project in file(".")).
           }
         s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       }
-    )
+    ) ++
+    // Suppress compiler plugin for source files in core
+    // We don't need this in regular compile because we just don't add the chisel3-plugin to core's scalacOptions
+    // This works around an issue where unidoc uses the exact same arguments for all source files.
+    // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
+    // See https://github.com/sbt/sbt-unidoc/issues/107
+    (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
   )
-
-lazy val noPluginTests = (project in file ("no-plugin-tests")).
-  dependsOn(chisel).
-  settings(commonSettings: _*).
-  settings(chiselSettings: _*).
-  settings(Seq(
-    // Totally don't know why GitHub Action won't introduce FIRRTL to dependency.
-    libraryDependencies += defaultVersions("firrtl"),
-  ))
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
 lazy val integrationTests = (project in file ("integration-tests")).

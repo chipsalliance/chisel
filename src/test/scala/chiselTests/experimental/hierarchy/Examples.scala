@@ -36,6 +36,19 @@ object Examples {
     out := innerWire
   }
   @instantiable
+  class AddOneParameterized(width: Int) extends Module {
+    @public val in  = IO(Input(UInt(width.W)))
+    @public val out = IO(Output(UInt(width.W)))
+    out := in + 1.U
+  }
+  class AddOneWithNested(width: Int) extends Module {
+    @public val in  = IO(Input(UInt(width.W)))
+    @public val out = IO(Output(UInt(width.W)))
+    val addOneDef = Seq.fill(3)(Definition(new AddOne))
+    out := in + 1.U
+  }
+
+  @instantiable
   class AddTwo extends Module {
     @public val in  = IO(Input(UInt(32.W)))
     @public val out = IO(Output(UInt(32.W)))
@@ -53,6 +66,33 @@ object Examples {
     val definition = Definition(new AddOne)
     @public val i0: Instance[AddOne] = Instance(definition)
     @public val i1 = Module(new AddOne)
+    i0.in := in
+    i1.in := i0.out
+    out := i1.out
+  }
+  @instantiable
+  class AddTwoParameterized(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneParameterized]]) extends Module {
+    val in  = IO(Input(UInt(width.W)))
+    val out = IO(Output(UInt(width.W)))
+    val addOnes = makeParameterizedOnes(width)
+    addOnes.head.in := in
+    out := addOnes.last.out
+    addOnes.zip(addOnes.tail).foreach{ case (head, tail) => tail.in := head.out}
+  }
+  @instantiable
+  class AddTwoWithNested(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneWithNested]]) extends Module {
+    val in  = IO(Input(UInt(width.W)))
+    val out = IO(Output(UInt(width.W)))
+    val addOnes = makeParameterizedOnes(width)
+  }
+
+  @instantiable
+  class AddFour extends Module {
+    @public val in  = IO(Input(UInt(32.W)))
+    @public val out = IO(Output(UInt(32.W)))
+    @public val definition = Definition(new AddTwoMixedModules)
+    @public val i0 = Instance(definition)
+    @public val i1 = Instance(definition)
     i0.in := in
     i1.in := i0.out
     out := i1.out
@@ -191,5 +231,19 @@ object Examples {
   @instantiable
   class ConcreteHasBlah() extends HasBlah {
     val blah = 10
+  }
+  @instantiable
+  class HasTypeParams[D <: Data](d: D) extends Module {
+    @public val blah = Wire(d)
+  }
+
+  @instantiable
+  class HasMultipleTypeParamsInside extends Module {
+    val tpDef0 = Definition(new HasTypeParams(Bool()))
+    val tpDef1 = Definition(new HasTypeParams(UInt(4.W)))
+    val i00 = Instance(tpDef0)
+    val i01 = Instance(tpDef0)
+    val i10 = Instance(tpDef1)
+    val i11 = Instance(tpDef1)
   }
 }
