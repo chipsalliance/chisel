@@ -23,7 +23,7 @@ Please select the item best describing the issue in each category and delete the
 
 **Please tell us about your environment:**
 <!--    (examples)
-    - version: `3.0-SNAPSHOT`
+    - version: 3.5.0
     - OS: `Linux knight 4.4.0-92-generic #115-Ubuntu SMP Thu Aug 10 09:04:33 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux`
 -->
 **What is the use case for changing the behavior?**

@@ -18,8 +18,8 @@ import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBin
   * Sealed.
   */
 @implicitNotFound(
-  "@public is only legal within a class marked @instantiable and only on vals of type" +
-    " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable or Option"
+  "@public is only legal within a class or trait marked @instantiable, and only on vals of type" +
+    " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, or Either"
 )
 trait Lookupable[-B] {
   type C // Return type of the lookup
@@ -379,6 +379,27 @@ object Lookupable {
       import instance._
       val ret = that(proto)
       ret.map { x: B => lookupable.instanceLookup[A](_ => x, instance) }
+    }
+  }
+  implicit def lookupEither[L, R](
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions,
+    lookupableL:         Lookupable[L],
+    lookupableR:         Lookupable[R]
+  ) = new Lookupable[Either[L, R]] {
+    type C = Either[lookupableL.C, lookupableR.C]
+    def definitionLookup[A](that: A => Either[L, R], definition: Definition[A]): C = {
+      val ret = that(definition.proto)
+      ret.map { x: R => lookupableR.definitionLookup[A](_ => x, definition) }.left.map { x: L =>
+        lookupableL.definitionLookup[A](_ => x, definition)
+      }
+    }
+    def instanceLookup[A](that: A => Either[L, R], instance: Instance[A]): C = {
+      import instance._
+      val ret = that(proto)
+      ret.map { x: R => lookupableR.instanceLookup[A](_ => x, instance) }.left.map { x: L =>
+        lookupableL.instanceLookup[A](_ => x, instance)
+      }
     }
   }
   implicit def lookupIsInstantiable[B <: IsInstantiable](
