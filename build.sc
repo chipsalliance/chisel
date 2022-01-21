@@ -58,7 +58,8 @@ trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule
   override def scalacOptions = T {
     super.scalacOptions() ++ Agg(
       "-deprecation",
-      "-feature"
+      "-feature",
+      "-P:chiselplugin:genBundleElements"
     ) ++ (if (majorVersion == 13) Agg("-Ymacro-annotations") else Agg.empty[String])
   }
 

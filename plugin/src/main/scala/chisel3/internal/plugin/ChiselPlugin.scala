@@ -10,7 +10,7 @@ import scala.collection.mutable
 
 private[plugin] case class ChiselPluginArguments(
   val skipFiles:         mutable.HashSet[String] = mutable.HashSet.empty,
-  var genBundleElements: Boolean = true) {
+  var genBundleElements: Boolean = false) {
   def useBundlePluginOpt = "useBundlePlugin"
   def useBundlePluginFullOpt = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
   def genBundleElementsOpt = "genBundleElements"
@@ -23,7 +23,7 @@ private[plugin] case class ChiselPluginArguments(
 object ChiselPlugin {
   val name = "chiselplugin"
 
-  // Also logs why the compoennt was not run
+  // Also logs why the component was not run
   private[plugin] def runComponent(
     global:    Global,
     arguments: ChiselPluginArguments
