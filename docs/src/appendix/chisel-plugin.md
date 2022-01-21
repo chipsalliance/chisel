@@ -16,7 +16,7 @@ After a period of testing this is now on by default. This flag was used to contr
 
 ### Generating the `_elementsImpl` method
 For generating the elementsImpl method, the default is off.
-Turn it on by using the javac flag
+Turn it on by using the scalac flag
 ```
 -P:chiselplugin:buildElementAccessor
 ```

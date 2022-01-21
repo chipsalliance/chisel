@@ -160,7 +160,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
          * converted to an immediate form that will not require reflection
          */
         def isSupportedBundleType: Boolean = {
-          arguments.buildElementsAccessor && !bundle.mods.hasFlag(Flag.ABSTRACT)
+          arguments.genBundleElements && !bundle.mods.hasFlag(Flag.ABSTRACT)
         }
 
         val elementsImplOpt = if (isSupportedBundleType) {
@@ -219,9 +219,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
           val elementsImplSym =
             bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
-          // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
           elementsImplSym.resetFlag(Flags.METHOD)
-          // Need to set the type to chisel3.Bundle for the override to work
           elementsImplSym.setInfo(NullaryMethodType(seqMapTpe))
 
           val elementsImpl = localTyper.typed(
