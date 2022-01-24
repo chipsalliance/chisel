@@ -18,7 +18,6 @@ import chisel3.util.{Cat, Fill, DecoupledIO}
         <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
 <td>
@@ -41,32 +40,10 @@ class Foo extends Module {
   val b = Output(Bool())
   b := a
 }
-
+```
 </td>
-    <td>Text comes here</td>
          </tr>
     <tr>
-<td>
-Text comes here
-</td>
-<td>
-
-
-
-```scala mdoc:silent
-class PassthroughGenerator(width: Int) extends Module {
-  val io = IO(new Bundle {
-    val in = Input(UInt(width.W))
-    val out = Output(UInt(width.W))
-  })
-  io.out := io.in
-}
-```
-```scala mdoc
-ChiselStage.emitVerilog(new PassthroughGenerator(10))
-ChiselStage.emitVerilog(new PassthroughGenerator(20))
-```
-</td>
 <td>
 
 ```
@@ -89,6 +66,22 @@ assign io_out = io_in; // @[main.scala 13:10]
 endmodule
 ```
 </td>
+<td>
+
+```scala mdoc:silent
+class PassthroughGenerator(width: Int) extends Module {
+  val io = IO(new Bundle {
+    val in = Input(UInt(width.W))
+    val out = Output(UInt(width.W))
+  })
+  io.out := io.in
+}
+```
+```scala mdoc: invicible
+ChiselStage.emitVerilog(new PassthroughGenerator(10))
+ChiselStage.emitVerilog(new PassthroughGenerator(20))
+```
+</td>
          </tr>
     </table>
 </body>
@@ -102,7 +95,6 @@ endmodule
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
 <td>
@@ -140,7 +132,6 @@ class ParameterizedWidthAdder(in0Width: Int, in1Width: Int, sumWidth: Int) exten
 }
 ```
 </td>
-             <td>Text comes here</td>
 </tr>
 <tr>
 <td>
@@ -158,11 +149,22 @@ endmodule
 val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
 ```
 </td>
-             <td>Text comes here</td>
          </tr>
  <tr>
 <td>
-Text comes here
+
+```
+2
+UInt<1>(OpResult in MyModule)
+module MyModule(
+  input        clock,
+  input        reset,
+  input  [3:0] io_in,
+  output [3:0] io_out
+);
+  assign io_out = io_in; // @[main.scala 19:10]
+endmodule
+```
 </td>
 <td>
 
@@ -185,21 +187,6 @@ io.out := io.in
 ChiselStage.emitVerilog(new MyModule)
 ```
 </td>
-<td>
-
-```
-2
-UInt<1>(OpResult in MyModule)
-module MyModule(
-  input        clock,
-  input        reset,
-  input  [3:0] io_in,
-  output [3:0] io_out
-);
-  assign io_out = io_in; // @[main.scala 19:10]
-endmodule
-```
-</td>
          </tr>
     </table>
 <html>
@@ -213,7 +200,6 @@ endmodule
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
 <td>
@@ -244,6 +230,8 @@ class MyWireAssignmentModule extends Module {
 ChiselStage.emitVerilog(new MyWireAssignmentModule)
 ```
 </td>
+         </tr>
+<tr>
 <td>
 
 ```
@@ -252,12 +240,10 @@ module MyWireAssignmentModule(
   input   reset
 );
 endmodule
-
 ```
+
+
 </td>
-         </tr>
-<tr>
-<td>text here</td>
 <td>
 
 ```scala mdoc:silent
@@ -284,18 +270,6 @@ ChiselStage.emitVerilog(new MyWireAssignmentModule2)
 ```
 
 </td>
-<td>
-
-```
-module MyWireAssignmentModule(
-  input   clock,
-  input   reset
-);
-endmodule
-```
-
-
-</td>
 </tr>
     </table>
 <html>
@@ -309,10 +283,21 @@ endmodule
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
-<td>Text comes here</td>
+<td>
+
+```
+module RegisterModule(
+  input         clock,
+  input         reset,
+  input  [11:0] io_in,
+  output [11:0] io_out
+);
+  assign io_out = io_in; // @[main.scala 18:10]
+endmodule
+```
+</td>
 <td>
 
 ```scala mdoc:silent
@@ -331,19 +316,6 @@ class RegisterModule extends Module {
 ChiselStage.emitVerilog(new RegisterModule)
 ```
 </td>
-<td>
-
-```
-module RegisterModule(
-  input         clock,
-  input         reset,
-  input  [11:0] io_in,
-  output [11:0] io_out
-);
-  assign io_out = io_in; // @[main.scala 18:10]
-endmodule
-```
-</td>
          </tr>
     </table>
 <html>
@@ -357,10 +329,27 @@ endmodule
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
-<td>Text comes here</td>
+<td>
+
+```
+module CaseStatementModule(
+  input        clock,
+  input        reset,
+  input  [2:0] a,
+  input  [2:0] b,
+  input  [2:0] c,
+  input  [1:0] sel,
+  output [2:0] out
+);
+  wire [2:0] _GEN_0 = 2'h2 == sel ? c : 3'h0; // @[main.scala 16:16 28:8 14:9]
+  wire [2:0] _GEN_1 = 2'h1 == sel ? b : _GEN_0; // @[main.scala 16:16 24:8]
+  assign out = 2'h0 == sel ? a : _GEN_1; // @[main.scala 16:16 19:8]
+endmodule
+```
+</td>
+
 <td>
 
 ```scala mdoc:silent
@@ -387,24 +376,6 @@ class CaseStatementModule extends Module {
 ChiselStage.emitVerilog(new CaseStatementModule)
 ```
 </td>
-<td>
-
-```
-module CaseStatementModule(
-  input        clock,
-  input        reset,
-  input  [2:0] a,
-  input  [2:0] b,
-  input  [2:0] c,
-  input  [1:0] sel,
-  output [2:0] out
-);
-  wire [2:0] _GEN_0 = 2'h2 == sel ? c : 3'h0; // @[main.scala 16:16 28:8 14:9]
-  wire [2:0] _GEN_1 = 2'h1 == sel ? b : _GEN_0; // @[main.scala 16:16 24:8]
-  assign out = 2'h0 == sel ? a : _GEN_1; // @[main.scala 16:16 19:8]
-endmodule
-```
-</td>
          </tr>
     </table>
 <html>
@@ -418,10 +389,24 @@ endmodule
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
-<td>Text comes here</td>
+<td>
+
+```
+module CaseStatementModule(
+  input        clock,
+  input        reset,
+  input  [2:0] a,
+  input  [2:0] b,
+  input        sel,
+  output [2:0] out
+);
+  wire [2:0] _GEN_0 = sel ? b : 3'h0; // @[main.scala 22:16 30:8 20:9]
+  assign out = ~sel ? a : _GEN_0; // @[main.scala 22:16 25:8]
+endmodule
+```
+</td>
 <td>
 
 
@@ -450,22 +435,6 @@ import AluMux1Sel._
 ```
 ```scala mdoc:invisible
 ChiselStage.emitVerilog(new CaseStatementEnumModule1)
-```
-</td>
-<td>
-
-```
-module CaseStatementModule(
-  input        clock,
-  input        reset,
-  input  [2:0] a,
-  input  [2:0] b,
-  input        sel,
-  output [2:0] out
-);
-  wire [2:0] _GEN_0 = sel ? b : 3'h0; // @[main.scala 22:16 30:8 20:9]
-  assign out = ~sel ? a : _GEN_0; // @[main.scala 22:16 25:8]
-endmodule
 ```
 </td>
          </tr>
@@ -529,81 +498,6 @@ class CaseStatementEnumModule2 extends Module {
 ChiselStage.emitVerilog(new CaseStatementEnumModule2)
 ```
 </td>
-<td>
-
-```
-module CaseStatementModule(
-  input        clock,
-  input        reset,
-  output [5:0] nextState
-);
-`ifdef RANDOMIZE_REG_INIT
-  reg [31:0] _RAND_0;
-`endif // RANDOMIZE_REG_INIT
-  reg [5:0] state; // @[main.scala 20:24]
-  wire [5:0] _GEN_0 = 6'h23 == state ? 6'h13 : state; // @[main.scala 25:18 41:10 20:24]
-  assign nextState = state; // @[main.scala 22:13]
-  always @(posedge clock) begin
-    if (reset) begin // @[main.scala 20:24]
-      state <= 6'h3; // @[main.scala 20:24]
-    end else if (6'h3 == state) begin // @[main.scala 25:18]
-      state <= 6'h13; // @[main.scala 28:10]
-    end else if (6'h13 == state) begin // @[main.scala 25:18]
-      state <= 6'h17; // @[main.scala 33:10]
-    end else if (6'h17 == state) begin // @[main.scala 25:18]
-      state <= 6'h23; // @[main.scala 37:10]
-    end else begin
-      state <= _GEN_0;
-    end
-  end
-// Register and memory initialization
-`ifdef RANDOMIZE_GARBAGE_ASSIGN
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_INVALID_ASSIGN
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_REG_INIT
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-`define RANDOMIZE
-`endif
-`ifndef RANDOM
-`define RANDOM $random
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-  integer initvar;
-`endif
-`ifndef SYNTHESIS
-`ifdef FIRRTL_BEFORE_INITIAL
-`FIRRTL_BEFORE_INITIAL
-`endif
-initial begin
-  `ifdef RANDOMIZE
-    `ifdef INIT_RANDOM
-      `INIT_RANDOM
-    `endif
-    `ifndef VERILATOR
-      `ifdef RANDOMIZE_DELAY
-        #`RANDOMIZE_DELAY begin end
-      `else
-        #0.002 begin end
-      `endif
-    `endif
-`ifdef RANDOMIZE_REG_INIT
-  _RAND_0 = {1{`RANDOM}};
-  state = _RAND_0[5:0];
-`endif // RANDOMIZE_REG_INIT
-  `endif // RANDOMIZE
-end // initial
-`ifdef FIRRTL_AFTER_INITIAL
-`FIRRTL_AFTER_INITIAL
-`endif
-`endif // SYNTHESIS
-endmodule
-```
-</td>
          </tr>
     </table>
 <html>
@@ -617,29 +511,8 @@ endmodule
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
-<td>Text comes here</td>
-<td>
-
-```scala mdoc:silent
-class MyInterfaceModule extends Module {
-val io = IO(new Bundle {
-val in = Flipped(DecoupledIO(UInt(8.W)))
-val out = DecoupledIO(UInt(8.W))
-})
-
-val tmp = Wire(DecoupledIO(UInt(8.W)))
-tmp <> io.in
-io.out <> tmp
-io.out <> io.in
-}
-```
-```scala mdoc:invisible
-ChiselStage.emitVerilog(new MyInterfaceModule)
-```
-</td>
 <td>
 
 ```
@@ -659,6 +532,25 @@ module MyInterfaceModule(
 endmodule
 ```
 </td>
+<td>
+
+```scala mdoc:silent
+class MyInterfaceModule extends Module {
+val io = IO(new Bundle {
+val in = Flipped(DecoupledIO(UInt(8.W)))
+val out = DecoupledIO(UInt(8.W))
+})
+
+val tmp = Wire(DecoupledIO(UInt(8.W)))
+tmp <> io.in
+io.out <> tmp
+io.out <> io.in
+}
+```
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new MyInterfaceModule)
+```
+</td>
          </tr>
     </table>
 <html>
@@ -672,49 +564,8 @@ endmodule
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
-<td>Text comes here</td>
-
-<td>
-
-```scala mdoc:silent
-class ReadWriteSmem extends Module {
-  val width: Int = 32
-  val io = IO(new Bundle {
-    val enable = Input(Bool())
-    val write = Input(Bool())
-    val addr = Input(UInt(10.W))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
-  })
-  val mem = SyncReadMem(1024, UInt(width.W))
-  // Create one write port and one read port
-  mem.write(io.addr, io.dataIn)
-  io.dataOut := mem.read(io.addr, io.enable)
-}
-class ReadWriteMem extends Module {
-  val width: Int = 32
-  val io = IO(new Bundle {
-    val enable = Input(Bool())
-    val write = Input(Bool())
-    val addr = Input(UInt(10.W))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
-  })
-  val mem = Mem(1024, UInt(width.W))
-  // Create one write port and one read port
-  mem.write(io.addr, io.dataIn)
-  io.dataOut := mem.read(io.addr)
-}
-```
-```scala mdoc:invisible
-ChiselStage.emitVerilog(new ReadWriteSmem)
-ChiselStage.emitVerilog(new ReadWriteMem)
-```
-</td>
-
 <td>
 
 ```
@@ -896,14 +747,51 @@ end // initial
 endmodule
 ```
 </td>
+
+<td>
+
+```scala mdoc:silent
+class ReadWriteSmem extends Module {
+  val width: Int = 32
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(width.W))
+    val dataOut = Output(UInt(width.W))
+  })
+  val mem = SyncReadMem(1024, UInt(width.W))
+  // Create one write port and one read port
+  mem.write(io.addr, io.dataIn)
+  io.dataOut := mem.read(io.addr, io.enable)
+}
+class ReadWriteMem extends Module {
+  val width: Int = 32
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(width.W))
+    val dataOut = Output(UInt(width.W))
+  })
+  val mem = Mem(1024, UInt(width.W))
+  // Create one write port and one read port
+  mem.write(io.addr, io.dataIn)
+  io.dataOut := mem.read(io.addr)
+}
+```
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new ReadWriteSmem)
+ChiselStage.emitVerilog(new ReadWriteMem)
+```
+</td>
          </tr>
     </table>
 <html>
-<body>
+<html>
 
 # Operators
 
-<html>
 <body>
     <table border ="0">
           <tr>
@@ -912,56 +800,6 @@ endmodule
             <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
-<td>text here
-</td>
-<td>
-
-```scala mdoc:silent
-class OperatorExampleModule extends Module {
-
-  val x, y = IO(Input(UInt(32.W)))
-
-  val a, b, c, d , e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, xx, yy,  z, zz, zzz, zzzz, zzzzz = IO(Output(UInt(32.W)))
-  val aa, bb= IO(Output(Bool()))
-  
-  a := x + y
-  b := x - y 
-  c := x % y
-  d := x * y
-  e := x / y
-  f := x % y
-  g := x +% y
-  h := x -% y
-  i := x -& y
-  j := x === y
-  k := DontCare//x != y This one is a bit nonsensical -- this is a Scala comparison. This might be a bug in the cheat sheet.
-  l := x =/= y 
-  m := x & y
-  n := x | y
-  o := x ^ y
-  p :=  ~x
-  q := !x
-  r := x(0) && y(0) // Must be a Bool type
-  s := x(0) || y(0) // Must be a Bool type
-  t := Cat(x, y)
-  u := Mux(c(0), x, y)  // Selector must be a Bool type
-  v := x >> y(2, 0)
-  w := x << y(2, 0) // Can't do a 32-bit shift operator
-  xx := x > y
-  yy := x >= y
-  z := x <= y
-  zz := x(1) 
-  zzz := x(1, 0) 
-  zzzz:= Fill(3,x)
-  zzzzz := x.andR
-  aa := x.orR
-  bb := x.xorR
-} 
-```
-```scala mdoc:invisible
-ChiselStage.emitVerilog(new OperatorExampleModule)
-```
-</td>
 <td>
 
 ```
@@ -1048,7 +886,55 @@ module OperatorExampleModule(
 endmodule
 ```
 </td>
+<td>
+
+```scala mdoc:silent
+class OperatorExampleModule extends Module {
+
+  val x, y = IO(Input(UInt(32.W)))
+
+  val a, b, c, d , e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, xx, yy,  z, zz, zzz, zzzz, zzzzz = IO(Output(UInt(32.W)))
+  val aa, bb= IO(Output(Bool()))
+  
+  a := x + y
+  b := x - y 
+  c := x % y
+  d := x * y
+  e := x / y
+  f := x % y
+  g := x +% y
+  h := x -% y
+  i := x -& y
+  j := x === y
+  k := DontCare//x != y This one is a bit nonsensical -- this is a Scala comparison. This might be a bug in the cheat sheet.
+  l := x =/= y 
+  m := x & y
+  n := x | y
+  o := x ^ y
+  p :=  ~x
+  q := !x
+  r := x(0) && y(0) // Must be a Bool type
+  s := x(0) || y(0) // Must be a Bool type
+  t := Cat(x, y)
+  u := Mux(c(0), x, y)  // Selector must be a Bool type
+  v := x >> y(2, 0)
+  w := x << y(2, 0) // Can't do a 32-bit shift operator
+  xx := x > y
+  yy := x >= y
+  z := x <= y
+  zz := x(1) 
+  zzz := x(1, 0) 
+  zzzz:= Fill(3,x)
+  zzzzz := x.andR
+  aa := x.orR
+  bb := x.xorR
+} 
+```
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new OperatorExampleModule)
+```
+</td>
          </tr>
     </table>
-<html>
-<body>
+</body>
+</html>
