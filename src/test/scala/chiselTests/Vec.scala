@@ -270,6 +270,19 @@ class OneBitUnitRegVecTester extends BasicTester {
   stop()
 }
 
+class SumVector extends Module {
+  val array = IO(Input(Vec(3, Vec(3, UInt(3.W)))))
+  val total = IO(Output(UInt()))
+  total := array.reduce(_ ++ _).reduce(_ + _)
+}
+
+class SumVectorTester extends BasicTester {
+  val dut = Module(new SumVector)
+  assert(dut.total === 0.U)
+  stop()
+}
+
+
 class ZeroEntryVecTester extends BasicTester {
   require(Vec(0, Bool()).getWidth == 0)
 
@@ -461,6 +474,10 @@ class VecSpec extends ChiselPropSpec with Utils {
 
   property("A Reg of a Vec of a single 1 bit element should compile and work") {
     assertTesterPasses { new OneBitUnitRegVecTester }
+  }
+
+  property("sum vector") {
+    assertTesterPasses { new SumVectorTester }
   }
 
   property("A Vec with zero entries should compile and have zero width") {
