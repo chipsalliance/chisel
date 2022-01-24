@@ -18,33 +18,55 @@ import chisel3.util.{Cat, Fill, DecoupledIO}
         <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
-<tr>
+         <tr>
 <td>
 
 ```
-    module foo (
-                    input  a,
-                    output b
-                )
-                assign b = a;
-            endmodule
+module Foo (
+  input  a,
+  output b
+);
+  assign b = a;
+endmodule
 ```
 
 </td>
     <td>
 
 ```scala mdoc
-    class Foo extends Module {
-    val a = Input(Bool())
-    val b = Output(Bool())
-    b := a
-    }
-```
+class Foo extends Module {
+  val a = Input(Bool())
+  val b = Output(Bool())
+  b := a
+}
 
 </td>
-</tr>
-<tr>
+    <td>Text comes here</td>
+         </tr>
+    <tr>
+<td>
+Text comes here
+</td>
+<td>
+
+
+
+```scala mdoc:silent
+class PassthroughGenerator(width: Int) extends Module {
+  val io = IO(new Bundle {
+    val in = Input(UInt(width.W))
+    val out = Output(UInt(width.W))
+  })
+  io.out := io.in
+}
+```
+```scala mdoc
+ChiselStage.emitVerilog(new PassthroughGenerator(10))
+ChiselStage.emitVerilog(new PassthroughGenerator(20))
+```
+</td>
 <td>
 
 ```
@@ -67,22 +89,6 @@ assign io_out = io_in; // @[main.scala 13:10]
 endmodule
 ```
 </td>
-<td>
-
-```scala mdoc:silent
-class PassthroughGenerator(width: Int) extends Module {
-val io = IO(new Bundle {
-val in = Input(UInt(width.W))
-val out = Output(UInt(width.W))
-})
-io.out := io.in
-}
-```
-```scala mdoc
-ChiselStage.emitVerilog(new PassthroughGenerator(10))
-ChiselStage.emitVerilog(new PassthroughGenerator(20))
-```
-</td>
          </tr>
     </table>
 </body>
@@ -96,21 +102,22 @@ ChiselStage.emitVerilog(new PassthroughGenerator(20))
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
 <td>
 
 ```
 module ParameterizedWidthAdder(
-input [in0Width-1:0] in0,
-input [in1Width-1:0] in1,
-output [sumWidth-1:0] sum
+  input [in0Width-1:0] in0,
+  input [in1Width-1:0] in1,
+  output [sumWidth-1:0] sum
 );
-parameter in0Width = 8;
-parameter in1Width = 1;
-parameter sumWidth = 9;
+  parameter in0Width = 8;
+  parameter in1Width = 1;
+  parameter sumWidth = 9;
 
-assign sum = in0 + in1;
+  assign sum = in0 + in1;
 
 endmodule
 ```
@@ -133,7 +140,7 @@ class ParameterizedWidthAdder(in0Width: Int, in1Width: Int, sumWidth: Int) exten
 }
 ```
 </td>
-
+             <td>Text comes here</td>
 </tr>
 <tr>
 <td>
@@ -151,7 +158,12 @@ endmodule
 val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
 ```
 </td>
+             <td>Text comes here</td>
+         </tr>
  <tr>
+<td>
+Text comes here
+</td>
 <td>
 
 ```scala mdoc:silent
@@ -201,6 +213,7 @@ endmodule
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
 <td>
@@ -230,9 +243,7 @@ class MyWireAssignmentModule extends Module {
 ```scala mdoc:invisible
 ChiselStage.emitVerilog(new MyWireAssignmentModule)
 ```
-</td> 
-</tr>
-<tr>
+</td>
 <td>
 
 ```
@@ -241,10 +252,12 @@ module MyWireAssignmentModule(
   input   reset
 );
 endmodule
+
 ```
-
-
 </td>
+         </tr>
+<tr>
+<td>text here</td>
 <td>
 
 ```scala mdoc:silent
@@ -271,7 +284,18 @@ ChiselStage.emitVerilog(new MyWireAssignmentModule2)
 ```
 
 </td>
+<td>
 
+```
+module MyWireAssignmentModule(
+  input   clock,
+  input   reset
+);
+endmodule
+```
+
+
+</td>
 </tr>
     </table>
 <html>
@@ -285,8 +309,28 @@ ChiselStage.emitVerilog(new MyWireAssignmentModule2)
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
+<td>Text comes here</td>
+<td>
+
+```scala mdoc:silent
+class RegisterModule extends Module {
+  val io = IO(new Bundle {
+    val in  = Input(UInt(12.W))
+    val out = Output(UInt(12.W))
+  })
+
+  val registerWithInit = RegInit(42.U(12.W))
+  registerWithInit := registerWithInit - 1.U
+  io.out := io.in
+}
+```
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new RegisterModule)
+```
+</td>
 <td>
 
 ```
@@ -300,26 +344,8 @@ module RegisterModule(
 endmodule
 ```
 </td>
-<td>
-
-```scala mdoc:silent
-class RegisterModule extends Module {
-  val io = IO(new Bundle {
-    val in  = Input(UInt(12.W))
-    val out = Output(UInt(12.W))
-  })
-
-  val registerWithInit = RegInit(42.U(12.W))
-    registerWithInit := registerWithInit - 1.U
-    io.out := io.in
-}
-```
-```scala mdoc:invisible
-ChiselStage.emitVerilog(new RegisterModule)
-```
-</td>
-</tr>
-</table>
+         </tr>
+    </table>
 <html>
 <body>
 
@@ -331,8 +357,36 @@ ChiselStage.emitVerilog(new RegisterModule)
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
+<td>Text comes here</td>
+<td>
+
+```scala mdoc:silent
+class CaseStatementModule extends Module {
+  val a, b, c= IO(Input(UInt(3.W)))
+  val sel = IO(Input(UInt(2.W)))
+  val out = IO(Output(UInt(3.W)))
+  out := 0.U
+
+  switch (sel) {
+    is ("b00".U) {
+      out := a 
+    }
+    is ("b01".U) { 
+      out := b
+    }
+    is ("b10".U) {
+      out := c
+    }
+  }
+};
+```
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new CaseStatementModule)
+```
+</td>
 <td>
 
 ```
@@ -351,34 +405,6 @@ module CaseStatementModule(
 endmodule
 ```
 </td>
-<td>
-
-```scala mdoc:silent
-class CaseStatementModule extends Module {
-   val a, b, c= IO(Input(UInt(3.W)))
-    val sel = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt(3.W)))
-    out := 0.U
-    
-  switch (sel) {
-  is ("b00".U) {
-   out := a 
-  }
-  
-  is ("b01".U) { 
-   out := b
-  }
-  
-  is ("b10".U) {
-   out := c
-  }
-}
-  };
-```
-```scala mdoc:invisible
-ChiselStage.emitVerilog(new CaseStatementModule)
-```
-</td>
          </tr>
     </table>
 <html>
@@ -392,24 +418,10 @@ ChiselStage.emitVerilog(new CaseStatementModule)
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
+            <td><b style="font-size:30px">Generated Verilog</b></td>
          </tr>
          <tr>
-<td>
-
-```
-module CaseStatementModule(
-  input        clock,
-  input        reset,
-  input  [2:0] a,
-  input  [2:0] b,
-  input        sel,
-  output [2:0] out
-);
-  wire [2:0] _GEN_0 = sel ? b : 3'h0; // @[main.scala 22:16 30:8 20:9]
-  assign out = ~sel ? a : _GEN_0; // @[main.scala 22:16 25:8]
-endmodule
-```
-</td>
+<td>Text comes here</td>
 <td>
 
 
@@ -438,6 +450,22 @@ import AluMux1Sel._
 ```
 ```scala mdoc:invisible
 ChiselStage.emitVerilog(new CaseStatementEnumModule1)
+```
+</td>
+<td>
+
+```
+module CaseStatementModule(
+  input        clock,
+  input        reset,
+  input  [2:0] a,
+  input  [2:0] b,
+  input        sel,
+  output [2:0] out
+);
+  wire [2:0] _GEN_0 = sel ? b : 3'h0; // @[main.scala 22:16 30:8 20:9]
+  assign out = ~sel ? a : _GEN_0; // @[main.scala 22:16 25:8]
+endmodule
 ```
 </td>
          </tr>
