@@ -211,7 +211,7 @@ private[chisel3] object MonoConnect {
     import ActualDirection.{Input, Output}
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException)
+    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
     val sink_parent = Builder.retrieveParent(sink_mod, context_mod).getOrElse(None)
@@ -226,13 +226,12 @@ private[chisel3] object MonoConnect {
       case _              => false
     }
 
-    // TODO do i need these checks?
     if (!checkWhenVisibility(sink)) {
-      throw SinkEscapedWhenScopeException
+      throw SinkEscapedWhenScopeException(sink)
     }
 
     if (!checkWhenVisibility(source)) {
-      throw SourceEscapedWhenScopeException
+      throw SourceEscapedWhenScopeException(source)
     }
 
     // CASE: Context is same module that both sink node and source node are in
@@ -289,7 +288,7 @@ private[chisel3] object MonoConnect {
 
   /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. (MonoConnect case)
     *
-    * Mono-directional bulk connects only work if all signals of the sink are only inputs
+    * Mono-directional bulk connects only work if all signals of the sink are unidirectional
     * In the case of a sink aggregate with bidirectional signals, e.g. `Decoupled`,
     * a `BiConnect` is necessary.
     */
@@ -304,10 +303,10 @@ private[chisel3] object MonoConnect {
     val biConnectCheck =
       BiConnect.canBulkConnectAggregates(sink, source, sourceInfo, connectCompileOptions, context_mod)
 
-    // Check that the Aggregate's child signals are only inputs
+    // Check that the Aggregate's child signals can be driven
     val childDirections = sink.getElements.map(_.direction).toSet - ActualDirection.Empty
     val monoSinkCheck: Boolean = ActualDirection.fromChildren(childDirections, SpecifiedDirection.Unspecified) match {
-      case Some(dir) => dir == ActualDirection.Input
+      case Some(dir) => dir == ActualDirection.Output
       case other     => false
     }
 
