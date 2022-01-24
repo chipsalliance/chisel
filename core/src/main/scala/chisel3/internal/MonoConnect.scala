@@ -132,7 +132,7 @@ private[chisel3] object MonoConnect {
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if (sink_v.length != source_v.length) { throw MismatchedVecException }
         if (canBulkConnectAggregates(sink_v, source_v, sourceInfo, connectCompileOptions, context_mod)) {
-          pushCommand(Connect(sourceInfo, sink_v.lref, source_v.lref))
+          pushCommand(Connect(sourceInfo, sink_v.lref, source_v.ref))
         } else {
           for (idx <- 0 until sink_v.length) {
             try {
@@ -157,7 +157,7 @@ private[chisel3] object MonoConnect {
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
         if (canBulkConnectAggregates(sink_r, source_r, sourceInfo, connectCompileOptions, context_mod)) {
-          pushCommand(Connect(sourceInfo, sink_r.lref, source_r.lref))
+          pushCommand(Connect(sourceInfo, sink_r.lref, source_r.ref))
         } else {
           // For each field, descend with right
           for ((field, sink_sub) <- sink_r.elements) {
