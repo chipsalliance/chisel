@@ -24,24 +24,23 @@ import chisel3.util.{Cat, Fill, DecoupledIO}
 <td>
 
 ```
-    module foo (
-                    input  a,
-                    output b
-                )
-                assign b = a;
-            endmodule
+module Foo (
+  input  a,
+  output b
+);
+  assign b = a;
+endmodule
 ```
 
 </td>
     <td>
 
 ```scala mdoc
-    class Foo extends Module {
-    val a = Input(Bool())
-    val b = Output(Bool())
-    b := a
-    }
-```
+class Foo extends Module {
+  val a = Input(Bool())
+  val b = Output(Bool())
+  b := a
+}
 
 </td>
     <td>Text comes here</td>
@@ -56,11 +55,11 @@ Text comes here
 
 ```scala mdoc:silent
 class PassthroughGenerator(width: Int) extends Module {
-val io = IO(new Bundle {
-val in = Input(UInt(width.W))
-val out = Output(UInt(width.W))
-})
-io.out := io.in
+  val io = IO(new Bundle {
+    val in = Input(UInt(width.W))
+    val out = Output(UInt(width.W))
+  })
+  io.out := io.in
 }
 ```
 ```scala mdoc
@@ -110,15 +109,15 @@ endmodule
 
 ```
 module ParameterizedWidthAdder(
-input [in0Width-1:0] in0,
-input [in1Width-1:0] in1,
-output [sumWidth-1:0] sum
+  input [in0Width-1:0] in0,
+  input [in1Width-1:0] in1,
+  output [sumWidth-1:0] sum
 );
-parameter in0Width = 8;
-parameter in1Width = 1;
-parameter sumWidth = 9;
+  parameter in0Width = 8;
+  parameter in1Width = 1;
+  parameter sumWidth = 9;
 
-assign sum = in0 + in1;
+  assign sum = in0 + in1;
 
 endmodule
 ```
@@ -324,8 +323,8 @@ class RegisterModule extends Module {
   })
 
   val registerWithInit = RegInit(42.U(12.W))
-    registerWithInit := registerWithInit - 1.U
-    io.out := io.in
+  registerWithInit := registerWithInit - 1.U
+  io.out := io.in
 }
 ```
 ```scala mdoc:invisible
@@ -366,25 +365,23 @@ endmodule
 
 ```scala mdoc:silent
 class CaseStatementModule extends Module {
-   val a, b, c= IO(Input(UInt(3.W)))
-    val sel = IO(Input(UInt(2.W)))
+  val a, b, c= IO(Input(UInt(3.W)))
+  val sel = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt(3.W)))
-    out := 0.U
-    
+  out := 0.U
+
   switch (sel) {
-  is ("b00".U) {
-   out := a 
+    is ("b00".U) {
+      out := a 
+    }
+    is ("b01".U) { 
+      out := b
+    }
+    is ("b10".U) {
+      out := c
+    }
   }
-  
-  is ("b01".U) { 
-   out := b
-  }
-  
-  is ("b10".U) {
-   out := c
-  }
-}
-  };
+};
 ```
 ```scala mdoc:invisible
 ChiselStage.emitVerilog(new CaseStatementModule)
