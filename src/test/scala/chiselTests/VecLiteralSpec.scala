@@ -445,8 +445,9 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     }
 
     val firrtl = (new chisel3.stage.ChiselStage).emitFirrtl(new VecExample5, args = Array("--full-stacktrace"))
-    firrtl should include("""out[0] <= UInt<4>("ha")""")
-    firrtl should include("""out[1] <= UInt<4>("hb")""")
+    firrtl should include("""_WIRE[0] <= UInt<4>("ha")""")
+    firrtl should include("""_WIRE[1] <= UInt<4>("hb")""")
+    firrtl should include("""out <= _WIRE""")
   }
 
   class SubBundle extends Bundle {
@@ -465,10 +466,11 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "vec literals can contain bundles" in {
     val chirrtl = (new chisel3.stage.ChiselStage).emitChirrtl(new VecExample, args = Array("--full-stacktrace"))
-    chirrtl should include("""out[0].bar <= UInt<5>("h16")""")
-    chirrtl should include("""out[0].foo <= UInt<6>("h2a")""")
-    chirrtl should include("""out[1].bar <= UInt<2>("h3")""")
-    chirrtl should include("""out[1].foo <= UInt<3>("h7")""")
+    chirrtl should include("""_WIRE[0].bar <= UInt<5>("h16")""")
+    chirrtl should include("""_WIRE[0].foo <= UInt<6>("h2a")""")
+    chirrtl should include("""_WIRE[1].bar <= UInt<2>("h3")""")
+    chirrtl should include("""_WIRE[1].foo <= UInt<3>("h7")""")
+    chirrtl should include("""out <= _WIRE""")
 
   }
 
