@@ -108,7 +108,7 @@ endmodule
 <td>
 
 ```
-class ParameterizedWidthAdder(in0Width: Int, in1Width: Int, sumWidth: Int) extends Module {
+class ParameterizedWidthAdder(in0Width: Int, in1Width: Int, sumWidth: Int) extends Tester{
   require(in0Width >= 0)
   require(in1Width >= 0)
   require(sumWidth >= 0)
@@ -879,28 +879,27 @@ class OperatorExampleModule extends Module {
 
   val x, y = IO(Input(UInt(32.W)))
 
-  val a, b, c, e, f, m, n, o, p, q, u, v, w,  zzzz = IO(Output(UInt(32.W)))
-  val r, s, j, l, aa, bb, xx, yy, z, zz, zzzzz = IO(Output(Bool()))
-  val d , t= IO(Output(UInt(64.W)))
+  val add_res, sub_res, per_res ,mul_res, div_res, and_res, n, o, p, q, mux_res, v, w,  zzzz = IO(Output(UInt(32.W)))
+  val r, s, equ_res, !equ_res, or_res, bb, xx, yy, z, zz, fill_res = IO(Output(Bool()))
+  val d , cat_res= IO(Output(UInt(64.W)))
   val zzz = IO(Output(UInt(2.W)))
   
-  a := x + y
-  b := x - y 
-  c := x % y
-  d := x * y
-  e := x / y
-  f := x % y
-  j := x === y
-  l := x =/= y 
-  m := x & y
+  add_res := x + y
+  sub_res := x - y 
+  per_res := x % y
+  div_res:= x * y
+  mul_res := x / y
+  equ_res := x === y
+  !equ_res := x =/= y 
+  and_res := x & y
   n := x | y
   o := x ^ y
   p :=  ~x
   q := !x
   r := x(0) && y(0) // Must be a Bool type
   s := x(0) || y(0) // Must be a Bool type
-  t := Cat(x, y)
-  u := Mux(c(0), x, y)  // Selector must be a Bool type
+  cat_res := Cat(x, y)
+  mux_res := Mux(c(0), x, y)  // Selector must be a Bool type
   v := x >> y(2, 0)
   w := x << y(2, 0) // Can't do a 32-bit shift operator
   xx := x > y
@@ -908,9 +907,9 @@ class OperatorExampleModule extends Module {
   z := x <= y
   zz := x(1) 
   zzz := x(1, 0) 
-  zzzz:= Fill(3,x)
+  fill_res:= Fill(3,x)
   zzzzz := x.andR
-  aa := x.orR
+  or_res := x.orR
   bb := x.xorR
 } 
 ```
