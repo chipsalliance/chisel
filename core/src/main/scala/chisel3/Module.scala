@@ -28,6 +28,8 @@ object Module extends SourceInfoDoc {
   def do_apply[T <: BaseModule](bc: => T)
                                (implicit sourceInfo: SourceInfo,
                                          compileOptions: CompileOptions): T = {
+    val start = System.currentTimeMillis()
+
     if (Builder.readyForModuleConstr) {
       throwException("Error: Called Module() twice without instantiating a Module." +
                      sourceInfo.makeMessage(" See " + _))
@@ -79,6 +81,8 @@ object Module extends SourceInfoDoc {
       pushCommand(DefInstance(sourceInfo, module, component.ports))
       module.initializeInParent(compileOptions)
     }
+    val end = System.currentTimeMillis()
+    Builder.setTiming(module.name, end - start)
     module
   }
 

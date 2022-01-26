@@ -327,6 +327,7 @@ private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq) {
   var currentReset: Option[Reset] = None
   val errors = new ErrorLog
   val namingStack = new NamingStack
+  val elaborationTiming: mutable.HashMap[String, Int] = mutable.HashMap.empty[String, Int]
 }
 
 private[chisel3] object Builder extends LazyLogging {
@@ -369,6 +370,9 @@ private[chisel3] object Builder extends LazyLogging {
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def annotationSeq: AnnotationSeq = dynamicContext.annotationSeq
   def namingStack: NamingStack = dynamicContext.namingStack
+
+  def setTiming(name: String, ms: Int): Unit = dynamicContext.elaborationTiming(name) = ms
+  def getTiming: Map[String, Int] = dynamicContext.elaborationTiming.toMap
 
   // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {
@@ -654,6 +658,7 @@ private[chisel3] object Builder extends LazyLogging {
       mod.forceName(None, mod.name, globalNamespace)
       errors.checkpoint(logger)
       logger.warn("Done elaborating.")
+      println(Builder.getTiming.toSeq.sorted.mkString("\n"))
 
       (Circuit(components.last.name, components.toSeq, annotations.toSeq), mod)
     }
