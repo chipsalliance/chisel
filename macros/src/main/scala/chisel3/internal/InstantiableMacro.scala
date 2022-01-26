@@ -16,21 +16,25 @@ private[chisel3] object instantiableMacro {
       // Note the triple `_` prefixing `module` is to avoid conflicts if a user marks a 'val module'
       //  with @public; in this case, the lookup code is ambiguous between the generated `def module`
       //  function and the argument to the generated implicit class.
-      val resultStats = stats.flatMap {
-        case x @ q"@public val $tpname: $tpe = $name" if tpname.toString() == name.toString() =>
-          extensions += atPos(x.pos)(q"def $tpname = ___module._lookup(_.$tpname)")
-          Nil
-        case x @ q"@public val $tpname: $tpe = $_" =>
-          extensions += atPos(x.pos)(q"def $tpname = ___module._lookup(_.$tpname)")
-          Seq(x)
-        case x @ q"@public val $tpname: $tpe" =>
-          extensions += atPos(x.pos)(q"def $tpname = ___module._lookup(_.$tpname)")
-          Seq(x)
-        case x @ q"@public lazy val $tpname: $tpe = $_" =>
-          extensions += atPos(x.pos)(q"def $tpname = ___module._lookup(_.$tpname)")
-          Seq(x)
-        case other =>
-          Seq(other)
+      val resultStats = stats.flatMap { stat =>
+        stat match {
+          case hasPublic: ValOrDefDef if hasPublic.mods.annotations.toString.contains("new public()") =>
+            hasPublic match {
+              case aDef: DefDef =>
+                c.error(aDef.pos, s"Cannot mark a def as @public")
+                Nil
+              // For now, we only omit protected/private vals
+              case aVal: ValDef
+                  if aVal.mods.hasFlag(c.universe.Flag.PRIVATE) || aVal.mods.hasFlag(c.universe.Flag.PROTECTED) =>
+                c.error(aVal.pos, s"Cannot mark a private or protected val as @public")
+                Nil
+              case aVal: ValDef =>
+                extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
+                if (aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
+              case other => Seq(other)
+            }
+          case other => Seq(other)
+        }
       }
       (resultStats, extensions)
     }
