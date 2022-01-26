@@ -79,7 +79,6 @@ class PassthroughGenerator(width: Int) extends Module {
 ```
 ```scala mdoc: invicible
 ChiselStage.emitVerilog(new PassthroughGenerator(10))
-ChiselStage.emitVerilog(new PassthroughGenerator(20))
 ```
 </td>
          </tr>
