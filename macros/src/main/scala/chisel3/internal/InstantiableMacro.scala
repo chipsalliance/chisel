@@ -18,19 +18,21 @@ private[chisel3] object instantiableMacro {
       //  function and the argument to the generated implicit class.
       val resultStats = stats.flatMap { stat =>
         stat match {
-          case hasPublic: ValOrDefDef if hasPublic.mods.annotations.toString.contains("new public()") => hasPublic match {
-            case aDef: DefDef =>
-              c.error(aDef.pos, s"Cannot mark a def as @public")
-              Nil
-            // For now, we only omit protected/private vals
-            case aVal: ValDef if aVal.mods.hasFlag(c.universe.Flag.PRIVATE) || aVal.mods.hasFlag(c.universe.Flag.PROTECTED) =>
-              c.error(aVal.pos, s"Cannot mark a private or protected val as @public")
-              Nil
-            case aVal: ValDef =>
-              extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
-              if(aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
-            case other => Seq(other)
-          }
+          case hasPublic: ValOrDefDef if hasPublic.mods.annotations.toString.contains("new public()") =>
+            hasPublic match {
+              case aDef: DefDef =>
+                c.error(aDef.pos, s"Cannot mark a def as @public")
+                Nil
+              // For now, we only omit protected/private vals
+              case aVal: ValDef
+                  if aVal.mods.hasFlag(c.universe.Flag.PRIVATE) || aVal.mods.hasFlag(c.universe.Flag.PROTECTED) =>
+                c.error(aVal.pos, s"Cannot mark a private or protected val as @public")
+                Nil
+              case aVal: ValDef =>
+                extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
+                if (aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
+              case other => Seq(other)
+            }
           case other => Seq(other)
         }
       }
