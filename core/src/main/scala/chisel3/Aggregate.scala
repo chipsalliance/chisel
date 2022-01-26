@@ -381,11 +381,11 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     compileOptions:      CompileOptions
   ): T = {
     require(!isEmpty, "Cannot apply reduction on a vec of size 0")
-    var curLayer: Seq[T] = this
+    var curLayer = this.toIterator
     while (curLayer.length > 1) {
-      curLayer = curLayer.grouped(2).map(x => if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))).toSeq
+      curLayer = curLayer.grouped(2).map(x => if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1)))
     }
-    curLayer(0)
+    curLayer.next()
   }
 
   /** Creates a Vec literal of this type with specified values. this must be a chisel type.
