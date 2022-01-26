@@ -298,6 +298,21 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|Top/i:HasEither>x".rt, "xright"))
       annos should contain(MarkAnnotation("~Top|Top/i:HasEither>y".rt, "yleft"))
     }
+    it("3.12: should properly support val modifiers") {
+      class SupClass extends Module {
+        val value = 10
+        val overriddenVal = 10
+      }
+      @instantiable class SubClass() extends SupClass {
+        // This errors
+        //@public private val privateVal = 10
+        // This errors
+        //@public protected val protectedVal = 10
+        @public override val overriddenVal = 12
+        @public lazy val lazyValue = 12
+        @public val value = value
+      }
+    }
   }
   describe("4: toInstance") {
     it("4.0: should work on modules") {
