@@ -303,7 +303,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val value = 10
         val overriddenVal = 10
       }
-      @instantiable class SubClass() extends SupClass {
+      trait SupTrait {
+        def x: Int
+        def y: Int
+      }
+      @instantiable class SubClass() extends SupClass with SupTrait {
         // This errors
         //@public private val privateVal = 10
         // This errors
@@ -312,6 +316,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         @public final val finalVal = 12
         @public lazy val lazyValue = 12
         @public val value = value
+        @public final override lazy val x: Int = 3
+        @public override final lazy val y: Int = 4
       }
     }
   }
