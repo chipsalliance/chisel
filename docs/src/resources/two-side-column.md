@@ -53,16 +53,7 @@ module PassthroughGenerator(
   input  [9:0] io_in,
   output [9:0] io_out
 );
-  assign io_out = io_in; // @[main.scala 13:10]
-endmodule
-
-module PassthroughGenerator(
-input         clock,
-input         reset,
-input  [19:0] io_in,
-output [19:0] io_out
-);
-assign io_out = io_in; // @[main.scala 13:10]
+  assign io_out = io_in;
 endmodule
 ```
 </td>
@@ -153,8 +144,6 @@ val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
 <td>
 
 ```
-2
-UInt<1>(OpResult in MyModule)
 module MyModule(
   input        clock,
   input        reset,
@@ -175,9 +164,7 @@ class MyModule extends Module {
   })
 
 val two  = 1 + 1
-println(two)
 val utwo = 1.U + 1.U
-println(utwo)
 
 io.out := io.in
 }
