@@ -309,6 +309,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         // This errors
         //@public protected val protectedVal = 10
         @public override val overriddenVal = 12
+        @public final val finalVal = 12
         @public lazy val lazyValue = 12
         @public val value = value
       }
