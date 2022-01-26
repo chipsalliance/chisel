@@ -68,7 +68,7 @@ class PassthroughGenerator(width: Int) extends Module {
   io.out := io.in
 }
 ```
-```scala mdoc: invicible
+```scala mdoc:invisible
 ChiselStage.emitVerilog(new PassthroughGenerator(10))
 ```
 </td>
@@ -879,8 +879,10 @@ class OperatorExampleModule extends Module {
 
   val x, y = IO(Input(UInt(32.W)))
 
-  val a, b, c, d , e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, xx, yy,  z, zz, zzz, zzzz, zzzzz = IO(Output(UInt(32.W)))
-  val aa, bb= IO(Output(Bool()))
+  val a, b, c, e, f, m, n, o, p, q, u, v, w,  zzzz = IO(Output(UInt(32.W)))
+  val r, s, j, l, aa, bb, xx, yy, z, zz, zzzzz = IO(Output(Bool()))
+  val d , t= IO(Output(UInt(64.W)))
+  val zzz = IO(Output(UInt(2.W)))
   
   a := x + y
   b := x - y 
@@ -888,11 +890,7 @@ class OperatorExampleModule extends Module {
   d := x * y
   e := x / y
   f := x % y
-  g := x +% y
-  h := x -% y
-  i := x -& y
   j := x === y
-  k := DontCare//x != y This one is a bit nonsensical -- this is a Scala comparison. This might be a bug in the cheat sheet.
   l := x =/= y 
   m := x & y
   n := x | y
