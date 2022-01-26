@@ -3,7 +3,7 @@
 package chisel3.internal
 
 import chisel3._
-import chisel3.experimental.dataview.reify
+import chisel3.experimental.dataview.{isView, reify, reifySingleData}
 import chisel3.experimental.{attach, Analog, BaseModule}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
@@ -247,6 +247,28 @@ private[chisel3] object BiConnect {
 //      }
 //      elemValidConnect.foldLeft(true)(_ && _)
 //    } else false
+
+    // do not bulk connect DataViews if they don't both reify to the same type
+    // or if their types do not exist
+    val sinkIsView = isView(sink)
+    val sourceIsView = isView(source)
+    if (sinkIsView || sourceIsView) {
+      val sourceType =
+        if (sourceIsView) reifySingleData(source) match {
+          case Some(data) => Converter.extractType(data, sourceInfo)
+          case None       => None
+        }
+        else Converter.extractType(source, sourceInfo)
+      val sinkType =
+        if (sinkIsView) reifySingleData(sink) match {
+          case Some(data) => Converter.extractType(data, sourceInfo)
+          case None       => None
+        }
+        else Converter.extractType(sink, sourceInfo)
+
+      if (sourceType != sinkType || sourceType == None)
+        return false
+    }
 
     // check records live in appropriate contexts
     val contextCheck =
