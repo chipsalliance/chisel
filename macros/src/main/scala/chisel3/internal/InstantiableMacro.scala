@@ -26,7 +26,6 @@ private[chisel3] object instantiableMacro {
             case aVal: ValDef if aVal.mods.hasFlag(c.universe.Flag.PRIVATE) || aVal.mods.hasFlag(c.universe.Flag.PROTECTED) =>
               c.error(aVal.pos, s"Cannot mark a private or protected val as @public")
               Nil
-            case aVal: ValDef if aVal.name.toString.contains("ADAM") => c.abort(aVal.pos, s"$aVal"); Nil
             case aVal: ValDef =>
               extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
               if(aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
