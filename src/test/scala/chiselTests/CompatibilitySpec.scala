@@ -238,10 +238,10 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
 
   "A Module without val io" should "throw an exception" in {
     class ModuleWithoutValIO extends Module {
-      val foo = new Bundle {
+      val foo = IO(new Bundle {
         val in = UInt(width = 32).asInput
         val out = Bool().asOutput
-      }
+      })
       foo.out := foo.in(1)
     }
     val e = intercept[Exception](
@@ -593,6 +593,25 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     val verilog = ChiselStage.emitVerilog(new MyModule)
     verilog should include("input  [7:0] io_foo")
     verilog should include("output [7:0] io_bar")
+  }
+
+  it should "properly handle hardware construction before val io is initialized" in {
+    class MyModule extends Module {
+      val foo = Wire(init = UInt(8))
+      val io = new Bundle {
+        val in = UInt(INPUT, width = 8)
+        val en = Bool(INPUT)
+        val out = UInt(OUTPUT, width = 8)
+      }
+      io.out := foo
+      when(io.en) {
+        io.out := io.in
+      }
+    }
+    // Just check that this doesn't crash during elaboration. For more info see:
+    // https://github.com/chipsalliance/chisel3/issues/1802
+    //
+    ChiselStage.elaborate(new MyModule)
   }
 
 }
