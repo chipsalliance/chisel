@@ -3,12 +3,11 @@
 <title> Two side column </title>
 
 ```scala mdoc:invisible
-import Chisel.Queue
 import chisel3._
-import chisel3.util.{DecoupledIO, switch, is}
+import chisel3.util.{switch, is}
 import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
-import chisel3.util.{Cat, Fill, DecoupledIO}
+import chisel3.util.{Cat, Fill}
 ```
 
 <body>
