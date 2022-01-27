@@ -200,8 +200,8 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     q"$thisObj.$doFuncTerm($x, $y)($implicitSourceInfo, $implicitCompileOptions)"
   }
 
-  def xyzArg(x: c.Tree, y: c.Tree, z: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($x, $y, $z)($implicitSourceInfo, $implicitCompileOptions)"
+  def xyzArg(idx: c.Tree, en: c.Tree, clock: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $en, $clock)($implicitSourceInfo, $implicitCompileOptions)"
   }
 
   def xEnArg(x: c.Tree, en: c.Tree): c.Tree = {
