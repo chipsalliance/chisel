@@ -272,4 +272,39 @@ trait MinimizerSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
       BitPat(s"b${Seq(N, X, X, X, X, X, X, X, X, A2_X, A1_X, IMM_X, DW_X, FN_X, N, M_X, X, X, X, X, X, X, X, CSR_X, X, X, X, X).reduce(_ + _)}")
     ))
   }
+
+  "output is 0" should "pass" in {
+    minimizerTest(TruthTable.fromString(
+      """00->0
+        |01->?
+        |10->0
+        |11->0
+        |    ?
+        |""".stripMargin
+
+    ))
+  }
+  "output is 1" should "pass" in {
+    minimizerTest(TruthTable.fromString(
+      """00->1
+        |01->?
+        |10->1
+        |11->1
+        |    ?
+        |""".stripMargin
+
+    ))
+  }
+  // I know this seems to be crazy, but if user is crazy as well...
+  "output is dont care" should "pass" in {
+    minimizerTest(TruthTable.fromString(
+      """00->?
+        |01->?
+        |10->?
+        |11->?
+        |    ?
+        |""".stripMargin
+
+    ))
+  }
 }
