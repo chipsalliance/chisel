@@ -235,7 +235,6 @@ private[chisel3] class ErrorLog {
 
     if (!allErrors.isEmpty) {
       throw new ChiselException("Fatal errors during hardware elaboration. Look above for error list.")
-        with scala.util.control.NoStackTrace
     } else {
       // No fatal errors, clear accumulated warnings since they've been reported
       errors.clear()
