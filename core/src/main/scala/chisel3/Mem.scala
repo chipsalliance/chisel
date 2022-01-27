@@ -192,9 +192,9 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     * @param idx memory element index to write into
     * @param data new data to write
     * @param mask write mask as a Seq of Bool: a write to the Vec element in
-    * memory is only performed if the corresponding mask index is true. 
+    * memory is only performed if the corresponding mask index is true.
     * @param clock clock to bind to this accessor
-    * 
+    *
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def write(

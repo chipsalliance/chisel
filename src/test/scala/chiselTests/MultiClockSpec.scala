@@ -130,70 +130,119 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   }
 
   "Differing clocks at memory and port instantiation" should "warn" in {
-    class MyModuleMemInstClock extends Module {
+    class modMemDifferingClock extends Module {
       val myClock = IO(Input(Clock()))
-
       val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
       val port0 = mem(0.U)
     }
+    val (logMemDifferingClock, _) = grabLog(ChiselStage.elaborate(new modMemDifferingClock))
+    logMemDifferingClock should include("memory is different")
 
-    class MyModulePortInstClock extends Module {
+    class modSyncReadMemDifferingClock extends Module {
       val myClock = IO(Input(Clock()))
-
-      val mem = Mem(4, UInt(8.W))
-      val port0 = mem(0.U, myClock)
+      val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
+      val port0 = mem(0.U)
     }
-
-    class MyModuleNoWarn extends Module {
-      val myClock = IO(Input(Clock()))
-
-      val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
-      val port0 = mem(0.U, myClock)
-    }
-
-    val (logMemInst, _) = grabLog(ChiselStage.elaborate(new MyModuleMemInstClock))
-    logMemInst should include("memory is different")
-
-    val (logPortInst, _) = grabLog(ChiselStage.elaborate(new MyModulePortInstClock))
-    (logPortInst should not).include("memory is different")
-
-    val (logNoWarn, _) = grabLog(ChiselStage.elaborate(new MyModuleNoWarn))
-    (logNoWarn should not).include("memory is different")
+    val (logSyncReadMemDifferingClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemDifferingClock))
+    logSyncReadMemDifferingClock should include("memory is different")
   }
 
-  "Differing clocks at sync memory and port instantiation" should "warn" in {
-    class MyModuleMemInstClock extends Module {
+  "Differing clocks at memory and write accessor instantiation" should "warn" in {
+      class modMemWriteDifferingClock extends Module {
+        val myClock = IO(Input(Clock()))
+        val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
+        mem(1.U) := 1.U
+      }
+    val (logMemWriteDifferingClock, _) = grabLog(ChiselStage.elaborate(new modMemWriteDifferingClock))
+    logMemWriteDifferingClock should include ("memory is different")
+
+      class modSyncReadMemWriteDifferingClock extends Module {
+        val myClock = IO(Input(Clock()))
+        val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
+        mem.write(1.U, 1.U)
+      }
+    val (logSyncReadMemWriteDifferingClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemWriteDifferingClock))
+    logSyncReadMemWriteDifferingClock should include ("memory is different")
+  }
+
+  "Differing clocks at memory and read accessor instantiation" should "warn" in {
+      class modMemReadDifferingClock extends Module {
+        val myClock = IO(Input(Clock()))
+        val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
+        val readVal = mem.read(0.U)
+      }
+    val (logMemReadDifferingClock, _) = grabLog(ChiselStage.elaborate(new modMemReadDifferingClock))
+    logMemReadDifferingClock should include ("memory is different")
+
+      class modSyncReadMemReadDifferingClock extends Module {
+        val myClock = IO(Input(Clock()))
+        val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
+        val readVal = mem.read(0.U)
+      }
+    val (logSyncReadMemReadDifferingClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemReadDifferingClock))
+    logSyncReadMemReadDifferingClock should include ("memory is different")
+  }
+
+  "Passing clock parameter to memory port instantiation" should "not warn" in {
+      class modMemPortClock extends Module {
+        val myClock = IO(Input(Clock()))
+        val mem = Mem(4, UInt(8.W))
+        val port0 = mem(0.U, myClock)
+      }
+    val (logMemPortClock, _) = grabLog(ChiselStage.elaborate(new modMemPortClock))
+      (logMemPortClock should not).include("memory is different")
+
+    class modSyncReadMemPortClock extends Module {
       val myClock = IO(Input(Clock()))
-
-      val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
-      val port0 = mem(0.U)
-      mem(1.U) := 1.U
-    }
-
-    class MyModulePortInstClock extends Module {
-      val myClock = IO(Input(Clock()))
-
       val mem = SyncReadMem(4, UInt(8.W))
       val port0 = mem(0.U, myClock)
-      mem(1.U, myClock) := 1.U
     }
+    val (logSyncReadMemPortClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemPortClock))
+      (logSyncReadMemPortClock should not).include("memory is different")
+  }
 
-    class MyModuleExplicitClk extends Module {
+  "Passing clock parameter to memory write accessor" should "not warn" in {
+      class modMemWriteClock extends Module {
+        val myClock = IO(Input(Clock()))
+        val mem = Mem(4, UInt(8.W))
+        mem.write(0.U, 0.U, myClock)
+      }
+    val (logMemWriteClock, _) = grabLog(ChiselStage.elaborate(new modMemWriteClock))
+      (logMemWriteClock should not).include("memory is different")
+
+    class modMemWriteClock extends Module {
       val myClock = IO(Input(Clock()))
-
-      val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
-      val port0 = mem(0.U, myClock)
-      mem(1.U, myClock) := 1.U
+      val mem = Mem(4, UInt(8.W))
+      mem.write(0.U, 0.U, myClock)
     }
+    val (logMemWriteClock, _) = grabLog(ChiselStage.elaborate(new modMemWriteClock))
+      (logMemWriteClock should not).include("memory is different")
 
-    val (logMemInst, _) = grabLog(ChiselStage.elaborate(new MyModuleMemInstClock))
-    logMemInst should include("memory is different")
+      class modSyncReadMemWriteClock extends Module {
+        val myClock = IO(Input(Clock()))
+        val mem = SyncReadMem(4, UInt(8.W))
+        mem.write(0.U, 0.U, myClock)
+      }
+    val (logSyncReadMemWriteClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemWriteClock))
+      (logSyncReadMemWriteClock should not).include("memory is different")
+  }
 
-    val (logPortInst, _) = grabLog(ChiselStage.elaborate(new MyModulePortInstClock))
-    (logPortInst should not).include("memory is different")
+  "Passing clock parameter to memory read accessor" should "not warn" in {
+    class modMemReadClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = Mem(4, UInt(8.W))
+      val readVal = mem.read(0.U, myClock)
+    }
+    val (logMemReadClock, _) = grabLog(ChiselStage.elaborate(new modMemReadClock))
+      (logMemReadClock should not).include("memory is different")
 
-    val (logExplicitClk, _) = grabLog(ChiselStage.elaborate(new MyModuleExplicitClk))
-    (logExplicitClk should not).include("memory is different")
+      class modSyncReadMemReadClock extends Module {
+        val myClock = IO(Input(Clock()))
+        val mem = SyncReadMem(4, UInt(8.W))
+        val readVal = mem.read(0.U, myClock)
+      }
+    val (logSyncReadMemReadClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemReadClock))
+      (logSyncReadMemReadClock should not).include("memory is different")
   }
 
   "withReset" should "scope the reset of registers" in {
