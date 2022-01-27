@@ -178,11 +178,12 @@ package object internal {
   // Private reflective version of "val io" to maintain Chisel.Module semantics without having
   // io as a virtual method. See https://github.com/freechipsproject/chisel3/pull/1550 for more
   // information about the removal of "val io"
-  private def reflectivelyFindValIO(self: BaseModule): Record = {
+  private def reflectivelyFindValIO(self: BaseModule): Option[Record] = {
     // Java reflection is faster and works for the common case
     def tryJavaReflect: Option[Record] = Try {
       self.getClass.getMethod("io").invoke(self).asInstanceOf[Record]
     }.toOption
+      .filter(_ != null)
     // Anonymous subclasses don't work with Java reflection, so try slower, Scala reflection
     def tryScalaReflect: Option[Record] = {
       val ru = scala.reflect.runtime.universe
@@ -199,6 +200,7 @@ package object internal {
         Try {
           im.reflectField(term).get.asInstanceOf[Record]
         }.toOption
+          .filter(_ != null)
       }
     }
 
@@ -209,13 +211,6 @@ package object internal {
         // Fallback if reflection fails, user can wrap in IO(...)
         self.findPort("io").collect { case r: Record => r }
       }
-      .getOrElse(
-        throwException(
-          s"Compatibility mode Module '$this' must have a 'val io' Bundle. " +
-            "If there is such a field and you still see this error, autowrapping has failed (sorry!). " +
-            "Please wrap the Bundle declaration in IO(...)."
-        )
-      )
   }
 
   /** Legacy Module class that restricts IOs to just io, clock, and reset, and provides a constructor
@@ -243,17 +238,29 @@ package object internal {
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
-    private lazy val _io: Record = reflectivelyFindValIO(this)
+    // Sort of a DIY lazy val because if the user tries to construct hardware before val io is
+    // constructed, _compatAutoWrapPorts will try to access it but it will be null
+    // In that case, we basically need to delay setting this var until later
+    private var _ioValue: Option[Record] = None
+    private def _io: Option[Record] = _ioValue.orElse {
+      _ioValue = reflectivelyFindValIO(this)
+      _ioValue
+    }
 
     // Allow access to bindings from the compatibility package
-    protected def _compatIoPortBound() = portsContains(_io)
+    protected def _compatIoPortBound() = _io.exists(portsContains(_))
 
     private[chisel3] override def generateComponent(): Option[Component] = {
       _compatAutoWrapPorts() // pre-IO(...) compatibility hack
 
       // Restrict IO to just io, clock, and reset
-      require(_io != null, "Module must have io")
-      require(portsContains(_io), "Module must have io wrapped in IO(...)")
+      if (_io.isEmpty || !_compatIoPortBound) {
+        throwException(
+          s"Compatibility mode Module '$this' must have a 'val io' Bundle. " +
+            "If there is such a field and you still see this error, autowrapping has failed (sorry!). " +
+            "Please wrap the Bundle declaration in IO(...)."
+        )
+      }
       require(
         (portsContains(clock)) && (portsContains(reset)),
         "Internal error, module did not have clock or reset as IO"
@@ -264,8 +271,8 @@ package object internal {
     }
 
     override def _compatAutoWrapPorts(): Unit = {
-      if (!_compatIoPortBound() && _io != null) {
-        _bindIoInPlace(_io)
+      if (!_compatIoPortBound()) {
+        _io.foreach(_bindIoInPlace(_))
       }
     }
   }
@@ -283,13 +290,13 @@ package object internal {
     implicit moduleCompileOptions: CompileOptions)
       extends chisel3.BlackBox(params) {
 
-    override private[chisel3] lazy val _io: Record = reflectivelyFindValIO(this)
+    override private[chisel3] lazy val _io: Option[Record] = reflectivelyFindValIO(this)
 
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _bindIoInPlace(_io)
+        _io.foreach(_bindIoInPlace(_))
       }
     }
   }

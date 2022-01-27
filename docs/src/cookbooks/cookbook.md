@@ -440,7 +440,7 @@ chisel3.stage.ChiselStage.emitVerilog(new CountBits(4))
 
 ### How do I get Chisel to name signals properly in blocks like when/withClockAndReset?
 
-Use the compiler plugin, and check out the [Naming Cookbook](#naming) if that still does not do what you want.
+Use the compiler plugin, and check out the [Naming Cookbook](naming) if that still does not do what you want.
 
 ### How do I get Chisel to name the results of vector reads properly?
 Currently, name information is lost when using dynamic indexing. For example:

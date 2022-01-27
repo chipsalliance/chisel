@@ -195,7 +195,7 @@ The repository version can be found in the [build.sbt](build.sbt) file.
 As of the time of writing it was:
 
 ```
-version := "3.5-SNAPSHOT"
+version := "3.6-SNAPSHOT"
 ```
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
@@ -210,7 +210,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to:
 
 ```
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.6-SNAPSHOT"
 ```
 
 ### Building Chisel with FIRRTL in the same SBT Project
