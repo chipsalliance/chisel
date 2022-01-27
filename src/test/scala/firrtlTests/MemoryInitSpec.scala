@@ -61,14 +61,15 @@ class MemInitSpec extends FirrtlFlatSpec {
     result should containLine("    m[initvar] = _RAND_0[31:0];")
   }
 
-  "MemoryScalarInitAnnotation w/ 0" should "create an initialization with all zeros" in {
+  behavior.of("MemoryScalarInitAnnotation")
+  it should "create an initialization with all zeros" in {
     val annos = Seq(MemoryScalarInitAnnotation(mRef, 0))
     val result = compile(basicTest(), annos)
     result should containLine("    m[initvar] = 0;")
   }
 
   Seq(1, 3, 30, 400, 12345).foreach { value =>
-    s"MemoryScalarInitAnnotation w/ $value" should
+    it should
       s"create an initialization with all values set to $value" in {
       val annos = Seq(MemoryScalarInitAnnotation(mRef, value))
       val result = compile(basicTest(), annos)
@@ -76,7 +77,20 @@ class MemInitSpec extends FirrtlFlatSpec {
     }
   }
 
-  "MemoryArrayInitAnnotation" should "initialize all addresses" in {
+  it should "fail for a negative value" in {
+    assertThrows[EmitterException] {
+      compile(basicTest(), Seq(MemoryScalarInitAnnotation(mRef, -1)))
+    }
+  }
+
+  it should "fail for a value that is too large" in {
+    assertThrows[EmitterException] {
+      compile(basicTest(), Seq(MemoryScalarInitAnnotation(mRef, BigInt(1) << 32)))
+    }
+  }
+
+  behavior.of("MemoryArrayInitAnnotation")
+  it should "initialize all addresses" in {
     val values = Seq.tabulate(32)(ii => 2 * ii + 5).map(BigInt(_))
     val annos = Seq(MemoryArrayInitAnnotation(mRef, values))
     val result = compile(basicTest(), annos)
@@ -86,47 +100,35 @@ class MemInitSpec extends FirrtlFlatSpec {
     }
   }
 
-  "MemoryScalarInitAnnotation" should "fail for a negative value" in {
-    assertThrows[EmitterException] {
-      compile(basicTest(), Seq(MemoryScalarInitAnnotation(mRef, -1)))
-    }
-  }
-
-  "MemoryScalarInitAnnotation" should "fail for a value that is too large" in {
-    assertThrows[EmitterException] {
-      compile(basicTest(), Seq(MemoryScalarInitAnnotation(mRef, BigInt(1) << 32)))
-    }
-  }
-
-  "MemoryArrayInitAnnotation" should "fail for a negative value" in {
+  it should "fail for a negative value" in {
     assertThrows[EmitterException] {
       val values = Seq.tabulate(32)(_ => BigInt(-1))
       compile(basicTest(), Seq(MemoryArrayInitAnnotation(mRef, values)))
     }
   }
 
-  "MemoryArrayInitAnnotation" should "fail for a value that is too large" in {
+  it should "fail for a value that is too large" in {
     assertThrows[EmitterException] {
       val values = Seq.tabulate(32)(_ => BigInt(1) << 32)
       compile(basicTest(), Seq(MemoryArrayInitAnnotation(mRef, values)))
     }
   }
 
-  "MemoryArrayInitAnnotation" should "fail if the number of values is too small" in {
+  it should "fail if the number of values is too small" in {
     assertThrows[EmitterException] {
       val values = Seq.tabulate(31)(_ => BigInt(1))
       compile(basicTest(), Seq(MemoryArrayInitAnnotation(mRef, values)))
     }
   }
 
-  "MemoryArrayInitAnnotation" should "fail if the number of values is too large" in {
+  it should "fail if the number of values is too large" in {
     assertThrows[EmitterException] {
       val values = Seq.tabulate(33)(_ => BigInt(1))
       compile(basicTest(), Seq(MemoryArrayInitAnnotation(mRef, values)))
     }
   }
 
-  "MemoryScalarInitAnnotation on Memory with Vector type" should "fail" in {
+  it should "fail on Memory with Vector type" in {
     val caught = intercept[Exception] {
       val annos = Seq(MemoryScalarInitAnnotation(mRef, 0))
       compile(basicTest("UInt<32>[2]"), annos)
@@ -134,7 +136,7 @@ class MemInitSpec extends FirrtlFlatSpec {
     assert(caught.getMessage.endsWith("Cannot initialize memory m of non ground type UInt<32>[2]"))
   }
 
-  "MemoryScalarInitAnnotation on Memory with Bundle type" should "fail" in {
+  it should "fail on Memory with Bundle type" in {
     val caught = intercept[Exception] {
       val annos = Seq(MemoryScalarInitAnnotation(mRef, 0))
       compile(basicTest("{real: SInt<10>, imag: SInt<10>}"), annos)
@@ -147,44 +149,48 @@ class MemInitSpec extends FirrtlFlatSpec {
   private def jsonAnno(name: String, suffix: String): String =
     s"""[{"class": "firrtl.annotations.$name", "target": "~MemTest|MemTest>m"$suffix}]"""
 
-  "MemoryRandomInitAnnotation" should "load from JSON" in {
+  behavior.of("MemoryInit load from JSON")
+  it should "work with MemoryRandomInitAnnotation" in {
     val json = jsonAnno("MemoryRandomInitAnnotation", "")
     val annos = JsonProtocol.deserialize(json)
     assert(annos == Seq(MemoryRandomInitAnnotation(mRef)))
   }
 
-  "MemoryScalarInitAnnotation" should "load from JSON" in {
+  it should "work with MemoryScalarInitAnnotation" in {
     val json = jsonAnno("MemoryScalarInitAnnotation", """, "value": 1234567890""")
     val annos = JsonProtocol.deserialize(json)
     assert(annos == Seq(MemoryScalarInitAnnotation(mRef, 1234567890)))
   }
 
-  "MemoryArrayInitAnnotation" should "load from JSON" in {
+  it should "work with MemoryArrayInitAnnotation" in {
     val json = jsonAnno("MemoryArrayInitAnnotation", """, "values": [10000000000, 20000000000]""")
     val annos = JsonProtocol.deserialize(json)
     val largeSeq = Seq(BigInt("10000000000"), BigInt("20000000000"))
     assert(annos == Seq(MemoryArrayInitAnnotation(mRef, largeSeq)))
   }
 
-  "MemoryFileInlineAnnotation" should "emit $readmemh for text.hex" in {
+  behavior.of("MemoryFileInlineAnnotation")
+  it should "emit $readmemh for text.hex" in {
     val annos = Seq(MemoryFileInlineAnnotation(mRef, filename = "text.hex"))
     val result = compile(basicTest(), annos)
     result should containLine("""$readmemh("text.hex", """ + mRef.name + """);""")
   }
 
-  "MemoryFileInlineAnnotation" should "emit $readmemb for text.bin" in {
+  it should "emit $readmemb for text.bin" in {
     val annos = Seq(MemoryFileInlineAnnotation(mRef, filename = "text.bin", hexOrBinary = MemoryLoadFileType.Binary))
     val result = compile(basicTest(), annos)
     result should containLine("""$readmemb("text.bin", """ + mRef.name + """);""")
   }
 
-  "MemoryFileInlineAnnotation" should "fail with blank filename" in {
+  it should "fail with blank filename" in {
     assertThrows[Exception] {
       compile(basicTest(), Seq(MemoryFileInlineAnnotation(mRef, filename = "")))
     }
   }
 
-  "MemoryInitialization" should "emit readmem in `ifndef SYNTHESIS` block by default" in {
+  behavior.of("MemorySynthesisInitialization")
+
+  it should "emit readmem in `ifndef SYNTHESIS` block by default" in {
     val annos = Seq(
       MemoryFileInlineAnnotation(mRef, filename = "text.hex", hexOrBinary = MemoryLoadFileType.Hex)
     )
@@ -196,7 +202,7 @@ class MemInitSpec extends FirrtlFlatSpec {
     )
   }
 
-  "MemoryInitialization" should "emit readmem outside `ifndef SYNTHESIS` block with MemorySynthInit annotation" in {
+  it should "emit readmem outside `ifndef SYNTHESIS` block with MemorySynthInit annotation" in {
     val annos = Seq(
       MemoryFileInlineAnnotation(mRef, filename = "text.hex", hexOrBinary = MemoryLoadFileType.Hex)
     ) ++ Seq(MemorySynthInit)
@@ -209,7 +215,50 @@ class MemInitSpec extends FirrtlFlatSpec {
     )
   }
 
-  "MemoryInitialization" should "emit readmem outside `ifndef SYNTHESIS` block with MemoryNoSynthInit annotation" in {
+  it should "emit MemoryScalarInit outside `ifndef SYNTHESIS` block with MemorySynthInit annotation" in {
+    val annos = Seq(MemoryScalarInitAnnotation(mRef, 0), MemorySynthInit)
+    val result = compile(basicTest(), annos)
+    result should containLines(
+      """`endif // SYNTHESIS""",
+      """initial begin""",
+      """  for (initvar = 0; initvar < 32; initvar = initvar+1)""",
+      """    m[initvar] = 0;""",
+      """end"""
+    )
+  }
+
+  it should "always emit MemoryRandomInit inside `ifndef SYNTHESIS` block even with MemorySynthInit annotation" in {
+    // randomization should never make it to synthesis!
+    val annos = Seq(MemoryRandomInitAnnotation(mRef), MemorySynthInit)
+    val result = compile(basicTest(), annos)
+    result shouldNot containLines(
+      """`endif // SYNTHESIS""",
+      """initial begin""",
+      """  for (initvar = 0; initvar < 32; initvar = initvar+1)""",
+      """    m[initvar] = _RAND_0[31:0];""",
+      """end"""
+    )
+    result should containLines(
+      """`ifdef RANDOMIZE_MEM_INIT""",
+      """_RAND_0 = {1{`RANDOM}};""",
+      """  for (initvar = 0; initvar < 32; initvar = initvar+1)""",
+      """    m[initvar] = _RAND_0[31:0];"""
+    )
+  }
+
+  it should "emit MemoryArrayInit outside `ifndef SYNTHESIS` block with MemorySynthInit annotation" in {
+    val values = Seq.tabulate(32)(ii => 2 * ii + 5).map(BigInt(_))
+    val annos = Seq(MemoryArrayInitAnnotation(mRef, values), MemorySynthInit)
+    val result = compile(basicTest(), annos)
+    val expInit = values.zipWithIndex.map { case (value, addr) => s"  m[$addr] = $value;" }
+    result should containLines(
+      ((Seq("""`endif // SYNTHESIS""", """initial begin""") ++
+        expInit) :+
+        """end"""): _*
+    )
+  }
+
+  it should "emit readmem inside `ifndef SYNTHESIS` block with MemoryNoSynthInit annotation" in {
     val annos = Seq(
       MemoryFileInlineAnnotation(mRef, filename = "text.hex", hexOrBinary = MemoryLoadFileType.Hex)
     ) ++ Seq(MemoryNoSynthInit)
@@ -295,7 +344,9 @@ class MemInitSpec extends FirrtlFlatSpec {
   // Final deduplicated reference
   val dedupedRef = CircuitTarget("Top").module("Child").ref("m")
 
-  "MemoryRandomInitAnnotation" should "randomize memory in single deduped module" in {
+  behavior.of("MemoryInitDeduplication")
+
+  it should "allow MemoryRandomInitAnnotation to randomize memory in single deduped module" in {
     val annos = Seq(
       MemoryRandomInitAnnotation(child1MRef),
       MemoryRandomInitAnnotation(child2MRef)
@@ -304,7 +355,7 @@ class MemInitSpec extends FirrtlFlatSpec {
     result should containLine("      m[initvar] = _RAND_0[7:0];")
   }
 
-  "MemoryScalarInitAnnotation" should "initialize memory to 0 in deduped module" in {
+  it should "allow MemoryScalarInitAnnotation to initialize memory to 0 in deduped module" in {
     val annos = Seq(
       MemoryScalarInitAnnotation(child1MRef, value = 0),
       MemoryScalarInitAnnotation(child2MRef, value = 0)
@@ -313,7 +364,7 @@ class MemInitSpec extends FirrtlFlatSpec {
     result should containLine("      m[initvar] = 0;")
   }
 
-  "MemoryArrayInitAnnotation" should "initialize memory with array of values in deduped module" in {
+  it should "allow MemoryArrayInitAnnotation to initialize memory with array of values in deduped module" in {
     val values = Seq.tabulate(32)(ii => 2 * ii + 5).map(BigInt(_))
     val annos = Seq(
       MemoryArrayInitAnnotation(child1MRef, values),
@@ -327,7 +378,7 @@ class MemInitSpec extends FirrtlFlatSpec {
     }
   }
 
-  "MemoryFileInlineAnnotation" should "emit $readmemh in deduped module" in {
+  it should "allow MemoryFileInlineAnnotation to emit $readmemh in deduped module" in {
     val annos = Seq(
       MemoryFileInlineAnnotation(child1MRef, filename = "text.hex"),
       MemoryFileInlineAnnotation(child2MRef, filename = "text.hex")
@@ -336,7 +387,7 @@ class MemInitSpec extends FirrtlFlatSpec {
     result should containLine("""$readmemh("text.hex", """ + dedupedRef.name + """);""")
   }
 
-  "MemoryFileInlineAnnotation" should "fail dedup if not all instances have the annotation" in {
+  it should "fail dedup if not all instances have the MemoryFileInlineAnnotation" in {
     val annos = Seq(
       MemoryFileInlineAnnotation(child1MRef, filename = "text.hex")
     )
@@ -345,7 +396,7 @@ class MemInitSpec extends FirrtlFlatSpec {
     }
   }
 
-  "MemoryFileInlineAnnotation" should "fail dedup if instances have different init files" in {
+  it should "fail dedup if instances have different MemoryFileInlineAnnotation filenames" in {
     val annos = Seq(
       MemoryFileInlineAnnotation(child1MRef, filename = "text.hex"),
       MemoryFileInlineAnnotation(child2MRef, filename = "text.bin")
