@@ -91,6 +91,9 @@ private[chisel3] object BiConnect {
           throw MismatchedVecException
         }
         if (canBulkConnectAggregates(left_v, right_v, sourceInfo, connectCompileOptions, context_mod)) {
+          val leftReified:  Data = if (isView(left_v)) reifySingleData(left_v).get else left_v
+          val rightReified: Data = if (isView(right_v)) reifySingleData(right_v).get else right_v
+
           pushCommand(Connect(sourceInfo, left_v.lref, right_v.lref))
         } else {
           for (idx <- 0 until left_v.length) {
@@ -138,6 +141,9 @@ private[chisel3] object BiConnect {
 
         // Check whether Records can be bulk connected (all elements can be connected)
         if (canBulkConnectAggregates(newLeft, newRight, sourceInfo, connectCompileOptions, context_mod)) {
+          val leftReified:  Data = if (isView(left_r)) reifySingleData(left_r).get else left_r
+          val rightReified: Data = if (isView(right_r)) reifySingleData(right_r).get else right_r
+
           pushCommand(Connect(sourceInfo, newLeft.lref, newRight.lref))
         } else if (notStrict) {
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
@@ -252,17 +258,23 @@ private[chisel3] object BiConnect {
     // or if their types do not exist
     val sinkIsView = isView(sink)
     val sourceIsView = isView(source)
+    var sourceReified: Aggregate = source
+    var sinkReified:   Aggregate = sink
     if (sinkIsView || sourceIsView) {
       val sourceType =
         if (sourceIsView) reifySingleData(source) match {
-          case Some(data) => Converter.extractType(data, sourceInfo)
-          case None       => None
+          case Some(data: Aggregate) =>
+            sourceReified = data
+            Converter.extractType(data, sourceInfo)
+          case None => None
         }
         else Converter.extractType(source, sourceInfo)
       val sinkType =
         if (sinkIsView) reifySingleData(sink) match {
-          case Some(data) => Converter.extractType(data, sourceInfo)
-          case None       => None
+          case Some(data: Aggregate) =>
+            sinkReified = data
+            Converter.extractType(data, sourceInfo)
+          case None => None
         }
         else Converter.extractType(sink, sourceInfo)
 
@@ -272,7 +284,13 @@ private[chisel3] object BiConnect {
 
     // check records live in appropriate contexts
     val contextCheck =
-      MonoConnect.aggregateConnectContextCheck(sourceInfo, connectCompileOptions, sink, source, context_mod)
+      MonoConnect.aggregateConnectContextCheck(
+        sourceInfo,
+        connectCompileOptions,
+        sinkReified,
+        sourceReified,
+        context_mod
+      )
 
     // sink must be writable
     val bindingCheck = sink.topBinding match {
