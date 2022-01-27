@@ -73,7 +73,7 @@ endmodule
 <td>
 
 ```scala mdoc:silent
-class PassthroughGenerator(width: Int) extends Module {
+class PassthroughGenerator(width: Int = 8) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(width.W))
     val out = Output(UInt(width.W))
