@@ -878,10 +878,10 @@ class OperatorExampleModule extends Module {
 
   val x, y = IO(Input(UInt(32.W)))
 
-  val add_res, sub_res, per_res ,mul_res, div_res, and_res, n, o, p, q, mux_res, v, w,  zzzz = IO(Output(UInt(32.W)))
-  val r, s, equ_res, !equ_res, or_res, bb, xx, yy, z, zz, fill_res = IO(Output(Bool()))
-  val d , cat_res= IO(Output(UInt(64.W)))
-  val zzz = IO(Output(UInt(2.W)))
+  val add_res, sub_res, per_res ,mul_res, and_res, or_res, xor_res, not_res,logical_not_res, mux_res,  rshift_res , lshift_res,  andR_res = IO(Output(UInt(32.W)))
+  val logical_and_res, logical_or_res, equ_res, !equ_res, orR_res, xorR_res, gt_res,lt_res, geq_res, leq_res,single_bitselect_res, fill_res = IO(Output(Bool()))
+  val  div_res, cat_res= IO(Output(UInt(64.W)))
+  val multiple_bitselect_res = IO(Output(UInt(2.W)))
   
   add_res := x + y
   sub_res := x - y 
@@ -891,25 +891,26 @@ class OperatorExampleModule extends Module {
   equ_res := x === y
   !equ_res := x =/= y 
   and_res := x & y
-  n := x | y
-  o := x ^ y
-  p :=  ~x
-  q := !x
-  r := x(0) && y(0) // Must be a Bool type
-  s := x(0) || y(0) // Must be a Bool type
+  or_res := x | y
+  xor_res := x ^ y
+  not_res :=  ~x
+  logical_not_res := !x
+  logical_and_res := x(0) && y(0) // Must be a Bool type
+  logical_or_res := x(0) || y(0) // Must be a Bool type
   cat_res := Cat(x, y)
   mux_res := Mux(c(0), x, y)  // Selector must be a Bool type
-  v := x >> y(2, 0)
-  w := x << y(2, 0) // Can't do a 32-bit shift operator
-  xx := x > y
-  yy := x >= y
-  z := x <= y
-  zz := x(1) 
-  zzz := x(1, 0) 
+  rshift_res := x >> y(2, 0)
+  lshift_res := x << y(2, 0) // Can't do a 32-bit shift operator
+  gt_res := x > y
+  lt_res := x < y
+  geq_res := x >= y
+  leq_res := x <= y
+  single_bitselect_res := x(1) 
+  multiple_bitselect_res := x(1, 0) 
   fill_res:= Fill(3,x)
-  zzzzz := x.andR
-  or_res := x.orR
-  bb := x.xorR
+  andR_res := x.andR
+  orR_res := x.orR
+  xorR_res := x.xorR
 } 
 ```
 ```scala mdoc:invisible
