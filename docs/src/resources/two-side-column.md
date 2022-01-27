@@ -458,6 +458,7 @@ ChiselStage.emitVerilog(new CaseStatementEnumModule2)
 <html>
 <body>
 
+<!--
 # SystemVerilog Interfaces
 
 <html>
@@ -505,11 +506,15 @@ io.out <> io.in
 ```scala mdoc:invisible
 ChiselStage.emitVerilog(new MyInterfaceModule)
 ```
+
 </td>
          </tr>
     </table>
+
 <html>
 <body>
+-->
+
 
 # Memory Modules
 
@@ -851,6 +856,7 @@ class OperatorExampleModule extends Module {
   xorR_res := x.xorR
 } 
 ```
+
 ```scala mdoc:invisible
 ChiselStage.emitVerilog(new OperatorExampleModule)
 ```
