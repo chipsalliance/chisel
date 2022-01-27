@@ -63,9 +63,12 @@ class Foo extends Module {
 module PassthroughGenerator(
   input        clock,
   input        reset,
-  input  [9:0] io_in,
-  output [9:0] io_out
+  input  [width-1:0] io_in,
+  output [width-1:0] io_out
 );
+ 
+  parameter width = 8;
+  
   assign io_out = io_in;
 endmodule
 ```
