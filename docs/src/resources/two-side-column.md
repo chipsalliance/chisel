@@ -42,7 +42,21 @@ class Foo extends Module {
 ```
 </td>
          </tr>
-    <tr>
+    </table>
+</body>
+</html>
+
+# Parameterizing a Module
+
+<html>
+<body>
+    <table border ="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+         </tr>
+
+<tr>
 <td>
 
 ```
@@ -71,19 +85,6 @@ class PassthroughGenerator(width: Int) extends Module {
 ChiselStage.emitVerilog(new PassthroughGenerator(10))
 ```
 </td>
-         </tr>
-    </table>
-</body>
-</html>
-
-# Parameterizing a Module
-
-<html>
-<body>
-    <table border ="0">
-          <tr>
-            <td><b style="font-size:30px">Verilog</b></td>
-            <td><b style="font-size:30px">Chisel</b></td>
          </tr>
          <tr>
 <td>
