@@ -102,6 +102,11 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     do_apply_impl(idx, Builder.forcedClock, MemPortDirection.READ, true)
 
+  /** Creates a read accessor into the memory with dynamic addressing.
+    * Takes a clock parameter to bind a clock that may be different
+    * from the implicit clock. See the class documentation of the memory
+    * for more detailed information.
+    */
   def read(x: UInt, y: Clock): T = macro SourceInfoTransform.xyArg
 
   /** @group SourceInfoTransformMacro */
@@ -134,6 +139,13 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit =
     write_impl(idx, data, Builder.forcedClock, true)
 
+  /** Creates a write accessor into the memory with a clock
+    * that may be different from the implicit clock.
+    *
+    * @param idx memory element index to write into
+    * @param data new data to write
+    * @param clock clock to bind to this accessor
+    */
   def write(idx: UInt, data: T, clock: Clock)(implicit compileOptions: CompileOptions): Unit =
     write_impl(idx, data, clock, false)
 
@@ -174,6 +186,17 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   ): Unit =
     masked_write_impl(idx, data, mask, Builder.forcedClock, true)
 
+  /** Creates a masked write accessor into the memory with a clock
+    * that may be different from the implicit clock.
+    *
+    * @param idx memory element index to write into
+    * @param data new data to write
+    * @param mask write mask as a Seq of Bool: a write to the Vec element in
+    * memory is only performed if the corresponding mask index is true. 
+    * @param clock clock to bind to this accessor
+    * 
+    * @note this is only allowed if the memory's element data type is a Vec
+    */
   def write(
     idx:   UInt,
     data:  T,
