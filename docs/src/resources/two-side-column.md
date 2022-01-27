@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.util.{switch, is}
 import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
-import chisel3.util.{Cat, Fill}
+import chisel3.util.{Cat, Fill, DecoupledIO}
 ```
 
 <body>
@@ -140,40 +140,6 @@ endmodule
 
 ```
 val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
-```
-</td>
-         </tr>
- <tr>
-<td>
-
-```
-module MyModule(
-  input        clock,
-  input        reset,
-  input  [3:0] io_in,
-  output [3:0] io_out
-);
-  assign io_out = io_in; // @[main.scala 19:10]
-endmodule
-```
-</td>
-<td>
-
-```scala mdoc:silent
-class MyModule extends Module {
-  val io = IO(new Bundle {
-    val in  = Input(UInt(4.W))
-    val out = Output(UInt(4.W))
-  })
-
-val two  = 1 + 1
-val utwo = 1.U + 1.U
-
-io.out := io.in
-}
-```
-```scala mdoc:invisible
-ChiselStage.emitVerilog(new MyModule)
 ```
 </td>
          </tr>
@@ -792,99 +758,67 @@ ChiselStage.emitVerilog(new ReadWriteMem)
 <td>
 
 ```
-module OperatorExampleModule(
-  input         clock,
-  input         reset,
-  input  [31:0] x,
-  input  [31:0] y,
-  output [31:0] a,
-  output [31:0] b,
-  output [31:0] c,
-  output [31:0] d,
-  output [31:0] e,
-  output [31:0] f,
-  output [31:0] g,
-  output [31:0] h,
-  output [31:0] i,
-  output [31:0] j,
-  output [31:0] k,
-  output [31:0] l,
-  output [31:0] m,
-  output [31:0] n,
-  output [31:0] o,
-  output [31:0] p,
-  output [31:0] q,
-  output [31:0] r,
-  output [31:0] s,
-  output [31:0] t,
-  output [31:0] u,
-  output [31:0] v,
-  output [31:0] w,
-  output [31:0] xx,
-  output [31:0] yy,
-  output [31:0] z,
-  output [31:0] zz,
-  output [31:0] zzz,
-  output [31:0] zzzz,
-  output [31:0] zzzzz,
-  output        aa,
-  output        bb
-);
-  wire [32:0] _b_T = x - y; // @[main.scala 16:10]
-  wire [63:0] _d_T = x * y; // @[main.scala 18:10]
-  wire  _r_T_2 = x[0] & y[0]; // @[main.scala 32:13]
-  wire  _s_T_2 = x[0] | y[0]; // @[main.scala 33:13]
-  wire [63:0] _t_T = {x,y}; // @[Cat.scala 30:58]
-  wire [38:0] _GEN_0 = {{7'd0}, x}; // @[main.scala 37:10]
-  wire [38:0] _w_T_1 = _GEN_0 << y[2:0]; // @[main.scala 37:10]
-  wire [95:0] _zzzz_T_1 = {x,x,x}; // @[Cat.scala 30:58]
-  wire [31:0] _GEN_1 = x % y; // @[main.scala 17:10]
-  wire [31:0] _GEN_2 = x % y; // @[main.scala 20:10]
-  assign a = x + y; // @[main.scala 15:10]
-  assign b = x - y; // @[main.scala 16:10]
-  assign c = _GEN_1[31:0]; // @[main.scala 17:10]
-  assign d = _d_T[31:0]; // @[main.scala 18:5]
-  assign e = x / y; // @[main.scala 19:10]
-  assign f = _GEN_2[31:0]; // @[main.scala 20:10]
-  assign g = x + y; // @[main.scala 21:10]
-  assign h = x - y; // @[main.scala 22:10]
-  assign i = _b_T[31:0]; // @[main.scala 23:5]
-  assign j = {{31'd0}, x == y}; // @[main.scala 24:5]
-  assign k = 32'h0;
-  assign l = {{31'd0}, x != y}; // @[main.scala 26:5]
-  assign m = x & y; // @[main.scala 27:10]
-  assign n = x | y; // @[main.scala 28:10]
-  assign o = x ^ y; // @[main.scala 29:10]
-  assign p = ~x; // @[main.scala 30:9]
-  assign q = {{31'd0}, x == 32'h0}; // @[main.scala 31:5]
-  assign r = {{31'd0}, _r_T_2}; // @[main.scala 32:5]
-  assign s = {{31'd0}, _s_T_2}; // @[main.scala 33:5]
-  assign t = _t_T[31:0]; // @[main.scala 34:5]
-  assign u = c[0] ? x : y; // @[main.scala 35:11]
-  assign v = x >> y[2:0]; // @[main.scala 36:10]
-  assign w = _w_T_1[31:0]; // @[main.scala 37:5]
-  assign xx = {{31'd0}, x > y}; // @[main.scala 38:6]
-  assign yy = {{31'd0}, x >= y}; // @[main.scala 39:6]
-  assign z = {{31'd0}, x <= y}; // @[main.scala 40:5]
-  assign zz = {{31'd0}, x[1]}; // @[main.scala 41:6]
-  assign zzz = {{30'd0}, x[1:0]}; // @[main.scala 42:7]
-  assign zzzz = _zzzz_T_1[31:0]; // @[main.scala 43:7]
-  assign zzzzz = {{31'd0}, &x}; // @[main.scala 44:9]
-  assign aa = |x; // @[main.scala 45:11]
-  assign bb = ^x; // @[main.scala 46:11]
-endmodule
+// res10: String = """module OperatorExampleModule(
+//   input         clock,
+//   input         reset,
+//   input  [31:0] x,
+//   input  [31:0] y,
+//   input  [31:0] c,
+//   output [31:0] add_res,
+//   output [31:0] sub_res,
+//   output [31:0] per_res,
+//   output [31:0] mul_res,
+//   output [31:0] and_res,
+//   output [31:0] or_res,
+//   output [31:0] xor_res,
+//   output [31:0] not_res,
+//   output [31:0] logical_not_res,
+//   output [31:0] mux_res,
+//   output [31:0] rshift_res,
+//   output [31:0] lshift_res,
+//   output [31:0] andR_res,
+//   output        logical_and_res,
+//   output        logical_or_res,
+//   output        equ_res,
+//   output        not_equ_res,
+//   output        orR_res,
+//   output        xorR_res,
+//   output        gt_res,
+//   output        lt_res,
+//   output        geq_res,
+//   output        leq_res,
+//   output        single_bitselect_res,
+//   output        fill_res,
+//   output [63:0] div_res,
+//   output [63:0] cat_res,
+//   output [1:0]  multiple_bitselect_res
+// );
+//   wire [38:0] _GEN_0 = {{7'd0}, x}; // @[two-side-column.md 313:19]
+//   wire [38:0] _lshift_res_T_1 = _GEN_0 << y[2:0]; // @[two-side-column.md 313:19]
+//   wire [95:0] _fill_res_T_1 = {x,x,x}; // @[Cat.scala 30:58]
+//   wire [31:0] _GEN_1 = x % y; // @[two-side-column.md 298:16]
+//   assign add_res = x + y; // @[two-side-column.md 296:16]
+//   assign sub_res = x - y; // @[two-side-column.md 297:16]
+//   assign per_res = _GEN_1[31:0]; // @[two-side-column.md 298:16]
+//   assign mul_res = x / y; // @[two-side-column.md 300:16]
+//   assign and_res = x & y; // @[two-side-column.md 303:16]
+//   assign or_res = x | y; // @[two-side-column.md 304:15]
+//   assign xor_res = x ^ y; // @[two-side-column.md 305:16]
+//   assign not_res = ~x; // @[two-side-column.md 306:15]
+//   assign logical_not_res = {{31'd0}, x == 32'h0}; // @[two-side-column.md 307:19...
 ```
+
 </td>
 <td>
 
 ```scala mdoc:silent
 class OperatorExampleModule extends Module {
 
-  val x, y = IO(Input(UInt(32.W)))
+  val x, y, c = IO(Input(UInt(32.W)))
 
-  val add_res, sub_res, per_res ,mul_res, and_res, or_res, xor_res, not_res,logical_not_res, mux_res,  rshift_res , lshift_res,  andR_res = IO(Output(UInt(32.W)))
-  val logical_and_res, logical_or_res, equ_res, !equ_res, orR_res, xorR_res, gt_res,lt_res, geq_res, leq_res,single_bitselect_res, fill_res = IO(Output(Bool()))
-  val  div_res, cat_res= IO(Output(UInt(64.W)))
+  val add_res, sub_res, per_res,mul_res, and_res, or_res, xor_res, not_res,logical_not_res, mux_res,  rshift_res , lshift_res,  andR_res = IO(Output(UInt(32.W)))
+  val logical_and_res, logical_or_res, equ_res, not_equ_res, orR_res, xorR_res, gt_res,lt_res, geq_res, leq_res,single_bitselect_res, fill_res = IO(Output(Bool()))
+  val div_res, cat_res= IO(Output(UInt(64.W)))
   val multiple_bitselect_res = IO(Output(UInt(2.W)))
   
   add_res := x + y
@@ -893,7 +827,7 @@ class OperatorExampleModule extends Module {
   div_res:= x * y
   mul_res := x / y
   equ_res := x === y
-  !equ_res := x =/= y 
+  not_equ_res := x =/= y 
   and_res := x & y
   or_res := x | y
   xor_res := x ^ y
