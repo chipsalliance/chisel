@@ -288,7 +288,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|Top/i:HasPublicConstructorArgs>x".rt, "10"))
     }
-    it("3.11: should work on eithers") {
+        it("3.11: should work on eithers") {
       class Top() extends Module {
         val i = Instance(Definition(new HasEither()))
         i.x.map(x => mark(x, "xright")).left.map(x => mark(x, "xleft"))
@@ -298,7 +298,18 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|Top/i:HasEither>x".rt, "xright"))
       annos should contain(MarkAnnotation("~Top|Top/i:HasEither>y".rt, "yleft"))
     }
-    it("3.12: should properly support val modifiers") {
+    it("3.12: should work on tuple2") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasTuple2()))
+        mark(i.xy._1, "x")
+        mark(i.xy._2, "y")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|Top/i:HasTuple2>x".rt, "x"))
+      annos should contain(MarkAnnotation("~Top|Top/i:HasTuple2>y".rt, "y"))
+    }
+    
+    it("3.13: should properly support val modifiers") {
       class SupClass extends Module {
         val value = 10
         val overriddenVal = 10
