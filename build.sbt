@@ -5,10 +5,10 @@ enablePlugins(SiteScaladocPlugin)
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
   "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT",
-  "chiseltest" -> "edu.berkeley.cs" %% "chiseltest" % "0.6-SNAPSHOT",
+  "chiseltest" -> "edu.berkeley.cs" %% "chiseltest" % "0.6-SNAPSHOT"
 )
 
-lazy val commonSettings = Seq (
+lazy val commonSettings = Seq(
   resolvers ++= Seq(
     Resolver.sonatypeRepo("snapshots"),
     Resolver.sonatypeRepo("releases")
@@ -24,18 +24,18 @@ lazy val commonSettings = Seq (
   scalacOptions ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
-      case _ => Nil
+      case _                       => Nil
     }
   },
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 => Nil
-      case _ => compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full) :: Nil
+      case _                       => compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)) :: Nil
     }
   }
 )
 
-lazy val publishSettings = Seq (
+lazy val publishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
@@ -54,36 +54,32 @@ lazy val publishSettings = Seq (
         <url>http://www.eecs.berkeley.edu/~jrb/</url>
       </developer>
     </developers>,
-
   publishTo := {
     val v = version.value
     val nexus = "https://oss.sonatype.org/"
     if (v.trim.endsWith("SNAPSHOT")) {
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    }
-    else {
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+      Some("snapshots".at(nexus + "content/repositories/snapshots"))
+    } else {
+      Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
     }
   }
 )
 
-lazy val chiselSettings = Seq (
+lazy val chiselSettings = Seq(
   name := "chisel3",
-
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.10" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.11" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "com.lihaoyi" %% "os-lib" % "0.8.0",
-  ),
+    "com.lihaoyi" %% "os-lib" % "0.8.0"
+  )
 ) ++ (
   // Tests from other projects may still run concurrently
   //  if we're not running with -DminimalResources.
   // Another option would be to experiment with:
   //  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
   sys.props.contains("minimalResources") match {
-    case true  => Seq( Test / parallelExecution := false )
-    case false => Seq( fork := true,
-                       Test / testForkedParallel := true )
+    case true  => Seq(Test / parallelExecution := false)
+    case false => Seq(fork := true, Test / testForkedParallel := true)
   }
 )
 
@@ -117,11 +113,11 @@ lazy val pluginScalaVersions = Seq(
   "2.13.7"
 )
 
-lazy val plugin = (project in file("plugin")).
-  settings(name := "chisel3-plugin").
-  settings(commonSettings: _*).
-  settings(publishSettings: _*).
-  settings(
+lazy val plugin = (project in file("plugin"))
+  .settings(name := "chisel3-plugin")
+  .settings(commonSettings: _*)
+  .settings(publishSettings: _*)
+  .settings(
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
     scalacOptions += "-Xfatal-warnings",
     crossScalaVersions := pluginScalaVersions,
@@ -131,8 +127,8 @@ lazy val plugin = (project in file("plugin")).
       // workaround for https://github.com/sbt/sbt/issues/5097
       target.value / s"scala-${scalaVersion.value}"
     }
-  ).
-  settings(
+  )
+  .settings(
     mimaPreviousArtifacts := {
       Set()
     }
@@ -149,26 +145,26 @@ lazy val usePluginSettings = Seq(
   }
 )
 
-lazy val macros = (project in file("macros")).
-  settings(name := "chisel3-macros").
-  settings(commonSettings: _*).
-  settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set())
+lazy val macros = (project in file("macros"))
+  .settings(name := "chisel3-macros")
+  .settings(commonSettings: _*)
+  .settings(publishSettings: _*)
+  .settings(mimaPreviousArtifacts := Set())
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
-lazy val core = (project in file("core")).
-  sourceDependency(firrtlRef, defaultVersions("firrtl")).
-  settings(commonSettings: _*).
-  enablePlugins(BuildInfoPlugin).
-  settings(
+lazy val core = (project in file("core"))
+  .sourceDependency(firrtlRef, defaultVersions("firrtl"))
+  .settings(commonSettings: _*)
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
     buildInfoPackage := "chisel3",
     buildInfoUsePackageAsPath := true,
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
-  ).
-  settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set()).
-  settings(
+  )
+  .settings(publishSettings: _*)
+  .settings(mimaPreviousArtifacts := Set())
+  .settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
       "-deprecation",
@@ -180,36 +176,41 @@ lazy val core = (project in file("core")).
       "-Xlint:infer-any"
 //      , "-Xlint:missing-interpolator"
     )
-  ).
-  dependsOn(macros)
+  )
+  .dependsOn(macros)
 
 // This will always be the root project, even if we are a sub-project.
 lazy val root = RootProject(file("."))
 
-lazy val chisel = (project in file(".")).
-  enablePlugins(ScalaUnidocPlugin).
-  settings(commonSettings: _*).
-  settings(chiselSettings: _*).
-  settings(publishSettings: _*).
-  settings(usePluginSettings: _*).
-  dependsOn(macros).
-  dependsOn(core).
-  aggregate(macros, core, plugin).
-  settings(
+lazy val chisel = (project in file("."))
+  .enablePlugins(ScalaUnidocPlugin)
+  .settings(commonSettings: _*)
+  .settings(chiselSettings: _*)
+  .settings(publishSettings: _*)
+  .settings(usePluginSettings: _*)
+  .dependsOn(macros)
+  .dependsOn(core)
+  .aggregate(macros, core, plugin)
+  .settings(
     mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
       "-groups",
-      "-skip-packages", "chisel3.internal",
-      "-diagrams-max-classes", "25",
-      "-doc-version", version.value,
-      "-doc-title", name.value,
-      "-doc-root-content", baseDirectory.value+"/root-doc.txt",
-      "-sourcepath", (baseDirectory in ThisBuild).value.toString,
-      "-doc-source-url",
-      {
+      "-skip-packages",
+      "chisel3.internal",
+      "-diagrams-max-classes",
+      "25",
+      "-doc-version",
+      version.value,
+      "-doc-title",
+      name.value,
+      "-doc-root-content",
+      baseDirectory.value + "/root-doc.txt",
+      "-sourcepath",
+      (baseDirectory in ThisBuild).value.toString,
+      "-doc-source-url", {
         val branch =
           if (version.value.endsWith("-SNAPSHOT")) {
             "master"
@@ -219,25 +220,27 @@ lazy val chisel = (project in file(".")).
         s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       }
     ) ++
-    // Suppress compiler plugin for source files in core
-    // We don't need this in regular compile because we just don't add the chisel3-plugin to core's scalacOptions
-    // This works around an issue where unidoc uses the exact same arguments for all source files.
-    // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
-    // See https://github.com/sbt/sbt-unidoc/issues/107
-    (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
+      // Suppress compiler plugin for source files in core
+      // We don't need this in regular compile because we just don't add the chisel3-plugin to core's scalacOptions
+      // This works around an issue where unidoc uses the exact same arguments for all source files.
+      // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
+      // See https://github.com/sbt/sbt-unidoc/issues/107
+      (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
   )
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
-lazy val integrationTests = (project in file ("integration-tests")).
-  dependsOn(chisel).
-  settings(commonSettings: _*).
-  settings(chiselSettings: _*).
-  settings(usePluginSettings: _*).
-  settings(Seq(
-    libraryDependencies += defaultVersions("chiseltest") % "test",
-  ))
+lazy val integrationTests = (project in file("integration-tests"))
+  .dependsOn(chisel)
+  .settings(commonSettings: _*)
+  .settings(chiselSettings: _*)
+  .settings(usePluginSettings: _*)
+  .settings(
+    Seq(
+      libraryDependencies += defaultVersions("chiseltest") % "test"
+    )
+  )
 
-lazy val docs = project       // new documentation project
+lazy val docs = project // new documentation project
   .in(file("docs-target")) // important: it must not be docs/
   .dependsOn(chisel)
   .enablePlugins(MdocPlugin)
