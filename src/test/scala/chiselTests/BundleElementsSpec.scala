@@ -8,6 +8,7 @@ import chisel3.stage.ChiselStage
 import chisel3.util.Decoupled
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import scala.language.reflectiveCalls
 
 /* Rich and complicated bundle examples
  */
@@ -41,34 +42,28 @@ class BpipDecoupled extends BpipOneField {
 
 class HasDecoupledBundleByInheritance extends Module {
   val out1 = IO(Output(new BpipDecoupled))
-  assert(
-    FieldsMatch(
-      out1,
-      "bpipDecoupledDecoupled",
-      "bpipDecoupledVec",
-      "bpipDecoupledSInt",
-      "bpipOneFieldTwo",
-      "bpipOneFieldOne",
-      "bpipTraitGood",
-      "bpipSuperTraitGood"
-    )
+  assertElementsMatchExpected(out1)(
+    "bpipDecoupledDecoupled" -> _.bpipDecoupledDecoupled,
+    "bpipDecoupledVec" -> _.bpipDecoupledVec,
+    "bpipDecoupledSInt" -> _.bpipDecoupledSInt,
+    "bpipOneFieldTwo" -> _.bpipOneFieldTwo,
+    "bpipOneFieldOne" -> _.bpipOneFieldOne,
+    "bpipTraitGood" -> _.bpipTraitGood,
+    "bpipSuperTraitGood" -> _.bpipSuperTraitGood
   )
 }
 
 /* plugin should not affect the seq detection */
 class DebugProblem3 extends Module {
   val out1 = IO(Output(new BpipTwoField))
-  assert(
-    FieldsMatch(
-      out1,
-      "baz",
-      "bpipTwoFieldTwo",
-      "bpipTwoFieldOne",
-      "bpipOneFieldTwo",
-      "bpipOneFieldOne",
-      "bpipTraitGood",
-      "bpipSuperTraitGood"
-    )
+  assertElementsMatchExpected(out1)(
+    "baz" -> _.baz,
+    "bpipTwoFieldTwo" -> _.bpipTwoFieldTwo,
+    "bpipTwoFieldOne" -> _.bpipTwoFieldOne,
+    "bpipOneFieldTwo" -> _.bpipOneFieldTwo,
+    "bpipOneFieldOne" -> _.bpipOneFieldOne,
+    "bpipTraitGood" -> _.bpipTraitGood,
+    "bpipSuperTraitGood" -> _.bpipSuperTraitGood
   )
 }
 
@@ -110,7 +105,14 @@ class BpipP8_3 extends BpipP8_2 {
 class ForFieldOrderingTest extends Module {
   val out1 = IO(Output(new BpipP8_3))
   out1 := DontCare
-  assert(FieldsMatch(out1, "field_3_2", "field_3_1", "field_2_2", "field_2_1", "field_1_2", "field_1_1"))
+  assertElementsMatchExpected(out1)(
+    "field_3_2" -> _.field_3_2,
+    "field_3_1" -> _.field_3_1,
+    "field_2_2" -> _.field_2_2,
+    "field_2_1" -> _.field_2_1,
+    "field_1_2" -> _.field_1_2,
+    "field_1_1" -> _.field_1_1
+  )
 }
 
 /* plugin should allow parameter var fields */
@@ -122,8 +124,8 @@ class HasValParamsToBundle extends Module {
   val out3 = IO(Output(new BpipParamIsField1(UInt(10.W))))
   val out4 = IO(Output(new BpipParamIsField1(UInt(10.W))))
   out3 := DontCare
-  assert(FieldsMatch(out3, "paramField0", "paramField1"))
-  assert(FieldsMatch(out4, "paramField0", "paramField1"))
+  assertElementsMatchExpected(out3)("paramField0" -> _.paramField0, "paramField1" -> _.paramField1)
+  assertElementsMatchExpected(out4)("paramField0" -> _.paramField0, "paramField1" -> _.paramField1)
 }
 
 class HasGenParamsPassedToSuperclasses extends Module {
@@ -151,8 +153,20 @@ class HasGenParamsPassedToSuperclasses extends Module {
 
   out1 := DontCare
 
-  assert(FieldsMatch(out1, "baz", "qux", "bar", "superQux", "superFoo"))
-  assert(FieldsMatch(out2, "baz", "qux", "bar", "superQux", "superFoo"))
+  assertElementsMatchExpected(out1)(
+    "baz" -> _.baz,
+    "qux" -> _.qux,
+    "bar" -> _.bar,
+    "superQux" -> _.superQux,
+    "superFoo" -> _.superFoo
+  )
+  assertElementsMatchExpected(out2)(
+    "baz" -> _.baz,
+    "qux" -> _.qux,
+    "bar" -> _.bar,
+    "superQux" -> _.superQux,
+    "superFoo" -> _.superFoo
+  )
 }
 
 /* Testing whether gen fields superFoo and superQux can be found when they are
@@ -171,7 +185,7 @@ class UsesGenFiedldsInSuperClass extends Module {
 
   out := DontCare
 
-  assert(FieldsMatch(out))
+  assertElementsMatchExpected(out)()
 }
 
 /* Testing whether gen fields superFoo and superQux can be found when they are
@@ -185,7 +199,7 @@ class BpipBadBundleWithHardware extends Bundle {
 
 class HasHardwareFieldsInBundle extends Module {
   val out = IO(Output(new BpipBadBundleWithHardware))
-  assert(FieldsMatch(out))
+  assertElementsMatchExpected(out)()
 }
 
 /* This is legal because of =>
@@ -202,7 +216,7 @@ class UsesBundleWithGeneratorField extends Module {
 
   out := DontCare
 
-  assert(FieldsMatch(out, "superQux", "superFoo"))
+  assertElementsMatchExpected(out)("superQux" -> _.superQux, "superFoo" -> _.superFoo)
 }
 
 /* Testing whether gen fields superFoo and superQux can be found when they are
@@ -217,7 +231,9 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
 
     trait BpipVarmint {
       val varmint = Bool()
+
       def vermin = Bool()
+
       private val puppy = Bool()
     }
 
@@ -235,6 +251,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       val fieldTwo = SInt(8.W)
       val fieldThree = Vec(4, UInt(12.W))
     }
+
     class BpipAnimalBundle(w1: Int, w2: Int) extends Bundle {
       val dog = SInt(w1.W)
       val fox = UInt(w2.W)
@@ -252,8 +269,9 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
     val out = IO(Output(new BpipDemoBundle(UInt(4.W), FixedPoint(10.W, 4.BP))))
 
     val out2 = IO(Output(new BpipAbstractBundle {
-      override def doNothing: Unit = println("ugh")
-      val notAbstract:        Bool = Bool()
+      override def doNothing: Unit = ()
+
+      val notAbstract: Bool = Bool()
     }))
 
     val out4 = IO(Output(new BpipAnimalBundle(99, 100)))
@@ -262,10 +280,20 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
     out := DontCare
     out5 := DontCare
 
-    assert(FieldsMatch(out, "animals", "baz", "qux", "bar", "varmint", "fieldThree", "fieldTwo", "fieldOne", "foo"))
-    assert(FieldsMatch(out5, "fieldThree", "fieldTwo", "fieldOne"))
-    assert(FieldsMatch(out2, "notAbstract", "fromAbstractBundle"))
-    assert(FieldsMatch(out4, "fox", "dog"))
+    assertElementsMatchExpected(out)(
+      "animals" -> _.animals,
+      "baz" -> _.baz,
+      "qux" -> _.qux,
+      "bar" -> _.bar,
+      "varmint" -> _.varmint,
+      "fieldThree" -> _.fieldThree,
+      "fieldTwo" -> _.fieldTwo,
+      "fieldOne" -> _.fieldOne,
+      "foo" -> _.foo
+    )
+    assertElementsMatchExpected(out5)("fieldThree" -> _.fieldThree, "fieldTwo" -> _.fieldTwo, "fieldOne" -> _.fieldOne)
+    assertElementsMatchExpected(out2)("notAbstract" -> _.notAbstract, "fromAbstractBundle" -> _.fromAbstractBundle)
+    assertElementsMatchExpected(out4)("fox" -> _.fox, "dog" -> _.dog)
   }
 
   "Complex Bundle with inheritance, traits and params. DebugProblem1" in {
@@ -333,8 +361,9 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   class UsesBundleWithOptionFields extends Module {
     val outTrue = IO(Output(new OptionBundle(hasIn = true)))
     val outFalse = IO(Output(new OptionBundle(hasIn = false)))
-    assert(FieldsMatch(outTrue, "out", "in"))
-    assert(FieldsMatch(outFalse, "out"))
+    //NOTE: The _.in.get _.in is an optional field
+    assertElementsMatchExpected(outTrue)("out" -> _.out, "in" -> _.in.get)
+    assertElementsMatchExpected(outFalse)("out" -> _.out)
   }
 
   "plugin should work with Bundles with Option fields" in {
@@ -353,7 +382,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
         val b = Bool()
         val c = Enum0.Type
       }))
-      assert(FieldsMatch(out, "b", "a"))
+      assertElementsMatchExpected(out)("b" -> _.b, "a" -> _.a)
     })
   }
 
@@ -365,8 +394,10 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
           val y = if (false) Some(Input(UInt(8.W))) else None
         }
       })
-      assert(FieldsMatch(io, "x", "foo"))
-      assert(FieldsMatch(io.x))
+      assertElementsMatchExpected(io)("x" -> _.x, "foo" -> _.foo)
+//TDDO: Figure out why the following line fails.
+//      assertElementsMatchExpected(io.x)("y" -> _.y.get)
+      assertElementsMatchExpected(io.x)()
     })
   }
 
@@ -387,6 +418,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
         val bpipUIntVal = Input(UInt(8.W))
         lazy val bpipUIntLazyVal = Input(UInt(8.W))
         var bpipUIntVar = Input(UInt(8.W))
+
         def bpipUIntDef = Input(UInt(8.W))
 
         val bpipOptionUInt = Some(Input(UInt(16.W)))
@@ -395,7 +427,12 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       }
 
       val io = IO(new BpipOptionBundle)
-      assert(FieldsMatch(io, "bpipUIntLazyVal", "bpipOptionUInt", "bpipUIntVar", "bpipUIntVal"))
+      assertElementsMatchExpected(io)(
+        "bpipUIntLazyVal" -> _.bpipUIntLazyVal,
+        "bpipOptionUInt" -> _.bpipOptionUInt.get,
+        "bpipUIntVar" -> _.bpipUIntVar,
+        "bpipUIntVal" -> _.bpipUIntVal
+      )
     }
 
     ChiselStage.emitFirrtl(new ALU(ALUConfig(10, mul = true, b = false)))
@@ -420,9 +457,9 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       o := r
       r := i
 
-      assert(FieldsMatch(i, "b", "a"))
-      assert(FieldsMatch(o, "b", "a"))
-      assert(FieldsMatch(r, "b", "a"))
+      assertElementsMatchExpected(i)("b" -> _.b, "a" -> _.a)
+      assertElementsMatchExpected(o)("b" -> _.b, "a" -> _.a)
+      assertElementsMatchExpected(r)("b" -> _.b, "a" -> _.a)
     }
 
     class Module1 extends Module {
@@ -430,8 +467,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       val m0 = Module(new Module0)
       m0.i := i
       m0.o := DontCare
-      assert(FieldsMatch(i, "b", "a"))
-
+      assertElementsMatchExpected(i)("b" -> _.b, "a" -> _.a)
     }
 
     object Enum0 extends ChiselEnum {
@@ -441,17 +477,39 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
     ChiselStage.emitFirrtl(new Module1)
   }
 }
-
-object FieldsMatch {
-  def apply(bundle: Bundle, fieldNames: String*): Boolean = {
-    fieldNames.toSeq
-      .zipAll(bundle.elements.map(_._1).toList, "Missing Bundle Field", "Extra BundleField")
-      .forall {
-        case (fromBundle, fromList) =>
-          if (fromBundle != fromList) {
-            println(s"""Bundle: ${bundle}, field mismatch "$fromBundle" to "$fromList" """)
-          }
-          fromBundle == fromList
-      }
+/* Checks that the elements method of a bundle matches the testers idea of what the bundle field names and their
+ * associated data match and that they have the same number of fields in the same order
+ */
+object assertElementsMatchExpected {
+  def apply[T <: Bundle](bun: T)(checks: (T => (String, Data))*): Boolean = {
+    val expected = checks.map { fn => fn(bun) }
+    val elements = bun.elements
+    val missingMsg = "missing field in #elements"
+    val extraMsg = "extra field in #elements"
+    val paired = elements.toSeq.zipAll(expected, missingMsg -> UInt(1.W), extraMsg -> UInt(1.W))
+    val errorsStrings = paired.flatMap {
+      case (element, expected) =>
+        val (elementName, elementData) = element
+        val (expectedName, expectedData) = expected
+        if (elementName == missingMsg) {
+          Some(s"#elements is missing the '$expectedName' field")
+        } else if (expectedName == extraMsg) {
+          Some(s"#elements should not have field '$elementName' field")
+        } else if (elementName != expectedName) {
+          Some(s"field: '$elementName' did not match expected '$expectedName!'")
+        } else if (elementData != expectedData) {
+          Some(
+            s"field '$elementName' data field ${elementData}(${elementData.hashCode}) did not match expected $expectedData(${expectedData.hashCode})"
+          )
+        } else {
+          None
+        }
+    }
+    if (errorsStrings.nonEmpty) {
+      assert(false, s"Bundle: ${bun.getClass.getName}: " + errorsStrings.mkString("\n"))
+      false
+    } else {
+      true
+    }
   }
 }
