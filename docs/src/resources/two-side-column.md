@@ -529,181 +529,24 @@ ChiselStage.emitVerilog(new MyInterfaceModule)
 <td>
 
 ```
-module ReadWriteSmem(
-input         clock,
-input         reset,
-input         io_enable,
-input         io_write,
-input  [9:0]  io_addr,
-input  [31:0] io_dataIn,
-output [31:0] io_dataOut
-);
-`ifdef RANDOMIZE_MEM_INIT
-reg [31:0] _RAND_0;
-`endif // RANDOMIZE_MEM_INIT
-`ifdef RANDOMIZE_REG_INIT
-reg [31:0] _RAND_1;
-reg [31:0] _RAND_2;
-`endif // RANDOMIZE_REG_INIT
-reg [31:0] mem [0:1023]; // @[main.scala 15:24]
-wire  mem_io_dataOut_MPORT_en; // @[main.scala 15:24]
-wire [9:0] mem_io_dataOut_MPORT_addr; // @[main.scala 15:24]
-wire [31:0] mem_io_dataOut_MPORT_data; // @[main.scala 15:24]
-wire [31:0] mem_MPORT_data; // @[main.scala 15:24]
-wire [9:0] mem_MPORT_addr; // @[main.scala 15:24]
-wire  mem_MPORT_mask; // @[main.scala 15:24]
-wire  mem_MPORT_en; // @[main.scala 15:24]
-reg  mem_io_dataOut_MPORT_en_pipe_0;
-reg [9:0] mem_io_dataOut_MPORT_addr_pipe_0;
-assign mem_io_dataOut_MPORT_en = mem_io_dataOut_MPORT_en_pipe_0;
-assign mem_io_dataOut_MPORT_addr = mem_io_dataOut_MPORT_addr_pipe_0;
-assign mem_io_dataOut_MPORT_data = mem[mem_io_dataOut_MPORT_addr]; // @[main.scala 15:24]
-assign mem_MPORT_data = io_dataIn;
-assign mem_MPORT_addr = io_addr;
-assign mem_MPORT_mask = 1'h1;
-assign mem_MPORT_en = 1'h1;
-assign io_dataOut = mem_io_dataOut_MPORT_data; // @[main.scala 18:14]
-always @(posedge clock) begin
-if (mem_MPORT_en & mem_MPORT_mask) begin
-mem[mem_MPORT_addr] <= mem_MPORT_data; // @[main.scala 15:24]
-end
-mem_io_dataOut_MPORT_en_pipe_0 <= io_enable;
-if (io_enable) begin
-mem_io_dataOut_MPORT_addr_pipe_0 <= io_addr;
-end
-end
-// Register and memory initialization
-`ifdef RANDOMIZE_GARBAGE_ASSIGN
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_INVALID_ASSIGN
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_REG_INIT
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-`define RANDOMIZE
-`endif
-`ifndef RANDOM
-`define RANDOM $random
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-integer initvar;
-`endif
-`ifndef SYNTHESIS
-`ifdef FIRRTL_BEFORE_INITIAL
-`FIRRTL_BEFORE_INITIAL
-`endif
-initial begin
-`ifdef RANDOMIZE
-`ifdef INIT_RANDOM
-`INIT_RANDOM
-`endif
-`ifndef VERILATOR
-`ifdef RANDOMIZE_DELAY
-#`RANDOMIZE_DELAY begin end
-`else
-#0.002 begin end
-`endif
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-_RAND_0 = {1{`RANDOM}};
-for (initvar = 0; initvar < 1024; initvar = initvar+1)
-mem[initvar] = _RAND_0[31:0];
-`endif // RANDOMIZE_MEM_INIT
-`ifdef RANDOMIZE_REG_INIT
-_RAND_1 = {1{`RANDOM}};
-mem_io_dataOut_MPORT_en_pipe_0 = _RAND_1[0:0];
-_RAND_2 = {1{`RANDOM}};
-mem_io_dataOut_MPORT_addr_pipe_0 = _RAND_2[9:0];
-`endif // RANDOMIZE_REG_INIT
-`endif // RANDOMIZE
-end // initial
-`ifdef FIRRTL_AFTER_INITIAL
-`FIRRTL_AFTER_INITIAL
-`endif
-`endif // SYNTHESIS
-endmodule
 module ReadWriteMem(
 input         clock,
-input         reset,
 input         io_enable,
 input         io_write,
 input  [9:0]  io_addr,
 input  [31:0] io_dataIn,
 output [31:0] io_dataOut
 );
-`ifdef RANDOMIZE_MEM_INIT
-reg [31:0] _RAND_0;
-`endif // RANDOMIZE_MEM_INIT
-reg [31:0] mem [0:1023]; // @[main.scala 32:16]
-wire  mem_io_dataOut_MPORT_en; // @[main.scala 32:16]
-wire [9:0] mem_io_dataOut_MPORT_addr; // @[main.scala 32:16]
-wire [31:0] mem_io_dataOut_MPORT_data; // @[main.scala 32:16]
-wire [31:0] mem_MPORT_data; // @[main.scala 32:16]
-wire [9:0] mem_MPORT_addr; // @[main.scala 32:16]
-wire  mem_MPORT_mask; // @[main.scala 32:16]
-wire  mem_MPORT_en; // @[main.scala 32:16]
-assign mem_io_dataOut_MPORT_en = 1'h1;
-assign mem_io_dataOut_MPORT_addr = io_addr;
-assign mem_io_dataOut_MPORT_data = mem[mem_io_dataOut_MPORT_addr]; // @[main.scala 32:16]
-assign mem_MPORT_data = io_dataIn;
-assign mem_MPORT_addr = io_addr;
-assign mem_MPORT_mask = 1'h1;
-assign mem_MPORT_en = 1'h1;
-assign io_dataOut = mem_io_dataOut_MPORT_data; // @[main.scala 35:14]
+
+reg [31:0] mem [0:1023];
+
+assign io_dataOut = mem[io_addr];
+
 always @(posedge clock) begin
-if (mem_MPORT_en & mem_MPORT_mask) begin
-mem[mem_MPORT_addr] <= mem_MPORT_data; // @[main.scala 32:16]
+  if (io_enable && io_write) begin
+  mem[io_addr] <= io_dataIn;
 end
-end
-// Register and memory initialization
-`ifdef RANDOMIZE_GARBAGE_ASSIGN
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_INVALID_ASSIGN
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_REG_INIT
-`define RANDOMIZE
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-`define RANDOMIZE
-`endif
-`ifndef RANDOM
-`define RANDOM $random
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-integer initvar;
-`endif
-`ifndef SYNTHESIS
-`ifdef FIRRTL_BEFORE_INITIAL
-`FIRRTL_BEFORE_INITIAL
-`endif
-initial begin
-`ifdef RANDOMIZE
-`ifdef INIT_RANDOM
-`INIT_RANDOM
-`endif
-`ifndef VERILATOR
-`ifdef RANDOMIZE_DELAY
-#`RANDOMIZE_DELAY begin end
-`else
-#0.002 begin end
-`endif
-`endif
-`ifdef RANDOMIZE_MEM_INIT
-_RAND_0 = {1{`RANDOM}};
-for (initvar = 0; initvar < 1024; initvar = initvar+1)
-mem[initvar] = _RAND_0[31:0];
-`endif // RANDOMIZE_MEM_INIT
-`endif // RANDOMIZE
-end // initial
-`ifdef FIRRTL_AFTER_INITIAL
-`FIRRTL_AFTER_INITIAL
-`endif
-`endif // SYNTHESIS
+
 endmodule
 ```
 </td>
@@ -763,54 +606,55 @@ ChiselStage.emitVerilog(new ReadWriteMem)
 <td>
 
 ```
-// res10: String = """module OperatorExampleModule(
-//   input         clock,
-//   input         reset,
-//   input  [31:0] x,
-//   input  [31:0] y,
-//   input  [31:0] c,
-//   output [31:0] add_res,
-//   output [31:0] sub_res,
-//   output [31:0] per_res,
-//   output [31:0] mul_res,
-//   output [31:0] and_res,
-//   output [31:0] or_res,
-//   output [31:0] xor_res,
-//   output [31:0] not_res,
-//   output [31:0] logical_not_res,
-//   output [31:0] mux_res,
-//   output [31:0] rshift_res,
-//   output [31:0] lshift_res,
-//   output [31:0] andR_res,
-//   output        logical_and_res,
-//   output        logical_or_res,
-//   output        equ_res,
-//   output        not_equ_res,
-//   output        orR_res,
-//   output        xorR_res,
-//   output        gt_res,
-//   output        lt_res,
-//   output        geq_res,
-//   output        leq_res,
-//   output        single_bitselect_res,
-//   output        fill_res,
-//   output [63:0] div_res,
-//   output [63:0] cat_res,
-//   output [1:0]  multiple_bitselect_res
-// );
-//   wire [38:0] _GEN_0 = {{7'd0}, x}; // @[two-side-column.md 313:19]
-//   wire [38:0] _lshift_res_T_1 = _GEN_0 << y[2:0]; // @[two-side-column.md 313:19]
-//   wire [95:0] _fill_res_T_1 = {x,x,x}; // @[Cat.scala 30:58]
-//   wire [31:0] _GEN_1 = x % y; // @[two-side-column.md 298:16]
-//   assign add_res = x + y; // @[two-side-column.md 296:16]
-//   assign sub_res = x - y; // @[two-side-column.md 297:16]
-//   assign per_res = _GEN_1[31:0]; // @[two-side-column.md 298:16]
-//   assign mul_res = x / y; // @[two-side-column.md 300:16]
-//   assign and_res = x & y; // @[two-side-column.md 303:16]
-//   assign or_res = x | y; // @[two-side-column.md 304:15]
-//   assign xor_res = x ^ y; // @[two-side-column.md 305:16]
-//   assign not_res = ~x; // @[two-side-column.md 306:15]
-//   assign logical_not_res = {{31'd0}, x == 32'h0}; // @[two-side-column.md 307:19...
+ res10: String = """module OperatorExampleModule(
+   input         clock,
+   input         reset,
+   input  [31:0] x,
+   input  [31:0] y,
+   input  [31:0] c,
+   output [31:0] add_res,
+   output [31:0] sub_res,
+   output [31:0] per_res,
+   output [31:0] mul_res,
+   output [31:0] and_res,
+   output [31:0] or_res,
+   output [31:0] xor_res,
+   output [31:0] not_res,
+   output [31:0] logical_not_res,
+   output [31:0] mux_res,
+   output [31:0] rshift_res,
+   output [31:0] lshift_res,
+   output [31:0] andR_res,
+   output        logical_and_res,
+   output        logical_or_res,
+   output        equ_res,
+   output        not_equ_res,
+   output        orR_res,
+   output        xorR_res,
+   output        gt_res,
+   output        lt_res,
+   output        geq_res,
+   output        leq_res,
+   output        single_bitselect_res,
+   output [63:0] div_res,
+   output [63:0] cat_res,
+   output [1:0]  multiple_bitselect_res,
+   output [95:0] fill_res
+ );
+   wire [38:0] _GEN_0 = {{7'd0}, x}; 
+   wire [38:0] _lshift_res_T_1 = _GEN_0 << y[2:0]; 
+   wire [63:0] _fill_res_T = {x,x}; 
+   wire [31:0] _GEN_1 = x % y; 
+   assign add_res = x + y; 
+   assign sub_res = x - y; 
+   assign per_res = _GEN_1[31:0]; 
+   assign mul_res = x / y;
+   assign and_res = x & y;
+   assign or_res = x | y; 
+   assign xor_res = x ^ y;
+   assign not_res = ~x; 
+   assign logical_not_res = {{31'd0}, x == 32'h0}; 
+ endmodule
 ```
 
 </td>
@@ -822,9 +666,10 @@ class OperatorExampleModule extends Module {
   val x, y, c = IO(Input(UInt(32.W)))
 
   val add_res, sub_res, per_res,mul_res, and_res, or_res, xor_res, not_res,logical_not_res, mux_res,  rshift_res , lshift_res,  andR_res = IO(Output(UInt(32.W)))
-  val logical_and_res, logical_or_res, equ_res, not_equ_res, orR_res, xorR_res, gt_res,lt_res, geq_res, leq_res,single_bitselect_res, fill_res = IO(Output(Bool()))
+  val logical_and_res, logical_or_res, equ_res, not_equ_res, orR_res, xorR_res, gt_res,lt_res, geq_res, leq_res,single_bitselect_res = IO(Output(Bool()))
   val div_res, cat_res= IO(Output(UInt(64.W)))
   val multiple_bitselect_res = IO(Output(UInt(2.W)))
+  val fill_res = IO(Output(UInt((3*32).W)))
   
   add_res := x + y
   sub_res := x - y 
