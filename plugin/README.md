@@ -1,34 +1,36 @@
 # Notes on the Compiler Plug-in
 
-The Chisel plugin provides some operations that are too difficult, or not possbile, 
-to implement through regular Scala code.
+The Chisel plugin provides some operations that are too difficult, or not possbile,
+to implement through regular Scala code. 
+>This documentation is for developers working on chisel internals.
 
 ## Compiler plugin operations
+These are the three things that the compile plugin does.
+
 1. Automatically generates the `cloneType` methods of Bundles
-2. Records that this plugin ran on a bundle by adding a method `_usingPlugin: Boolean = true`
+2. The plugin adds a method `_usingPlugin: Boolean = true` to show step 1. was done.
 3. Generates a function that returns list of the hardware fields in a bundle `_elementsImpl`
+4. Future work: Make having a Seq[Data] in a bundle be a compiler error. See "Detecting Bundles with Seq[Data]" below.
 
 ### Generating `cloneType` method
-After a period of testing this is now on by default. This flag was used to control that prior to full adoption.
+As of  Mar 18, 2021, PR #1826, generating the `cloneType` method (1. above) is now the default behavior.
+For historical purposes, here is the flag was used to control that prior to full adoption.
 ```
 -P:chiselplugin:useBundlePlugin
 ```
 
 ### Generating the `_elementsImpl` method
-For generating the elementsImpl method, the default is off.
-Turn it on by using the scalac flag
+The plugin does not by default generate the optimized (no-reflection based) `_elementsImpl` method.
+Turn on this feature by adding the `scalac` flag
 ```
 -P:chiselplugin:buildElementAccessor
 ```
 
 #### Detecting Bundles with Seq[Data]
-Currently having this is a run time error
-Here is a block of code that could be added (with some refinement in 
-the detection mechanism)
+Trying to have a `val Seq[Data]` (as opposed to a `val Vec[Data]` in a `Bundle` is a run time error.
+Here is a block of code that could be added to the plugin to detect this case at compile time (with some refinement in
+the detection mechanism):
 ```scala
-  //TODO: The following code block creates a compiler error for bundle fields that are
-  //      Seq[Data]. The test for this case is a bit too hacky so for now we will just
-  //      elide these fields, and will be caught in Aggregate.scala at runtime
   if (member.isAccessor && typeIsSeqOfData(member.tpe) && !isIgnoreSeqInBundle(bundleSymbol)) {
     global.reporter.error(
       member.pos,
@@ -37,7 +39,7 @@ the detection mechanism)
     )
   }
 ```
-## Notes about working on the `_elementsImpl` generator for the plugin in `BundleComponent.scala`
+### Notes about working on the `_elementsImpl` generator for the plugin in `BundleComponent.scala`
 In general the easiest way to develop and debug new code in the plugin is to use `println` statements.
 Naively this can result in reams of text that can be very hard to look through.
 
