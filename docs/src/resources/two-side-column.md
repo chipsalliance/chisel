@@ -674,8 +674,8 @@ class OperatorExampleModule extends Module {
   add_res := x + y
   sub_res := x - y 
   mod_res := x % y
-  div_res:= x * y
-  mul_res := x / y
+  mul_res := x * y
+  div_res := x / y
   equ_res := x === y
   not_equ_res := x =/= y 
   and_res := x & y
