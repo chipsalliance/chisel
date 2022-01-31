@@ -6,8 +6,10 @@ import chisel3._
 import chisel3.experimental.{ChiselEnum, FixedPoint}
 import chisel3.stage.ChiselStage
 import chisel3.util.Decoupled
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+
 import scala.language.reflectiveCalls
 
 /* Rich and complicated bundle examples
@@ -371,7 +373,6 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   }
 
   "plugin should work with enums in bundles" in {
-
     object Enum0 extends ChiselEnum {
       val s0, s1, s2 = Value
     }
@@ -386,6 +387,61 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
     })
   }
 
+  "plugin will NOT see fields that are Data but declared in some way as Any" in {
+    //This is not incompatible with chisel not using the plugin, but this code is considered bad practice
+
+    ChiselStage.emitFirrtl(new Module {
+      val out = IO(Output(new Bundle {
+        val a = UInt(8.W)
+        val b: Any = Bool()
+      }))
+
+      intercept[TestFailedException] {
+        assert(out.elements.keys.exists(_ == "b"))
+      }
+    })
+  }
+
+  "plugin tests should fail properly in the following cases" - {
+
+    class BundleAB extends Bundle {
+      val a = Output(UInt(8.W))
+      val b = Output(Bool())
+    }
+
+    def checkAssertion(checks: (BundleAB => (String, Data))*)(expectedMessage: String): Unit = {
+      intercept[AssertionError] {
+        ChiselStage.emitFirrtl(new Module {
+          val out = IO(new BundleAB)
+          assertElementsMatchExpected(out)(checks: _*)
+        })
+      }.getMessage should include(expectedMessage)
+    }
+
+    "one of the expected data values is wrong" in {
+      checkAssertion("b" -> _.b, "a" -> _.b)("field 'a' data field BundleElementsSpec_Anon.out.a")
+    }
+
+    "one of the expected field names in wrong" in {
+      checkAssertion("b" -> _.b, "z" -> _.a)("field: 'a' did not match expected 'z'")
+    }
+
+    "fields that are expected are not returned by the elements method" in {
+      checkAssertion("b" -> _.b, "a" -> _.a, "c" -> _.a)("#elements is missing the 'c' field")
+    }
+
+    "fields returned by the element are not specified in the expected fields" in {
+      checkAssertion("b" -> _.b)("expected fields did not include 'a' field found in #elements")
+    }
+
+    "multiple errors between elements method and expected fields are shown in the assertion error message" in {
+      checkAssertion()(
+        "expected fields did not include 'b' field found in #elements," +
+          " expected fields did not include 'a' field found in #elements"
+      )
+    }
+  }
+
   "plugin should error correctly when bundles contain only a Option field" in {
     ChiselStage.emitFirrtl(new Module {
       val io = IO(new Bundle {
@@ -395,8 +451,6 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
         }
       })
       assertElementsMatchExpected(io)("x" -> _.x, "foo" -> _.foo)
-//TDDO: Figure out why the following line fails.
-//      assertElementsMatchExpected(io.x)("y" -> _.y.get)
       assertElementsMatchExpected(io.x)()
     })
   }
@@ -481,7 +535,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
  * associated data match and that they have the same number of fields in the same order
  */
 object assertElementsMatchExpected {
-  def apply[T <: Bundle](bun: T)(checks: (T => (String, Data))*): Boolean = {
+  def apply[T <: Bundle](bun: T)(checks: (T => (String, Data))*): Unit = {
     val expected = checks.map { fn => fn(bun) }
     val elements = bun.elements
     val missingMsg = "missing field in #elements"
@@ -494,9 +548,9 @@ object assertElementsMatchExpected {
         if (elementName == missingMsg) {
           Some(s"#elements is missing the '$expectedName' field")
         } else if (expectedName == extraMsg) {
-          Some(s"#elements should not have field '$elementName' field")
+          Some(s"expected fields did not include '$elementName' field found in #elements")
         } else if (elementName != expectedName) {
-          Some(s"field: '$elementName' did not match expected '$expectedName!'")
+          Some(s"field: '$elementName' did not match expected '$expectedName'")
         } else if (elementData != expectedData) {
           Some(
             s"field '$elementName' data field ${elementData}(${elementData.hashCode}) did not match expected $expectedData(${expectedData.hashCode})"
@@ -505,11 +559,6 @@ object assertElementsMatchExpected {
           None
         }
     }
-    if (errorsStrings.nonEmpty) {
-      assert(false, s"Bundle: ${bun.getClass.getName}: " + errorsStrings.mkString("\n"))
-      false
-    } else {
-      true
-    }
+    assert(errorsStrings.isEmpty, s"Bundle: ${bun.getClass.getName}: " + errorsStrings.mkString(", "))
   }
 }

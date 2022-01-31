@@ -2,31 +2,52 @@
 
 The Chisel plugin provides some operations that are too difficult, or not possbile,
 to implement through regular Scala code. 
->This documentation is for developers working on chisel internals.
+
+# This documentation is for developers working on chisel internals.
 
 ## Compiler plugin operations
-These are the three things that the compile plugin does.
+These are the two things that the compile plugin does.
 
-1. Automatically generates the `cloneType` methods of Bundles
-2. The plugin adds a method `_usingPlugin: Boolean = true` to show step 1. was done.
-3. Generates a function that returns list of the hardware fields in a bundle `_elementsImpl`
-4. Future work: Make having a Seq[Data] in a bundle be a compiler error. See "Detecting Bundles with Seq[Data]" below.
+1. Automatically generates the `cloneType` methods of Bundle
+2. Changes the underlying mechanics of the `Bundle`s `elements` method in a way 
+that does not require the use of **reflection** 
+3. Future work: Make having a Seq[Data] in a bundle be a compiler error. See "Detecting Bundles with Seq[Data]" below.
 
-### Generating `cloneType` method
+### 1. Generating `cloneType` method
 As of  Mar 18, 2021, PR #1826, generating the `cloneType` method (1. above) is now the default behavior.
+The cloneType method used to be a tricky thing to write for chisel developers.
 For historical purposes, here is the flag was used to control that prior to full adoption.
 ```
 -P:chiselplugin:useBundlePlugin
 ```
 
-### Generating the `_elementsImpl` method
-The plugin does not by default generate the optimized (no-reflection based) `_elementsImpl` method.
-Turn on this feature by adding the `scalac` flag
+### 2. Changing `Bundle#elements` method
+
+A `Bundle` has a default `elements` method that relies on **reflection**, which is slow and brittle, to access the list of
+*fields* the bundle contains.
+When enabled this second operation of the plugin examines
+the `Bundle`s AST in order to determine the fields and then re-writes the underlying code of `elements`.
+Technically, rewriting a lower level private method `_elementsImpl`.
+It is expected that the using this feature will shortly become the default.
+
+>The plugin should not be enabled for the `main` chisel3 project because of internal considerations.
+> It is enabled for the `Test` section.
+
+In the meantime, advanced users can try using the feature by adding the following flag to the scalac options in their
+chisel projects.
+
 ```
 -P:chiselplugin:buildElementAccessor
 ```
 
-#### Detecting Bundles with Seq[Data]
+For example in an `build.sbt` file adding the line 
+```
+scalacOptions += "-P:chiselplugin:genBundleElements",
+```
+in the appropriate place.
+
+## Future work
+### Detecting Bundles with Seq[Data]
 Trying to have a `val Seq[Data]` (as opposed to a `val Vec[Data]` in a `Bundle` is a run time error.
 Here is a block of code that could be added to the plugin to detect this case at compile time (with some refinement in
 the detection mechanism):
