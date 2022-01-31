@@ -214,7 +214,7 @@ private[chisel3] object MonoConnect {
     source:                Aggregate,
     context_mod:           RawModule
   ): Boolean = {
-    import ActualDirection.{Input, Output}
+    import ActualDirection.{Input, Output, Bidirectional}
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
     val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
@@ -258,7 +258,14 @@ private[chisel3] object MonoConnect {
 
     // CASE: Context is same module as source node and sink node is in child module
     else if ((source_mod == context_mod) && (sink_parent == context_mod)) {
-      sink.direction == Input
+      // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
+      // See: https://github.com/freechipsproject/firrtl/issues/1703
+      // Original behavior should just check if the sink direction is an Input
+      sink.direction match {
+          case Input => true
+          case Bidirectional(_) => true
+          case _ => false
+      }
     }
 
     // CASE: Context is the parent module of both the module containing sink node
@@ -267,7 +274,16 @@ private[chisel3] object MonoConnect {
     else if ((sink_parent == context_mod) && (source_parent == context_mod)) {
       // Thus both nodes must be ports and have a direction
       if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
-      else if (sink_is_port) { sink.direction == Input }
+      else if (sink_is_port) {
+        // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
+        // See: https://github.com/freechipsproject/firrtl/issues/1703
+        // Original behavior should just check if the sink direction is an Input
+        sink.direction match {
+          case Input => true
+          case Bidirectional(_) => true // NOTE: Workaround for non-agnostified ports
+          case _ => false
+        }
+      }
       else { false }
     }
 

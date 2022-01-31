@@ -94,7 +94,7 @@ private[chisel3] object BiConnect {
           val leftReified:  Data = if (isView(left_v)) reifySingleData(left_v).get else left_v
           val rightReified: Data = if (isView(right_v)) reifySingleData(right_v).get else right_v
 
-          pushCommand(Connect(sourceInfo, left_v.lref, right_v.lref))
+          pushCommand(Connect(sourceInfo, leftReified.lref, rightReified.lref))
         } else {
           for (idx <- 0 until left_v.length) {
             try {
@@ -141,10 +141,10 @@ private[chisel3] object BiConnect {
 
         // Check whether Records can be bulk connected (all elements can be connected)
         if (canBulkConnectAggregates(newLeft, newRight, sourceInfo, connectCompileOptions, context_mod)) {
-          val leftReified:  Data = if (isView(left_r)) reifySingleData(left_r).get else left_r
-          val rightReified: Data = if (isView(right_r)) reifySingleData(right_r).get else right_r
+          val leftReified:  Data = if (isView(newLeft)) reifySingleData(newLeft).get else newLeft
+          val rightReified: Data = if (isView(newRight)) reifySingleData(newRight).get else newRight
 
-          pushCommand(Connect(sourceInfo, newLeft.lref, newRight.lref))
+          pushCommand(Connect(sourceInfo, leftReified.lref, rightReified.lref))
         } else if (notStrict) {
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
         } else {
