@@ -683,12 +683,12 @@ class OperatorExampleModule extends Module {
   xor_res := x ^ y
   not_res :=  ~x
   logical_not_res := !x
-  logical_and_res := x(0) && y(0) // Must be a Bool type
-  logical_or_res := x(0) || y(0) // Must be a Bool type
+  logical_and_res := x(0) && y(0)
+  logical_or_res := x(0) || y(0)
   cat_res := Cat(x, y)
-  mux_res := Mux(c(0), x, y)  // Selector must be a Bool type
+  mux_res := Mux(c(0), x, y)
   rshift_res := x >> y(2, 0)
-  lshift_res := x << y(2, 0) // Can't do a 32-bit shift operator
+  lshift_res := x << y(2, 0)
   gt_res := x > y
   lt_res := x < y
   geq_res := x >= y
