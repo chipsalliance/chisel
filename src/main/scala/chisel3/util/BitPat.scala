@@ -2,11 +2,13 @@
 
 package chisel3.util
 
-import scala.language.experimental.macros
 import chisel3._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import logger.LazyLogging
 
-object BitPat {
+import scala.language.experimental.macros
+
+object BitPat extends LazyLogging {
 
   private[chisel3] implicit val bitPatOrder = new Ordering[BitPat] {
     import scala.math.Ordered.orderingToOrdered
@@ -95,7 +97,15 @@ object BitPat {
     */
   def apply(x: UInt): BitPat = {
     require(x.isLit, s"$x is not a literal, BitPat.apply(x: UInt) only accepts literals")
-    val len = if (x.isWidthKnown) x.getWidth else 0
+    val len =
+      if (x.isWidthKnown) x.getWidth
+      else {
+        logger.warn(
+          s"""$x doesn't have a explicit width, the result width will be ${x.litValue.bitCount}.
+             |To eliminate this warning, please add width to $x.""".stripMargin
+        )
+        0
+      }
     apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
   }
 
