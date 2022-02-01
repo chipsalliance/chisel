@@ -246,7 +246,10 @@ private[chisel3] class ErrorLog {
     }
 
     if (!allErrors.isEmpty) {
-      throw new Errors("Fatal errors during hardware elaboration. Look above for error list.")
+      throw new Errors(
+        "Fatal errors during hardware elaboration. Look above for error list. " +
+          "Rerun with --throw-on-first-error if you wish to see a stack trace."
+      )
     } else {
       // No fatal errors, clear accumulated warnings since they've been reported
       errors.clear()

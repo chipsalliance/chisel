@@ -5,7 +5,13 @@ package chisel3.stage.phases
 import chisel3.Module
 import chisel3.internal.ExceptionHelpers.ThrowableHelpers
 import chisel3.internal.{Builder, DynamicContext}
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselOptions, DesignAnnotation}
+import chisel3.stage.{
+  ChiselCircuitAnnotation,
+  ChiselGeneratorAnnotation,
+  ChiselOptions,
+  DesignAnnotation,
+  ThrowOnFirstErrorAnnotation
+}
 import firrtl.AnnotationSeq
 import firrtl.options.Phase
 import firrtl.options.Viewer.view
@@ -21,14 +27,16 @@ class Elaborate extends Phase {
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
     case ChiselGeneratorAnnotation(gen) =>
+      val chiselOptions = view[ChiselOptions](annotations)
       try {
-        val (circuit, dut) = Builder.build(Module(gen()), new DynamicContext(annotations))
+        val (circuit, dut) =
+          Builder.build(Module(gen()), new DynamicContext(annotations, chiselOptions.throwOnFirstError))
         Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
       } catch {
         /* if any throwable comes back and we're in "stack trace trimming" mode, then print an error and trim the stack trace
          */
         case scala.util.control.NonFatal(a) =>
-          if (!view[ChiselOptions](annotations).printFullStackTrace) {
+          if (!chiselOptions.printFullStackTrace) {
             a.trimStackTraceToUserCode()
           }
           throw (a)
