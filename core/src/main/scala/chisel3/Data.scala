@@ -480,7 +480,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   protected[chisel3] def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
-      throw RebindingException(s"Attempted reassignment of binding to $this")
+      throw RebindingException(s"Attempted reassignment of binding to $this, from: ${target}")
     }
     _binding = Some(target)
   }

@@ -27,6 +27,10 @@ trait BundleSpecUtils {
     val bar = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
   }
 
+  class BadSeqBundleWithIgnoreSeqInBundle extends Bundle with IgnoreSeqInBundle {
+    val bar = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
+  }
+
   class MyModule(output: Bundle, input: Bundle) extends Module {
     val io = IO(new Bundle {
       val in = Input(input)
@@ -88,7 +92,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       new BasicTester {
         val m = Module(new Module {
           val io = IO(new Bundle {
-            val b = new BadSeqBundle with IgnoreSeqInBundle
+            val b = new BadSeqBundleWithIgnoreSeqInBundle
           })
         })
         stop()
@@ -142,7 +146,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
           out := in
         }
       }
-    }).getMessage should include("must be a Chisel type, not hardware")
+    }).getMessage should include("MyBundle contains hardware fields: foo: UInt<7>(123)")
   }
   "Bundles" should "not recursively contain aggregates with bound hardware" in {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
@@ -154,7 +158,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
           out := in
         }
       }
-    }).getMessage should include("must be a Chisel type, not hardware")
+    }).getMessage should include("Bundle: MyBundle contains hardware fields: foo: BundleSpec_Anon.out")
   }
   "Unbound bundles sharing a field" should "not error" in {
     ChiselStage.elaborate {
