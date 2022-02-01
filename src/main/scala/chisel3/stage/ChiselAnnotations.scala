@@ -61,6 +61,24 @@ case object PrintFullStackTraceAnnotation
 
 }
 
+/** On recoverable errors, this will cause Chisel to throw an exception instead of continuing.
+  */
+case object ThrowOnFirstErrorAnnotation
+    extends NoTargetAnnotation
+    with ChiselOption
+    with HasShellOptions
+    with Unserializable {
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "throw-on-first-error",
+      toAnnotationSeq = _ => Seq(ThrowOnFirstErrorAnnotation),
+      helpText = "Throw an exception on the first error instead of continuing"
+    )
+  )
+
+}
+
 /** An [[firrtl.annotations.Annotation]] storing a function that returns a Chisel module
   * @param gen a generator function
   */
