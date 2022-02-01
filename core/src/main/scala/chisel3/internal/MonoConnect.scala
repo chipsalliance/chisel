@@ -214,7 +214,7 @@ private[chisel3] object MonoConnect {
     source:                Aggregate,
     context_mod:           RawModule
   ): Boolean = {
-    import ActualDirection.{Input, Output, Bidirectional}
+    import ActualDirection.{Bidirectional, Input, Output}
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
     val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
@@ -251,9 +251,9 @@ private[chisel3] object MonoConnect {
       // See: https://github.com/freechipsproject/firrtl/issues/1703
       // Original behavior should just check if the sink direction is an Input
       val sinkCanBeInput = sink.direction match {
-        case Input => true
+        case Input            => true
         case Bidirectional(_) => true
-        case _ => false
+        case _                => false
       }
       // Thus, right node better be a port node and thus have a direction
       if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
@@ -270,9 +270,9 @@ private[chisel3] object MonoConnect {
       // See: https://github.com/freechipsproject/firrtl/issues/1703
       // Original behavior should just check if the sink direction is an Input
       sink.direction match {
-          case Input => true
-          case Bidirectional(_) => true
-          case _ => false
+        case Input            => true
+        case Bidirectional(_) => true
+        case _                => false
       }
     }
 
@@ -287,12 +287,11 @@ private[chisel3] object MonoConnect {
         // See: https://github.com/freechipsproject/firrtl/issues/1703
         // Original behavior should just check if the sink direction is an Input
         sink.direction match {
-          case Input => true
+          case Input            => true
           case Bidirectional(_) => true // NOTE: Workaround for non-agnostified ports
-          case _ => false
+          case _                => false
         }
-      }
-      else { false }
+      } else { false }
     }
 
     // Not quite sure where left and right are compared to current module
@@ -333,14 +332,10 @@ private[chisel3] object MonoConnect {
     val biConnectCheck =
       BiConnect.canBulkConnectAggregates(sink, source, sourceInfo, connectCompileOptions, context_mod)
 
-    // Check that the Aggregate's child signals can be driven
-    val childDirections = sink.getElements.map(_.direction).toSet - ActualDirection.Empty
-    val monoSinkCheck: Boolean = ActualDirection.fromChildren(childDirections, SpecifiedDirection.Unspecified) match {
-      case Some(dir) => dir == ActualDirection.Output
-      case other     => false
-    }
+    // Check that the Aggregate's child signals are all strictly inputs (not bidirectional)
+    val sinkIsInputCheck: Boolean = sink.direction == ActualDirection.Output
 
-    biConnectCheck && monoSinkCheck
+    biConnectCheck && sinkIsInputCheck
   }
 
   // This function (finally) issues the connection operation
