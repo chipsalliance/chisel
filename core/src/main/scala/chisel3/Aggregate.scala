@@ -1208,12 +1208,58 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     * }}}
     */
   final lazy val elements: SeqMap[String, Data] = {
+    val hardwareFields = _elementsImpl.flatMap {
+      case (name, data: Data) =>
+        if (data.isSynthesizable) {
+          Some(s"$name: $data")
+        } else {
+          None
+        }
+      case (name, Some(data: Data)) =>
+        if (data.isSynthesizable) {
+          Some(s"$name: $data")
+        } else {
+          None
+        }
+      case (name, s: scala.collection.Seq[Any]) if s.nonEmpty =>
+        s.head match {
+          // Ignore empty Seq()
+          case d: Data =>
+            throwException(
+              "Public Seq members cannot be used to define Bundle elements " +
+                s"(found public Seq member '${name}'). " +
+                "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
+                "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
+                "IgnoreSeqInBundle."
+            )
+          case _ => // don't care about non-Data Seq
+        }
+        None
+
+      case _ => None
+    }
+    if (hardwareFields.nonEmpty) {
+      throw ExpectedChiselTypeException(s"Bundle: $this contains hardware fields: " + hardwareFields.mkString(","))
+    }
+    VectorMap(_elementsImpl.toSeq.flatMap {
+      case (name, data: Data) =>
+        Some(name -> data)
+      case (name, Some(data: Data)) =>
+        Some(name -> data)
+      case _ => None
+    }.sortWith {
+      case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))
+    }: _*)
+  }
+  /*
+   * This method will be overwritten by the Chisel-Plugin
+   */
+  protected def _elementsImpl: SeqMap[String, Any] = {
     val nameMap = LinkedHashMap[String, Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
         case Some(d: Data) =>
-          requireIsChiselType(d)
-
+          // Checking for chiselType is done in elements method
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
           } else {
