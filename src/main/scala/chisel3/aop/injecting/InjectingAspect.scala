@@ -6,9 +6,10 @@ import chisel3.{withClockAndReset, Module, ModuleAspect, RawModule}
 import chisel3.aop._
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
-import chisel3.stage.DesignAnnotation
+import chisel3.stage.{ChiselOptions, DesignAnnotation}
 import firrtl.annotations.ModuleTarget
 import firrtl.stage.RunFirrtlTransformAnnotation
+import firrtl.options.Viewer.view
 import firrtl.{ir, _}
 
 import scala.collection.mutable
@@ -56,7 +57,8 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     */
   final def toAnnotation(modules: Iterable[M], circuit: String, moduleNames: Seq[String]): AnnotationSeq = {
     RunFirrtlTransformAnnotation(new InjectingTransform) +: modules.map { module =>
-      val dynamicContext = new DynamicContext(annotationsInAspect)
+      val chiselOptions = view[ChiselOptions](annotationsInAspect)
+      val dynamicContext = new DynamicContext(annotationsInAspect, chiselOptions.throwOnFirstError)
       // Add existing module names into the namespace. If injection logic instantiates new modules
       //  which would share the same name, they will get uniquified accordingly
       moduleNames.foreach { n =>

@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+import com.typesafe.tools.mima.core._
+
 enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
@@ -197,6 +199,10 @@ lazy val chisel = (project in file(".")).
   aggregate(macros, core, plugin).
   settings(
     mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.5.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      // Modified package private methods (https://github.com/lightbend/mima/issues/53)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this"),
+    ),
     libraryDependencies += defaultVersions("treadle") % "test",
     Test / scalacOptions += "-P:chiselplugin:genBundleElements",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
