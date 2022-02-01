@@ -34,6 +34,10 @@ object ChiselStageSpec {
     assert(false, "User threw an exception")
   }
 
+  class UserExceptionNoStackTrace extends RawModule {
+    throw new Exception("Something bad happened") with scala.util.control.NoStackTrace
+  }
+
 }
 
 class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
@@ -169,6 +173,19 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     (exception.getStackTrace.mkString("\n") should not).include("java")
   }
 
+  it should "NOT add a stack trace to an exception with no stack trace" in {
+    val exception = intercept[java.lang.Exception] {
+      ChiselStage.emitChirrtl(new UserExceptionNoStackTrace)
+    }
+
+    val message = exception.getMessage
+    info("The exception includes the user's message")
+    message should include("Something bad happened")
+
+    info("The exception should not contain a stack trace")
+    exception.getStackTrace should be(Array())
+  }
+
   behavior.of("ChiselStage exception handling")
 
   it should "truncate a user exception" in {
@@ -205,6 +222,19 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
     info("The stack trace is not trimmed")
     exception.getStackTrace.mkString("\n") should include("java")
+  }
+
+  it should "NOT add a stack trace to an exception with no stack trace" in {
+    val exception = intercept[java.lang.Exception] {
+      (new ChiselStage).emitChirrtl(new UserExceptionNoStackTrace)
+    }
+
+    val message = exception.getMessage
+    info("The exception includes the user's message")
+    message should include("Something bad happened")
+
+    info("The exception should not contain a stack trace")
+    exception.getStackTrace should be(Array())
   }
 
 }
