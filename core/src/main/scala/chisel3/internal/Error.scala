@@ -4,6 +4,7 @@ package chisel3.internal
 
 import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
+import scala.util.control.NoStackTrace
 import _root_.logger.Logger
 
 object ExceptionHelpers {
@@ -46,31 +47,36 @@ object ExceptionHelpers {
       }
 
       // Step 1: Remove elements from the top in the package trimlist
-      ((a: Array[StackTraceElement]) => a.dropWhile(inTrimlist))
-        // Step 2: Optionally remove elements from the bottom until the anchor
-        .andThen(_.reverse)
-        .andThen(a =>
-          anchor match {
-            case Some(b) => a.dropWhile(ste => !ste.getClassName.startsWith(b))
-            case None    => a
-          }
-        )
-        // Step 3: Remove elements from the bottom in the package trimlist
-        .andThen(_.dropWhile(inTrimlist))
-        // Step 4: Reverse back to the original order
-        .andThen(_.reverse.toArray)
-        // Step 5: Add ellipsis stack trace elements and "--full-stacktrace" info
-        .andThen(a =>
-          ellipsis() +:
-            a :+
-            ellipsis() :+
-            ellipsis(
-              Some("Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace")
-            )
-        )
-        // Step 5: Mutate the stack trace in this exception
-        .andThen(throwable.setStackTrace(_))
-        .apply(throwable.getStackTrace)
+      val trimStackTrace =
+        ((a: Array[StackTraceElement]) => a.dropWhile(inTrimlist))
+          // Step 2: Optionally remove elements from the bottom until the anchor
+          .andThen(_.reverse)
+          .andThen(a =>
+            anchor match {
+              case Some(b) => a.dropWhile(ste => !ste.getClassName.startsWith(b))
+              case None    => a
+            }
+          )
+          // Step 3: Remove elements from the bottom in the package trimlist
+          .andThen(_.dropWhile(inTrimlist))
+          // Step 4: Reverse back to the original order
+          .andThen(_.reverse.toArray)
+          // Step 5: Add ellipsis stack trace elements and "--full-stacktrace" info
+          .andThen(a =>
+            ellipsis() +:
+              a :+
+              ellipsis() :+
+              ellipsis(
+                Some("Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace")
+              )
+          )
+          // Step 5: Mutate the stack trace in this exception
+          .andThen(throwable.setStackTrace(_))
+
+      val stackTrace = throwable.getStackTrace
+      if (stackTrace.nonEmpty) {
+        trimStackTrace(stackTrace)
+      }
     }
 
   }
@@ -80,11 +86,11 @@ object ExceptionHelpers {
 class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause, true, true) {
 
   /** Package names whose stack trace elements should be trimmed when generating a trimmed stack trace */
-  @deprecated("Use ExceptionHelpers.packageTrimlist. This will be removed in Chisel 3.6", "3.5")
+  @deprecated("Use ExceptionHelpers.packageTrimlist. This will be removed in Chisel 3.6", "Chisel 3.5")
   val blacklistPackages: Set[String] = Set("chisel3", "scala", "java", "sun", "sbt")
 
   /** The object name of Chisel's internal `Builder`. Everything stack trace element after this will be trimmed. */
-  @deprecated("Use ExceptionHelpers.builderName. This will be removed in Chisel 3.6", "3.5")
+  @deprecated("Use ExceptionHelpers.builderName. This will be removed in Chisel 3.6", "Chisel 3.5")
   val builderName: String = chisel3.internal.Builder.getClass.getName
 
   /** Examine a [[Throwable]], to extract all its causes. Innermost cause is first.
@@ -138,6 +144,11 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     trimmedReverse.toIndexedSeq.reverse.toArray
   }
 
+  @deprecated(
+    "Use extension method trimStackTraceToUserCode defined in ExceptionHelpers.ThrowableHelpers. " +
+      "This will be removed in Chisel 3.6",
+    "Chisel 3.5.0"
+  )
   def chiselStackTrace: String = {
     val trimmed = trimmedStackTrace(likelyCause)
 
@@ -151,6 +162,7 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     sw.toString
   }
 }
+private[chisel3] class Errors(message: String) extends ChiselException(message) with NoStackTrace
 
 private[chisel3] object throwException {
   def apply(s: String, t: Throwable = null): Nothing =
@@ -234,8 +246,10 @@ private[chisel3] class ErrorLog {
     }
 
     if (!allErrors.isEmpty) {
-      throw new ChiselException("Fatal errors during hardware elaboration. Look above for error list.")
-        with scala.util.control.NoStackTrace
+      throw new Errors(
+        "Fatal errors during hardware elaboration. Look above for error list. " +
+          "Rerun with --throw-on-first-error if you wish to see a stack trace."
+      )
     } else {
       // No fatal errors, clear accumulated warnings since they've been reported
       errors.clear()

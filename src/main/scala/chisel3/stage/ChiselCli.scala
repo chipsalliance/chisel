@@ -9,6 +9,7 @@ trait ChiselCli { this: Shell =>
   Seq(
     NoRunFirrtlCompilerAnnotation,
     PrintFullStackTraceAnnotation,
+    ThrowOnFirstErrorAnnotation,
     ChiselOutputFileAnnotation,
     ChiselGeneratorAnnotation
   )
