@@ -4,6 +4,7 @@ package chisel3.internal
 
 import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
+import scala.util.control.NoStackTrace
 import _root_.logger.Logger
 
 object ExceptionHelpers {
@@ -161,6 +162,7 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     sw.toString
   }
 }
+private[chisel3] class Errors(message: String) extends ChiselException(message) with NoStackTrace
 
 private[chisel3] object throwException {
   def apply(s: String, t: Throwable = null): Nothing =
@@ -244,8 +246,7 @@ private[chisel3] class ErrorLog {
     }
 
     if (!allErrors.isEmpty) {
-      throw new ChiselException("Fatal errors during hardware elaboration. Look above for error list.")
-        with scala.util.control.NoStackTrace
+      throw new Errors("Fatal errors during hardware elaboration. Look above for error list.")
     } else {
       // No fatal errors, clear accumulated warnings since they've been reported
       errors.clear()
