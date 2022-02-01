@@ -34,6 +34,14 @@ object ChiselStageSpec {
     assert(false, "User threw an exception")
   }
 
+  class UserExceptionNoStackTrace extends RawModule {
+    throw new Exception("Something bad happened") with scala.util.control.NoStackTrace
+  }
+
+  class RecoverableError extends RawModule {
+    3.U >> -1
+  }
+
 }
 
 class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
@@ -169,6 +177,32 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     (exception.getStackTrace.mkString("\n") should not).include("java")
   }
 
+  it should "NOT add a stack trace to an exception with no stack trace" in {
+    val exception = intercept[java.lang.Exception] {
+      ChiselStage.emitChirrtl(new UserExceptionNoStackTrace)
+    }
+
+    val message = exception.getMessage
+    info("The exception includes the user's message")
+    message should include("Something bad happened")
+
+    info("The exception should not contain a stack trace")
+    exception.getStackTrace should be(Array())
+  }
+
+  it should "NOT include a stack trace for recoverable errors" in {
+    val exception = intercept[java.lang.Exception] {
+      ChiselStage.emitChirrtl(new RecoverableError)
+    }
+
+    val message = exception.getMessage
+    info("The exception includes the standard error message")
+    message should include("Fatal errors during hardware elaboration. Look above for error list.")
+
+    info("The exception should not contain a stack trace")
+    exception.getStackTrace should be(Array())
+  }
+
   behavior.of("ChiselStage exception handling")
 
   it should "truncate a user exception" in {
@@ -207,4 +241,53 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     exception.getStackTrace.mkString("\n") should include("java")
   }
 
+  it should "NOT add a stack trace to an exception with no stack trace" in {
+    val exception = intercept[java.lang.Exception] {
+      (new ChiselStage).emitChirrtl(new UserExceptionNoStackTrace)
+    }
+
+    val message = exception.getMessage
+    info("The exception includes the user's message")
+    message should include("Something bad happened")
+
+    info("The exception should not contain a stack trace")
+    exception.getStackTrace should be(Array())
+  }
+
+  it should "NOT include a stack trace for recoverable errors" in {
+    val exception = intercept[java.lang.Exception] {
+      (new ChiselStage).emitChirrtl(new RecoverableError)
+    }
+
+    val message = exception.getMessage
+    info("The exception includes the standard error message")
+    message should include("Fatal errors during hardware elaboration. Look above for error list.")
+
+    info("The exception should not contain a stack trace")
+    exception.getStackTrace should be(Array())
+  }
+
+  it should "include a stack trace for recoverable errors with '--throw-on-first-error'" in {
+    val exception = intercept[java.lang.Exception] {
+      (new ChiselStage).emitChirrtl(new RecoverableError, Array("--throw-on-first-error"))
+    }
+
+    val stackTrace = exception.getStackTrace.mkString("\n")
+    info("The exception should contain a truncated stack trace")
+    stackTrace shouldNot include("java")
+
+    info("The stack trace include information about running --full-stacktrace")
+    stackTrace should include("--full-stacktrace")
+  }
+
+  it should "include an untruncated stack trace for recoverable errors when given both '--throw-on-first-error' and '--full-stacktrace'" in {
+    val exception = intercept[java.lang.Exception] {
+      val args = Array("--throw-on-first-error", "--full-stacktrace")
+      (new ChiselStage).emitChirrtl(new RecoverableError, args)
+    }
+
+    val stackTrace = exception.getStackTrace.mkString("\n")
+    info("The exception should contain a truncated stack trace")
+    stackTrace should include("java")
+  }
 }
