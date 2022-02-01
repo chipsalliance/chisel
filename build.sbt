@@ -204,6 +204,7 @@ lazy val chisel = (project in file(".")).
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this"),
     ),
     libraryDependencies += defaultVersions("treadle") % "test",
+    Test / scalacOptions += "-P:chiselplugin:genBundleElements",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
