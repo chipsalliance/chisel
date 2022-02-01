@@ -31,8 +31,14 @@ object TruthTable {
 
   /** Convert a table and default output into a [[TruthTable]]. */
   def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = true): TruthTable = {
-    require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
-    require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
+    require(
+      table.map(_._1.getWidth).toSet.size == 1,
+      s"input width not equal: \n${table.map(t => s"${t._1} -> ${t._2}").mkString("\n")}\n$default"
+    )
+    require(
+      table.map(_._2.getWidth).toSet.size == 1,
+      s"output width not equal: \n${table.map(t => s"${t._1} -> ${t._2}").mkString("\n")}\n$default"
+    )
     val outputWidth = table.map(_._2.getWidth).head
     val mergedTable = table
       .groupBy(_._1.toString)
