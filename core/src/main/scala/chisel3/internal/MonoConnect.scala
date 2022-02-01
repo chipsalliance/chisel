@@ -247,9 +247,17 @@ private[chisel3] object MonoConnect {
 
     // CASE: Context is same module as sink node and source node is in a child module
     else if ((sink_mod == context_mod) && (source_parent == context_mod)) {
+      // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
+      // See: https://github.com/freechipsproject/firrtl/issues/1703
+      // Original behavior should just check if the sink direction is an Input
+      val sinkCanBeInput = sink.direction match {
+        case Input => true
+        case Bidirectional(_) => true
+        case _ => false
+      }
       // Thus, right node better be a port node and thus have a direction
       if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
-      else if (sink.direction == Input) {
+      else if (sinkCanBeInput) {
         if (source.direction == Output) {
           !connectCompileOptions.dontTryConnectionsSwapped
         } else { false }
