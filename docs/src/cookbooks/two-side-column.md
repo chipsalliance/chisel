@@ -568,27 +568,64 @@ class ReadWriteSmem extends Module {
   mem.write(io.addr, io.dataIn)
   io.dataOut := mem.read(io.addr, io.enable)
 }
-class ReadWriteMem extends Module {
-  val width: Int = 32
-  val io = IO(new Bundle {
-    val enable = Input(Bool())
-    val write = Input(Bool())
-    val addr = Input(UInt(10.W))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
-  })
-  val mem = Mem(1024, UInt(width.W))
-  // Create one write port and one read port
-  mem.write(io.addr, io.dataIn)
-  io.dataOut := mem.read(io.addr)
-}
-```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new ReadWriteSmem)
 ChiselStage.emitVerilog(new ReadWriteMem)
 ```
 </td>
-         </tr>
+</tr>
+<tr>
+<td>
+
+```
+module ReadWriteSmem2(
+input clock,
+input reset, 
+input io_enable, 
+input io_write,
+input [9:0] io_addr,
+input [31:0] io_dataIn,
+output [31:0] io_dataOut 
+); 
+
+reg [31:0] mem [0:1023]; 
+reg [9:0] addr_delay;
+
+assign io_dataOut = mem[addr_delay] 
+
+always @(posedge clock) begin 
+   if (io_enable & io_write) begin 
+   mem[io_addr] <= io_data; 
+ end
+  if (io_enable) begin 
+  addr_delay <= io_addr; 
+end
+end
+endmodule
+</td>
+
+<td>
+
+```scala mdoc:silent
+class ReadWriteMem2 extends Module {
+val width: Int = 32
+val io = IO(new Bundle {
+val enable = Input(Bool())
+val write = Input(Bool())
+val addr = Input(UInt(10.W))
+val dataIn = Input(UInt(width.W))
+val dataOut = Output(UInt(width.W))
+})
+val mem = Mem(1024, UInt(width.W))
+// Create one write port and one read port
+mem.write(io.addr, io.dataIn)
+io.dataOut := mem.read(io.addr)
+}
+```
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new ReadWriteSmem2)
+```
+</td>
+</tr>
     </table>
 <html>
 <html>
