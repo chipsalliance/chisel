@@ -1210,12 +1210,15 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   final lazy val elements: SeqMap[String, Data] = {
     // Use list so that fast path (no hardwareFields) is fast
     var hardwareFields: List[String] = Nil
+    val builder = VectorMap.newBuilder[String, Data]
     _elementsImpl.foreach {
       case (name, data: Data) =>
+        builder += (name -> data)
         if (data.isSynthesizable) {
           hardwareFields ::= s"$name: $data"
         }
       case (name, Some(data: Data)) =>
+        builder += (name -> data)
         if (data.isSynthesizable) {
           hardwareFields ::= s"$name: $data"
         }
@@ -1236,13 +1239,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
     if (hardwareFields.nonEmpty) {
       throw ExpectedChiselTypeException(s"Bundle: $this contains hardware fields: " + hardwareFields.reverse.mkString(","))
-    }
-    val builder = VectorMap.newBuilder[String, Data]
-    _elementsImpl.foreach {
-      case (name, data: Data) =>
-        builder += (name -> data)
-      case (name, Some(data: Data)) =>
-        builder += (name -> data)
     }
     builder.result()
   }
