@@ -1237,13 +1237,14 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     if (hardwareFields.nonEmpty) {
       throw ExpectedChiselTypeException(s"Bundle: $this contains hardware fields: " + hardwareFields.reverse.mkString(","))
     }
-    VectorMap(_elementsImpl.toSeq.flatMap {
+    val builder = VectorMap.newBuilder[String, Data]
+    _elementsImpl.foreach {
       case (name, data: Data) =>
-        Some(name -> data)
+        builder += (name -> data)
       case (name, Some(data: Data)) =>
-        Some(name -> data)
-      case _ => None
-    }: _*)
+        builder += (name -> data)
+    }
+    builder.result()
   }
   /*
    * This method will be overwritten by the Chisel-Plugin
