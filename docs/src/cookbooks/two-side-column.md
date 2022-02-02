@@ -147,7 +147,7 @@ val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
 <html>
 <body>
 
-# Wire assignment
+# Wire Assignment and Literal Values
 
 <html>
 <body>
