@@ -230,7 +230,7 @@ ChiselStage.emitVerilog(new MyWireAssignmentModule2)
 <html>
 <body>
 
-# Register assignment
+# Register Declaration and Assignment
 
 <html>
 <body>
