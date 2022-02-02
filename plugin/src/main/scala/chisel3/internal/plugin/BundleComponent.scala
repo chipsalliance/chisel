@@ -46,7 +46,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     val ignoreSeqTpe:  Type = inferType(tq"chisel3.IgnoreSeqInBundle")
     val seqOfDataTpe:  Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
     val someOfDataTpe: Type = inferType(tq"scala.Option[chisel3.Data]")
-    val seqMapTpe:     Type = inferType(tq"scala.collection.immutable.SeqMap[String,Any]")
+    val seqMapTpe:     Type = inferType(tq"Array[(String,Any)]")
 
     // Not cached because it should only be run once per class (thus once per Type)
     def isBundle(sym: Symbol): Boolean = { sym.tpe <:< bundleTpe }
@@ -223,7 +223,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           elementsImplSym.setInfo(NullaryMethodType(seqMapTpe))
 
           val elementsImpl = localTyper.typed(
-            DefDef(elementsImplSym, q"scala.collection.immutable.SeqMap.apply[String, Any](..$elementArgs)")
+            DefDef(elementsImplSym, q"Array.apply[(String, Any)](..$elementArgs)")
           )
 
           Some(elementsImpl)
