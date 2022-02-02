@@ -276,7 +276,7 @@ ChiselStage.emitVerilog(new RegisterModule)
 <html>
 <body>
 
-# Case statement
+# Case Statements
 
 <html>
 <body>
