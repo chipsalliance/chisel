@@ -1208,18 +1208,16 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     * }}}
     */
   final lazy val elements: SeqMap[String, Data] = {
-    val hardwareFields = _elementsImpl.flatMap {
+    // Use list so that fast path (no hardwareFields) is fast
+    var hardwareFields: List[String] = Nil
+    _elementsImpl.foreach {
       case (name, data: Data) =>
         if (data.isSynthesizable) {
-          Some(s"$name: $data")
-        } else {
-          None
+          hardwareFields ::= s"$name: $data"
         }
       case (name, Some(data: Data)) =>
         if (data.isSynthesizable) {
-          Some(s"$name: $data")
-        } else {
-          None
+          hardwareFields ::= s"$name: $data"
         }
       case (name, s: scala.collection.Seq[Any]) if s.nonEmpty =>
         s.head match {
@@ -1234,12 +1232,10 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
             )
           case _ => // don't care about non-Data Seq
         }
-        None
-
-      case _ => None
+      case _ =>
     }
     if (hardwareFields.nonEmpty) {
-      throw ExpectedChiselTypeException(s"Bundle: $this contains hardware fields: " + hardwareFields.mkString(","))
+      throw ExpectedChiselTypeException(s"Bundle: $this contains hardware fields: " + hardwareFields.reverse.mkString(","))
     }
     VectorMap(_elementsImpl.toSeq.flatMap {
       case (name, data: Data) =>
