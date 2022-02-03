@@ -41,12 +41,12 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
-    val bundleTpe:     Type = inferType(tq"chisel3.Bundle")
-    val dataTpe:       Type = inferType(tq"chisel3.Data")
-    val ignoreSeqTpe:  Type = inferType(tq"chisel3.IgnoreSeqInBundle")
-    val seqOfDataTpe:  Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
-    val someOfDataTpe: Type = inferType(tq"scala.Option[chisel3.Data]")
-    val seqMapTpe:     Type = inferType(tq"scala.collection.immutable.SeqMap[String,Any]")
+    val bundleTpe:      Type = inferType(tq"chisel3.Bundle")
+    val dataTpe:        Type = inferType(tq"chisel3.Data")
+    val ignoreSeqTpe:   Type = inferType(tq"chisel3.IgnoreSeqInBundle")
+    val seqOfDataTpe:   Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
+    val someOfDataTpe:  Type = inferType(tq"scala.Option[chisel3.Data]")
+    val itStringAnyTpe: Type = inferType(tq"scala.collection.Iterable[(String,Any)]")
 
     // Not cached because it should only be run once per class (thus once per Type)
     def isBundle(sym: Symbol): Boolean = { sym.tpe <:< bundleTpe }
@@ -220,10 +220,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           val elementsImplSym =
             bundle.symbol.newMethod(TermName("_elementsImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
           elementsImplSym.resetFlag(Flags.METHOD)
-          elementsImplSym.setInfo(NullaryMethodType(seqMapTpe))
+          elementsImplSym.setInfo(NullaryMethodType(itStringAnyTpe))
 
           val elementsImpl = localTyper.typed(
-            DefDef(elementsImplSym, q"scala.collection.immutable.SeqMap.apply[String, Any](..$elementArgs)")
+            DefDef(elementsImplSym, q"scala.collection.immutable.Vector.apply[(String, Any)](..$elementArgs)")
           )
 
           Some(elementsImpl)
