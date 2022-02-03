@@ -1208,7 +1208,9 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     * }}}
     */
   final lazy val elements: SeqMap[String, Data] = {
-    val hardwareFields = _elementsImpl.flatMap {
+    // _elementsImpl is a method, only call it once
+    val elementsImpl = _elementsImpl
+    val hardwareFields = elementsImpl.flatMap {
       case (name, data: Data) =>
         if (data.isSynthesizable) {
           Some(s"$name: $data")
@@ -1241,7 +1243,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     if (hardwareFields.nonEmpty) {
       throw ExpectedChiselTypeException(s"Bundle: $this contains hardware fields: " + hardwareFields.mkString(","))
     }
-    VectorMap(_elementsImpl.toSeq.flatMap {
+    VectorMap(elementsImpl.toSeq.flatMap {
       case (name, data: Data) =>
         Some(name -> data)
       case (name, Some(data: Data)) =>
