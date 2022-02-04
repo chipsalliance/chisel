@@ -438,8 +438,13 @@ private[chisel3] object Builder extends LazyLogging {
   def getPrefix(): Prefix = chiselContext.get().prefixStack
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
+<<<<<<< HEAD
     case Some(dyanmicContext) => dynamicContext.currentModule
     case _ => None
+=======
+    case Some(dynamicContext) => dynamicContext.currentModule
+    case _                    => None
+>>>>>>> 01575574 (Fix variable-name typo (#2397))
   }
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
