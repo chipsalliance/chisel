@@ -1207,8 +1207,19 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     *   assert(uint === "h12345678".U) // This will pass
     * }}}
     */
-  final lazy val elements: SeqMap[String, Data] = {
-    val hardwareFields = _elementsImpl.flatMap {
+  final lazy val elements: SeqMap[String, Data] =
+    // _elementsImpl is a method, only call it once
+    _elementsImpl match {
+      // Those not using plugin-generated _elementsImpl use the old reflective implementation
+      case oldElements: VectorMap[_, _] => oldElements.asInstanceOf[VectorMap[String, Data]]
+      // Plugin-generated _elementsImpl are incomplete and need some processing
+      case rawElements => _processRawElements(rawElements)
+    }
+
+  // The compiler plugin is imperfect at picking out elements statically so we process at runtime
+  // checking for errors and filtering out mistakes
+  private def _processRawElements(rawElements: Iterable[(String, Any)]): SeqMap[String, Data] = {
+    val hardwareFields = rawElements.flatMap {
       case (name, data: Data) =>
         if (data.isSynthesizable) {
           Some(s"$name: $data")
@@ -1241,7 +1252,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     if (hardwareFields.nonEmpty) {
       throw ExpectedChiselTypeException(s"Bundle: $this contains hardware fields: " + hardwareFields.mkString(","))
     }
-    VectorMap(_elementsImpl.toSeq.flatMap {
+    VectorMap(rawElements.toSeq.flatMap {
       case (name, data: Data) =>
         Some(name -> data)
       case (name, Some(data: Data)) =>
@@ -1251,15 +1262,17 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))
     }: _*)
   }
-  /*
-   * This method will be overwritten by the Chisel-Plugin
+
+  /* The old, reflective implementation of Bundle.elements
+   * This method is optionally overwritten by the compiler plugin for much better performance
    */
   protected def _elementsImpl: Iterable[(String, Any)] = {
     val nameMap = LinkedHashMap[String, Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
         case Some(d: Data) =>
-          // Checking for chiselType is done in elements method
+          requireIsChiselType(d)
+
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
           } else {
