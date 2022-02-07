@@ -35,9 +35,10 @@ object TruthTable {
     require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
     val outputWidth = table.map(_._2.getWidth).head
     val mergedTable = table.map {
-      case (in, out) =>
-        // pad input signals.
-        (BitPat.dontCare(inputWidth - in.getWidth) ## in, out)
+      // pad input signals if necessary
+      case (in, out) if inputWidth > in.width =>
+        (BitPat.dontCare(inputWidth - in.width) ## in, out)
+      case (in, out) => (in, out)
     }
       .groupBy(_._1.toString)
       .map {
