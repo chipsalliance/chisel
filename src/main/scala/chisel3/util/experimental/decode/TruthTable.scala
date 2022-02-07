@@ -37,7 +37,7 @@ object TruthTable {
     val mergedTable = table.map {
       // pad input signals if necessary
       case (in, out) if inputWidth > in.width =>
-        (BitPat.dontCare(inputWidth - in.width) ## in, out)
+        (BitPat.N(inputWidth - in.width) ## in, out)
       case (in, out) => (in, out)
     }
       .groupBy(_._1.toString)
