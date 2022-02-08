@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+import com.typesafe.tools.mima.core._
+
 enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
@@ -114,7 +116,8 @@ lazy val pluginScalaVersions = Seq(
   "2.13.4",
   "2.13.5",
   "2.13.6",
-  "2.13.7"
+  "2.13.7",
+  "2.13.8"
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -134,7 +137,7 @@ lazy val plugin = (project in file("plugin")).
   ).
   settings(
     mimaPreviousArtifacts := {
-      Set()
+      Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.0" cross CrossVersion.full)
     }
   )
 
@@ -153,7 +156,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set())
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.5.0"))
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -167,7 +170,7 @@ lazy val core = (project in file("core")).
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set()).
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.0")).
   settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
@@ -196,8 +199,13 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
-    mimaPreviousArtifacts := Set(),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.5.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      // Modified package private methods (https://github.com/lightbend/mima/issues/53)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this"),
+    ),
     libraryDependencies += defaultVersions("treadle") % "test",
+    Test / scalacOptions += "-P:chiselplugin:genBundleElements",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",

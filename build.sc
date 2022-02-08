@@ -107,6 +107,10 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   object test extends Tests {
     override def scalacPluginClasspath = m.scalacPluginClasspath
 
+    override  def scalacOptions = T {
+      super.scalacOptions() ++ Agg("-P:chiselplugin:genBundleElements")
+    }
+
     override def ivyDeps = m.ivyDeps() ++ Agg(
       ivy"org.scalatest::scalatest:3.2.10",
       ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0",

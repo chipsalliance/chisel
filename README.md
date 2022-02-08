@@ -121,10 +121,10 @@ For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
 scalaVersion := "2.13.7"
-addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.5.0-RC2" cross CrossVersion.full)
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5.0-RC2"
+addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.5.0" cross CrossVersion.full)
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5.0"
 // We also recommend using chiseltest for writing unit tests 
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.0-RC2" % "test"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.0" % "test"
 ```
 ### Guide For New Contributors
 If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
@@ -144,7 +144,7 @@ These simulation-based verification tools are available for Chisel:
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
-- [**Scastie (3.5.0-RC2)**](https://scastie.scala-lang.org/R6wV80vUTr2CwhvouEdidg)
+- [**Scastie (3.5.0)**](https://scastie.scala-lang.org/9ga9i2DvQymKlA5JjS1ieA)
 - [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).

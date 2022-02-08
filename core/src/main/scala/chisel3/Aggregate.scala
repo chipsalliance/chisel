@@ -1207,7 +1207,66 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     *   assert(uint === "h12345678".U) // This will pass
     * }}}
     */
-  final lazy val elements: SeqMap[String, Data] = {
+  final lazy val elements: SeqMap[String, Data] =
+    // _elementsImpl is a method, only call it once
+    _elementsImpl match {
+      // Those not using plugin-generated _elementsImpl use the old reflective implementation
+      case oldElements: VectorMap[_, _] => oldElements.asInstanceOf[VectorMap[String, Data]]
+      // Plugin-generated _elementsImpl are incomplete and need some processing
+      case rawElements => _processRawElements(rawElements)
+    }
+
+  // The compiler plugin is imperfect at picking out elements statically so we process at runtime
+  // checking for errors and filtering out mistakes
+  private def _processRawElements(rawElements: Iterable[(String, Any)]): SeqMap[String, Data] = {
+    val hardwareFields = rawElements.flatMap {
+      case (name, data: Data) =>
+        if (data.isSynthesizable) {
+          Some(s"$name: $data")
+        } else {
+          None
+        }
+      case (name, Some(data: Data)) =>
+        if (data.isSynthesizable) {
+          Some(s"$name: $data")
+        } else {
+          None
+        }
+      case (name, s: scala.collection.Seq[Any]) if s.nonEmpty =>
+        s.head match {
+          // Ignore empty Seq()
+          case d: Data =>
+            throwException(
+              "Public Seq members cannot be used to define Bundle elements " +
+                s"(found public Seq member '${name}'). " +
+                "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
+                "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
+                "IgnoreSeqInBundle."
+            )
+          case _ => // don't care about non-Data Seq
+        }
+        None
+
+      case _ => None
+    }
+    if (hardwareFields.nonEmpty) {
+      throw ExpectedChiselTypeException(s"Bundle: $this contains hardware fields: " + hardwareFields.mkString(","))
+    }
+    VectorMap(rawElements.toSeq.flatMap {
+      case (name, data: Data) =>
+        Some(name -> data)
+      case (name, Some(data: Data)) =>
+        Some(name -> data)
+      case _ => None
+    }.sortWith {
+      case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))
+    }: _*)
+  }
+
+  /* The old, reflective implementation of Bundle.elements
+   * This method is optionally overwritten by the compiler plugin for much better performance
+   */
+  protected def _elementsImpl: Iterable[(String, Any)] = {
     val nameMap = LinkedHashMap[String, Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
