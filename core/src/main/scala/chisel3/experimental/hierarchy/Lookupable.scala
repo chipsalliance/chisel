@@ -349,7 +349,7 @@ object Lookupable {
     }
 
   private[chisel3] def cloneMemToContext[T <: MemBase[_]](
-    mem:    T,
+    mem:     T,
     context: BaseModule
   )(
     implicit sourceInfo: SourceInfo,
@@ -366,7 +366,8 @@ object Lookupable {
             Builder.currentModule = Some(mod)
             val newChild: T = mem match {
               case m: Mem[_] => new Mem(m.t.asInstanceOf[Data].cloneTypeFull, m.length).asInstanceOf[T]
-              case m: SyncReadMem[_] => new SyncReadMem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, m.readUnderWrite).asInstanceOf[T]
+              case m: SyncReadMem[_] =>
+                new SyncReadMem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, m.readUnderWrite).asInstanceOf[T]
             }
             Builder.currentModule = existingMod
             newChild.setRef(mem.getRef, true)

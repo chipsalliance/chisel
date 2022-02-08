@@ -327,7 +327,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.syncReadMem, "SyncReadMem")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.foreach{x => println(x.serialize)}
+      annos.foreach { x => println(x.serialize) }
       annos should contain(MarkAnnotation("~Top|Top/i:HasMems>mem".rt, "Mem"))
       annos should contain(MarkAnnotation("~Top|Top/i:HasMems>syncReadMem".rt, "SyncReadMem"))
     }

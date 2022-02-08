@@ -339,7 +339,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|HasMems>mem".rt, "Mem"))
       annos should contain(MarkAnnotation("~Top|HasMems>syncReadMem".rt, "SyncReadMem"))
     }
-    it ("3.13: should not create memory ports") {
+    it("3.13: should not create memory ports") {
       class Top() extends Module {
         val i = Definition(new HasMems())
         i.mem(0) := 100.U // should be illegal!
@@ -347,8 +347,10 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val failure = intercept[IllegalArgumentException] {
         getFirrtlAndAnnos(new Top)
       }
-      assert(failure.getMessage ==
-        "requirement failed: cannot create a memory port in a different module (Top) than where the memory is (HasMems).")
+      assert(
+        failure.getMessage ==
+          "requirement failed: cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
+      )
     }
   }
   describe("4: toDefinition") {
