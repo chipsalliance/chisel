@@ -433,7 +433,7 @@ ChiselStage.emitVerilog(new CaseStatementModule)
 <html>
 <body>
 
-# Case statement Enum Module 
+# Case Statements Using Enums 
 
 <html>
 <body>
