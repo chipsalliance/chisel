@@ -613,7 +613,7 @@ ChiselStage.emitVerilog(new MyInterfaceModule)
 -->
 
 
-# Memory Modules
+# Multi-Dimensional Memories
 
 <html>
 <body>
