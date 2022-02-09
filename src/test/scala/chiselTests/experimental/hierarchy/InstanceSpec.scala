@@ -308,7 +308,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|Top/i:HasTuple2>x".rt, "x"))
       annos should contain(MarkAnnotation("~Top|Top/i:HasTuple2>y".rt, "y"))
     }
-    
+
     it("3.13: should properly support val modifiers") {
       class SupClass extends Module {
         val value = 10
