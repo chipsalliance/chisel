@@ -18,6 +18,8 @@ class SimpleIO extends Bundle {
 
 class PlusOne extends Module {
   val io = IO(new SimpleIO)
+  val myReg = RegInit(0.U(8.W))
+  dontTouch(myReg)
   io.out := io.in + 1.asUInt
 }
 
@@ -267,6 +269,13 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   property("getVerilogString(new PlusOne() should produce a valid Verilog string") {
     val s = getVerilogString(new PlusOne())
     assert(s.contains("assign io_out = io_in + 32'h1"))
+    assert(s.contains("RANDOMIZE_REG_INIT"))
+  }
+
+  property("getVerilogString(new PlusOne() should produce a valid Verilog string with arguments") {
+    val s = getVerilogString(new PlusOne(), Array("--emission-options=disableRegisterRandomization"))
+    assert(s.contains("assign io_out = io_in + 32'h1"))
+    assert(!s.contains("RANDOMIZE_REG_INIT"))
   }
 
   property("emitVerilog((new PlusOne()..) shall produce a valid Verilog file in a subfolder") {

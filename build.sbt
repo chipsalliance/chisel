@@ -110,7 +110,8 @@ lazy val pluginScalaVersions = Seq(
   "2.13.4",
   "2.13.5",
   "2.13.6",
-  "2.13.7"
+  "2.13.7",
+  "2.13.8"
 )
 
 lazy val plugin = (project in file("plugin"))
@@ -194,6 +195,7 @@ lazy val chisel = (project in file("."))
   .settings(
     mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",
+    Test / scalacOptions += "-P:chiselplugin:genBundleElements",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
