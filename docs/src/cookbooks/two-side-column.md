@@ -817,7 +817,7 @@ class OperatorExampleModule extends Module {
 
   val x, y, c = IO(Input(UInt(32.W)))
 
-  val add_res, sub_res, mod_res, div_res, and_res, or_res, xor_res, not_res,logical_not_res, mux_res,  rshift_res , lshift_res,  andR_res = IO(Output(UInt(32.W)))
+  val add_res, sub_res, mod_res, div_res, and_res, or_res, xor_res, not_res,logical_not_res, mux_res,  rshift_res , lshift_res = IO(Output(UInt(32.W)))
   val logical_and_res, logical_or_res, equ_res, not_equ_res, andR_res, orR_res, xorR_res, gt_res,lt_res, geq_res, leq_res,single_bitselect_res = IO(Output(Bool()))
   val mul_res, cat_res= IO(Output(UInt(64.W)))
   val multiple_bitselect_res = IO(Output(UInt(2.W)))
