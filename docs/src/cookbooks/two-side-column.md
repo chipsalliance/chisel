@@ -272,6 +272,103 @@ ChiselStage.emitVerilog(new RegisterModule)
 ```
 </td>
          </tr>
+ <tr>
+<td>
+
+```
+module RegisterModule(
+  input        clock,
+  input        reset,
+  input  [7:0] in,
+  output [7:0] out,
+  input        differentClock,
+  input        differentSyncReset,
+  input        differentAsyncReset
+);
+
+reg [7:0] registerWithoutInit;
+reg [7:0] registerWithInit;
+reg [7:0] registerOnDifferentClockAndSyncReset;
+reg [7:0] registerOnDifferentClockAndAsyncReset;
+
+
+ always @(posedge clock) begin
+    registerWithoutInit <= in + 8'h1;
+ end
+
+ always @(posedge clock) begin
+    if (reset) begin
+      registerWithInit <= 8'd42;
+    end else begin
+      registerWithInit <= registerWithInit - 8'h1;
+    end
+  end
+ 
+ always @(posedge differentClock) begin
+    if (differentSyncReset) begin
+      registerOnDifferentClockAndSyncReset <= 8'h42;
+    end else begin
+      registerOnDifferentClockAndSyncReset <= in - 8'h1;
+    end
+ end
+  
+ always @(posedge differentClock or posedge differentAsyncReset) begin
+   if (differentAsyncReset) begin
+      registerOnDifferentClockAndAsyncReset <= 8'h24;
+   end else begin
+      registerOnDifferentClockAndAsyncReset <= in + 8'h2;
+   end
+ end
+
+  assign out = in + registerWithoutInit + registerWithInit + registerOnDifferentClockAndSyncReset registerOnDifferentClockAndAsyncReset;
+
+
+endmodule
+
+```
+</td>
+<td>
+
+```scala mdoc:silent
+class RegisterModule2 extends Module {
+  val in  = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+
+  val differentClock = IO(Input(Clock()))
+  val differentSyncReset = IO(Input(Bool()))
+  
+  val differentAsyncReset = IO(Input(AsyncReset()))
+  
+  
+  
+  val registerWithoutInit = Reg(UInt(8.W))
+  
+  val registerWithInit = RegInit(42.U(8.W))
+  
+  registerWithoutInit := in + 1.U
+  
+  registerWithInit := registerWithInit - 1.U
+  
+  val registerOnDifferentClockAndSyncReset = withClockAndReset(differentClock, differentSyncReset) {
+    val reg = RegInit("h42".U(8.W))
+    reg
+  }
+  registerOnDifferentClockAndSyncReset := in - 1.U
+  
+  val registerOnDifferentClockAndAsyncReset = withClockAndReset(differentClock, differentAsyncReset) {
+    val reg = RegInit("h24".U(8.W))
+    reg
+  }
+  registerOnDifferentClockAndAsyncReset := in + 2.U
+  
+  out := registerWithoutInit + registerWithInit + registerOnDifferentClockAndSyncReset + registerOnDifferentClockAndAsyncReset
+}
+```
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new RegisterModule2)
+```
+</td>
+         </tr>
     </table>
 <html>
 <body>
@@ -573,6 +670,7 @@ ChiselStage.emitVerilog(new ReadWriteMem)
 ```
 </td>
 </tr>
+
 <tr>
 <td>
 
@@ -601,6 +699,7 @@ always @(posedge clock) begin
 end
 end
 endmodule
+```
 </td>
 
 <td>
@@ -643,55 +742,71 @@ ChiselStage.emitVerilog(new ReadWriteSmem2)
 <td>
 
 ```
- res10: String = """module OperatorExampleModule(
-   input         clock,
-   input         reset,
-   input  [31:0] x,
-   input  [31:0] y,
-   input  [31:0] c,
-   output [31:0] add_res,
-   output [31:0] sub_res,
-   output [31:0] per_res,
-   output [31:0] mul_res,
-   output [31:0] and_res,
-   output [31:0] or_res,
-   output [31:0] xor_res,
-   output [31:0] not_res,
-   output [31:0] logical_not_res,
-   output [31:0] mux_res,
-   output [31:0] rshift_res,
-   output [31:0] lshift_res,
-   output [31:0] andR_res,
-   output        logical_and_res,
-   output        logical_or_res,
-   output        equ_res,
-   output        not_equ_res,
-   output        orR_res,
-   output        xorR_res,
-   output        gt_res,
-   output        lt_res,
-   output        geq_res,
-   output        leq_res,
-   output        single_bitselect_res,
-   output [63:0] div_res,
-   output [63:0] cat_res,
-   output [1:0]  multiple_bitselect_res,
-   output [95:0] fill_res
- );
-   wire [38:0] _GEN_0 = {{7'd0}, x}; 
-   wire [38:0] _lshift_res_T_1 = _GEN_0 << y[2:0]; 
-   wire [63:0] _fill_res_T = {x,x}; 
-   wire [31:0] _GEN_1 = x % y; 
-   assign add_res = x + y; 
-   assign sub_res = x - y; 
-   assign per_res = _GEN_1[31:0]; 
-   assign mul_res = x / y;
-   assign and_res = x & y;
-   assign or_res = x | y; 
-   assign xor_res = x ^ y;
-   assign not_res = ~x; 
-   assign logical_not_res = {{31'd0}, x == 32'h0}; 
- endmodule
+ module OperatorExampleModule(
+  input         clock,
+  input         reset,
+  input  [31:0] x,
+  input  [31:0] y,
+  input  [31:0] c,
+  output [31:0] add_res,
+  output [31:0] sub_res,
+  output [31:0] mod_res,
+  output [31:0] div_res,
+  output [31:0] and_res,
+  output [31:0] or_res,
+  output [31:0] xor_res,
+  output [31:0] not_res,
+  output [31:0] logical_not_res,
+  output [31:0] mux_res,
+  output [31:0] rshift_res,
+  output [31:0] lshift_res,
+  output        andR_res,
+  output        logical_and_res,
+  output        logical_or_res,
+  output        equ_res,
+  output        not_equ_res,
+  output        orR_res,
+  output        xorR_res,
+  output        gt_res,
+  output        lt_res,
+  output        geq_res,
+  output        leq_res,
+  output        single_bitselect_res,
+  output [63:0] mul_res,
+  output [63:0] cat_res,
+  output [1:0]  multiple_bitselect_res,
+  output [95:0] fill_res
+);
+  assign add_res = x + y; 
+  assign sub_res = x - y;
+  assign mod_res = x % y;
+  assign div_res = x / y;
+  assign and_res = x & y;
+  assign or_res = x | y; 
+  assign xor_res = x ^ y;
+  assign not_res = ~x; 
+  assign logical_not_res = !(x == 32'h0);
+  assign mux_res = c[0] ? x : y;
+  assign rshift_res = x >> y[2:0];
+  assign lshift_res = x << y[2:0];
+  assign logical_and_res = x[0] && y[0];
+  assign logical_or_res = x[0] || y[0];
+  assign equ_res = x == y; 
+  assign not_equ_res = x != y;
+  assign andR_res = &x;
+  assign orR_res = |x; 
+  assign xorR_res = ^x; 
+  assign gt_res = x > y; 
+  assign lt_res = x < y;
+  assign geq_res = x >= y; 
+  assign leq_res = x <= y;
+  assign single_bitselect_res = x[1];
+  assign mul_res = x * y;
+  assign cat_res = {x,y}; 
+  assign multiple_bitselect_res = x[1:0];
+  assign fill_res = {3{x}};
+endmodule
+
 ```
 
 </td>
@@ -708,6 +823,34 @@ class OperatorExampleModule extends Module {
   val multiple_bitselect_res = IO(Output(UInt(2.W)))
   val fill_res = IO(Output(UInt((3*32).W)))
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+ 
   add_res := x + y
   sub_res := x - y 
   mod_res := x % y
