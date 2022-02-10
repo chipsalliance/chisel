@@ -329,7 +329,17 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|HasEither>x".rt, "xright"))
       annos should contain(MarkAnnotation("~Top|HasEither>y".rt, "yleft"))
     }
-    it("3.12: should work on Mems/SyncReadMems") {
+    it("3.12: should work on tuple2") {
+      class Top() extends Module {
+        val i = Definition(new HasTuple2())
+        mark(i.xy._1, "x")
+        mark(i.xy._2, "y")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|HasTuple2>x".rt, "x"))
+      annos should contain(MarkAnnotation("~Top|HasTuple2>y".rt, "y"))
+    }
+    it("3.13: should work on Mems/SyncReadMems") {
       class Top() extends Module {
         val i = Definition(new HasMems())
         mark(i.mem, "Mem")
@@ -339,7 +349,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|HasMems>mem".rt, "Mem"))
       annos should contain(MarkAnnotation("~Top|HasMems>syncReadMem".rt, "SyncReadMem"))
     }
-    it("3.13: should not create memory ports") {
+    it("3.14: should not create memory ports") {
       class Top() extends Module {
         val i = Definition(new HasMems())
         i.mem(0) := 100.U // should be illegal!
