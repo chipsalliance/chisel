@@ -16,6 +16,20 @@
 
 ### Frequently Asked Questions
 
+#### I'm failing the scalafmt check. How do I make sure my code is formatted?
+
+From the Chisel3 root directory, run:
+
+```
+sbt scalafmtAll
+```
+
+You may need to specify the version, at time of writing this is:
+
+```
+sbt ++2.12.15 scalafmtAll
+```
+
 #### How do I update PRs from before Scalafmt was applied?
 
 Just before the release of Chisel v3.5.0, we started using [Scalafmt](https://scalameta.org/scalafmt/) in this repository.
