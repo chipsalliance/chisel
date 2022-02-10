@@ -102,9 +102,7 @@ object Module extends SourceInfoDoc {
   ): T = {
     val parent = Builder.currentModule
     val module: T = bc // bc is actually evaluated here
-    if (Builder.currentModule != parent) {
-      Builder.currentModule = parent
-    }
+    if (!parent.isEmpty) { Builder.currentModule = parent }
 
     module
   }
