@@ -19,7 +19,7 @@ import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBin
   */
 @implicitNotFound(
   "@public is only legal within a class or trait marked @instantiable, and only on vals of type" +
-    " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, or Either"
+    " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, Either, or Tuple2"
 )
 trait Lookupable[-B] {
   type C // Return type of the lookup
@@ -402,6 +402,28 @@ object Lookupable {
       }
     }
   }
+
+  implicit def lookupTuple2[X, Y](
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions,
+    lookupableX:         Lookupable[X],
+    lookupableY:         Lookupable[Y]
+  ) = new Lookupable[(X, Y)] {
+    type C = (lookupableX.C, lookupableY.C)
+    def definitionLookup[A](that: A => (X, Y), definition: Definition[A]): C = {
+      val ret = that(definition.proto)
+      (
+        lookupableX.definitionLookup[A](_ => ret._1, definition),
+        lookupableY.definitionLookup[A](_ => ret._2, definition)
+      )
+    }
+    def instanceLookup[A](that: A => (X, Y), instance: Instance[A]): C = {
+      import instance._
+      val ret = that(proto)
+      (lookupableX.instanceLookup[A](_ => ret._1, instance), lookupableY.instanceLookup[A](_ => ret._2, instance))
+    }
+  }
+
   implicit def lookupIsInstantiable[B <: IsInstantiable](
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions

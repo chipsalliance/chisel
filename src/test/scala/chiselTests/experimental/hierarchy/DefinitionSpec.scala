@@ -329,6 +329,16 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|HasEither>x".rt, "xright"))
       annos should contain(MarkAnnotation("~Top|HasEither>y".rt, "yleft"))
     }
+    it("3.12: should work on tuple2") {
+      class Top() extends Module {
+        val i = Definition(new HasTuple2())
+        mark(i.xy._1, "x")
+        mark(i.xy._2, "y")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|HasTuple2>x".rt, "x"))
+      annos should contain(MarkAnnotation("~Top|HasTuple2>y".rt, "y"))
+    }
   }
   describe("4: toDefinition") {
     it("4.0: should work on modules") {
