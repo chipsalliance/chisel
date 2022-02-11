@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, EnumType, FixedPoint, Interval, UnsafeEnum}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
-import chisel3.experimental.dataview.{isView, reify, reifySingleData}
+import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.SourceInfo
@@ -131,11 +131,12 @@ private[chisel3] object MonoConnect {
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if (sink_v.length != source_v.length) { throw MismatchedVecException }
-        if (canBulkConnectAggregates(sink_v, source_v, sourceInfo, connectCompileOptions, context_mod)) {
-          val sinkReified:   Data = if (isView(sink_v)) reifySingleData(sink_v).get else sink_v
-          val sourceReified: Data = if (isView(source_v)) reifySingleData(source_v).get else source_v
 
-          pushCommand(Connect(sourceInfo, sinkReified.lref, sourceReified.ref))
+        val sinkReified:  Option[Aggregate] = if (isView(sink_v)) reifyToAggregate(sink_v) else Some(sink_v)
+        val sourceReified: Option[Aggregate] = if (isView(source_v)) reifyToAggregate(source_v) else Some(source_v)
+
+        if (sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(sinkReified.get, sourceReified.get, sourceInfo, connectCompileOptions, context_mod)) {
+          pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
         } else {
           for (idx <- 0 until sink_v.length) {
             try {
@@ -159,11 +160,11 @@ private[chisel3] object MonoConnect {
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
-        if (canBulkConnectAggregates(sink_r, source_r, sourceInfo, connectCompileOptions, context_mod)) {
-          val sinkReified:   Data = if (isView(sink_r)) reifySingleData(sink_r).get else sink_r
-          val sourceReified: Data = if (isView(source_r)) reifySingleData(source_r).get else source_r
+        val sinkReified:  Option[Aggregate] = if (isView(sink_r)) reifyToAggregate(sink_r) else Some(sink_r)
+        val sourceReified: Option[Aggregate] = if (isView(source_r)) reifyToAggregate(source_r) else Some(source_r)
 
-          pushCommand(Connect(sourceInfo, sinkReified.lref, sourceReified.ref))
+        if (sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(sinkReified.get, sourceReified.get, sourceInfo, connectCompileOptions, context_mod)) {
+          pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
         } else {
           // For each field, descend with right
           for ((field, sink_sub) <- sink_r.elements) {
