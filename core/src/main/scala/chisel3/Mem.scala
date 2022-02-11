@@ -246,10 +246,11 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   )(
     implicit compileOptions: CompileOptions
   ): T = {
-    require(
-      Builder.currentModule == _parent,
-      s"cannot create a memory port in a different module (${Builder.currentModule.get.name}) than where the memory is (${_parent.get.name})."
-    )
+    if (Builder.currentModule != _parent) {
+      throwException(
+        s"Cannot create a memory port in a different module (${Builder.currentModule.get.name}) than where the memory is (${_parent.get.name})."
+      )
+    }
     requireIsHardware(idx, "memory port index")
     val i = Vec.truncateIndex(idx, length)(sourceInfo, compileOptions)
 

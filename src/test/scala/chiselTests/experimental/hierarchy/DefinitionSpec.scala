@@ -354,12 +354,12 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         val i = Definition(new HasMems())
         i.mem(0) := 100.U // should be illegal!
       }
-      val failure = intercept[IllegalArgumentException] {
+      val failure = intercept[ChiselException] {
         getFirrtlAndAnnos(new Top)
       }
       assert(
         failure.getMessage ==
-          "requirement failed: cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
+          "Cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
       )
     }
   }
