@@ -7,7 +7,8 @@ import chisel3.experimental.{annotate, BaseModule}
 import chisel3.{Data, MemBase}
 import chisel3.experimental.hierarchy.{Definition, Hierarchy, Instance}
 
-object Annotations {
+// These annotations exist purely for testing purposes
+private[hierarchy] object Annotations {
   case class MarkAnnotation(target: IsMember, tag: String) extends SingleTargetAnnotation[IsMember] {
     def duplicate(n: IsMember): Annotation = this.copy(target = n)
   }
