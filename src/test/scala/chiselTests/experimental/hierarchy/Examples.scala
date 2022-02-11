@@ -258,4 +258,10 @@ object Examples {
     val i10 = Instance(tpDef1)
     val i11 = Instance(tpDef1)
   }
+
+  @instantiable
+  class HasMems() extends Module {
+    @public val mem = Mem(8, UInt(32.W))
+    @public val syncReadMem = SyncReadMem(8, UInt(32.W))
+  }
 }
