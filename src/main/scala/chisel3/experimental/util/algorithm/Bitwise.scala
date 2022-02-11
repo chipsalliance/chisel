@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3.experimental.util.algorithm
 
 import chisel3._
@@ -8,6 +10,7 @@ import chisel3._
   * LSBOr("b00010100".U) // Returns "b11111100".U
   * LSBOr("b00000000".U) // Returns "b00000000".U
   * }}}
+  * This circuit seems to be high fan out, but synthesis tool should handle this.
   */
 object LSBOr {
   def apply(data: UInt): UInt = VecInit(Seq.tabulate(data.getWidth) { i: Int =>
@@ -21,6 +24,7 @@ object LSBOr {
   * MSBOr("b00010100".U) // Returns "b00011111".U
   * MSBOr("b00000000".U) // Returns "b00000000".U
   * }}}
+  * This circuit seems to be high fan out, but synthesis tool should handle this.
   */
 object MSBOr {
   def apply(data: UInt): UInt = VecInit(Seq.tabulate(data.getWidth) { i: Int =>

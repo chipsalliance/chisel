@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.util.algorithm._
