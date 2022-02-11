@@ -13,9 +13,15 @@ import chisel3._
   * This circuit seems to be high fan out, but synthesis tool should handle this.
   */
 object LSBOr {
-  def apply(data: UInt): UInt = VecInit(Seq.tabulate(data.getWidth) { i: Int =>
-    VecInit(data.asBools().dropRight(data.getWidth - i - 1)).asUInt().orR()
-  }).asUInt()
+  def apply(data: UInt): UInt = {
+    val width = data.widthOption match {
+      case Some(w) => w
+      case None    => throw new IllegalArgumentException("Cannot call LSBOr on data with unknown width.")
+    }
+    VecInit(Seq.tabulate(width) { i: Int =>
+      VecInit(data.asBools().dropRight(width - i - 1)).asUInt().orR()
+    }).asUInt()
+  }
 }
 
 /** Map each bits to logical or of itself and all bits more siginificant than it.
@@ -27,7 +33,13 @@ object LSBOr {
   * This circuit seems to be high fan out, but synthesis tool should handle this.
   */
 object MSBOr {
-  def apply(data: UInt): UInt = VecInit(Seq.tabulate(data.getWidth) { i: Int =>
-    VecInit(data.asBools().drop(i)).asUInt().orR()
-  }).asUInt()
+  def apply(data: UInt): UInt = {
+    val width = data.widthOption match {
+      case Some(w) => w
+      case None    => throw new IllegalArgumentException("Cannot call MSBOr on data with unknown width.")
+    }
+    VecInit(Seq.tabulate(width) { i: Int =>
+      VecInit(data.asBools().drop(i)).asUInt().orR()
+    }).asUInt()
+  }
 }
