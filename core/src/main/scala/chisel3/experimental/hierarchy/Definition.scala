@@ -20,7 +20,7 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   *
   * @param underlying The internal representation of the definition, which may be either be directly the object, or a clone of an object
   */
-final case class Definition[+A] private[chisel3] (private[chisel3] underlying: Underlying[A])
+final case class Definition[+A] private[chisel3] (private[chisel3] underlying: Underlying[A], private[chisel3] contexts: Contexts)
     extends IsLookupable
     with SealedHierarchy[A] {
 
@@ -50,7 +50,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
     case value: BaseModule =>
-      val newChild = Module.do_pseudo_apply(new internal.BaseModule.DefinitionClone(value))(
+      val newChild = Module.do_pseudo_apply(new internal.BaseModule.DefinitionClone(value, Contexts()))(
         chisel3.internal.sourceinfo.UnlocatableSourceInfo,
         chisel3.ExplicitCompileOptions.Strict
       )
@@ -61,8 +61,10 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
   }
 
   override def toDefinition: Definition[A] = this
-  override def toInstance:   Instance[A] = new Instance(underlying)
+  override def toInstance:   Instance[A] = new Instance(underlying, contexts)
 
+  def withContext(pf: PartialFunction[Any, Any]): Definition[A] = new Definition(underlying, contexts.append(pf))
+  def stripContext: Definition[A] = new Definition(underlying, Contexts())
 }
 
 /** Factory methods for constructing [[Definition]]s */
@@ -77,7 +79,7 @@ object Definition extends SourceInfoDoc {
     /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
       * @return absoluteTarget of this instance
       */
-    def toAbsoluteTarget: IsModule = d.proto.toAbsoluteTarget
+    def toAbsoluteTarget: IsModule = d.proto.toTarget
   }
 
   /** A construction method to build a Definition of a Module
@@ -108,7 +110,7 @@ object Definition extends SourceInfoDoc {
     Builder.annotations ++= ir.annotations
     module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-    new Definition(Proto(module))
+    new Definition(Proto(module), Contexts())
   }
 
 }

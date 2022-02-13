@@ -90,6 +90,9 @@ sealed trait Hierarchy[+A] {
 
   /** @return Convert this Hierarchy[A] as a top-level Instance[A] */
   def toInstance: Instance[A]
+
+  private[chisel3] def contexts: Contexts
+
 }
 
 // Used to effectively seal Hierarchy, without requiring Definition and Instance to be in this file.

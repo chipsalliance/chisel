@@ -48,7 +48,15 @@ package object experimental {
       implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
       compileOptions:      CompileOptions
     ): ClonePorts = {
-      BaseModule.cloneIORecord(proto)
+      apply(proto.toDefinition)
+    }
+    def apply(
+      definition: experimental.hierarchy.Definition[BaseModule]
+    )(
+      implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
+      compileOptions:      CompileOptions
+    ): ClonePorts = {
+      BaseModule.cloneIORecord(definition)
     }
   }
 

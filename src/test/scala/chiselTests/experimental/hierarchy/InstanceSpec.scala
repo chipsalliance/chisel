@@ -5,8 +5,11 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Contextual, IsLookupable}
+import chisel3.aop.Select
 import chisel3.util.{DecoupledIO, Valid}
+import chisel3.experimental.hierarchy.IsInstantiable
+import chisel3.internal.MacroGenerated
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -1044,4 +1047,333 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
   }
+  describe("11: Contextual") {
+    import ContextualExamples._
+    it("11.0: Example - Set in definition, read outside definition") {
+      @instantiable
+      class AddOne extends Module {
+        @public val index = Contextual(0)
+      }
+      class Top extends Module {
+        val d0 = Definition(new AddOne)
+        d0.index should be (0)
+        val d1 = d0.withContext { case i: Int => i + 1}
+        d1.index should be (1)
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+    }
+    it("11.1: Example - absolute indexes of instances") {
+      class AbsoluteIndexer() {
+        private var i = 0
+        def get: Int = { i += 1; i - 1 }
+      }
+      class Top extends Module {
+        val indexer = new AbsoluteIndexer()
+        val definition = Definition(new Root).withContext {
+          case NoIndex => Index(indexer.get)
+        }
+        val answers = Map(
+          ("~Top|Root/i0:Middle/i0:Leaf" -> Index(0)),
+          ("~Top|Root/i0:Middle/i1:Leaf" -> Index(1)),
+          ("~Top|Root/i1:Middle/i0:Leaf" -> Index(2)),
+          ("~Top|Root/i1:Middle/i1:Leaf" -> Index(3))
+        )
+        Select.allInstancesOf[Leaf](definition).foreach { case l: Instance[Leaf] =>
+          l.index should be (answers(l.toTarget.toString))
+        }
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+    }
+    it("11.2?: Example - physical design orientation?") { }
+    it("11.3: Example - sibling references") {
+      class Top extends Module {
+        val definition = Definition(new AddFour)
+        val answers = Map(
+          ("~Top|AddFour/i0:AddTwo/i0:AddOne" -> "NONE"),
+          ("~Top|AddFour/i0:AddTwo/i1:AddOne" -> "~Top|AddFour/i0:AddTwo/i0:AddOne"),
+          ("~Top|AddFour/i1:AddTwo/i0:AddOne" -> "~Top|AddFour/i0:AddTwo/i1:AddOne"),
+          ("~Top|AddFour/i1:AddTwo/i1:AddOne" -> "~Top|AddFour/i1:AddTwo/i0:AddOne")
+        )
+        Select.allInstancesOf[AddOne](definition).foreach { case l: Instance[AddOne] =>
+          // TODO: This kind of processing should be in Elder companion object @public def
+          val target = l.previousAdder match {
+            case i: Instance[Sibling] if i.isA[Sibling] => i.inst.toTarget.toString
+            case i => "NONE"
+          }
+          target should be (answers(l.toTarget.toString))
+        }
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+    }
+    it("11.4?: Example - no mutation!") { }
+  }
 }
+object ContextualExamples {
+  // Unique Index Example
+  trait UniqueIndex extends IsLookupable
+  case object NoIndex extends UniqueIndex
+  case class Index(index: Int) extends UniqueIndex
+  @instantiable
+  class Leaf extends Module {
+    @public val index = Contextual[UniqueIndex](NoIndex)
+  }
+  @instantiable
+  class Middle extends Module {
+    val d = Definition(new Leaf)
+    val i0 = Instance(d)
+    val i1 = Instance(d)
+  }
+  @instantiable
+  class Root extends Module {
+    val definition = Definition(new Middle)
+    val i0 = Instance(definition)
+    val i1 = Instance(definition)
+  }
+
+  // Elder Sibling Example
+  trait Elder extends IsInstantiable
+  case object NoElder extends Elder with IsInstantiable
+  @instantiable
+  case class Sibling(i: Instance[AddOne]) extends Elder {
+    @public val inst = i
+    override def toString = s"Sibling(${i.toTarget})"
+  }
+  @instantiable
+  class AddOne extends Module {
+    @public val previousAdder = Contextual[Elder](NoElder)
+  }
+  @instantiable
+  class AddTwo extends Module {
+    val d = Definition(new AddOne)
+    @public val i0 = Instance(d)
+    @public val i1 = Instance(d.withContext {
+      case NoElder => Sibling(i0)
+    })
+  }
+  @instantiable
+  class AddFour extends Module {
+    val definition = Definition(new AddTwo)
+    val i0 = Instance(definition)
+    val i1 = Instance(definition.withContext {
+      case NoElder => Sibling(i0.i1)
+    })
+  }
+}
+// =========================================
+
+// Chisel addition
+// All values must share the same proto
+// Contextual never loses information as it is modified etc. Only when you do .get does any true 'merging' occur
+
+
+// =========================================
+// TODO: Example(Contextual): Absolute index
+// Ok, I think this is possible if we express the splittable and collapsable functionality in typeclasses like lookupable
+// We need to figure out the return value for get, which needs to be customized based on IsInstantiable vs IsLookupable types (e.g. wrapped in Instance[X] or just X)
+
+//@instantiable
+//class AddOne extends Module {
+//  @public val index: Contextual[Int] = Contextual.empty[Int]
+//  // 
+//}
+//object AddOne {
+//  // Consuming a Contextual value
+//  @public def printElder(i: Instance[AddOne])(): Unit = println(s"$i's elder sibling is ${i.elder.get}") // ok to call .get, because it is in an @derived def
+//}
+//
+//@instantiable
+//class AddTwo extends Module { 
+//  @public val elder: Contextual[AddOne] = Contextual.empty
+//  val d1: Definition[AddOne] = Definition(new AddOne)
+//  // Can derive per val
+//  @public val i0 = d1.instantiate(elder = elder)
+//  @public val i1 = d1.instantiate(elder = i0)
+//}
+//
+//@instantiable
+//class AddFour extends Module { 
+//  val d2: Definition[AddTwo] = Definition(new AddTwo)
+//  // Can set derive per val
+//  @public val i0 = d2.instantiate()
+//  @public val i1 = d2.instantiate(elder = Contextual(i0.i1))
+//}
+//
+//
+//
+//// =========================================
+//// Example(Contextual): Who is your elder sibling?
+//// Contextual values can be set on instantiation
+//
+//@instantiable
+//class AddOne extends Module {
+//  @public val elder: Contextual[AddOne] = Contextual.empty[AddOne]
+//  @public val myCaseClass: CaseClass
+//  // On Instance, synthezise a 'elder' val
+//  // On Definition, synthesize a 'elder' val and 'elder_=(blah): Definition[AddOne]'
+//  elder     // ok
+//  elder.get // [ERROR] NOPE! It's locked in this context
+//}
+//
+//@instantiable
+//class AddTwo extends Module { 
+//  @public val elder: Contextual[AddOne] = Contextual.empty
+//  val d1: Definition[AddOne] = Definition(new AddOne)
+//  // Can derive per val
+//  @public val i0 = Instance(d1.context(elder = elder): Definition[AddOne])
+//  @public val i1 = Instance(d1.context(elder = Contextual(i0): Definition[AddOne])
+//  Instance(d1.applyContext {
+//    case c: FloorSide => c.opposite
+//  })
+//}
+//
+//@instantiable
+//class AddFour extends Module { 
+//  val d2: Definition[AddTwo] = Definition(new AddTwo)
+//  // Can set derive per val
+//  @public val i0 = d2.instantiate()
+//  @public val i1 = d2.instantiate(elder = Contextual(i0.i1))
+//}
+//
+//Select.allInstancesOf[AddOne](add4){
+//  case i: Instance[AddOne] => i.elder
+//}
+//
+//// =========================================
+//// Example(@derive): per-instance index of AddOne
+//case class AbsoluteIndex(i: Int)
+//@instantiable
+//class AddOne extends Module {
+//  // If used within AddOne, throws a compile time error "Cannot reference derived val's within the class they are defined"
+//  @derived val aindex: AbsoluteIndex // requires it to be uninitialized!! No '=' after type!!
+//  aindex + 1 //ERROR! Cannot use aindex within AddOne
+//}
+//object AddOne {
+//  // Consuming a derived value
+//  @derived def device(i: Instance[AddOne]): Device = { new Device(i.aindex) }
+//}
+//
+//@instantiable
+//class AddTwo extends Module { 
+//  val d1: Definition[AddOne] = Definition(new AddOne)
+//  // Can derive per val
+//  @public val i0 = Instance(d1.derive(aindex = AbsoluteIndex(0)): Definition[AddOne])
+//  @public val i1 = Instance(d1.derive(aindex = AbsoluteIndex(1)): Definition[AddOne])
+//  Instance(d1) // error! no derived value for aindex is set
+//  d1.aindex    // error!
+//  i1.device
+//
+//}
+//@instantiable
+//class AddFour extends Module {
+//  val d2: Definition[AddTwo] = Definition(new AddTwo)
+//  // Can derive per type
+//  @public val i0 = Instance(d2)
+//  @public val i1 = Instance(d2.derive{x: AbsoluteIndex => i0.i1.aindex + 1 + x })
+//}
+//
+//
+//@instantiable
+//class Top extends Module {
+//  val d4 = Definition(new AddFour)
+//
+//  d4.i1:Add2.i0:Add1.aindex
+//  d4.i1(_ + (Add4.)i0.i1(1).aindex + 1).i0(aindex=0).aindex
+//  d4.i0.i1.aindex
+//
+//  Select.allInstanceOf[AddOne](d4) { i: Instance[AddOne] => println(i.toTarget, i.aindex) }
+//}
+//
+//
+//
+//
+//// Specializer idea (deprecated in favor of @derive)
+////      @specializer // Use to mark a specializer which can be passed during D/I construction
+////
+////      // User extends to specializes an Instance[T]/Definition[T] object
+////      // - Must be extended in companion object of T
+////      // - Note that this trait can access public members of instance/definition
+////      // - Passed to Instance, synthesized @public accessors on all Instances but dynamic failure if
+////      //   calling accessor on Instance who was not passed specializer at construction
+////      trait PerInstance[T <: IsInstantiable] {
+////        val instance: Instance[T]
+////      }
+////      // Passed to Definition, synthesized accessors on Definition but not Instances
+////      // - Not sure this has a usecase.... Maybe unneeded
+////      trait AllInstances[T <: IsInstantiable] {
+////        val instance: Instance[T]
+////      }
+////      // Passed to Definition, synthesized accessors on all Instances but not on Definition
+////      // - Not sure this has a usecase.... Maybe unneeded
+////      trait PerDefinition[T <: IsInstantiable] {
+////        val definition: Definition[T]
+////      }
+////      // =========================================
+////      // Indexer Library
+////      // Derives a .index on an Instance[T]
+////      case class ID(id: Long)
+//
+//
+//
+//// Schuyler's example/idea
+//// Why Schuyler is wrong: with his mechanism, you cannot have intermediate hierarchies which don't know about children instance parameters
+////   basically it limits the power of dependency injection into the child, which is what we want to achieve.
+//  //@derived val base: Int
+//  //@public val i0 = Instance(d1.derive(aindex = base): Definition[AddOne])
+//  //@public val i1 = Instance(d1.derive(aindex = {base + d1.getOffset}): Definition[AddOne])
+//  //def getOffset: Int = d1.getOffset * 2
+//  //@derived val base: Int
+//  //@public val i0 = Instance(d2.derive(base = base))
+//  // Requires staged evaluation of base + offset, after Instance is known
+//  //@public val i1 = Instance(d2.derive(base = {base + offset}))
+//  //val offset = d2.getOffset
+//
+//      //object AddOne {
+//      //  // Ex: Customizing per-instance metadata
+//      //  @specializer
+//      //  trait AddOneMeta extends PerInstance[AddOne] {
+//      //    @public val aindex: AbsoluteIndex
+//      //  }
+//      //}
+//      //object AddTwo {
+//      //  @specializer
+//      //  trait AddTwoMeta extends PerInstance[AddTwo] {
+//      //    @public val aindex: AbsoluteIndex
+//      //    instance.i0.specialize { x: AbsoluteIndex => x + instance.aIndex}
+//      //    instance.i0.specialize
+//      //    @child[AbsoluteIndex] val i0
+//      //    @derive def modifyChildren(x: AbsoluteIndex): AbsoluteIndex = x + instance.aIndex
+//      //    @derive { instance.i0.aindex = instance.i0.aindex + instance.aindex }
+//      //  }
+//      //}
+//      ////def instanceLookup[A](that: A => B, instance: Instance[A]): C
+//
+//
+//      // Open questions:
+//      // Q: Can we do the same thing but with user-defined implicit classes?
+//      //  E.g. implicit class AddOneExtension(instance: Instance[AddOne])(implicit extension: InstanceExtension[AddOne]) { }
+//      // Q: How does this work with nested D/I calls?
+//      //  E.g. i0.i0.iAddress ?
+//      // T: I think I need a way to determine whether the instance I'm passed
+//
+//      // Closed questions:
+//      // Q: Can we just use DataView? In the conversion, user adds the instance-specific info
+//      // A: I don't think its appropriate, because the Instance type is not enough. We actually want to associate the info
+//      //    with the OBJECT, not the TYPE
+//      //class Top extends Module {
+//      //  val definition = Definition(new AddOne)
+//      //  val i0 = Instance(definition).specialize(new AddOneExtension(index))
+//      //  println(i0.instanceAddress)
+//      //}
+//      //val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+//      //chirrtl.serialize should include("inst i0 of AddOne")
+//    }
+//    // OLD IDEAS:
+//    //
+//    //    // Pros: Easy to add more per-instance vals
+//    //    // Cons: Annoying to specify per-instance stuff per lookup
+//    //    @instance def instanceAddress(i: Instance[AddOne])(index: Int): Int = {
+//    //      i.baseAddress + (index * 4)
+//    //    }
+////  }
+////}
+//
