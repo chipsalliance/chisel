@@ -16,7 +16,7 @@ import firrtl.annotations.IsModule
   *
   * @param underlying The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Underlying[A]) extends SealedHierarchy[A] {
+final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Underlying[A], private[chisel3] contexts: Contexts) extends SealedHierarchy[A] {
   underlying match {
     case Proto(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Proto with a clone!")
     case other => //Ok
@@ -36,6 +36,8 @@ final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Und
     case Clone(i: BaseModule) => i._parent
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
   }
+
+  private[chisel3] def addContext(c: Contexts): Instance[A] = new Instance(underlying, c ++ contexts)
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
@@ -61,8 +63,9 @@ final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Und
   }
 
   /** Returns the definition of this Instance */
-  override def toDefinition: Definition[A] = new Definition(Proto(proto))
+  override def toDefinition: Definition[A] = new Definition(Proto(proto), contexts)
   override def toInstance:   Instance[A] = this
+  def stripContext: Instance[A] = new Instance(underlying, Contexts())
 
 }
 
@@ -85,7 +88,6 @@ object Instance extends SourceInfoDoc {
       case Proto(x) => x.toAbsoluteTarget
       case Clone(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
     }
-
   }
 
   /** A constructs an [[Instance]] from a [[Definition]]
@@ -107,10 +109,10 @@ object Instance extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): Instance[T] = {
-    val ports = experimental.CloneModuleAsRecord(definition.proto)
+    val ports = experimental.CloneModuleAsRecord(definition)
     val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
     clone._madeFromDefinition = true
-    new Instance(Clone(clone))
+    new Instance(Clone(clone), definition.contexts)
   }
 
 }

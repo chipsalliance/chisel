@@ -5,8 +5,11 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Contextual, IsLookupable, Hierarchy}
+import chisel3.aop.Select
 import chisel3.util.{DecoupledIO, Valid}
+import chisel3.experimental.hierarchy.IsInstantiable
+import chisel3.internal.MacroGenerated
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -1066,4 +1069,196 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
   }
+  describe("11: Contextual") {
+    import ContextualExamples._
+    it("11.0: Example - Set in definition, read outside definition") {
+      @instantiable
+      class AddOne extends Module {
+        @public val index = Contextual(0)
+      }
+      class Top extends Module {
+        val d0 = Definition(new AddOne)
+        d0.index should be (0)
+        val d1 = d0.withContext { case i: Int => i + 1}
+        d1.index should be (1)
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+    }
+    it("11.1: Example - absolute indexes of instances") {
+      import E1._
+      class AbsoluteIndexer() {
+        private var i = 0
+        def get: Int = { i += 1; i - 1 }
+      }
+      class Top extends Module {
+        val indexer = new AbsoluteIndexer()
+        val definition = Definition(new Root).withContext {
+          case NoIndex => Index(indexer.get)
+        }
+        val answers = Map(
+          ("~Top|Root/i0:Middle/i0:Leaf" -> Index(0)),
+          ("~Top|Root/i0:Middle/i1:Leaf" -> Index(1)),
+          ("~Top|Root/i1:Middle/i0:Leaf" -> Index(2)),
+          ("~Top|Root/i1:Middle/i1:Leaf" -> Index(3))
+        )
+        Select.allInstancesOf[Leaf](definition).foreach { case l: Instance[Leaf] =>
+          l.index should be (answers(l.toTarget.toString))
+        }
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+    }
+    it("11.2: Example - physical design orientation?") {
+      //TODO: To work with empty contextuals, we need a flatMap operation,
+      // rather than the map operation (withContext)
+      // Perhaps this is how we can implement collapse, as a call to flatMap
+      import ContextualExamples._
+
+      class Top extends Module {
+        val soc = Definition(new E2.SoC)
+        val answers = Map[_root_.firrtl.annotations.IsModule, String](
+          "~Top|SoC/cluster0:Cluster/tile0:Tile/sram0:SRAM".it -> "Left, Top",
+          "~Top|SoC/cluster0:Cluster/tile0:Tile/sram1:SRAM".it -> "Left, Bottom",
+          "~Top|SoC/cluster0:Cluster/tile1:Tile/sram0:SRAM".it -> "Right, Top",
+          "~Top|SoC/cluster0:Cluster/tile1:Tile/sram1:SRAM".it -> "Right, Bottom",
+          "~Top|SoC/cluster1:Cluster/tile0:Tile/sram0:SRAM".it -> "Right, Top",
+          "~Top|SoC/cluster1:Cluster/tile0:Tile/sram1:SRAM".it -> "Right, Bottom",
+          "~Top|SoC/cluster1:Cluster/tile1:Tile/sram0:SRAM".it -> "Left, Top",
+          "~Top|SoC/cluster1:Cluster/tile1:Tile/sram1:SRAM".it -> "Left, Bottom"
+        )
+        val srams = Select.allInstancesOf[E2.SRAM](soc)
+        require(srams.size == 8, srams)
+        srams.foreach{ case i: Instance[E2.SRAM] =>
+          s"${i.reflection}, ${i.placement}" should be (answers(i.toTarget))
+        }
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+    }
+    it("11.3: Example - sibling references") {
+      class Top extends Module {
+        val definition = Definition(new E3.AddFour)
+        val answers = Map(
+          ("~Top|AddFour/i0:AddTwo/i0:AddOne" -> "NONE"),
+          ("~Top|AddFour/i0:AddTwo/i1:AddOne" -> "~Top|AddFour/i0:AddTwo/i0:AddOne"),
+          ("~Top|AddFour/i1:AddTwo/i0:AddOne" -> "~Top|AddFour/i0:AddTwo/i1:AddOne"),
+          ("~Top|AddFour/i1:AddTwo/i1:AddOne" -> "~Top|AddFour/i1:AddTwo/i0:AddOne")
+        )
+        Select.allInstancesOf[E3.AddOne](definition).foreach { case l: Instance[E3.AddOne] =>
+          l.previousAdder.elderString should be (answers(l.toTarget.toString))
+        }
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+    }
+    it("11.4?: Example - no mutation!") { }
+  }
 }
+
+object Playground {
+  @instantiable
+  class Foo {
+    @public val int = 10
+  }
+  object Foo {
+    //@public def baz(i: Instance[Foo]): Unit = println(i.int)
+  }
+}
+  object ContextualExamples {
+    object E1 { // Unique Index Example
+      trait UniqueIndex extends IsLookupable
+      case object NoIndex extends UniqueIndex
+      case class Index(index: Int) extends UniqueIndex
+      @instantiable
+      class Leaf extends Module {
+        @public val index = Contextual[UniqueIndex](NoIndex)
+      }
+      @instantiable
+      class Middle extends Module {
+        val d = Definition(new Leaf)
+        val i0 = Instance(d)
+        val i1 = Instance(d)
+      }
+      @instantiable
+      class Root extends Module {
+        val definition = Definition(new Middle)
+        val i0 = Instance(definition)
+        val i1 = Instance(definition)
+      }
+    } // Unique Index Example
+    object E2 { // Physical Design Example
+      trait Reflection extends IsLookupable { def mirror: Reflection }
+      case object Right extends Reflection { def mirror = Left }
+      case object Left extends Reflection { def mirror = Right }
+      case object NoReflection extends Reflection { def mirror = NoReflection}
+
+      trait Placement extends IsLookupable
+      case object Top extends Placement
+      case object Bottom extends Placement
+      case object NoPlacement extends Placement
+
+      @instantiable
+      class SRAM extends Module {
+        @public val reflection = Contextual[Reflection](NoReflection)
+        @public val placement = Contextual[Placement](NoPlacement)
+      }
+
+      @instantiable
+      class Tile extends Module {
+        val sram = Definition(new SRAM)
+        @public val sram0 = Instance(sram.withContext{case NoPlacement => Top})
+        @public val sram1 = Instance(sram.withContext{case NoPlacement => Bottom})
+      }
+
+      @instantiable
+      class Cluster extends Module {
+        val tile = Definition(new Tile)
+        @public val tile0 = Instance(tile.withContext{case NoReflection => Left})
+        @public val tile1 = Instance(tile.withContext{case NoReflection => Right})
+      }
+
+      @instantiable
+      class SoC extends Module {
+        val cluster = Definition(new Cluster)
+        @public val cluster0 = Instance(cluster)
+        @public val cluster1 = Instance(cluster.withContext {
+          case o: Reflection => o.mirror
+        })
+      }
+    } // Physical Design Example
+    object E3 { // Elder Sibling Example
+      trait Elder extends IsInstantiable
+      object Elder {
+        // This is the use case for @public on def in companion object, but we can use normal extension method syntax instead.
+        implicit class ElderExtensions(h: Instance[Elder]) {
+          def elderString: String = h match {
+            case h: Instance[Sibling] if h.isA[Sibling] => h.inst.toTarget.toString
+            case other => "NONE"
+          }
+        }
+      }
+      case object NoElder extends Elder with IsInstantiable
+      @instantiable
+      case class Sibling(i: Instance[AddOne]) extends Elder {
+        @public val inst = i
+        override def toString = s"Sibling(${i.toTarget})"
+      }
+      @instantiable
+      class AddOne extends Module {
+        @public val previousAdder = Contextual[Elder](NoElder)
+      }
+      @instantiable
+      class AddTwo extends Module {
+        val d = Definition(new AddOne)
+        @public val i0 = Instance(d)
+        @public val i1 = Instance(d.withContext {
+          case NoElder => Sibling(i0)
+        })
+      }
+      @instantiable
+      class AddFour extends Module {
+        val definition = Definition(new AddTwo)
+        val i0 = Instance(definition)
+        val i1 = Instance(definition.withContext {
+          case NoElder => Sibling(i0.i1)
+        })
+      }
+    } // Elder Sibling Example
+  }

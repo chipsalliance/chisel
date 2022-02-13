@@ -11,6 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
+import chisel3.experimental.hierarchy.Contexts
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -212,6 +213,7 @@ package internal {
     trait IsClone[+T] {
       // Underlying object of which this is a clone of
       private[chisel3] def getProto: T
+      def contexts: Contexts
 
       /** Determines whether another object is a clone of the same underlying proto
         *
@@ -227,7 +229,7 @@ package internal {
     }
 
     // Private internal class to serve as a _parent for Data in cloned ports
-    private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends PseudoModule with IsClone[T] {
+    private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T, val contexts: Contexts) extends PseudoModule with IsClone[T] {
       override def toString = s"ModuleClone(${getProto})"
       // Do not call default addId function, which may modify a module that is already "closed"
       override def addId(d: HasId): Unit = ()
@@ -281,7 +283,7 @@ package internal {
       * @note In addition, the instance name of an InstanceClone is going to be the SAME as the proto, but this is not true
       * for ModuleClone.
       */
-    private[chisel3] final class InstanceClone[T <: BaseModule](val getProto: T, val instName: () => String)
+    private[chisel3] final class InstanceClone[T <: BaseModule](val getProto: T, val instName: () => String, val contexts: Contexts)
         extends PseudoModule
         with IsClone[T] {
       override def toString = s"InstanceClone(${getProto})"
@@ -305,7 +307,8 @@ package internal {
       * target whose root is the Definition. This DefinitionClone is used to represent the root parent of the
       * InstanceClone (which represents the returned module).
       */
-    private[chisel3] class DefinitionClone[T <: BaseModule](val getProto: T) extends PseudoModule with IsClone[T] {
+    private[chisel3] class DefinitionClone[T <: BaseModule](val getProto: T, val contexts: Contexts) extends PseudoModule with IsClone[T] {
+      _parent = None
       override def toString = s"DefinitionClone(${getProto})"
       // No addition components are generated
       private[chisel3] def generateComponent(): Option[Component] = None
@@ -336,16 +339,17 @@ package internal {
     }
 
     private[chisel3] def cloneIORecord(
-      proto: BaseModule
+      definition: experimental.hierarchy.Definition[BaseModule]
     )(
       implicit sourceInfo: SourceInfo,
       compileOptions:      CompileOptions
     ): ClonePorts = {
+      val proto = definition.proto
       require(proto.isClosed, "Can't clone a module before module close")
       // Fake Module to serve as the _parent of the cloned ports
       // We make this before clonePorts because we want it to come up first in naming in
       // currentModule
-      val cloneParent = Module(new ModuleClone(proto))
+      val cloneParent = Module(new ModuleClone(proto, definition.contexts))
       require(proto.isClosed, "Can't clone a module before module close")
       require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")
       // Fake Module to serve as the _parent of the cloned ports
@@ -375,8 +379,8 @@ package experimental {
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
       import chisel3.experimental.hierarchy.{Definition, Instance}
-      def toInstance:   Instance[T] = new Instance(Proto(b))
-      def toDefinition: Definition[T] = new Definition(Proto(b))
+      def toInstance:   Instance[T] = new Instance(Proto(b), Contexts())
+      def toDefinition: Definition[T] = new Definition(Proto(b), Contexts())
     }
   }
 

@@ -11,6 +11,7 @@ trait IsInstantiable
 
 object IsInstantiable {
   implicit class IsInstantiableExtensions[T <: IsInstantiable](i: T) {
-    def toInstance: Instance[T] = new Instance(Proto(i))
+    //TODO: Not sure an empty context is correct here. In fact its probably wrong.
+    def toInstance: Instance[T] = new Instance(Proto(i), Contexts())
   }
 }

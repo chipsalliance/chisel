@@ -22,13 +22,14 @@ object LibraryHooks {
   )(
     implicit inside: InsideHierarchyLibraryExtension
   ): Instance[A] = {
-    new Instance(createUnderlying(definition.underlying))
+    new Instance(createUnderlying(definition.underlying), definition.contexts)
   }
 
   /** Builds a new definition given an Underlying implementation
     * @note Implicitly requires being inside a Hierarchy Library Extension
     */
   def buildDefinition[A](underlying: Underlying[A])(implicit inside: InsideHierarchyLibraryExtension): Definition[A] = {
-    new Definition(underlying)
+    //TODO!!! Setting contexts needs to actually be correct, this is not correct as is.
+    new Definition(underlying, Contexts())
   }
 }
