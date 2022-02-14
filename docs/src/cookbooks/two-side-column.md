@@ -367,7 +367,11 @@ class RegisterModule2 extends Module {
   }
   registerOnDifferentClockAndAsyncReset := in + 2.U
   
-  out := registerWithoutInit + registerWithInit + registerOnDifferentClockAndSyncReset + registerOnDifferentClockAndAsyncReset
+  out := in + 
+    registerWithoutInit + 
+    registerWithInit + 
+    registerOnDifferentClockAndSyncReset + 
+    registerOnDifferentClockAndAsyncReset
 }
 ```
 ```scala mdoc:invisible
@@ -393,17 +397,21 @@ ChiselStage.emitVerilog(new RegisterModule2)
 
 ```
 module CaseStatementModule(
-  input        clock,
-  input        reset,
   input  [2:0] a,
   input  [2:0] b,
   input  [2:0] c,
   input  [1:0] sel,
-  output [2:0] out
+  output reg [2:0] out
 );
-  wire [2:0] _GEN_0 = 2'h2 == sel ? c : 3'h0; // @[main.scala 16:16 28:8 14:9]
-  wire [2:0] _GEN_1 = 2'h1 == sel ? b : _GEN_0; // @[main.scala 16:16 24:8]
-  assign out = 2'h0 == sel ? a : _GEN_1; // @[main.scala 16:16 19:8]
+
+always @(*)
+  case (sel)
+    2'b00: out <= a;
+    2'b01: out <= b;
+    2'b10: out <= c;
+    default: out <= 3'b0;
+  end
+end
 endmodule
 ```
 </td>
@@ -415,20 +423,16 @@ class CaseStatementModule extends Module {
   val a, b, c= IO(Input(UInt(3.W)))
   val sel = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt(3.W)))
+  
+  // default goes first
   out := 0.U
 
   switch (sel) {
-    is ("b00".U) {
-      out := a 
-    }
-    is ("b01".U) { 
-      out := b
-    }
-    is ("b10".U) {
-      out := c
-    }
+    is ("b00".U) { out := a }
+    is ("b01".U) { out := b }
+    is ("b10".U) { out := c }
   }
-};
+}
 ```
 ```scala mdoc:invisible
 ChiselStage.emitVerilog(new CaseStatementModule)
@@ -452,18 +456,6 @@ ChiselStage.emitVerilog(new CaseStatementModule)
 <td>
 
 ```
-module CaseStatementModule(
-  input        clock,
-  input        reset,
-  input  [2:0] a,
-  input  [2:0] b,
-  input        sel,
-  output [2:0] out
-);
-  wire [2:0] _GEN_0 = sel ? b : 3'h0; // @[main.scala 22:16 30:8 20:9]
-  assign out = ~sel ? a : _GEN_0; // @[main.scala 22:16 25:8]
-endmodule
-```
 </td>
 <td>
 
@@ -472,24 +464,22 @@ endmodule
 class CaseStatementEnumModule1 extends Module {
   
   object AluMux1Sel extends ChiselEnum {
-  val selectRS1, selectPC = Value
+    val selectRS1, selectPC = Value
   }
   
-import AluMux1Sel._
-   val a, b = IO(Input(UInt(3.W)))
-    val sel = IO(Input(AluMux1Sel()))
-  val out = IO(Output(UInt(3.W)))
-    out := 0.U
+   import AluMux1Sel._
+   val rs1, pc = IO(Input(UInt(3.W)))
+   val sel = IO(Input(AluMux1Sel()))
+   val out = IO(Output(UInt(3.W)))
+   
+   // default goes first
+   out := 0.U
     
-  switch (sel) {
-  is (selectRS1) {
-   out := a
-  }
-  is (selectPC) {
-   out := b
+   switch (sel) {
+     is (selectRS1) { out := rs1 }
+     is (selectPC)  { out := pc }
   }
 }
-  };
 ```
 ```scala mdoc:invisible
 ChiselStage.emitVerilog(new CaseStatementEnumModule1)
@@ -502,8 +492,8 @@ ChiselStage.emitVerilog(new CaseStatementEnumModule1)
 ```
 module CaseStatementEnumModule2 (input clk);
  
-  typedef enum {INIT, IDLE, START, READY} t_state;
-    t_state state;
+  typedef enum {INIT, IDLE, START, READY} StateValue;
+    StateValue state;
     
     
  
@@ -524,15 +514,15 @@ endmodule
 ```scala mdoc:silent
 class CaseStatementEnumModule2 extends Module {
   
-  object AluMux1Sel extends ChiselEnum {
+  object StateValue extends ChiselEnum {
    val INIT  = Value(0x03.U) 
     val IDLE  = Value(0x13.U) 
     val START = Value(0x17.U) 
     val READY = Value(0x23.U) 
   }
-   import AluMux1Sel._
+   import StateValues._
     val state = RegInit(INIT)
-  val nextState = IO(Output(AluMux1Sel()))
+  val nextState = IO(Output(StateValue()))
   nextState := state
 
   
