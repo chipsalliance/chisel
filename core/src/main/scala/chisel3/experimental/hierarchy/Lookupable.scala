@@ -315,13 +315,12 @@ object Lookupable {
       }
       def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): C = {
         val ret = that(instance.proto)
-        //println(s"lookupInstance ${ret.toTarget} in ${instance}")
         val x = instance.underlying match {
           // If instance is just a normal module, no changing of context is necessary
           case Proto(_) => new Instance(ret.underlying, instance.contexts)
           case Clone(_) => new Instance(cloneModuleToContext(ret.underlying, instance.getInnerDataContext.get), instance.contexts ++ ret.contexts)
         }
-        //println(s"lookupInstance ${ret.toTarget} in ${instance} gets ${x.toTarget}")
+        //println(s"lookupInstance ${x.toTarget} ${instance.contexts}, ${x.contexts}")
         x
       }
     }

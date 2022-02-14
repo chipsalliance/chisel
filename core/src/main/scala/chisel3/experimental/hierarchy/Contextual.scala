@@ -1,5 +1,6 @@
 package chisel3.experimental.hierarchy
 import chisel3.internal.Builder
+import chisel3.experimental.BaseModule
 
 
 /** Contextual represent context-dependent values which can be passed around in various datastructures
@@ -14,6 +15,12 @@ case class Contextual[T, V] private[chisel3] (private[chisel3] val values: Seq[(
       //case (h: Hierarchy[T], value: V) if Contextual.viewableFrom(h, context) => value
       case (h: Hierarchy[T], value: V) => value
     }
+    lazy val contextString = context match {
+      case h: Instance[BaseModule] if h.isA[BaseModule] => h.toTarget.toString
+      case h: Definition[BaseModule] if h.isA[BaseModule] => h.toTarget.toString
+      case other => context.toString
+    }
+    require(matchingValues.size > 0, s"Contextual is empty when accessed from ${contextString}")
     require(matchingValues.size == 1)
     matchingValues.head
   }
@@ -27,8 +34,10 @@ object Contextual {
     val currentModule = Builder.currentModule.get
     new Contextual(Seq(currentModule.toDefinition -> value))
   }
+  def empty[V]: Contextual[BaseModule, V] = new Contextual(Seq.empty[(Hierarchy[BaseModule], V)])
+
   def apply[I <: IsInstantiable, V](context: I, value: V) = new Contextual(Seq((context.toInstance, value)))
-  def empty[T, V]: Contextual[T, V] = new Contextual(Seq.empty[(Hierarchy[T], V)])
+  def apply[I <: IsInstantiable, V]() = new Contextual(Seq.empty[(Hierarchy[I],V)])
 
   // This needs to be a derived typeclass w.r.t. the hierarchical type in Contextual
   def viewableFrom[T](h: Hierarchy[T], context: Hierarchy[T]): Boolean = ???

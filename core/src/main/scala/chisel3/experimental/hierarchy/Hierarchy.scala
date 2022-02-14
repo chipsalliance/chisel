@@ -52,10 +52,22 @@ sealed trait Hierarchy[+A] {
       }
     } else clz
   }
+  // Nested objects stick a '$' at the end of the object name, but this does not show up in the scala reflection type string
+  // E.g.
+  // object Foo {
+  //   object Bar {
+  //     class Baz() 
+  //   }
+  // }
+  // Scala type will be Foo.Bar.Baz
+  // Java type will be Foo.Bar$.Baz
+  private def modifyNestedObjects(clz: String): String = {
+    if (clz != null) { clz.replace("$","") } else clz
+  }
   private lazy val superClasses = calculateSuperClasses(proto.getClass())
   private def calculateSuperClasses(clz: Class[_]): Set[String] = {
     if (clz != null) {
-      Set(modifyReplString(clz.getCanonicalName())) ++
+      Set(modifyNestedObjects(modifyReplString(clz.getCanonicalName()))) ++
         clz.getInterfaces().flatMap(i => calculateSuperClasses(i)) ++
         calculateSuperClasses(clz.getSuperclass())
     } else {
