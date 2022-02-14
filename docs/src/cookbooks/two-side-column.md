@@ -35,8 +35,8 @@ endmodule
 
 ```scala mdoc
 class Foo extends Module {
-  val a = Input(Bool())
-  val b = Output(Bool())
+  val a = IO(Input(Bool()))
+  val b = IO(Output(Bool()))
   b := a
 }
 ```
@@ -111,10 +111,10 @@ endmodule
 <td>
 
 ```
-class ParameterizedWidthAdder(in0Width: Int, in1Width: Int, sumWidth: Int) extends Tester{
-  require(in0Width >= 0)
-  require(in1Width >= 0)
-  require(sumWidth >= 0)
+class ParameterizedWidthAdder(
+  in0Width: Int,
+  in1Width: Int,
+  sumWidth: Int) extends Tester {
   val io = IO(new Bundle {
     val in0 = Input(UInt(in0Width.W))
     val in1 = Input(UInt(in1Width.W))
@@ -132,14 +132,16 @@ class ParameterizedWidthAdder(in0Width: Int, in1Width: Int, sumWidth: Int) exten
 ```
 module TestBench;
 wire [31:0] sum;
-ParameterizedWidthAdder  #(32, 32, 32) my32BitAdderWithTruncation (32'b0, 32'b0, sum);
+ParameterizedWidthAdder  #(32, 32, 32)
+  my32BitAdderWithTruncation (32'b0, 32'b0, sum);
 endmodule
 ```
 </td>
             <td>
 
 ```
-val my32BitAdderWithTruncation = Module(new ParameterizedWidthAdder(32, 32, 32)
+val my32BitAdderWithTruncation =
+  Module(new ParameterizedWidthAdder(32, 32, 32)
 ```
 </td>
          </tr>
@@ -320,7 +322,11 @@ reg [7:0] registerOnDifferentClockAndAsyncReset;
    end
  end
 
-  assign out = in + registerWithoutInit + registerWithInit + registerOnDifferentClockAndSyncReset registerOnDifferentClockAndAsyncReset;
+  assign out = in + 
+    registerWithoutInit + 
+    registerWithInit + 
+    registerOnDifferentClockAndSyncReset + 
+    registerOnDifferentClockAndAsyncReset;
 
 
 endmodule
