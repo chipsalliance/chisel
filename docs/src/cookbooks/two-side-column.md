@@ -92,7 +92,7 @@ ChiselStage.emitVerilog(new PassthroughGenerator(10))
          <tr>
 <td>
 
-```
+```verilog
 module ParameterizedWidthAdder(
   input [in0Width-1:0] in0,
   input [in1Width-1:0] in1,
