@@ -239,13 +239,13 @@ private[chisel3] object BiConnect {
   ): Boolean = {
 
     // check that the aggregates have the same types
-    val typeCheck = CheckTypes.validConnect(
+    def typeCheck = CheckTypes.validConnect(
       Converter.extractType(sink, sourceInfo),
       Converter.extractType(source, sourceInfo)
     )
 
     // check records live in appropriate contexts
-    val contextCheck =
+    def contextCheck =
       MonoConnect.aggregateConnectContextCheck(
         sourceInfo,
         connectCompileOptions,
@@ -255,13 +255,13 @@ private[chisel3] object BiConnect {
       )
 
     // sink must be writable
-    val bindingCheck = sink.topBinding match {
+    def bindingCheck = sink.topBinding match {
       case _: ReadOnlyBinding => false
       case _ => true
     }
 
     // check data can flow between provided aggregates
-    val flow_check = MonoConnect.canBeSink(sink, context_mod) && MonoConnect.canBeSource(source, context_mod)
+    def flow_check = MonoConnect.canBeSink(sink, context_mod) && MonoConnect.canBeSource(source, context_mod)
 
     typeCheck && contextCheck && bindingCheck && flow_check
   }

@@ -330,11 +330,11 @@ private[chisel3] object MonoConnect {
     context_mod:           RawModule
   ): Boolean = {
     // Assuming we're using a <>, check if a bulk connect is valid in that case
-    val biConnectCheck =
+    def biConnectCheck =
       BiConnect.canBulkConnectAggregates(sink, source, sourceInfo, connectCompileOptions, context_mod)
 
     // Check that the Aggregate's child signals are all strictly inputs (not bidirectional)
-    val sinkIsInputCheck: Boolean = sink.direction == ActualDirection.Output
+    def sinkIsInputCheck: Boolean = sink.direction == ActualDirection.Input
 
     biConnectCheck && sinkIsInputCheck
   }
