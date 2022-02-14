@@ -263,12 +263,18 @@ package internal {
         record.forceName(None, default = this.desiredName, namespace)
         // Now take the Ref that forceName set and convert it to the correct Arg
         val instName = record.getRef match {
-          case Ref(name) => name
-          case bad       => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
+          case Ref(name)              => name
+          case ModuleCloneIO(_, name) => namespace.name(name)
+          case bad                    => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
         }
         // Set both the record and the module to have the same instance name
         record.setRef(ModuleCloneIO(getProto, instName), force = true) // force because we did .forceName first
         this.setRef(Ref(instName))
+      }
+
+      def suggestName(name: String): Unit = {
+        _portsRecord.setRef(ModuleCloneIO(getProto, name)) // force because we did .forceName first
+        this.setRef(Ref(name))
       }
     }
 

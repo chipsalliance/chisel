@@ -86,6 +86,9 @@ object Instance extends SourceInfoDoc {
       case Clone(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
     }
 
+    def suggestName(name: String): Unit = {
+      i.getInnerDataContext.get.asInstanceOf[ModuleClone[T]].suggestName(name)
+    }
   }
 
   /** A constructs an [[Instance]] from a [[Definition]]
