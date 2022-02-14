@@ -31,9 +31,9 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
   * [How can I dynamically set/parametrize the name of a module?](#how-can-i-dynamically-setparametrize-the-name-of-a-module)
 * Directionality
   * [How do I strip directions from a bidirectional Bundle (or other Data)?](#how-do-i-strip-directions-from-a-bidirectional-bundle-or-other-data)
-* ilog to Chisel
-  * [How do I write Verilog codes in chisel?](two-side-column)
-## Type ConversionsVer
+  * [Side-by-Side Comparison of Verilog to Chisel](two-side-column)
+  
+## Type Conversions
 
 ### How do I create a UInt from an instance of a Bundle?
 
