@@ -1082,7 +1082,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     val (chirrtl, _) = getFirrtlAndAnnos(new Top)
     chirrtl.serialize should include("inst potato of AddOne")
   }
-  it("11.2 suggestName with sanitization") {
+  it("11.3 suggestName with sanitization") {
     class Top extends Module {
       val definition = Definition(new AddOne)
       val inst0 = Instance(definition)
@@ -1093,5 +1093,14 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     val (chirrtl, _) = getFirrtlAndAnnos(new Top)
     chirrtl.serialize should include("inst potato of AddOne")
     chirrtl.serialize should include("inst potato_1 of AddOne")
+  }
+  it("11.4 suggestName with multi-def collision sanitization") {
+    class Top extends Module {
+      val inst0 = Module(new AddOne()).suggestName("potato")
+      val inst1 = Instance(Definition(new AddOne)).suggestName("potato")
+    }
+    val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+    chirrtl.serialize should include("inst potato of AddOne")
+    chirrtl.serialize should include("inst potato_1 of AddOne_1")
   }
 }
