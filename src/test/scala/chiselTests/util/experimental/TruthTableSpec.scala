@@ -80,4 +80,28 @@ class TruthTableSpec extends AnyFlatSpec {
     }
     assert(chisel3.stage.ChiselStage.emitChirrtl(new Foo) == chisel3.stage.ChiselStage.emitChirrtl(new Foo))
   }
+  "TruthTable" should "accept unknown input width" in {
+    val t = TruthTable(
+      Seq(
+        BitPat(0.U) -> BitPat.dontCare(1),
+        BitPat(1.U) -> BitPat.dontCare(1),
+        BitPat(2.U) -> BitPat.dontCare(1),
+        BitPat(3.U) -> BitPat.dontCare(1),
+        BitPat(4.U) -> BitPat.dontCare(1),
+        BitPat(5.U) -> BitPat.dontCare(1),
+        BitPat(6.U) -> BitPat.dontCare(1),
+        BitPat(7.U) -> BitPat.dontCare(1)
+      ),
+      BitPat.N(1)
+    )
+    assert(t.toString contains "000->?")
+    assert(t.toString contains "001->?")
+    assert(t.toString contains "010->?")
+    assert(t.toString contains "011->?")
+    assert(t.toString contains "100->?")
+    assert(t.toString contains "101->?")
+    assert(t.toString contains "110->?")
+    assert(t.toString contains "111->?")
+    assert(t.toString contains "     0")
+  }
 }
