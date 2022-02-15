@@ -19,7 +19,7 @@ import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBin
   */
 @implicitNotFound(
   "@public is only legal within a class or trait marked @instantiable, and only on vals of type" +
-    " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, Either, or Tuple2"
+    " Data, BaseModule, MemBase, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, Either, or Tuple2"
 )
 trait Lookupable[-B] {
   type C // Return type of the lookup
@@ -345,6 +345,45 @@ object Lookupable {
           doLookupData(ret, instance.cache, ioMap, instance.getInnerDataContext)
         }
 
+      }
+    }
+
+  private[chisel3] def cloneMemToContext[T <: MemBase[_]](
+    mem:     T,
+    context: BaseModule
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
+    mem._parent match {
+      case None => mem
+      case Some(parent) =>
+        val newParent = cloneModuleToContext(Proto(parent), context)
+        newParent match {
+          case Proto(p) if p == parent => mem
+          case Clone(mod: BaseModule) =>
+            val existingMod = Builder.currentModule
+            Builder.currentModule = Some(mod)
+            val newChild: T = mem match {
+              case m: Mem[_] => new Mem(m.t.asInstanceOf[Data].cloneTypeFull, m.length).asInstanceOf[T]
+              case m: SyncReadMem[_] =>
+                new SyncReadMem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, m.readUnderWrite).asInstanceOf[T]
+            }
+            Builder.currentModule = existingMod
+            newChild.setRef(mem.getRef, true)
+            newChild
+        }
+    }
+  }
+
+  implicit def lookupMem[B <: MemBase[_]](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    new Lookupable[B] {
+      type C = B
+      def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
+        cloneMemToContext(that(definition.proto), definition.getInnerDataContext.get)
+      }
+      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+        cloneMemToContext(that(instance.proto), instance.getInnerDataContext.get)
       }
     }
 

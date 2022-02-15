@@ -331,6 +331,17 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         @public override final lazy val y: Int = 4
       }
     }
+    it("3.13: should work with Mems/SyncReadMems") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasMems()))
+        mark(i.mem, "Mem")
+        mark(i.syncReadMem, "SyncReadMem")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.foreach { x => println(x.serialize) }
+      annos should contain(MarkAnnotation("~Top|Top/i:HasMems>mem".rt, "Mem"))
+      annos should contain(MarkAnnotation("~Top|Top/i:HasMems>syncReadMem".rt, "SyncReadMem"))
+    }
   }
   describe("4: toInstance") {
     it("4.0: should work on modules") {

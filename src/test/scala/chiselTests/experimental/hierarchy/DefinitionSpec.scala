@@ -339,6 +339,29 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|HasTuple2>x".rt, "x"))
       annos should contain(MarkAnnotation("~Top|HasTuple2>y".rt, "y"))
     }
+    it("3.13: should work on Mems/SyncReadMems") {
+      class Top() extends Module {
+        val i = Definition(new HasMems())
+        mark(i.mem, "Mem")
+        mark(i.syncReadMem, "SyncReadMem")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|HasMems>mem".rt, "Mem"))
+      annos should contain(MarkAnnotation("~Top|HasMems>syncReadMem".rt, "SyncReadMem"))
+    }
+    it("3.14: should not create memory ports") {
+      class Top() extends Module {
+        val i = Definition(new HasMems())
+        i.mem(0) := 100.U // should be illegal!
+      }
+      val failure = intercept[ChiselException] {
+        getFirrtlAndAnnos(new Top)
+      }
+      assert(
+        failure.getMessage ==
+          "Cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
+      )
+    }
   }
   describe("4: toDefinition") {
     it("4.0: should work on modules") {

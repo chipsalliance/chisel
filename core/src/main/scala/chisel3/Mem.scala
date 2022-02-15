@@ -246,6 +246,11 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   )(
     implicit compileOptions: CompileOptions
   ): T = {
+    if (Builder.currentModule != _parent) {
+      throwException(
+        s"Cannot create a memory port in a different module (${Builder.currentModule.get.name}) than where the memory is (${_parent.get.name})."
+      )
+    }
     requireIsHardware(idx, "memory port index")
     val i = Vec.truncateIndex(idx, length)(sourceInfo, compileOptions)
 
@@ -267,7 +272,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class Mem[T <: Data] private (t: T, length: BigInt) extends MemBase(t, length)
+sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt) extends MemBase(t, length)
 
 object SyncReadMem {
 
@@ -345,7 +350,7 @@ object SyncReadMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
+sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
     extends MemBase[T](t, n) {
 
   override def read(x: UInt): T = macro SourceInfoTransform.xArg
