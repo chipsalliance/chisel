@@ -74,10 +74,9 @@ object Lookupable {
     }
   }
   // The business logic of lookupData
-  // Also called by cloneViewToContext which potentially needs to lookup stuff from ioMap or the cache
+  // Also called by cloneViewToContext which potentially needs to lookup stuff from ioMap
   private[chisel3] def doLookupData[A, B <: Data](
     data:    B,
-    cache:   HashMap[Data, Data],
     ioMap:   Option[Map[Data, Data]],
     context: Option[BaseModule]
   )(
@@ -86,12 +85,9 @@ object Lookupable {
   ): B = {
     def impl[C <: Data](d: C): C = d match {
       case x: Data if ioMap.nonEmpty && ioMap.get.contains(x) => ioMap.get(x).asInstanceOf[C]
-      case x: Data if cache.contains(x)                       => cache(x).asInstanceOf[C]
       case _ =>
         assert(context.nonEmpty) // TODO is this even possible? Better error message here
-        val ret = cloneDataToContext(d, context.get)
-        cache(d) = ret
-        ret
+        cloneDataToContext(d, context.get)
     }
     data.binding match {
       case Some(_: ChildBinding) => mapRootAndExtractSubField(data, impl)
@@ -157,7 +153,6 @@ object Lookupable {
   // TODO Describe what this is doing at a high level
   private[chisel3] def cloneViewToContext[A, B <: Data](
     data:    B,
-    cache:   HashMap[Data, Data],
     ioMap:   Option[Map[Data, Data]],
     context: Option[BaseModule]
   )(
@@ -165,7 +160,7 @@ object Lookupable {
     compileOptions:      CompileOptions
   ): B = {
     // alias to shorten lookups
-    def lookupData[C <: Data](d: C) = doLookupData(d, cache, ioMap, context)
+    def lookupData[C <: Data](d: C) = doLookupData(d, ioMap, context)
 
     val result = data.cloneTypeFull
 
@@ -329,7 +324,7 @@ object Lookupable {
         if (isView(ret)) {
           ??? // TODO!!!!!!  cloneViewToContext(ret, instance, ioMap, instance.getInnerDataContext)
         } else {
-          doLookupData(ret, definition.cache, None, definition.getInnerDataContext)
+          doLookupData(ret, None, definition.getInnerDataContext)
         }
       }
       def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
@@ -340,9 +335,9 @@ object Lookupable {
           case _ => None
         }
         if (isView(ret)) {
-          cloneViewToContext(ret, instance.cache, ioMap, instance.getInnerDataContext)
+          cloneViewToContext(ret, ioMap, instance.getInnerDataContext)
         } else {
-          doLookupData(ret, instance.cache, ioMap, instance.getInnerDataContext)
+          doLookupData(ret, ioMap, instance.getInnerDataContext)
         }
 
       }

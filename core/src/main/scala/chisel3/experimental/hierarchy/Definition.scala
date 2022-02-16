@@ -44,7 +44,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
     implicit lookup: Lookupable[B],
     macroGenerated:  chisel3.internal.MacroGenerated
   ): lookup.C = {
-    lookup.definitionLookup(that, this)
+    returnValue(that(proto), lookup.definitionLookup(that, this))
   }
 
   /** @return the context of any Data's return from inside the instance */

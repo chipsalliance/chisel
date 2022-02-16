@@ -57,7 +57,7 @@ final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Und
     implicit lookup: Lookupable[B],
     macroGenerated:  chisel3.internal.MacroGenerated
   ): lookup.C = {
-    lookup.instanceLookup(that, this)
+    returnValue(that(proto), lookup.instanceLookup(that, this))
   }
 
   /** Returns the definition of this Instance */
