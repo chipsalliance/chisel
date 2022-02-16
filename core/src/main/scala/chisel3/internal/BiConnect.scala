@@ -94,7 +94,15 @@ private[chisel3] object BiConnect {
         val leftReified:  Option[Aggregate] = if (isView(left_v)) reifyToAggregate(left_v) else Some(left_v)
         val rightReified: Option[Aggregate] = if (isView(right_v)) reifyToAggregate(right_v) else Some(right_v)
 
-        if (leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectAggregates(leftReified.get, rightReified.get, sourceInfo, connectCompileOptions, context_mod)) {
+        if (
+          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectAggregates(
+            leftReified.get,
+            rightReified.get,
+            sourceInfo,
+            connectCompileOptions,
+            context_mod
+          )
+        ) {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
         } else {
           for (idx <- 0 until left_v.length) {
@@ -143,7 +151,15 @@ private[chisel3] object BiConnect {
         val leftReified:  Option[Aggregate] = if (isView(newLeft)) reifyToAggregate(newLeft) else Some(newLeft)
         val rightReified: Option[Aggregate] = if (isView(newRight)) reifyToAggregate(newRight) else Some(newRight)
 
-        if (leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectAggregates(leftReified.get, rightReified.get, sourceInfo, connectCompileOptions, context_mod)) {
+        if (
+          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectAggregates(
+            leftReified.get,
+            rightReified.get,
+            sourceInfo,
+            connectCompileOptions,
+            context_mod
+          )
+        ) {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
         } else if (notStrict) {
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)

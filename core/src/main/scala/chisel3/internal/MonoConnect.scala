@@ -132,10 +132,18 @@ private[chisel3] object MonoConnect {
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if (sink_v.length != source_v.length) { throw MismatchedVecException }
 
-        val sinkReified:  Option[Aggregate] = if (isView(sink_v)) reifyToAggregate(sink_v) else Some(sink_v)
+        val sinkReified:   Option[Aggregate] = if (isView(sink_v)) reifyToAggregate(sink_v) else Some(sink_v)
         val sourceReified: Option[Aggregate] = if (isView(source_v)) reifyToAggregate(source_v) else Some(source_v)
 
-        if (sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(sinkReified.get, sourceReified.get, sourceInfo, connectCompileOptions, context_mod)) {
+        if (
+          sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(
+            sinkReified.get,
+            sourceReified.get,
+            sourceInfo,
+            connectCompileOptions,
+            context_mod
+          )
+        ) {
           pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
         } else {
           for (idx <- 0 until sink_v.length) {
@@ -160,10 +168,18 @@ private[chisel3] object MonoConnect {
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
-        val sinkReified:  Option[Aggregate] = if (isView(sink_r)) reifyToAggregate(sink_r) else Some(sink_r)
+        val sinkReified:   Option[Aggregate] = if (isView(sink_r)) reifyToAggregate(sink_r) else Some(sink_r)
         val sourceReified: Option[Aggregate] = if (isView(source_r)) reifyToAggregate(source_r) else Some(source_r)
 
-        if (sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(sinkReified.get, sourceReified.get, sourceInfo, connectCompileOptions, context_mod)) {
+        if (
+          sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(
+            sinkReified.get,
+            sourceReified.get,
+            sourceInfo,
+            connectCompileOptions,
+            context_mod
+          )
+        ) {
           pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
         } else {
           // For each field, descend with right
@@ -333,10 +349,11 @@ private[chisel3] object MonoConnect {
     def biConnectCheck =
       BiConnect.canBulkConnectAggregates(sink, source, sourceInfo, connectCompileOptions, context_mod)
 
-    // Check that the Aggregate's child signals are all strictly inputs (not bidirectional)
-    def sinkIsInputCheck: Boolean = sink.direction == ActualDirection.Input
+    // Check that the Aggregate can be driven (not bidirectional or an input) to match Chisel semantics
+    def sinkCanBeDrivenCheck: Boolean =
+      sink.direction == ActualDirection.Output || sink.direction == ActualDirection.Unspecified
 
-    biConnectCheck && sinkIsInputCheck
+    biConnectCheck && sinkCanBeDrivenCheck
   }
 
   // This function (finally) issues the connection operation
