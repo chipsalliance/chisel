@@ -22,7 +22,7 @@ import chisel3.util.{Cat, Fill, DecoupledIO}
          <tr>
 <td>
 
-```
+```verilog
 module Foo (
   input  a,
   output b
@@ -60,7 +60,7 @@ class Foo extends Module {
 <tr>
 <td>
 
-```
+```verilog
 module PassthroughGenerator(
   input        clock,
   input        reset,
@@ -111,7 +111,7 @@ endmodule
 </td>
 <td>
 
-```
+```verilog
 class ParameterizedWidthAdder(
   in0Width: Int,
   in1Width: Int,
@@ -148,7 +148,7 @@ class ParameterizedWidthAdder(
          <tr>
 <td>
 
-```
+```verilog
 wire [31:0] 
 a = 32'd42; 
 wire [31:0] 
@@ -178,7 +178,7 @@ ChiselStage.emitVerilog(new MyWireAssignmentModule)
 <tr>
 <td>
 
-```
+```verilog
 module MyWireAssignmentModule(
   input   clock,
   input   reset
@@ -231,7 +231,7 @@ ChiselStage.emitVerilog(new MyWireAssignmentModule2)
          <tr>
 <td>
 
-```
+```verilog
 module RegisterModule(
   input         clock,
   input         reset,
@@ -264,7 +264,7 @@ ChiselStage.emitVerilog(new RegisterModule)
  <tr>
 <td>
 
-```
+```verilog
 module RegisterModule(
   input        clock,
   input        reset,
@@ -314,8 +314,6 @@ reg [7:0] registerOnDifferentClockAndAsyncReset;
     registerWithInit + 
     registerOnDifferentClockAndSyncReset + 
     registerOnDifferentClockAndAsyncReset;
-
-
 endmodule
 
 ```
@@ -323,7 +321,7 @@ endmodule
 <td>
 
 ```scala mdoc:silent
-class RegisterModule extends Module {
+class RegisterModule2 extends Module {
   val in  = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
 
@@ -331,8 +329,6 @@ class RegisterModule extends Module {
   val differentSyncReset = IO(Input(Bool()))
   
   val differentAsyncReset = IO(Input(AsyncReset()))
-  
-  
   
   val registerWithoutInit = Reg(UInt(8.W))
   
@@ -382,7 +378,7 @@ ChiselStage.emitVerilog(new RegisterModule2)
          <tr>
 <td>
 
-```
+```verilog
 module CaseStatementModule(
   input  [2:0] a,
   input  [2:0] b,
@@ -402,7 +398,6 @@ end
 endmodule
 ```
 </td>
-
 <td>
 
 ```scala mdoc:silent
@@ -442,10 +437,24 @@ ChiselStage.emitVerilog(new CaseStatementModule)
          <tr>
 <td>
 
+```verilog
+module CaseStatementEnumModule1 (
+  input [2:0] rs1,
+  input [2:0] pc,
+  input AluMux1Sel sel,
+  output reg [2:0] out);
+
+  typedef enum {SELECT_RS1, SELECT_PC} AluMux1Sel;
+  
+  case(sel)
+    SELECT_RS1: out <= rs1;
+    SELECT_PC: out <= pc;
+    default: out <= 3'b0;
+  end
+endmodule
 ```
 </td>
 <td>
-
 
 ```scala mdoc:silent
 class CaseStatementEnumModule1 extends Module {
@@ -476,12 +485,11 @@ ChiselStage.emitVerilog(new CaseStatementEnumModule1)
   <tr>
 <td>
 
-```
+```verilog
 module CaseStatementEnumModule2 (input clk);
  
-  typedef enum {INIT, IDLE, START, READY} StateValue;
+  typedef enum {INIT = 3, IDLE = 'h13, START = 'h17, READY = 'h23} StateValue;
     StateValue state;
-    
     
  
     always @(posedge clk) begin
@@ -492,7 +500,6 @@ module CaseStatementEnumModule2 (input clk);
             default : state = IDLE ;
         endcase
     end
-    
 endmodule
 ```
 </td>
@@ -507,25 +514,17 @@ class CaseStatementEnumModule2 extends Module {
     val START = Value(0x17.U) 
     val READY = Value(0x23.U) 
   }
-   import StateValues._
-    val state = RegInit(INIT)
+  import StateValue._
+  val state = RegInit(INIT)
   val nextState = IO(Output(StateValue()))
   nextState := state
 
   
   switch (state) {
-  is (INIT) {
-   state := IDLE   
-  }
-  is (IDLE) {  
-   state := START
-  }
-  is (START) { 
-   state := READY
-  }
- is (READY) { 
-   state := IDLE
-  }
+    is (INIT) {state := IDLE}
+    is (IDLE) {state := START}
+    is (START) {state := READY}
+    is (READY) {state := IDLE}
   }
 }
 ```
@@ -608,28 +607,34 @@ ChiselStage.emitVerilog(new MyInterfaceModule)
          <tr>
 <td>
 
-```
-module ReadWriteMem(
-input         clock,
-input         io_enable,
-input         io_write,
-input  [9:0]  io_addr,
-input  [31:0] io_dataIn,
+```verilog
+module ReadWriteSmem(
+input clock,
+input reset,
+input io_enable,
+input io_write,
+input [9:0] io_addr,
+input [31:0] io_dataIn,
 output [31:0] io_dataOut
 );
 
 reg [31:0] mem [0:1023];
+reg [9:0] addr_delay;
 
-assign io_dataOut = mem[io_addr];
+assign io_dataOut = mem[addr_delay]
 
 always @(posedge clock) begin
-  if (io_enable && io_write) begin
-  mem[io_addr] <= io_dataIn;
+if (io_enable & io_write) begin
+mem[io_addr] <= io_data;
 end
-
+if (io_enable) begin
+addr_delay <= io_addr;
+end
+end
 endmodule
 ```
 </td>
+
 
 <td>
 
@@ -648,47 +653,43 @@ class ReadWriteSmem extends Module {
   mem.write(io.addr, io.dataIn)
   io.dataOut := mem.read(io.addr, io.enable)
 }
+```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new ReadWriteMem)
+ChiselStage.emitVerilog(new ReadWriteSmem)
 ```
 </td>
 </tr>
-
 <tr>
 <td>
 
-```
-module ReadWriteSmem2(
-input clock,
-input reset, 
-input io_enable, 
-input io_write,
-input [9:0] io_addr,
-input [31:0] io_dataIn,
-output [31:0] io_dataOut 
-); 
+```verilog
+module ReadWriteMem(
+input         clock,
+input         io_enable,
+input         io_write,
+input  [9:0]  io_addr,
+input  [31:0] io_dataIn,
+output [31:0] io_dataOut
+);
 
-reg [31:0] mem [0:1023]; 
-reg [9:0] addr_delay;
+reg [31:0] mem [0:1023];
 
-assign io_dataOut = mem[addr_delay] 
+assign io_dataOut = mem[io_addr];
 
-always @(posedge clock) begin 
-   if (io_enable & io_write) begin 
-   mem[io_addr] <= io_data; 
- end
-  if (io_enable) begin 
-  addr_delay <= io_addr; 
+always @(posedge clock) begin
+if (io_enable && io_write) begin
+mem[io_addr] <= io_dataIn;
 end
-end
+
 endmodule
 ```
+
 </td>
 
 <td>
 
 ```scala mdoc:silent
-class ReadWriteMem2 extends Module {
+class ReadWriteMem extends Module {
 val width: Int = 32
 val io = IO(new Bundle {
 val enable = Input(Bool())
@@ -704,7 +705,7 @@ io.dataOut := mem.read(io.addr)
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new ReadWriteSmem2)
+ChiselStage.emitVerilog(new ReadWriteMem)
 ```
 </td>
 </tr>
@@ -724,7 +725,7 @@ ChiselStage.emitVerilog(new ReadWriteSmem2)
          <tr>
 <td>
 
-```
+```verilog
  module OperatorExampleModule(
   input         clock,
   input         reset,
@@ -763,31 +764,36 @@ ChiselStage.emitVerilog(new ReadWriteSmem2)
   assign add_res = x + y; 
   assign sub_res = x - y;
   assign mod_res = x % y;
+  assign mul_res = x * y;
   assign div_res = x / y;
+  assign equ_res = x == y;
+  assign not_equ_res = x != y;
   assign and_res = x & y;
   assign or_res = x | y; 
   assign xor_res = x ^ y;
-  assign not_res = ~x; 
+   assign not_res = ~x; 
   assign logical_not_res = !(x == 32'h0);
+   assign logical_and_res = x[0] && y[0];
+  assign logical_or_res = x[0] || y[0];
+  assign cat_res = {x,y}; 
   assign mux_res = c[0] ? x : y;
   assign rshift_res = x >> y[2:0];
   assign lshift_res = x << y[2:0];
-  assign logical_and_res = x[0] && y[0];
-  assign logical_or_res = x[0] || y[0];
-  assign equ_res = x == y; 
-  assign not_equ_res = x != y;
-  assign andR_res = &x;
-  assign orR_res = |x; 
-  assign xorR_res = ^x; 
   assign gt_res = x > y; 
   assign lt_res = x < y;
   assign geq_res = x >= y; 
   assign leq_res = x <= y;
   assign single_bitselect_res = x[1];
-  assign mul_res = x * y;
-  assign cat_res = {x,y}; 
   assign multiple_bitselect_res = x[1:0];
   assign fill_res = {3{x}};
+  assign andR_res = &x;
+  assign orR_res = |x; 
+  assign xorR_res = ^x; 
+ 
+  
+
+  
+ 
 endmodule
 
 ```
@@ -800,10 +806,21 @@ class OperatorExampleModule extends Module {
 
   val x, y, c = IO(Input(UInt(32.W)))
 
-  val add_res, sub_res, mod_res, div_res, and_res, or_res, xor_res, not_res,logical_not_res, mux_res,  rshift_res , lshift_res = IO(Output(UInt(32.W)))
-  val logical_and_res, logical_or_res, equ_res, not_equ_res, andR_res, orR_res, xorR_res, gt_res,lt_res, geq_res, leq_res,single_bitselect_res = IO(Output(Bool()))
+  val add_res, sub_res, 
+  mod_res, div_res, and_res, 
+  or_res, xor_res, not_res,
+  logical_not_res, mux_res,  
+  rshift_res , lshift_res = IO(Output(UInt(32.W)))
+  
+  val logical_and_res, logical_or_res, 
+  equ_res, not_equ_res, andR_res, 
+  orR_res, xorR_res, gt_res,lt_res, 
+  geq_res, leq_res,single_bitselect_res = IO(Output(Bool()))
+  
   val mul_res, cat_res= IO(Output(UInt(64.W)))
+  
   val multiple_bitselect_res = IO(Output(UInt(2.W)))
+  
   val fill_res = IO(Output(UInt((3*32).W)))
   
   
