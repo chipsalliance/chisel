@@ -1,6 +1,6 @@
 <!Doctype html>
 <html>
-<title> Two side column </title>
+# Verilog vs Chisel Side-By-Side
 
 ```scala mdoc:invisible
 import chisel3._
@@ -11,6 +11,7 @@ import chisel3.util.{Cat, Fill, DecoupledIO}
 ```
 
 <body>
+    <!-- This script is needed so that Markdown and HTML will render together, see link to Stack overflow -->
     <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
     <table border ="0">
         <h1>Creating a Module</h1>
@@ -129,20 +130,6 @@ class ParameterizedWidthAdder(
 <tr>
 <td>
 
-```
-module TestBench;
-wire [31:0] sum;
-ParameterizedWidthAdder  #(32, 32, 32)
-  my32BitAdderWithTruncation (32'b0, 32'b0, sum);
-endmodule
-```
-</td>
-            <td>
-
-```
-val my32BitAdderWithTruncation =
-  Module(new ParameterizedWidthAdder(32, 32, 32)
-```
 </td>
          </tr>
     </table>
@@ -336,7 +323,7 @@ endmodule
 <td>
 
 ```scala mdoc:silent
-class RegisterModule2 extends Module {
+class RegisterModule extends Module {
   val in  = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
 
