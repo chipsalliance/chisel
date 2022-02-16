@@ -21,7 +21,7 @@ sealed trait Hierarchy[+A] {
     case Clone(i: IsClone[A]) => i.getProto
   }
 
-  /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
+  /** Updated by calls to [[_lookup]], to avoid recloning returned values */
   private val cache = HashMap[Any, Any]()
   private[chisel3] def returnValue[T](protoValue: Any, contextValue: => T): T = {
     cache.getOrElseUpdate(protoValue, contextValue).asInstanceOf[T]
