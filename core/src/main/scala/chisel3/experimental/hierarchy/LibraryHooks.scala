@@ -16,20 +16,20 @@ object LibraryHooks {
     * definition's Underlying
     * @note Implicitly requires being inside a Hierarchy Library Extension
     */
-  def buildInstance[A](
+  def buildInstance[A <: IsInstantiable](
     definition:       Definition[A],
     createUnderlying: Underlying[A] => Underlying[A]
   )(
     implicit inside: InsideHierarchyLibraryExtension
   ): Instance[A] = {
-    new Instance(createUnderlying(definition.underlying), definition.contexts)
+    new Instance(createUnderlying(definition.underlying))
   }
 
   /** Builds a new definition given an Underlying implementation
     * @note Implicitly requires being inside a Hierarchy Library Extension
     */
-  def buildDefinition[A](underlying: Underlying[A])(implicit inside: InsideHierarchyLibraryExtension): Definition[A] = {
+  def buildDefinition[A <: IsInstantiable](underlying: Underlying[A])(implicit inside: InsideHierarchyLibraryExtension): Definition[A] = {
     //TODO!!! Setting contexts needs to actually be correct, this is not correct as is.
-    new Definition(underlying, Contexts())
+    new Definition(underlying)
   }
 }

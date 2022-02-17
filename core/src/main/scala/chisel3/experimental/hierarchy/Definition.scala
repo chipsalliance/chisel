@@ -9,7 +9,6 @@ import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
 import chisel3.experimental.BaseModule
-import chisel3.internal.BaseModule.IsClone
 import firrtl.annotations.{IsModule, ModuleTarget}
 
 /** User-facing Definition type.
@@ -20,7 +19,7 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   *
   * @param underlying The internal representation of the definition, which may be either be directly the object, or a clone of an object
   */
-final case class Definition[+A] private[chisel3] (private[chisel3] underlying: Underlying[A], private[chisel3] contexts: Contexts)
+final case class Definition[+A <: IsInstantiable] private[chisel3] (private[chisel3] underlying: Underlying[A])
     extends IsLookupable
     with SealedHierarchy[A] {
 
@@ -61,10 +60,9 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
   }
 
   override def toDefinition: Definition[A] = this
-  override def toInstance:   Instance[A] = new Instance(underlying, contexts)
+  override def toInstance:   Instance[A] = new Instance(underlying)
 
-  def withContext(pf: PartialFunction[Any, Any]): Definition[A] = new Definition(underlying, contexts.append(pf))
-  def stripContext: Definition[A] = new Definition(underlying, Contexts())
+  //def withContext(pf: PartialFunction[Any, Any]): Definition[A] = new Definition(underlying.withContext(pf))
 }
 
 /** Factory methods for constructing [[Definition]]s */
@@ -110,7 +108,7 @@ object Definition extends SourceInfoDoc {
     Builder.annotations ++= ir.annotations
     module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-    new Definition(Proto(module), Contexts())
+    new Definition(Proto(module))
   }
 
 }

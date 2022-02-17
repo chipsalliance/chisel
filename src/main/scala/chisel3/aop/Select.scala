@@ -9,7 +9,7 @@ import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy._
 import chisel3.internal.PseudoModule
-import chisel3.internal.BaseModule.{IsClone, ModuleClone, InstanceClone, DefinitionClone}
+import chisel3.internal.BaseModule.{ModuleClone, InstanceClone, DefinitionClone}
 import firrtl.annotations.ReferenceTarget
 import scala.reflect.runtime.universe.TypeTag
 
@@ -55,10 +55,10 @@ object Select {
             d.id match {
               case p: IsClone[_] =>
                 parent._lookup {
-                  x => new Instance(Clone(p), p.contexts).asInstanceOf[Instance[BaseModule]]
+                  x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]]
                 }//.addContext(parent.contexts)
               case other: BaseModule =>
-                new Instance(parent._lookup { x => other }.underlying, parent.contexts)
+                new Instance(parent._lookup { x => other }.underlying)
             }
         }
       case other => Nil
@@ -81,10 +81,10 @@ object Select {
           case d: DefInstance =>
             d.id match {
               case p: IsClone[_] =>
-                val i = parent._lookup { x => new Instance(Clone(p), p.contexts).asInstanceOf[Instance[BaseModule]] }//.addContext(parent.contexts)
+                val i = parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }//.addContext(parent.contexts)
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
               case other: BaseModule =>
-                val i = new Instance(parent._lookup { x => other }.underlying, parent.contexts)
+                val i = new Instance(parent._lookup { x => other }.underlying)
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
             }
           case other => None
@@ -121,7 +121,7 @@ object Select {
             i.id match {
               case p: IsClone[_] =>
                 //TODO: Think about if returning parent definition's context is appropriate or not.
-                parent._lookup { x => new Definition(Proto(p.getProto), Contexts()).asInstanceOf[Definition[BaseModule]] }
+                parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
               case other: BaseModule =>
                 other.toDefinition
             }
@@ -153,7 +153,7 @@ object Select {
             d.id match {
               case p: IsClone[_] =>
                 //TODO think about this.
-                val d = parent._lookup { x => new Definition(Clone(p), p.contexts).asInstanceOf[Definition[BaseModule]] }
+                val d = parent._lookup { x => new Definition(Clone(p)).asInstanceOf[Definition[BaseModule]] }
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
               case other: BaseModule =>
                 val d = parent._lookup { x => other.toDefinition }

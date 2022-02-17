@@ -5,7 +5,7 @@ package chisel3.experimental.hierarchy
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.language.experimental.macros
 import chisel3._
-import chisel3.internal.BaseModule.{InstantiableClone, IsClone, ModuleClone}
+import chisel3.internal.BaseModule.{InstantiableClone, ModuleClone}
 import chisel3.internal.sourceinfo.{InstanceTransform, SourceInfo}
 import chisel3.experimental.BaseModule
 import firrtl.annotations.IsModule
@@ -16,7 +16,7 @@ import firrtl.annotations.IsModule
   *
   * @param underlying The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Underlying[A], private[chisel3] contexts: Contexts) extends SealedHierarchy[A] {
+final case class Instance[+A <: IsInstantiable] private[chisel3] (private[chisel3] underlying: Underlying[A]) extends SealedHierarchy[A] {
   underlying match {
     case Proto(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Proto with a clone!")
     case other => //Ok
@@ -37,7 +37,7 @@ final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Und
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
   }
 
-  private[chisel3] def addContext(c: Contexts): Instance[A] = new Instance(underlying, c ++ contexts)
+  //private[chisel3] def addContext(c: Contexts): Instance[A] = new Instance(underlying, c ++ contexts)
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
@@ -63,9 +63,9 @@ final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Und
   }
 
   /** Returns the definition of this Instance */
-  override def toDefinition: Definition[A] = new Definition(Proto(proto), contexts)
+  override def toDefinition: Definition[A] = Definition(underlying)
   override def toInstance:   Instance[A] = this
-  def stripContext: Instance[A] = new Instance(underlying, Contexts())
+  //def stripContext: Instance[A] = new Instance(underlying.stripContext)
 
 }
 
@@ -112,7 +112,7 @@ object Instance extends SourceInfoDoc {
     val ports = experimental.CloneModuleAsRecord(definition)
     val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
     clone._madeFromDefinition = true
-    new Instance(Clone(clone), definition.contexts)
+    new Instance(Clone(clone))
   }
 
 }

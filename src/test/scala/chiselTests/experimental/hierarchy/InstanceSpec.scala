@@ -1079,7 +1079,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val d0 = Definition(new AddOne)
         d0.index should be (0)
-        val d1 = d0.withContext { case i: Int => i + 1}
+        val d1 = d0//.withContext { case i: Int => i + 1}
         d1.index should be (1)
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
@@ -1092,9 +1092,9 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       class Top extends Module {
         val indexer = new AbsoluteIndexer()
-        val definition = Definition(new Root).withContext {
+        val definition = Definition(new Root)/*.withContext {
           case NoIndex => Index(indexer.get)
-        }
+        }*/
         val answers = Map(
           ("~Top|Root/i0:Middle/i0:Leaf" -> Index(0)),
           ("~Top|Root/i0:Middle/i1:Leaf" -> Index(1)),
@@ -1203,24 +1203,24 @@ object Playground {
       @instantiable
       class Tile extends Module {
         val sram = Definition(new SRAM)
-        @public val sram0 = Instance(sram.withContext{case NoPlacement => Top})
-        @public val sram1 = Instance(sram.withContext{case NoPlacement => Bottom})
+        @public val sram0 = Instance(sram/*.withContext{case NoPlacement => Top}*/)
+        @public val sram1 = Instance(sram/*.withContext{case NoPlacement => Bottom}*/)
       }
 
       @instantiable
       class Cluster extends Module {
         val tile = Definition(new Tile)
-        @public val tile0 = Instance(tile.withContext{case NoReflection => Left})
-        @public val tile1 = Instance(tile.withContext{case NoReflection => Right})
+        @public val tile0 = Instance(tile/*.withContext{case NoReflection => Left}*/)
+        @public val tile1 = Instance(tile/*.withContext{case NoReflection => Right}*/)
       }
 
       @instantiable
       class SoC extends Module {
         val cluster = Definition(new Cluster)
         @public val cluster0 = Instance(cluster)
-        @public val cluster1 = Instance(cluster.withContext {
+        @public val cluster1 = Instance(cluster/*.withContext {
           case o: Reflection => o.mirror
-        })
+        }*/)
       }
     } // Physical Design Example
     object E3 { // Elder Sibling Example
@@ -1248,17 +1248,17 @@ object Playground {
       class AddTwo extends Module {
         val d = Definition(new AddOne)
         @public val i0 = Instance(d)
-        @public val i1 = Instance(d.withContext {
+        @public val i1 = Instance(d/*.withContext {
           case NoElder => Sibling(i0)
-        })
+        }*/)
       }
       @instantiable
       class AddFour extends Module {
         val definition = Definition(new AddTwo)
         val i0 = Instance(definition)
-        val i1 = Instance(definition.withContext {
+        val i1 = Instance(definition/*.withContext {
           case NoElder => Sibling(i0.i1)
-        })
+        }*/)
       }
     } // Elder Sibling Example
   }

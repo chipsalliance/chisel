@@ -5,7 +5,6 @@ package chisel3.experimental.hierarchy
 import chisel3._
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.reflect.runtime.universe.TypeTag
-import chisel3.internal.BaseModule.IsClone
 import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.IsModule
 import scala.annotation.implicitNotFound
@@ -14,11 +13,15 @@ import scala.annotation.implicitNotFound
   *
   * Enables writing functions which are Instance/Definition agnostic
   */
-sealed trait Hierarchy[+A] {
+sealed trait Hierarchy[+A <: IsInstantiable] {
   private[chisel3] def underlying: Underlying[A]
   private[chisel3] def proto: A = underlying match {
     case Proto(value: A) => value
     case Clone(i: IsClone[A]) => i.getProto
+  }
+  def contexts = underlying match {
+    case Proto(proto) => Contexts()
+    case Clone(i: IsClone[_]) => i.contexts
   }
 
   /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
@@ -103,12 +106,10 @@ sealed trait Hierarchy[+A] {
   /** @return Convert this Hierarchy[A] as a top-level Instance[A] */
   def toInstance: Instance[A]
 
-  private[chisel3] def contexts: Contexts
-
 }
 
 // Used to effectively seal Hierarchy, without requiring Definition and Instance to be in this file.
-private[chisel3] trait SealedHierarchy[+A] extends Hierarchy[A]
+private[chisel3] trait SealedHierarchy[+A <: IsInstantiable] extends Hierarchy[A]
 
 object Hierarchy {
   implicit class HierarchyBaseModuleExtensions[T <: BaseModule](i: Hierarchy[T]) {

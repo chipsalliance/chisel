@@ -7,11 +7,13 @@ package chisel3.experimental.hierarchy
   *
   * This trait indicates whether a class can be returned from an Instance.
   */
-trait IsInstantiable
+trait IsInstantiable {
+  var _instantiableParent: Option[IsInstantiable] = None
+}
 
 object IsInstantiable {
   implicit class IsInstantiableExtensions[T <: IsInstantiable](i: T) {
     //TODO: Not sure an empty context is correct here. In fact its probably wrong.
-    def toInstance: Instance[T] = new Instance(Proto(i), Contexts())
+    def toInstance: Instance[T] = new Instance(Proto(i))
   }
 }

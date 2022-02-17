@@ -11,7 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.Contexts
+import chisel3.experimental.hierarchy.{IsClone, Contexts}
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -206,30 +206,14 @@ package internal {
 
   object BaseModule {
 
-    /** Represents a clone of an underlying object. This is used to support CloneModuleAsRecord and Instance/Definition.
-      *
-      * @note We don't actually "clone" anything in the traditional sense but is a placeholder so we lazily clone internal state
-      */
-    trait IsClone[+T] {
-      // Underlying object of which this is a clone of
-      private[chisel3] def getProto: T
-      def contexts: Contexts
-
-      /** Determines whether another object is a clone of the same underlying proto
-        *
-        * @param a
-        */
-      def hasSameProto(a: Any): Boolean = {
-        val aProto = a match {
-          case x: IsClone[BaseModule] => x.getProto
-          case o => o
-        }
-        this == aProto || getProto == aProto
-      }
-    }
 
     // Private internal class to serve as a _parent for Data in cloned ports
     private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T, val contexts: Contexts) extends PseudoModule with IsClone[T] {
+      // IsClone Methods
+      //def withContexts(pf: PartialFunction[Any, Any]): ModuleClone = new InstanceClone(getProto, () => name, )
+
+
+
       override def toString = s"ModuleClone(${getProto})"
       // Do not call default addId function, which may modify a module that is already "closed"
       override def addId(d: HasId): Unit = ()
@@ -379,8 +363,8 @@ package experimental {
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
       import chisel3.experimental.hierarchy.{Definition, Instance}
-      def toInstance:   Instance[T] = new Instance(Proto(b), Contexts())
-      def toDefinition: Definition[T] = new Definition(Proto(b), Contexts())
+      def toInstance:   Instance[T] = new Instance(Proto(b))
+      def toDefinition: Definition[T] = new Definition(Proto(b))
     }
   }
 
