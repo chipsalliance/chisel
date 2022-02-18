@@ -13,11 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/circt/images/circt:nightly
+    strategy:
+      matrix:
+        scala: [2.12.15, 2.13.6]
     steps:
       - uses: actions/checkout@v2
       - uses: olafurpg/setup-scala@v10
       - name: Setup and run tests
-        run: sbt test
+        run: sbt ++${{ matrix.scala }} test
 
   publish:
     needs: [test]
