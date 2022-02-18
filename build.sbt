@@ -1,6 +1,7 @@
 import Dependencies._
 
-ThisBuild / scalaVersion         := "2.12.12"
+ThisBuild / scalaVersion         := "2.12.15"
+ThisBuild / crossScalaVersions   := Seq("2.13.6", scalaVersion.value)
 ThisBuild / organization         := "com.sifive"
 ThisBuild / organizationName     := "SiFive"
 ThisBuild / organizationHomepage := Some(url("https://www.sifive.com/"))
