@@ -8,7 +8,7 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Contextual, IsLookupable, Hierarchy}
 import chisel3.aop.Select
 import chisel3.util.{DecoupledIO, Valid}
-import chisel3.experimental.hierarchy.IsInstantiable
+import chisel3.experimental.hierarchy.IsHierarchicable
 import chisel3.internal.MacroGenerated
 
 // TODO/Notes
@@ -356,7 +356,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOne>innerWire".rt, "blah"))
     }
-    it("4.1: should work on isinstantiables") {
+    it("4.1: should work on IsHierarchicables") {
       class Top() extends Module {
         val i = Module(new AddTwo())
         val v = new Viewer(i, false)
@@ -375,7 +375,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
     }
-    it("4.3: should work on seqs of isInstantiables") {
+    it("4.3: should work on seqs of IsHierarchicables") {
       class Top() extends Module {
         val i = Module(new AddTwo())
         val vs = Seq(new Viewer(i, false), new Viewer(i, false)).map(_.toInstance)
@@ -1224,7 +1224,7 @@ object Playground {
       }
     } // Physical Design Example
     object E3 { // Elder Sibling Example
-      trait Elder extends IsInstantiable
+      trait Elder extends IsHierarchicable
       object Elder {
         // This is the use case for @public on def in companion object, but we can use normal extension method syntax instead.
         implicit class ElderExtensions(h: Instance[Elder]) {
@@ -1234,7 +1234,7 @@ object Playground {
           }
         }
       }
-      case object NoElder extends Elder with IsInstantiable
+      case object NoElder extends Elder with IsHierarchicable
       @instantiable
       case class Sibling(i: Instance[AddOne]) extends Elder {
         @public val inst = i

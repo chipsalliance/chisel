@@ -9,7 +9,7 @@ import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy._
 import chisel3.internal.PseudoModule
-import chisel3.internal.BaseModule.{ModuleClone, InstanceClone, DefinitionClone}
+import chisel3.internal.BaseModule.{experimental.hierarchy.StandInModule, InstanceClone, DefinitionClone}
 import firrtl.annotations.ReferenceTarget
 import scala.reflect.runtime.universe.TypeTag
 
@@ -250,7 +250,7 @@ object Select {
         d.commands.flatMap {
           case i: DefInstance =>
             i.id match {
-              case m: ModuleClone[_] if !m._madeFromDefinition => None
+              case m: experimental.hierarchy.StandInModule[_] if !m._madeFromDefinition => None
               case _: PseudoModule =>
                 throw new Exception(
                   "instances, collectDeep, and getDeep are currently incompatible with Definition/Instance!"

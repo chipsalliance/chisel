@@ -51,7 +51,7 @@ package object experimental {
       apply(proto.toDefinition)
     }
     def apply(
-      definition: experimental.hierarchy.Definition[BaseModule]
+      definition: experimental.hierarchy.core.Definition[BaseModule]
     )(
       implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
       compileOptions:      CompileOptions

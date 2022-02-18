@@ -50,7 +50,7 @@ private[chisel3] object instantiableMacro {
           val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
-            q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats } """,
+            q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsHierarchicable { $self => ..$newStats } """,
             Seq(
               q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.Definition[$tpname[..$argTParams]]) { ..$extensions }""",
               q"""implicit class $instname[..$tparams](___module: chisel3.experimental.hierarchy.Instance[$tpname[..$argTParams]]) { ..$extensions } """
@@ -63,7 +63,7 @@ private[chisel3] object instantiableMacro {
           val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
-            q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats }",
+            q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsHierarchicable { $self => ..$newStats }",
             Seq(
               q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.Definition[$tpname[..$argTParams]]) { ..$extensions }""",
               q"""implicit class $instname[..$tparams](___module: chisel3.experimental.hierarchy.Instance[$tpname[..$argTParams]]) { ..$extensions } """
