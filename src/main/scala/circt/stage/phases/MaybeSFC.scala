@@ -45,7 +45,12 @@ class MaybeSFC extends Phase {
         logger.info(
           s"Running the Scala FIRRTL Compiler to CIRCT handover at ${view[CIRCTOptions](annotations).handover.get}"
         )
-        (new firrtl.stage.phases.Compiler).transform(extra ++ annotations)
+        /* Do not run custom transforms in the SFC.  This messes with scheduling. */
+        val (toSFC, toMFC) = annotations.partition {
+          case _: RunFirrtlTransformAnnotation => false
+          case _ => true
+        }
+        (new firrtl.stage.phases.Compiler).transform(extra ++ toSFC) ++ toMFC
       case None => annotations
     }
   }

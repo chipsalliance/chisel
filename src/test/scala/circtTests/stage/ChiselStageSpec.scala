@@ -7,6 +7,7 @@ import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
 
 import firrtl.annotations.DeletedAnnotation
+import firrtl.EmittedVerilogCircuitAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
 
 import java.io.File
@@ -241,6 +242,282 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
         .get should include ("""b <= UInt<1>("h1")""")
 
     }
+  }
+
+  describe("ChiselStage custom transform support") {
+
+    it("should work with InlineInstance") {
+
+      import chisel3._
+      import chisel3.util.experimental.InlineInstance
+
+      trait SimpleIO { this: RawModule =>
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+      }
+
+      class Bar extends RawModule with SimpleIO with InlineInstance {
+        b := ~a
+      }
+
+      class Foo extends RawModule with SimpleIO {
+        val bar = Module(new Bar)
+        bar.a := a
+        b := bar.b
+      }
+
+      val targetDir = new File("test_run_dir/InlineInstance")
+
+      val args: Array[String] = Array(
+        "--target", "systemverilog",
+        "--target-dir", targetDir.toString
+      )
+
+      (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }.get
+        .value should not include ("module Bar")
+    }
+
+    it("should work with FlattenInstance") {
+
+      import chisel3._
+      import chisel3.util.experimental.FlattenInstance
+
+      trait SimpleIO { this: RawModule =>
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+      }
+
+      class Baz extends RawModule with SimpleIO {
+        b := ~a
+      }
+
+      class Bar extends RawModule with SimpleIO {
+        val baz = Module(new Baz)
+        baz.a := a
+        b := baz.b
+      }
+
+      class Foo extends RawModule with SimpleIO {
+        val bar = Module(new Bar with FlattenInstance)
+        bar.a := a
+        b := bar.b
+      }
+
+      val targetDir = new File("test_run_dir/FlattenInstance")
+
+      val args: Array[String] = Array(
+        "--target", "systemverilog",
+        "--target-dir", targetDir.toString
+      )
+
+      val verilog = (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }.get
+        .value
+
+      verilog should not include ("module Baz")
+      verilog should not include ("module Bar")
+
+    }
+
+  }
+
+  describe("ChiselStage DontTouchAnnotation support") {
+
+    it("should block removal of wires and nodes") {
+
+      import chisel3._
+
+      class Foo extends RawModule {
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+
+        val w = WireDefault(a)
+        dontTouch(w)
+
+        val n = ~w
+        dontTouch(n)
+
+        b := n
+      }
+
+      val targetDir = new File("test_run_dir/DontTouch")
+
+      val args: Array[String] = Array(
+        "--target", "systemverilog",
+        "--target-dir", targetDir.toString
+      )
+
+      val verilog = (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }.get
+        .value
+
+      verilog should include ("wire w")
+      verilog should include ("wire n")
+
+    }
+
+  }
+
+  describe("ChiselStage forceName support") {
+
+    it("should work when forcing a module name") {
+
+      import chisel3._
+      import chisel3.util.experimental.{forceName, InlineInstance}
+
+      trait SimpleIO { this: RawModule =>
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+      }
+
+      class Baz extends RawModule with SimpleIO {
+        b := ~a
+      }
+
+      class Bar extends RawModule with SimpleIO with InlineInstance {
+        val baz = Module(new Baz)
+        baz.a := a
+        b := baz.b
+      }
+
+      class Foo extends RawModule with SimpleIO {
+        val bar = Module(new Bar)
+        bar.a := a
+        b := bar.b
+
+        forceName(bar.baz)
+      }
+
+      val targetDir = new File("test_run_dir/ForceName")
+
+      val args: Array[String] = Array(
+        "--target", "systemverilog",
+        "--target-dir", targetDir.toString
+      )
+
+      val verilog: String = (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }.get
+        .value
+
+      verilog should include ("module Baz")
+
+    }
+
+  }
+
+  describe("ChiselStage dedup behavior") {
+
+    it("should be on by default and work") {
+
+      import chisel3._
+
+      class Baz extends RawModule {
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+
+        b := a
+      }
+
+      class Bar extends RawModule {
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+
+        b := a
+      }
+
+      class Foo extends RawModule {
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+
+        val bar = Module(new Bar)
+        val baz = Module(new Baz)
+        bar.a := a
+        baz.a := a
+        b := bar.b ^ baz.b
+      }
+
+      val targetDir = new File("test_run_dir/Dedup")
+
+      val args: Array[String] = Array(
+        "--target", "systemverilog",
+        "--target-dir", targetDir.toString
+      )
+
+      val verilog: String = (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }.get
+        .value
+
+      verilog should include ("module Bar")
+      verilog should not include ("module Baz")
+
+    }
+
+    it("should respect the doNotDedup API") {
+
+      import chisel3._
+      import chisel3.experimental.doNotDedup
+
+      class Baz extends RawModule {
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+
+        b := a
+      }
+
+      class Bar extends RawModule {
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+
+        b := a
+      }
+
+      class Foo extends RawModule {
+        val a = IO(Input(Bool()))
+        val b = IO(Output(Bool()))
+
+        val bar = Module(new Bar)
+        val baz = Module(new Baz)
+        bar.a := a
+        baz.a := a
+        b := bar.b ^ baz.b
+        doNotDedup(baz)
+      }
+
+      val targetDir = new File("test_run_dir/Dedup")
+
+      val args: Array[String] = Array(
+        "--target", "systemverilog",
+        "--target-dir", targetDir.toString
+      )
+
+      val verilog: String = (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }.get
+        .value
+
+      verilog should include ("module Bar")
+      verilog should include ("module Baz")
+
+    }
+
   }
 
   describe("ChiselStage$") {
