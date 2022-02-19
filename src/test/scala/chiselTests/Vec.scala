@@ -514,31 +514,6 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
-  property("Vec connections should emit FIRRTL bulk connects when possible") {
-    val chirrtl = ChiselStage.emitChirrtl(new Module {
-      val io = IO(new Bundle {
-        val inMono = Input(Vec(4, UInt(8.W)))
-        val outMono = Output(Vec(4, UInt(8.W)))
-        val inBi = Input(Vec(4, UInt(8.W)))
-        val outBi = Output(Vec(4, UInt(8.W)))
-      })
-      io.outMono := io.inMono
-      io.outBi <> io.inBi
-    })
-    chirrtl should include("io.outMono <= io.inMono @[Vec.scala")
-    chirrtl should include("io.outBi <= io.inBi @[Vec.scala")
-  }
-
-  property("Vec connections should bulk connect internal wires") {
-    val chirrtl = ChiselStage.emitChirrtl(new Module {
-      val io = IO(new Bundle {})
-      val w1 = Wire(Vec(2, UInt(8.W)))
-      val w2 = Wire(Vec(2, UInt(8.W)))
-      w2 := w1
-    })
-    chirrtl should include("w2 <= w1 @[Vec.scala")
-  }
-
   property("reduceTree should preserve input/output type") {
     assertTesterPasses { new ReduceTreeTester() }
   }
