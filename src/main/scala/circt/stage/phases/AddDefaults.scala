@@ -24,7 +24,7 @@ class AddDefaults extends Phase {
     }
 
     annotations ++
-      (!handover).option(CIRCTHandover(CIRCTHandover.LowOptimizedFIRRTL))
+      (!handover).option(CIRCTHandover(CIRCTHandover.CHIRRTL))
   }
 
 }
