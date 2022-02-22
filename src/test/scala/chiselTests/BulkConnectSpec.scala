@@ -5,7 +5,7 @@ import chisel3.util.Decoupled
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
-class BulkConnectSpec extends ChiselPropSpec { 
+class BulkConnectSpec extends ChiselPropSpec {
   property("Chisel connects should emit FIRRTL bulk connects when possible") {
     val chirrtl = ChiselStage.emitChirrtl(new Module {
       val io = IO(new Bundle {
