@@ -12,21 +12,38 @@ import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBin
 import chisel3.experimental.hierarchy.core._
 
 private[chisel3] object Utils {
-  def toUnderlying[T <: BaseModule](module: T): Underlying[T] = module match {
-    case i: IsStandIn[T] => StandIn(i)
-    case other: T => Proto(other, other._parent.map{ case p: BaseModule with IsHierarchicable => toUnderlying(p).asInstanceOf[Underlying[IsHierarchicable]]})
+  // TODO This is wrong, the standIn is T, but I'm calling the proto T...
+  def toUnderlyingAsInstance[T <: BaseModule](module: T): Underlying[BaseModule] = module match {
+    case i: IsStandIn[BaseModule] => StandIn(i)
+    case other: T => Proto(other, other._parent.map{ case p: BaseModule with IsHierarchicable => toUnderlyingAsInstance(p).asInstanceOf[Underlying[IsHierarchicable]]})
   }
-  def getInnerDataContext[T](h: Hierarchy[T]): Option[BaseModule] = h.proto match {
-    case value: BaseModule =>
-      val newChild = Module.do_pseudo_apply(new StandInDefinition(value))(
-        chisel3.internal.sourceinfo.UnlocatableSourceInfo,
-        chisel3.ExplicitCompileOptions.Strict
-      )
-      newChild._circuit = value._circuit.orElse(Some(value))
-      newChild._parent = None
-      Some(newChild)
-    case value: IsHierarchicable => None
+  def toUnderlyingAsDefinition[T <: BaseModule](module: T): Underlying[BaseModule] = {
+    module match {
+      case i: IsStandIn[BaseModule] =>
+        StandIn(StandInDefinition(i.proto, module.getCircuit))
+      case other: T =>
+        StandIn(StandInDefinition(other, module.getCircuit))
+    }
   }
+  def getInnerDataContext[T](h: Hierarchy[T])(implicit tc: Hierarchicable[T]): Option[BaseModule] = tc.hierarchy(h) match {
+    case Some(StandIn(standin: BaseModule)) => Some(standin)
+    case Some(Proto(proto: BaseModule, _)) => Some(proto)
+    case Some(StandIn(StandInIsInstantiable(p, parent: Option[BaseModule]))) => parent
+    case other => None
+  } 
+  //h match {
+  //  case d: Definition[_] => 
+  //  case i: Instance[_] =>
+  //  case value: BaseModule =>
+  //    val newChild = Module.do_pseudo_apply(new StandInDefinition(value))(
+  //      chisel3.internal.sourceinfo.UnlocatableSourceInfo,
+  //      chisel3.ExplicitCompileOptions.Strict
+  //    )
+  //    newChild._circuit = value._circuit.orElse(Some(value))
+  //    newChild._parent = None
+  //    Some(newChild)
+  //  case value: IsHierarchicable => None
+  //}
   /** Given a Data, find the root of its binding, apply a function to the root to get a "new root",
     * and find the equivalent child Data in the "new root"
     *
@@ -85,11 +102,15 @@ private[chisel3] object Utils {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): T = {
+    //println(s"HERE!!!! $data")
     internal.requireIsHardware(data, "cross module reference type")
-    data._parent match {
+    val ret = data._parent match {
       case None => data
       case Some(parent) =>
-        val newParent = cloneModuleToContext(Proto(parent, parent._parent.map(toUnderlying)), context)
+        //println(s"OLD PARENT: $parent")
+        //println(s"CONTEXT: $context")
+        val newParent = cloneModuleToContext(Proto(parent, parent._parent.map(toUnderlyingAsInstance)), context)
+        //println(s"NEW PARENT: $newParent")
         newParent match {
           case Proto(p, _) if p == parent => data
           case StandIn(m: BaseModule) =>
@@ -100,6 +121,8 @@ private[chisel3] object Utils {
             newChild
         }
     }
+    //println(s"THERE!!!! $ret, ${ret._parent}")
+    ret
   }
   // Helper for co-iterating on Elements of aggregates, they must be the same type but that is unchecked
   def coiterate(a: Data, b: Data): Iterable[(Element, Element)] = {
@@ -117,7 +140,7 @@ private[chisel3] object Utils {
     compileOptions:      CompileOptions
   ): B = {
     def impl[C <: Data](d: C): C = d match {
-      case x: Data if ioMap.get.contains(x) => ioMap.get(x).asInstanceOf[C]
+      case x: Data if ioMap.nonEmpty && ioMap.get.contains(x) => ioMap.get(x).asInstanceOf[C]
       case _ => cloneDataToContext(d, self)
     }
     data.binding match {
@@ -223,24 +246,24 @@ private[chisel3] object Utils {
         StandIn(newChild)
       }
       (m, context) match {
-        case (c, ctx) if ctx == c => Proto(c, c._parent.map(toUnderlying))
+        case (c, ctx) if ctx == c => Proto(c, c._parent.map(toUnderlyingAsInstance))
         //case (c, ctx: IsStandIn[_]) if ctx.hasSameProto(c) => Clone(ctx.asInstanceOf[IsStandIn[A]])
         case (c, ctx: IsStandIn[ _]) if ctx.hasSameProto(c) && (c._parent.isEmpty || ctx._parent.isEmpty) =>
           //println(s"Matched ctx with empty parent: $c, $ctx")
           StandIn(ctx.asInstanceOf[IsStandIn[A]])
         case (c, ctx: IsStandIn[ _]) if ctx.hasSameProto(c) =>
           //println(s"Matched ctx")
-          cloneModuleToContext(toUnderlying(m._parent.get), ctx._parent.get) match {
-            case Proto(p, _) => Proto(m, m._parent.map(toUnderlying))
+          cloneModuleToContext(toUnderlyingAsInstance(m._parent.get), ctx._parent.get) match {
+            case Proto(p, _) => Proto(m, m._parent.map(toUnderlyingAsInstance))
             case StandIn(p: BaseModule) =>
               //println(s"Cloning2: $m, $p")
               clone(m, Some(p), () => m.instanceName)
           }
-        case (c, ctx) if c._parent.isEmpty => Proto(c, c._parent.map(toUnderlying))
+        case (c, ctx) if c._parent.isEmpty => Proto(c, c._parent.map(toUnderlyingAsInstance))
         case (_, _) =>
           //println(s"Rec: ${m._parent.get.toTarget}, ${context}")
-          cloneModuleToContext(toUnderlying(m._parent.get), context) match {
-            case Proto(p, _) => Proto(m, m._parent.map(toUnderlying))
+          cloneModuleToContext(toUnderlyingAsInstance(m._parent.get), context) match {
+            case Proto(p, _) => Proto(m, m._parent.map(toUnderlyingAsInstance))
             case StandIn(p: BaseModule) =>
               //println(s"Cloning: $m, $p")
               clone(m, Some(p), () => m.instanceName)
@@ -254,7 +277,7 @@ private[chisel3] object Utils {
         rec(m) match {
           case Proto(mx, _) => StandIn(mx)
           case StandIn(i: StandInInstance[T]) =>
-            val newChild = Module.do_pseudo_apply(new StandInInstance(m.getProto, () => m.instanceName, i._parent))
+            val newChild = Module.do_pseudo_apply(new StandInInstance(m.proto, () => m.instanceName, i._parent))
             StandIn(newChild)
         }
       case StandIn(m: StandInInstance[_]) =>
@@ -262,11 +285,12 @@ private[chisel3] object Utils {
         rec(m) match {
           case Proto(mx, _) => StandIn(mx)
           case StandIn(i: StandInInstance[_]) =>
-            val newChild = Module.do_pseudo_apply(new StandInInstance(m.getProto, () => m.instanceName, i.parent))
+            val newChild = Module.do_pseudo_apply(new StandInInstance(m.proto, () => m.instanceName, i.parent))
             StandIn(newChild)
         }
     }
   }
+
 
 
   def cloneMemToContext[T <: MemBase[_]](
@@ -279,7 +303,7 @@ private[chisel3] object Utils {
     mem._parent match {
       case None => mem
       case Some(parent) =>
-        val newParent = cloneModuleToContext(toUnderlying(parent), context)
+        val newParent = cloneModuleToContext(toUnderlyingAsInstance(parent), context)
         newParent match {
           case Proto(p, _) if p == parent => mem
           case StandIn(mod: BaseModule) =>

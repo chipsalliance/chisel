@@ -30,7 +30,7 @@ trait IsLookupable
 //    def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
 //      val ret = that(definition.proto)
 //      val underlying = new InstantiableClone[B] {
-//        val getProto = ret
+//        val proto = ret
 //        val contexts = definition.contexts
 //        lazy val _innerContext = definition
 //      }
@@ -40,7 +40,7 @@ trait IsLookupable
 //      val ret = that(instance.proto)
 //      //println("lookupIsHierarchicable,Inst", ret)
 //      val underlying = new InstantiableClone[B] {
-//        val getProto = ret
+//        val proto = ret
 //        val contexts = instance.contexts
 //        lazy val _innerContext = instance
 //        override def toString = s"InstantiableClone($ret)"

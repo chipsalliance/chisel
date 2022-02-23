@@ -203,6 +203,7 @@ class SelectSpec extends ChiselFlatSpec {
   "Using Definition/Instance with Injecting Aspects" should "throw an error" in {
     import chisel3.experimental.CloneModuleAsRecord
     import chisel3.experimental.hierarchy._
+    import chisel3.experimental.hierarchy.core._ // TODO figure out how to avoid doing this
     @instantiable
     class Child extends RawModule {
       @public val in = IO(Input(UInt(8.W)))

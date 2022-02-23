@@ -50,9 +50,9 @@ object DefinitionTransform
 // Module instantiation transform
 class DefinitionTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def buildable = q"implicitly[_root_.chisel3.experimental.hierarchy.core.Buildable[T]]"
   def apply[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($proto)($buildable)"
+    val tt: Type = weakTypeOf[T]
+    q"$thisObj.do_apply($proto)(implicitly[_root_.chisel3.experimental.hierarchy.core.Buildable[$tt]])"
   }
 }
 
@@ -61,9 +61,9 @@ object InstanceTransform
 // Module instantiation transform
 class InstanceTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def stampable = q"implicitly[_root_.chisel3.experimental.hierarchy.core.Stampable[T]]"
   def apply[T: c.WeakTypeTag](definition: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($definition)($stampable)"
+    val tt: Type = weakTypeOf[T]
+    q"$thisObj.do_apply($definition)(implicitly[_root_.chisel3.experimental.hierarchy.core.Stampable[$tt]])"
   }
 }
 

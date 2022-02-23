@@ -230,6 +230,7 @@ package internal {
       // currentModule
       val parent = Builder.currentModule
       val cloneParent = Module(new experimental.hierarchy.StandInModule(proto, parent))
+      //cloneParent._parent = parent
       require(proto.isClosed, "Can't clone a module before module close")
       require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")
       // Fake Module to serve as the _parent of the cloned ports
@@ -422,9 +423,11 @@ package experimental {
       case m: experimental.hierarchy.StandInModule[_] if m._madeFromDefinition =>
         m._parent.get.getTarget.instOf(instanceName, name)
       // Without this, we get the wrong CircuitName for the Definition
-      case m: experimental.hierarchy.StandInDefinition[_] if m._circuit.nonEmpty =>
-        ModuleTarget(this._circuit.get.circuitName, this.name)
-      case _ => this.toTarget
+      case m: experimental.hierarchy.StandInDefinition[_] if m.getCircuit.nonEmpty =>
+        ModuleTarget(this.getCircuit.get.circuitName, this.name)
+      case m => 
+        //println(s"$m, ${m._parent}, ${m.getCircuit}")
+        this.toTarget
     }
 
     /** Returns a FIRRTL ModuleTarget that references this object

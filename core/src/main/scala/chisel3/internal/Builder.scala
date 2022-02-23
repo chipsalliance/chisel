@@ -94,6 +94,14 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
   private[chisel3] var _circuit: Option[BaseModule] = None
+  private[chisel3] def getCircuit: Option[BaseModule] = _circuit.orElse(_parent match {
+    case None => this match {
+      case b: BaseModule => Some(b)
+      case other => None
+    }
+    case Some(p) => p.getCircuit
+  })
+  
 
   private[chisel3] val _id: Long = Builder.idGen.next
 

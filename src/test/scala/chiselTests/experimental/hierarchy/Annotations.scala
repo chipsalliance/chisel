@@ -5,7 +5,8 @@ package chiselTests.experimental.hierarchy
 import _root_.firrtl.annotations._
 import chisel3.experimental.{annotate, BaseModule}
 import chisel3.{Data, MemBase}
-import chisel3.experimental.hierarchy.{Definition, Hierarchy, Instance}
+//import chisel3.experimental.hierarchy.{Definition, Hierarchy, Instance}
+import chisel3.experimental.hierarchy.core._ // TODO figure out how to avoid doing this
 
 // These annotations exist purely for testing purposes
 private[hierarchy] object Annotations {

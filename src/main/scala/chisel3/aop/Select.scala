@@ -8,8 +8,8 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy._
+import chisel3.experimental.hierarchy.core._ // TODO figure out how to avoid doing this
 import chisel3.internal.PseudoModule
-import chisel3.internal.BaseModule.{experimental.hierarchy.StandInModule, InstanceClone, DefinitionClone}
 import firrtl.annotations.ReferenceTarget
 import scala.reflect.runtime.universe.TypeTag
 
@@ -53,9 +53,9 @@ object Select {
         d.commands.collect {
           case d: DefInstance =>
             d.id match {
-              case p: IsClone[_] =>
+              case p: core.IsStandIn[_] =>
                 parent._lookup {
-                  x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]]
+                  x => new Instance(core.StandIn(p)).asInstanceOf[Instance[BaseModule]]
                 }//.addContext(parent.contexts)
               case other: BaseModule =>
                 new Instance(parent._lookup { x => other }.underlying)
@@ -80,8 +80,8 @@ object Select {
         d.commands.flatMap {
           case d: DefInstance =>
             d.id match {
-              case p: IsClone[_] =>
-                val i = parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }//.addContext(parent.contexts)
+              case p: core.IsStandIn[_] =>
+                val i = parent._lookup { x => new Instance(core.StandIn(p)).asInstanceOf[Instance[BaseModule]] }//.addContext(parent.contexts)
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
               case other: BaseModule =>
                 val i = new Instance(parent._lookup { x => other }.underlying)
@@ -119,9 +119,10 @@ object Select {
         d.commands.collect {
           case i: DefInstance =>
             i.id match {
-              case p: IsClone[_] =>
+              case p: core.IsStandIn[BaseModule] =>
                 //TODO: Think about if returning parent definition's context is appropriate or not.
-                parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
+                p.toDefinition
+                //parent._lookup { x => new Definition(core.StandIn(p)).asInstanceOf[Definition[BaseModule]] }
               case other: BaseModule =>
                 other.toDefinition
             }
@@ -151,12 +152,11 @@ object Select {
         d.commands.flatMap {
           case d: DefInstance =>
             d.id match {
-              case p: IsClone[_] =>
-                //TODO think about this.
-                val d = parent._lookup { x => new Definition(Clone(p)).asInstanceOf[Definition[BaseModule]] }
+              case p: core.IsStandIn[_] =>
+                val d = p.toDefinition
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
               case other: BaseModule =>
-                val d = parent._lookup { x => other.toDefinition }
+                val d = other.toDefinition
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
             }
           case other => None
@@ -194,6 +194,10 @@ object Select {
       }
     }
     rec(root.toDefinition)
+    println("LIST")
+    println(defList.mkString("\n"))
+    println("SET")
+    println(defSet.toList.mkString("\n"))
     defList.toList
   }
 

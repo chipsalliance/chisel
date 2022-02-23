@@ -10,18 +10,21 @@ import Utils._
   *
   * Private internal class to serve as a _parent for Data in cloned ports
   *
-  * @param getProto
+  * @param proto
   * @param contexts
   */
-private[chisel3] class StandInModule[T <: BaseModule](val getProto: T, val parent: Option[IsHierarchicable]) extends PseudoModule with IsStandIn[T] {
+private[chisel3] final class StandInModule[T <: BaseModule](val proto: T, val parent: Option[IsHierarchicable]) extends PseudoModule with IsStandIn[T] {
   _parent = parent match {
-    case b: BaseModule => Some(b)
+    case Some(b: BaseModule) => Some(b)
     case other => None
   }
 
+  def toInstance:   core.Instance[T] = new core.Instance(StandIn(this))
+  def toDefinition: core.Definition[T] = new core.Definition(StandIn(StandInDefinition(proto, getCircuit)))
+
   // ======== THINGS TO MAKE CHISEL WORK ========
 
-  override def toString = s"experimental.hierarchy.StandInModule(${getProto})"
+  override def toString = s"experimental.hierarchy.StandInModule(${proto})"
   // Do not call default addId function, which may modify a module that is already "closed"
   override def addId(d: HasId): Unit = ()
   def getPorts = _portsRecord
@@ -36,19 +39,19 @@ private[chisel3] class StandInModule[T <: BaseModule](val getProto: T, val paren
   private[chisel3] def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
-    _component = getProto._component
+    _component = proto._component
     None
   }
   // Maps proto ports to module clone's ports
   private[chisel3] lazy val ioMap: Map[Data, Data] = {
     val name2Port = getPorts.elements
-    getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+    proto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
   }
   // This module doesn't actually exist in the FIRRTL so no initialization to do
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
 
   // Name of this instance's module is the same as the proto's name
-  override def desiredName: String = getProto.name
+  override def desiredName: String = proto.name
 
   private[chisel3] def setRefAndPortsRef(namespace: Namespace): Unit = {
     val record = _portsRecord
@@ -60,7 +63,7 @@ private[chisel3] class StandInModule[T <: BaseModule](val getProto: T, val paren
       case bad       => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
     }
     // Set both the record and the module to have the same instance name
-    record.setRef(ModuleCloneIO(getProto, instName), force = true) // force because we did .forceName first
+    record.setRef(ModuleCloneIO(proto, instName), force = true) // force because we did .forceName first
     this.setRef(Ref(instName))
   }
 }

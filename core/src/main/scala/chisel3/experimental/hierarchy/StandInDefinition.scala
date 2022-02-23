@@ -22,12 +22,23 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   * target whose root is the Definition. This DefinitionClone is used to represent the root parent of the
   * InstanceClone (which represents the returned module).
   */
-private[chisel3] class StandInDefinition[T <: BaseModule](val getProto: T) extends PseudoModule with IsStandIn[T] {
+private[chisel3] final case class StandInDefinition[T <: BaseModule](proto: T, circuit: Option[BaseModule]) extends PseudoModule with IsStandIn[T] {
+  override def equals(a: Any): Boolean = {
+    a match {
+      case d: StandInDefinition[_] if d.proto == proto && d.circuit == circuit => true
+      case _ => false
+    }
+  }
+  val parent = None
   _parent = None
+  _circuit = circuit
+
+  def toInstance:   core.Instance[T] = new core.Instance(StandIn(this))
+  def toDefinition: core.Definition[T] = new core.Definition(StandIn(this))
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
-  override def toString = s"DefinitionClone(${getProto})"
+  //override def toString = s"StandInDefinition($proto, $circuit)"
   // No addition components are generated
   private[chisel3] def generateComponent(): Option[Component] = None
   // Do not call default addId function, which may modify a module that is already "closed"
@@ -35,5 +46,15 @@ private[chisel3] class StandInDefinition[T <: BaseModule](val getProto: T) exten
   // Necessary for toTarget to work
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
   // Module name is the same as proto's module name
-  override def desiredName: String = getProto.name
+  override def desiredName: String = proto.name
+}
+
+object StandInDefinition {
+  def apply[T <: BaseModule](proto: T, circuit: Option[BaseModule]): StandInDefinition[T] = {
+    val newChild = Module.do_pseudo_apply(new StandInDefinition(proto, circuit))(
+      chisel3.internal.sourceinfo.UnlocatableSourceInfo,
+      chisel3.ExplicitCompileOptions.Strict
+    )
+    newChild
+  }
 }

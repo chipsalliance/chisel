@@ -15,15 +15,18 @@ import chisel3._
   * @note In addition, the instance name of an InstanceClone is going to be the SAME as the proto, but this is not true
   * for experimental.hierarchy.StandInModule.
   */
-private[chisel3] final class StandInInstance[T <: BaseModule](val getProto: T, val instName: () => String, parent: Option[IsHierarchicable]) extends PseudoModule with IsStandIn[T] {
+private[chisel3] final case class StandInInstance[T <: BaseModule](val proto: T, val instName: () => String, val parent: Option[IsHierarchicable]) extends PseudoModule with IsStandIn[T] {
   _parent = parent match {
-    case b: BaseModule => Some(b)
+    case Some(b: BaseModule) => Some(b)
     case other => None
   }
 
+  def toInstance:   core.Instance[T] = new core.Instance(StandIn(this))
+  def toDefinition: core.Definition[T] = new core.Definition(StandIn(StandInDefinition(proto, getCircuit)))
+
   // ======== THINGS TO MAKE CHISEL WORK ========
 
-  override def toString = s"InstanceClone(${getProto})"
+  override def toString = s"StandInInstance(${proto})"
   // No addition components are generated
   private[chisel3] def generateComponent(): Option[Component] = None
   // Necessary for toTarget to work
@@ -33,5 +36,5 @@ private[chisel3] final class StandInInstance[T <: BaseModule](val getProto: T, v
   // Instance name is the same as proto's instance name
   override def instanceName = instName()
   // Module name is the same as proto's module name
-  override def desiredName: String = getProto.name
+  override def desiredName: String = proto.name
 }

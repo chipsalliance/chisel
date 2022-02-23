@@ -7,13 +7,7 @@ import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
 
 // Marker Trait
-trait IsHierarchicable {
-  def parent: Option[IsHierarchicable]
-  def toUnderlying: Underlying[IsHierarchicable] = this match {
-    case i: IsStandIn[IsHierarchicable] => StandIn(i)
-    case o => Proto(o, parent.map(_.toUnderlying))
-  }
-}
+trait IsHierarchicable
 
 // Wrapper Class
 sealed trait Hierarchy[+A] {
@@ -23,6 +17,7 @@ sealed trait Hierarchy[+A] {
 
   def _lookup[B, C](that: A => B)(
     implicit instancify: Instancify[B],
+    h: Hierarchicable[A],
     macroGenerated:  chisel3.internal.MacroGenerated
   ): instancify.C = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
@@ -66,106 +61,62 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
 // Typeclass Trait
 trait Instancify[B] extends IsTypeclass[B] {
   type C
-  def apply[A](b: B, context: Hierarchy[A]): C
+  def apply[A](b: B, context: Hierarchy[A])(implicit h: Hierarchicable[A]): C
 }
-
 // Typeclass Implementations
 object Instancify {
+
   implicit def isLookupable[L <: IsLookupable] = new Instancify[L] {
     type C = L
-    def apply[A](b: L, context: Hierarchy[A]): L = b
+    def apply[A](b: L, context: Hierarchy[A])(implicit h: Hierarchicable[A]): L = b
   }
   implicit def isContextual[I <: IsContextual](implicit contextualize: Contextualize[I]) = new Instancify[I] {
     type C = contextualize.C 
-    def apply[A](b: I, context: Hierarchy[A]): C = {
+    def apply[A](b: I, context: Hierarchy[A])(implicit h: Hierarchicable[A]): C = {
       contextualize(b, context)
     }
   }
-  //implicit def isOther[X](implicit contextualize: Contextualize[X]) = new Instancify[X] {
-  //  type C = contextualize.C
-  //  def apply[A](b: X, context: Hierarchy[A]): C = {
-  //    new Instance(contextualize(b, context).asInstan)
-  //  }
-  //}
-//  import scala.language.higherKinds // Required to avoid warning for lookupIterable type parameter
-//  implicit def lookupIterable[B, F[_] <: Iterable[_]](
-//    implicit sourceInfo: SourceInfo,
-//    compileOptions:      CompileOptions,
-//    lookupable:          Lookupable[B]
-//  ) = new Lookupable[F[B]] {
-//    type C = F[lookupable.C]
-//    def definitionLookup[A](that: A => F[B], definition: Definition[A]): C = {
-//      val ret = that(definition.proto).asInstanceOf[Iterable[B]]
-//      ret.map { x: B => lookupable.definitionLookup[A](_ => x, definition) }.asInstanceOf[C]
-//    }
-//    def instanceLookup[A](that: A => F[B], instance: Instance[A]): C = {
-//      import instance._
-//      val ret = that(proto).asInstanceOf[Iterable[B]]
-//      ret.map { x: B => lookupable.instanceLookup[A](_ => x, instance) }.asInstanceOf[C]
-//    }
-//  }
-//  implicit def lookupOption[B](
-//    implicit sourceInfo: SourceInfo,
-//    compileOptions:      CompileOptions,
-//    lookupable:          Lookupable[B]
-//  ) = new Lookupable[Option[B]] {
-//    type C = Option[lookupable.C]
-//    def definitionLookup[A](that: A => Option[B], definition: Definition[A]): C = {
-//      val ret = that(definition.proto)
-//      ret.map { x: B => lookupable.definitionLookup[A](_ => x, definition) }
-//    }
-//    def instanceLookup[A](that: A => Option[B], instance: Instance[A]): C = {
-//      import instance._
-//      val ret = that(proto)
-//      ret.map { x: B => lookupable.instanceLookup[A](_ => x, instance) }
-//    }
-//  }
-//  implicit def lookupEither[L, R](
-//    implicit sourceInfo: SourceInfo,
-//    compileOptions:      CompileOptions,
-//    lookupableL:         Lookupable[L],
-//    lookupableR:         Lookupable[R]
-//  ) = new Lookupable[Either[L, R]] {
-//    type C = Either[lookupableL.C, lookupableR.C]
-//    def definitionLookup[A](that: A => Either[L, R], definition: Definition[A]): C = {
-//      val ret = that(definition.proto)
-//      ret.map { x: R => lookupableR.definitionLookup[A](_ => x, definition) }.left.map { x: L =>
-//        lookupableL.definitionLookup[A](_ => x, definition)
-//      }
-//    }
-//    def instanceLookup[A](that: A => Either[L, R], instance: Instance[A]): C = {
-//      import instance._
-//      val ret = that(proto)
-//      ret.map { x: R => lookupableR.instanceLookup[A](_ => x, instance) }.left.map { x: L =>
-//        lookupableL.instanceLookup[A](_ => x, instance)
-//      }
-//    }
-//  }
-//
-//  implicit def lookupTuple2[X, Y](
-//    implicit sourceInfo: SourceInfo,
-//    compileOptions:      CompileOptions,
-//    lookupableX:         Lookupable[X],
-//    lookupableY:         Lookupable[Y]
-//  ) = new Lookupable[(X, Y)] {
-//    type C = (lookupableX.C, lookupableY.C)
-//    def definitionLookup[A](that: A => (X, Y), definition: Definition[A]): C = {
-//      val ret = that(definition.proto)
-//      (
-//        lookupableX.definitionLookup[A](_ => ret._1, definition),
-//        lookupableY.definitionLookup[A](_ => ret._2, definition)
-//      )
-//    }
-//    def instanceLookup[A](that: A => (X, Y), instance: Instance[A]): C = {
-//      import instance._
-//      val ret = that(proto)
-//      (lookupableX.instanceLookup[A](_ => ret._1, instance), lookupableY.instanceLookup[A](_ => ret._2, instance))
-//    }
-//  }
+  implicit val instancifyInt = new Instancify[Int] {
+    type C = Int
+    def apply[A](that: Int, context: Hierarchy[A])(implicit h: Hierarchicable[A]): C = that
+  }
+  implicit val instancifyString = new Instancify[String] {
+    type C = String
+    def apply[A](that: String, context: Hierarchy[A])(implicit h: Hierarchicable[A]): C = that
+  }
+  implicit def instancifyIterable[B, F[_] <: Iterable[_]](
+    implicit instancify:          Instancify[B]
+  ) = new Instancify[F[B]] {
+    type C = F[instancify.C]
+    def apply[A](that: F[B], context: Hierarchy[A])(implicit h: Hierarchicable[A]): C = {
+      val ret = that.asInstanceOf[Iterable[B]]
+      ret.map { x: B => instancify[A](x, context) }.asInstanceOf[C]
+    }
+  }
+  implicit def instancifyOption[B](implicit instancify: Instancify[B]) = new Instancify[Option[B]] {
+    type C = Option[instancify.C]
+    def apply[A](that: Option[B], context: Hierarchy[A])(implicit h: Hierarchicable[A]): C = {
+      that.map { x: B => instancify[A](x, context) }
+    }
+  }
+  implicit def instancifyEither[L, R](implicit instancifyL: Instancify[L], instancifyR: Instancify[R]) = new Instancify[Either[L, R]] {
+    type C = Either[instancifyL.C, instancifyR.C]
+    def apply[A](that: Either[L, R], context: Hierarchy[A])(implicit h: Hierarchicable[A]): C = {
+      that.map { x: R => instancifyR[A](x, context) }
+          .left
+          .map { x: L => instancifyL[A](x, context) }
+    }
+  }
+  implicit def instancifyTuple2[X, Y](implicit instancifyX: Instancify[X], instancifyY: Instancify[Y]) = new Instancify[Tuple2[X, Y]] {
+    type C = Tuple2[instancifyX.C, instancifyY.C]
+    def apply[A](that: Tuple2[X, Y], context: Hierarchy[A])(implicit h: Hierarchicable[A]): C = {
+      (instancifyX[A](that._1, context), instancifyY(that._2, context))
+    }
+  }
 }
 
 object Definition {
-  def apply[T](proto: => T): Instance[T] =
+  def apply[T](proto: => T): Definition[T] =
     macro DefinitionTransform.apply[T]
   def do_apply[T](proto: => T)(implicit buildable: Buildable[T]): Definition[T] = {
     Definition(buildable(proto))
