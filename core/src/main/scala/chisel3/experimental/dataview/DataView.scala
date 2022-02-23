@@ -154,7 +154,7 @@ object DataView {
   // ****************************** Built-in Implementations of DataView ******************************
   // Sort of the "Standard library" implementations
 
-  /** All Chisel Data are viewable as their own type */
+  /** All Chisel Data are proxifier as their own type */
   implicit def identityView[A <: Data](implicit sourceInfo: SourceInfo): DataView[A, A] =
     DataView[A, A](chiselTypeOf.apply, { case (x, y) => (x, y) })
 

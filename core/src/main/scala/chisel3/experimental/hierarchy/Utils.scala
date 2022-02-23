@@ -13,11 +13,11 @@ import chisel3.experimental.hierarchy.core._
 
 private[chisel3] object Utils {
   // TODO This is wrong, the standIn is T, but I'm calling the proto T...
-  def toUnderlyingAsInstance[T <: BaseModule](module: T): Underlying[BaseModule] = module match {
+  def toUnderlyingAsInstance[T <: BaseModule](module: T): Proxy[BaseModule] = module match {
     case i: IsStandIn[BaseModule] => StandIn(i)
-    case other: T => Proto(other, other._parent.map{ case p: BaseModule with IsHierarchicable => toUnderlyingAsInstance(p).asInstanceOf[Underlying[IsHierarchicable]]})
+    case other: T => Proto(other, other._parent.map{ case p: BaseModule with IsHierarchical => toUnderlyingAsInstance(p).asInstanceOf[Proxy[IsHierarchical]]})
   }
-  def toUnderlyingAsDefinition[T <: BaseModule](module: T): Underlying[BaseModule] = {
+  def toUnderlyingAsDefinition[T <: BaseModule](module: T): Proxy[BaseModule] = {
     module match {
       case i: IsStandIn[BaseModule] =>
         StandIn(StandInDefinition(i.proto, module.getCircuit))
@@ -25,7 +25,7 @@ private[chisel3] object Utils {
         StandIn(StandInDefinition(other, module.getCircuit))
     }
   }
-  def getInnerDataContext[T](h: Hierarchy[T])(implicit tc: Hierarchicable[T]): Option[BaseModule] = tc.hierarchy(h) match {
+  def getInnerDataContext[T](h: Hierarchy[T])(implicit tc: Hierarchicalizer[T]): Option[BaseModule] = tc.hierarchy(h) match {
     case Some(StandIn(standin: BaseModule)) => Some(standin)
     case Some(Proto(proto: BaseModule, _)) => Some(proto)
     case Some(StandIn(StandInIsInstantiable(p, parent: Option[BaseModule]))) => parent
@@ -42,7 +42,7 @@ private[chisel3] object Utils {
   //    newChild._circuit = value._circuit.orElse(Some(value))
   //    newChild._parent = None
   //    Some(newChild)
-  //  case value: IsHierarchicable => None
+  //  case value: IsHierarchical => None
   //}
   /** Given a Data, find the root of its binding, apply a function to the root to get a "new root",
     * and find the equivalent child Data in the "new root"
@@ -230,15 +230,15 @@ private[chisel3] object Utils {
     * @return original or clone in the new context
     */
   private[chisel3] def cloneModuleToContext[T <: BaseModule](
-    module:  Underlying[T],
+    module:  Proxy[T],
     context: BaseModule // TODO! This needs to be Hierarchy, so we can get the contexts and pass to StandInInstance, so they are accessible in the Select operators.
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): Underlying[T] = {
+  ): Proxy[T] = {
     // Recursive call
-    def rec[A <: BaseModule](m: A): Underlying[A] = {
-      def clone(x: A, p: Option[BaseModule], name: () => String): Underlying[A] = {
+    def rec[A <: BaseModule](m: A): Proxy[A] = {
+      def clone(x: A, p: Option[BaseModule], name: () => String): Proxy[A] = {
         val newChild = x match {
           case ic: IsStandIn[ _] => Module.do_pseudo_apply(new StandInInstance(x, name, p))
           case other => Module.do_pseudo_apply(new StandInInstance(other, name, p))

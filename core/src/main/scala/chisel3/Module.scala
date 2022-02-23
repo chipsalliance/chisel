@@ -201,7 +201,7 @@ package experimental {
 
 package internal {
   import chisel3.experimental.BaseModule
-  import chisel3.experimental.hierarchy.core.{IsHierarchicable, Proto}
+  import chisel3.experimental.hierarchy.core.{IsHierarchical, Proto}
 
   object BaseModule {
 
@@ -259,7 +259,7 @@ package experimental {
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
-  abstract class BaseModule extends HasId with experimental.hierarchy.core.IsHierarchicable {
+  abstract class BaseModule extends HasId with experimental.hierarchy.core.IsHierarchical {
     _parent.foreach(_.addId(this))
 
     //

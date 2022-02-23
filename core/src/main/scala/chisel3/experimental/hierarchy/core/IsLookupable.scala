@@ -22,30 +22,30 @@ trait IsLookupable
 //
 //
 //
-//  implicit def lookupIsHierarchicable[B <: IsHierarchicable](
+//  implicit def lookupIsHierarchical[B <: IsHierarchical](
 //    implicit sourceInfo: SourceInfo,
 //    compileOptions:      CompileOptions
 //  ) = new Lookupable[B] {
 //    type C = Instance[B]
 //    def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
 //      val ret = that(definition.proto)
-//      val underlying = new InstantiableClone[B] {
+//      val proxy = new InstantiableClone[B] {
 //        val proto = ret
 //        val contexts = definition.contexts
 //        lazy val _innerContext = definition
 //      }
-//      new Instance(Clone(underlying))
+//      new Instance(Clone(proxy))
 //    }
 //    def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
 //      val ret = that(instance.proto)
-//      //println("lookupIsHierarchicable,Inst", ret)
-//      val underlying = new InstantiableClone[B] {
+//      //println("lookupIsHierarchical,Inst", ret)
+//      val proxy = new InstantiableClone[B] {
 //        val proto = ret
 //        val contexts = instance.contexts
 //        lazy val _innerContext = instance
 //        override def toString = s"InstantiableClone($ret)"
 //      }
-//      new Instance(Clone(underlying))
+//      new Instance(Clone(proxy))
 //    }
 //  }
 //

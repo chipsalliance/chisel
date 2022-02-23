@@ -58,7 +58,7 @@ object Select {
                   x => new Instance(core.StandIn(p)).asInstanceOf[Instance[BaseModule]]
                 }//.addContext(parent.contexts)
               case other: BaseModule =>
-                new Instance(parent._lookup { x => other }.underlying)
+                new Instance(parent._lookup { x => other }.proxy)
             }
         }
       case other => Nil
@@ -84,7 +84,7 @@ object Select {
                 val i = parent._lookup { x => new Instance(core.StandIn(p)).asInstanceOf[Instance[BaseModule]] }//.addContext(parent.contexts)
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
               case other: BaseModule =>
-                val i = new Instance(parent._lookup { x => other }.underlying)
+                val i = new Instance(parent._lookup { x => other }.proxy)
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
             }
           case other => None

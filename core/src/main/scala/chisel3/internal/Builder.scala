@@ -648,7 +648,7 @@ private[chisel3] object Builder extends LazyLogging {
   import chisel3.experimental.hierarchy.{StandInModule}
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
     case (id: Instance[_]) =>
-      id.underlying match {
+      id.proxy match {
         case StandIn(m: StandInModule[_]) => namer(m.getPorts, prefix)
         case _ =>
       }

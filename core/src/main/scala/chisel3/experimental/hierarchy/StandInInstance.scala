@@ -15,7 +15,7 @@ import chisel3._
   * @note In addition, the instance name of an InstanceClone is going to be the SAME as the proto, but this is not true
   * for experimental.hierarchy.StandInModule.
   */
-private[chisel3] final case class StandInInstance[T <: BaseModule](val proto: T, val instName: () => String, val parent: Option[IsHierarchicable]) extends PseudoModule with IsStandIn[T] {
+private[chisel3] final case class StandInInstance[T <: BaseModule](val proto: T, val instName: () => String, val parent: Option[IsHierarchical]) extends PseudoModule with IsStandIn[T] {
   _parent = parent match {
     case Some(b: BaseModule) => Some(b)
     case other => None

@@ -5,9 +5,9 @@ package chisel3.experimental.hierarchy.core
 trait IsLensable
 
 // Wrapper Class
-final case class Lense[T](underlying: Underlying[T, IsHierarchicable])
+final case class Lense[T](proxy: Proxy[T, IsHierarchical])
 
-// Underlying Classes; For now, just use IsHierarchicable's until proven otherwise
+// Underlying Classes; For now, just use IsHierarchical's until proven otherwise
 
 // Typeclass Trait
 trait Lensify[B] extends IsTypeclass[B] {
@@ -21,9 +21,9 @@ object Lensify {
     type C = L
     def apply[C](b: L, context: Lense[C]): L = ??? //ERROR!! Cannot do this!!
   }
-  implicit def IsHierarchicable[I <: IsHierarchicable] = new Lensify[Hierarchy[I]] {
+  implicit def IsHierarchical[I <: IsHierarchical] = new Lensify[Hierarchy[I]] {
     type C = Lense[I]
-    def apply[C](b: Hierarchy[I], context: Lense[C]): Lense[I] = Lense(b.underlying)
+    def apply[C](b: Hierarchy[I], context: Lense[C]): Lense[I] = Lense(b.proxy)
   }
 }
 */
@@ -32,7 +32,7 @@ object Lensify {
 
 //TODO: will need to handle lensing nested Contextuals with another typeclass
 // TODO: nested contextuals
-//final case class ContextualLense[T, V](value: V, parent: Underlying[T, IsHierarchicable])
+//final case class ContextualLense[T, V](value: V, parent: Proxy[T, IsHierarchical])
   // TODO: nested contextuals
   //implicit def isContextual[I <: IsContextual] = new Lensify[Contextual[I], Edit[I]] {
   //  def lensify[C](b: Contextual[I], context: Lense[C]): Edit[I] = Edit(b.value)
