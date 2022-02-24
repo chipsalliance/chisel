@@ -1,12 +1,5 @@
 package chisel3.experimental.hierarchy.core
 
-
-case class StandInIsInstantiable[T <: IsInstantiable](proto: T, parent: Option[IsContext]) extends IsStandIn[T] {
-  def toInstance:   Instance[T] = new Instance(StandIn(this))
-  def toDefinition: Definition[T] = new Definition(StandIn(this))
-}
-
-
 // Wrapper Class
 sealed trait Proxy[+T] {
   def proto: T
@@ -37,6 +30,33 @@ final case class StandIn[T](isStandIn: IsStandIn[T]) extends Proxy[T] {
   }
 }
 
+trait IsStandIn[+P] {
+
+  def parent: Option[IsContext]
+  def proto: P
+
+  def toInstance:   Instance[P]
+  def toDefinition: Definition[P]
+  /** Determines whether another object is a clone of the same proxy proto
+    *
+    * @param a
+    */
+  def hasSameProto(a: Any): Boolean = {
+    val aProto = a match {
+      case is: IsStandIn[_] => is.proto
+      case other => other
+    }
+    this == aProto || proto == aProto
+  }
+}
+
+// Default implementation for IsInstantiable, as it does not add context
+case class InstantiableStandIn[P <: IsInstantiable](proto: P, parent: Option[IsContext]) extends IsStandIn[P] {
+  def toInstance:   Instance[P] = new Instance(StandIn(this))
+  def toDefinition: Definition[P] = new Definition(StandIn(this))
+}
+
+
 // Typeclass Trait
 trait Proxifier[V]  {
   type U
@@ -44,19 +64,12 @@ trait Proxifier[V]  {
   def apply[P](value: V, hierarchy: Hierarchy[P]): R
 }
 
+
 // Typeclass Default Implementations
 object Proxifier {
   implicit def isIsInstantiable[L <: IsInstantiable, C <: IsContext](implicit contexter: Contexter[L, C]) =
     new Proxifier[L] {
       type U = L
-      def apply[P](value: L, hierarchy: Hierarchy[P]) = StandIn(StandInIsInstantiable(value, contexter(value, hierarchy).context))
+      def apply[P](value: L, hierarchy: Hierarchy[P]) = StandIn(InstantiableStandIn(value, contexter(value, hierarchy).context))
     }
-}
-
-trait ProxyDefiner[T] {
-  def apply(f: => T): Proxy[T]
-}
-
-trait ProxyInstancer[T] {
-  def apply(definition: Definition[T]): Proxy[T]
 }

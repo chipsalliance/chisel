@@ -18,27 +18,23 @@ trait IsContext
 
 
 // ==========================================
-// Library-facing Trait, NOT FOR USERS
+// Library-facing Traits, NOT FOR USERS
+// Additional library-facing traits are not in this file
 // ==========================================
 
-// Use for a library to have a standin for a proto, which can be the thing that updates the library's
-//  internal representations and state properly
-trait IsStandIn[+T] {
+// Implemented by a library so we can create a Definition of an underlying Proto
+trait ProxyDefiner[P] {
+  def apply(f: => P): Proxy[P]
+}
 
-  def parent: Option[IsContext]
-  def proto: T
+// Implemented by a library so we can create an Instance of a Definition
+trait ProxyInstancer[P] {
+  def apply(definition: Definition[P]): Proxy[P]
+}
 
-  def toInstance:   Instance[T]
-  def toDefinition: Definition[T]
-  /** Determines whether another object is a clone of the same proxy proto
-    *
-    * @param a
-    */
-  def hasSameProto(a: Any): Boolean = {
-    val aProto = a match {
-      case is: IsStandIn[_] => is.proto
-      case other => other
-    }
-    this == aProto || proto == aProto
-  }
+// Use for a library to have a standin for an IsContext proto
+//   This is the thing that interacts with a library's internal representations and state properly to
+//   manage context
+trait ContextStandIn[+P <: IsContext] extends IsStandIn[P] {
+  def asProxy: Proxy[P] = StandIn(this)
 }

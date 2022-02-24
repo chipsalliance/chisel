@@ -22,7 +22,7 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   * target whose root is the Definition. This DefinitionClone is used to represent the root parent of the
   * InstanceClone (which represents the returned module).
   */
-private[chisel3] final case class StandInDefinition[T <: BaseModule](proto: T, circuit: Option[BaseModule]) extends PseudoModule with IsStandIn[T] {
+private[chisel3] final case class StandInDefinition[T <: BaseModule](proto: T, circuit: Option[BaseModule]) extends PseudoModule with ContextStandIn[T] {
   override def equals(a: Any): Boolean = {
     a match {
       case d: StandInDefinition[_] if d.proto == proto && d.circuit == circuit => true

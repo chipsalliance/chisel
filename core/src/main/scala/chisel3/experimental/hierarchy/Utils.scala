@@ -12,38 +12,6 @@ import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBin
 import chisel3.experimental.hierarchy.core._
 
 private[chisel3] object Utils {
-  // TODO This is wrong, the standIn is T, but I'm calling the proto T...
-  def toUnderlyingAsInstance[T <: BaseModule](module: T): Proxy[BaseModule] = module match {
-    case i: IsStandIn[BaseModule] => StandIn(i)
-    case other: T => Proto(other, other._parent.map{ case p: BaseModule with IsContext => toUnderlyingAsInstance(p).asInstanceOf[Proxy[IsContext]]})
-  }
-  def toUnderlyingAsDefinition[T <: BaseModule](module: T): Proxy[BaseModule] = {
-    module match {
-      case i: IsStandIn[BaseModule] =>
-        StandIn(StandInDefinition(i.proto, module.getCircuit))
-      case other: T =>
-        StandIn(StandInDefinition(other, module.getCircuit))
-    }
-  }
-  //def getInnerDataContext[T](h: Hierarchy[T])(implicit tc: Contexter[T]): Option[BaseModule] = tc.lookupContext(h) match {
-  //  case Some(StandIn(standin: BaseModule)) => Some(standin)
-  //  case Some(Proto(proto: BaseModule, _)) => Some(proto)
-  //  case Some(StandIn(StandInIsInstantiable(p, parent: Option[BaseModule]))) => parent
-  //  case other => None
-  //} 
-  //h match {
-  //  case d: Definition[_] => 
-  //  case i: Instance[_] =>
-  //  case value: BaseModule =>
-  //    val newChild = Module.do_pseudo_apply(new StandInDefinition(value))(
-  //      chisel3.internal.sourceinfo.UnlocatableSourceInfo,
-  //      chisel3.ExplicitCompileOptions.Strict
-  //    )
-  //    newChild._circuit = value._circuit.orElse(Some(value))
-  //    newChild._parent = None
-  //    Some(newChild)
-  //  case value: IsContext => None
-  //}
   /** Given a Data, find the root of its binding, apply a function to the root to get a "new root",
     * and find the equivalent child Data in the "new root"
     *
@@ -109,7 +77,7 @@ private[chisel3] object Utils {
       case Some(parent) =>
         //println(s"OLD PARENT: $parent")
         //println(s"CONTEXT: $context")
-        val newParent = cloneModuleToContext(Proto(parent, parent._parent.map(toUnderlyingAsInstance)), context)
+        val newParent = cloneModuleToContext(Proto(parent, parent._parent.map(_.asProxy)), context)
         //println(s"NEW PARENT: $newParent")
         newParent match {
           case Proto(p, _) if p == parent => data
@@ -246,24 +214,24 @@ private[chisel3] object Utils {
         StandIn(newChild)
       }
       (m, context) match {
-        case (c, ctx) if ctx == c => Proto(c, c._parent.map(toUnderlyingAsInstance))
+        case (c, ctx) if ctx == c => Proto(c, c._parent.map(_.asProxy))
         //case (c, ctx: IsStandIn[_]) if ctx.hasSameProto(c) => Clone(ctx.asInstanceOf[IsStandIn[A]])
         case (c, ctx: IsStandIn[ _]) if ctx.hasSameProto(c) && (c._parent.isEmpty || ctx._parent.isEmpty) =>
           //println(s"Matched ctx with empty parent: $c, $ctx")
           StandIn(ctx.asInstanceOf[IsStandIn[A]])
         case (c, ctx: IsStandIn[ _]) if ctx.hasSameProto(c) =>
           //println(s"Matched ctx")
-          cloneModuleToContext(toUnderlyingAsInstance(m._parent.get), ctx._parent.get) match {
-            case Proto(p, _) => Proto(m, m._parent.map(toUnderlyingAsInstance))
+          cloneModuleToContext(m._parent.get.asProxy, ctx._parent.get) match {
+            case Proto(p, _) => Proto(m, m._parent.map(_.asProxy))
             case StandIn(p: BaseModule) =>
               //println(s"Cloning2: $m, $p")
               clone(m, Some(p), () => m.instanceName)
           }
-        case (c, ctx) if c._parent.isEmpty => Proto(c, c._parent.map(toUnderlyingAsInstance))
+        case (c, ctx) if c._parent.isEmpty => Proto(c, c._parent.map(_.asProxy))
         case (_, _) =>
           //println(s"Rec: ${m._parent.get.toTarget}, ${context}")
-          cloneModuleToContext(toUnderlyingAsInstance(m._parent.get), context) match {
-            case Proto(p, _) => Proto(m, m._parent.map(toUnderlyingAsInstance))
+          cloneModuleToContext(m._parent.get.asProxy, context) match {
+            case Proto(p, _) => Proto(m, m._parent.map(_.asProxy))
             case StandIn(p: BaseModule) =>
               //println(s"Cloning: $m, $p")
               clone(m, Some(p), () => m.instanceName)
@@ -303,7 +271,7 @@ private[chisel3] object Utils {
     mem._parent match {
       case None => mem
       case Some(parent) =>
-        val newParent = cloneModuleToContext(toUnderlyingAsInstance(parent), context)
+        val newParent = cloneModuleToContext(parent.asProxy, context)
         newParent match {
           case Proto(p, _) if p == parent => mem
           case StandIn(mod: BaseModule) =>

@@ -101,8 +101,8 @@ package object hierarchy {
   ) = new Proxifier[V] {
       type U = V
       def apply[P](value: V, hierarchy: core.Hierarchy[P]) = contexter(value, hierarchy) match {
-        case Context(None) => toUnderlyingAsInstance(value).asInstanceOf[this.R]
-        case Context(Some(p: BaseModule)) => cloneModuleToContext(toUnderlyingAsInstance(value), p).asInstanceOf[this.R]
+        case Context(None) => value.asProxy.asInstanceOf[this.R]
+        case Context(Some(p: BaseModule)) => cloneModuleToContext(value.asProxy, p).asInstanceOf[this.R]
       }
     }
 
@@ -220,14 +220,20 @@ package object hierarchy {
 
   // ========= Extensions =========
 
-  implicit class BaseModuleExtensions[T <: BaseModule](value: T) {
+  implicit class BaseModuleExtensions[P <: BaseModule](proto: P) {
     import chisel3.experimental.hierarchy.core.{Definition, Instance}
-    value match {
-      case _: IsStandIn[_] => chisel3.internal.throwException("BAD!")
-      case other =>
+    // Require proto is not a ContextStandIn, as ContextStandIn should always implement toInstance/toDefinition
+    require(!proto.isInstanceOf[ContextStandIn[_]], s"Cannot have $proto be a ContextStandIn, must be a proto!!")
+    def toInstance:   core.Instance[P] = new core.Instance(proto.asProxy)
+    def toDefinition: core.Definition[P] = {
+      new core.Definition(StandIn(StandInDefinition(proto, proto.getCircuit)))
     }
-    def toInstance:   core.Instance[T] = new core.Instance(Utils.toUnderlyingAsInstance(value).asInstanceOf[Proxy[T]])
-    def toDefinition: core.Definition[T] = new core.Definition(Utils.toUnderlyingAsDefinition(value).asInstanceOf[Proxy[T]])
+    def asProxy: Proxy[P] = {
+      Proto(proto, proto._parent.map{
+        case p: ContextStandIn[BaseModule] => p.asProxy
+        case p: BaseModule => p.asProxy
+      })
+    }
   }
   implicit class HierarchyBaseModuleExtensions[T <: BaseModule](i: core.Hierarchy[T]) {
 
@@ -254,7 +260,7 @@ package object hierarchy {
       */
     def toTarget: IsModule = i.proxy match {
       case Proto(x: BaseModule, _) => x.getTarget
-      case StandIn(x: IsStandIn[_] with BaseModule) => x.getTarget
+      case StandIn(x: ContextStandIn[_] with BaseModule) => x.getTarget
     }
 
     /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
@@ -262,7 +268,7 @@ package object hierarchy {
       */
     def toAbsoluteTarget: IsModule = i.proxy match {
       case Proto(x, _) => x.toAbsoluteTarget
-      case StandIn(x: IsStandIn[_] with BaseModule) => x.toAbsoluteTarget
+      case StandIn(x: ContextStandIn[_] with BaseModule) => x.toAbsoluteTarget
     }
   }
   implicit class DefinitionBaseModuleExtensions[T <: BaseModule](d: Definition[T]) {
