@@ -1,5 +1,6 @@
 <!Doctype html>
 <html>
+
 # Verilog vs Chisel Side-By-Side
 
 ```scala mdoc:invisible
@@ -179,10 +180,35 @@ ChiselStage.emitVerilog(new MyWireAssignmentModule)
 <td>
 
 ```verilog
-module MyWireAssignmentModule(
-  input   clock,
-  input   reset
-);
+module MyWireAssignmentModule2 ();
+
+wire [31:0] aa = 'd42;
+ reg [31:0] a; // Logical register for use in always block, not real register
+ //
+always @(*) begin
+  a = aa;
+end 
+
+// Hex value initialization
+ wire [31:0] b = 32'hbabecafe;
+
+ // Declaration separate from Assignment
+ wire [15:0] c;
+ wire d;
+
+ assign c = 16'b1;
+ assign d = 1'b1;
+
+// Signed values
+wire signed [63:0] g;
+assign g = -’d5;
+
+wire signed [31:0] h = 'd5;
+
+reg signed[31:0] f;
+always@(*) begin
+  f = ‘d5;
+end
 endmodule
 ```
 
@@ -191,22 +217,23 @@ endmodule
 <td>
 
 ```scala mdoc:silent
-class MyWireAssignmentModule2 extends Module {
- val a = WireDefault(42.U(32.W))
- val aa = 42.U(32.W)
- val b = WireDefault("hbabecafe".U(32.W))  
- val c = Wire(UInt(16.W)) 
- val d = Wire(Bool())
- val e = Wire(UInt())
- val f = WireDefault("hdead".U)
- val g = Wire(SInt(64.W))
- val h = WireDefault(5.asSInt(32.W))
- val i = WireDefault((3.S(16.W)))
 
-c := "b1".U;
+
+class MyWireAssignmentModule2 extends Module {
+
+val aa = 42.U(32.W)
+val a = Wire(UInt(32.W))
+a := aa
+val b = "hbabecafe".U(32.W)
+val c = Wire(UInt(16.W))
+val d = Wire(Bool())
+c := “b1”.U(16.W)
 d := true.B
-e := "b1".U(3.W);
+val g = Wire(SInt(64.W))
 g := -5.S
+val h = 5.asSInt(32.W)
+val f = Wire(SInt(32.W))
+f := 5.S
 }
 ```
 ```scala mdoc:invisible
