@@ -32,38 +32,42 @@ sealed trait Proxy[+T] {
   def proto: T
   def toDefinition = Definition(this)
   def toInstance = Instance(this)
+  def myContext: Option[IsHierarchical]
+  def lookupContext: Option[IsHierarchical]
 }
 // Used for when proxy implementation is pure
-final case class Proto[T](proto: T, parent: Option[Proxy[IsHierarchical]]) extends Proxy[T]
+final case class Proto[T](proto: T, parent: Option[Proxy[IsHierarchical]]) extends Proxy[T] {
+  def myContext: Option[IsHierarchical] = parent match {
+    case Some(p: Proxy[_]) => p.lookupContext
+    case None => None
+  }
+  def lookupContext: Option[IsHierarchical] = proto match {
+    case p: IsHierarchical => Some(p)
+    case _ => myContext
+  }
+}
 // Used for when proxy implementation is not pure, and thus requires a mock up
 final case class StandIn[T](isStandIn: IsStandIn[T]) extends Proxy[T] {
   def proto = isStandIn.proto
+  def myContext: Option[IsHierarchical] = isStandIn.parent
+  def lookupContext: Option[IsHierarchical] = isStandIn match {
+    case p: IsHierarchical => Some(p)
+    case o => myContext
+  }
 }
 
 // Typeclass Trait
-trait Proxifier[B] extends IsTypeclass[B] {
+trait Proxifier[V] extends IsTypeclass[V] {
   type U
-  type C = Proxy[U]
-  def apply[A](b: B, context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C
+  type R = Proxy[U]
+  def apply[H](value: V, hierarchy: Hierarchy[H]): R
 }
 
 // Typeclass Default Implementations
 object Proxifier {
-  implicit def isLookupable[L <: IsLookupable] = new Proxifier[L] {
-    type U = L
-    def apply[A](b: L, context: Hierarchy[A])(implicit h: Hierarchicalizer[A]) = Proto(b, h.hierarchy(context))
-  }
-  implicit def isContextual[L <: IsContextual] = new Proxifier[L] {
-    type U = L
-    def apply[A](b: L, context: Hierarchy[A])(implicit h: Hierarchicalizer[A]) = Proto(b, h.hierarchy(context))
-  }
-  implicit def isIsInstantiable[L <: IsInstantiable] = new Proxifier[L] {
-    type U = L
-    def apply[A](b: L, context: Hierarchy[A])(implicit h: Hierarchicalizer[A]) = h.hierarchy(context) match {
-      case None => StandIn(StandInIsInstantiable(b, None))
-      case Some(p: Proto[_]) => StandIn(StandInIsInstantiable(b, Some(p.proto)))
-      case Some(StandIn(i: IsStandIn[_] with IsHierarchical)) => StandIn(StandInIsInstantiable(b, Some(i)))
-      case Some(StandIn(i: IsStandIn[_] with IsInstantiable)) => StandIn(StandInIsInstantiable(b, i.parent))
+  implicit def isIsInstantiable[L <: IsInstantiable, C <: IsHierarchical](implicit contexter: Contexter[C]) =
+    new Proxifier[L] {
+      type U = L
+      def apply[H](b: L, hierarchy: Hierarchy[H]) = StandIn(StandInIsInstantiable(b, contexter.lookupContext(hierarchy)))
     }
-  }
 }

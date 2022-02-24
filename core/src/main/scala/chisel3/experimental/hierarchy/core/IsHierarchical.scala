@@ -10,16 +10,16 @@ import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
 trait IsHierarchical
 
 // Wrapper Class
-sealed trait Hierarchy[+A] {
+sealed trait Hierarchy[+H] {
 
   /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
   private[chisel3] val cache = HashMap[Any, Any]()
 
-  def _lookup[B, C](that: A => B)(
+  def _lookup[B, C](that: H => B)(
     implicit instancify: Instancify[B],
-    h: Hierarchicalizer[A],
+    h: Contexter[C],
     macroGenerated:  chisel3.internal.MacroGenerated
-  ): instancify.C = {
+  ): instancify.R = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(this.proto)
     val retValue = instancify(protoValue, this)
@@ -43,74 +43,74 @@ sealed trait Hierarchy[+A] {
     superClasses.contains(name)
   }
 
-  /** @return Return the proxy Definition[A] of this Hierarchy[A] */
+  /** @return Return the proxy Definition[H] of this Hierarchy[H] */
   def toDefinition = Definition(proxy)
 
-  /** @return Convert this Hierarchy[A] as a top-level Instance[A] */
+  /** @return Convert this Hierarchy[H] as a top-level Instance[H] */
   def toInstance = Instance(proxy)
 
-  private[chisel3] def proxy: Proxy[A]
-  private[chisel3] def proto: A = proxy.proto
+  private[chisel3] def proxy: Proxy[H]
+  private[chisel3] def proto: H = proxy.proto
   private lazy val superClasses = Hierarchy.calculateSuperClasses(proto.getClass())
 
 }
 
-final case class Instance[+A] private[chisel3] (private[chisel3] proxy: Proxy[A]) extends Hierarchy[A]
-final case class Definition[+A] private[chisel3] (private[chisel3] proxy: Proxy[A]) extends IsLookupable with Hierarchy[A]
+final case class Instance[+H] private[chisel3] (private[chisel3] proxy: Proxy[H]) extends Hierarchy[H]
+final case class Definition[+H] private[chisel3] (private[chisel3] proxy: Proxy[H]) extends IsLookupable with Hierarchy[H]
 
 // Typeclass Trait
-trait Instancify[B] extends IsTypeclass[B] {
-  type C
-  def apply[A](b: B, context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C
+trait Instancify[V] extends IsTypeclass[V] {
+  type R
+  def apply[H](value: V, hierarchy: Hierarchy[H]): R
 }
 // Typeclass Implementations
 object Instancify {
 
-  implicit def isLookupable[L <: IsLookupable] = new Instancify[L] {
-    type C = L
-    def apply[A](b: L, context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): L = b
+  implicit def isLookupable[V <: IsLookupable] = new Instancify[V] {
+    type R = V
+    def apply[H](value: V, hierarchy: Hierarchy[H]): R = value
   }
   implicit def isContextual[I <: IsContextual](implicit contextualizer: Contextualizer[I]) = new Instancify[I] {
-    type C = contextualizer.C 
-    def apply[A](b: I, context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C = {
-      contextualizer(b, context)
+    type R = contextualizer.R 
+    def apply[H](value: I, hierarchy: Hierarchy[H]): R = {
+      contextualizer(value, hierarchy)
     }
   }
   implicit val instancifyInt = new Instancify[Int] {
-    type C = Int
-    def apply[A](that: Int, context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C = that
+    type R = Int
+    def apply[H](that: Int, hierarchy: Hierarchy[H]): R = that
   }
   implicit val instancifyString = new Instancify[String] {
-    type C = String
-    def apply[A](that: String, context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C = that
+    type R = String
+    def apply[H](that: String, hierarchy: Hierarchy[H]): R = that
   }
   implicit def instancifyIterable[B, F[_] <: Iterable[_]](
     implicit instancify:          Instancify[B]
   ) = new Instancify[F[B]] {
-    type C = F[instancify.C]
-    def apply[A](that: F[B], context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C = {
+    type R = F[instancify.R]
+    def apply[H](that: F[B], hierarchy: Hierarchy[H]): R = {
       val ret = that.asInstanceOf[Iterable[B]]
-      ret.map { x: B => instancify[A](x, context) }.asInstanceOf[C]
+      ret.map { x: B => instancify[H](x, hierarchy) }.asInstanceOf[R]
     }
   }
   implicit def instancifyOption[B](implicit instancify: Instancify[B]) = new Instancify[Option[B]] {
-    type C = Option[instancify.C]
-    def apply[A](that: Option[B], context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C = {
-      that.map { x: B => instancify[A](x, context) }
+    type R = Option[instancify.R]
+    def apply[H](that: Option[B], hierarchy: Hierarchy[H]): R = {
+      that.map { x: B => instancify[H](x, hierarchy) }
     }
   }
-  implicit def instancifyEither[L, R](implicit instancifyL: Instancify[L], instancifyR: Instancify[R]) = new Instancify[Either[L, R]] {
-    type C = Either[instancifyL.C, instancifyR.C]
-    def apply[A](that: Either[L, R], context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C = {
-      that.map { x: R => instancifyR[A](x, context) }
+  implicit def instancifyEither[X, Y](implicit instancifyX: Instancify[X], instancifyY: Instancify[Y]) = new Instancify[Either[X, Y]] {
+    type R = Either[instancifyX.R, instancifyY.R]
+    def apply[H](that: Either[X, Y], hierarchy: Hierarchy[H]): R = {
+      that.map { y: Y => instancifyY[H](y, hierarchy) }
           .left
-          .map { x: L => instancifyL[A](x, context) }
+          .map { x: X => instancifyX[H](x, hierarchy) }
     }
   }
   implicit def instancifyTuple2[X, Y](implicit instancifyX: Instancify[X], instancifyY: Instancify[Y]) = new Instancify[Tuple2[X, Y]] {
-    type C = Tuple2[instancifyX.C, instancifyY.C]
-    def apply[A](that: Tuple2[X, Y], context: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C = {
-      (instancifyX[A](that._1, context), instancifyY(that._2, context))
+    type R = Tuple2[instancifyX.R, instancifyY.R]
+    def apply[H](that: Tuple2[X, Y], hierarchy: Hierarchy[H]): R = {
+      (instancifyX[H](that._1, hierarchy), instancifyY(that._2, hierarchy))
     }
   }
 }

@@ -9,24 +9,24 @@ final case class Contextual[V](value: V)
 // No Underlying Classes needed; Contextuals clone themselves into their new hierarchy
 
 // Typeclass Trait
-trait Contextualizer[B] extends IsTypeclass[B] {
-  type C
-  def apply[A](value: B, hierarchy: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C
+trait Contextualizer[V] extends IsTypeclass[V] {
+  type R
+  def apply[H](value: V, hierarchy: Hierarchy[H]): R
 }
 
 // Default Typeclass Implementations
 object Contextualizer {
   implicit def isLookupable[L <: IsLookupable] = new Contextualizer[L] {
-    type C = L
-    def apply[A](v: L, hierarchy: Hierarchy[A])(implicit h: Hierarchicalizer[A]): L = v
+    type R = L
+    def apply[H](v: L, hierarchy: Hierarchy[H]): L = v
   }
   implicit def isContextual[V] = new Contextualizer[Contextual[V]] {
-    type C = V
-    def apply[A](v: Contextual[V], hierarchy: Hierarchy[A])(implicit h: Hierarchicalizer[A]): V = v.value
+    type R = V
+    def apply[H](v: Contextual[V], hierarchy: Hierarchy[H]): V = v.value
   }
   implicit def isOther[X](implicit proxifier: Proxifier[X]) = new Contextualizer[X] {
-    type C = proxifier.C
-    def apply[A](v: X, hierarchy: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C = proxifier(v, hierarchy)
+    type R = proxifier.R
+    def apply[H](v: X, hierarchy: Hierarchy[H]): R = proxifier(v, hierarchy)
   }
 }
 

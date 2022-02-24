@@ -1,11 +1,10 @@
 package chisel3.experimental.hierarchy.core
 
-trait Hierarchicalizer[-A] {
-  def hierarchy(context: Hierarchy[A]): Option[Proxy[IsHierarchical]]
-  def asUnderlying[X <: A](value: X): Proxy[X]
+trait Contexter[C] {
+  def lookupContext[H](hierarchy: Hierarchy[H]): Option[C]
 }
 
-trait IsTypeclass[B] {
-  type C
-  def apply[A](value: B, hierarchy: Hierarchy[A])(implicit h: Hierarchicalizer[A]): C
+trait IsTypeclass[V] {
+  type R
+  def apply[H](value: V, hierarchy: Hierarchy[H]): R
 }

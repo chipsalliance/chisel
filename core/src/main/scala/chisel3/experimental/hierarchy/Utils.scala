@@ -25,12 +25,12 @@ private[chisel3] object Utils {
         StandIn(StandInDefinition(other, module.getCircuit))
     }
   }
-  def getInnerDataContext[T](h: Hierarchy[T])(implicit tc: Hierarchicalizer[T]): Option[BaseModule] = tc.hierarchy(h) match {
-    case Some(StandIn(standin: BaseModule)) => Some(standin)
-    case Some(Proto(proto: BaseModule, _)) => Some(proto)
-    case Some(StandIn(StandInIsInstantiable(p, parent: Option[BaseModule]))) => parent
-    case other => None
-  } 
+  //def getInnerDataContext[T](h: Hierarchy[T])(implicit tc: Contexter[T]): Option[BaseModule] = tc.lookupContext(h) match {
+  //  case Some(StandIn(standin: BaseModule)) => Some(standin)
+  //  case Some(Proto(proto: BaseModule, _)) => Some(proto)
+  //  case Some(StandIn(StandInIsInstantiable(p, parent: Option[BaseModule]))) => parent
+  //  case other => None
+  //} 
   //h match {
   //  case d: Definition[_] => 
   //  case i: Instance[_] =>

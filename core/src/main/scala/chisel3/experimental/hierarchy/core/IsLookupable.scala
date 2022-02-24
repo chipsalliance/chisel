@@ -9,9 +9,9 @@ trait IsLookupable
 
 //class SimpleLookupable[X] extends Lookupable[X] {
 //  type B = X
-//  type C = X
+//  type R = X
 //  type D = Lense[X]
-//  def apply[A](that: A => B, definition: Definition[A]): C = that(definition.proto)
+//  def apply[H](that: A => B, definition: Definition[A]): R = that(definition.proto)
 //  def instanceLookup[A](that:   A => B, instance:   Instance[A]):   C = that(instance.proto)
 //  def lenseLookup[A](that:      A => B, lense:   Lense[A]):         D = that(lense.proto)
 //}
@@ -26,8 +26,8 @@ trait IsLookupable
 //    implicit sourceInfo: SourceInfo,
 //    compileOptions:      CompileOptions
 //  ) = new Lookupable[B] {
-//    type C = Instance[B]
-//    def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
+//    type R = Instance[B]
+//    def definitionLookup[A](that: A => B, definition: Definition[A]): R = {
 //      val ret = that(definition.proto)
 //      val proxy = new InstantiableClone[B] {
 //        val proto = ret
@@ -36,7 +36,7 @@ trait IsLookupable
 //      }
 //      new Instance(Clone(proxy))
 //    }
-//    def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+//    def instanceLookup[A](that: A => B, instance: Instance[A]): R = {
 //      val ret = that(instance.proto)
 //      //println("lookupIsHierarchical,Inst", ret)
 //      val proxy = new InstantiableClone[B] {
@@ -69,15 +69,15 @@ trait IsLookupable
 //    compileOptions:      CompileOptions,
 //    lookupableV:         Lookupable[V],
 //  ) = new Lookupable[Contextual[_, V]] {
-//    type C = lookupableV.C
-//    def instanceLookup[A](that: A => Contextual[_,V], instance: Instance[A]): C = {
+//    type R = lookupableV.R
+//    def instanceLookup[A](that: A => Contextual[_,V], instance: Instance[A]): R = {
 //      val value = that(instance.proto).asInstanceOf[Contextual[A,V]].get(instance)
 //      //println("lookupC,Inst",value)
 //      val ret = lookupableV.instanceLookup({_: A => instance.contexts.apply(value)}, instance)
 //      //println("lookupC,Inst,ret",ret)
 //      ret
 //    }
-//    def definitionLookup[A](that: A => Contextual[_,V], definition: Definition[A]): C = {
+//    def definitionLookup[A](that: A => Contextual[_,V], definition: Definition[A]): R = {
 //      val value = that(definition.proto).asInstanceOf[Contextual[A,V]].get(definition)
 //      //println("lookupC,Def",value)
 //      val ret = lookupableV.definitionLookup({ _: A => definition.contexts.apply(value) }, definition)
