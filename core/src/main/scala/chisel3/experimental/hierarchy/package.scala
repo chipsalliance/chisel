@@ -93,7 +93,6 @@ package object hierarchy {
     }
   }
 
-
   implicit def proxifierModule[V <: BaseModule](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
@@ -117,9 +116,7 @@ package object hierarchy {
         val ioMap: Option[Map[Data, Data]] = hierarchy.proxy match {
           case StandIn(x: StandInModule[_]) => Some(x.ioMap)
           case Proto(x: BaseModule, _) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
-          case m =>
-            //println(s"NOWHERE! $m")
-            None
+          case m => None
         }
         if (isView(value)) {
           cloneViewToContext(value, ioMap, contexter(value, hierarchy).context)
@@ -174,6 +171,7 @@ package object hierarchy {
     }
   }
 
+  // TODO: make Data extend IsContextual, then this can go in Contextual object
   implicit def lookuperData[V <: Data](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
@@ -184,7 +182,18 @@ package object hierarchy {
       contextualizer(value, hierarchy)
     }
   }
+  implicit def lenserData[V <: Data](
+    implicit sourceInfo: SourceInfo,
+    compileOptions: CompileOptions,
+    contextualizer: Contextualizer[V]
+  ) = new Lenser[V] {
+    type R = contextualizer.R
+    def apply[P](value: V, lense: core.Lense[P]) = {
+      contextualizer(value, new Instance(lense.proxy))
+    }
+  }
 
+  // TODO: make MemBase extend IsContextual, then this can go in Contextual object
   implicit def lookuperMem[M <: MemBase[_]](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
@@ -193,6 +202,16 @@ package object hierarchy {
     type R = contextualizer.R
     def apply[P](value: M, hierarchy: core.Hierarchy[P]) = {
       contextualizer(value, hierarchy)
+    }
+  }
+  implicit def lenserMem[V <: MemBase[_]](
+    implicit sourceInfo: SourceInfo,
+    compileOptions: CompileOptions,
+    contextualizer: Contextualizer[V]
+  ) = new Lenser[V] {
+    type R = contextualizer.R
+    def apply[P](value: V, lense: core.Lense[P]) = {
+      contextualizer(value, new Instance(lense.proxy))
     }
   }
 

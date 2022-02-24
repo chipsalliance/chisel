@@ -68,6 +68,19 @@ class InstanceTransform(val c: Context) extends SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
+object WithContextTransform
+class WithContextTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def withContext[T: c.WeakTypeTag](definition: c.Tree)(fs: c.Tree*): c.Tree = {
+    val tt: Type = weakTypeOf[T]
+    val newFs = fs.map { f => f
+      //q"{l: _root_.chisel3.experimental.hierarchy.core.Lense[$tt] => $f }"
+    }
+    q"$thisObj.do_withContext($definition)(..$newFs)(implicitly[_root_.chisel3.experimental.hierarchy.core.ProxyInstancer[$tt]])"
+  }
+}
+
+// Workaround for https://github.com/sbt/sbt/issues/3966
 object MemTransform
 class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._

@@ -265,4 +265,10 @@ object Examples {
     @public val mem = Mem(8, UInt(32.W))
     @public val syncReadMem = SyncReadMem(8, UInt(32.W))
   }
+
+  @instantiable
+  class HasContextual() extends Module {
+    @public val index: Contextual[Int] = Contextual(1)
+    @public val foo: Contextual[Int] = Contextual(1)
+  }
 }

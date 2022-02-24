@@ -1,4 +1,5 @@
 package chisel3.experimental.hierarchy.core
+import scala.collection.mutable
 
 // ==========================================
 // User-facing Traits
@@ -14,7 +15,17 @@ trait IsContextual
 trait IsInstantiable
 
 // Context dependent that lacks a clone method, and also creates a new context for values looked up from it
-trait IsContext
+trait IsContext {
+  import java.util.IdentityHashMap
+  private val sockets: IdentityHashMap[Contextual[Any], Any => Any] =
+    new java.util.IdentityHashMap[Contextual[Any], Any => Any]()
+  //private val sockets: mutable.HashMap[Contextual[Any], Any => Any] = mutable.HashMap.empty[Contextual[Any], Any => Any]
+  def addEdit[T](contextual: Contextual[T], edit: T => T): Unit = {
+    require(!sockets.containsKey(contextual), s"Cannot set the same Contextual twice, using the same lense! $this, $contextual")
+    sockets.put(contextual, edit.asInstanceOf[Any => Any])
+  }
+  def edit[T](contextual: Contextual[T]): T = if(sockets.containsKey(contextual)) sockets.get(contextual)(contextual.value).asInstanceOf[T] else contextual.value
+}
 
 
 // ==========================================

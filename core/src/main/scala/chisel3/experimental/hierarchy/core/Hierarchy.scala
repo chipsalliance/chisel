@@ -4,7 +4,7 @@ package chisel3.experimental.hierarchy.core
 import scala.collection.mutable.HashMap
 import scala.reflect.runtime.universe.TypeTag
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
+import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform, WithContextTransform}
 
 sealed trait Hierarchy[+P] {
 
@@ -43,6 +43,8 @@ sealed trait Hierarchy[+P] {
 
   /** @return Convert this Hierarchy[P] as a top-level Instance[P] */
   def toInstance = Instance(proxy)
+
+  def toLense = Lense(proxy)
 
   private[chisel3] def proxy: Proxy[P]
   private[chisel3] def proto: P = proxy.proto
@@ -93,6 +95,14 @@ object Instance {
     macro InstanceTransform.apply[P]
   def do_apply[P](definition: Definition[P])(implicit stampable: ProxyInstancer[P]): Instance[P] = {
     Instance(stampable(definition))
+  }
+  def withContext[P](definition: Definition[P])(fs: (Lense[P] => Unit)*): Instance[P] = 
+    macro WithContextTransform.withContext[P]
+  def do_withContext[P](definition: Definition[P])(fs: (Lense[P] => Unit)*)(implicit stampable: ProxyInstancer[P]): Instance[P] = {
+    val i = Instance(stampable(definition))
+    val l = i.toLense
+    fs.foreach(f => f(l))
+    i
   }
 }
 

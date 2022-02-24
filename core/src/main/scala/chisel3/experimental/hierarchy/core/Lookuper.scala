@@ -24,6 +24,12 @@ object Lookuper {
       contextualizer(value, hierarchy)
     }
   }
+  implicit def contextual[I](implicit contextualizer: Contextualizer[Contextual[I]]) = new Lookuper[Contextual[I]] {
+    type R = contextualizer.R 
+    def apply[P](value: Contextual[I], hierarchy: Hierarchy[P]): R = {
+      contextualizer(value, hierarchy)
+    }
+  }
   implicit val lookuperInt = new Lookuper[Int] {
     type R = Int
     def apply[P](that: Int, hierarchy: Hierarchy[P]): R = that

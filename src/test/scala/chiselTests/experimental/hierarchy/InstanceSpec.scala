@@ -1069,6 +1069,23 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
   }
+  describe("11: Lense") {
+    it("11.0: it should work on simple classes") {
+      class Top extends Module {
+        val d = Definition(new HasContextual)
+        require(d.index == 1, "Definition")
+
+        val i0 = Instance.withContext(d)(_.index.value = 2)
+        require(i0.index == 2, s"i0, ${i0.index}")
+        require(i0.foo == 1, s"i0, ${i0.foo}")
+
+        val i1 = Instance.withContext(d)(_.index.value = 2, _.foo.edit(_ + 2))
+        require(i1.index == 2, s"i1, ${i1.index}")
+        require(i1.foo == 3, s"i1, ${i1.foo}")
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+  }
 }
 //  describe("11: Contextual") {
 //    import ContextualExamples._
