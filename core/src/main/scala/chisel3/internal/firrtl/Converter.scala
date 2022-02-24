@@ -102,8 +102,8 @@ private[chisel3] object Converter {
       throwException(s"Internal Error! Unexpected ILit: $lit")
   }
 
-  /** Convert Commands that map 1:1 to Statements */
-  def convertSimpleCommand(cmd: Command, ctx: Component): Option[fir.Statement] = cmd match {
+  /** Convert simple commands to Statements */
+  def convertSimpleCommand(cmd: Command, ctx: Component): Seq[fir.Statement] = cmd match {
     case e: DefPrim[_] =>
       val consts = e.args.collect { case ILit(i) => i }
       val args = e.args.flatMap {
@@ -117,11 +117,19 @@ private[chisel3] object Converter {
         case _ =>
           fir.DoPrim(convert(e.op), args, consts, fir.UnknownType)
       }
-      Some(fir.DefNode(convert(e.sourceInfo), e.name, expr))
+      val info = convert(e.sourceInfo)
+      // If this is a good name, emit a wire instead of a node
+      if (e.name.startsWith("_")) {
+        Seq(fir.DefNode(info, e.name, expr))
+      } else {
+        val wire = fir.DefWire(info, e.name, extractType(e.id, e.sourceInfo))
+        val connect = fir.Connect(info, fir.Reference(e.name), expr)
+        Seq(wire, connect)
+      }
     case e @ DefWire(info, id) =>
-      Some(fir.DefWire(convert(info), e.name, extractType(id, info)))
+      Seq(fir.DefWire(convert(info), e.name, extractType(id, info)))
     case e @ DefReg(info, id, clock) =>
-      Some(
+      Seq(
         fir.DefRegister(
           convert(info),
           e.name,
@@ -132,7 +140,7 @@ private[chisel3] object Converter {
         )
       )
     case e @ DefRegInit(info, id, clock, reset, init) =>
-      Some(
+      Seq(
         fir.DefRegister(
           convert(info),
           e.name,
@@ -143,12 +151,12 @@ private[chisel3] object Converter {
         )
       )
     case e @ DefMemory(info, id, t, size) =>
-      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info), size, false))
+      Seq(firrtl.CDefMemory(convert(info), e.name, extractType(t, info), size, false))
     case e @ DefSeqMemory(info, id, t, size, ruw) =>
-      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info), size, true, ruw))
+      Seq(firrtl.CDefMemory(convert(info), e.name, extractType(t, info), size, true, ruw))
     case e: DefMemPort[_] =>
       val info = e.sourceInfo
-      Some(
+      Seq(
         firrtl.CDefMPort(
           convert(e.sourceInfo),
           e.name,
@@ -159,20 +167,20 @@ private[chisel3] object Converter {
         )
       )
     case Connect(info, loc, exp) =>
-      Some(fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
+      Seq(fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
     case BulkConnect(info, loc, exp) =>
-      Some(fir.PartialConnect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
+      Seq(fir.PartialConnect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
     case Attach(info, locs) =>
-      Some(fir.Attach(convert(info), locs.map(l => convert(l, ctx, info))))
+      Seq(fir.Attach(convert(info), locs.map(l => convert(l, ctx, info))))
     case DefInvalid(info, arg) =>
-      Some(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
+      Seq(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
     case e @ DefInstance(info, id, _) =>
-      Some(fir.DefInstance(convert(info), e.name, id.name))
+      Seq(fir.DefInstance(convert(info), e.name, id.name))
     case e @ Stop(_, info, clock, ret) =>
-      Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name))
+      Seq(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name))
     case e @ Printf(_, info, clock, pable) =>
       val (fmt, args) = unpack(pable, ctx)
-      Some(
+      Seq(
         fir.Print(
           convert(info),
           fir.StringLit(fmt),
@@ -188,7 +196,7 @@ private[chisel3] object Converter {
         case Formal.Assume => fir.Formal.Assume
         case Formal.Cover  => fir.Formal.Cover
       }
-      Some(
+      Seq(
         fir.Verification(
           firOp,
           convert(info),
@@ -199,7 +207,7 @@ private[chisel3] object Converter {
           e.name
         )
       )
-    case _ => None
+    case _ => Nil
   }
 
   /** Internal datastructure to help translate Chisel's flat Command structure to FIRRTL's AST
@@ -229,45 +237,46 @@ private[chisel3] object Converter {
       if (cmds.isEmpty) {
         assert(scope.isEmpty)
         acc
-      } else
-        convertSimpleCommand(cmds.head, ctx) match {
+      } else {
+        val result = convertSimpleCommand(cmds.head, ctx)
+        if (result.nonEmpty) {
           // Most Commands map 1:1
-          case Some(stmt) =>
-            rec(acc :+ stmt, scope)(cmds.tail)
+          rec(acc ++ result, scope)(cmds.tail)
+        } else {
           // When scoping logic does not map 1:1 and requires pushing/popping WhenFrames
           // Please see WhenFrame for more details
-          case None =>
-            cmds.head match {
-              case WhenBegin(info, pred) =>
-                val when = fir.Conditionally(convert(info), convert(pred, ctx, info), fir.EmptyStmt, fir.EmptyStmt)
-                val frame = WhenFrame(when, acc, false)
-                rec(Queue.empty, frame +: scope)(cmds.tail)
-              case WhenEnd(info, depth, _) =>
-                val frame = scope.head
-                val when =
-                  if (frame.alt) frame.when.copy(alt = fir.Block(acc))
-                  else frame.when.copy(conseq = fir.Block(acc))
-                // Check if this when has an else
-                cmds.tail.headOption match {
-                  case Some(AltBegin(_)) =>
-                    assert(!frame.alt, "Internal Error! Unexpected when structure!") // Only 1 else per when
-                    rec(Queue.empty, frame.copy(when = when, alt = true) +: scope.tail)(cmds.drop(2))
-                  case _ => // Not followed by otherwise
-                    // If depth > 0 then we need to close multiple When scopes so we add a new WhenEnd
-                    // If we're nested we need to add more WhenEnds to ensure each When scope gets
-                    // properly closed
-                    val cmdsx = if (depth > 0) WhenEnd(info, depth - 1, false) +: cmds.tail else cmds.tail
-                    rec(frame.outer :+ when, scope.tail)(cmdsx)
-                }
-              case OtherwiseEnd(info, depth) =>
-                val frame = scope.head
-                val when = frame.when.copy(alt = fir.Block(acc))
-                // TODO For some reason depth == 1 indicates the last closing otherwise whereas
-                //  depth == 0 indicates last closing when
-                val cmdsx = if (depth > 1) OtherwiseEnd(info, depth - 1) +: cmds.tail else cmds.tail
-                rec(scope.head.outer :+ when, scope.tail)(cmdsx)
-            }
+          cmds.head match {
+            case WhenBegin(info, pred) =>
+              val when = fir.Conditionally(convert(info), convert(pred, ctx, info), fir.EmptyStmt, fir.EmptyStmt)
+              val frame = WhenFrame(when, acc, false)
+              rec(Queue.empty, frame +: scope)(cmds.tail)
+            case WhenEnd(info, depth, _) =>
+              val frame = scope.head
+              val when =
+                if (frame.alt) frame.when.copy(alt = fir.Block(acc))
+                else frame.when.copy(conseq = fir.Block(acc))
+              // Check if this when has an else
+              cmds.tail.headOption match {
+                case Some(AltBegin(_)) =>
+                  assert(!frame.alt, "Internal Error! Unexpected when structure!") // Only 1 else per when
+                  rec(Queue.empty, frame.copy(when = when, alt = true) +: scope.tail)(cmds.drop(2))
+                case _ => // Not followed by otherwise
+                  // If depth > 0 then we need to close multiple When scopes so we add a new WhenEnd
+                  // If we're nested we need to add more WhenEnds to ensure each When scope gets
+                  // properly closed
+                  val cmdsx = if (depth > 0) WhenEnd(info, depth - 1, false) +: cmds.tail else cmds.tail
+                  rec(frame.outer :+ when, scope.tail)(cmdsx)
+              }
+            case OtherwiseEnd(info, depth) =>
+              val frame = scope.head
+              val when = frame.when.copy(alt = fir.Block(acc))
+              // TODO For some reason depth == 1 indicates the last closing otherwise whereas
+              //  depth == 0 indicates last closing when
+              val cmdsx = if (depth > 1) OtherwiseEnd(info, depth - 1) +: cmds.tail else cmds.tail
+              rec(scope.head.outer :+ when, scope.tail)(cmdsx)
+          }
         }
+      }
     }
     fir.Block(rec(Queue.empty, List.empty)(cmds))
   }
