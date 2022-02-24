@@ -15,7 +15,7 @@ private[chisel3] object Utils {
   // TODO This is wrong, the standIn is T, but I'm calling the proto T...
   def toUnderlyingAsInstance[T <: BaseModule](module: T): Proxy[BaseModule] = module match {
     case i: IsStandIn[BaseModule] => StandIn(i)
-    case other: T => Proto(other, other._parent.map{ case p: BaseModule with IsHierarchical => toUnderlyingAsInstance(p).asInstanceOf[Proxy[IsHierarchical]]})
+    case other: T => Proto(other, other._parent.map{ case p: BaseModule with IsContext => toUnderlyingAsInstance(p).asInstanceOf[Proxy[IsContext]]})
   }
   def toUnderlyingAsDefinition[T <: BaseModule](module: T): Proxy[BaseModule] = {
     module match {
@@ -42,7 +42,7 @@ private[chisel3] object Utils {
   //    newChild._circuit = value._circuit.orElse(Some(value))
   //    newChild._parent = None
   //    Some(newChild)
-  //  case value: IsHierarchical => None
+  //  case value: IsContext => None
   //}
   /** Given a Data, find the root of its binding, apply a function to the root to get a "new root",
     * and find the equivalent child Data in the "new root"

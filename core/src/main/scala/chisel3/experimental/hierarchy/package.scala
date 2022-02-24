@@ -30,7 +30,7 @@ package object hierarchy {
     * enable accessing these values from a [[Definition]] or [[Instance]] of the class.
     *
     * Only vals of the the following types can be marked [[@public]]:
-    *   1. IsHierarchical
+    *   1. IsContext
     *   2. IsLookupable
     *   3. Data
     *   4. BaseModule
@@ -59,7 +59,7 @@ package object hierarchy {
 
   // TYPECLASSES for BaseModule
   // Required by Definition(..)
-  implicit def buildable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Buildable[T] {
+  implicit def buildable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new ProxyDefiner[T] {
     def apply(proto: => T): Proxy[T] = {
       val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
       Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
@@ -73,7 +73,7 @@ package object hierarchy {
     }
   }
   
-  implicit def stampable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Stampable[T] {
+  implicit def stampable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new ProxyInstancer[T] {
     def apply(definition: Definition[T]): Proxy[T] = {
       val ports = experimental.CloneModuleAsRecord(definition)
       val clone = ports._parent.get.asInstanceOf[StandInModule[T]]
@@ -85,11 +85,11 @@ package object hierarchy {
   implicit def proxifierInstance[M <: BaseModule](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
-    contexter: Contexter[BaseModule]
+    contexter: Contexter[Instance[M], BaseModule]
   ) = new Proxifier[Instance[M]] {
     type U = M
-    def apply[H](value: Instance[M], hierarchy: core.Hierarchy[H]) = {
-      cloneModuleToContext(value.proxy, contexter.lookupContext(hierarchy).get)
+    def apply[P](value: Instance[M], hierarchy: core.Hierarchy[P]) = {
+      cloneModuleToContext(value.proxy, contexter(value, hierarchy).context.get.asInstanceOf[BaseModule])
     }
   }
 
@@ -97,23 +97,23 @@ package object hierarchy {
   implicit def proxifierModule[V <: BaseModule](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
-    contexter: Contexter[BaseModule]
+    contexter: Contexter[V, BaseModule]
   ) = new Proxifier[V] {
       type U = V
-      def apply[H](value: V, hierarchy: core.Hierarchy[H]) = contexter.lookupContext(hierarchy) match {
-        case None => toUnderlyingAsInstance(value).asInstanceOf[this.R]
-        case Some(p) => cloneModuleToContext(toUnderlyingAsInstance(value), p).asInstanceOf[this.R]
+      def apply[P](value: V, hierarchy: core.Hierarchy[P]) = contexter(value, hierarchy) match {
+        case Context(None) => toUnderlyingAsInstance(value).asInstanceOf[this.R]
+        case Context(Some(p: BaseModule)) => cloneModuleToContext(toUnderlyingAsInstance(value), p).asInstanceOf[this.R]
       }
     }
 
   implicit def contextualizerData[V <: Data](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
-    contexter: Contexter[BaseModule]
+    contexter: Contexter[V, BaseModule]
   ) =
     new Contextualizer[V] {
       type R = V
-      def apply[H](v: V, hierarchy: core.Hierarchy[H]): R = {
+      def apply[P](value: V, hierarchy: core.Hierarchy[P]): R = {
         val ioMap: Option[Map[Data, Data]] = hierarchy.proxy match {
           case StandIn(x: StandInModule[_]) => Some(x.ioMap)
           case Proto(x: BaseModule, _) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
@@ -121,95 +121,100 @@ package object hierarchy {
             //println(s"NOWHERE! $m")
             None
         }
-        if (isView(v)) {
-          cloneViewToContext(v, ioMap, contexter.lookupContext(hierarchy))
+        if (isView(value)) {
+          cloneViewToContext(value, ioMap, contexter(value, hierarchy).context)
         } else {
-          doLookupData(v, ioMap, contexter.lookupContext(hierarchy).get)
+          doLookupData(value, ioMap, contexter(value, hierarchy).context.get)
         }
       }
     }
 
-  implicit def contextualizerMem[M <: MemBase[_]](
+  implicit def contextualizerMem[V <: MemBase[_]](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
-    contexter: Contexter[BaseModule]
+    contexter: Contexter[V, BaseModule]
   ) =
-    new Contextualizer[M] {
-      type R = M
-      def apply[H](v: M, hierarchy: core.Hierarchy[H]): M = {
-        cloneMemToContext(v, contexter.lookupContext(hierarchy).get)
+    new Contextualizer[V] {
+      type R = V
+      def apply[P](value: V, hierarchy: core.Hierarchy[P]): R = {
+        cloneMemToContext(value, contexter(value, hierarchy).context.get)
       }
     }
 
-  implicit def instancifyInstance[M <: BaseModule](
+  implicit def lookuperInstance[M <: BaseModule](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
     proxifier: Proxifier[Instance[M]]
-  ) = new Instancify[Instance[M]] {
+  ) = new Lookuper[Instance[M]] {
     type R = Instance[proxifier.U]
-    def apply[H](value: Instance[M], hierarchy: core.Hierarchy[H]) = {
+    def apply[P](value: Instance[M], hierarchy: core.Hierarchy[P]) = {
       Instance(proxifier(value, hierarchy))
     }
   }
 
-  implicit def instancifyModule[V <: BaseModule](
+  implicit def lookuperModule[V <: BaseModule](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
     proxifier: Proxifier[V]
-  ) = new Instancify[V] {
+  ) = new Lookuper[V] {
     type R = Instance[proxifier.U]
-    def apply[H](value: V, hierarchy: core.Hierarchy[H]) = {
+    def apply[P](value: V, hierarchy: core.Hierarchy[P]) = {
       Instance(proxifier(value, hierarchy))
     }
   }
 
-  implicit def instancifyIsInstantiable[V <: IsInstantiable](
+  implicit def lookuperIsInstantiable[V <: IsInstantiable](
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions,
     proxifier: Proxifier[V]
-  ) = new Instancify[V] {
+  ) = new Lookuper[V] {
     type R = Instance[proxifier.U]
-    def apply[H](value: V, hierarchy: core.Hierarchy[H]): R = {
+    def apply[P](value: V, hierarchy: core.Hierarchy[P]): R = {
       Instance(proxifier(value, hierarchy))
     }
   }
 
-  implicit def instancifyData[V <: Data](
+  implicit def lookuperData[V <: Data](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
     contextualizer: Contextualizer[V]
-  ) = new Instancify[V] {
+  ) = new Lookuper[V] {
     type R = contextualizer.R
-    def apply[H](value: V, hierarchy: core.Hierarchy[H]) = {
+    def apply[P](value: V, hierarchy: core.Hierarchy[P]) = {
       contextualizer(value, hierarchy)
     }
   }
 
-  implicit def instancifyMem[M <: MemBase[_]](
+  implicit def lookuperMem[M <: MemBase[_]](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
     contextualizer: Contextualizer[M]
-  ) = new Instancify[M] {
+  ) = new Lookuper[M] {
     type R = contextualizer.R
-    def apply[H](value: M, hierarchy: core.Hierarchy[H]) = {
+    def apply[P](value: M, hierarchy: core.Hierarchy[P]) = {
       contextualizer(value, hierarchy)
     }
   }
 
-  //type Definition[H] = core.Definition[H]
-  //type Instance[H] = core.Instance[H]
-  //type Hierarchy[H] = core.Hierarchy[H]
-  //type IsHierarchical = core.IsHierarchical
+  //type Definition[P] = core.Definition[P]
+  //type Instance[P] = core.Instance[P]
+  //type Hierarchy[P] = core.Hierarchy[P]
+  //type IsContext = core.IsContext
 
 
-  implicit val contexter = new Contexter[BaseModule] {
-    def lookupContext[H](hierarchy: core.Hierarchy[H]): Option[BaseModule] =
+  def baseModuleContexterBuilder[V](): Contexter[V, BaseModule] = new Contexter[V, BaseModule] {
+    def apply[P](value: V, hierarchy: Hierarchy[P]): R = {
       hierarchy.proxy.lookupContext match {
-        case Some(value: BaseModule) => Some(value)
-        case _ => None
+        case Context(Some(value: BaseModule)) => Context(Some(value))
+        case _ => Context(None)
       }
-      //Some(hierarchy.proxy)
+    }
   }
+  implicit def contexterData[V <: Data] = baseModuleContexterBuilder[V]()
+  implicit def contexterMem[V <: MemBase[_]] = baseModuleContexterBuilder[V]()
+  implicit def contexterModule[V <: BaseModule] = baseModuleContexterBuilder[V]()
+  implicit def contexterInstanceModule[V <: BaseModule] = baseModuleContexterBuilder[Instance[V]]()
+  implicit def contexterIsInstantiable[V <: IsInstantiable] = baseModuleContexterBuilder[V]()
 
 
 

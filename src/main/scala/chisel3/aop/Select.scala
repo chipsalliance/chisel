@@ -194,10 +194,6 @@ object Select {
       }
     }
     rec(root.toDefinition)
-    println("LIST")
-    println(defList.mkString("\n"))
-    println("SET")
-    println(defSet.toList.mkString("\n"))
     defList.toList
   }
 

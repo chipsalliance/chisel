@@ -13,7 +13,7 @@ import Utils._
   * @param proto
   * @param contexts
   */
-private[chisel3] final class StandInModule[T <: BaseModule](val proto: T, val parent: Option[IsHierarchical]) extends PseudoModule with IsStandIn[T] {
+private[chisel3] final class StandInModule[T <: BaseModule](val proto: T, val parent: Option[IsContext]) extends PseudoModule with IsStandIn[T] {
   _parent = parent match {
     case Some(b: BaseModule) => Some(b)
     case other => None

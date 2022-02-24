@@ -52,7 +52,7 @@ class DefinitionTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
     val tt: Type = weakTypeOf[T]
-    q"$thisObj.do_apply($proto)(implicitly[_root_.chisel3.experimental.hierarchy.core.Buildable[$tt]])"
+    q"$thisObj.do_apply($proto)(implicitly[_root_.chisel3.experimental.hierarchy.core.ProxyDefiner[$tt]])"
   }
 }
 
@@ -63,7 +63,7 @@ class InstanceTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](definition: c.Tree): c.Tree = {
     val tt: Type = weakTypeOf[T]
-    q"$thisObj.do_apply($definition)(implicitly[_root_.chisel3.experimental.hierarchy.core.Stampable[$tt]])"
+    q"$thisObj.do_apply($definition)(implicitly[_root_.chisel3.experimental.hierarchy.core.ProxyInstancer[$tt]])"
   }
 }
 
