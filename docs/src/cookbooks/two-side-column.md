@@ -112,11 +112,11 @@ endmodule
 </td>
 <td>
 
-```verilog
+```scala mdoc:silent
 class ParameterizedWidthAdder(
   in0Width: Int,
   in1Width: Int,
-  sumWidth: Int) extends Tester {
+  sumWidth: Int) extends Module {
   val io = IO(new Bundle {
     val in0 = Input(UInt(in0Width.W))
     val in1 = Input(UInt(in1Width.W))
@@ -228,7 +228,7 @@ a := aa
 val b = "hbabecafe".U(32.W)
 val c = Wire(UInt(16.W))
 val d = Wire(Bool())
-c := “b1”.U(16.W)
+c := "b1".U(16.W)
 d := true.B
 val g = Wire(SInt(64.W))
 g := -5.S
