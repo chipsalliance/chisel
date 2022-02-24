@@ -184,6 +184,7 @@ module MyWireAssignmentModule2 ();
 
 wire [31:0] aa = 'd42;
  reg [31:0] a; // Logical register for use in always block, not real register
+ 
  //
 always @(*) begin
   a = aa;
