@@ -15,7 +15,7 @@ final case class Lense[+P](proxy: Proxy[P]) {
     cache.getOrElseUpdate(protoValue, retValue)
     retValue
   }
-  //def toHierarchy: Hierarchy[P] = { Instance(proxy) }
+  def toInstance: Instance[P] = { new Instance(proxy) }
 }
 
 final case class Socket[T](contextual: Contextual[T], lense: Lense[_]) {
@@ -37,30 +37,36 @@ trait Lenser[V]  {
 }
 
 object Lenser {
-  implicit def context[V <: IsContext](implicit lookuper: Lookuper[V]) = new Lenser[V] {
-    type R = Lense[V]
-    def apply[P](value: V, lense: Lense[P]): R = {
-      // For now i'm just wrapping it in instance, i don't think it matters as of now, but something to investigate later
-      Lense(lookuper(value, new Instance(lense.proxy)).asInstanceOf[Hierarchy[V]].proxy)
-    }
-  }
   implicit def instance[I](implicit lookuper: Lookuper[Instance[I]]) = new Lenser[Instance[I]] {
     type R = Lense[I]
     def apply[P](value: Instance[I], lense: Lense[P]): R = {
       // For now i'm just wrapping it in instance, i don't think it matters as of now, but something to investigate later
-      Lense(lookuper(value, new Instance(lense.proxy)).asInstanceOf[Definition[I]].proxy)
-    }
-  }
-  implicit def instantiable[V <: IsInstantiable](implicit lookuper: Lookuper[V]) = new Lenser[V] {
-    type R = Lense[V]
-    def apply[P](value: V, lense: Lense[P]): R = {
-      Lense(lookuper(value, new Instance(lense.proxy)).asInstanceOf[Hierarchy[V]].proxy)
+      Lense(lookuper(value, lense.toInstance).asInstanceOf[Definition[I]].proxy)
     }
   }
   implicit def contextual[I] = new Lenser[Contextual[I]] {
     type R = Socket[I]
     def apply[P](value: Contextual[I], lense: Lense[P]): R = {
       Socket(value, lense)
+    }
+  }
+  implicit def isContext[V <: IsContext](implicit lookuper: Lookuper[V]) = new Lenser[V] {
+    type R = Lense[V]
+    def apply[P](value: V, lense: Lense[P]): R = {
+      // For now i'm just wrapping it in instance, i don't think it matters as of now, but something to investigate later
+      Lense(lookuper(value, lense.toInstance).asInstanceOf[Hierarchy[V]].proxy)
+    }
+  }
+  implicit def isInstantiable[V <: IsInstantiable](implicit lookuper: Lookuper[V]) = new Lenser[V] {
+    type R = Lense[V]
+    def apply[P](value: V, lense: Lense[P]): R = {
+      Lense(lookuper(value, lense.toInstance).asInstanceOf[Hierarchy[V]].proxy)
+    }
+  }
+  implicit def isContextual[V <: IsContextual](implicit contextualizer: Contextualizer[V]) = new Lenser[V] {
+    type R = contextualizer.R
+    def apply[P](value: V, lense: Lense[P]) = {
+      contextualizer(value, lense.toInstance)
     }
   }
   implicit def isLookupable[I <: IsLookupable] = new Lenser[I] {

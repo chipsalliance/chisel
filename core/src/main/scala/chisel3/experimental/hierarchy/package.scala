@@ -171,50 +171,6 @@ package object hierarchy {
     }
   }
 
-  // TODO: make Data extend IsContextual, then this can go in Contextual object
-  implicit def lookuperData[V <: Data](
-    implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions,
-    contextualizer: Contextualizer[V]
-  ) = new Lookuper[V] {
-    type R = contextualizer.R
-    def apply[P](value: V, hierarchy: core.Hierarchy[P]) = {
-      contextualizer(value, hierarchy)
-    }
-  }
-  implicit def lenserData[V <: Data](
-    implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions,
-    contextualizer: Contextualizer[V]
-  ) = new Lenser[V] {
-    type R = contextualizer.R
-    def apply[P](value: V, lense: core.Lense[P]) = {
-      contextualizer(value, new Instance(lense.proxy))
-    }
-  }
-
-  // TODO: make MemBase extend IsContextual, then this can go in Contextual object
-  implicit def lookuperMem[M <: MemBase[_]](
-    implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions,
-    contextualizer: Contextualizer[M]
-  ) = new Lookuper[M] {
-    type R = contextualizer.R
-    def apply[P](value: M, hierarchy: core.Hierarchy[P]) = {
-      contextualizer(value, hierarchy)
-    }
-  }
-  implicit def lenserMem[V <: MemBase[_]](
-    implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions,
-    contextualizer: Contextualizer[V]
-  ) = new Lenser[V] {
-    type R = contextualizer.R
-    def apply[P](value: V, lense: core.Lense[P]) = {
-      contextualizer(value, new Instance(lense.proxy))
-    }
-  }
-
   //type Definition[P] = core.Definition[P]
   //type Instance[P] = core.Instance[P]
   //type Hierarchy[P] = core.Hierarchy[P]

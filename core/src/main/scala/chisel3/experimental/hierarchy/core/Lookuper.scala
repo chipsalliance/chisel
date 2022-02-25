@@ -30,6 +30,7 @@ object Lookuper {
       contextualizer(value, hierarchy)
     }
   }
+  
   implicit val lookuperInt = new Lookuper[Int] {
     type R = Int
     def apply[P](that: Int, hierarchy: Hierarchy[P]): R = that

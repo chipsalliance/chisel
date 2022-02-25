@@ -53,7 +53,8 @@ object Mem {
 sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     extends HasId
     with NamedComponent
-    with SourceInfoDoc {
+    with SourceInfoDoc 
+    with experimental.hierarchy.core.IsContextual {
   _parent.foreach(_.addId(this))
 
   private val clockInst: Clock = Builder.forcedClock
