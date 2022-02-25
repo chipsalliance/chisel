@@ -270,7 +270,7 @@ private[chisel3] object BiConnect {
         context_mod
       )
 
-    // sink must be writable
+    // sink must be writable and must also not be a literal
     def bindingCheck = sink.topBinding match {
       case _: ReadOnlyBinding => false
       case _ => true
@@ -279,7 +279,13 @@ private[chisel3] object BiConnect {
     // check data can flow between provided aggregates
     def flow_check = MonoConnect.canBeSink(sink, context_mod) && MonoConnect.canBeSource(source, context_mod)
 
-    typeCheck && contextCheck && bindingCheck && flow_check
+    // do not bulk connect source literals (results in infinite recursion from calling .ref)
+    def sourceNotLiteralCheck = source.topBinding match {
+      case _: LitBinding => false
+      case _ => true
+    }
+
+    typeCheck && contextCheck && bindingCheck && flow_check && sourceNotLiteralCheck
   }
 
   // These functions (finally) issue the connection operation
