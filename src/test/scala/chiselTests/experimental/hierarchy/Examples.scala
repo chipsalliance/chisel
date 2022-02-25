@@ -268,7 +268,14 @@ object Examples {
 
   @instantiable
   class HasContextual() extends Module {
-    @public val index: Contextual[Int] = Contextual(1)
+    @public val index: Contextual[Int] = Contextual(0)
     @public val foo: Contextual[Int] = Contextual(1)
+  }
+
+  @instantiable
+  class IntermediateHierarchy() extends Module {
+    val d = Definition(new HasContextual)
+    @public val i0 = Instance.withContext(d)(_.index.value = 0)
+    @public val i1 = Instance.withContext(d)(_.index.value = 1)
   }
 }

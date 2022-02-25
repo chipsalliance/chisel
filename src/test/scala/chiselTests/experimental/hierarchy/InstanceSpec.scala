@@ -1073,17 +1073,33 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     it("11.0: it should work on simple classes") {
       class Top extends Module {
         val d = Definition(new HasContextual)
-        require(d.index == 1, "Definition")
+        d.index should be(1)
 
         val i0 = Instance.withContext(d)(_.index.value = 2)
-        require(i0.index == 2, s"i0, ${i0.index}")
-        require(i0.foo == 1, s"i0, ${i0.foo}")
+        i0.index should be(2)
+        i0.foo should be(1)
 
         val i1 = Instance.withContext(d)(_.index.value = 2, _.foo.edit(_ + 2))
-        require(i1.index == 2, s"i1, ${i1.index}")
-        require(i1.foo == 3, s"i1, ${i1.foo}")
+        i1.index should be(2)
+        i1.foo should be(3)
       }
       getFirrtlAndAnnos(new Top)
+    }
+    it("11.1: it should compose hierarchically") {
+      class Top extends Module {
+        val d = Definition(new IntermediateHierarchy)
+        val i0 = Instance(d)
+        val i1 = Instance.withContext(d)(
+          _.i0.index.edit(_ + i0.i1.index + 1),
+          _.i1.index.edit(_ + i0.i1.index + 1),
+        )
+        i0.i0.index should be(0)
+        i0.i1.index should be(1)
+        i1.i0.index should be(2)
+        i1.i1.index should be(3)
+      }
+      getFirrtlAndAnnos(new Top)
+
     }
   }
 }

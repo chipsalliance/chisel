@@ -41,7 +41,7 @@ object Lenser {
     type R = Lense[I]
     def apply[P](value: Instance[I], lense: Lense[P]): R = {
       // For now i'm just wrapping it in instance, i don't think it matters as of now, but something to investigate later
-      Lense(lookuper(value, lense.toInstance).asInstanceOf[Definition[I]].proxy)
+      Lense(lookuper(value, lense.toInstance).asInstanceOf[Instance[I]].proxy)
     }
   }
   implicit def contextual[I] = new Lenser[Contextual[I]] {
