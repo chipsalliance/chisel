@@ -434,7 +434,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     exc.getMessage should include("field 0 specified with non-literal value UInt")
   }
 
-  "vec literals are instantiated on connect" in {
+  "vec literals are instantiated on connect and are not bulk connected" in {
     class VecExample5 extends RawModule {
       val out = IO(Output(Vec(2, UInt(4.W))))
       val bundle = Vec(2, UInt(4.W)).Lit(
@@ -445,9 +445,8 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     }
 
     val firrtl = (new chisel3.stage.ChiselStage).emitFirrtl(new VecExample5, args = Array("--full-stacktrace"))
-    firrtl should include("""_WIRE[0] <= UInt<4>("ha")""")
-    firrtl should include("""_WIRE[1] <= UInt<4>("hb")""")
-    firrtl should include("""out <= _WIRE""")
+    firrtl should include("""out[0] <= UInt<4>("ha")""")
+    firrtl should include("""out[1] <= UInt<4>("hb")""")
   }
 
   class SubBundle extends Bundle {
@@ -464,14 +463,12 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     out := bundle
   }
 
-  "vec literals can contain bundles" in {
+  "vec literals can contain bundles and should not be bulk connected" in {
     val chirrtl = (new chisel3.stage.ChiselStage).emitChirrtl(new VecExample, args = Array("--full-stacktrace"))
-    chirrtl should include("""_WIRE[0].bar <= UInt<5>("h16")""")
-    chirrtl should include("""_WIRE[0].foo <= UInt<6>("h2a")""")
-    chirrtl should include("""_WIRE[1].bar <= UInt<2>("h3")""")
-    chirrtl should include("""_WIRE[1].foo <= UInt<3>("h7")""")
-    chirrtl should include("""out <= _WIRE""")
-
+    chirrtl should include("""out[0].bar <= UInt<5>("h16")""")
+    chirrtl should include("""out[0].foo <= UInt<6>("h2a")""")
+    chirrtl should include("""out[1].bar <= UInt<2>("h3")""")
+    chirrtl should include("""out[1].foo <= UInt<3>("h7")""")
   }
 
   "vec literals can have bundle children" in {
