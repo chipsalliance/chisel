@@ -146,36 +146,6 @@ class ParameterizedWidthAdder(
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
          </tr>
-         <tr>
-<td>
-
-```verilog
-wire [31:0] 
-a = 32'd42; 
-wire [31:0] 
-b = 32'hbabecafe; 
-wire [15:0] c; 
-assign c = 16'b1;
-```
-
-</td>
-<td>
-
-```scala mdoc:silent
-
-
-class MyWireAssignmentModule extends Module {
- val a = WireDefault(42.U(32.W))
- val b = WireDefault("hbabecafe".U(32.W))  
- val c = Wire(UInt(16.W)) 
-  c := "b1".U;
-}
-```
-```scala mdoc:invisible
-ChiselStage.emitVerilog(new MyWireAssignmentModule)
-```
-</td>
-         </tr>
 <tr>
 <td>
 
@@ -255,39 +225,6 @@ ChiselStage.emitVerilog(new MyWireAssignmentModule2)
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-         </tr>
-         <tr>
-<td>
-
-```verilog
-module RegisterModule(
-  input         clock,
-  input         reset,
-  input  [11:0] io_in,
-  output [11:0] io_out
-);
-  assign io_out = io_in; // @[main.scala 18:10]
-endmodule
-```
-</td>
-<td>
-
-```scala mdoc:silent
-class RegisterModule extends Module {
-  val io = IO(new Bundle {
-    val in  = Input(UInt(12.W))
-    val out = Output(UInt(12.W))
-  })
-
-  val registerWithInit = RegInit(42.U(12.W))
-  registerWithInit := registerWithInit - 1.U
-  io.out := io.in
-}
-```
-```scala mdoc:invisible
-ChiselStage.emitVerilog(new RegisterModule)
-```
-</td>
          </tr>
  <tr>
 <td>
