@@ -4,7 +4,12 @@ package chiselTests
 
 import chisel3._
 import chisel3.aop.Aspect
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
+import chisel3.stage.{
+  ChiselGeneratorAnnotation,
+  ChiselStage,
+  NoRunFirrtlCompilerAnnotation,
+  PrintFullStackTraceAnnotation
+}
 import chisel3.testers._
 import firrtl.annotations.Annotation
 import firrtl.ir.Circuit
@@ -27,26 +32,29 @@ import scala.reflect.ClassTag
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
-  def runTester(t: => BasicTester,
-                additionalVResources: Seq[String] = Seq(),
-                annotations: AnnotationSeq = Seq()
-               ): Boolean = {
+  def runTester(
+    t:                    => BasicTester,
+    additionalVResources: Seq[String] = Seq(),
+    annotations:          AnnotationSeq = Seq()
+  ): Boolean = {
     // Change this to enable Treadle as a backend
     val defaultBackend = chisel3.testers.TesterDriver.defaultBackend
     val hasBackend = TestUtils.containsBackend(annotations)
     val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
     TesterDriver.execute(() => t, additionalVResources, annos)
   }
-  def assertTesterPasses(t: => BasicTester,
-                         additionalVResources: Seq[String] = Seq(),
-                         annotations: AnnotationSeq = Seq()
-                        ): Unit = {
+  def assertTesterPasses(
+    t:                    => BasicTester,
+    additionalVResources: Seq[String] = Seq(),
+    annotations:          AnnotationSeq = Seq()
+  ): Unit = {
     assert(runTester(t, additionalVResources, annotations))
   }
-  def assertTesterFails(t: => BasicTester,
-                        additionalVResources: Seq[String] = Seq(),
-                        annotations: Seq[chisel3.aop.Aspect[_]] = Seq()
-                       ): Unit = {
+  def assertTesterFails(
+    t:                    => BasicTester,
+    additionalVResources: Seq[String] = Seq(),
+    annotations:          Seq[chisel3.aop.Aspect[_]] = Seq()
+  ): Unit = {
     assert(!runTester(t, additionalVResources, annotations))
   }
 
@@ -57,7 +65,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       // Sanity check that firrtl doesn't change the width
       x := 0.U.asTypeOf(chiselTypeOf(x))
       val (_, done) = chisel3.util.Counter(true.B, 2)
-      when (done) {
+      when(done) {
         chisel3.assert(~(x.asUInt) === -1.S(expected.W).asUInt)
         stop()
       }
@@ -70,7 +78,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       assert(!x.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
       x := 0.U.asTypeOf(chiselTypeOf(x))
       val (_, done) = chisel3.util.Counter(true.B, 2)
-      when (done) {
+      when(done) {
         chisel3.assert(~(x.asUInt) === -1.S(expected.W).asUInt)
         stop()
       }
@@ -84,11 +92,14 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     */
   def compile(t: => RawModule): String = {
     (new ChiselStage)
-      .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
-               Seq(ChiselGeneratorAnnotation(() => t)))
+      .execute(
+        Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
+        Seq(ChiselGeneratorAnnotation(() => t))
+      )
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a.value
-      }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
+      }
+      .getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
 
   def elaborateAndGetModule[A <: RawModule](t: => A): A = {
@@ -147,9 +158,9 @@ abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaC
     n <- Gen.choose(1, 10)
   } yield {
     if (dir) {
-      Range(m, (m+n)*step, step)
+      Range(m, (m + n) * step, step)
     } else {
-      Range((m+n)*step, m, -step)
+      Range((m + n) * step, m, -step)
     }
   }
 
@@ -185,7 +196,7 @@ abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaC
     w <- smallPosInts
     i <- Gen.containerOfN[List, Int](n, Gen.choose(0, (1 << w) - 1))
     j <- Gen.containerOfN[List, Int](n, Gen.choose(0, (1 << w) - 1))
-  } yield (w, i zip j)
+  } yield (w, i.zip(j))
 
   // Generator which gives a width w and a pair of numbers up to w bits.
   val safeUIntPair = for {
@@ -291,7 +302,6 @@ trait Utils {
     }
   }
 
-
   /** A tester which runs generator and uses an aspect to check the returned object
     * @param gen function to generate a Chisel module
     * @param f a function to check the Chisel module
@@ -300,14 +310,16 @@ trait Utils {
   def aspectTest[T <: RawModule](gen: () => T)(f: T => Unit)(implicit scalaMajorVersion: Int): Unit = {
     // Runs chisel stage
     def run[T <: RawModule](gen: () => T, annotations: AnnotationSeq): AnnotationSeq = {
-      new ChiselStage().run(Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation) ++ annotations)
+      new ChiselStage().run(
+        Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation) ++ annotations
+      )
     }
     // Creates a wrapping aspect to contain checking function
     case object BuiltAspect extends Aspect[T] {
-      override def toAnnotation(top: T): AnnotationSeq = {f(top); Nil}
+      override def toAnnotation(top: T): AnnotationSeq = { f(top); Nil }
     }
     val currentMajorVersion = scala.util.Properties.versionNumberString.split('.')(1).toInt
-    if(currentMajorVersion >= scalaMajorVersion) {
+    if (currentMajorVersion >= scalaMajorVersion) {
       run(gen, Seq(BuiltAspect))
     }
   }
@@ -326,25 +338,27 @@ trait Utils {
     * @tparam A the type of the exception to extract
     * @return nothing
     */
-  def extractCause[A <: Throwable : ClassTag](thunk: => Any): Unit = {
+  def extractCause[A <: Throwable: ClassTag](thunk: => Any): Unit = {
     def unrollCauses(a: Throwable): Seq[Throwable] = a match {
       case null => Seq.empty
       case _    => a +: unrollCauses(a.getCause)
     }
 
-    val exceptions: Seq[_ <: Throwable] = try {
-      thunk
-      Seq.empty
-    } catch {
-      case a: Throwable => unrollCauses(a)
-    }
-
-    exceptions.collectFirst{ case a: A => a } match {
-      case Some(a) => throw a
-      case None => exceptions match {
-        case Nil    => ()
-        case h :: t => throw h
+    val exceptions: Seq[_ <: Throwable] =
+      try {
+        thunk
+        Seq.empty
+      } catch {
+        case a: Throwable => unrollCauses(a)
       }
+
+    exceptions.collectFirst { case a: A => a } match {
+      case Some(a) => throw a
+      case None =>
+        exceptions match {
+          case Nil    => ()
+          case h :: t => throw h
+        }
     }
 
   }

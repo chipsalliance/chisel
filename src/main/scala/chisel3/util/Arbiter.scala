@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
+import chisel3.internal.naming.chiselName // can't use chisel3_ version because of compile order
 
 /** IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs
   * (selects) at most one.
@@ -18,20 +18,22 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
 class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
   // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
 
-/** Input data, one per potential sender
-  * 
-  * @group Signals
-  */
-  val in  = Flipped(Vec(n, Decoupled(gen)))
-/** Output data after arbitration
-  *
-  * @group Signals
-  */
+  /** Input data, one per potential sender
+    *
+    * @group Signals
+    */
+  val in = Flipped(Vec(n, Decoupled(gen)))
+
+  /** Output data after arbitration
+    *
+    * @group Signals
+    */
   val out = Decoupled(gen)
-/** One-Hot vector indicating which output was chosen
-  *
-  * @group Signals
-  */
+
+  /** One-Hot vector indicating which output was chosen
+    *
+    * @group Signals
+    */
   val chosen = Output(UInt(log2Ceil(n).W))
 }
 
@@ -46,7 +48,7 @@ private object ArbiterCtrl {
 }
 
 abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]) extends Module {
-  def grant: Seq[Bool]
+  def grant:  Seq[Bool]
   def choice: UInt
   val io = IO(new ArbiterIO(gen, n))
 
@@ -60,16 +62,16 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
     val locked = lockCount.value =/= 0.U
     val wantsLock = needsLock.map(_(io.out.bits)).getOrElse(true.B)
 
-    when (io.out.fire && wantsLock) {
+    when(io.out.fire && wantsLock) {
       lockIdx := io.chosen
       lockCount.inc()
     }
 
-    when (locked) { io.chosen := lockIdx }
-    for ((in, (g, i)) <- io.in zip grant.zipWithIndex)
+    when(locked) { io.chosen := lockIdx }
+    for ((in, (g, i)) <- io.in.zip(grant.zipWithIndex))
       in.ready := Mux(locked, lockIdx === i.asUInt, g) && io.out.ready
   } else {
-    for ((in, g) <- io.in zip grant)
+    for ((in, g) <- io.in.zip(grant))
       in.ready := g && io.out.ready
   }
 }
@@ -78,27 +80,27 @@ class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
   lazy val lastGrant = RegEnable(io.chosen, io.out.fire)
   lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
-  lazy val validMask = io.in zip grantMask map { case (in, g) => in.valid && g }
+  lazy val validMask = io.in.zip(grantMask).map { case (in, g) => in.valid && g }
 
   override def grant: Seq[Bool] = {
     val ctrl = ArbiterCtrl((0 until n).map(i => validMask(i)) ++ io.in.map(_.valid))
     (0 until n).map(i => ctrl(i) && grantMask(i) || ctrl(i + n))
   }
 
-  override lazy val choice = WireDefault((n-1).asUInt)
-  for (i <- n-2 to 0 by -1)
-    when (io.in(i).valid) { choice := i.asUInt }
-  for (i <- n-1 to 1 by -1)
-    when (validMask(i)) { choice := i.asUInt }
+  override lazy val choice = WireDefault((n - 1).asUInt)
+  for (i <- n - 2 to 0 by -1)
+    when(io.in(i).valid) { choice := i.asUInt }
+  for (i <- n - 1 to 1 by -1)
+    when(validMask(i)) { choice := i.asUInt }
 }
 
 class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
   def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
 
-  override lazy val choice = WireDefault((n-1).asUInt)
-  for (i <- n-2 to 0 by -1)
-    when (io.in(i).valid) { choice := i.asUInt }
+  override lazy val choice = WireDefault((n - 1).asUInt)
+  for (i <- n - 2 to 0 by -1)
+    when(io.in(i).valid) { choice := i.asUInt }
 }
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
@@ -133,17 +135,17 @@ class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](g
 class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
   val io = IO(new ArbiterIO(gen, n))
 
-  io.chosen := (n-1).asUInt
-  io.out.bits := io.in(n-1).bits
-  for (i <- n-2 to 0 by -1) {
-    when (io.in(i).valid) {
+  io.chosen := (n - 1).asUInt
+  io.out.bits := io.in(n - 1).bits
+  for (i <- n - 2 to 0 by -1) {
+    when(io.in(i).valid) {
       io.chosen := i.asUInt
       io.out.bits := io.in(i).bits
     }
   }
 
   val grant = ArbiterCtrl(io.in.map(_.valid))
-  for ((in, g) <- io.in zip grant)
+  for ((in, g) <- io.in.zip(grant))
     in.ready := g && io.out.ready
   io.out.valid := !grant.last || io.in.last.valid
 }

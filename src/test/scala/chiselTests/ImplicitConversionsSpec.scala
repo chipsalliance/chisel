@@ -41,7 +41,7 @@ class ImplicitConversionsSpec extends ChiselFlatSpec {
   }
 
   "X.B for X not in [0,1]" should "throw an exception, even outside hardware context" in {
-    a [ChiselException] should be thrownBy {
+    a[ChiselException] should be thrownBy {
       65.B
     }
   }

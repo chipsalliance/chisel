@@ -5,7 +5,7 @@ package chiselTests.experimental
 import chisel3._
 import chisel3.experimental.dataview._
 import chisel3.experimental.conversions._
-import chisel3.experimental.{ChiselAnnotation, annotate}
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import chiselTests.ChiselFlatSpec
 
 object DataViewTargetSpec {
@@ -29,22 +29,22 @@ class DataViewTargetSpec extends ChiselFlatSpec {
     _.instanceName,
     _.pathName,
     _.parentPathName,
-    _.parentModName,
+    _.parentModName
   )
 
   // Check helpers
   private def checkAll(impl: Data, refs: String*): Unit = {
-    refs.size should be (checks.size)
+    refs.size should be(checks.size)
     for ((check, value) <- checks.zip(refs)) {
-      check(impl) should be (value)
+      check(impl) should be(value)
     }
   }
   private def checkSameAs(impl: Data, refs: Data*): Unit =
     for (ref <- refs) {
-      checkAll(impl, checks.map(_(ref)):_*)
+      checkAll(impl, checks.map(_(ref)): _*)
     }
 
-  behavior of "DataView Naming"
+  behavior.of("DataView Naming")
 
   it should "support views of Elements" in {
     class MyChild extends Module {
@@ -67,7 +67,8 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       val foo = UInt(8.W)
       val bars = Vec(2, UInt(8.W))
     }
-    implicit val dv = DataView[MyBundle, Vec[UInt]](_ => Vec(3, UInt(8.W)), _.foo -> _(0), _.bars(0) -> _(1), _.bars(1) -> _(2))
+    implicit val dv =
+      DataView[MyBundle, Vec[UInt]](_ => Vec(3, UInt(8.W)), _.foo -> _(0), _.bars(0) -> _(1), _.bars(1) -> _(2))
     class MyChild extends Module {
       val out = IO(Output(new MyBundle))
       val outView = out.viewAs[Vec[UInt]] // Note different type
@@ -82,7 +83,7 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       out := inst.out
     }
     val m = elaborateAndGetModule(new MyParent)
-    val outView = m.inst.out.viewAs[Vec[UInt]]// Note different type
+    val outView = m.inst.out.viewAs[Vec[UInt]] // Note different type
     val outFooView = m.inst.out.foo.viewAs[UInt]
     val outBarsView = m.inst.out.bars.viewAs[Vec[UInt]]
     val outBars0View = m.inst.out.bars(0).viewAs[UInt]
@@ -90,8 +91,15 @@ class DataViewTargetSpec extends ChiselFlatSpec {
     checkSameAs(m.inst.out, m.inst.outView, outView)
     checkSameAs(m.inst.out.foo, m.inst.outFooView, m.inst.outView(0), outFooView, outView(0))
     checkSameAs(m.inst.out.bars, m.inst.outBarsView, outBarsView)
-    checkSameAs(m.inst.out.bars(0), m.inst.outBars0View, outBars0View, m.inst.outView(1), outView(1),
-      m.inst.outBarsView(0), outBarsView(0))
+    checkSameAs(
+      m.inst.out.bars(0),
+      m.inst.outBars0View,
+      outBars0View,
+      m.inst.outView(1),
+      outView(1),
+      m.inst.outBarsView(0),
+      outBarsView(0)
+    )
   }
 
   // Ideally this would work 1:1 but that requires changing the binding
@@ -123,7 +131,7 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       2 -> "~MyParent|MyParent/inst:MyChild>out.foo",
       3 -> "~MyParent|MyParent/inst:MyChild>out"
     )
-    pairs should equal (expected)
+    pairs should equal(expected)
   }
 
   it should "support annotating views that cannot be mapped to a single ReferenceTarget" in {
@@ -161,9 +169,9 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       3 -> "~MyParent|MyParent/inst:MyChild>io.c",
       3 -> "~MyParent|MyParent/inst:MyChild>io.d",
       4 -> "~MyParent|MyChild>io.b",
-      4 -> "~MyParent|MyChild>io.d",
+      4 -> "~MyParent|MyChild>io.d"
     )
-    pairs should equal (expected)
+    pairs should equal(expected)
   }
 
   // TODO check these properties when using @instance API (especially preservation of totality)

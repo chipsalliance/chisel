@@ -3,10 +3,10 @@
 /** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
-import chisel3._    // required for implicit conversions.
+import chisel3._ // required for implicit conversions.
 import chisel3.experimental.chiselName
 import chisel3.util.random.FibonacciLFSR
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselOutputFileAnnotation, ChiselStage, phases}
+import chisel3.stage.{phases, ChiselCircuitAnnotation, ChiselOutputFileAnnotation, ChiselStage}
 
 package object Chisel {
   import chisel3.internal.firrtl.Width
@@ -23,23 +23,26 @@ package object Chisel {
   case object OUTPUT extends Direction
   case object NODIR extends Direction
 
-  val Input   = chisel3.Input
-  val Output  = chisel3.Output
+  val Input = chisel3.Input
+  val Output = chisel3.Output
 
   object Flipped {
-    def apply[T<:Data](target: T): T = chisel3.Flipped[T](target)
+    def apply[T <: Data](target: T): T = chisel3.Flipped[T](target)
   }
 
-  implicit class AddDirectionToData[T<:Data](target: T) {
-    def asInput: T = Input(target)
+  implicit class AddDirectionToData[T <: Data](target: T) {
+    def asInput:  T = Input(target)
     def asOutput: T = Output(target)
-    def flip: T = Flipped(target)
+    def flip:     T = Flipped(target)
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
     def flip(dummy: Int*): T = flip
   }
 
-  implicit class AddDirMethodToData[T<:Data](target: T) {
+  implicit class AddDirMethodToData[T <: Data](target: T) {
     import chisel3.ActualDirection
     import chisel3.experimental.DataMirror
     import chisel3.internal.requireIsHardware
@@ -47,11 +50,12 @@ package object Chisel {
     def dir: Direction = {
       requireIsHardware(target) // This has the side effect of calling _autoWrapPorts
       target match {
-        case e: Element => DataMirror.directionOf(e) match {
-          case ActualDirection.Output => OUTPUT
-          case ActualDirection.Input => INPUT
-          case _ => NODIR
-        }
+        case e: Element =>
+          DataMirror.directionOf(e) match {
+            case ActualDirection.Output => OUTPUT
+            case ActualDirection.Input  => INPUT
+            case _                      => NODIR
+          }
         case _ => NODIR
       }
     }
@@ -81,9 +85,9 @@ package object Chisel {
     def apply(dir: Direction): Clock = {
       val result = apply()
       dir match {
-        case INPUT => Input(result)
+        case INPUT  => Input(result)
         case OUTPUT => Output(result)
-        case _ => result
+        case _      => result
       }
     }
   }
@@ -130,20 +134,33 @@ package object Chisel {
       apply(Seq.fill(n)(gen))
 
     def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+
     /** @group SourceInfoTransformMacro */
     def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.VecInit(elts)
 
     def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+
     /** @group SourceInfoTransformMacro */
-    def do_apply[T <: Data](elt0: T, elts: T*)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    def do_apply[T <: Data](
+      elt0: T,
+      elts: T*
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): Vec[T] =
       chisel3.VecInit(elt0 +: elts.toSeq)
 
     def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+
     /** @group SourceInfoTransformMacro */
-    def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    def do_tabulate[T <: Data](
+      n:   Int
+    )(gen: (Int) => T
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): Vec[T] =
       chisel3.VecInit.tabulate(n)(gen)
   }
   type Vec[T <: Data] = chisel3.Vec[T]
@@ -157,8 +174,10 @@ package object Chisel {
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
   trait UIntFactory extends chisel3.UIntFactory {
+
     /** Create a UInt literal with inferred width. */
     def apply(n: String): UInt = n.asUInt
+
     /** Create a UInt literal with fixed width. */
     def apply(n: String, width: Int): UInt = n.asUInt(width.W)
 
@@ -171,19 +190,21 @@ package object Chisel {
     /** Create a UInt with a specified width - compatibility with Chisel2. */
     // NOTE: This resolves UInt(width = 32)
     def apply(dir: Option[Direction] = None, width: Int): UInt = apply(width.W)
+
     /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
     def apply(value: BigInt): UInt = value.asUInt
 
     /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
     def apply(dir: Direction, width: Int): UInt = apply(dir, width.W)
+
     /** Create a UInt with a specified direction, but unspecified width - compatibility with Chisel2. */
     def apply(dir: Direction): UInt = apply(dir, Width())
     def apply(dir: Direction, width: Width): UInt = {
       val result = apply(width)
       dir match {
-        case INPUT => Input(result)
+        case INPUT  => Input(result)
         case OUTPUT => Output(result)
-        case NODIR => result
+        case NODIR  => result
       }
     }
 
@@ -197,13 +218,16 @@ package object Chisel {
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
   trait SIntFactory extends chisel3.SIntFactory {
+
     /** Create a SInt type or port with fixed width. */
     def width(width: Int): SInt = apply(width.W)
+
     /** Create an SInt type with specified width. */
     def width(width: Width): SInt = apply(width)
 
     /** Create an SInt literal with inferred width. */
     def apply(value: BigInt): SInt = value.asSInt
+
     /** Create an SInt literal with fixed width. */
     def apply(value: BigInt, width: Int): SInt = value.asSInt(width.W)
 
@@ -215,16 +239,18 @@ package object Chisel {
 
     /** Create a SInt with a specified width - compatibility with Chisel2. */
     def apply(dir: Option[Direction] = None, width: Int): SInt = apply(width.W)
+
     /** Create a SInt with a specified direction and width - compatibility with Chisel2. */
     def apply(dir: Direction, width: Int): SInt = apply(dir, width.W)
+
     /** Create a SInt with a specified direction, but unspecified width - compatibility with Chisel2. */
     def apply(dir: Direction): SInt = apply(dir, Width())
     def apply(dir: Direction, width: Width): SInt = {
       val result = apply(width)
       dir match {
-        case INPUT => Input(result)
+        case INPUT  => Input(result)
         case OUTPUT => Output(result)
-        case NODIR => result
+        case NODIR  => result
       }
     }
   }
@@ -232,6 +258,7 @@ package object Chisel {
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
   trait BoolFactory extends chisel3.BoolFactory {
+
     /** Creates Bool literal.
       */
     def apply(x: Boolean): Bool = x.B
@@ -240,9 +267,9 @@ package object Chisel {
     def apply(dir: Direction): Bool = {
       val result = apply()
       dir match {
-        case INPUT => Input(result)
+        case INPUT  => Input(result)
         case OUTPUT => Output(result)
-        case NODIR => result
+        case NODIR  => result
       }
     }
   }
@@ -286,12 +313,22 @@ package object Chisel {
   implicit class SeqMemCompatibility(a: SeqMem.type) {
     import chisel3.internal.sourceinfo.SourceInfo
 
-    def apply[T <: Data](t: T, size: BigInt)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] =
+    def apply[T <: Data](
+      t:    T,
+      size: BigInt
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): SyncReadMem[T] =
       a.do_apply(size, t)
 
-    def apply[T <: Data](t: T, size: Int)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] =
+    def apply[T <: Data](
+      t:    T,
+      size: Int
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): SyncReadMem[T] =
       a.do_apply(size, t)
   }
 
@@ -329,8 +366,14 @@ package object Chisel {
       * is a valid value. In those cases, you can either use the outType only Reg
       * constructor or pass in `null.asInstanceOf[T]`.
       */
-    def apply[T <: Data](t: T = null, next: T = null, init: T = null)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    def apply[T <: Data](
+      t:    T = null,
+      next: T = null,
+      init: T = null
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): T = {
       if (t ne null) {
         val reg = if (init ne null) {
           RegInit(t, init)
@@ -386,19 +429,19 @@ package object Chisel {
     def apply[T <: Module](args: Array[String], gen: () => T): Unit =
       Predef.assert(false, "No more chiselMain in Chisel3")
 
-    def run[T <: Module] (args: Array[String], gen: () => T): Unit = {
+    def run[T <: Module](args: Array[String], gen: () => T): Unit = {
       val circuit = ChiselStage.elaborate(gen())
       parseArgs(args)
       val output_file = new File(target_dir.getOrElse(new File(".").getCanonicalPath) + "/" + circuit.name + ".fir")
 
-      (new phases.Emitter).transform(Seq(ChiselCircuitAnnotation(circuit),
-                                         ChiselOutputFileAnnotation(output_file.toString)))
+      (new phases.Emitter)
+        .transform(Seq(ChiselCircuitAnnotation(circuit), ChiselOutputFileAnnotation(output_file.toString)))
     }
   }
 
   @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
   object debug {
-    def apply (arg: Data): Data = arg
+    def apply(arg: Data): Data = arg
   }
 
   // Deprecated as of Chsiel3
@@ -423,7 +466,7 @@ package object Chisel {
   object log2Up {
     def apply(in: BigInt): Int = {
       require(in >= 0)
-      1 max (in-1).bitLength
+      1.max((in - 1).bitLength)
     }
     def apply(in: Int): Int = apply(BigInt(in))
   }
@@ -431,7 +474,7 @@ package object Chisel {
   /** Compute the log2 rounded down with min value of 1 */
   object log2Down {
     def apply(in: BigInt): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
-    def apply(in: Int): Int = apply(BigInt(in))
+    def apply(in: Int):    Int = apply(BigInt(in))
   }
 
   val BitPat = chisel3.util.BitPat
@@ -472,8 +515,13 @@ package object Chisel {
   val Queue = chisel3.util.Queue
   type Queue[T <: Data] = QueueCompatibility[T]
 
-  sealed class QueueCompatibility[T <: Data](gen: T, entries: Int, pipe: Boolean = false, flow: Boolean = false)
-                                 (implicit compileOptions: chisel3.CompileOptions)
+  sealed class QueueCompatibility[T <: Data](
+    gen:     T,
+    entries: Int,
+    pipe:    Boolean = false,
+    flow:    Boolean = false
+  )(
+    implicit compileOptions: chisel3.CompileOptions)
       extends chisel3.util.Queue[T](gen, entries, pipe, flow)(compileOptions) {
 
     def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
@@ -489,6 +537,7 @@ package object Chisel {
   }
 
   object Enum extends chisel3.util.Enum {
+
     /** Returns n unique values of the specified type. Can be used with unpacking to define enums.
       *
       * nodeType must be of UInt type (note that Bits() creates a UInt) with unspecified width.
@@ -522,10 +571,10 @@ package object Chisel {
       * Deprecation is only to nag users to do something safer.
       */
     @deprecated("Use list-based Enum", "not soon enough")
-    def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = {
+    def apply[T <: Bits](nodeType: T, l: Symbol*): Map[Symbol, T] = {
       require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
       require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
-      (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
+      (l.zip(createValues(l.length))).toMap.asInstanceOf[Map[Symbol, T]]
     }
 
     /** An old Enum API that returns a map of symbols to UInts.
@@ -541,7 +590,7 @@ package object Chisel {
     def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = {
       require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
       require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
-      (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
+      (l.zip(createValues(l.length))).toMap.asInstanceOf[Map[Symbol, T]]
     }
   }
 
@@ -564,16 +613,18 @@ package object Chisel {
     * }}}
     */
   object LFSR16 {
+
     /** Generates a 16-bit linear feedback shift register, returning the register contents.
       * @param increment optional control to gate when the LFSR updates.
       */
     @chiselName
     def apply(increment: Bool = true.B): UInt =
-      VecInit( FibonacciLFSR
-                .maxPeriod(16, increment, seed = Some(BigInt(1) << 15))
-                .asBools
-                .reverse )
-        .asUInt
+      VecInit(
+        FibonacciLFSR
+          .maxPeriod(16, increment, seed = Some(BigInt(1) << 15))
+          .asBools
+          .reverse
+      ).asUInt
 
   }
 
@@ -597,7 +648,6 @@ package object Chisel {
   val Valid = chisel3.util.Valid
   val Pipe = chisel3.util.Pipe
   type Pipe[T <: Data] = chisel3.util.Pipe[T]
-
 
   /** Package for experimental features, which may have their API changed, be removed, etc.
     *
@@ -638,7 +688,8 @@ package object Chisel {
 
     final def toUInt(implicit compileOptions: CompileOptions): UInt = a.do_asUInt(DeprecatedSourceInfo, compileOptions)
 
-    final def toBools(implicit compileOptions: CompileOptions): Seq[Bool] = a.do_asBools(DeprecatedSourceInfo, compileOptions)
+    final def toBools(implicit compileOptions: CompileOptions): Seq[Bool] =
+      a.do_asBools(DeprecatedSourceInfo, compileOptions)
   }
 
 }

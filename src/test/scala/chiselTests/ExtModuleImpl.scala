@@ -23,14 +23,17 @@ class ExtModuleAdd(n: Int) extends ExtModule with HasExtModuleInline {
   })
 
   //scalastyle:off regex
-  setInline("ExtModuleAdd.v", s"""
-      |module ExtModuleAdd(
-      |    input  [15:0] in,
-      |    output [15:0] out
-      |);
-      |  assign out = in + $n;
-      |endmodule
-    """.stripMargin)
+  setInline(
+    "ExtModuleAdd.v",
+    s"""
+       |module ExtModuleAdd(
+       |    input  [15:0] in,
+       |    output [15:0] out
+       |);
+       |  assign out = in + $n;
+       |endmodule
+    """.stripMargin
+  )
 }
 
 class UsesExtModuleAddViaInline extends Module {
@@ -93,7 +96,7 @@ class UsesExtModuleMinusViaPath extends Module {
 }
 
 class ExtModuleResourceNotFound extends HasExtModuleResource {
-  val io = IO(new Bundle{})
+  val io = IO(new Bundle {})
   addResource("/missing.resource")
 }
 
@@ -113,7 +116,7 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
       )
       val newAnnotations = (new ChiselStage).transform(annotations)
 
-      newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be (true)
+      newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be(true)
       val verilogOutput = new File(targetDir, "ExtModuleAdd.v")
       verilogOutput.exists() should be(true)
       verilogOutput.delete()
@@ -127,7 +130,7 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
       )
       val newAnnotations = (new ChiselStage).transform(annotations)
 
-      newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be (true)
+      newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be(true)
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
       verilogOutput.exists() should be(true)
       verilogOutput.delete()
@@ -141,14 +144,14 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
       )
       val newAnnotations = (new ChiselStage).transform(annotations)
 
-      newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be (true)
+      newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be(true)
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
       verilogOutput.exists() should be(true)
       verilogOutput.delete()
     }
 
     "Resource files that do not exist produce Chisel errors" in {
-      assertThrows[BlackBoxNotFoundException]{
+      assertThrows[BlackBoxNotFoundException] {
         ChiselStage.emitChirrtl(new UsesMissingExtModuleResource)
       }
     }

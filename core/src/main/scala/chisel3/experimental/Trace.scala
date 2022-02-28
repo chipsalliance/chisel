@@ -18,7 +18,7 @@ import firrtl.transforms.DontTouchAllTargets
   *   // get final reference of `a` Seq(ReferenceTarget("Dut", "Dut", Seq.empty, "a", Seq.empty))
   *   val firrtlReferenceOfDutA = finalTarget(annos)(dut.a)
   * }}}
-  * */
+  */
 object Trace {
 
   /** Trace a Instance name. */
@@ -49,8 +49,8 @@ object Trace {
     * @param chiselTarget original annotated target in Chisel, which should not be changed or renamed in FIRRTL.
     */
   private case class TraceNameAnnotation[T <: CompleteTarget](target: T, chiselTarget: T)
-    extends SingleTargetAnnotation[T]
-    with DontTouchAllTargets {
+      extends SingleTargetAnnotation[T]
+      with DontTouchAllTargets {
     def duplicate(n: T): Annotation = this.copy(target = n)
   }
 
@@ -64,6 +64,6 @@ object Trace {
     * This API can be used to gather all final reference to the signal or module which is marked by `traceName`
     */
   def finalTargetMap(annos: AnnotationSeq): Map[CompleteTarget, Seq[CompleteTarget]] = annos.collect {
-      case TraceNameAnnotation(t, chiselTarget) => chiselTarget -> t
-    }.groupBy(_._1).map{case (k, v) => k -> v.map(_._2)}
+    case TraceNameAnnotation(t, chiselTarget) => chiselTarget -> t
+  }.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
 }

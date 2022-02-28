@@ -8,12 +8,10 @@ import chisel3.experimental.{FixedPoint, Interval}
 import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
-  UIntTransform}
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
-
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
@@ -27,7 +25,10 @@ private[chisel3] sealed trait ToBoolable extends Element {
     */
   final def asBool: Bool = macro SourceInfoWhiteboxTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def asBool(dummy: Int*): Bool = macro SourceInfoWhiteboxTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
@@ -82,7 +83,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** @group SourceInfoTransformMacro */
   def do_head(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     width match {
-      case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
+      case KnownWidth(x)  => require(x >= n, s"Can't head($n) for width $x < $n")
       case UnknownWidth() =>
     }
     binop(sourceInfo, UInt(Width(n)), HeadOp, n)
@@ -217,7 +218,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** @group SourceInfoTransformMacro */
   def do_pad(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = this.width match {
     case KnownWidth(w) if w >= that => this
-    case _ => binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
+    case _                          => binop(sourceInfo, cloneTypeWidth(this.width.max(Width(that))), PadOp, that)
   }
 
   /** Bitwise inversion operator
@@ -227,11 +228,14 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     */
   final def unary_~ : Bits = macro SourceInfoWhiteboxTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def unary_~(dummy: Int*): Bits = macro SourceInfoWhiteboxTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
-  def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  def do_unary_~(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Static left shift operator
     *
@@ -242,10 +246,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     */
   // REVIEW TODO: redundant
   // REVIEW TODO: should these return this.type or Bits?
-  final def << (that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def <<(that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Static left shift operator
     *
@@ -254,10 +258,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * $sumWidthInt
     * @group Bitwise
     */
-  final def << (that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def <<(that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  def do_<<(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Dynamic left shift operator
     *
@@ -266,10 +270,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
     * @group Bitwise
     */
-  final def << (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def <<(that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Static right shift operator
     *
@@ -279,10 +283,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @group Bitwise
     */
   // REVIEW TODO: redundant
-  final def >> (that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def >>(that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Static right shift operator
     *
@@ -291,10 +295,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * $unchangedWidth
     * @group Bitwise
     */
-  final def >> (that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def >>(that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Dynamic right shift operator
     *
@@ -304,15 +308,18 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * $unchangedWidth
     * @group Bitwise
     */
-  final def >> (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def >>(that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  def do_>>(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   final def asBools: Seq[Bool] = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def asBools(dummy: Int*): Seq[Bool] = macro SourceInfoWhiteboxTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
@@ -326,7 +333,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     */
   final def asSInt: SInt = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def asSInt(dummy: Int*): SInt = macro SourceInfoWhiteboxTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
@@ -341,7 +351,12 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def asFixedPoint(that: BinaryPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_asFixedPoint(that: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+  def do_asFixedPoint(
+    that: BinaryPoint
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): FixedPoint = {
     throwException(s"Cannot call .asFixedPoint on $this")
   }
 
@@ -360,7 +375,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     width match {
       case KnownWidth(1) => this(0)
-      case _ => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
+      case _             => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
     }
   }
 
@@ -371,10 +386,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * $sumWidth
     * @group Bitwise
     */
-  final def ## (that: Bits): UInt = macro SourceInfoTransform.thatArg
+  final def ##(that: Bits): UInt = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_## (that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+  def do_##(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     val w = this.width + that.width
     pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, this.ref, that.ref))
   }
@@ -401,7 +416,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def toString: String = {
     litOption match {
       case Some(value) => s"UInt$width($value)"
-      case _ => stringAccessor(s"UInt$width")
+      case _           => stringAccessor(s"UInt$width")
     }
   }
 
@@ -420,7 +435,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     */
   final def unary_- : UInt = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def unary_-(dummy: Int*): UInt = macro SourceInfoTransform.noArgDummy
 
   /** Unary negation (constant width)
@@ -431,21 +449,25 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     */
   final def unary_-% : UInt = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def unary_%(dummy: Int*): UInt = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
-  def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : UInt = 0.U - this
-  /** @group SourceInfoTransformMacro */
-  def do_unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = 0.U -% this
+  def do_unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = 0.U - this
 
-  override def do_+ (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this +% that
-  override def do_- (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this -% that
-  override def do_/ (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  /** @group SourceInfoTransformMacro */
+  def do_unary_-%(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = 0.U -% this
+
+  override def do_+(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this +% that
+  override def do_-(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this -% that
+  override def do_/(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width), DivideOp, that)
-  override def do_% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width min that.width), RemOp, that)
-  override def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  override def do_%(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    binop(sourceInfo, UInt(this.width.min(that.width)), RemOp, that)
+  override def do_*(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width + that.width), TimesOp, that)
 
   /** Multiplication operator
@@ -456,9 +478,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $singleCycleMul
     * @group Arithmetic
     */
-  final def * (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def *(that: SInt): SInt = macro SourceInfoTransform.thatArg
+
   /** @group SourceInfoTransformMacro */
-  def do_* (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = that * this
+  def do_*(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = that * this
 
   /** Addition operator (expanding width)
     *
@@ -467,7 +490,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  final def +& (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def +&(that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   /** Addition operator (constant width)
     *
@@ -476,7 +499,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $maxWidth
     * @group Arithmetic
     */
-  final def +% (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def +%(that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   /** Subtraction operator (increasing width)
     *
@@ -485,7 +508,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  final def -& (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def -&(that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   /** Subtraction operator (constant width)
     *
@@ -494,20 +517,23 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $maxWidth
     * @group Arithmetic
     */
-  final def -% (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def -%(that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_+& (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt((this.width max that.width) + 1), AddOp, that)
+  def do_+&(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    binop(sourceInfo, UInt((this.width.max(that.width)) + 1), AddOp, that)
+
   /** @group SourceInfoTransformMacro */
-  def do_+% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_+%(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     (this +& that).tail(1)
+
   /** @group SourceInfoTransformMacro */
-  def do_-& (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    (this subtractAsSInt that).asUInt
+  def do_-&(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    (this.subtractAsSInt(that)).asUInt
+
   /** @group SourceInfoTransformMacro */
-  def do_-% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    (this subtractAsSInt that).tail(1)
+  def do_-%(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    (this.subtractAsSInt(that)).tail(1)
 
   /** Bitwise and operator
     *
@@ -516,7 +542,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $maxWidth
     * @group Bitwise
     */
-  final def & (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def &(that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   /** Bitwise or operator
     *
@@ -525,7 +551,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $maxWidth
     * @group Bitwise
     */
-  final def | (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def |(that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   /** Bitwise exclusive or (xor) operator
     *
@@ -534,23 +560,25 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $maxWidth
     * @group Bitwise
     */
-  final def ^ (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def ^(that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   //  override def abs: UInt = macro SourceInfoTransform.noArgDummy
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this
 
   /** @group SourceInfoTransformMacro */
-  def do_& (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width max that.width), BitAndOp, that)
-  /** @group SourceInfoTransformMacro */
-  def do_| (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width max that.width), BitOrOp, that)
-  /** @group SourceInfoTransformMacro */
-  def do_^ (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width max that.width), BitXorOp, that)
+  def do_&(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    binop(sourceInfo, UInt(this.width.max(that.width)), BitAndOp, that)
 
   /** @group SourceInfoTransformMacro */
-  def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_|(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    binop(sourceInfo, UInt(this.width.max(that.width)), BitOrOp, that)
+
+  /** @group SourceInfoTransformMacro */
+  def do_^(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    binop(sourceInfo, UInt(this.width.max(that.width)), BitXorOp, that)
+
+  /** @group SourceInfoTransformMacro */
+  def do_unary_~(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     unop(sourceInfo, UInt(width = width), BitNotOp)
 
   // REVIEW TODO: Can these be defined on Bits?
@@ -561,7 +589,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     */
   final def orR: Bool = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def orR(dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
 
   /** And reduction operator
@@ -571,7 +602,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     */
   final def andR: Bool = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def andR(dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
 
   /** Exclusive or (xor) reduction operator
@@ -581,20 +615,29 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     */
   final def xorR: Bool = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def xorR(dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_orR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, OrReduceOp)
+
   /** @group SourceInfoTransformMacro */
   def do_andR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, AndReduceOp)
+
   /** @group SourceInfoTransformMacro */
   def do_xorR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, XorReduceOp)
 
-  override def do_< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
-  override def do_> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
-  override def do_<= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
-  override def do_>= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
+  override def do_<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, LessOp, that)
+  override def do_>(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, GreaterOp, that)
+  override def do_<=(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, LessEqOp, that)
+  override def do_>=(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, GreaterEqOp, that)
 
   /** Dynamic not equals operator
     *
@@ -602,7 +645,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
     * @group Comparison
     */
-  final def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  final def =/=(that: UInt): Bool = macro SourceInfoTransform.thatArg
 
   /** Dynamic equals operator
     *
@@ -610,12 +653,15 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
     * @group Comparison
     */
-  final def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  final def ===(that: UInt): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
+  def do_=/=(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, NotEqualOp, that)
+
   /** @group SourceInfoTransformMacro */
-  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
+  def do_===(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, EqualOp, that)
 
   /** Unary not
     *
@@ -624,69 +670,77 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     */
   final def unary_! : Bool = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
-  final def unary_! (dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
+  final def unary_!(dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
-  def do_unary_! (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : Bool = this === 0.U(1.W)
+  def do_unary_!(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this === 0.U(1.W)
 
-  override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  override def do_<<(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
-  override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     this << castToInt(that, "Shift amount")
-  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
-  override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width.shiftRight(that)), ShiftRightOp, validateShiftAmount(that))
-  override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     this >> castToInt(that, "Shift amount")
-  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that)
 
   /**
-   * Circular shift to the left
-   * @param that number of bits to rotate
-   * @return UInt of same width rotated left n bits
-   */
-  final def rotateLeft(that: Int): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+    * Circular shift to the left
+    * @param that number of bits to rotate
+    * @return UInt of same width rotated left n bits
+    */
+  final def rotateLeft(that: Int): UInt = macro SourceInfoWhiteboxTransform.thatArg
 
   def do_rotateLeft(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
-    case _ if (n == 0) => this
+    case _ if (n == 0)             => this
     case KnownWidth(w) if (w <= 1) => this
-    case KnownWidth(w) if n >= w => do_rotateLeft(n % w)
-    case _ if (n < 0) => do_rotateRight(-n)
-    case _ => tail(n) ## head(n)
+    case KnownWidth(w) if n >= w   => do_rotateLeft(n % w)
+    case _ if (n < 0)              => do_rotateRight(-n)
+    case _                         => tail(n) ## head(n)
   }
 
   /**
-   * Circular shift to the right
-   * @param that number of bits to rotate
-   * @return UInt of same width rotated right n bits
-   */
-  final def rotateRight(that: Int): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+    * Circular shift to the right
+    * @param that number of bits to rotate
+    * @return UInt of same width rotated right n bits
+    */
+  final def rotateRight(that: Int): UInt = macro SourceInfoWhiteboxTransform.thatArg
 
   def do_rotateRight(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
-    case _ if (n <= 0) => do_rotateLeft(-n)
+    case _ if (n <= 0)             => do_rotateLeft(-n)
     case KnownWidth(w) if (w <= 1) => this
-    case KnownWidth(w) if n >= w => do_rotateRight(n % w)
-    case _ => this(n - 1, 0) ## (this >> n)
+    case KnownWidth(w) if n >= w   => do_rotateRight(n % w)
+    case _                         => this(n - 1, 0) ## (this >> n)
   }
 
-  final def rotateRight(that: UInt): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+  final def rotateRight(that: UInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
 
-  private def dynamicShift(n: UInt, staticShift: (UInt,Int) => UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : UInt =
-    n.asBools().zipWithIndex.foldLeft(this){
-      case (in, (en, sh)) => Mux(en, staticShift(in,  1 << sh), in)
+  private def dynamicShift(
+    n:           UInt,
+    staticShift: (UInt, Int) => UInt
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): UInt =
+    n.asBools().zipWithIndex.foldLeft(this) {
+      case (in, (en, sh)) => Mux(en, staticShift(in, 1 << sh), in)
     }
 
   def do_rotateRight(n: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     dynamicShift(n, _ rotateRight _)
 
-  final def rotateLeft(that: UInt): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+  final def rotateLeft(that: UInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
 
   def do_rotateLeft(n: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     dynamicShift(n, _ rotateLeft _)
-
 
   /** Conditionally set or clear a bit
     *
@@ -712,7 +766,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     */
   final def zext: SInt = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def zext(dummy: Int*): SInt = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
@@ -722,44 +779,58 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this
-  override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+  override def do_asFixedPoint(
+    binaryPoint: BinaryPoint
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): FixedPoint = {
     binaryPoint match {
       case KnownBinaryPoint(value) =>
         val iLit = ILit(value)
         pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
       case _ =>
-        throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+        throwException(
+          s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint"
+        )
     }
   }
 
-  override def do_asInterval(range: IntervalRange = IntervalRange.Unknown)
-                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+  override def do_asInterval(
+    range: IntervalRange = IntervalRange.Unknown
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Interval = {
     (range.lower, range.upper, range.binaryPoint) match {
       case (lx: firrtlconstraint.IsKnown, ux: firrtlconstraint.IsKnown, KnownBinaryPoint(bp)) =>
         // No mechanism to pass open/close to firrtl so need to handle directly
         val l = lx match {
-          case firrtlir.Open(x) => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case firrtlir.Open(x)   => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
           case firrtlir.Closed(x) => x
         }
         val u = ux match {
-          case firrtlir.Open(x) => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case firrtlir.Open(x)   => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
           case firrtlir.Closed(x) => x
         }
         val minBI = (l * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
         val maxBI = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
-        throwException(
-          s"cannot call $this.asInterval($range), you must specify a known binaryPoint and range")
+        throwException(s"cannot call $this.asInterval($range), you must specify a known binaryPoint and range")
     }
   }
-  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): Unit = {
+  private[chisel3] override def connectFromBits(
+    that: Bits
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Unit = {
     this := that.asUInt
   }
 
   private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that)
+    binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
 }
 
 /** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
@@ -774,12 +845,12 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def toString: String = {
     litOption match {
       case Some(value) => s"SInt$width($value)"
-      case _ => stringAccessor(s"SInt$width")
+      case _           => stringAccessor(s"SInt$width")
     }
   }
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass && this.width == that.width  // TODO: should this be true for unspecified widths?
+    this.getClass == that.getClass && this.width == that.width // TODO: should this be true for unspecified widths?
 
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
@@ -792,7 +863,10 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     */
   final def unary_- : SInt = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def unary_-(dummy: Int*): SInt = macro SourceInfoTransform.noArgDummy
 
   /** Unary negation (constant width)
@@ -803,26 +877,31 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     */
   final def unary_-% : SInt = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def unary_-%(dummy: Int*): SInt = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
-  def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S - this
+  def do_unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S - this
+
   /** @group SourceInfoTransformMacro */
-  def do_unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S -% this
+  def do_unary_-%(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S -% this
 
   /** add (default - no growth) operator */
-  override def do_+ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_+(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     this +% that
+
   /** subtract (default - no growth) operator */
-  override def do_- (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_-(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     this -% that
-  override def do_* (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_*(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width + that.width), TimesOp, that)
-  override def do_/ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_/(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width + 1), DivideOp, that)
-  override def do_% (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt(this.width min that.width), RemOp, that)
+  override def do_%(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+    binop(sourceInfo, SInt(this.width.min(that.width)), RemOp, that)
 
   /** Multiplication operator
     *
@@ -832,9 +911,10 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $singleCycleMul
     * @group Arithmetic
     */
-  final def * (that: UInt): SInt = macro SourceInfoTransform.thatArg
+  final def *(that: UInt): SInt = macro SourceInfoTransform.thatArg
+
   /** @group SourceInfoTransformMacro */
-  def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
+  def do_*(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
     val thatToSInt = that.zext
     val result = binop(sourceInfo, SInt(this.width + thatToSInt.width), TimesOp, thatToSInt)
     result.tail(1).asSInt
@@ -847,7 +927,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  final def +& (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def +&(that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   /** Addition operator (constant width)
     *
@@ -856,7 +936,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $maxWidth
     * @group Arithmetic
     */
-  final def +% (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def +%(that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   /** Subtraction operator (increasing width)
     *
@@ -865,7 +945,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  final def -& (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def -&(that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   /** Subtraction operator (constant width)
     *
@@ -874,19 +954,22 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $maxWidth
     * @group Arithmetic
     */
-  final def -% (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def -%(that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_+& (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt((this.width max that.width) + 1), AddOp, that)
+  def do_+&(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+    binop(sourceInfo, SInt((this.width.max(that.width)) + 1), AddOp, that)
+
   /** @group SourceInfoTransformMacro */
-  def do_+% (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  def do_+%(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     (this +& that).tail(1).asSInt
+
   /** @group SourceInfoTransformMacro */
-  def do_-& (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that)
+  def do_-&(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+    binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
+
   /** @group SourceInfoTransformMacro */
-  def do_-% (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  def do_-%(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     (this -& that).tail(1).asSInt
 
   /** Bitwise and operator
@@ -896,7 +979,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $maxWidth
     * @group Bitwise
     */
-  final def & (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def &(that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   /** Bitwise or operator
     *
@@ -905,7 +988,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $maxWidth
     * @group Bitwise
     */
-  final def | (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def |(that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   /** Bitwise exclusive or (xor) operator
     *
@@ -914,26 +997,32 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $maxWidth
     * @group Bitwise
     */
-  final def ^ (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def ^(that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_& (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, UInt(this.width max that.width), BitAndOp, that).asSInt
-  /** @group SourceInfoTransformMacro */
-  def do_| (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, UInt(this.width max that.width), BitOrOp, that).asSInt
-  /** @group SourceInfoTransformMacro */
-  def do_^ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, UInt(this.width max that.width), BitXorOp, that).asSInt
+  def do_&(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+    binop(sourceInfo, UInt(this.width.max(that.width)), BitAndOp, that).asSInt
 
   /** @group SourceInfoTransformMacro */
-  def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  def do_|(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+    binop(sourceInfo, UInt(this.width.max(that.width)), BitOrOp, that).asSInt
+
+  /** @group SourceInfoTransformMacro */
+  def do_^(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+    binop(sourceInfo, UInt(this.width.max(that.width)), BitXorOp, that).asSInt
+
+  /** @group SourceInfoTransformMacro */
+  def do_unary_~(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     unop(sourceInfo, UInt(width = width), BitNotOp).asSInt
 
-  override def do_< (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
-  override def do_> (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
-  override def do_<= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
-  override def do_>= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
+  override def do_<(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, LessOp, that)
+  override def do_>(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, GreaterOp, that)
+  override def do_<=(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, LessEqOp, that)
+  override def do_>=(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, GreaterEqOp, that)
 
   /** Dynamic not equals operator
     *
@@ -941,7 +1030,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
     * @group Comparison
     */
-  final def =/= (that: SInt): Bool = macro SourceInfoTransform.thatArg
+  final def =/=(that: SInt): Bool = macro SourceInfoTransform.thatArg
 
   /** Dynamic equals operator
     *
@@ -949,12 +1038,15 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
     * @group Comparison
     */
-  final def === (that: SInt): Bool = macro SourceInfoTransform.thatArg
+  final def ===(that: SInt): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_=/= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
+  def do_=/=(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, NotEqualOp, that)
+
   /** @group SourceInfoTransformMacro */
-  def do_=== (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
+  def do_===(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, EqualOp, that)
 
 //  final def abs(): UInt = macro SourceInfoTransform.noArgDummy
 
@@ -962,42 +1054,55 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     Mux(this < 0.S, -this, this)
   }
 
-  override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_<<(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
-  override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     this << castToInt(that, "Shift amount")
-  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
-  override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width.shiftRight(that)), ShiftRightOp, validateShiftAmount(that))
-  override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     this >> castToInt(that, "Shift amount")
-  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+  override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that)
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = pushOp(
+    DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
+  )
   override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = this
-  override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+  override def do_asFixedPoint(
+    binaryPoint: BinaryPoint
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): FixedPoint = {
     binaryPoint match {
       case KnownBinaryPoint(value) =>
         val iLit = ILit(value)
         pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
       case _ =>
-        throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+        throwException(
+          s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint"
+        )
     }
   }
 
-  override def do_asInterval(range: IntervalRange = IntervalRange.Unknown)
-                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+  override def do_asInterval(
+    range: IntervalRange = IntervalRange.Unknown
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Interval = {
     (range.lower, range.upper, range.binaryPoint) match {
       case (lx: firrtlconstraint.IsKnown, ux: firrtlconstraint.IsKnown, KnownBinaryPoint(bp)) =>
         // No mechanism to pass open/close to firrtl so need to handle directly
         val l = lx match {
-          case firrtlir.Open(x) => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case firrtlir.Open(x)   => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
           case firrtlir.Closed(x) => x
         }
         val u = ux match {
-          case firrtlir.Open(x) => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case firrtlir.Open(x)   => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
           case firrtlir.Closed(x) => x
         }
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
@@ -1006,21 +1111,29 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
         val maxBI = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
-        throwException(
-          s"cannot call $this.asInterval($range), you must specify a known binaryPoint and range")
+        throwException(s"cannot call $this.asInterval($range), you must specify a known binaryPoint and range")
     }
   }
 
-  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+  private[chisel3] override def connectFromBits(
+    that: Bits
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ) {
     this := that.asSInt
   }
 }
 
 sealed trait Reset extends Element with ToBoolable {
+
   /** Casts this $coll to an [[AsyncReset]] */
   final def asAsyncReset: AsyncReset = macro SourceInfoWhiteboxTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   final def asAsyncReset(dummy: Int*): AsyncReset = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
@@ -1049,10 +1162,16 @@ final class ResetType(private[chisel3] val width: Width = Width(1)) extends Elem
   /** Not really supported */
   def toPrintable: Printable = PString("Reset")
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(
+    DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
+  )
 
-  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): Unit = {
+  private[chisel3] override def connectFromBits(
+    that: Bits
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Unit = {
     this := that
   }
 
@@ -1091,11 +1210,17 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
   /** Not really supported */
   def toPrintable: Printable = PString("AsyncReset")
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(
+    DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
+  )
 
   // TODO Is this right?
-  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): Unit = {
+  private[chisel3] override def connectFromBits(
+    that: Bits
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Unit = {
     this := that.asBool.asAsyncReset
   }
 
@@ -1121,7 +1246,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
   override def toString: String = {
     litToBooleanOption match {
       case Some(value) => s"Bool($value)"
-      case _ => stringAccessor("Bool")
+      case _           => stringAccessor("Bool")
     }
   }
 
@@ -1134,7 +1259,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
   def litToBooleanOption: Option[Boolean] = litOption.map {
     case intVal if intVal == 1 => true
     case intVal if intVal == 0 => false
-    case intVal => throwException(s"Boolean with unexpected literal value $intVal")
+    case intVal                => throwException(s"Boolean with unexpected literal value $intVal")
   }
 
   /** Convert to a [[scala.Boolean]] */
@@ -1149,7 +1274,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
     * @return the bitwise and of  this $coll and `that`
     * @group Bitwise
     */
-  final def & (that: Bool): Bool = macro SourceInfoTransform.thatArg
+  final def &(that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** Bitwise or operator
     *
@@ -1157,7 +1282,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
     * @return the bitwise or of this $coll and `that`
     * @group Bitwise
     */
-  final def | (that: Bool): Bool = macro SourceInfoTransform.thatArg
+  final def |(that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** Bitwise exclusive or (xor) operator
     *
@@ -1165,20 +1290,22 @@ sealed class Bool() extends UInt(1.W) with Reset {
     * @return the bitwise xor of this $coll and `that`
     * @group Bitwise
     */
-  final def ^ (that: Bool): Bool = macro SourceInfoTransform.thatArg
+  final def ^(that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_& (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_&(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     binop(sourceInfo, Bool(), BitAndOp, that)
+
   /** @group SourceInfoTransformMacro */
-  def do_| (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_|(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     binop(sourceInfo, Bool(), BitOrOp, that)
+
   /** @group SourceInfoTransformMacro */
-  def do_^ (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_^(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     binop(sourceInfo, Bool(), BitXorOp, that)
 
   /** @group SourceInfoTransformMacro */
-  override def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  override def do_unary_~(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     unop(sourceInfo, Bool(), BitNotOp)
 
   /** Logical or operator
@@ -1188,10 +1315,10 @@ sealed class Bool() extends UInt(1.W) with Reset {
     * @note this is equivalent to [[Bool!.|(that:chisel3\.Bool)* Bool.|)]]
     * @group Logical
     */
-  def || (that: Bool): Bool = macro SourceInfoTransform.thatArg
+  def ||(that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_|| (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this | that
+  def do_||(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this | that
 
   /** Logical and operator
     *
@@ -1200,19 +1327,24 @@ sealed class Bool() extends UInt(1.W) with Reset {
     * @note this is equivalent to [[Bool!.&(that:chisel3\.Bool)* Bool.&]]
     * @group Logical
     */
-  def && (that: Bool): Bool = macro SourceInfoTransform.thatArg
+  def &&(that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_&& (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this & that
+  def do_&&(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this & that
 
   /** Reinterprets this $coll as a clock */
   def asClock: Clock = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   def asClock(dummy: Int*): Clock = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
-  def do_asClock(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Clock = pushOp(DefPrim(sourceInfo, Clock(), AsClockOp, ref))
+  def do_asClock(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Clock = pushOp(
+    DefPrim(sourceInfo, Clock(), AsClockOp, ref)
+  )
 
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset =
@@ -1261,6 +1393,7 @@ package experimental {
       */
     def litToBigDecimal: BigDecimal = litToBigDecimalOption.get
   }
+
   /** A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point
     * may be inferred.
     *
@@ -1275,28 +1408,32 @@ package experimental {
     * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
     * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
     */
-  sealed class FixedPoint private(width: Width, val binaryPoint: BinaryPoint)
-    extends Bits(width) with Num[FixedPoint] with HasBinaryPoint {
+  sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
+      extends Bits(width)
+      with Num[FixedPoint]
+      with HasBinaryPoint {
 
     override def toString: String = {
       litToDoubleOption match {
         case Some(value) => s"FixedPoint$width$binaryPoint($value)"
-        case _ => stringAccessor(s"FixedPoint$width$binaryPoint")
+        case _           => stringAccessor(s"FixedPoint$width$binaryPoint")
       }
     }
 
     private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
-      case that: FixedPoint => this.width == that.width && this.binaryPoint == that.binaryPoint // TODO: should this be true for unspecified widths?
+      case that: FixedPoint =>
+        this.width == that.width && this.binaryPoint == that.binaryPoint // TODO: should this be true for unspecified widths?
       case _ => false
     }
 
     private[chisel3] override def cloneTypeWidth(w: Width): this.type =
       new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
 
-    override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
-      case _: FixedPoint|DontCare => super.connect(that)
-      case _ => this badConnect that
-    }
+    override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit =
+      that match {
+        case _: FixedPoint | DontCare => super.connect(that)
+        case _ => this.badConnect(that)
+      }
 
     /** Unary negation (expanding width)
       *
@@ -1306,7 +1443,10 @@ package experimental {
       */
     final def unary_- : FixedPoint = macro SourceInfoTransform.noArg
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
     final def unary_-(dummy: Int*): FixedPoint = macro SourceInfoTransform.noArgDummy
 
     /** Unary negation (constant width)
@@ -1316,27 +1456,33 @@ package experimental {
       * @group Arithmetic
       */
     final def unary_-% : FixedPoint = macro SourceInfoTransform.noArg
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
     final def unary_-%(dummy: Int*): FixedPoint = macro SourceInfoTransform.noArgDummy
 
     /** @group SourceInfoTransformMacro */
-    def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = FixedPoint.fromBigInt(0) - this
+    def do_unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      FixedPoint.fromBigInt(0) - this
+
     /** @group SourceInfoTransformMacro */
-    def do_unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = FixedPoint.fromBigInt(0) -% this
+    def do_unary_-%(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      FixedPoint.fromBigInt(0) -% this
 
     /** add (default - no growth) operator */
-    override def do_+ (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    override def do_+(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       this +% that
-    /** subtract (default - no growth) operator */
-    override def do_- (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-      this -% that
-    override def do_* (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-      binop(sourceInfo, FixedPoint(this.width + that.width, this.binaryPoint + that.binaryPoint), TimesOp, that)
-    override def do_/ (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-      throwException(s"division is illegal on FixedPoint types")
-    override def do_% (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-      throwException(s"mod is illegal on FixedPoint types")
 
+    /** subtract (default - no growth) operator */
+    override def do_-(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      this -% that
+    override def do_*(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      binop(sourceInfo, FixedPoint(this.width + that.width, this.binaryPoint + that.binaryPoint), TimesOp, that)
+    override def do_/(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      throwException(s"division is illegal on FixedPoint types")
+    override def do_%(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      throwException(s"mod is illegal on FixedPoint types")
 
     /** Multiplication operator
       *
@@ -1346,9 +1492,10 @@ package experimental {
       *         $singleCycleMul
       * @group Arithmetic
       */
-    final def * (that: UInt): FixedPoint = macro SourceInfoTransform.thatArg
+    final def *(that: UInt): FixedPoint = macro SourceInfoTransform.thatArg
+
     /** @group SourceInfoTransformMacro */
-    def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    def do_*(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       binop(sourceInfo, FixedPoint(this.width + that.width, binaryPoint), TimesOp, that)
 
     /** Multiplication operator
@@ -1359,9 +1506,10 @@ package experimental {
       *         $singleCycleMul
       * @group Arithmetic
       */
-    final def * (that: SInt): FixedPoint = macro SourceInfoTransform.thatArg
+    final def *(that: SInt): FixedPoint = macro SourceInfoTransform.thatArg
+
     /** @group SourceInfoTransformMacro */
-    def do_* (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    def do_*(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       binop(sourceInfo, FixedPoint(this.width + that.width, binaryPoint), TimesOp, that)
 
     /** Addition operator (expanding width)
@@ -1371,7 +1519,7 @@ package experimental {
       *         $maxWidthPlusOne
       * @group Arithmetic
       */
-    final def +& (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def +&(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
     /** Addition operator (constant width)
       *
@@ -1380,7 +1528,7 @@ package experimental {
       *         $maxWidth
       * @group Arithmetic
       */
-    final def +% (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def +%(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
     /** Subtraction operator (increasing width)
       *
@@ -1389,7 +1537,7 @@ package experimental {
       *         $maxWidthPlusOne
       * @group Arithmetic
       */
-    final def -& (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def -&(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
     /** Subtraction operator (constant width)
       *
@@ -1398,44 +1546,45 @@ package experimental {
       *         $maxWidth
       * @group Arithmetic
       */
-    final def -% (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def -%(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
     /** @group SourceInfoTransformMacro */
-    def do_+& (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+    def do_+&(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
       (this.width, that.width, this.binaryPoint, that.binaryPoint) match {
         case (KnownWidth(thisWidth), KnownWidth(thatWidth), KnownBinaryPoint(thisBP), KnownBinaryPoint(thatBP)) =>
           val thisIntWidth = thisWidth - thisBP
           val thatIntWidth = thatWidth - thatBP
-          val newBinaryPoint = thisBP max thatBP
-          val newWidth = (thisIntWidth max thatIntWidth) + newBinaryPoint + 1
+          val newBinaryPoint = thisBP.max(thatBP)
+          val newWidth = (thisIntWidth.max(thatIntWidth)) + newBinaryPoint + 1
           binop(sourceInfo, FixedPoint(newWidth.W, newBinaryPoint.BP), AddOp, that)
         case _ =>
-          val newBinaryPoint = this.binaryPoint max that.binaryPoint
+          val newBinaryPoint = this.binaryPoint.max(that.binaryPoint)
           binop(sourceInfo, FixedPoint(UnknownWidth(), newBinaryPoint), AddOp, that)
       }
     }
 
     /** @group SourceInfoTransformMacro */
-    def do_+% (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-      (this +& that).tail(1).asFixedPoint(this.binaryPoint max that.binaryPoint)
+    def do_+%(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      (this +& that).tail(1).asFixedPoint(this.binaryPoint.max(that.binaryPoint))
+
     /** @group SourceInfoTransformMacro */
-    def do_-& (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+    def do_-&(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
       (this.width, that.width, this.binaryPoint, that.binaryPoint) match {
         case (KnownWidth(thisWidth), KnownWidth(thatWidth), KnownBinaryPoint(thisBP), KnownBinaryPoint(thatBP)) =>
           val thisIntWidth = thisWidth - thisBP
           val thatIntWidth = thatWidth - thatBP
-          val newBinaryPoint = thisBP max thatBP
-          val newWidth = (thisIntWidth max thatIntWidth) + newBinaryPoint + 1
+          val newBinaryPoint = thisBP.max(thatBP)
+          val newWidth = (thisIntWidth.max(thatIntWidth)) + newBinaryPoint + 1
           binop(sourceInfo, FixedPoint(newWidth.W, newBinaryPoint.BP), SubOp, that)
         case _ =>
-          val newBinaryPoint = this.binaryPoint max that.binaryPoint
+          val newBinaryPoint = this.binaryPoint.max(that.binaryPoint)
           binop(sourceInfo, FixedPoint(UnknownWidth(), newBinaryPoint), SubOp, that)
       }
     }
 
     /** @group SourceInfoTransformMacro */
-    def do_-% (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-      (this -& that).tail(1).asFixedPoint(this.binaryPoint max that.binaryPoint)
+    def do_-%(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      (this -& that).tail(1).asFixedPoint(this.binaryPoint.max(that.binaryPoint))
 
     /** Bitwise and operator
       *
@@ -1444,7 +1593,7 @@ package experimental {
       *         $maxWidth
       * @group Bitwise
       */
-    final def & (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def &(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
     /** Bitwise or operator
       *
@@ -1453,7 +1602,7 @@ package experimental {
       *         $maxWidth
       * @group Bitwise
       */
-    final def | (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def |(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
     /** Bitwise exclusive or (xor) operator
       *
@@ -1462,38 +1611,45 @@ package experimental {
       *         $maxWidth
       * @group Bitwise
       */
-    final def ^ (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+    final def ^(that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
     /** @group SourceInfoTransformMacro */
-    def do_& (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    def do_&(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       throwException(s"And is illegal between $this and $that")
+
     /** @group SourceInfoTransformMacro */
-    def do_| (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    def do_|(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       throwException(s"Or is illegal between $this and $that")
+
     /** @group SourceInfoTransformMacro */
-    def do_^ (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    def do_^(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       throwException(s"Xor is illegal between $this and $that")
 
     final def setBinaryPoint(that: Int): FixedPoint = macro SourceInfoTransform.thatArg
 
     /** @group SourceInfoTransformMacro */
-    def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = this.binaryPoint match {
-      case KnownBinaryPoint(value) =>
-        binop(sourceInfo, FixedPoint(this.width + (that - value), KnownBinaryPoint(that)), SetBinaryPoint, that)
-      case _ =>
-        binop(sourceInfo, FixedPoint(UnknownWidth(), KnownBinaryPoint(that)), SetBinaryPoint, that)
-    }
+    def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      this.binaryPoint match {
+        case KnownBinaryPoint(value) =>
+          binop(sourceInfo, FixedPoint(this.width + (that - value), KnownBinaryPoint(that)), SetBinaryPoint, that)
+        case _ =>
+          binop(sourceInfo, FixedPoint(UnknownWidth(), KnownBinaryPoint(that)), SetBinaryPoint, that)
+      }
 
     /** @group SourceInfoTransformMacro */
-    def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    def do_unary_~(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       throwException(s"Not is illegal on $this")
 
-    override def do_< (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
-    override def do_> (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
-    override def do_<= (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
-    override def do_>= (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
+    override def do_<(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, LessOp, that)
+    override def do_>(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, GreaterOp, that)
+    override def do_<=(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, LessEqOp, that)
+    override def do_>=(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, GreaterEqOp, that)
 
-    final def != (that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
+    final def !=(that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
 
     /** Dynamic not equals operator
       *
@@ -1501,7 +1657,7 @@ package experimental {
       * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
       * @group Comparison
       */
-    final def =/= (that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
+    final def =/=(that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
 
     /** Dynamic equals operator
       *
@@ -1509,14 +1665,19 @@ package experimental {
       * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
       * @group Comparison
       */
-    final def === (that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
+    final def ===(that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
 
     /** @group SourceInfoTransformMacro */
-    def do_!= (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
+    def do_!=(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, NotEqualOp, that)
+
     /** @group SourceInfoTransformMacro */
-    def do_=/= (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
+    def do_=/=(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, NotEqualOp, that)
+
     /** @group SourceInfoTransformMacro */
-    def do_=== (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
+    def do_===(that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, EqualOp, that)
 
     def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
       // TODO: remove this once we have CompileOptions threaded through the macro system.
@@ -1524,59 +1685,88 @@ package experimental {
       Mux(this < 0.F(0.BP), 0.F(0.BP) - this, this)
     }
 
-    override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    override def do_<<(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       binop(sourceInfo, FixedPoint(this.width + that, this.binaryPoint), ShiftLeftOp, validateShiftAmount(that))
-    override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       (this << castToInt(that, "Shift amount")).asFixedPoint(this.binaryPoint)
-    override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       binop(sourceInfo, FixedPoint(this.width.dynamicShiftLeft(that.width), this.binaryPoint), DynamicShiftLeftOp, that)
-    override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-      binop(sourceInfo, FixedPoint(this.width.shiftRight(that), this.binaryPoint), ShiftRightOp, validateShiftAmount(that))
-    override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    override def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+      binop(
+        sourceInfo,
+        FixedPoint(this.width.shiftRight(that), this.binaryPoint),
+        ShiftRightOp,
+        validateShiftAmount(that)
+      )
+    override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       (this >> castToInt(that, "Shift amount")).asFixedPoint(this.binaryPoint)
-    override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       binop(sourceInfo, FixedPoint(this.width, this.binaryPoint), DynamicShiftRightOp, that)
 
-    override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
-    override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
+    override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = pushOp(
+      DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
+    )
+    override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = pushOp(
+      DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref)
+    )
 
-    override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+    override def do_asFixedPoint(
+      binaryPoint: BinaryPoint
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): FixedPoint = {
       binaryPoint match {
         case KnownBinaryPoint(value) =>
           val iLit = ILit(value)
           pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
         case _ =>
-          throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+          throwException(
+            s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint"
+          )
       }
     }
 
-  def do_asInterval(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    throwException(s"cannot call $this.asInterval(binaryPoint=$binaryPoint), you must specify a range")
-  }
-
-  override def do_asInterval(range: IntervalRange = IntervalRange.Unknown)
-                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    (range.lower, range.upper, range.binaryPoint) match {
-      case (lx: firrtlconstraint.IsKnown, ux: firrtlconstraint.IsKnown, KnownBinaryPoint(bp)) =>
-        // No mechanism to pass open/close to firrtl so need to handle directly
-        val l = lx match {
-          case firrtlir.Open(x) => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
-          case firrtlir.Closed(x) => x
-        }
-        val u = ux match {
-          case firrtlir.Open(x) => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
-          case firrtlir.Closed(x) => x
-        }
-        val minBI = (l * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
-        val maxBI = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
-        pushOp(DefPrim(sourceInfo, Interval(range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
-      case _ =>
-        throwException(
-          s"cannot call $this.asInterval($range), you must specify a known binaryPoint and range")
+    def do_asInterval(
+      binaryPoint: BinaryPoint
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): Interval = {
+      throwException(s"cannot call $this.asInterval(binaryPoint=$binaryPoint), you must specify a range")
     }
-  }
 
-    private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+    override def do_asInterval(
+      range: IntervalRange = IntervalRange.Unknown
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): Interval = {
+      (range.lower, range.upper, range.binaryPoint) match {
+        case (lx: firrtlconstraint.IsKnown, ux: firrtlconstraint.IsKnown, KnownBinaryPoint(bp)) =>
+          // No mechanism to pass open/close to firrtl so need to handle directly
+          val l = lx match {
+            case firrtlir.Open(x)   => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+            case firrtlir.Closed(x) => x
+          }
+          val u = ux match {
+            case firrtlir.Open(x)   => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+            case firrtlir.Closed(x) => x
+          }
+          val minBI = (l * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+          val maxBI = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+          pushOp(DefPrim(sourceInfo, Interval(range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
+        case _ =>
+          throwException(s"cannot call $this.asInterval($range), you must specify a known binaryPoint and range")
+      }
+    }
+
+    private[chisel3] override def connectFromBits(
+      that: Bits
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ) {
       // TODO: redefine as just asFixedPoint on that, where FixedPoint.asFixedPoint just works.
       this := (that match {
         case fp: FixedPoint => fp.asSInt.asFixedPoint(this.binaryPoint)
@@ -1610,36 +1800,43 @@ package experimental {
     def fromBigInt(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
       apply(value, width, binaryPoint)
     }
+
     /** Create an FixedPoint literal with inferred width from BigInt.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
     def fromBigInt(value: BigInt, binaryPoint: BinaryPoint = 0.BP): FixedPoint = {
       apply(value, Width(), binaryPoint)
     }
+
     /** Create an FixedPoint literal with inferred width from BigInt.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
     def fromBigInt(value: BigInt, width: Int, binaryPoint: Int): FixedPoint =
-      if(width == -1) {
+      if (width == -1) {
         apply(value, Width(), BinaryPoint(binaryPoint))
-      }
-      else {
+      } else {
         apply(value, Width(width), BinaryPoint(binaryPoint))
       }
+
     /** Create an FixedPoint literal with inferred width from Double.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
     def fromDouble(value: Double, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
       fromBigInt(
-        toBigInt(value, binaryPoint.get), width = width, binaryPoint = binaryPoint
+        toBigInt(value, binaryPoint.get),
+        width = width,
+        binaryPoint = binaryPoint
       )
     }
+
     /** Create an FixedPoint literal with inferred width from BigDecimal.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
     def fromBigDecimal(value: BigDecimal, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
       fromBigInt(
-        toBigInt(value, binaryPoint.get), width = width, binaryPoint = binaryPoint
+        toBigInt(value, binaryPoint.get),
+        width = width,
+        binaryPoint = binaryPoint
       )
     }
 
@@ -1650,8 +1847,6 @@ package experimental {
       // Ensure we have something capable of generating a name.
       lit.bindLitArg(newLiteral)
     }
-
-
 
     object Implicits {
 
@@ -1695,12 +1890,14 @@ package experimental {
     * @param range       a range specifies min, max and binary point
     */
   sealed class Interval private[chisel3] (val range: chisel3.internal.firrtl.IntervalRange)
-    extends Bits(range.getWidth) with Num[Interval] with HasBinaryPoint {
+      extends Bits(range.getWidth)
+      with Num[Interval]
+      with HasBinaryPoint {
 
     override def toString: String = {
       litOption match {
         case Some(value) => s"Interval$width($value)"
-        case _ => stringAccessor(s"Interval$width")
+        case _           => stringAccessor(s"Interval$width")
       }
     }
 
@@ -1714,27 +1911,27 @@ package experimental {
       val int = """([+\-]?[0-9]\d*)""".r
       def dec2string(v: BigDecimal): String = v.toString match {
         case zdec1(x, y, z) => x + y
-        case zdec2(x, y) => x
-        case other => other
+        case zdec2(x, y)    => x
+        case other          => other
       }
 
       val lowerString = range.lower match {
         case firrtlir.Open(l)      => s"(${dec2string(l)}, "
         case firrtlir.Closed(l)    => s"[${dec2string(l)}, "
         case firrtlir.UnknownBound => s"[?, "
-        case _  => s"[?, "
+        case _                     => s"[?, "
       }
       val upperString = range.upper match {
         case firrtlir.Open(u)      => s"${dec2string(u)})"
         case firrtlir.Closed(u)    => s"${dec2string(u)}]"
         case firrtlir.UnknownBound => s"?]"
-        case _  => s"?]"
+        case _                     => s"?]"
       }
       val bounds = lowerString + upperString
 
       val pointString = range.binaryPoint match {
-        case KnownBinaryPoint(i)  => "." + i.toString
-        case _ => ""
+        case KnownBinaryPoint(i) => "." + i.toString
+        case _                   => ""
       }
       "Interval" + bounds + pointString
     }
@@ -1746,19 +1943,25 @@ package experimental {
 
     override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
       that match {
-        case _: Interval|DontCare => super.connect(that)
-        case _ => this badConnect that
+        case _: Interval | DontCare => super.connect(that)
+        case _ => this.badConnect(that)
       }
     }
 
     final def unary_- : Interval = macro SourceInfoTransform.noArg
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
     final def unary_-(dummy: Int*): Interval = macro SourceInfoTransform.noArgDummy
 
     final def unary_-% : Interval = macro SourceInfoTransform.noArg
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
     final def unary_-%(dummy: Int*): Interval = macro SourceInfoTransform.noArgDummy
 
     /** @group SourceInfoTransformMacro */
@@ -1772,6 +1975,7 @@ package experimental {
     /** add (default - growing) operator */
     override def do_+(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       this +& that
+
     /** subtract (default - growing) operator */
     override def do_-(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       this -& that
@@ -1785,10 +1989,13 @@ package experimental {
 
     /** add (width +1) operator */
     final def +&(that: Interval): Interval = macro SourceInfoTransform.thatArg
+
     /** add (no growth) operator */
     final def +%(that: Interval): Interval = macro SourceInfoTransform.thatArg
+
     /** subtract (width +1) operator */
     final def -&(that: Interval): Interval = macro SourceInfoTransform.thatArg
+
     /** subtract (no growth) operator */
     final def -%(that: Interval): Interval = macro SourceInfoTransform.thatArg
 
@@ -1859,21 +2066,28 @@ package experimental {
     }
 
     /** Returns this wire bitwise-inverted. */
-    def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    def do_unary_~(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       throwException(s"Not is illegal on $this")
 
-    override def do_< (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
-    override def do_> (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
-    override def do_<= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
-    override def do_>= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
+    override def do_<(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, LessOp, that)
+    override def do_>(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, GreaterOp, that)
+    override def do_<=(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, LessEqOp, that)
+    override def do_>=(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, GreaterEqOp, that)
 
-    final def != (that: Interval): Bool = macro SourceInfoTransform.thatArg
-    final def =/= (that: Interval): Bool = macro SourceInfoTransform.thatArg
-    final def === (that: Interval): Bool = macro SourceInfoTransform.thatArg
+    final def !=(that:  Interval): Bool = macro SourceInfoTransform.thatArg
+    final def =/=(that: Interval): Bool = macro SourceInfoTransform.thatArg
+    final def ===(that: Interval): Bool = macro SourceInfoTransform.thatArg
 
-    def do_!= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
-    def do_=/= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
-    def do_=== (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
+    def do_!=(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, NotEqualOp, that)
+    def do_=/=(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, NotEqualOp, that)
+    def do_===(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      compop(sourceInfo, EqualOp, that)
 
     //  final def abs(): UInt = macro SourceInfoTransform.noArgDummy
 
@@ -1881,24 +2095,24 @@ package experimental {
       Mux(this < Interval.Zero, (Interval.Zero - this), this)
     }
 
-    override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    override def do_<<(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       binop(sourceInfo, Interval(this.range << that), ShiftLeftOp, that)
 
-    override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       do_<<(that.toInt)
 
-    override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       binop(sourceInfo, Interval(this.range << that), DynamicShiftLeftOp, that)
     }
 
-    override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    override def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       binop(sourceInfo, Interval(this.range >> that), ShiftRightOp, that)
     }
 
-    override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       do_>>(that.toInt)
 
-    override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       binop(sourceInfo, Interval(this.range >> that), DynamicShiftRightOp, that)
     }
 
@@ -1965,12 +2179,11 @@ package experimental {
     final def squeeze(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
     def do_squeeze(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       val intervalLitOpt = Interval.getSmallestLegalLit(that)
-      val intervalLit    = intervalLitOpt.getOrElse(
+      val intervalLit = intervalLitOpt.getOrElse(
         throwException(s"$this.squeeze($that) requires an Interval range with known lower and upper bounds")
       )
       do_squeeze(intervalLit)
     }
-
 
     /**
       * Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
@@ -2104,14 +2317,20 @@ package experimental {
       pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
     }
 
-    override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+    override def do_asFixedPoint(
+      binaryPoint: BinaryPoint
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): FixedPoint = {
       binaryPoint match {
         case KnownBinaryPoint(value) =>
           val iLit = ILit(value)
           pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
         case _ =>
           throwException(
-            s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+            s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint"
+          )
       }
     }
 
@@ -2132,8 +2351,12 @@ package experimental {
       throwException("fromBits INVALID for intervals")
     }
 
-    private[chisel3] override def connectFromBits(that: Bits)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+    private[chisel3] override def connectFromBits(
+      that: Bits
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ) {
       this := that.asInterval(this.range)
     }
   }
@@ -2146,6 +2369,7 @@ package experimental {
     * IMPORTANT: The API provided here is experimental and may change in the future.
     */
   object Interval extends NumObject {
+
     /** Create an Interval type with inferred width and binary point. */
     def apply(): Interval = Interval(range"[?,?]")
 
@@ -2153,7 +2377,7 @@ package experimental {
     def apply(binaryPoint: BinaryPoint): Interval = {
       val binaryPointString = binaryPoint match {
         case KnownBinaryPoint(value) => s"$value"
-        case _ => s""
+        case _                       => s""
       }
       Interval(range"[?,?].$binaryPointString")
     }
@@ -2201,27 +2425,39 @@ package experimental {
     /** Create an Interval literal with inferred width from Double.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
-    def fromDouble(value: Double, dummy: PrivateType = PrivateObject,
-                   width: Width, binaryPoint: BinaryPoint): Interval = {
+    def fromDouble(
+      value:       Double,
+      dummy:       PrivateType = PrivateObject,
+      width:       Width,
+      binaryPoint: BinaryPoint
+    ): Interval = {
       fromBigInt(
-        toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
+        toBigInt(value, binaryPoint),
+        width = width,
+        binaryPoint = binaryPoint
       )
     }
 
     /** Create an Interval literal with inferred width from Double.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
-    def fromBigDecimal(value: Double, dummy: PrivateType = PrivateObject,
-                       width: Width, binaryPoint: BinaryPoint): Interval = {
+    def fromBigDecimal(
+      value:       Double,
+      dummy:       PrivateType = PrivateObject,
+      width:       Width,
+      binaryPoint: BinaryPoint
+    ): Interval = {
       fromBigInt(
-        toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
+        toBigInt(value, binaryPoint),
+        width = width,
+        binaryPoint = binaryPoint
       )
     }
 
     protected[chisel3] def Lit(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
       width match {
         case KnownWidth(w) =>
-          if(value >= 0 && value.bitLength >= w || value < 0 && value.bitLength > w) {
+          if (value >= 0 && value.bitLength >= w || value < 0 && value.bitLength > w) {
             throw new ChiselException(
               s"Error literal interval value $value is too many bits for specified width $w"
             )
@@ -2243,7 +2479,7 @@ package experimental {
         case (firrtlir.Open(l), firrtlir.Closed(u))   => l < bigDecimal && bigDecimal <= u
         case (firrtlir.Open(l), firrtlir.Open(u))     => l < bigDecimal && bigDecimal < u
       }
-      if(! inRange) {
+      if (!inRange) {
         throw new ChiselException(
           s"Error literal interval value $bigDecimal is not contained in specified range $range"
         )
@@ -2338,9 +2574,7 @@ package experimental {
       }
 
       implicit class fromDoubleToLiteralInterval(double: Double)
-        extends fromBigDecimalToLiteralInterval(BigDecimal(double))
+          extends fromBigDecimalToLiteralInterval(BigDecimal(double))
     }
   }
 }
-
-

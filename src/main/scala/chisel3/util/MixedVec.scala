@@ -19,6 +19,7 @@ import scala.collection.immutable.ListMap
   * }}}
   */
 object MixedVecInit {
+
   /**
     * Create a MixedVec wire from a Seq of values.
     */
@@ -45,6 +46,7 @@ object MixedVecInit {
   * @return MixedVec with the given types.
   */
 object MixedVec {
+
   /**
     * Create a MixedVec type from a Seq of Chisel types.
     */
@@ -111,7 +113,7 @@ final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with 
     */
   def :=(that: Seq[T]): Unit = {
     require(this.length == that.length)
-    for ((a, b) <- this zip that)
+    for ((a, b) <- this.zip(that))
       a := b
   }
 

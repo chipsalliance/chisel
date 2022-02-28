@@ -27,6 +27,6 @@ class IntegerMathTester extends BasicTester {
 
 class IntegerMathSpec extends ChiselPropSpec {
   property("All integer ops should return the correct result") {
-    assertTesterPasses{ new IntegerMathTester }
+    assertTesterPasses { new IntegerMathTester }
   }
 }

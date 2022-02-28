@@ -54,7 +54,7 @@ object FlatDecoupledDataView {
 
 class DataViewSpec extends ChiselFlatSpec {
 
-  behavior of "DataView"
+  behavior.of("DataView")
 
   it should "support simple Bundle viewing" in {
     import SimpleBundleDataView._
@@ -240,8 +240,8 @@ class DataViewSpec extends ChiselFlatSpec {
       fooOut := cat
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include ("node cat = cat(barIn.foo, barIn.bar)")
-    chirrtl should include ("fooOut <= cat")
+    chirrtl should include("node cat = cat(barIn.foo, barIn.bar)")
+    chirrtl should include("fooOut <= cat")
   }
 
   it should "be composable" in {
@@ -262,8 +262,8 @@ class DataViewSpec extends ChiselFlatSpec {
       z := b.viewAs[Bar].viewAs[Fizz]
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include ("y.fizz <= a.foo")
-    chirrtl should include ("z.fizz <= b.foo")
+    chirrtl should include("y.fizz <= a.foo")
+    chirrtl should include("z.fizz <= b.foo")
   }
 
   it should "enable using Seq like Data" in {
@@ -277,8 +277,8 @@ class DataViewSpec extends ChiselFlatSpec {
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
     val verilog = ChiselStage.emitVerilog(new MyModule)
-    verilog should include ("assign y = sel ? a : c;")
-    verilog should include ("assign z = sel ? b : d;")
+    verilog should include("assign y = sel ? a : c;")
+    verilog should include("assign z = sel ? b : d;")
   }
 
   // This example should be turned into a built-in feature
@@ -291,9 +291,9 @@ class DataViewSpec extends ChiselFlatSpec {
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
     val verilog = ChiselStage.emitVerilog(new MyModule)
-    verilog should include ("assign x = a;")
-    verilog should include ("assign y = b;")
-    verilog should include ("assign z = c;")
+    verilog should include("assign x = a;")
+    verilog should include("assign y = b;")
+    verilog should include("assign z = c;")
   }
 
   it should "support recursive composition of views" in {
@@ -307,10 +307,10 @@ class DataViewSpec extends ChiselFlatSpec {
       Seq((w, x), (y, z)) := VecInit[HWTuple2[UInt, UInt]]((a, b), (c, d))
     }
     val verilog = ChiselStage.emitVerilog(new MyModule)
-    verilog should include ("assign w = a;")
-    verilog should include ("assign x = b;")
-    verilog should include ("assign y = c;")
-    verilog should include ("assign z = d;")
+    verilog should include("assign w = a;")
+    verilog should include("assign x = b;")
+    verilog should include("assign y = c;")
+    verilog should include("assign z = d;")
   }
 
   it should "support dynamic indexing for Vec identity views" in {
@@ -328,8 +328,8 @@ class DataViewSpec extends ChiselFlatSpec {
       dataOut := selected
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include ("vec[addr] <= dataIn")
-    chirrtl should include ("dataOut <= vec[addr]")
+    chirrtl should include("vec[addr] <= dataIn")
+    chirrtl should include("dataOut <= vec[addr]")
   }
 
   it should "error if you try to dynamically index a Vec view that does not correspond to a Vec target" in {
@@ -346,9 +346,9 @@ class DataViewSpec extends ChiselFlatSpec {
       selected := (inA, inB)
       (outA, outB) := selected
     }
-    (the [InvalidViewException] thrownBy {
+    (the[InvalidViewException] thrownBy {
       ChiselStage.emitChirrtl(new MyModule)
-    }).getMessage should include ("Dynamic indexing of Views is not yet supported")
+    }).getMessage should include("Dynamic indexing of Views is not yet supported")
   }
 
   it should "error if the mapping is non-total in the view" in {
@@ -360,8 +360,8 @@ class DataViewSpec extends ChiselFlatSpec {
       val out = IO(Output(tpe))
       out := in.viewAs[MyBundle]
     }
-    val err = the [InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
-    err.toString should include ("View field '_.foo' is missing")
+    val err = the[InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
+    err.toString should include("View field '_.foo' is missing")
   }
 
   it should "error if the mapping is non-total in the target" in {
@@ -371,8 +371,8 @@ class DataViewSpec extends ChiselFlatSpec {
       val out = IO(Output(UInt(8.W)))
       out := (a, b).viewAs[UInt]
     }
-    val err = the [InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
-    err.toString should include ("Target field '_._2' is missing")
+    val err = the[InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
+    err.toString should include("Target field '_._2' is missing")
   }
 
   it should "error if the mapping contains Data that are not part of the Target" in {
@@ -389,8 +389,8 @@ class DataViewSpec extends ChiselFlatSpec {
       val out = IO(Output(new BundleB))
       out := in.viewAs[BundleB]
     }
-    val err = the [InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
-    err.toString should include ("View mapping must only contain Elements within the Target")
+    val err = the[InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
+    err.toString should include("View mapping must only contain Elements within the Target")
   }
 
   it should "error if the mapping contains Data that are not part of the View" in {
@@ -408,8 +408,8 @@ class DataViewSpec extends ChiselFlatSpec {
       val out = IO(Output(new BundleB))
       out.viewAs[BundleA] := in
     }
-    val err = the [InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
-    err.toString should include ("View mapping must only contain Elements within the View")
+    val err = the[InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
+    err.toString should include("View mapping must only contain Elements within the View")
   }
 
   it should "error if a view has a width that does not match the target" in {
@@ -425,9 +425,9 @@ class DataViewSpec extends ChiselFlatSpec {
       val out = IO(Output(new BundleB))
       out := in.viewAs[BundleB]
     }
-    val err = the [InvalidViewException] thrownBy ChiselStage.emitChirrtl(new MyModule)
+    val err = the[InvalidViewException] thrownBy ChiselStage.emitChirrtl(new MyModule)
     val expected = """View field _\.bar UInt<4> has width <4> that is incompatible with target value .+'s width <8>""".r
-    err.getMessage should fullyMatch regex expected
+    (err.getMessage should fullyMatch).regex(expected)
   }
 
   it should "error if a view has a known width when the target width is unknown" in {
@@ -443,12 +443,13 @@ class DataViewSpec extends ChiselFlatSpec {
       val out = IO(Output(new BundleB))
       out := in.viewAs[BundleB]
     }
-    val err = the [InvalidViewException] thrownBy ChiselStage.emitChirrtl(new MyModule)
-    val expected = """View field _\.bar UInt<4> has width <4> that is incompatible with target value .+'s width <unknown>""".r
-    err.getMessage should fullyMatch regex expected
+    val err = the[InvalidViewException] thrownBy ChiselStage.emitChirrtl(new MyModule)
+    val expected =
+      """View field _\.bar UInt<4> has width <4> that is incompatible with target value .+'s width <unknown>""".r
+    (err.getMessage should fullyMatch).regex(expected)
   }
 
-  behavior of "PartialDataView"
+  behavior.of("PartialDataView")
 
   it should "still error if the mapping is non-total in the view" in {
     class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
@@ -458,8 +459,8 @@ class DataViewSpec extends ChiselFlatSpec {
       val out = IO(Output(new MyBundle(UInt(8.W), UInt(8.W))))
       out := in.viewAs[MyBundle]
     }
-    val err = the [InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
-    err.toString should include ("View field '_.foo' is missing")
+    val err = the[InvalidViewException] thrownBy (ChiselStage.emitVerilog(new MyModule))
+    err.toString should include("View field '_.foo' is missing")
   }
 
   it should "NOT error if the mapping is non-total in the target" in {
@@ -470,6 +471,6 @@ class DataViewSpec extends ChiselFlatSpec {
       out := (a, b).viewAs[UInt]
     }
     val verilog = ChiselStage.emitVerilog(new MyModule)
-    verilog should include ("assign out = b;")
+    verilog should include("assign out = b;")
   }
 }

@@ -53,7 +53,7 @@ class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends AnalogBlackBoxModule
   val bbs = idxs.map(i => Module(new AnalogBlackBoxModule(i)))
   io.bus <> bbs.head.io.bus // Always bulk connect io.bus to first bus
   io.port <> bbs.flatMap(_.io.port) // Connect ports
-  attach(bbs.map(_.io.bus):_*) // Attach all the buses
+  attach(bbs.map(_.io.bus): _*) // Attach all the buses
 }
 
 // Common superclass for AnalogDUT and AnalogSmallDUT
@@ -80,7 +80,7 @@ class AnalogDUT extends AnalogDUTModule(5) { // 5 BlackBoxes
   // Connect all ports to top
   io.ports <> mods.flatMap(_.io.port)
   // Attach first 3 Modules
-  attach(mods.take(3).map(_.io.bus):_*)
+  attach(mods.take(3).map(_.io.bus): _*)
   // Attach last module to 1st through AnalogConnector
   val con = Module(new AnalogConnector)
   attach(con.io.bus1, mods.head.io.bus)
@@ -100,9 +100,8 @@ class AnalogSmallDUT extends AnalogDUTModule(4) { // 4 BlackBoxes
   // Connect all ports to top
   io.ports <> mods.flatMap(_.io.port)
   // Attach first 3 Modules
-  attach(mods.take(3).map(_.io.bus):_*)
+  attach(mods.take(3).map(_.io.bus): _*)
 }
-
 
 // This tester is primarily intended to be able to pass the dut to synthesis
 class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
@@ -122,17 +121,17 @@ class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
     // Error checking
     assert(dut.out === expectedValue)
 
-    when (cycle === idx.U) {
+    when(cycle === idx.U) {
       expectedValue := BusValue + idx.U
       dut.in.valid := true.B
 
     }
   }
-  when (done) { stop() }
+  when(done) { stop() }
 }
 
 class AnalogIntegrationSpec extends ChiselFlatSpec {
-  behavior of "Verilator"
+  behavior.of("Verilator")
   it should "support simple bidirectional wires" in {
     assertTesterPasses(
       new AnalogIntegrationTester(new AnalogSmallDUT),

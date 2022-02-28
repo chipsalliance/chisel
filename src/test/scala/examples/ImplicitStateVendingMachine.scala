@@ -12,14 +12,14 @@ class ImplicitStateVendingMachine extends SimpleVendingMachine {
   val incValue = WireDefault(0.asUInt(3.W))
   val doDispense = value >= 4.U // 4 * nickel as 1 == $0.20
 
-  when (doDispense) {
+  when(doDispense) {
     value := 0.U // No change given
-  } .otherwise {
+  }.otherwise {
     value := value + incValue
   }
 
-  when (io.nickel) { incValue := 1.U }
-  when (io.dime) { incValue := 2.U }
+  when(io.nickel) { incValue := 1.U }
+  when(io.dime) { incValue := 2.U }
 
   io.dispense := doDispense
 }

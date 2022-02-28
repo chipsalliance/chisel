@@ -12,14 +12,16 @@ import scala.collection.immutable.VectorMap
   */
 object requireIsHardware {
   def apply(node: Data, msg: String = ""): Unit = {
-    node._parent match {  // Compatibility layer hack
+    node._parent match { // Compatibility layer hack
       case Some(x: BaseModule) => x._compatAutoWrapPorts
       case _ =>
     }
     if (!node.isSynthesizable) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
-        "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?")
+      throw ExpectedHardwareException(
+        s"$prefix'$node' must be hardware, " +
+          "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?"
+      )
     }
   }
 }
@@ -36,12 +38,15 @@ object requireIsChiselType {
 // Element only direction used for the Binding system only.
 private[chisel3] sealed abstract class BindingDirection
 private[chisel3] object BindingDirection {
+
   /** Internal type or wire
     */
   case object Internal extends BindingDirection
+
   /** Module port with output direction
     */
   case object Output extends BindingDirection
+
   /** Module port with input direction
     */
   case object Input extends BindingDirection
@@ -50,11 +55,12 @@ private[chisel3] object BindingDirection {
     */
   def from(binding: TopBinding, direction: ActualDirection): BindingDirection = {
     binding match {
-      case PortBinding(_) => direction match {
-        case ActualDirection.Output => Output
-        case ActualDirection.Input => Input
-        case dir => throw new RuntimeException(s"Unexpected port element direction '$dir'")
-      }
+      case PortBinding(_) =>
+        direction match {
+          case ActualDirection.Output => Output
+          case ActualDirection.Input  => Input
+          case dir                    => throw new RuntimeException(s"Unexpected port element direction '$dir'")
+        }
       case _ => Internal
     }
   }
@@ -81,7 +87,7 @@ sealed trait ConstrainedBinding extends TopBinding {
     // This allows aspect modules to pretend to be enclosed modules for connectivity checking,
     // inside vs outside instance checking, etc.
     Builder.aspectModule(enclosure) match {
-      case None => Some(enclosure)
+      case None         => Some(enclosure)
       case Some(aspect) => Some(aspect)
     }
   }
@@ -100,18 +106,29 @@ sealed trait ConditionalDeclarable extends TopBinding {
 
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
 
-case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ReadOnlyBinding with ConditionalDeclarable
-case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ConditionalDeclarable
-case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ConditionalDeclarable
-case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ConditionalDeclarable
+case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext])
+    extends ConstrainedBinding
+    with ReadOnlyBinding
+    with ConditionalDeclarable
+case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
+    extends ConstrainedBinding
+    with ConditionalDeclarable
+case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext])
+    extends ConstrainedBinding
+    with ConditionalDeclarable
+case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext])
+    extends ConstrainedBinding
+    with ConditionalDeclarable
 
 case class ChildBinding(parent: Data) extends Binding {
   def location: Option[BaseModule] = parent.topBinding.location
 }
+
 /** Special binding for Vec.sample_element */
 case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
   def location = parent.topBinding.location
 }
+
 /** Special binding for Mem types */
 case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
   def location: Option[BaseModule] = parent._parent
@@ -122,12 +139,13 @@ case class DontCareBinding() extends UnconstrainedBinding
 
 // Views currently only support 1:1 Element-level mappings
 private[chisel3] case class ViewBinding(target: Element) extends UnconstrainedBinding
+
 /** Binding for Aggregate Views
   * @param childMap Mapping from children of this view to each child's target
   * @param target Optional Data this Aggregate views if the view is total and the target is a Data
   */
-private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Element], target: Option[Data]) extends UnconstrainedBinding
-
+private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Element], target: Option[Data])
+    extends UnconstrainedBinding
 
 /** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
 private[chisel3] case object CrossModuleBinding extends TopBinding {

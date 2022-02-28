@@ -4,6 +4,7 @@ package chisel3.internal
 
 import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
+import scala.util.control.NoStackTrace
 import _root_.logger.Logger
 
 object ExceptionHelpers {
@@ -38,7 +39,7 @@ object ExceptionHelpers {
       */
     def trimStackTraceToUserCode(
       packageTrimlist: Set[String] = packageTrimlist,
-      anchor: Option[String] = Some(builderName)
+      anchor:          Option[String] = Some(builderName)
     ): Unit = {
       def inTrimlist(ste: StackTraceElement) = {
         val packageName = ste.getClassName().takeWhile(_ != '.')
@@ -46,28 +47,36 @@ object ExceptionHelpers {
       }
 
       // Step 1: Remove elements from the top in the package trimlist
-      ((a: Array[StackTraceElement]) => a.dropWhile(inTrimlist))
-      // Step 2: Optionally remove elements from the bottom until the anchor
-        .andThen(_.reverse)
-        .andThen( a =>
-          anchor match {
-            case Some(b) => a.dropWhile(ste => !ste.getClassName.startsWith(b))
-            case None    => a
-          }
-        )
-      // Step 3: Remove elements from the bottom in the package trimlist
-        .andThen(_.dropWhile(inTrimlist))
-      // Step 4: Reverse back to the original order
-        .andThen(_.reverse.toArray)
-      // Step 5: Add ellipsis stack trace elements and "--full-stacktrace" info
-        .andThen(a =>
-          ellipsis() +:
-            a :+
-            ellipsis() :+
-            ellipsis(Some("Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace")))
-      // Step 5: Mutate the stack trace in this exception
-        .andThen(throwable.setStackTrace(_))
-        .apply(throwable.getStackTrace)
+      val trimStackTrace =
+        ((a: Array[StackTraceElement]) => a.dropWhile(inTrimlist))
+          // Step 2: Optionally remove elements from the bottom until the anchor
+          .andThen(_.reverse)
+          .andThen(a =>
+            anchor match {
+              case Some(b) => a.dropWhile(ste => !ste.getClassName.startsWith(b))
+              case None    => a
+            }
+          )
+          // Step 3: Remove elements from the bottom in the package trimlist
+          .andThen(_.dropWhile(inTrimlist))
+          // Step 4: Reverse back to the original order
+          .andThen(_.reverse.toArray)
+          // Step 5: Add ellipsis stack trace elements and "--full-stacktrace" info
+          .andThen(a =>
+            ellipsis() +:
+              a :+
+              ellipsis() :+
+              ellipsis(
+                Some("Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace")
+              )
+          )
+          // Step 5: Mutate the stack trace in this exception
+          .andThen(throwable.setStackTrace(_))
+
+      val stackTrace = throwable.getStackTrace
+      if (stackTrace.nonEmpty) {
+        trimStackTrace(stackTrace)
+      }
     }
 
   }
@@ -77,11 +86,11 @@ object ExceptionHelpers {
 class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause, true, true) {
 
   /** Package names whose stack trace elements should be trimmed when generating a trimmed stack trace */
-  @deprecated("Use ExceptionHelpers.packageTrimlist. This will be removed in Chisel 3.6", "3.5")
+  @deprecated("Use ExceptionHelpers.packageTrimlist. This will be removed in Chisel 3.6", "Chisel 3.5")
   val blacklistPackages: Set[String] = Set("chisel3", "scala", "java", "sun", "sbt")
 
   /** The object name of Chisel's internal `Builder`. Everything stack trace element after this will be trimmed. */
-  @deprecated("Use ExceptionHelpers.builderName. This will be removed in Chisel 3.6", "3.5")
+  @deprecated("Use ExceptionHelpers.builderName. This will be removed in Chisel 3.6", "Chisel 3.5")
   val builderName: String = chisel3.internal.Builder.getClass.getName
 
   /** Examine a [[Throwable]], to extract all its causes. Innermost cause is first.
@@ -95,18 +104,21 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
       case a    => getCauses(a, throwable +: acc)
     }
 
-  /** Returns true if an exception contains  */
+  /** Returns true if an exception contains */
   private def containsBuilder(throwable: Throwable): Boolean =
-    throwable.getStackTrace().collectFirst {
-      case ste if ste.getClassName().startsWith(ExceptionHelpers.builderName) => throwable
-    }.isDefined
+    throwable
+      .getStackTrace()
+      .collectFirst {
+        case ste if ste.getClassName().startsWith(ExceptionHelpers.builderName) => throwable
+      }
+      .isDefined
 
   /** Examine this [[ChiselException]] and it's causes for the first [[Throwable]] that contains a stack trace including
     * a stack trace element whose declaring class is the [[builderName]]. If no such element exists, return this
     * [[ChiselException]].
     */
   private lazy val likelyCause: Throwable =
-    getCauses(this).collectFirst{ case a if containsBuilder(a) => a }.getOrElse(this)
+    getCauses(this).collectFirst { case a if containsBuilder(a) => a }.getOrElse(this)
 
   /** For an exception, return a stack trace trimmed to user code only
     *
@@ -132,6 +144,11 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     trimmedReverse.toIndexedSeq.reverse.toArray
   }
 
+  @deprecated(
+    "Use extension method trimStackTraceToUserCode defined in ExceptionHelpers.ThrowableHelpers. " +
+      "This will be removed in Chisel 3.6",
+    "Chisel 3.5.0"
+  )
   def chiselStackTrace: String = {
     val trimmed = trimmedStackTrace(likelyCause)
 
@@ -139,10 +156,13 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     sw.write(likelyCause.toString + "\n")
     sw.write("\t...\n")
     trimmed.foreach(ste => sw.write(s"\tat $ste\n"))
-    sw.write("\t... (Stack trace trimmed to user code only, rerun with --full-stacktrace if you wish to see the full stack trace)\n")
+    sw.write(
+      "\t... (Stack trace trimmed to user code only, rerun with --full-stacktrace if you wish to see the full stack trace)\n"
+    )
     sw.toString
   }
 }
+private[chisel3] class Errors(message: String) extends ChiselException(message) with NoStackTrace
 
 private[chisel3] object throwException {
   def apply(s: String, t: Throwable = null): Nothing =
@@ -157,6 +177,7 @@ private[chisel3] object ErrorLog {
 }
 
 private[chisel3] class ErrorLog {
+
   /** Log an error message */
   def error(m: => String): Unit =
     errors += new Error(m, getUserLineNumber)
@@ -168,16 +189,17 @@ private[chisel3] class ErrorLog {
   /** Emit an informational message */
   @deprecated("This method will be removed in 3.5", "3.4")
   def info(m: String): Unit =
-    println(new Info("[%2.3f] %s".format(elapsedTime/1e3, m), None))
+    println(new Info("[%2.3f] %s".format(elapsedTime / 1e3, m), None))
 
   /** Log a deprecation warning message */
   def deprecated(m: => String, location: Option[String]): Unit = {
     val sourceLoc = location match {
       case Some(loc) => loc
-      case None => getUserLineNumber match {
-        case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
-        case None => "(unknown)"
-      }
+      case None =>
+        getUserLineNumber match {
+          case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
+          case None => "(unknown)"
+        }
     }
 
     val thisEntry = (m, sourceLoc)
@@ -186,15 +208,20 @@ private[chisel3] class ErrorLog {
 
   /** Throw an exception if any errors have yet occurred. */
   def checkpoint(logger: Logger): Unit = {
-    deprecations.foreach { case ((message, sourceLoc), count) =>
-      logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
+    deprecations.foreach {
+      case ((message, sourceLoc), count) =>
+        logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
     errors.foreach(e => logger.error(e.toString))
 
     if (!deprecations.isEmpty) {
-      logger.warn(s"${ErrorLog.warnTag} ${Console.YELLOW}There were ${deprecations.size} deprecated function(s) used." +
-          s" These may stop compiling in a future release - you are encouraged to fix these issues.${Console.RESET}")
-      logger.warn(s"${ErrorLog.warnTag} Line numbers for deprecations reported by Chisel may be inaccurate; enable scalac compiler deprecation warnings via either of the following methods:")
+      logger.warn(
+        s"${ErrorLog.warnTag} ${Console.YELLOW}There were ${deprecations.size} deprecated function(s) used." +
+          s" These may stop compiling in a future release - you are encouraged to fix these issues.${Console.RESET}"
+      )
+      logger.warn(
+        s"${ErrorLog.warnTag} Line numbers for deprecations reported by Chisel may be inaccurate; enable scalac compiler deprecation warnings via either of the following methods:"
+      )
       logger.warn(s"${ErrorLog.warnTag}   In the sbt interactive console, enter:")
       logger.warn(s"""${ErrorLog.warnTag}     set scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")""")
       logger.warn(s"${ErrorLog.warnTag}   or, in your build.sbt, add the line:")
@@ -205,16 +232,24 @@ private[chisel3] class ErrorLog {
     val allWarnings = errors.filter(!_.isFatal)
 
     if (!allWarnings.isEmpty && !allErrors.isEmpty) {
-      logger.warn(s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} and ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
+      logger.warn(
+        s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} and ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration."
+      )
     } else if (!allWarnings.isEmpty) {
-      logger.warn(s"${ErrorLog.warnTag} There were ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
+      logger.warn(
+        s"${ErrorLog.warnTag} There were ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration."
+      )
     } else if (!allErrors.isEmpty) {
-      logger.warn(s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} during hardware elaboration.")
+      logger.warn(
+        s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} during hardware elaboration."
+      )
     }
 
     if (!allErrors.isEmpty) {
-      throw new ChiselException("Fatal errors during hardware elaboration. Look above for error list.")
-          with scala.util.control.NoStackTrace
+      throw new Errors(
+        "Fatal errors during hardware elaboration. Look above for error list. " +
+          "Rerun with --throw-on-first-error if you wish to see a stack trace."
+      )
     } else {
       // No fatal errors, clear accumulated warnings since they've been reported
       errors.clear()
@@ -228,20 +263,25 @@ private[chisel3] class ErrorLog {
       // List of classpath prefixes that are Chisel internals and should be ignored when looking for user code
       // utils are not part of internals and errors there can be reported
       val chiselPrefixes = Set(
-          "java.",
-          "scala.",
-          "chisel3.",
-          "chisel3.internal.",
-          "chisel3.experimental.",
-          "chisel3.package$"  // for some compatibility / deprecated types
-          )
+        "java.",
+        "scala.",
+        "chisel3.",
+        "chisel3.internal.",
+        "chisel3.experimental.",
+        "chisel3.package$" // for some compatibility / deprecated types
+      )
       !chiselPrefixes.filter(className.startsWith(_)).isEmpty
     }
 
-    Thread.currentThread().getStackTrace.toList.dropWhile(
-          // Get rid of everything in Chisel core
-          ste => isChiselClassname(ste.getClassName)
-        ).headOption
+    Thread
+      .currentThread()
+      .getStackTrace
+      .toList
+      .dropWhile(
+        // Get rid of everything in Chisel core
+        ste => isChiselClassname(ste.getClassName)
+      )
+      .headOption
   }
 
   private val errors = ArrayBuffer[LogEntry]()
@@ -257,7 +297,7 @@ private abstract class LogEntry(msg: => String, line: Option[StackTraceElement])
 
   override def toString: String = line match {
     case Some(l) => s"${format} ${l.getFileName}:${l.getLineNumber}: ${msg} in class ${l.getClassName}"
-    case None => s"${format} ${msg}"
+    case None    => s"${format} ${msg}"
   }
 
   protected def tag(name: String, color: String): String =
@@ -266,7 +306,7 @@ private abstract class LogEntry(msg: => String, line: Option[StackTraceElement])
 
 private class Error(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
   override def isFatal: Boolean = true
-  def format: String = tag("error", Console.RED)
+  def format:           String = tag("error", Console.RED)
 }
 
 private class Warning(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {

@@ -9,7 +9,7 @@ import chisel3.stage.ChiselStage
 
 class TupleSpec extends ChiselFlatSpec {
 
-  behavior of "Tuple"
+  behavior.of("Tuple")
 
   it should "enable using Tuple2 like Data" in {
     class MyModule extends Module {
@@ -20,8 +20,8 @@ class TupleSpec extends ChiselFlatSpec {
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
     val verilog = ChiselStage.emitVerilog(new MyModule)
-    verilog should include ("assign y = sel ? a : c;")
-    verilog should include ("assign z = sel ? b : d;")
+    verilog should include("assign y = sel ? a : c;")
+    verilog should include("assign z = sel ? b : d;")
   }
 
   it should "support nesting of tuples" in {
@@ -31,10 +31,10 @@ class TupleSpec extends ChiselFlatSpec {
       ((w, x), (y, z)) := ((a, b), (c, d))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include ("w <= a")
-    chirrtl should include ("x <= b")
-    chirrtl should include ("y <= c")
-    chirrtl should include ("z <= d")
+    chirrtl should include("w <= a")
+    chirrtl should include("x <= b")
+    chirrtl should include("y <= c")
+    chirrtl should include("z <= d")
   }
 
   it should "enable using Tuple3 like Data" in {
@@ -47,9 +47,9 @@ class TupleSpec extends ChiselFlatSpec {
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
     val verilog = ChiselStage.emitVerilog(new MyModule)
-    verilog should include ("assign v = sel ? a : f;")
-    verilog should include ("assign w = sel ? b : g;")
-    verilog should include ("assign x = sel ? c : h;")
+    verilog should include("assign v = sel ? a : f;")
+    verilog should include("assign w = sel ? b : g;")
+    verilog should include("assign x = sel ? c : h;")
   }
 
   it should "enable using Tuple4 like Data" in {
@@ -62,10 +62,10 @@ class TupleSpec extends ChiselFlatSpec {
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
     val verilog = ChiselStage.emitVerilog(new MyModule)
-    verilog should include ("assign v = sel ? a : f;")
-    verilog should include ("assign w = sel ? b : g;")
-    verilog should include ("assign x = sel ? c : h;")
-    verilog should include ("assign y = sel ? d : i;")
+    verilog should include("assign v = sel ? a : f;")
+    verilog should include("assign w = sel ? b : g;")
+    verilog should include("assign x = sel ? c : h;")
+    verilog should include("assign y = sel ? d : i;")
   }
 
   it should "enable using Tuple5 like Data" in {

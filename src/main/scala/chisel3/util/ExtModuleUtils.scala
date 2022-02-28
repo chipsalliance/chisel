@@ -3,8 +3,13 @@
 package chisel3.util
 
 import chisel3.experimental.{ChiselAnnotation, ExtModule, RunFirrtlTransform}
-import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
-  BlackBoxNotFoundException}
+import firrtl.transforms.{
+  BlackBoxInlineAnno,
+  BlackBoxNotFoundException,
+  BlackBoxPathAnno,
+  BlackBoxResourceAnno,
+  BlackBoxSourceHelper
+}
 
 import BlackBoxHelpers._
 

@@ -16,7 +16,7 @@ class MaybeAspectPhase extends Phase {
   override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    if(annotations.collectFirst { case a: Aspect[_] => annotations }.isDefined) {
+    if (annotations.collectFirst { case a: Aspect[_] => annotations }.isDefined) {
       new AspectPhase().transform(annotations)
     } else annotations
   }

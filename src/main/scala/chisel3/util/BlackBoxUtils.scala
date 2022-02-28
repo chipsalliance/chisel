@@ -4,14 +4,20 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
-import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
-  BlackBoxNotFoundException}
+import firrtl.transforms.{
+  BlackBoxInlineAnno,
+  BlackBoxNotFoundException,
+  BlackBoxPathAnno,
+  BlackBoxResourceAnno,
+  BlackBoxSourceHelper
+}
 import firrtl.annotations.ModuleName
 import logger.LazyLogging
 
 private[util] object BlackBoxHelpers {
 
   implicit class BlackBoxInlineAnnoHelpers(anno: BlackBoxInlineAnno.type) extends LazyLogging {
+
     /** Generate a BlackBoxInlineAnno from a Java Resource and a module name. */
     def fromResource(resourceName: String, moduleName: ModuleName) = try {
       val blackBoxFile = os.resource / os.RelPath(resourceName.dropWhile(_ == '/'))

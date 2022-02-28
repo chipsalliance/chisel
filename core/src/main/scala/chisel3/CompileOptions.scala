@@ -36,7 +36,7 @@ object CompileOptions {
 }
 
 object ExplicitCompileOptions {
-  case class CompileOptionsClass (
+  case class CompileOptionsClass(
     // Should Record connections require a strict match of fields.
     // If true and the same fields aren't present in both source and sink, a MissingFieldException,
     // MissingLeftFieldException, or MissingRightFieldException will be thrown.
@@ -52,12 +52,12 @@ object ExplicitCompileOptions {
     // Require an explicit DontCare assignment to generate a firrtl DefInvalid
     val explicitInvalidate: Boolean,
     // Should the reset type of Module be a Bool or a Reset
-    val inferModuleReset: Boolean
-  ) extends CompileOptions
+    val inferModuleReset: Boolean)
+      extends CompileOptions
 
   // Collection of "not strict" connection compile options.
   // These provide compatibility with existing code.
-  implicit val NotStrict = new CompileOptionsClass (
+  implicit val NotStrict = new CompileOptionsClass(
     connectFieldsMustMatch = false,
     declaredTypeMustBeUnbound = false,
     dontTryConnectionsSwapped = false,
@@ -68,13 +68,13 @@ object ExplicitCompileOptions {
   )
 
   // Collection of "strict" connection compile options, preferred for new code.
-  implicit val Strict = new CompileOptionsClass (
+  implicit val Strict = new CompileOptionsClass(
     connectFieldsMustMatch = true,
     declaredTypeMustBeUnbound = true,
     dontTryConnectionsSwapped = true,
     dontAssumeDirectionality = true,
     checkSynthesizable = true,
     explicitInvalidate = true,
-    inferModuleReset  = true
+    inferModuleReset = true
   )
 }
