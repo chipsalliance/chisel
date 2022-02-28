@@ -4,7 +4,7 @@ package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.dataview.reify
-import chisel3.experimental.{Analog, BaseModule, attach}
+import chisel3.experimental.{attach, Analog, BaseModule}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
 
@@ -14,18 +14,17 @@ import chisel3.internal.sourceinfo._
 import scala.annotation.tailrec
 
 /**
-* BiConnect.connect executes a bidirectional connection element-wise.
-*
-* Note that the arguments are left and right (not source and sink) so the
-* intent is for the operation to be commutative.
-*
-* The connect operation will recurse down the left Data (with the right Data).
-* An exception will be thrown if a movement through the left cannot be matched
-* in the right (or if the right side has extra fields).
-*
-* See elemConnect for details on how the root connections are issued.
-*
-*/
+  * BiConnect.connect executes a bidirectional connection element-wise.
+  *
+  * Note that the arguments are left and right (not source and sink) so the
+  * intent is for the operation to be commutative.
+  *
+  * The connect operation will recurse down the left Data (with the right Data).
+  * An exception will be thrown if a movement through the left cannot be matched
+  * in the right (or if the right side has extra fields).
+  *
+  * See elemConnect for details on how the root connections are issued.
+  */
 
 private[chisel3] object BiConnect {
   // These are all the possible exceptions that can be thrown.
@@ -53,26 +52,32 @@ private[chisel3] object BiConnect {
     BiConnectException(": DontCare cannot be a connection sink (LHS)")
 
   /** This function is what recursively tries to connect a left and right together
-  *
-  * There is some cleverness in the use of internal try-catch to catch exceptions
-  * during the recursive decent and then rethrow them with extra information added.
-  * This gives the user a 'path' to where in the connections things went wrong.
-  */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: RawModule): Unit = {
+    *
+    * There is some cleverness in the use of internal try-catch to catch exceptions
+    * during the recursive decent and then rethrow them with extra information added.
+    * This gives the user a 'path' to where in the connections things went wrong.
+    */
+  def connect(
+    sourceInfo:            SourceInfo,
+    connectCompileOptions: CompileOptions,
+    left:                  Data,
+    right:                 Data,
+    context_mod:           RawModule
+  ): Unit = {
     (left, right) match {
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
         try {
           markAnalogConnected(sourceInfo, left_a, context_mod)
           markAnalogConnected(sourceInfo, right_a, context_mod)
-        } catch {  // convert attach exceptions to BiConnectExceptions
+        } catch { // convert attach exceptions to BiConnectExceptions
           case attach.AttachException(message) => throw BiConnectException(message)
         }
         attach.impl(Seq(left_a, right_a), context_mod)(sourceInfo)
       case (left_a: Analog, DontCare) =>
         try {
           markAnalogConnected(sourceInfo, left_a, context_mod)
-        } catch {  // convert attach exceptions to BiConnectExceptions
+        } catch { // convert attach exceptions to BiConnectExceptions
           case attach.AttachException(message) => throw BiConnectException(message)
         }
         pushCommand(DefInvalid(sourceInfo, left_a.lref))
@@ -82,7 +87,7 @@ private[chisel3] object BiConnect {
         // TODO(twigg): Verify the element-level classes are connectable
       }
       // Handle Vec case
-      case (left_v: Vec[Data@unchecked], right_v: Vec[Data@unchecked]) => {
+      case (left_v: Vec[Data @unchecked], right_v: Vec[Data @unchecked]) => {
         if (left_v.length != right_v.length) {
           throw MismatchedVecException
         }
@@ -96,7 +101,7 @@ private[chisel3] object BiConnect {
         }
       }
       // Handle Vec connected to DontCare
-      case (left_v: Vec[Data@unchecked], DontCare) => {
+      case (left_v: Vec[Data @unchecked], DontCare) => {
         for (idx <- 0 until left_v.length) {
           try {
             implicit val compileOptions = connectCompileOptions
@@ -107,7 +112,7 @@ private[chisel3] object BiConnect {
         }
       }
       // Handle DontCare connected to Vec
-      case (DontCare, right_v: Vec[Data@unchecked]) => {
+      case (DontCare, right_v: Vec[Data @unchecked]) => {
         for (idx <- 0 until right_v.length) {
           try {
             implicit val compileOptions = connectCompileOptions
@@ -135,7 +140,7 @@ private[chisel3] object BiConnect {
               case _ => true
             }
           }
-          def canBeSink(data: Data): Boolean = traceFlow(true, data)
+          def canBeSink(data:   Data): Boolean = traceFlow(true, data)
           def canBeSource(data: Data): Boolean = traceFlow(false, data)
           // chisel3 <> is commutative but FIRRTL <- is not
           val flipConnection = !canBeSink(left_r) || !canBeSource(right_r)
@@ -181,21 +186,23 @@ private[chisel3] object BiConnect {
   }
 
   // Do connection of two Records
-  def recordConnect(sourceInfo: SourceInfo,
-                    connectCompileOptions: CompileOptions,
-                    left_r: Record,
-                    right_r: Record,
-                    context_mod: RawModule): Unit = {
+  def recordConnect(
+    sourceInfo:            SourceInfo,
+    connectCompileOptions: CompileOptions,
+    left_r:                Record,
+    right_r:               Record,
+    context_mod:           RawModule
+  ): Unit = {
     // Verify right has no extra fields that left doesn't have
-    for((field, right_sub) <- right_r.elements) {
-      if(!left_r.elements.isDefinedAt(field)) {
+    for ((field, right_sub) <- right_r.elements) {
+      if (!left_r.elements.isDefinedAt(field)) {
         if (connectCompileOptions.connectFieldsMustMatch) {
           throw MissingLeftFieldException(field)
         }
       }
     }
     // For each field in left, descend with right
-    for((field, left_sub) <- left_r.elements) {
+    for ((field, left_sub) <- left_r.elements) {
       try {
         right_r.elements.get(field) match {
           case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
@@ -210,7 +217,6 @@ private[chisel3] object BiConnect {
       }
     }
   }
-
 
   // These functions (finally) issue the connection operation
   // Issue with right as sink, left as source
@@ -238,13 +244,19 @@ private[chisel3] object BiConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, _left: Element, _right: Element, context_mod: RawModule): Unit = {
-    import BindingDirection.{Internal, Input, Output} // Using extensively so import these
+  def elemConnect(
+    implicit sourceInfo:   SourceInfo,
+    connectCompileOptions: CompileOptions,
+    _left:                 Element,
+    _right:                Element,
+    context_mod:           RawModule
+  ): Unit = {
+    import BindingDirection.{Input, Internal, Output} // Using extensively so import these
     val left = reify(_left)
     val right = reify(_right)
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously
-    val left_mod: BaseModule  = left.topBinding.location.getOrElse(context_mod)
+    val left_mod:  BaseModule = left.topBinding.location.getOrElse(context_mod)
     val right_mod: BaseModule = right.topBinding.location.getOrElse(context_mod)
 
     val left_parent = Builder.retrieveParent(left_mod, context_mod).getOrElse(None)
@@ -254,54 +266,54 @@ private[chisel3] object BiConnect {
     val right_direction = BindingDirection.from(right.topBinding, right.direction)
 
     // CASE: Context is same module as left node and right node is in a child module
-    if((left_mod == context_mod) && (right_parent == context_mod)) {
+    if ((left_mod == context_mod) && (right_parent == context_mod)) {
       // Thus, right node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CHILD MOD
-        case (Input,        Input)  => issueConnectL2R(left, right)
-        case (Internal,     Input)  => issueConnectL2R(left, right)
+        case (Input, Input)    => issueConnectL2R(left, right)
+        case (Internal, Input) => issueConnectL2R(left, right)
 
-        case (Output,       Output) => issueConnectR2L(left, right)
-        case (Internal,     Output) => issueConnectR2L(left, right)
+        case (Output, Output)   => issueConnectR2L(left, right)
+        case (Internal, Output) => issueConnectR2L(left, right)
 
-        case (Input,        Output) => throw BothDriversException
-        case (Output,       Input)  => throw NeitherDriverException
-        case (_,            Internal) => throw UnknownRelationException
+        case (Input, Output) => throw BothDriversException
+        case (Output, Input) => throw NeitherDriverException
+        case (_, Internal)   => throw UnknownRelationException
       }
     }
 
     // CASE: Context is same module as right node and left node is in child module
-    else if((right_mod == context_mod) && (left_parent == context_mod)) {
+    else if ((right_mod == context_mod) && (left_parent == context_mod)) {
       // Thus, left node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CURRENT MOD
-        case (Input,        Input)  => issueConnectR2L(left, right)
-        case (Input,        Internal)         => issueConnectR2L(left, right)
+        case (Input, Input)    => issueConnectR2L(left, right)
+        case (Input, Internal) => issueConnectR2L(left, right)
 
-        case (Output,       Output) => issueConnectL2R(left, right)
-        case (Output,       Internal)         => issueConnectL2R(left, right)
+        case (Output, Output)   => issueConnectL2R(left, right)
+        case (Output, Internal) => issueConnectL2R(left, right)
 
-        case (Input,        Output) => throw NeitherDriverException
-        case (Output,       Input)  => throw BothDriversException
-        case (Internal,     _)      => throw UnknownRelationException
+        case (Input, Output) => throw NeitherDriverException
+        case (Output, Input) => throw BothDriversException
+        case (Internal, _)   => throw UnknownRelationException
       }
     }
 
     // CASE: Context is same module that both left node and right node are in
-    else if( (context_mod == left_mod) && (context_mod == right_mod) ) {
+    else if ((context_mod == left_mod) && (context_mod == right_mod)) {
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CURRENT MOD
-        case (Input,        Output) => issueConnectL2R(left, right)
-        case (Input,        Internal) => issueConnectL2R(left, right)
-        case (Internal,     Output) => issueConnectL2R(left, right)
+        case (Input, Output)    => issueConnectL2R(left, right)
+        case (Input, Internal)  => issueConnectL2R(left, right)
+        case (Internal, Output) => issueConnectL2R(left, right)
 
-        case (Output,       Input)  => issueConnectR2L(left, right)
-        case (Output,       Internal) => issueConnectR2L(left, right)
-        case (Internal,     Input)  => issueConnectR2L(left, right)
+        case (Output, Input)    => issueConnectR2L(left, right)
+        case (Output, Internal) => issueConnectR2L(left, right)
+        case (Internal, Input)  => issueConnectR2L(left, right)
 
-        case (Input,        Input)  => throw BothDriversException
-        case (Output,       Output) => throw BothDriversException
-        case (Internal,     Internal) => {
+        case (Input, Input)   => throw BothDriversException
+        case (Output, Output) => throw BothDriversException
+        case (Internal, Internal) => {
           if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownDriverException
           } else {
@@ -314,22 +326,22 @@ private[chisel3] object BiConnect {
     // CASE: Context is the parent module of both the module containing left node
     //                                        and the module containing right node
     //   Note: This includes case when left and right in same module but in parent
-    else if((left_parent == context_mod) && (right_parent == context_mod)) {
+    else if ((left_parent == context_mod) && (right_parent == context_mod)) {
       // Thus both nodes must be ports and have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CHILD MOD
-        case (Input,        Output) => issueConnectR2L(left, right)
-        case (Output,       Input)  => issueConnectL2R(left, right)
+        case (Input, Output) => issueConnectR2L(left, right)
+        case (Output, Input) => issueConnectL2R(left, right)
 
-        case (Input,        Input)  => throw NeitherDriverException
-        case (Output,       Output) => throw BothDriversException
-        case (_, Internal)          =>
+        case (Input, Input)   => throw NeitherDriverException
+        case (Output, Output) => throw BothDriversException
+        case (_, Internal) =>
           if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownRelationException
           } else {
             issueConnectR2L(left, right)
           }
-        case (Internal, _)          =>
+        case (Internal, _) =>
           if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownRelationException
           } else {
@@ -347,7 +359,7 @@ private[chisel3] object BiConnect {
   def markAnalogConnected(implicit sourceInfo: SourceInfo, analog: Analog, contextModule: RawModule): Unit = {
     analog.biConnectLocs.get(contextModule) match {
       case Some(sl) => throw AttachAlreadyBulkConnectedException(sl)
-      case None => // Do nothing
+      case None     => // Do nothing
     }
     // Mark bulk connected
     analog.biConnectLocs(contextModule) = sourceInfo

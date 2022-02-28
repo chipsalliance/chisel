@@ -26,21 +26,21 @@ class DetectTwoOnes extends Module {
 
   io.out := (state === State.sTwo1s)
 
-  switch (state) {
-    is (State.sNone) {
-      when (io.in) {
+  switch(state) {
+    is(State.sNone) {
+      when(io.in) {
         state := State.sOne1
       }
     }
-    is (State.sOne1) {
-      when (io.in) {
+    is(State.sOne1) {
+      when(io.in) {
         state := State.sTwo1s
-      } .otherwise {
+      }.otherwise {
         state := State.sNone
       }
     }
-    is (State.sTwo1s) {
-      when (!io.in) {
+    is(State.sTwo1s) {
+      when(!io.in) {
         state := State.sNone
       }
     }
@@ -53,7 +53,8 @@ class DetectTwoOnesTester extends CookbookTester(10) {
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
-  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected: Vec[Bool] =
+    VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
 
   dut.io.in := inputs(cycle)
   assert(dut.io.out === expected(cycle))

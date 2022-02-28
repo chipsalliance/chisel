@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{DataMirror, requireIsChiselType}
+import chisel3.experimental.{requireIsChiselType, DataMirror}
 import scala.collection.immutable.ListMap
 
 // An example of how Record might be extended
@@ -11,9 +11,10 @@ import scala.collection.immutable.ListMap
 //   it is a possible implementation of a programmatic "Bundle"
 //   (and can by connected to MyBundle below)
 final class CustomBundle(elts: (String, Data)*) extends Record {
-  val elements = ListMap(elts map { case (field, elt) =>
-    requireIsChiselType(elt)
-    field -> elt
+  val elements = ListMap(elts.map {
+    case (field, elt) =>
+      requireIsChiselType(elt)
+      field -> elt
   }: _*)
   def apply(elt: String): Data = elements(elt)
   override def cloneType: this.type = {
@@ -21,4 +22,3 @@ final class CustomBundle(elts: (String, Data)*) extends Record {
     (new CustomBundle(cloned: _*)).asInstanceOf[this.type]
   }
 }
-

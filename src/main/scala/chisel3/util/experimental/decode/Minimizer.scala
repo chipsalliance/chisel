@@ -3,6 +3,7 @@
 package chisel3.util.experimental.decode
 
 abstract class Minimizer {
+
   /** Minimize a multi-input multi-output logic function given by the truth table `table`, with function output values
     * on unspecified inputs treated as `default`, and return a minimized PLA-like representation of the function.
     *

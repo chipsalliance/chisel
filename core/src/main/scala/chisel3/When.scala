@@ -9,6 +9,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 
 object when {
+
   /** Create a `when` condition block, where whether a block of logic is
     * executed or not depends on the conditional.
     *
@@ -27,7 +28,13 @@ object when {
     * }}}
     */
 
-  def apply(cond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
+  def apply(
+    cond:  => Bool
+  )(block: => Any
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): WhenContext = {
     new WhenContext(sourceInfo, Some(() => cond), block, 0, Nil)
   }
 
@@ -44,7 +51,7 @@ object when {
     *   }
     * }
     * }}}
-    *  */
+    */
   def cond: Bool = {
     implicit val compileOptions = ExplicitCompileOptions.Strict
     implicit val sourceInfo = UnlocatableSourceInfo
@@ -66,13 +73,12 @@ object when {
   *  added by preprocessing the command queue.
   */
 final class WhenContext private[chisel3] (
-  sourceInfo: SourceInfo,
-  cond: Option[() => Bool],
-  block: => Any,
+  sourceInfo:  SourceInfo,
+  cond:        Option[() => Bool],
+  block:       => Any,
   firrtlDepth: Int,
   // For capturing conditions from prior whens or elsewhens
-  altConds: List[() => Bool]
-) {
+  altConds: List[() => Bool]) {
 
   @deprecated("Use when(...) { ... }, this should never have been public", "Chisel 3.4.2")
   def this(sourceInfo: SourceInfo, cond: Option[() => Bool], block: => Any, firrtlDepth: Int = 0) =
@@ -87,8 +93,9 @@ final class WhenContext private[chisel3] (
     val alt = altConds.foldRight(true.B) {
       case (c, acc) => acc & !c()
     }
-    cond.map(alt && _())
-        .getOrElse(alt)
+    cond
+      .map(alt && _())
+      .getOrElse(alt)
   }
 
   /** This block of logic gets executed if above conditions have been
@@ -97,7 +104,13 @@ final class WhenContext private[chisel3] (
     * declaration and assignment of the Bool node of the predicate in
     * the correct place.
     */
-  def elsewhen (elseCond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
+  def elsewhen(
+    elseCond: => Bool
+  )(block:    => Any
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): WhenContext = {
     new WhenContext(sourceInfo, Some(() => elseCond), block, firrtlDepth + 1, cond ++: altConds)
   }
 
@@ -113,26 +126,30 @@ final class WhenContext private[chisel3] (
 
   def active: Boolean = scopeOpen
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  @deprecated(
+    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+    "Chisel 3.5"
+  )
   def active(dummy: Int*): Boolean = active
 
   /*
    *
    */
   if (firrtlDepth > 0) { pushCommand(AltBegin(sourceInfo)) }
-  cond.foreach( c => pushCommand(WhenBegin(sourceInfo, c().ref)) )
+  cond.foreach(c => pushCommand(WhenBegin(sourceInfo, c().ref)))
   Builder.pushWhen(this)
   try {
     scopeOpen = true
     block
   } catch {
     case _: scala.runtime.NonLocalReturnControl[_] =>
-      throwException("Cannot exit from a when() block with a \"return\"!" +
-        " Perhaps you meant to use Mux or a Wire as a return value?"
+      throwException(
+        "Cannot exit from a when() block with a \"return\"!" +
+          " Perhaps you meant to use Mux or a Wire as a return value?"
       )
   }
   scopeOpen = false
   Builder.popWhen()
-  cond.foreach(_ => pushCommand(WhenEnd(sourceInfo,firrtlDepth)))
-  if (cond.isEmpty) { pushCommand(OtherwiseEnd(sourceInfo,firrtlDepth)) }
+  cond.foreach(_ => pushCommand(WhenEnd(sourceInfo, firrtlDepth)))
+  if (cond.isEmpty) { pushCommand(OtherwiseEnd(sourceInfo, firrtlDepth)) }
 }

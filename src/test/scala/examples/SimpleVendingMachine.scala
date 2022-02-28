@@ -9,8 +9,8 @@ import chisel3.util._
 
 class SimpleVendingMachineIO extends Bundle {
   val nickel = Input(Bool())
-  val dime   = Input(Bool())
-  val dispense  = Output(Bool())
+  val dime = Input(Bool())
+  val dispense = Output(Bool())
 }
 
 // Superclass for vending machines with very simple IO
@@ -24,24 +24,24 @@ class FSMVendingMachine extends SimpleVendingMachine {
   val sIdle :: s5 :: s10 :: s15 :: sOk :: Nil = Enum(5)
   val state = RegInit(sIdle)
 
-  switch (state) {
-    is (sIdle) {
-      when (io.nickel) { state := s5 }
-      when (io.dime)   { state := s10 }
+  switch(state) {
+    is(sIdle) {
+      when(io.nickel) { state := s5 }
+      when(io.dime) { state := s10 }
     }
-    is (s5) {
-      when (io.nickel) { state := s10 }
-      when (io.dime)   { state := s15 }
+    is(s5) {
+      when(io.nickel) { state := s10 }
+      when(io.dime) { state := s15 }
     }
-    is (s10) {
-      when (io.nickel) { state := s15 }
-      when (io.dime)   { state := sOk }
+    is(s10) {
+      when(io.nickel) { state := s15 }
+      when(io.dime) { state := sOk }
     }
-    is (s15) {
-      when (io.nickel) { state := sOk }
-      when (io.dime)   { state := sOk }
+    is(s15) {
+      when(io.nickel) { state := sOk }
+      when(io.dime) { state := sOk }
     }
-    is (sOk) {
+    is(sOk) {
       state := sIdle
     }
   }
@@ -73,11 +73,11 @@ class SimpleVendingMachineTester(mod: => SimpleVendingMachine) extends BasicTest
   val dut = Module(mod)
 
   val (cycle, done) = Counter(true.B, 10)
-  when (done) { stop(); stop() } // Stop twice because of Verilator
+  when(done) { stop(); stop() } // Stop twice because of Verilator
 
   val nickelInputs = VecInit(true.B, true.B, true.B, true.B, true.B, false.B, false.B, false.B, true.B, false.B)
-  val dimeInputs   = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
-  val expected     = VecInit(false.B, false.B, false.B, false.B, true.B , false.B, false.B, true.B, false.B, false.B)
+  val dimeInputs = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected = VecInit(false.B, false.B, false.B, false.B, true.B, false.B, false.B, true.B, false.B, false.B)
 
   dut.io.nickel := nickelInputs(cycle)
   dut.io.dime := dimeInputs(cycle)
@@ -89,7 +89,10 @@ class SimpleVendingMachineSpec extends ChiselFlatSpec {
     assertTesterPasses { new SimpleVendingMachineTester(new FSMVendingMachine) }
   }
   "An Verilog implementation of a vending machine" should "work" in {
-    assertTesterPasses(new SimpleVendingMachineTester(new VerilogVendingMachineWrapper),
-                       List("/chisel3/VerilogVendingMachine.v"), annotations = TesterDriver.verilatorOnly)
+    assertTesterPasses(
+      new SimpleVendingMachineTester(new VerilogVendingMachineWrapper),
+      List("/chisel3/VerilogVendingMachine.v"),
+      annotations = TesterDriver.verilatorOnly
+    )
   }
 }

@@ -4,9 +4,9 @@ package chisel3.experimental.hierarchy
 
 /** A User-extendable trait to mark metadata-containers, e.g. parameter case classes, as valid to return unchanged
   * from an instance.
-  * 
+  *
   * This should only be true of the metadata returned is identical for ALL instances!
-  * 
+  *
   * @example For instances of the same proto, metadata or other construction parameters
   *   may be useful to access outside of the instance construction. For parameters that are
   *   the same for all instances, we should mark it as IsLookupable

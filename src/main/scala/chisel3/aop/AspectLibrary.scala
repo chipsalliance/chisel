@@ -8,7 +8,7 @@ import firrtl.options.{OptionsException, RegisteredLibrary, ShellOption}
 /** Enables adding aspects to a design from the commandline, e.g.
   *  sbt> runMain chisel3.stage.ChiselMain --module <module> --with-aspect <aspect>
   */
-final class AspectLibrary() extends RegisteredLibrary  {
+final class AspectLibrary() extends RegisteredLibrary {
   val name = "AspectLibrary"
 
   import scala.reflect.runtime.universe._
@@ -34,16 +34,20 @@ final class AspectLibrary() extends RegisteredLibrary  {
         throw new OptionsException(s"Unable to locate aspect '$aspectName'! (Did you misspell it?)", e)
       case e: InstantiationException =>
         throw new OptionsException(
-          s"Unable to create instance of aspect '$aspectName'! (Does this class take parameters?)", e)
+          s"Unable to create instance of aspect '$aspectName'! (Does this class take parameters?)",
+          e
+        )
     }
   }
 
-  val options = Seq(new ShellOption[String](
-    longOption = "with-aspect",
-    toAnnotationSeq = {
-      case aspectName: String => Seq(apply(aspectName))
-    },
-    helpText = "The name/class of an aspect to compile with (must be a class/object without arguments!)",
-    helpValueName = Some("<package>.<aspect>")
-  ))
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "with-aspect",
+      toAnnotationSeq = {
+        case aspectName: String => Seq(apply(aspectName))
+      },
+      helpText = "The name/class of an aspect to compile with (must be a class/object without arguments!)",
+      helpValueName = Some("<package>.<aspect>")
+    )
+  )
 }

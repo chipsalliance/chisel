@@ -63,7 +63,7 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
   }
 
   "SuggestName collisions on ports" should "be illegal" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new Module {
         val foo = IO(UInt(8.W)).suggestName("apple")
         val bar = IO(UInt(8.W)).suggestName("apple")

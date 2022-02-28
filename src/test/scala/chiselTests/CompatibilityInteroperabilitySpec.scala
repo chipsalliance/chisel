@@ -114,7 +114,6 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     })
   }
 
-
   "Bundles defined in Chisel._" should "work in chisel3._ Modules" in {
     import chisel3._
     import chisel3.testers.BasicTester
@@ -153,9 +152,8 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     })
   }
 
-
   "Similar Bundles defined in the chisel3._ and Chisel._" should
-      "successfully bulk connect in chisel3._" in {
+    "successfully bulk connect in chisel3._" in {
     import chisel3._
     import chisel3.testers.BasicTester
     import Chisel3Components._
@@ -227,12 +225,11 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
           val cond = Bool(INPUT)
           val out = UInt(OUTPUT, width = 32)
         }
-        val children = Seq(Module(new PassthroughModule),
-                           Module(new PassthroughMultiIOModule),
-                           Module(new PassthroughRawModule))
+        val children =
+          Seq(Module(new PassthroughModule), Module(new PassthroughMultiIOModule), Module(new PassthroughRawModule))
         io.out := children.map(_.io.out).reduce(_ + _)
         children.foreach { child =>
-          when (io.cond) {
+          when(io.cond) {
             child.io.in := io.in
           }
         }
@@ -355,4 +352,3 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Top(false))
   }
 }
-

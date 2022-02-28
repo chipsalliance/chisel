@@ -35,10 +35,9 @@ class AbstractResetDontCareModule extends RawModule {
   bulkAggPort <> DontCare
 }
 
-
 class ResetSpec extends ChiselFlatSpec with Utils {
 
-  behavior of "Reset"
+  behavior.of("Reset")
 
   it should "be able to be connected to DontCare" in {
     ChiselStage.elaborate(new AbstractResetDontCareModule)
@@ -75,7 +74,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
       assert(inst.rst.isInstanceOf[chisel3.ResetType])
       io.out := inst.out
     })
-    sync should include ("always @(posedge clk)")
+    sync should include("always @(posedge clk)")
 
     val async = compile(new Module {
       val io = IO(new Bundle {
@@ -87,27 +86,27 @@ class ResetSpec extends ChiselFlatSpec with Utils {
       assert(inst.rst.isInstanceOf[chisel3.ResetType])
       io.out := inst.out
     })
-    async should include ("always @(posedge clk or posedge rst)")
+    async should include("always @(posedge clk or posedge rst)")
   }
 
-  behavior of "Users"
+  behavior.of("Users")
 
   they should "be able to force implicit reset to be synchronous" in {
     val fir = ChiselStage.emitChirrtl(new Module with RequireSyncReset {
-      reset shouldBe a [Bool]
+      reset shouldBe a[Bool]
     })
-    fir should include ("input reset : UInt<1>")
+    fir should include("input reset : UInt<1>")
   }
 
   they should "be able to force implicit reset to be asynchronous" in {
     val fir = ChiselStage.emitChirrtl(new Module with RequireAsyncReset {
-      reset shouldBe an [AsyncReset]
+      reset shouldBe an[AsyncReset]
     })
-    fir should include ("input reset : AsyncReset")
+    fir should include("input reset : AsyncReset")
   }
 
   "Chisel" should "error if sync and async modules are nested" in {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new Module with RequireAsyncReset {
         val mod = Module(new Module with RequireSyncReset)
       })

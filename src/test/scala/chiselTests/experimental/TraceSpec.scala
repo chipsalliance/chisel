@@ -88,13 +88,17 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
           .flatMap(finalTarget(annos))
           .toSet
           .map { target: CompleteTarget =>
-            s"""public_flat_rd -module "${target.tokens.collectFirst { case OfModule(m) => m }.get}" -var "${target.tokens.collectFirst { case Ref(r) => r }.get}""""
+            s"""public_flat_rd -module "${target.tokens.collectFirst {
+              case OfModule(m) => m
+            }.get}" -var "${target.tokens.collectFirst { case Ref(r) => r }.get}""""
           }
           .mkString("\n") + "\n"
 
     def verilatorTemplate(data: Seq[Data], annos: AnnotationSeq): String = {
       val vpiNames = data.flatMap(finalTarget(annos)).map { ct =>
-        s"""TOP.${ct.circuit}.${ct.path.map { case (Instance(i), _) => i }.mkString(".")}.${ct.tokens.collectFirst { case Ref(r) => r }.get}"""
+        s"""TOP.${ct.circuit}.${ct.path.map { case (Instance(i), _) => i }.mkString(".")}.${ct.tokens.collectFirst {
+          case Ref(r) => r
+        }.get}"""
       }
       s"""
          |#include "V${topName}.h"
@@ -155,20 +159,34 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     val verilog = testDir / s"$topName.v"
     val cpp = os.temp(dir = testDir, suffix = ".cpp", contents = verilatorTemplate(Seq(dut.m0.o.a.b), annos))
     val exe = testDir / "obj_dir" / s"V$topName"
-    os.proc("verilator", "-Wall", "--cc", "--exe", "--build", "--vpi", s"$cpp", s"$verilog", s"$config").call(stdout = os.Inherit, stderr = os.Inherit, cwd = testDir)
-    assert(os.proc(s"$exe").call(stdout = os.Inherit, stderr = os.Inherit).exitCode == 0, "verilator should exit peacefully")
+    os.proc("verilator", "-Wall", "--cc", "--exe", "--build", "--vpi", s"$cpp", s"$verilog", s"$config")
+      .call(stdout = os.Inherit, stderr = os.Inherit, cwd = testDir)
+    assert(
+      os.proc(s"$exe").call(stdout = os.Inherit, stderr = os.Inherit).exitCode == 0,
+      "verilator should exit peacefully"
+    )
   }
 
   "TraceFromCollideBundle" should "work" in {
     class CollideModule extends Module {
-      val a = IO(Input(Vec(2, new Bundle {
-        val b = Flipped(Bool())
-        val c = Vec(2, new Bundle {
-          val d = UInt(2.W)
-          val e = Flipped(UInt(3.W))
-        })
-        val c_1_e = UInt(4.W)
-      })))
+      val a = IO(
+        Input(
+          Vec(
+            2,
+            new Bundle {
+              val b = Flipped(Bool())
+              val c = Vec(
+                2,
+                new Bundle {
+                  val d = UInt(2.W)
+                  val e = Flipped(UInt(3.W))
+                }
+              )
+              val c_1_e = UInt(4.W)
+            }
+          )
+        )
+      )
       val a_0_c = IO(Output(UInt(5.W)))
       val a__0 = IO(Output(UInt(5.W)))
       a_0_c := DontCare
@@ -298,12 +316,14 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     val (_, annos) = compile("NestedModule", () => new M)
     val dut = annos.collectFirst { case DesignAnnotation(dut) => dut }.get.asInstanceOf[M]
     val allTargets = finalTargetMap(annos)
-    allTargets(dut.a.toAbsoluteTarget) should be (Seq(refTarget("M", "a")))
-    allTargets(dut.b.toAbsoluteTarget) should be (Seq(
-      refTarget("M", "b_0"),
-      refTarget("M", "b_1"),
-    ))
-    allTargets(dut.b(0).toAbsoluteTarget) should be (Seq(refTarget("M", "b_0")))
-    allTargets(dut.b(1).toAbsoluteTarget) should be (Seq(refTarget("M", "b_1")))
+    allTargets(dut.a.toAbsoluteTarget) should be(Seq(refTarget("M", "a")))
+    allTargets(dut.b.toAbsoluteTarget) should be(
+      Seq(
+        refTarget("M", "b_0"),
+        refTarget("M", "b_1")
+      )
+    )
+    allTargets(dut.b(0).toAbsoluteTarget) should be(Seq(refTarget("M", "b_0")))
+    allTargets(dut.b(1).toAbsoluteTarget) should be(Seq(refTarget("M", "b_1")))
   }
 }

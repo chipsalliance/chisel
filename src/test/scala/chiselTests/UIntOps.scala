@@ -70,8 +70,8 @@ class UIntOpsTester(a: Long, b: Long) extends BasicTester {
   assert(dut.io.addampout === (a + b).U(33.W))
   assert(dut.io.subampout === (a - b).S(33.W).asUInt)
   assert(dut.io.timesout === (a * b).U(32.W))
-  assert(dut.io.divout === (a / (b max 1)).U(32.W))
-  assert(dut.io.modout === (a % (b max 1)).U(32.W))
+  assert(dut.io.divout === (a / (b.max(1))).U(32.W))
+  assert(dut.io.modout === (a % (b.max(1))).U(32.W))
   assert(dut.io.lshiftout === (a << (b % 16)).U(32.W))
   assert(dut.io.rshiftout === (a >> b).U(32.W))
   assert(
@@ -117,7 +117,6 @@ class BasicRotate extends BasicTester {
   val shiftAmount = random.LFSR(4)
   val ctr = RegInit(0.U(4.W))
 
-  
   val rotL = 1.U(3.W).rotateLeft(shiftAmount)
   val rotR = 1.U(3.W).rotateRight(shiftAmount)
 
@@ -140,7 +139,7 @@ class BasicRotate extends BasicTester {
 
   ctr := ctr + 1.U
 
-  when (ctr === 15.U){
+  when(ctr === 15.U) {
     stop()
   }
 }
@@ -197,7 +196,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Bools cannot be created from >1 bit UInts") {
-    a [Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new BadBoolConversion) }
+    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new BadBoolConversion) }
   }
 
   property("UIntOps should elaborate") {
@@ -209,7 +208,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Negative shift amounts are invalid") {
-    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new NegativeShift(UInt()))
     }
   }

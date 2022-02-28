@@ -70,7 +70,7 @@ class NamedModule extends NamedModuleTester {
   def FunctionMockupInner(): UInt = {
     val my2A = 1.U
     val my2B = expectName(my2A +& 2.U, "test_myNested_my2B")
-    val my2C = my2B +& 3.U  // should get named at enclosing scope
+    val my2C = my2B +& 3.U // should get named at enclosing scope
     my2C
   }
 
@@ -85,14 +85,14 @@ class NamedModule extends NamedModuleTester {
     for ((d, i) <- myD.zipWithIndex)
       expectName(d, s"test_myD_$i")
 
-    myC +& 4.U  // named at enclosing scope
+    myC +& 4.U // named at enclosing scope
   }
 
   // chiselName "implicitly" applied
   def ImplicitlyNamed(): UInt = {
     val implicitA = expectName(1.U + 2.U, "test3_implicitA")
     val implicitB = expectName(implicitA + 3.U, "test3_implicitB")
-    implicitB + 2.U  // named at enclosing scope
+    implicitB + 2.U // named at enclosing scope
   }
 
   // Ensure this applies a partial name if there is no return value
@@ -115,8 +115,9 @@ class NamedModule extends NamedModuleTester {
   }
 
   // Test that contents of anonymous functions are named
-  Seq((0, "anonInner"), (1, "anonInner_1"), (2, "anonInner_2")).foreach { case (in, name) =>
-    val anonInner = expectName(test3 + in.U, name)
+  Seq((0, "anonInner"), (1, "anonInner_1"), (2, "anonInner_2")).foreach {
+    case (in, name) =>
+      val anonInner = expectName(test3 + in.U, name)
   }
 
   NoReturnFunction()
@@ -126,8 +127,8 @@ class NamedModule extends NamedModuleTester {
 class NameCollisionModule extends NamedModuleTester {
   @chiselName
   def repeatedCalls(id: Int): UInt = {
-     val test = expectName(1.U + 3.U, s"test_$id")  // should disambiguate by invocation order
-     test + 2.U
+    val test = expectName(1.U + 3.U, s"test_$id") // should disambiguate by invocation order
+    test + 2.U
   }
 
   // chiselName applied by default to this
@@ -167,7 +168,7 @@ object NonNamedHelper {
     myVal
   }
 
-  def NonNamedFunction() : UInt = {
+  def NonNamedFunction(): UInt = {
     val myVal = NamedFunction()
     myVal
   }
@@ -230,7 +231,6 @@ class NoChiselNamePrefixTester extends NamedModuleTester {
   expectName(fizz.c, "fizz_c")
 }
 
-
 /** A simple test that checks the recursive function val naming annotation both compiles and
   * generates the expected names.
   */
@@ -265,7 +265,7 @@ class NamingAnnotationSpec extends ChiselPropSpec {
   }
 
   property("NonBuilderFunction should run outside a Builder context") {
-    NonNamedHelper.NonBuilderFunction() should be (2)
+    NonNamedHelper.NonBuilderFunction() should be(2)
   }
 
   property("NoChiselNamePrefix should prevent prefixing when using @chiselName") {

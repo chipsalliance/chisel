@@ -25,10 +25,12 @@ import java.io.{File, FileWriter}
 class Emitter extends Phase {
 
   override def prerequisites =
-    Seq( Dependency[Elaborate],
-         Dependency[AddImplicitOutputFile],
-         Dependency[AddImplicitOutputAnnotationFile],
-         Dependency[MaybeAspectPhase] )
+    Seq(
+      Dependency[Elaborate],
+      Dependency[AddImplicitOutputFile],
+      Dependency[AddImplicitOutputAnnotationFile],
+      Dependency[MaybeAspectPhase]
+    )
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq(Dependency[Convert])
   override def invalidates(a: Phase) = false

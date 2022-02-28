@@ -38,7 +38,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
   }
 
   it should "error if the expected width is wrong" in {
-    a [TestFailedException] shouldBe thrownBy {
+    a[TestFailedException] shouldBe thrownBy {
       assertInferredWidth(8) {
         val w = Wire(UInt())
         w := 2.U(2.W)

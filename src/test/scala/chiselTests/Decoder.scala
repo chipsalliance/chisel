@@ -10,10 +10,10 @@ import chisel3.util._
 
 class Decoder(bitpats: List[String]) extends Module {
   val io = IO(new Bundle {
-    val inst  = Input(UInt(32.W))
+    val inst = Input(UInt(32.W))
     val matched = Output(Bool())
   })
-  io.matched := VecInit(bitpats.map(BitPat(_) === io.inst)).reduce(_||_)
+  io.matched := VecInit(bitpats.map(BitPat(_) === io.inst)).reduce(_ || _)
 }
 
 class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
@@ -33,10 +33,10 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
 class DecoderSpec extends ChiselPropSpec {
 
   // Use a single Int to make both a specific instruction and a BitPat that will match it
-  val bitpatPair = for(seed <- Arbitrary.arbitrary[Int]) yield {
+  val bitpatPair = for (seed <- Arbitrary.arbitrary[Int]) yield {
     val rnd = new scala.util.Random(seed)
     val bs = seed.toBinaryString
-    val bp = bs.map(if(rnd.nextBoolean) _ else "?")
+    val bp = bs.map(if (rnd.nextBoolean) _ else "?")
 
     // The following randomly throws in white space and underscores which are legal and ignored.
     val bpp = bp.map { a =>
@@ -49,11 +49,11 @@ class DecoderSpec extends ChiselPropSpec {
 
     ("b" + bs, "b" + bpp)
   }
-  private def nPairs(n: Int) = Gen.containerOfN[List, (String,String)](n,bitpatPair)
+  private def nPairs(n: Int) = Gen.containerOfN[List, (String, String)](n, bitpatPair)
 
   property("BitPat wildcards should be usable in decoding") {
-    forAll(nPairs(4)){ (pairs: List[(String, String)]) =>
-      assertTesterPasses{ new DecoderTester(pairs) }
+    forAll(nPairs(4)) { (pairs: List[(String, String)]) =>
+      assertTesterPasses { new DecoderTester(pairs) }
     }
   }
 }

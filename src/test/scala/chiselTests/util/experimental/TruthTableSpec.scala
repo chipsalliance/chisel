@@ -4,7 +4,7 @@ package chiselTests.util.experimental
 
 import chisel3._
 import chisel3.util.BitPat
-import chisel3.util.experimental.decode.{TruthTable, decoder}
+import chisel3.util.experimental.decode.{decoder, TruthTable}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class TruthTableSpec extends AnyFlatSpec {
@@ -64,15 +64,14 @@ class TruthTableSpec extends AnyFlatSpec {
   "TruthTable" should "be reproducible" in {
     class Foo extends Module {
 
-      val io = IO(new Bundle{
+      val io = IO(new Bundle {
         val in = Input(UInt(4.W))
         val out = Output(UInt(16.W))
       })
 
-
       val table = TruthTable(
-        (0 until 16).map{
-          i => BitPat(i.U(4.W)) -> BitPat((1<<i).U(16.W))
+        (0 until 16).map { i =>
+          BitPat(i.U(4.W)) -> BitPat((1 << i).U(16.W))
         },
         BitPat.dontCare(16)
       )
@@ -80,5 +79,29 @@ class TruthTableSpec extends AnyFlatSpec {
       io.out := decoder.qmc(io.in, table)
     }
     assert(chisel3.stage.ChiselStage.emitChirrtl(new Foo) == chisel3.stage.ChiselStage.emitChirrtl(new Foo))
+  }
+  "TruthTable" should "accept unknown input width" in {
+    val t = TruthTable(
+      Seq(
+        BitPat(0.U) -> BitPat.dontCare(1),
+        BitPat(1.U) -> BitPat.dontCare(1),
+        BitPat(2.U) -> BitPat.dontCare(1),
+        BitPat(3.U) -> BitPat.dontCare(1),
+        BitPat(4.U) -> BitPat.dontCare(1),
+        BitPat(5.U) -> BitPat.dontCare(1),
+        BitPat(6.U) -> BitPat.dontCare(1),
+        BitPat(7.U) -> BitPat.dontCare(1)
+      ),
+      BitPat.N(1)
+    )
+    assert(t.toString contains "000->?")
+    assert(t.toString contains "001->?")
+    assert(t.toString contains "010->?")
+    assert(t.toString contains "011->?")
+    assert(t.toString contains "100->?")
+    assert(t.toString contains "101->?")
+    assert(t.toString contains "110->?")
+    assert(t.toString contains "111->?")
+    assert(t.toString contains "     0")
   }
 }
