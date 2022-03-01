@@ -223,7 +223,11 @@ private[chisel3] object MonoConnect {
       case (sink, source) => throw MismatchedException(sink, source)
     }
 
-  /** Check [[Aggregate]] visibility. */
+  /** Determine if a valid connection can be made between a source [[Aggregate]] and sink
+    * [[Aggregate]] given their parent module and directionality context
+    *
+    * @return whether the source and sink exist in an appropriate context to be connected
+  */
   private[chisel3] def aggregateConnectContextCheck(
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions,
