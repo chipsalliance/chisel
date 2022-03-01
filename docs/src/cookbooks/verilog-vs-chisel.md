@@ -450,8 +450,12 @@ ChiselStage.emitVerilog(new CaseStatementEnumModule1)
 ```verilog
 module CaseStatementEnumModule2 (input clk);
  
-  typedef enum {INIT = 3, IDLE = 'h13, START = 'h17, READY = 'h23} StateValue;
-    StateValue state;
+  typedef enum {
+       INIT = 3,
+       IDLE = 'h13,
+       START = 'h17,
+       READY = 'h23 } StateValue;
+    reg StateValue state;
     
  
     always @(posedge clk) begin
@@ -477,9 +481,7 @@ class CaseStatementEnumModule2 extends Module {
     val READY = Value(0x23.U) 
   }
   import StateValue._
-  val state = RegInit(INIT)
-  val nextState = IO(Output(StateValue()))
-  nextState := state
+  val state = Reg(StateValue())
 
   
   switch (state) {
@@ -571,13 +573,13 @@ ChiselStage.emitVerilog(new MyInterfaceModule)
 
 ```verilog
 module ReadWriteSmem(
-input clock,
-input reset,
-input io_enable,
-input io_write,
-input [9:0] io_addr,
-input [31:0] io_dataIn,
-output [31:0] io_dataOut
+  input clock,
+  input reset,
+  input io_enable,
+  input io_write,
+  input [9:0] io_addr,
+  input [31:0] io_dataIn,
+  output [31:0] io_dataOut
 );
 
 reg [31:0] mem [0:1023];
@@ -585,14 +587,14 @@ reg [9:0] addr_delay;
 
 assign io_dataOut = mem[addr_delay]
 
-always @(posedge clock) begin
-if (io_enable & io_write) begin
-mem[io_addr] <= io_data;
-end
-if (io_enable) begin
-addr_delay <= io_addr;
-end
-end
+  always @(posedge clock) begin
+    if (io_enable & io_write) begin
+      mem[io_addr] <= io_data;
+    end
+    if (io_enable) begin
+      addr_delay <= io_addr;
+    end
+  end
 endmodule
 ```
 </td>
@@ -602,15 +604,14 @@ endmodule
 
 ```scala mdoc:silent
 class ReadWriteSmem extends Module {
-  val width: Int = 32
   val io = IO(new Bundle {
     val enable = Input(Bool())
     val write = Input(Bool())
     val addr = Input(UInt(10.W))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
+    val dataIn = Input(UInt(32.W))
+    val dataOut = Output(UInt(32.W))
   })
-  val mem = SyncReadMem(1024, UInt(width.W))
+  val mem = SyncReadMem(1024, UInt(32.W))
   // Create one write port and one read port
   mem.write(io.addr, io.dataIn)
   io.dataOut := mem.read(io.addr, io.enable)
