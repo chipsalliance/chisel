@@ -200,6 +200,12 @@ object Examples {
     @public val y: Either[Bool, UInt] = Left(Wire(Bool()).suggestName("y"))
   }
   @instantiable
+  class HasTuple2() extends Module {
+    val x = Wire(UInt(3.W))
+    val y = Wire(Bool())
+    @public val xy = (x, y)
+  }
+  @instantiable
   class HasVec() extends Module {
     @public val x = VecInit(1.U, 2.U, 3.U)
   }
@@ -251,5 +257,11 @@ object Examples {
     val i01 = Instance(tpDef0)
     val i10 = Instance(tpDef1)
     val i11 = Instance(tpDef1)
+  }
+
+  @instantiable
+  class HasMems() extends Module {
+    @public val mem = Mem(8, UInt(32.W))
+    @public val syncReadMem = SyncReadMem(8, UInt(32.W))
   }
 }

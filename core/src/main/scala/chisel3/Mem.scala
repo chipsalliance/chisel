@@ -9,7 +9,7 @@ import firrtl.{ir => fir}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{MemTransform, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo.{MemTransform, SourceInfo, SourceInfoTransform, SourceLine, UnlocatableSourceInfo}
 
 object Mem {
 
@@ -57,6 +57,16 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   _parent.foreach(_.addId(this))
 
   private val clockInst: Clock = Builder.forcedClock
+
+  protected def clockWarning(sourceInfo: Option[SourceInfo]): Unit = {
+    // Turn into pretty String if possible, if not, Builder.deprecated will find one via stack trace
+    val infoStr = sourceInfo.collect { case SourceLine(file, line, col) => s"$file:$line:$col" }
+    Builder.deprecated(
+      "The clock used to initialize the memory is different than the one used to initialize the port. " +
+        "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0",
+      infoStr
+    )
+  }
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
@@ -123,10 +133,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     compileOptions:      CompileOptions
   ): T = {
     if (warn && clock != clockInst) {
-      Builder.warning(
-        "The clock used to initialize the memory is different than the one used to initialize the port. " +
-          "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0"
-      )
+      clockWarning(Some(sourceInfo))
     }
     makePort(sourceInfo, idx, dir, clock)
   }
@@ -158,10 +165,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     implicit compileOptions: CompileOptions
   ): Unit = {
     if (warn && clock != clockInst) {
-      Builder.warning(
-        "The clock used to initialize the memory is different than the one used to initialize the port. " +
-          "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0"
-      )
+      clockWarning(None)
     }
     implicit val sourceInfo = UnlocatableSourceInfo
     makePort(UnlocatableSourceInfo, idx, MemPortDirection.WRITE, clock) := data
@@ -220,10 +224,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   ): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
     if (warn && clock != clockInst) {
-      Builder.warning(
-        "The clock used to initialize the memory is different than the one used to initialize the port. " +
-          "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0"
-      )
+      clockWarning(None)
     }
     val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE, clock).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
@@ -245,6 +246,11 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   )(
     implicit compileOptions: CompileOptions
   ): T = {
+    if (Builder.currentModule != _parent) {
+      throwException(
+        s"Cannot create a memory port in a different module (${Builder.currentModule.get.name}) than where the memory is (${_parent.get.name})."
+      )
+    }
     requireIsHardware(idx, "memory port index")
     val i = Vec.truncateIndex(idx, length)(sourceInfo, compileOptions)
 
@@ -266,7 +272,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class Mem[T <: Data] private (t: T, length: BigInt) extends MemBase(t, length)
+sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt) extends MemBase(t, length)
 
 object SyncReadMem {
 
@@ -344,7 +350,7 @@ object SyncReadMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
+sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
     extends MemBase[T](t, n) {
 
   override def read(x: UInt): T = macro SourceInfoTransform.xArg

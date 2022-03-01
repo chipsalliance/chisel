@@ -298,7 +298,18 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|Top/i:HasEither>x".rt, "xright"))
       annos should contain(MarkAnnotation("~Top|Top/i:HasEither>y".rt, "yleft"))
     }
-    it("3.12: should properly support val modifiers") {
+    it("3.12: should work on tuple2") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasTuple2()))
+        mark(i.xy._1, "x")
+        mark(i.xy._2, "y")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|Top/i:HasTuple2>x".rt, "x"))
+      annos should contain(MarkAnnotation("~Top|Top/i:HasTuple2>y".rt, "y"))
+    }
+
+    it("3.13: should properly support val modifiers") {
       class SupClass extends Module {
         val value = 10
         val overriddenVal = 10
@@ -319,6 +330,17 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         @public final override lazy val x: Int = 3
         @public override final lazy val y: Int = 4
       }
+    }
+    it("3.13: should work with Mems/SyncReadMems") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasMems()))
+        mark(i.mem, "Mem")
+        mark(i.syncReadMem, "SyncReadMem")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.foreach { x => println(x.serialize) }
+      annos should contain(MarkAnnotation("~Top|Top/i:HasMems>mem".rt, "Mem"))
+      annos should contain(MarkAnnotation("~Top|Top/i:HasMems>syncReadMem".rt, "SyncReadMem"))
     }
   }
   describe("4: toInstance") {

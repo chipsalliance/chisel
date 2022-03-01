@@ -101,8 +101,8 @@ object Module extends SourceInfoDoc {
     compileOptions:      CompileOptions
   ): T = {
     val parent = Builder.currentModule
-
     val module: T = bc // bc is actually evaluated here
+    if (!parent.isEmpty) { Builder.currentModule = parent }
 
     module
   }
@@ -229,6 +229,8 @@ package internal {
     // Private internal class to serve as a _parent for Data in cloned ports
     private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends PseudoModule with IsClone[T] {
       override def toString = s"ModuleClone(${getProto})"
+      // Do not call default addId function, which may modify a module that is already "closed"
+      override def addId(d: HasId): Unit = ()
       def getPorts = _portsRecord
       // ClonePorts that hold the bound ports for this module
       // Used for setting the refs of both this module and the Record
@@ -307,6 +309,8 @@ package internal {
       override def toString = s"DefinitionClone(${getProto})"
       // No addition components are generated
       private[chisel3] def generateComponent(): Option[Component] = None
+      // Do not call default addId function, which may modify a module that is already "closed"
+      override def addId(d: HasId): Unit = ()
       // Necessary for toTarget to work
       private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
       // Module name is the same as proto's module name
