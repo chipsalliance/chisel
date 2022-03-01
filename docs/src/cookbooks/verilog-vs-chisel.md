@@ -63,15 +63,13 @@ class Foo extends Module {
 
 ```verilog
 module PassthroughGenerator(
-  input        clock,
-  input        reset,
-  input  [width-1:0] io_in,
-  output [width-1:0] io_out
+  input  [width-1:0] in,
+  output [width-1:0] out
 );
  
   parameter width = 8;
   
-  assign io_out = io_in;
+  assign out = in;
 endmodule
 ```
 </td>
@@ -79,11 +77,10 @@ endmodule
 
 ```scala mdoc:silent
 class PassthroughGenerator(width: Int = 8) extends Module {
-  val io = IO(new Bundle {
-    val in = Input(UInt(width.W))
-    val out = Output(UInt(width.W))
-  })
-  io.out := io.in
+    val in = IO(Input(UInt(width.W)))
+    val out = IO(Output(UInt(width.W)))
+    
+    out := in
 }
 ```
 ```scala mdoc:invisible
@@ -117,13 +114,12 @@ class ParameterizedWidthAdder(
   in0Width: Int,
   in1Width: Int,
   sumWidth: Int) extends Module {
-  val io = IO(new Bundle {
-    val in0 = Input(UInt(in0Width.W))
-    val in1 = Input(UInt(in1Width.W))
-    val sum = Output(UInt(sumWidth.W))
+    val in0 = IO(Input(UInt(in0Width.W)))
+    val in1 = IO(Input(UInt(in1Width.W)))
+    val sum = IO(Output(UInt(sumWidth.W)))
   })
   // a +& b includes the carry, a + b does not
-  io.sum := io.in0 +& io.in1
+  sum := in0 +& in1
 }
 ```
 </td>
@@ -152,8 +148,9 @@ class ParameterizedWidthAdder(
 ```verilog
 module MyWireAssignmentModule2 ();
 
-wire [31:0] aa = 'd42;
- reg [31:0] a; // Logical register for use in always block, not real register
+ wire [31:0] aa = 'd42;
+ // Logical reg for use in always block, not real register
+ reg [31:0] a;
  
  //
 always @(*) begin
