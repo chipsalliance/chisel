@@ -114,10 +114,11 @@ class ParameterizedWidthAdder(
   in0Width: Int,
   in1Width: Int,
   sumWidth: Int) extends Module {
-    val in0 = IO(Input(UInt(in0Width.W)))
-    val in1 = IO(Input(UInt(in1Width.W)))
-    val sum = IO(Output(UInt(sumWidth.W)))
-  })
+  
+  val in0 = IO(Input(UInt(in0Width.W)))
+  val in1 = IO(Input(UInt(in1Width.W)))
+  val sum = IO(Output(UInt(sumWidth.W)))
+  
   // a +& b includes the carry, a + b does not
   sum := in0 +& in1
 }
@@ -146,37 +147,37 @@ class ParameterizedWidthAdder(
 <td>
 
 ```verilog
-module MyWireAssignmentModule2 ();
+module MyWireAssignmentModule ();
 
- wire [31:0] aa = 'd42;
- // Logical reg for use in always block, not real register
- reg [31:0] a;
- 
- //
-always @(*) begin
-  a = aa;
-end 
-
-// Hex value initialization
- wire [31:0] b = 32'hbabecafe;
-
- // Declaration separate from Assignment
- wire [15:0] c;
- wire d;
-
- assign c = 16'b1;
- assign d = 1'b1;
-
-// Signed values
-wire signed [63:0] g;
-assign g = -’d5;
-
-wire signed [31:0] h = 'd5;
-
-reg signed[31:0] f;
-always@(*) begin
-  f = ‘d5;
-end
+  wire [31:0] aa = 'd42;
+  // Logical reg for use in always block, not real register
+  reg [31:0] a;
+  
+  //
+  always @(*) begin
+    a = aa;
+  end 
+  
+  // Hex value initialization
+  wire [31:0] b = 32'hbabecafe;
+  
+  // Declaration separate from Assignment
+  wire [15:0] c;
+  wire d;
+  
+  assign c = 16'b1;
+  assign d = 1'b1;
+  
+  // Signed values
+  wire signed [63:0] g;
+  assign g = -’d5;
+  
+  wire signed [31:0] h = 'd5;
+  
+  reg signed[31:0] f;
+  always@(*) begin
+    f = ‘d5;
+  end
 endmodule
 ```
 
@@ -187,7 +188,7 @@ endmodule
 ```scala mdoc:silent
 
 
-class MyWireAssignmentModule2 extends Module {
+class MyWireAssignmentModule extends Module {
 
     val aa = 42.U(32.W)
     val a = Wire(UInt(32.W))
@@ -205,7 +206,7 @@ class MyWireAssignmentModule2 extends Module {
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new MyWireAssignmentModule2)
+ChiselStage.emitVerilog(new MyWireAssignmentModule)
 ```
 
 </td>
@@ -237,53 +238,53 @@ module RegisterModule(
   input        differentAsyncReset
 );
 
-reg [7:0] registerWithoutInit;
-reg [7:0] registerWithInit;
-reg [7:0] registerOnDifferentClockAndSyncReset;
-reg [7:0] registerOnDifferentClockAndAsyncReset;
+  reg [7:0] registerWithoutInit;
+  reg [7:0] registerWithInit;
+  reg [7:0] registerOnDifferentClockAndSyncReset;
+  reg [7:0] registerOnDifferentClockAndAsyncReset;
 
 
- always @(posedge clock) begin
+  always @(posedge clock) begin
     registerWithoutInit <= in + 8'h1;
- end
-
- always @(posedge clock) begin
+  end
+  
+  always @(posedge clock) begin
     if (reset) begin
       registerWithInit <= 8'd42;
     end else begin
       registerWithInit <= registerWithInit - 8'h1;
     end
   end
- 
- always @(posedge differentClock) begin
+  
+  always @(posedge differentClock) begin
     if (differentSyncReset) begin
       registerOnDifferentClockAndSyncReset <= 8'h42;
     end else begin
       registerOnDifferentClockAndSyncReset <= in - 8'h1;
     end
- end
-  
- always @(posedge differentClock or posedge differentAsyncReset) begin
-   if (differentAsyncReset) begin
+  end
+   
+  always @(posedge differentClock or posedge differentAsyncReset) begin
+    if (differentAsyncReset) begin
       registerOnDifferentClockAndAsyncReset <= 8'h24;
-   end else begin
+    end else begin
       registerOnDifferentClockAndAsyncReset <= in + 8'h2;
-   end
- end
-
+    end
+  end
+  
   assign out = in + 
     registerWithoutInit + 
     registerWithInit + 
     registerOnDifferentClockAndSyncReset + 
     registerOnDifferentClockAndAsyncReset;
 endmodule
-
+  
 ```
 </td>
 <td>
 
 ```scala mdoc:silent
-class RegisterModule2 extends Module {
+class RegisterModule extends Module {
   val in  = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
 
@@ -320,7 +321,7 @@ class RegisterModule2 extends Module {
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new RegisterModule2)
+ChiselStage.emitVerilog(new RegisterModule)
 ```
 </td>
          </tr>
@@ -349,14 +350,14 @@ module CaseStatementModule(
   output reg [2:0] out
 );
 
-always @(*)
-  case (sel)
-    2'b00: out <= a;
-    2'b01: out <= b;
-    2'b10: out <= c;
-    default: out <= 3'b0;
+  always @(*)
+    case (sel)
+      2'b00: out <= a;
+      2'b01: out <= b;
+      2'b10: out <= c;
+      default: out <= 3'b0;
+    end
   end
-end
 endmodule
 ```
 </td>
@@ -451,21 +452,22 @@ ChiselStage.emitVerilog(new CaseStatementEnumModule1)
 module CaseStatementEnumModule2 (input clk);
  
   typedef enum {
-       INIT = 3,
-       IDLE = 'h13,
-       START = 'h17,
-       READY = 'h23 } StateValue;
-    reg StateValue state;
+    INIT = 3,
+    IDLE = 'h13,
+    START = 'h17,
+    READY = 'h23 } StateValue;
+       
+  reg StateValue state;
     
  
-    always @(posedge clk) begin
-        case (state)
-            IDLE    : state = START;
-            START   : state = READY;
-            READY   : state = IDLE ;
-            default : state = IDLE ;
-        endcase
-    end
+  always @(posedge clk) begin
+    case (state)
+      IDLE    : state = START;
+      START   : state = READY;
+      READY   : state = IDLE ;
+      default : state = IDLE ;
+    endcase
+  end
 endmodule
 ```
 </td>
