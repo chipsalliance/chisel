@@ -189,19 +189,19 @@ endmodule
 
 class MyWireAssignmentModule2 extends Module {
 
-val aa = 42.U(32.W)
-val a = Wire(UInt(32.W))
-a := aa
-val b = "hbabecafe".U(32.W)
-val c = Wire(UInt(16.W))
-val d = Wire(Bool())
-c := "b1".U(16.W)
-d := true.B
-val g = Wire(SInt(64.W))
-g := -5.S
-val h = 5.asSInt(32.W)
-val f = Wire(SInt(32.W))
-f := 5.S
+    val aa = 42.U(32.W)
+    val a = Wire(UInt(32.W))
+    a := aa
+    val b = "hbabecafe".U(32.W)
+    val c = Wire(UInt(16.W))
+    val d = Wire(Bool())
+    c := "b1".U(16.W)
+    d := true.B
+    val g = Wire(SInt(64.W))
+    g := -5.S
+    val h = 5.asSInt(32.W)
+    val f = Wire(SInt(32.W))
+    f := 5.S
 }
 ```
 ```scala mdoc:invisible
@@ -611,7 +611,9 @@ class ReadWriteSmem extends Module {
     val dataIn = Input(UInt(32.W))
     val dataOut = Output(UInt(32.W))
   })
+  
   val mem = SyncReadMem(1024, UInt(32.W))
+  
   // Create one write port and one read port
   mem.write(io.addr, io.dataIn)
   io.dataOut := mem.read(io.addr, io.enable)
@@ -627,21 +629,21 @@ ChiselStage.emitVerilog(new ReadWriteSmem)
 
 ```verilog
 module ReadWriteMem(
-input         clock,
-input         io_enable,
-input         io_write,
-input  [9:0]  io_addr,
-input  [31:0] io_dataIn,
-output [31:0] io_dataOut
-);
-
-reg [31:0] mem [0:1023];
-
-assign io_dataOut = mem[io_addr];
-
-always @(posedge clock) begin
-if (io_enable && io_write) begin
-mem[io_addr] <= io_dataIn;
+  input         clock,
+  input         io_enable,
+  input         io_write,
+  input  [9:0]  io_addr,
+  input  [31:0] io_dataIn,
+  output [31:0] io_dataOut
+  );
+  
+  reg [31:0] mem [0:1023];
+  
+  assign io_dataOut = mem[io_addr];
+  
+  always @(posedge clock) begin
+  if (io_enable && io_write) begin
+  mem[io_addr] <= io_dataIn;
 end
 
 endmodule
@@ -784,35 +786,7 @@ class OperatorExampleModule extends Module {
   val multiple_bitselect_res = IO(Output(UInt(2.W)))
   
   val fill_res = IO(Output(UInt((3*32).W)))
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
- 
+
   add_res := x + y
   sub_res := x - y 
   mod_res := x % y
