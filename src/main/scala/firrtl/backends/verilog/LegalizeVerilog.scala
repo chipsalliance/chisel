@@ -9,6 +9,7 @@ import firrtl.transforms.ConstantPropagation
 import firrtl.{bitWidth, Dshlw, Transform}
 import firrtl.Mappers._
 import firrtl.passes.{Pass, SplitExpressions}
+import firrtl.passes.PadWidths.forceWidth
 
 /** Rewrites some expressions for valid/better Verilog emission.
   * - solves shift right overflows by replacing the shift with 0 for UInts and MSB for SInts
@@ -47,8 +48,36 @@ object LegalizeVerilog extends Pass {
     }
   }
 
-  import firrtl.passes.PadWidths.forceWidth
   private def getWidth(e: Expression): Int = bitWidth(e.tpe).toInt
+
+  /* Verilog has the width of (a % b) = Max(W(a), W(b))
+   * FIRRTL has the width of (a % b) = Min(W(a), W(b)), which makes more sense,
+   * but nevertheless is a problem when emitting verilog
+   *
+   * This function pads the arguments to be the same [max] width (to avoid lint issues)
+   * and then performs a bit extraction back down to the correct [min] width
+   */
+  private def legalizeRem(e: Expression): Expression = e match {
+    case rem @ DoPrim(Rem, Seq(a, b), _, tpe) =>
+      val awidth = getWidth(a)
+      val bwidth = getWidth(b)
+      // Do nothing if the widths are the same
+      if (awidth == bwidth) {
+        rem
+      } else {
+        // First pad the arguments to fix lint warnings because Verilog width is max of arguments
+        val maxWidth = awidth.max(bwidth)
+        val newType = tpe.mapWidth(_ => IntWidth(maxWidth))
+        val paddedRem =
+          rem
+            .map(forceWidth(maxWidth)(_)) // Pad the input arguments
+            .mapType(_ => newType) // Also make the width for this op correct
+        // Second, bit extract back down to the min width of original arguments to match FIRRTL semantics
+        val minWidth = awidth.min(bwidth)
+        forceWidth(minWidth)(paddedRem)
+      }
+    case _ => e
+  }
 
   private def onExpr(expr: Expression): Expression = expr.map(onExpr) match {
     case prim: DoPrim =>
@@ -56,7 +85,7 @@ object LegalizeVerilog extends Pass {
         case Shr                => ConstantPropagation.foldShiftRight(prim)
         case Bits | Head | Tail => legalizeBitExtract(prim)
         case Neg                => legalizeNeg(prim)
-        case Rem                => prim.map(forceWidth(prim.args.map(getWidth).max))
+        case Rem                => legalizeRem(prim)
         case Dshl               =>
           // special case as args aren't all same width
           prim.copy(op = Dshlw, args = Seq(forceWidth(getWidth(prim))(prim.args.head), prim.args(1)))

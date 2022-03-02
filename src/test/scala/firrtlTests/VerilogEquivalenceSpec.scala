@@ -241,4 +241,149 @@ class VerilogEquivalenceSpec extends FirrtlFlatSpec {
     firrtlEquivalenceWithVerilog(firrtlFalse, verilogFalse)
   }
 
+  "unsigned modulus" should "be handled correctly" in {
+    val input1 =
+      s"""
+         |circuit Modulus :
+         |  module Modulus :
+         |    input x : UInt<8>
+         |    input y : UInt<4>
+         |    input z : UInt<4>
+         |    output out : UInt<1>
+         |    out <= eq(rem(x, y), z)
+         |""".stripMargin
+    val expected1 =
+      """
+        |module ModulusRef(
+        |  input [7:0] x,
+        |  input [3:0] y,
+        |  input [3:0] z,
+        |  output      out
+        |);
+        |  wire [7:0] mod = x % y;
+        |  wire [3:0] ext = mod[3:0];
+        |  assign out = ext == z;
+        |endmodule""".stripMargin
+    firrtlEquivalenceWithVerilog(input1, expected1)
+
+    val input2 =
+      s"""
+         |circuit Modulus :
+         |  module Modulus :
+         |    input x : UInt<4>
+         |    input y : UInt<8>
+         |    input z : UInt<4>
+         |    output out : UInt<1>
+         |    out <= eq(rem(x, y), z)
+         |""".stripMargin
+    val expected2 =
+      """
+        |module ModulusRef(
+        |  input [3:0] x,
+        |  input [7:0] y,
+        |  input [3:0] z,
+        |  output      out
+        |);
+        |  wire [7:0] mod = x % y;
+        |  wire [3:0] ext = mod[3:0];
+        |  assign out = ext == z;
+        |endmodule""".stripMargin
+    firrtlEquivalenceWithVerilog(input2, expected2)
+
+    val input3 =
+      s"""
+         |circuit Modulus :
+         |  module Modulus :
+         |    input x : UInt<8>
+         |    input y : UInt<8>
+         |    input z : UInt<4>
+         |    output out : UInt<1>
+         |    out <= eq(rem(x, y), z)
+         |""".stripMargin
+    val expected3 =
+      """
+        |module ModulusRef(
+        |  input [7:0] x,
+        |  input [7:0] y,
+        |  input [3:0] z,
+        |  output      out
+        |);
+        |  wire [7:0] mod = x % y;
+        |  assign out = mod == z;
+        |endmodule""".stripMargin
+    firrtlEquivalenceWithVerilog(input3, expected3)
+  }
+
+  "signed modulus" should "be handled correctly" in {
+    val input1 =
+      s"""
+         |circuit Modulus :
+         |  module Modulus :
+         |    input x : SInt<8>
+         |    input y : SInt<4>
+         |    input z : SInt<4>
+         |    output out : UInt<1>
+         |    out <= eq(rem(x, y), z)
+         |""".stripMargin
+    val expected1 =
+      """
+        |module ModulusRef(
+        |  input [7:0] x,
+        |  input [3:0] y,
+        |  input [3:0] z,
+        |  output      out
+        |);
+        |  wire [7:0] mod = $signed(x) % $signed(y);
+        |  wire [3:0] ext = mod[3:0];
+        |  assign out = ext == z;
+        |endmodule""".stripMargin
+    firrtlEquivalenceWithVerilog(input1, expected1)
+
+    val input2 =
+      s"""
+         |circuit Modulus :
+         |  module Modulus :
+         |    input x : SInt<4>
+         |    input y : SInt<8>
+         |    input z : SInt<4>
+         |    output out : UInt<1>
+         |    out <= eq(rem(x, y), z)
+         |""".stripMargin
+    val expected2 =
+      """
+        |module ModulusRef(
+        |  input [3:0] x,
+        |  input [7:0] y,
+        |  input [3:0] z,
+        |  output      out
+        |);
+        |  wire [7:0] mod = $signed(x) % $signed(y);
+        |  wire [3:0] ext = mod[3:0];
+        |  assign out = ext == z;
+        |endmodule""".stripMargin
+    firrtlEquivalenceWithVerilog(input2, expected2)
+
+    val input3 =
+      s"""
+         |circuit Modulus :
+         |  module Modulus :
+         |    input x : SInt<8>
+         |    input y : SInt<8>
+         |    input z : SInt<4>
+         |    output out : UInt<1>
+         |    out <= eq(rem(x, y), z)
+         |""".stripMargin
+    val expected3 =
+      """
+        |module ModulusRef(
+        |  input [7:0] x,
+        |  input [7:0] y,
+        |  input [3:0] z,
+        |  output      out
+        |);
+        |  wire [7:0] mod = $signed(x) % $signed(y);
+        |  assign out = mod == {{4{z[3]}}, z};
+        |endmodule""".stripMargin
+    firrtlEquivalenceWithVerilog(input3, expected3)
+  }
 }
