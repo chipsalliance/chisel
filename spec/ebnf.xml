@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<language name="EBNF" version="1" kateversion="2.4" section="Sources" extensions="*.ebnf">
+  <highlighting>
+    <contexts>
+      <context name = "lhs" attribute="Keyword" lineEndContext="#stay">
+        <DetectChar char="=" attribute="Operator" context="rhs"/>
+        <Detect2Chars char="(" char1="*" attribute="Comment" context="comment"/>
+      </context>
+      <context name = "rhs" attribute="Variable" lineEndContext="#stay">
+        <AnyChar String="|" attribute="Operator" context="#stay"/>
+        <AnyChar String=",()[]{}" attribute="Separator" context="#stay"/>
+        <DetectChar char=";" attribute="Separator" context="#pop"/>
+        <DetectChar attribute="String" context="stringdoublequote" char="&quot;" />
+        <DetectChar attribute="String" context="stringsinglequote" char="&apos;" />
+        <DetectChar char="?" attribute="Operator" context="special"/>
+      </context>
+      <context name="stringdoublequote" attribute="String" lineEndContext="#stay">
+        <DetectChar attribute="String" context="#pop" char="&quot;"/>
+      </context>
+      <context name="stringsinglequote" attribute="String" lineEndContext="#stay">
+        <DetectChar attribute="String" context="#pop" char="&apos;"/>
+      </context>
+      <context name="comment" attribute="Comment" lineEndContext="#stay">
+        <Detect2Chars char="*" char1=")" context="#pop"/>
+      </context>
+      <context name="special" attribute="Special" lineEndContext="#stay">
+        <DetectChar char="?" attribute="Operator" context="#pop"/>
+      </context>
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text" defStyleNum="dsNormal" />
+      <itemData name="Keyword" defStyleNum="dsKeyword" />
+      <itemData name="Operator" defStyleNum="dsOperator" />
+      <itemData name="Separator" defStyleNum="dsOperator" />
+      <itemData name="String" defStyleNum="dsString" />
+      <itemData name="Variable" defStyleNum="dsVariable" />
+      <itemData name="Comment" defStyleNum="dsComment"/>
+      <itemData name="Special" defStyleNum="dsVerbatimString"/>
+    </itemDatas>
+  </highlighting>
+</language>
