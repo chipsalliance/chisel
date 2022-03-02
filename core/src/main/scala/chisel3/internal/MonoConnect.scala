@@ -227,7 +227,7 @@ private[chisel3] object MonoConnect {
     * [[Aggregate]] given their parent module and directionality context
     *
     * @return whether the source and sink exist in an appropriate context to be connected
-  */
+    */
   private[chisel3] def aggregateConnectContextCheck(
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions,
