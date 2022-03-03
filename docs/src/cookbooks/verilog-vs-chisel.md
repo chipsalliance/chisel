@@ -645,9 +645,10 @@ module ReadWriteMem(
   assign io_dataOut = mem[io_addr];
   
   always @(posedge clock) begin
-  if (io_enable && io_write) begin
-  mem[io_addr] <= io_dataIn;
-end
+    if (io_enable && io_write) begin
+      mem[io_addr] <= io_dataIn;
+    end
+  end
 
 endmodule
 ```
