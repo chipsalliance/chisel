@@ -2,6 +2,7 @@
 <html>
 
 # Verilog vs Chisel Side-By-Side
+This page serves as a quick introduction to Chisel for those familiar with Verilog. It is by no means a comprehensive guide of everything Chisel can do. Feel free to file an issue with suggestions of things you'd like to see added to this page. 
 
 ```scala mdoc:invisible
 import chisel3._
