@@ -133,11 +133,6 @@ class ParameterizedWidthAdder(
 ```
 </td>
 </tr>
-<tr>
-<td>
-
-</td>
-         </tr>
     </table>
 <html>
 <body>
