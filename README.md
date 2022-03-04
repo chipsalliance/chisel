@@ -16,7 +16,7 @@
 
  A Firrtl compiler is constructed by chaining together these transformations, then writing the final circuit to a file.
 
- For a detailed description of Firrtl's intermediate representation, see the document "Specification of the Firrtl Language" located in [spec/spec.pdf](https://github.com/freechipsproject/firrtl/blob/master/spec/spec.pdf).
+ For a detailed description of Firrtl's intermediate representation, see [chipsalliance/firrtl-spec/blob/spec.md](https://github.com/chipsalliance/firrtl-spec/blob/main/spec.md).
 
 #### Wiki Pages and Tutorials
 
