@@ -45,6 +45,9 @@ If you want to add your project to the list, let us know on the [Chisel users ma
 | FP Divider [Pipelined](https://github.com/Ssavas/fp-division-pipelined) / [Not Pipelined](https://github.com/Ssavas/fp-division-no-pipeline) | IEEE binary 32-bit divider using Harmonized Parabolic Synthesis | [`@Ssavas`](https://github.com/Ssavas)                                           | [Paper](https://ieeexplore.ieee.org/abstract/document/7987504)                                               |
 | Square Root [Pipelined](https://github.com/Ssavas/sqrt-pipelined) / [Not Pipelined](https://github.com/Ssavas/sqrt-no-pipeline)              | Square Root using Harmonized Parabolic Synthesis                | [`@Ssavas`](https://github.com/Ssavas)                                           | [Paper](http://urn.kb.se/resolve?urn=urn:nbn:se:hh:diva-39322)                                               |
 | [Pillars](https://github.com/pku-dasys/pillars) | A Consistent CGRA Design Framework | [`@pku-dasys`](https://github.com/pku-dasys) | [Paper](https://woset-workshop.github.io/PDFs/2020/a22.pdf), [Video](https://www.youtube.com/watch?v=oNLyD6koB2g) |
+| [Tensil](https://github.com/tensil-ai/tensil) | Machine Learning Accelerators | [`@tensil-ai`](https://github.com/tensil-ai) | [Website](https://www.tensil.ai) |
+| [Twine](https://github.com/Twine-Umich/Twine) | A Chisel Extension for Component-Level Heterogeneous Design | [`@shibo-chen`](https://github.com/shibo-chen) | [Paper](https://drive.google.com/file/d/10tDsvv2CSC70GNb_KCFDwXHq4UHdTumm/view) |
+
 
 ### FIRRTL
 
