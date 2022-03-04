@@ -8,6 +8,7 @@ section: "chisel3"
 <html>
 
 # Verilog vs Chisel Side-By-Side
+
 This page serves as a quick introduction to Chisel for those familiar with Verilog. It is by no means a comprehensive guide of everything Chisel can do. Feel free to file an issue with suggestions of things you'd like to see added to this page. 
 
 ```scala mdoc:invisible
@@ -694,8 +695,7 @@ ChiselStage.emitVerilog(new ReadWriteMem)
           <tr>
             <td><b style="font-size:30px">Verilog</b></td>
             <td><b style="font-size:30px">Chisel</b></td>
-            <td><b style="font-size:30px">Generated Verilog</b></td>
-         </tr>
+          </tr>
          <tr>
 <td>
 
