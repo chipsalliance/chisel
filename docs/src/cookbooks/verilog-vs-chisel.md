@@ -1,3 +1,9 @@
+---
+layout: docs
+title:  "Verilog-vs-Chisel"
+section: "chisel3"
+---
+
 <!Doctype html>
 <html>
 
