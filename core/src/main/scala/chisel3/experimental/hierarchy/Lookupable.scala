@@ -10,7 +10,7 @@ import scala.annotation.implicitNotFound
 import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifySingleData}
-import chisel3.internal.firrtl.{Arg, ILit, Index, Slot, ULit}
+import chisel3.internal.firrtl.{Arg, ILit, Index, ModuleIO, Slot, ULit}
 import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
@@ -123,8 +123,8 @@ object Lookupable {
     def unrollCoordinates(res: List[Arg], d: Data): (List[Arg], Data) = d.binding.get match {
       case ChildBinding(parent) =>
         d.getRef match {
-          case arg @ (_: Slot | _: Index) => unrollCoordinates(arg :: res, parent)
-          case other => err(s"Unroll coordinates failed for '$arg'! Unexpected arg '$other'")
+          case arg @ (_: Slot | _: Index | _: ModuleIO) => unrollCoordinates(arg :: res, parent)
+          case other => err(s"unrollCoordinates failed for '$arg'! Unexpected arg '$other'")
         }
       case _ => (res, d)
     }
@@ -135,6 +135,7 @@ object Lookupable {
           val next = (coor.head, d) match {
             case (Slot(_, name), rec: Record) => rec.elements(name)
             case (Index(_, ILit(n)), vec: Vec[_]) => vec.apply(n.toInt)
+            case (ModuleIO(_, name), rec: Record) => rec.elements(name)
             case (arg, _) => err(s"Unexpected Arg '$arg' applied to '$d'! Root was '$start'.")
           }
           applyCoordinates(coor.tail, next)
