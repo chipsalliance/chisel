@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental.util.algorithm
+package chisel3.util
 
 import chisel3._
 
-/** Map each bits to logical or of itself and all bits with lower index.
-  * Here `scanLeft` means "start at the left and look to the right, where left is the lowest index", a common operation on arrays and lists.
-  * This is consistent with the `left` as in "shift left" performed on bits, which means "start at the right (least significant bit) and move to the left".
+/** Map each bit to the logical OR of itself and all bits with lower index
+  *
+  * Here `scanLeft` means "start from the left and iterate to the right, where left is the lowest index", a common operation on arrays and lists.
   * @example {{{
   * scanLeftOr("b00001000".U(8.W)) // Returns "b11111000".U
   * scanLeftOr("b00010100".U(8.W)) // Returns "b11111100".U
@@ -25,9 +25,10 @@ object scanLeftOr {
     helper(1, data)(width - 1, 0)
   }
 }
-/** Map each bits to logical or of itself and all bits with higher index. 
-  * Here `scanRight` means "start at the right and look to the left, where right is the highest index", a common operation on arrays and lists.
-  * This is consistent with the `right` as in "shift right" performed on bits, which means "start at the left (most significant bit) and move to the right".
+
+/** Map each bit to the logical OR of itself and all bits with higher index
+  *
+  * Here `scanRight` means "start from the right and iterate to the left, where right is the highest index", a common operation on arrays and lists.
   * @example {{{
   * scanRightOr("b00001000".U) // Returns "b00001111".U
   * scanRightOr("b00010100".U) // Returns "b00011111".U

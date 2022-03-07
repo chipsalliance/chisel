@@ -2,13 +2,12 @@
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.util.algorithm._
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
 import scala.math.min
 
-class scanLeftOrTestModule(width: Int) extends Module {
+class ScanLeftOrTestModule(width: Int) extends Module {
   val input = IO(Input(UInt(width.W)))
 
   var lsb = false.B
@@ -24,7 +23,7 @@ class scanLeftOrTestModule(width: Int) extends Module {
   assert(testee === ref)
 }
 
-class scanRightOrTestModule(width: Int) extends Module {
+class ScanRightOrTestModule(width: Int) extends Module {
   val input = IO(Input(UInt(width.W)))
 
   val ref = Reverse(scanLeftOr(Reverse(input)))
@@ -34,15 +33,15 @@ class scanRightOrTestModule(width: Int) extends Module {
 }
 
 class scanOrTest extends AnyFlatSpec with ChiselScalatestTester with Formal {
-  "scanLeftOr" should "correctly computes" in {
+  "scanLeftOr" should "compute correctly" in {
     for(i <- 1 to 16) {
-      verify(new scanLeftOrTestModule(i), Seq(BoundedCheck(1)))
+      verify(new ScanLeftOrTestModule(i), Seq(BoundedCheck(1)))
     }
   }
 
-  "scanRightOr" should "correctly computes" in {
+  "scanRightOr" should "compute correctly" in {
     for(i <- 1 to 16) {
-      verify(new scanRightOrTestModule(i), Seq(BoundedCheck(1)))
+      verify(new ScanRightOrTestModule(i), Seq(BoundedCheck(1)))
     }
   }
 }
