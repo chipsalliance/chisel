@@ -25,6 +25,7 @@ object scanLeftOr {
     helper(1, data)(width - 1, 0)
   }
 }
+/** Map each bits to logical or of itself and all bits with higher index. 
   * Here `scanRight` means "start at the right and look to the left, where right is the highest index", a common operation on arrays and lists.
   * This is consistent with the `right` as in "shift right" performed on bits, which means "start at the left (most significant bit) and move to the right".
   * @example {{{
