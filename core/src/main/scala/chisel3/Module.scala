@@ -201,7 +201,6 @@ package experimental {
 
 package internal {
   import chisel3.experimental.BaseModule
-  import chisel3.experimental.hierarchy.core.{IsContext, Proto}
 
   object BaseModule {
 
@@ -217,11 +216,14 @@ package internal {
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }
 
+    //import chisel3.experimental.hierarchy.proxifierModule
+    import chisel3.experimental.hierarchy.core.{Proxifier, Definition}
     private[chisel3] def cloneIORecord(
-      definition: experimental.hierarchy.core.Definition[BaseModule]
+      definition: Definition[BaseModule]
     )(
       implicit sourceInfo: SourceInfo,
-      compileOptions:      CompileOptions
+      compileOptions:      CompileOptions,
+      //proxifier: Proxifier[BaseModule]
     ): ClonePorts = {
       val proto = definition.proto
       require(proto.isClosed, "Can't clone a module before module close")
@@ -229,12 +231,14 @@ package internal {
       // We make this before clonePorts because we want it to come up first in naming in
       // currentModule
       val parent = Builder.currentModule
-      val cloneParent = Module(new experimental.hierarchy.StandInModule(proto, parent))
-      //cloneParent._parent = parent
+      //import experimental.hierarchy.core.{Proto, Proxifier}
+      import experimental.hierarchy._
+      val cloneParent = Module(new experimental.hierarchy.ModuleClone(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]]))
+      cloneParent._parent = parent
       require(proto.isClosed, "Can't clone a module before module close")
       require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")
       // Fake Module to serve as the _parent of the cloned ports
-      // We don't create this inside the experimental.hierarchy.StandInModule because we need the ref to be set by the
+      // We don't create this inside the experimental.hierarchy.ModuleClone because we need the ref to be set by the
       // currentModule (and not clonePorts)
       val clonePorts = new ClonePorts(proto.getModulePorts: _*)
       clonePorts.bind(PortBinding(cloneParent))
@@ -399,10 +403,10 @@ package experimental {
       * @note Should not be called until circuit elaboration is complete
       */
     final def toTarget: ModuleTarget = this match {
-      case m: chisel3.experimental.hierarchy.StandInInstance[_] =>
-        throwException(s"Internal Error! It's not legal to call .toTarget on StandInInstance. $m")
-      case m: chisel3.experimental.hierarchy.StandInDefinition[_] =>
-        throwException(s"Internal Error! It's not legal to call .toTarget on StandInDefinition. $m")
+      case m: chisel3.experimental.hierarchy.ModuleMock[_] =>
+        throwException(s"Internal Error! It's not legal to call .toTarget on ModuleMock. $m")
+      case m: chisel3.experimental.hierarchy.ModuleDefinition[_] =>
+        throwException(s"Internal Error! It's not legal to call .toTarget on ModuleDefinition. $m")
       case _ => ModuleTarget(this.circuitName, this.name)
     }
 
@@ -411,19 +415,23 @@ package experimental {
       * BaseModule.toTarget returns a ModuleTarget because the classic Module(new MyModule) API elaborates
       * Modules in a way that there is a 1:1 relationship between instances and elaborated definitions
       *
-      * Instance/Definition introduced special internal modules [[InstanceClone]] and [[experimental.hierarchy.StandInModule]] that
+      * Instance/Definition introduced special internal modules [[InstanceClone]] and [[experimental.hierarchy.ModuleClone]] that
       * do not have this 1:1 relationship so need the ability to return [[InstanceTarget]]s.
       * Because users can never actually get references to these underlying objects, we can maintain
       * BaseModule.toTarget's API returning [[ModuleTarget]] while providing an internal API for getting
       * the correct [[InstanceTarget]]s whenever using the Definition/Instance API.
       */
     private[chisel3] def getTarget: IsModule = this match {
-      case m: experimental.hierarchy.StandInInstance[_] if m._parent.nonEmpty =>
+      case m: experimental.hierarchy.ModuleTransparent[_] if m._parent.nonEmpty =>
+        //toTarget
+        ModuleTarget(this.getCircuit.get.circuitName, this.name)
+        //m._parent.get.getTarget.instOf(instanceName, name)
+      case m: experimental.hierarchy.ModuleMock[_] if m._parent.nonEmpty =>
         m._parent.get.getTarget.instOf(instanceName, name)
-      case m: experimental.hierarchy.StandInModule[_] if m._madeFromDefinition =>
+      case m: experimental.hierarchy.ModuleClone[_] if m._madeFromDefinition =>
         m._parent.get.getTarget.instOf(instanceName, name)
       // Without this, we get the wrong CircuitName for the Definition
-      case m: experimental.hierarchy.StandInDefinition[_] if m.getCircuit.nonEmpty =>
+      case m: experimental.hierarchy.ModuleDefinition[_] if m.getCircuit.nonEmpty =>
         ModuleTarget(this.getCircuit.get.circuitName, this.name)
       case m => 
         //println(s"$m, ${m._parent}, ${m.getCircuit}")

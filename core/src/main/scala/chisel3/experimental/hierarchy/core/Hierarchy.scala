@@ -5,21 +5,18 @@ import scala.collection.mutable.HashMap
 import scala.reflect.runtime.universe.TypeTag
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform, WithContextTransform}
+import java.util.IdentityHashMap
 
 sealed trait Hierarchy[+P] {
 
   /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
-  private[chisel3] val cache = HashMap[Any, Any]()
-
-  def _lookup[B, C](that: P => B)(
+  def _lookup[B](that: P => B)(
     implicit lookuper: Lookuper[B],
     macroGenerated:  chisel3.internal.MacroGenerated
   ): lookuper.R = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
-    val protoValue = that(this.proto)
-    val retValue = lookuper(protoValue, this)
-    cache.getOrElseUpdate(protoValue, retValue)
-    retValue
+    val protoValue = that(proto)
+    lookuper(protoValue, proxy)
   }
 
   /** Determine whether proxy proto is of type provided.
@@ -39,17 +36,13 @@ sealed trait Hierarchy[+P] {
   }
 
   /** @return Return the proxy Definition[P] of this Hierarchy[P] */
-  def toDefinition = Definition(proxy)
+  def toDefinition: Definition[P]
 
-  /** @return Convert this Hierarchy[P] as a top-level Instance[P] */
-  def toInstance = Instance(proxy)
-
-  def toLense = Lense(proxy)
+  //def toLense = Lense(proxy)
 
   private[chisel3] def proxy: Proxy[P]
   private[chisel3] def proto: P = proxy.proto
   private lazy val superClasses = Hierarchy.calculateSuperClasses(proto.getClass())
-
 }
 
 object Hierarchy {
@@ -88,30 +81,44 @@ object Hierarchy {
   }
 }
 
-final case class Instance[+P] private[chisel3] (private[chisel3] proxy: Proxy[P]) extends Hierarchy[P]
+final case class Instance[+P] private[chisel3] (private[chisel3] proxy: InstanceProxy[P, _]) extends Hierarchy[P] {
+  def toDefinition = proxy.toDefinition
+  //def getContext[C: TypeTag]: Option[Hierarchy[C]] = {
+  //  if(isA[C]) Some(this) else lineage.flatMap(_.getContext[C])
+  //}
+}
+// Boxing as an Instance
+// Actual Instantiation of an underlying object
+// Deserialized thing in the future
 
 object Instance {
   def apply[P](definition: Definition[P]): Instance[P] =
     macro InstanceTransform.apply[P]
   def do_apply[P](definition: Definition[P])(implicit stampable: ProxyInstancer[P]): Instance[P] = {
-    Instance(stampable(definition))
+    new Instance(stampable(definition))
   }
-  def withContext[P](definition: Definition[P])(fs: (Lense[P] => Unit)*): Instance[P] = 
-    macro WithContextTransform.withContext[P]
-  def do_withContext[P](definition: Definition[P])(fs: (Lense[P] => Unit)*)(implicit stampable: ProxyInstancer[P]): Instance[P] = {
-    val i = Instance(stampable(definition))
-    val l = i.toLense
-    fs.foreach(f => f(l))
-    i
-  }
+  //def withContext[P, C](definition: Definition[P])(fs: (Lense[P] => Unit)*): Instance[P] = 
+  //  macro WithContextTransform.withContext[P, C]
+  //def do_withContext[P, C](definition: Definition[P])(fs: (Lense[P] => Edit[Any])*)(implicit stampable: ProxyInstancer[P, C]): Instance[P] = {
+  //  val l = definition.toLense
+  //  val edits = fs.foreach(f => f(l))
+  //  val i = new Instance(stampable(definition))
+  //  i
+  //}
 }
 
-final case class Definition[+P] private[chisel3] (private[chisel3] proxy: Proxy[P]) extends IsLookupable with Hierarchy[P]
+final case class Definition[+P] private[chisel3] (private[chisel3] proxy: DefinitionProxy[P]) extends IsLookupable with Hierarchy[P] {
+  def toDefinition = this
+  //def toLense = new Lense(proxy)
+  //def getContext[C: TypeTag]: Option[Hierarchy[C]] = {
+  //  if(isA[C]) Some(this) else None
+  //}
+}
 
 object Definition {
   def apply[P](proto: => P): Definition[P] =
     macro DefinitionTransform.apply[P]
   def do_apply[P](proto: => P)(implicit buildable: ProxyDefiner[P]): Definition[P] = {
-    Definition(buildable(proto))
+    new Definition(buildable(proto))
   }
 }

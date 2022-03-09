@@ -53,9 +53,9 @@ object Select {
         d.commands.collect {
           case d: DefInstance =>
             d.id match {
-              case p: core.IsStandIn[_] =>
+              case p: core.Clone[_, BaseModule] =>
                 parent._lookup {
-                  x => new Instance(core.StandIn(p)).asInstanceOf[Instance[BaseModule]]
+                  x => new Instance(p).asInstanceOf[Instance[BaseModule]]
                 }//.addContext(parent.contexts)
               case other: BaseModule =>
                 new Instance(parent._lookup { x => other }.proxy)
@@ -80,8 +80,8 @@ object Select {
         d.commands.flatMap {
           case d: DefInstance =>
             d.id match {
-              case p: core.IsStandIn[_] =>
-                val i = parent._lookup { x => new Instance(core.StandIn(p)).asInstanceOf[Instance[BaseModule]] }//.addContext(parent.contexts)
+              case p: core.Clone[_, BaseModule] =>
+                val i = parent._lookup { x => new Instance(p).asInstanceOf[Instance[BaseModule]] }//.addContext(parent.contexts)
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
               case other: BaseModule =>
                 val i = new Instance(parent._lookup { x => other }.proxy)
@@ -101,7 +101,10 @@ object Select {
     * @param root top of the hierarchy to search for instances/modules of given type
     */
   def allInstancesOf[T <: BaseModule: TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
-    val soFar = if (root.isA[T]) Seq(root.toInstance.asInstanceOf[Instance[T]]) else Nil
+    val soFar = root match {
+      case i: Instance[BaseModule] if i.isA[T] => Seq(i.asInstanceOf[Instance[T]])
+      case _ => Nil
+    }
     val allLocalInstances = instancesIn(root)
     soFar ++ (allLocalInstances.flatMap(allInstancesOf[T]))
   }
@@ -119,7 +122,7 @@ object Select {
         d.commands.collect {
           case i: DefInstance =>
             i.id match {
-              case p: core.IsStandIn[BaseModule] =>
+              case p: core.Clone[BaseModule, BaseModule] =>
                 //TODO: Think about if returning parent definition's context is appropriate or not.
                 p.toDefinition
                 //parent._lookup { x => new Definition(core.StandIn(p)).asInstanceOf[Definition[BaseModule]] }
@@ -152,7 +155,7 @@ object Select {
         d.commands.flatMap {
           case d: DefInstance =>
             d.id match {
-              case p: core.IsStandIn[_] =>
+              case p: core.Clone[_, _] =>
                 val d = p.toDefinition
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
               case other: BaseModule =>
@@ -250,7 +253,7 @@ object Select {
         d.commands.flatMap {
           case i: DefInstance =>
             i.id match {
-              case m: experimental.hierarchy.StandInModule[_] if !m._madeFromDefinition => None
+              case m: experimental.hierarchy.ModuleClone[_] if !m._madeFromDefinition => None
               case _: PseudoModule =>
                 throw new Exception(
                   "instances, collectDeep, and getDeep are currently incompatible with Definition/Instance!"
@@ -288,7 +291,7 @@ object Select {
   def ios[T <: BaseModule](parent: Hierarchy[T]): Seq[Data] = {
     check(parent)
     implicit val mg = new chisel3.internal.MacroGenerated {}
-    parent._lookup { x => ios(parent.proto) }
+    ???//parent._lookup { x => ios(parent.proto) }
   }
 
   /** Selects all SyncReadMems directly contained within given module

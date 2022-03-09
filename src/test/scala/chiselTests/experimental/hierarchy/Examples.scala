@@ -158,13 +158,14 @@ object Examples {
   }
   @instantiable
   class Viewer(val y: AddTwo, markPlease: Boolean) extends IsInstantiable {
-    @public val x = y
-    if (markPlease) mark(x.i0.innerWire, "first")
+    //@public val x = y
+    @public val xi0 = y.i0
+    if (markPlease) mark(xi0.innerWire, "first")
   }
   @instantiable
   class ViewerParent(val x: AddTwo, markHere: Boolean, markThere: Boolean) extends Module {
     @public val viewer = new Viewer(x, markThere)
-    if (markHere) mark(viewer.x.i0.innerWire, "second")
+    if (markHere) mark(viewer.xi0.innerWire, "second")
   }
   @instantiable
   class MultiVal() extends Module {
@@ -173,7 +174,7 @@ object Examples {
   @instantiable
   class LazyVal() extends Module {
     @public val x = Wire(UInt(3.W))
-    @public lazy val y = "Hi"
+    @public val y = "Hi"
   }
   case class Parameters(string: String, int: Int) extends IsLookupable
   @instantiable
@@ -181,16 +182,16 @@ object Examples {
     @public val y = p
     @public val x = Wire(UInt(3.W))
   }
-  @instantiable
-  class HasList() extends Module {
-    @public val y = List(1, 2, 3)
-    @public val x = List.fill(3)(Wire(UInt(3.W)))
-  }
-  @instantiable
-  class HasSeq() extends Module {
-    @public val y = Seq(1, 2, 3)
-    @public val x = Seq.fill(3)(Wire(UInt(3.W)))
-  }
+  //@instantiable
+  //class HasList() extends Module {
+  //  @public val y = List(1, 2, 3)
+  //  @public val x = List.fill(3)(Wire(UInt(3.W)))
+  //}
+  //@instantiable
+  //class HasSeq() extends Module {
+  //  @public val y = Seq(1, 2, 3)
+  //  @public val x = Seq.fill(3)(Wire(UInt(3.W)))
+  //}
   @instantiable
   class HasOption() extends Module {
     @public val x: Option[UInt] = Some(Wire(UInt(3.W)))
@@ -266,16 +267,37 @@ object Examples {
     @public val syncReadMem = SyncReadMem(8, UInt(32.W))
   }
 
-  @instantiable
-  class HasContextual() extends Module {
-    @public val index: Contextual[Int] = Contextual(0)
-    @public val foo: Contextual[Int] = Contextual(1)
-  }
+  //@instantiable
+  //class HasContextual() extends Module {
+  //  @public val index: Contextual[Int] = Contextual(0)
+  //  @public val foo: Contextual[Int] = Contextual(1)
+  //}
 
-  @instantiable
-  class IntermediateHierarchy() extends Module {
-    val d = Definition(new HasContextual)
-    @public val i0 = Instance.withContext(d)(_.index.value = 0)
-    @public val i1 = Instance.withContext(d)(_.index.value = 1)
-  }
+  //@instantiable
+  //class IntermediateHierarchy() extends Module {
+  //  val d = Definition(new HasContextual)
+  //  @public val i0 = Instance.withContext(d)(_.index.value = 0)
+  //  @public val i1 = Instance.withContext(d)(_.index.value = 1)
+  //}
+  //                                      IntermediateHierarchy.i0.index.value = 0
+  //                        d:Definition[IntermediateHierarchy].i0.index.value = 1
+  //                     Top.i0:Instance[IntermediateHierarchy].i0.index.value == 1
+  //Topper.top:Instance[Top].i0:Instance[IntermediateHierarchy].i0.index.value == 1
 }
+
+
+
+
+//val myType = TypeDefinition(new MyType {..})
+//val inst: WireInstance[MyType] = WireInstance(myType)
+//
+//val legacy: MyType = Wire(new MyType)
+//legacy := inst
+//
+//module X:
+//  input a: UInt
+//  output b: UInt
+//
+//inst x of x
+//wire y: {flip a: UInt, b: UInt}
+//y := x

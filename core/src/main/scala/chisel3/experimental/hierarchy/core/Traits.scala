@@ -16,15 +16,6 @@ trait IsInstantiable
 
 // Context dependent that lacks a clone method, and also creates a new context for values looked up from it
 trait IsContext {
-  import java.util.IdentityHashMap
-  private val sockets: IdentityHashMap[Contextual[Any], Any => Any] =
-    new java.util.IdentityHashMap[Contextual[Any], Any => Any]()
-  //private val sockets: mutable.HashMap[Contextual[Any], Any => Any] = mutable.HashMap.empty[Contextual[Any], Any => Any]
-  def addEdit[T](contextual: Contextual[T], edit: T => T): Unit = {
-    require(!sockets.containsKey(contextual), s"Cannot set the same Contextual twice, using the same lense! $this, $contextual")
-    sockets.put(contextual, edit.asInstanceOf[Any => Any])
-  }
-  def edit[T](contextual: Contextual[T]): T = if(sockets.containsKey(contextual)) sockets.get(contextual)(contextual.value).asInstanceOf[T] else contextual.value
 }
 
 
@@ -35,17 +26,17 @@ trait IsContext {
 
 // Implemented by a library so we can create a Definition of an underlying Proto
 trait ProxyDefiner[P] {
-  def apply(f: => P): Proxy[P]
+  def apply(f: => P): DefinitionProxy[P]
 }
 
 // Implemented by a library so we can create an Instance of a Definition
 trait ProxyInstancer[P] {
-  def apply(definition: Definition[P]): Proxy[P]
+  def apply(definition: Definition[P]): Clone[P, _]
 }
 
 // Use for a library to have a standin for an IsContext proto
 //   This is the thing that interacts with a library's internal representations and state properly to
 //   manage context
-trait ContextStandIn[+P <: IsContext] extends IsStandIn[P] {
-  def asProxy: Proxy[P] = StandIn(this)
-}
+//trait ContextStandIn[+P <: IsContext] extends IsStandIn[P] {
+//  def asProxy: Proxy[P] = StandIn(this)
+//}

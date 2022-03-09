@@ -6,25 +6,24 @@ import chisel3.experimental.BaseModule
 import chisel3._
 import Utils._
 
-/** Represents an instance contained in a specific proto context, e.g. a child module
+/** Represents a unique instance which is DIFFERENT from the underlying proto
+  * It has a different instance name and ports
+  * We do not mock up its parental lineage; to do that, we use StandInHierarchy
   *
   * Private internal class to serve as a _parent for Data in cloned ports
   *
   * @param proto
   * @param contexts
   */
-private[chisel3] final class StandInModule[T <: BaseModule](val proto: T, val parent: Option[IsContext]) extends PseudoModule with ContextStandIn[T] {
-  _parent = parent match {
-    case Some(b: BaseModule) => Some(b)
-    case other => None
-  }
-
-  def toInstance:   core.Instance[T] = new core.Instance(StandIn(this))
-  def toDefinition: core.Definition[T] = new core.Definition(StandIn(StandInDefinition(proto, getCircuit)))
+private[chisel3] final class ModuleClone[T <: BaseModule](
+    val genesis: ModuleDefinition[T]
+) extends PseudoModule with Clone[T, BaseModule] {
+  def parent = _parent.get
+  // _parent is set outside, just like a normal module
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
-  override def toString = s"experimental.hierarchy.StandInModule(${proto})"
+  override def toString = s"experimental.hierarchy.ModuleClone(${proto})"
   // Do not call default addId function, which may modify a module that is already "closed"
   override def addId(d: HasId): Unit = ()
   def getPorts = _portsRecord

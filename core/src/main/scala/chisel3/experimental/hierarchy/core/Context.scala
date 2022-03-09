@@ -8,16 +8,17 @@ case class Context[+C <: IsContext](context: Option[C]) {
 }
 
 // Typeclass
-trait Contexter[V, C <: IsContext]  {
-  type R = Context[C]
-  def apply[P](value: V, hierarchy: Hierarchy[P]): R
-}
+//trait Cloner[V]  {
+//  type R = Context[C]
+//  def apply[P](value: V): R
+//}
 
 // Default Typeclass Implementations
-object Contexter {
-  implicit def isContext[V] = new Contexter[V, IsContext] {
-    def apply[P](value: V, hierarchy: Hierarchy[P]): R = {
-      hierarchy.proxy.lookupContext
-    }
-  }
-}
+//object Contexter {
+//  implicit def isContext[V] = new Contexter[V, IsContext] {
+//    def apply[P](value: V, hierarchy: Hierarchy[P]): R = {
+//      hierarchy.proxy.lookupContext
+//    }
+//  }
+//}
+//

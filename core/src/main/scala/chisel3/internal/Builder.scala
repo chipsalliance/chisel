@@ -644,12 +644,13 @@ private[chisel3] object Builder extends LazyLogging {
     * innermost element is of type HasId
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
-  import chisel3.experimental.hierarchy.core.{Instance, StandIn}
-  import chisel3.experimental.hierarchy.{StandInModule}
+  import chisel3.experimental.hierarchy.core.{Instance}
+  import chisel3.experimental.hierarchy.{ModuleClone, ModuleTransparent}
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
     case (id: Instance[_]) =>
       id.proxy match {
-        case StandIn(m: StandInModule[_]) => namer(m.getPorts, prefix)
+        case m: ModuleClone[_] => namer(m.getPorts, prefix)
+        case m: ModuleTransparent[_] => namer(m.proto, prefix)
         case _ =>
       }
     case (id: HasId) => namer(id, prefix)
