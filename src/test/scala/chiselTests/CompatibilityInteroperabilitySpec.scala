@@ -74,7 +74,7 @@ object Chisel3Components {
   class Chisel3ModuleChiselRecordB extends Chisel3PassthroughModule(Flipped(new ChiselRecord))
 }
 
-class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
+class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "Modules defined in the Chisel._" should "successfully bulk connect in chisel3._" in {
     import chisel3._

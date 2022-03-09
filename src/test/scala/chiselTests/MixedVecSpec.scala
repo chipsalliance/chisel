@@ -280,4 +280,20 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
       })
     }
   }
+
+  property("MixedVec connections should emit FIRRTL bulk connects when possible") {
+    val chirrtl = ChiselStage.emitChirrtl(new Module {
+      val io = IO(new Bundle {
+        val inMono = Input(MixedVec(Seq(UInt(8.W), UInt(16.W), UInt(4.W), UInt(7.W))))
+        val outMono = Output(MixedVec(Seq(UInt(8.W), UInt(16.W), UInt(4.W), UInt(7.W))))
+        val inBi = Input(MixedVec(Seq(UInt(8.W), UInt(16.W), UInt(4.W), UInt(7.W))))
+        val outBi = Output(MixedVec(Seq(UInt(8.W), UInt(16.W), UInt(4.W), UInt(7.W))))
+      })
+      // Explicit upcast avoids weird issue where Scala 2.12 overloading resolution calls version of := accepting Seq[T] instead of normal Data version
+      io.outMono := (io.inMono: Data)
+      io.outBi <> io.inBi
+    })
+    chirrtl should include("io.outMono <= io.inMono @[MixedVecSpec.scala")
+    chirrtl should include("io.outBi <= io.inBi @[MixedVecSpec.scala")
+  }
 }
