@@ -43,6 +43,29 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       chirrtl.serialize should include("inst i0 of AddOne")
     }
+    it("0.3: BlackBoxes should be supported") {
+      class Top extends Module {
+        val in = IO(Input(UInt(32.W)))
+        val out = IO(Output(UInt(32.W)))
+        val io = IO(new Bundle {
+          val in = Input(UInt(32.W))
+          val out = Output(UInt(32.W))
+        })
+        val definition = Definition(new AddOneBlackBox)
+        val i0 = Instance(definition)
+        val i1 = Instance(definition)
+        i0.io.in := in
+        out := i0.io.out
+        io <> i1.io
+      }
+      val chirrtl = getFirrtlAndAnnos(new Top)._1.serialize
+      chirrtl should include("inst i0 of AddOneBlackBox")
+      chirrtl should include("inst i1 of AddOneBlackBox")
+      chirrtl should include("i0.in <= in")
+      chirrtl should include("out <= i0.out")
+      chirrtl should include("i1.in <= io.in")
+      chirrtl should include("io.out <= i1.out")
+    }
   }
   describe("1: Annotations on instances in same chisel compilation") {
     it("1.0: should work on a single instance, annotating the instance") {
@@ -338,7 +361,6 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.syncReadMem, "SyncReadMem")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.foreach { x => println(x.serialize) }
       annos should contain(MarkAnnotation("~Top|Top/i:HasMems>mem".rt, "Mem"))
       annos should contain(MarkAnnotation("~Top|Top/i:HasMems>syncReadMem".rt, "SyncReadMem"))
     }
@@ -717,6 +739,51 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         annos should contain(e)
       }
     }
+
+    it("7.4: should work on Views of BlackBoxes") {
+      @instantiable
+      class MyBlackBox extends BlackBox {
+        @public val io = IO(new Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        })
+        @public val innerView = io.viewAs
+        @public val foo = io.in.viewAs[UInt]
+        @public val bar = io.out.viewAs[UInt]
+      }
+      class Top extends RawModule {
+        val foo = IO(Input(UInt(8.W)))
+        val bar = IO(Output(UInt(8.W)))
+        val i = Instance(Definition(new MyBlackBox))
+        val outerView = i.io.viewAs
+        i.foo := foo
+        bar := i.bar
+        mark(i.foo, "i.foo")
+        mark(i.bar, "i.bar")
+        mark(i.innerView.in, "i.innerView.in")
+        mark(outerView.out, "outerView.out")
+      }
+      val inst = "~Top|Top/i:MyBlackBox"
+      val expectedAnnos = List(
+        s"$inst>in".rt -> "i.foo",
+        s"$inst>out".rt -> "i.bar",
+        s"$inst>in".rt -> "i.innerView.in",
+        s"$inst>out".rt -> "outerView.out"
+      )
+      val expectedLines = List(
+        "i.in <= foo",
+        "bar <= i.out"
+      )
+      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
+      val text = chirrtl.serialize
+      for (line <- expectedLines) {
+        text should include(line)
+      }
+      for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
+        annos should contain(e)
+      }
+    }
+
   }
 
   describe("8: @instantiable and @public should compose with CloneModuleAsRecord") {
