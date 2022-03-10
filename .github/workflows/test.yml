@@ -112,7 +112,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [ci, integration]
+    needs: [ci, integration, std]
     runs-on: ubuntu-20.04
     steps:
       - run: echo Success!
