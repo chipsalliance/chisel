@@ -262,4 +262,14 @@ package object dataview {
     }
   }
 
+  /** Determine the target of a View if it is a single Target
+    *
+    * @note An Aggregate may be a view of unrelated [[Data]] (eg. like a Seq or tuple) and thus this
+    *       there is no single Data representing the Target and this function will return None
+    * @return The single Data target of this view or None if a single Data doesn't exist
+    */
+  private[chisel3] def reifyToAggregate(data: Data): Option[Aggregate] = reifySingleData(data) match {
+    case Some(a: Aggregate) => Some(a)
+    case other => None
+  }
 }
