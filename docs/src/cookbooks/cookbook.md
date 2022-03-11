@@ -20,6 +20,8 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
   * [Can I make a 2D or 3D Vector?](#can-i-make-a-2D-or-3D-Vector)
   * [How do I create a Vector of Registers?](#how-do-i-create-a-vector-of-registers)
   * [How do I create a Reg of type Vec?](#how-do-i-create-a-reg-of-type-vec)
+* Bundles
+  * [How do I deal with aliased Bundle fields?](#aliased-bundle-fields)
 * [How do I create a finite state machine?](#how-do-i-create-a-finite-state-machine-fsm)
 * [How do I unpack a value ("reverse concatenation") like in Verilog?](#how-do-i-unpack-a-value-reverse-concatenation-like-in-verilog)
 * [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
@@ -31,7 +33,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
   * [How can I dynamically set/parametrize the name of a module?](#how-can-i-dynamically-setparametrize-the-name-of-a-module)
 * Directionality
   * [How do I strip directions from a bidirectional Bundle (or other Data)?](#how-do-i-strip-directions-from-a-bidirectional-bundle-or-other-data)
-  
+
 ## Type Conversions
 
 ### How do I create a UInt from an instance of a Bundle?
@@ -229,6 +231,145 @@ class Foo extends RawModule {
   //   The Reg is then initialized to the value of the Wire (which gives it the same type)
   val initRegOfVec = RegInit(VecInit(Seq.fill(4)(0.U(32.W))))
 }
+```
+
+## Bundles
+
+### <a name="aliased-bundle-fields"></a> How do I deal with aliased Bundle fields?
+
+```scala mdoc:invisible:reset
+import chisel3._
+
+class Top[T <: Data](gen: T) extends Module {
+  val in = IO(Input(gen))
+  val out = IO(Output(gen))
+  out := in
+}
+```
+
+Following the `gen` pattern when creating Bundles can result in some opaque error messages:
+
+```scala mdoc
+class AliasedBundle[T <: Data](gen: T) extends Bundle {
+  val foo = gen
+  val bar = gen
+}
+```
+
+```scala mdoc:crash
+getVerilogString(new Top(new AliasedBundle(UInt(8.W))))
+```
+
+This error is saying that fields `foo` and `bar` of `AliasedBundle` are the
+exact same object in memory.
+This is a problem for Chisel because we need to be able to distinguish uses of
+`foo` and `bar` but cannot when they are referentially the same.
+
+Note that the following example looks different but will give you exactly the same issue:
+
+```scala mdoc
+class AlsoAliasedBundle[T <: Data](val gen: T) extends Bundle {
+                                // ^ This val makes `gen` a field, just like `foo`
+  val foo = gen
+}
+```
+
+By making `gen` a `val`, it becomes a public field of the `class`, just like `foo`.
+
+```scala mdoc:crash
+getVerilogString(new Top(new AlsoAliasedBundle(UInt(8.W))))
+```
+
+There are several ways to solve this issue with their own advantages and disadvantages.
+
+#### 1. 0-arity function parameters
+
+Instead of passing an object as a parameter, you can pass a 0-arity function (a function with no arguments):
+
+```scala mdoc
+class UsingAFunctionBundle[T <: Data](gen: () => T) extends Bundle {
+  val foo = gen()
+  val bar = gen()
+}
+```
+
+Note that the type of `gen` is now `() => T`.
+Because it is now a function and not a subtype of `Data`, you can safely make `gen` a `val` without
+it becoming a hardware field of the `Bundle`.
+
+Note that this also means you must pass `gen` as a function, for example:
+
+```scala mdoc:silent
+getVerilogString(new Top(new UsingAFunctionBundle(() => UInt(8.W))))
+```
+
+<a name="aliased-warning"></a> **Warning**: you must ensure that `gen` creates fresh objects rather than capturing an already constructed value:
+
+```scala mdoc:crash
+class MisusedFunctionArguments extends Module {
+  // This usage is correct
+  val in = IO(Input(new UsingAFunctionBundle(() => UInt(8.W))))
+
+  // This usage is incorrect
+  val fizz = UInt(8.W)
+  val out = IO(Output(new UsingAFunctionBundle(() => fizz)))
+}
+getVerilogString(new MisusedFunctionArguments)
+```
+In the above example, value `fizz` and fields `foo` and `bar` of `out` are all the same object in memory.
+
+
+#### 2. By-name function parameters
+
+Functionally the same as (1) but with more subtle syntax, you can use [Scala by-name function parameters](https://docs.scala-lang.org/tour/by-name-parameters.html):
+
+```scala mdoc
+class UsingByNameParameters[T <: Data](gen: => T) extends Bundle {
+  val foo = gen
+  val bar = gen
+}
+```
+
+With this usage, you do not include `() =>` when passing the argument:
+
+```scala mdoc:silent
+getVerilogString(new Top(new UsingByNameParameters(UInt(8.W))))
+```
+
+Note that as this is just syntactic sugar over (1), the [same warning applies](#aliased-warning).
+
+#### 3. Directioned Bundle fields
+
+You can alternatively wrap the fields with `Output(...)`, which creates fresh instances of the passed argument.
+Chisel treats `Output` as the "default direction" so if all fields are outputs, the `Bundle` is functionally equivalent to a `Bundle` with no directioned fields.
+
+```scala mdoc
+class DirectionedBundle[T <: Data](gen: T) extends Bundle {
+  val foo = Output(gen)
+  val bar = Output(gen)
+}
+```
+
+```scala mdoc:invisible
+getVerilogString(new Top(new DirectionedBundle(UInt(8.W))))
+```
+
+This approach is admittedly a little ugly and may mislead others reading the code because it implies that this Bundle is intended to be used as an `Output`.
+
+#### 4. Call `.cloneType` directly
+
+You can also just call `.cloneType` on your `gen` argument directly.
+While we try to hide this implementation detail from the user, `.cloneType` is the mechanism by which Chisel creates fresh instances of `Data` objects:
+
+```scala mdoc
+class UsingCloneTypeBundle[T <: Data](gen: T) extends Bundle {
+  val foo = gen.cloneType
+  val bar = gen.cloneType
+}
+```
+
+```scala mdoc:invisible
+getVerilogString(new Top(new UsingCloneTypeBundle(UInt(8.W))))
 ```
 
 ### How do I create a finite state machine (FSM)?
