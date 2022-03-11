@@ -403,8 +403,16 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** @group SourceInfoTransformMacro */
   def do_##(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
-    val w = this.width + that.width
-    pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, this.ref, that.ref))
+    def f = pushOp(DefPrim(sourceInfo, UInt(this.width + that.width), ConcatOp, this.ref, that.ref))
+    constPropCat(that).getOrElse(f)
+  }
+
+  private def constPropCat(that: Bits): Option[UInt] = {
+    if (this.isLit && that.isLit) {
+      Some(((this.litValue << this.getWidth) | this.litValue).U(this.width + that.width))
+    } else {
+      None
+    }
   }
 
   /** Default print as [[Decimal]] */
