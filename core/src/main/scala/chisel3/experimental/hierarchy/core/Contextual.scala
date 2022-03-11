@@ -3,21 +3,25 @@ package chisel3.experimental.hierarchy.core
 import java.util.IdentityHashMap
 
 // Wrapper Class
-final case class Contextual[+V](value: V)
+final class Contextual[+V](val value: V)
 
-final case class Edit[V](c: Contextual[V], f: V => V)
+object Contextual {
+  def apply[V](value: V): Contextual[V] = new Contextual(value)
+}
+
+//final case class Edit[V](c: Contextual[V], f: V => V)
 
 //final case class Context(map: IdentityHashMap[Contextual[Any], Edit[Any]])
-final case class AllEdits(ls: List[Edit[Any]])
-object AllEdits {
-  def empty = AllEdits(Nil)//new IdentityHashMap[Contextual[Any], Edit[Any]]()
-}
+//final case class AllEdits(ls: List[Edit[Any]])
+//object AllEdits {
+//  def empty = AllEdits(Nil)//new IdentityHashMap[Contextual[Any], Edit[Any]]()
+//}
 
 // Typeclass Trait
-trait Contextualizer[V]  {
-  type R
-  def apply[P](value: V, hierarchy: Hierarchy[P]): R
-}
+//trait Contextualizer[V]  {
+//  type R
+//  def apply[P](value: V, hierarchy: Hierarchy[P]): R
+//}
 
 // Default Typeclass Implementations
 object Contextualizer {

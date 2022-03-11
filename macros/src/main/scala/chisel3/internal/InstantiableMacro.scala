@@ -55,7 +55,7 @@ private[chisel3] object instantiableMacro {
             Seq(
               q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Definition[$tpname[..$argTParams]]) { ..$hierarchyExtensions }""",
               q"""implicit class $instname[..$tparams](___module: chisel3.experimental.hierarchy.core.Instance[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """,
-              //q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """
+              q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """
             ),
             tpname
           )
@@ -70,7 +70,7 @@ private[chisel3] object instantiableMacro {
             Seq(
               q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Definition[$tpname[..$argTParams]]) { ..$hierarchyExtensions }""",
               q"""implicit class $instname[..$tparams](___module: chisel3.experimental.hierarchy.core.Instance[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """,
-              //q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """
+              q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """
             ),
             tpname
           )

@@ -4,55 +4,11 @@ import java.util.IdentityHashMap
 // Wrapper Class
 sealed trait Proxy[+P] {
   def proto: P
+  def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T]
+  def lenses: Seq[Lense[P]]
   def lineageOpt: Option[Proxy[Any]]
 
   private[chisel3] def open[V](contextual: Contextual[V]): V = ???
-
-
-  private[chisel3] val cache = new IdentityHashMap[Any, Any]()
-  //def lookup[U, C](value: Proxy[U])(
-  //    mockerU: Mocker[U, C],
-  //    mockerC: Mocker[C, C],
-  //    proxifier: Proxifier[C]
-  //): Proxy[U] = (this, value, this.proto == value.proto) match {
-  //  case (t: Transparent[P, C],   v,                        _)     => v
-  //  case (t: DefinitionProxy[P],  v: DefinitionProxy[U], true)  => v
-  //  case (t: DefinitionProxy[P],  v: DefinitionProxy[U], false) => v
-  //  case (t: DefinitionProxy[P],  v: HierarchicalProxy[U, C], true)  => t.asInstanceOf[DefinitionProxy[U]]
-  //  case (t: DefinitionProxy[P],  v: HierarchicalProxy[U, C], false) => 
-  //    val newParent = this.blookup(v.parent)(mockerC, mockerC, proxifier, proxifier).asInstanceOf[C]
-  //    if(newParent == v.parent) v else mockerU(v, newParent)
-  //  case (t: HierarchicalProxy[P, C], v: DefinitionProxy[U], true)  => 
-  //    t.asInstanceOf[HierarchicalProxy[U, C]]
-  //  case (t: HierarchicalProxy[P, C], v: DefinitionProxy[U], false) => v
-  //  case (t: HierarchicalProxy[P, C], v: HierarchicalProxy[U, C],   true)  => 
-  //    val newGenesis = if(t.genesis == v) t.asInstanceOf[HierarchicalProxy[U, C]] else t.genesis.ilookup(v)(mockerU, mockerC, proxifier)
-  //    mockerU(newGenesis, t.asInstanceOf[C])
-  //  case (t: HierarchicalProxy[P, C], v: HierarchicalProxy[U, C],   false) => 
-  //    val newParent  = this.blookup(v.parent)(mockerC, mockerC, proxifier, proxifier).asInstanceOf[C]
-  //    val newGenesis = t.genesis.ilookup(v)(mockerU, mockerC, proxifier)
-  //    if(newGenesis == v && newParent == v.parent) v else mockerU(newGenesis, newParent)
-  //}
-  //def ilookup[U, C](value: Proxy[U])(
-  //    mockerU: Mocker[U, C],
-  //    mockerC: Mocker[C, C],
-  //    proxifier: Proxifier[C]
-  //):  HierarchicalProxy[U, C] = {
-  //  lookup(value)(mockerU, mockerC, proxifier).asInstanceOf[HierarchicalProxy[U, C]]
-  //}
-  //def blookup[U, C](value: U)(
-  //    mockerU: Mocker[U, C],
-  //    mockerC: Mocker[C, C],
-  //    proxifierU: Proxifier[U],
-  //    proxifierC: Proxifier[C]
-  //): Proxy[U] = {
-  //  //println(s"  value=$value")
-  //  val p = proxifierU(value, this)
-  //  //println(s"  p=$p")
-  //  val ret = lookup(p)(mockerU, mockerC, proxifierC)
-  //  //println(s"  blookupRet=$ret")
-  //  ret
-  //}
 
   def toDefinition: Definition[P]
 }
@@ -72,6 +28,10 @@ trait Proxifier[C] {
 }
 sealed trait InstanceProxy[+P] extends Proxy[P] {
   def genesis: Proxy[P]
+  def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
+    val genesisContextual = genesis.compute(key, contextual)
+    lenses.foldLeft(genesisContextual) { case (c, lense) => lense.compute(key, c) }
+  }
   def proto = genesis.proto
   def lineageOfType[C](pf: PartialFunction[Any, C]): Option[C] = lineageOpt match {
     case Some(a) if pf.isDefinedAt(a) => pf.lift(a)
@@ -100,15 +60,19 @@ trait Mock[+P] extends InstanceProxy[P] {
   def genesis: InstanceProxy[P]
 }
 trait DefinitionProxy[+P] extends Proxy[P] {
+  def lenses: Seq[Lense[P]] = Nil
+  def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
+    lenses.foldLeft(contextual) { case (c, lense) => lense.compute(key, c) }
+  }
   def lineageOpt: Option[Proxy[Any]] = None
   def toDefinition = new Definition(this)
 }
 
 final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P]
-final case class InstantiableTransparent[P](genesis: InstantiableDefinition[P]) extends InstanceProxy[P] {
+final case class InstantiableTransparent[P](genesis: InstantiableDefinition[P], lenses: Seq[Lense[P]]) extends InstanceProxy[P] {
   val lineageOpt = None
 }
-final case class InstantiableMock[P](genesis: InstanceProxy[P], lineage: Proxy[Any]) extends InstanceProxy[P] {
+final case class InstantiableMock[P](genesis: InstanceProxy[P], lineage: Proxy[Any], lenses: Seq[Lense[P]]) extends InstanceProxy[P] {
   val lineageOpt = Some(lineage)
 }
 

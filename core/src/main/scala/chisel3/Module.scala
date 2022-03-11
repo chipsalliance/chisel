@@ -217,9 +217,10 @@ package internal {
     }
 
     //import chisel3.experimental.hierarchy.proxifierModule
-    import chisel3.experimental.hierarchy.core.{Proxifier, Definition}
+    import chisel3.experimental.hierarchy.core.{Proxifier, Definition, TopLense}
     private[chisel3] def cloneIORecord(
-      definition: Definition[BaseModule]
+      definition: Definition[BaseModule],
+      lenses: Seq[TopLense[BaseModule]]
     )(
       implicit sourceInfo: SourceInfo,
       compileOptions:      CompileOptions,
@@ -233,7 +234,7 @@ package internal {
       val parent = Builder.currentModule
       //import experimental.hierarchy.core.{Proto, Proxifier}
       import experimental.hierarchy._
-      val cloneParent = Module(new experimental.hierarchy.ModuleClone(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]]))
+      val cloneParent = Module(new experimental.hierarchy.ModuleClone(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]], lenses))
       cloneParent._parent = parent
       require(proto.isClosed, "Can't clone a module before module close")
       require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")

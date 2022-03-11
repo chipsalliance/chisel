@@ -3,86 +3,76 @@ import scala.collection.mutable
 import java.util.IdentityHashMap
 
 // Wrapper Class
-//final case class Lense[+P](proxy: Proxy[P]) {
-//
-//  private[chisel3] val cache = new IdentityHashMap[Any, Any]()
-//
-//  def _lookup[B, C](that: P => B)(
-//    implicit lenser: Lenser[B],
-//    macroGenerated:  chisel3.internal.MacroGenerated
-//  ): lenser.R = {
-//    val protoValue = that(this.proxy.proto)
-//    val retValue = lenser(protoValue, this)
-//    //cache.getOrElseUpdate(protoValue, retValue)
-//    retValue
-//  }
-//}
+trait Lense[+P] {
+  def proxy: Proxy[P]
+  def top: TopLense[_]
+  def toHierarchy: Hierarchy[P] = proxy match {
+    case d: DefinitionProxy[P] => Definition(d)
+    case i: InstanceProxy[P] => Instance(i)
+  }
+  private[chisel3] val edits = new IdentityHashMap[Contextual[Any], Any => Any]()
+  private[chisel3] val cache = new IdentityHashMap[Any, Any]()
 
-//final case class Socket[T](contextual: Contextual[T], lense: Lense[_]) {
-//  def value: T = contextual.value
-//  def value_=(newValue: T): Edit[T] = edit({_: T => newValue})
-//  def edit(f: T => T): Edit[T] = lense.proxy match {
-//    case i: HierarchicalProxy[_, _] => i.addEdit(contextual, f)
-//    case i: InstantiableProxy[_, _] => i.parent match {
-//      case i: HierarchicalProxy[_, _] => i.addEdit(contextual, f)
-//    }
-//    case other => chisel3.internal.throwException("Cannot edit on a non-IsContext lense!")
-//  }
-//}
+  private[chisel3] def addEdit[T](contextual: Contextual[T], edit: T => T): Unit = {
+    require(!edits.containsKey(contextual), s"Cannot set $contextual more than once!")
+    edits.put(contextual, edit.asInstanceOf[Any => Any])
+  }
+  private[chisel3] def getEdit[T](contextual: Contextual[T]): Edit[T] = {
+    if(edits.containsKey(contextual)) Edit(contextual, edits.get(contextual).asInstanceOf[T => T]) else {
+      Edit(contextual, {t: T => t})
+    }
+  }
+  private[chisel3] def compute[T](key: Contextual[T], c: Contextual[T]): Contextual[T] = new Contextual(getEdit(key).edit(c.value))
+
+  def _lookup[B, C](that: P => B)(
+    implicit lookuper: Lookuper[B],
+    macroGenerated:  chisel3.internal.MacroGenerated
+  ): lookuper.S = {
+    val protoValue = that(this.proxy.proto)
+    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookuper.S] else {
+      val retValue = lookuper.setter(protoValue, this)
+      cache.put(protoValue, retValue)
+      retValue
+    }
+  }
+  def getter[B, C](protoValue: B)(
+    implicit lookuper: Lookuper[B]
+  ): lookuper.G = {
+    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookuper.G] else {
+      println(protoValue)
+      val retValue = lookuper.getter(protoValue, this)
+      cache.put(protoValue, retValue)
+      println(retValue)
+      retValue
+    }
+  }
+}
+final case class TopLense[+P](proxy: Proxy[P]) extends Lense[P] {
+  def top = this
+}
+final case class NestedLense[+P](proxy: Proxy[P], top: TopLense[_]) extends Lense[P] {
+
+}
+
+final case class Socket[T](contextual: Contextual[T], lense: Lense[_]) {
+  def value: T = contextual.value
+  def value_=(newValue: T): TopLense[_] = edit({_: T => newValue})
+  def edit(f: T => T): TopLense[_] = {
+    lense.addEdit(contextual, f)
+    lense.top
+  }
+}
+final case class Edit[T](contextual: Contextual[T], edit: T => T)
 
 // Underlying Classes; For now, just use IsContext's until proven otherwise
 //
 // Typeclass Trait
 //trait Lenser[V]  {
-//  type R
-//  def apply[P](value: V, lense: Lense[P]): R
 //}
-//
 //object Lenser {
 //  implicit def instance[I](implicit lookuper: Lookuper[Instance[I]]) = new Lenser[Instance[I]] {
-//    type R = Lense[I]
-//    def apply[P](value: Instance[I], lense: Lense[P]): R = {
-//      // For now i'm just wrapping it in instance, i don't think it matters as of now, but something to investigate later
-//      Lense(lookuper(value, lense.proxy).asInstanceOf[Instance[I]].proxy)
-//    }
 //  }
-//  implicit def contextual[I] = new Lenser[Contextual[I]] {
-//    type R = Socket[I]
-//    def apply[P](value: Contextual[I], lense: Lense[P]): R = {
-//      Socket(value, lense)
-//    }
-//  }
-//  //implicit def isContextual[V <: IsContextual](implicit lookuper: Lookuper[V]) = new Lenser[V] {
-//  //  type R = lookuper.R
-//  //  def apply[P](v: V, lense: Lense[P]): R = {
-//  //    lookuper(v, lense.toHierarchy)
-//  //  }
-//  //}
-//  //implicit def isContext[V <: IsContext](implicit lookuper: Lookuper[V]) = new Lenser[V] {
-//  //  type R = Lense[V]
-//  //  def apply[P](value: V, lense: Lense[P]): R = {
-//  //    // For now i'm just wrapping it in instance, i don't think it matters as of now, but something to investigate later
-//  //    Lense(lookuper(value, lense.toHierarchy).asInstanceOf[Hierarchy[V]].proxy)
-//  //  }
-//  //}
-//  implicit def isInstantiable[V <: IsInstantiable](implicit lookuper: Lookuper[V]) = new Lenser[V] {
-//    type R = Lense[V]
-//    def apply[P](value: V, lense: Lense[P]): R = {
-//      Lense(lookuper(value, lense.proxy).asInstanceOf[Hierarchy[V]].proxy)
-//    }
-//  }
-//  implicit def isLookupable[I <: IsLookupable] = new Lenser[I] {
-//    type R = I
-//    def apply[P](value: I, lense: Lense[P]): I = value
-//  }
-//  implicit val lenserInt = new Lenser[Int] {
-//    type R = Int
-//    def apply[P](that: Int, lense: Lense[P]): R = that
-//  }
-//  implicit val lenserString = new Lenser[String] {
-//    type R = String
-//    def apply[P](that: String, lense: Lense[P]): R = that
-//  }
+//}
 //  //implicit def lenserIterable[B, F[_] <: Iterable[_]](
 //  //  implicit lenser: Lenser[B]
 //  //) = new Lenser[F[B]] {
@@ -92,27 +82,6 @@ import java.util.IdentityHashMap
 //  //    ret.map { x: B => lenser[P](x, lense) }.asInstanceOf[R]
 //  //  }
 //  //}
-//  implicit def lenserOption[B](implicit lenser: Lenser[B]) = new Lenser[Option[B]] {
-//    type R = Option[lenser.R]
-//    def apply[P](that: Option[B], lense: Lense[P]): R = {
-//      that.map { x: B => lenser[P](x, lense) }
-//    }
-//  }
-//  implicit def lenserEither[X, Y](implicit lenserX: Lenser[X], lenserY: Lenser[Y]) = new Lenser[Either[X, Y]] {
-//    type R = Either[lenserX.R, lenserY.R]
-//    def apply[P](that: Either[X, Y], lense: Lense[P]): R = {
-//      that.map { y: Y => lenserY[P](y, lense) }
-//          .left
-//          .map { x: X => lenserX[P](x, lense) }
-//    }
-//  }
-//  implicit def lenserTuple2[X, Y](implicit lenserX: Lenser[X], lenserY: Lenser[Y]) = new Lenser[Tuple2[X, Y]] {
-//    type R = Tuple2[lenserX.R, lenserY.R]
-//    def apply[P](that: Tuple2[X, Y], lense: Lense[P]): R = {
-//      (lenserX[P](that._1, lense), lenserY(that._2, lense))
-//    }
-//  }
-//}
 //
 //
 //

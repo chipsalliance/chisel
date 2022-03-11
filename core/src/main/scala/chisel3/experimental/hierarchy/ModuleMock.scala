@@ -16,7 +16,10 @@ import chisel3._
   * @note In addition, the instance name of an InstanceClone is going to be the SAME as the proto, but this is not true
   * for experimental.hierarchy.ModuleClone.
   */
-private[chisel3] final case class ModuleMock[T <: BaseModule] private (val genesis: InstanceProxy[T] with BaseModule) extends PseudoModule with Mock[T] {
+private[chisel3] final case class ModuleMock[T <: BaseModule] private (
+    val genesis: InstanceProxy[T] with BaseModule,
+    val lenses: Seq[Lense[T]]
+) extends PseudoModule with Mock[T] {
   def lineage = _parent.get.asInstanceOf[Proxy[BaseModule]]
 
   // ======== THINGS TO MAKE CHISEL WORK ========
@@ -36,12 +39,13 @@ private[chisel3] final case class ModuleMock[T <: BaseModule] private (val genes
 private[chisel3] object ModuleMock {
   def apply[T <: BaseModule](
     genesis: InstanceProxy[T] with BaseModule,
-    lineage: BaseModule
+    lineage: BaseModule,
+    lenses: Seq[Lense[T]]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions,
   ): ModuleMock[T] = {
-    val x = Module.do_pseudo_apply(new ModuleMock(genesis))
+    val x = Module.do_pseudo_apply(new ModuleMock(genesis, lenses))
     x._parent = Some(lineage)
     x
   }

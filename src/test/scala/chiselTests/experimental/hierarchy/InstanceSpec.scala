@@ -1076,44 +1076,38 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(11) Lense") {
-    //it("(11.a): it should work on simple classes") {
-    //  class Top extends Module {
-    //    val d = Definition(new HasContextual)
-    //    d.index should be(1)
+    it("(11.a): it should work on simple classes") {
+      class Top extends Module {
+        val d = Definition(new HasContextual)
+        d.index should be(0)
+        d.foo should be(1)
 
-    //    val i0 = Instance.withContext(d)(_.index.value = 2)
-    //    i0.index should be(2)
-    //    i0.foo should be(1)
+        val i0 = Instance.withContext(d)(_.index.value = 2)
+        i0.index should be(2)
+        i0.foo should be(1)
 
-    //    val i1 = Instance.withContext(d)(_.index.value = 2, _.foo.edit(_ + 2))
-    //    i1.index should be(2)
-    //    i1.foo should be(3)
-    //  }
-    //  getFirrtlAndAnnos(new Top)
-    //}
-  //  it("(11.b): it should compose hierarchically") {
-  //    class Top extends Module {
-  //      val d = Definition(new IntermediateHierarchy)
-  //      val i0 = Instance(d)
-  //      val i1 = Instance.withContext(d)(
-  //        _.i0.index.edit(_ + i0.i1.index + 1),
-  //        _.i1.index.edit(_ + i0.i1.index + 1),
-  //      )
-  //      Instance.withContext(d) { l: Lense[IntermediateHierarchy] =>
-  //        Select.allInstancesOf[HasContextual](l){ i: Lense[HasContextual] =>
-  //          i.index 
+        val i1 = Instance.withContext(d)(_.index.value = 3, _.foo.edit(_ + 3))
+        i1.index should be(3)
+        i1.foo should be(4)
+      }
+      getFirrtlAndAnnos(new Top)
+    }
+    it("(11.b): it should compose hierarchically") {
+      class Top extends Module {
+        val d = Definition(new IntermediateHierarchy)
+        val i0 = Instance(d)
+        val i1 = Instance.withContext(d)(
+          _.i0.index.edit(_ + i0.i1.index + 1),
+          _.i1.index.edit(_ + i0.i1.index + 1),
+        )
+        i0.i0.index should be(0)
+        i0.i1.index should be(1)
+        i1.i0.index should be(2)
+        i1.i1.index should be(3)
+      }
+      getFirrtlAndAnnos(new Top)
 
-  //        }
-
-  //      }
-  //      i0.i0.index should be(0)
-  //      i0.i1.index should be(1)
-  //      i1.i0.index should be(2)
-  //      i1.i1.index should be(3)
-  //    }
-  //    getFirrtlAndAnnos(new Top)
-
-  //  }
+    }
   }
 }
 //  describe("(11) Contextual") {

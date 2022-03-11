@@ -8,6 +8,9 @@ import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform, With
 import java.util.IdentityHashMap
 
 sealed trait Hierarchy[+P] {
+  private[chisel3] val cache = new IdentityHashMap[Any, Any]()
+
+  def open[T](contextual: Contextual[T]): T = proxy.compute(contextual, contextual).value
 
   /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
   def _lookup[B](that: P => B)(
@@ -16,17 +19,20 @@ sealed trait Hierarchy[+P] {
   ): lookuper.R = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(proto)
-    lookuper(protoValue, this)
+    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookuper.R] else {
+      val ret = lookuper(protoValue, this)
+      cache.put(protoValue, ret)
+      ret
+    }
   }
+
+
   def getLineageOf[T](pf: PartialFunction[Any, Hierarchy[T]]): Option[Hierarchy[T]] = {
-    println(this)
-    val ret = pf.lift(this).orElse(proxy.lineageOpt.flatMap {
+    pf.lift(this).orElse(proxy.lineageOpt.flatMap {
       case d: DefinitionProxy[_] => d.toDefinition.getLineageOf(pf)
       case i: InstanceProxy[_] => i.toInstance.getLineageOf(pf)
       case other => println(s"NONE!! $other"); None
     })
-    println(s"returning $ret from $this")
-    ret
   }
 
   def proxyAs[T]: Proxy[P] with T = proxy.asInstanceOf[Proxy[P] with T]
@@ -108,16 +114,19 @@ object Instance {
   def apply[P](definition: Definition[P]): Instance[P] =
     macro InstanceTransform.apply[P]
   def do_apply[P](definition: Definition[P])(implicit stampable: ProxyInstancer[P]): Instance[P] = {
-    new Instance(stampable(definition))
+    new Instance(stampable(definition, Nil))
   }
-  //def withContext[P](definition: Definition[P])(fs: (Lense[P] => Unit)*): Instance[P] = 
-  //  macro WithContextTransform.withContext[P]
-  //def do_withContext[P](definition: Definition[P])(fs: (Lense[P] => Edit[Any])*)(implicit stampable: ProxyInstancer[P]): Instance[P] = {
-  //  val l = definition.toLense
-  //  val edits = fs.foreach(f => f(l))
-  //  val i = new Instance(stampable(definition))
-  //  i
-  //}
+  def withContext[P](definition: Definition[P])(fs: (TopLense[P] => Unit)*): Instance[P] = 
+    macro WithContextTransform.withContext[P]
+  def do_withContext[P](definition: Definition[P])(fs: (TopLense[P] => Unit)*)(implicit stampable: ProxyInstancer[P]): Instance[P] = {
+    val lenses = fs.map{ f => 
+      val lense = TopLense(definition.proxy)
+      f(lense)
+      lense
+    }
+    val i = new Instance(stampable(definition, lenses))
+    i
+  }
 }
 
 final case class Definition[+P] private[chisel3] (private[chisel3] proxy: DefinitionProxy[P]) extends IsLookupable with Hierarchy[P] {

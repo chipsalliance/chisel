@@ -16,7 +16,8 @@ import Utils._
   * @param contexts
   */
 private[chisel3] final class ModuleClone[T <: BaseModule](
-    val genesis: ModuleDefinition[T]
+    val genesis: ModuleDefinition[T],
+    val lenses: Seq[Lense[T]]
 ) extends PseudoModule with Clone[T] {
   // _parent is set outside, just like a normal module
 
