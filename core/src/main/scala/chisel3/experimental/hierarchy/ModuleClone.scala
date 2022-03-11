@@ -17,8 +17,7 @@ import Utils._
   */
 private[chisel3] final class ModuleClone[T <: BaseModule](
     val genesis: ModuleDefinition[T]
-) extends PseudoModule with Clone[T, BaseModule] {
-  def parent = _parent.get
+) extends PseudoModule with Clone[T] {
   // _parent is set outside, just like a normal module
 
   // ======== THINGS TO MAKE CHISEL WORK ========

@@ -16,10 +16,8 @@ import chisel3._
   * @note In addition, the instance name of an InstanceClone is going to be the SAME as the proto, but this is not true
   * for experimental.hierarchy.ModuleClone.
   */
-private[chisel3] final case class ModuleMock[T <: BaseModule] private (
-    val genesis: HierarchicalProxy[T, BaseModule] with BaseModule
-) extends PseudoModule with Mock[T, BaseModule] {
-  def parent = _parent.get
+private[chisel3] final case class ModuleMock[T <: BaseModule] private (val genesis: InstanceProxy[T] with BaseModule) extends PseudoModule with Mock[T] {
+  def lineage = _parent.get.asInstanceOf[Proxy[BaseModule]]
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
@@ -27,17 +25,17 @@ private[chisel3] final case class ModuleMock[T <: BaseModule] private (
   // No addition components are generated
   private[chisel3] def generateComponent(): Option[Component] = None
   // Necessary for toTarget to work
-  private[chisel3] def setAsInstanceRef(): Unit = { this.setRef(Ref(local.asInstanceOf[BaseModule].instanceName)) }
+  private[chisel3] def setAsInstanceRef(): Unit = { this.setRef(Ref(localProxy.asInstanceOf[BaseModule].instanceName)) }
   // This module doesn't acutally exist in the FIRRTL so no initialization to do
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
   // Module name is the same as proto's module name
   override def desiredName: String = proto.name
-  override def instanceName: String = local.asInstanceOf[BaseModule].instanceName
+  override def instanceName: String = localProxy.asInstanceOf[BaseModule].instanceName
 }
 
 private[chisel3] object ModuleMock {
   def apply[T <: BaseModule](
-    genesis: HierarchicalProxy[T, BaseModule] with BaseModule,
+    genesis: InstanceProxy[T] with BaseModule,
     lineage: BaseModule
   )(
     implicit sourceInfo: SourceInfo,

@@ -15,9 +15,8 @@ import Utils._
  */
 private[chisel3] final class ModuleTransparent[T <: BaseModule] private (
     val genesis: ModuleDefinition[T]
-) extends PseudoModule with Transparent[T, BaseModule] {
+) extends PseudoModule with Transparent[T] {
   lazy val ioMap: Map[Data, Data] = proto.getChiselPorts.map { case (_, data) => data -> data }.toMap
-  def parent = _parent.get
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 

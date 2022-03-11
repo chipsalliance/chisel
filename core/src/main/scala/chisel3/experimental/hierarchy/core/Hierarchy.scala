@@ -16,8 +16,20 @@ sealed trait Hierarchy[+P] {
   ): lookuper.R = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(proto)
-    lookuper(protoValue, proxy)
+    lookuper(protoValue, this)
   }
+  def getLineageOf[T](pf: PartialFunction[Any, Hierarchy[T]]): Option[Hierarchy[T]] = {
+    println(this)
+    val ret = pf.lift(this).orElse(proxy.lineageOpt.flatMap {
+      case d: DefinitionProxy[_] => d.toDefinition.getLineageOf(pf)
+      case i: InstanceProxy[_] => i.toInstance.getLineageOf(pf)
+      case other => println(s"NONE!! $other"); None
+    })
+    println(s"returning $ret from $this")
+    ret
+  }
+
+  def proxyAs[T]: Proxy[P] with T = proxy.asInstanceOf[Proxy[P] with T]
 
   /** Determine whether proxy proto is of type provided.
     *
@@ -81,8 +93,9 @@ object Hierarchy {
   }
 }
 
-final case class Instance[+P] private[chisel3] (private[chisel3] proxy: InstanceProxy[P, _]) extends Hierarchy[P] {
+final case class Instance[+P] private[chisel3] (private[chisel3] proxy: InstanceProxy[P]) extends Hierarchy[P] {
   def toDefinition = proxy.toDefinition
+  override def proxyAs[T]: InstanceProxy[P] with T = proxy.asInstanceOf[InstanceProxy[P] with T]
   //def getContext[C: TypeTag]: Option[Hierarchy[C]] = {
   //  if(isA[C]) Some(this) else lineage.flatMap(_.getContext[C])
   //}
@@ -97,9 +110,9 @@ object Instance {
   def do_apply[P](definition: Definition[P])(implicit stampable: ProxyInstancer[P]): Instance[P] = {
     new Instance(stampable(definition))
   }
-  //def withContext[P, C](definition: Definition[P])(fs: (Lense[P] => Unit)*): Instance[P] = 
-  //  macro WithContextTransform.withContext[P, C]
-  //def do_withContext[P, C](definition: Definition[P])(fs: (Lense[P] => Edit[Any])*)(implicit stampable: ProxyInstancer[P, C]): Instance[P] = {
+  //def withContext[P](definition: Definition[P])(fs: (Lense[P] => Unit)*): Instance[P] = 
+  //  macro WithContextTransform.withContext[P]
+  //def do_withContext[P](definition: Definition[P])(fs: (Lense[P] => Edit[Any])*)(implicit stampable: ProxyInstancer[P]): Instance[P] = {
   //  val l = definition.toLense
   //  val edits = fs.foreach(f => f(l))
   //  val i = new Instance(stampable(definition))
@@ -110,6 +123,7 @@ object Instance {
 final case class Definition[+P] private[chisel3] (private[chisel3] proxy: DefinitionProxy[P]) extends IsLookupable with Hierarchy[P] {
   def toDefinition = this
   //def toLense = new Lense(proxy)
+  override def proxyAs[T]: DefinitionProxy[P] with T = proxy.asInstanceOf[DefinitionProxy[P] with T]
   //def getContext[C: TypeTag]: Option[Hierarchy[C]] = {
   //  if(isA[C]) Some(this) else None
   //}

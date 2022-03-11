@@ -53,7 +53,7 @@ object Select {
         d.commands.collect {
           case d: DefInstance =>
             d.id match {
-              case p: core.Clone[_, BaseModule] =>
+              case p: core.Clone[_] =>
                 parent._lookup {
                   x => new Instance(p).asInstanceOf[Instance[BaseModule]]
                 }//.addContext(parent.contexts)
@@ -80,7 +80,7 @@ object Select {
         d.commands.flatMap {
           case d: DefInstance =>
             d.id match {
-              case p: core.Clone[_, BaseModule] =>
+              case p: core.Clone[_] =>
                 val i = parent._lookup { x => new Instance(p).asInstanceOf[Instance[BaseModule]] }//.addContext(parent.contexts)
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
               case other: BaseModule =>
@@ -122,7 +122,7 @@ object Select {
         d.commands.collect {
           case i: DefInstance =>
             i.id match {
-              case p: core.Clone[BaseModule, BaseModule] =>
+              case p: core.Clone[BaseModule] =>
                 //TODO: Think about if returning parent definition's context is appropriate or not.
                 p.toDefinition
                 //parent._lookup { x => new Definition(core.StandIn(p)).asInstanceOf[Definition[BaseModule]] }
@@ -155,7 +155,7 @@ object Select {
         d.commands.flatMap {
           case d: DefInstance =>
             d.id match {
-              case p: core.Clone[_, _] =>
+              case p: core.Clone[_] =>
                 val d = p.toDefinition
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
               case other: BaseModule =>

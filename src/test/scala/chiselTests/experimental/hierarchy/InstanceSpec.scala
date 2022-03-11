@@ -1076,21 +1076,21 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(11) Lense") {
-    it("(11.a): it should work on simple classes") {
-      class Top extends Module {
-        val d = Definition(new HasContextual)
-        d.index should be(1)
+    //it("(11.a): it should work on simple classes") {
+    //  class Top extends Module {
+    //    val d = Definition(new HasContextual)
+    //    d.index should be(1)
 
-        val i0 = Instance.withContext(d)(_.index.value = 2)
-        i0.index should be(2)
-        i0.foo should be(1)
+    //    val i0 = Instance.withContext(d)(_.index.value = 2)
+    //    i0.index should be(2)
+    //    i0.foo should be(1)
 
-        val i1 = Instance.withContext(d)(_.index.value = 2, _.foo.edit(_ + 2))
-        i1.index should be(2)
-        i1.foo should be(3)
-      }
-      getFirrtlAndAnnos(new Top)
-    }
+    //    val i1 = Instance.withContext(d)(_.index.value = 2, _.foo.edit(_ + 2))
+    //    i1.index should be(2)
+    //    i1.foo should be(3)
+    //  }
+    //  getFirrtlAndAnnos(new Top)
+    //}
   //  it("(11.b): it should compose hierarchically") {
   //    class Top extends Module {
   //      val d = Definition(new IntermediateHierarchy)

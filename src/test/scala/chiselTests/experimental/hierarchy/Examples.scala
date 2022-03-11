@@ -267,11 +267,11 @@ object Examples {
     @public val syncReadMem = SyncReadMem(8, UInt(32.W))
   }
 
-  //@instantiable
-  //class HasContextual() extends Module {
-  //  @public val index: Contextual[Int] = Contextual(0)
-  //  @public val foo: Contextual[Int] = Contextual(1)
-  //}
+  @instantiable
+  class HasContextual() extends Module {
+    @public val index: Contextual[Int] = Contextual(0)
+    @public val foo: Contextual[Int] = Contextual(1)
+  }
 
   //@instantiable
   //class IntermediateHierarchy() extends Module {

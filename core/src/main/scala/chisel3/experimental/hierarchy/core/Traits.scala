@@ -31,7 +31,7 @@ trait ProxyDefiner[P] {
 
 // Implemented by a library so we can create an Instance of a Definition
 trait ProxyInstancer[P] {
-  def apply(definition: Definition[P]): Clone[P, _]
+  def apply(definition: Definition[P]): Clone[P]
 }
 
 // Use for a library to have a standin for an IsContext proto

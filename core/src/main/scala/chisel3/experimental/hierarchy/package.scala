@@ -87,71 +87,82 @@ package object hierarchy {
     }
   }
 
-  implicit def mockerBaseModule[U <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Mocker[U, BaseModule] {
-    def apply(newValue: HierarchicalProxy[U, BaseModule], parent: BaseModule): Mock[U, BaseModule] =
-      ModuleMock(newValue.asInstanceOf[HierarchicalProxy[U, BaseModule] with BaseModule], parent)
-  }
-  //implicit def mockerIsInstantiable[U <: IsInstantiable] = new Mocker[U, BaseModule] {
-  //  def apply(newValue: InstanceProxy[U, BaseModule], parent: BaseModule): BaseModule = 
-  //    InstantiableMock(newValue, parent)
-  //}
-
-  implicit def proxifierBaseModule(implicit mocker: Mocker[BaseModule, BaseModule]) = new Proxifier[BaseModule] {
-    def apply[P](protoValue: BaseModule, proxy: Proxy[P]): BaseModule with Proxy[BaseModule] = {
-      protoValue._parent match {
-        case Some(p) =>
-          val ip = asInstance(protoValue).proxy.asInstanceOf[InstanceProxy[BaseModule, BaseModule]]
-          proxy.lookup(ip)(mocker, mocker, this).asInstanceOf[BaseModule with Proxy[BaseModule]]
-        case None => ModuleDefinition(protoValue, protoValue.getCircuit)
+  object lookupBaseModule extends Lookuper[BaseModule] {
+    type R = Hierarchy[BaseModule]
+    def apply[P](value: BaseModule, hierarchy: Hierarchy[P]): Hierarchy[BaseModule] = {
+      require(!value.isInstanceOf[Proxy[_]], "BAD!")
+      val h = hierarchy.getLineageOf{case h: Hierarchy[BaseModule] if h.isA[BaseModule] => h} match {
+        case Some(h: Hierarchy[BaseModule]) => h
+        case None => hierarchy
       }
+      println(s"  $value on $hierarchy")
+      val ret = value match {
+        case v: Proxy[BaseModule] if v.proto == h.proto => h.asInstanceOf[Hierarchy[BaseModule]]
+        case v: BaseModule if v == h.proto => h.asInstanceOf[Hierarchy[BaseModule]]
+        case other => value._parent match {
+          case None => value.toDefinition
+          case Some(p) => apply(value, h._lookup(_ => p)(lookupBaseModule, mg))
+        }
+      }
+      println(s"  Returning $ret from $value")
+      ret
     }
   }
+  //val lookupBaseModule: BaseModuleLookuper = new BaseModuleLookuper()
 
-  implicit def lookupModule[V <: BaseModule](implicit mocker: Mocker[V, BaseModule], proxifier: Proxifier[BaseModule]) = new Lookuper[V] {
+  implicit def lookupModule[V <: BaseModule] = new Lookuper[V] {
     type R = Instance[V]
     // Note if value is a Proxy, we are assuming V is BaseModule, not a specific Proxy type
     // If this is not the case, its an internal error and we should get a dynamic error
-    def apply[P](value: V, proxy: Proxy[P]) = {
-      (value, value._parent) match {
-        case (p: Proxy[_], _) => println(p);??? // error
-        case (v, None)        => println(v);??? // error! should be definition
-        case (v: BaseModule, Some(p)) =>
-          proxifier(v, proxy).asInstanceOf[InstanceProxy[V, BaseModule]].toInstance
+    def apply[P](value: V, hierarchy: Hierarchy[P]) = {
+      require(!value.isInstanceOf[Proxy[_]], "BAD!")
+      println(s"   $value on $hierarchy")
+      val ret = (value._parent, value._parent == Some(hierarchy.proto), hierarchy) match {
+        case (None, _, _) => println(value); ??? //ERROR
+        case (Some(p), true, h: Hierarchy[BaseModule])  =>
+          // Create Mock, hierarchy proxy is parent
+          val d = ModuleDefinition(value)
+          val t = ModuleTransparent(d)
+          ModuleMock(t, h.proxyAs[BaseModule]).toInstance
+        case (Some(p), false, h: Hierarchy[P]) =>
+          // Create Mock, newParentHierarchy proxy is parent
+          val newParentHierarchy = lookupBaseModule(p, hierarchy)
+          val d = ModuleDefinition(value)
+          val t = ModuleTransparent(d)
+          ModuleMock(t, newParentHierarchy.proxyAs[BaseModule]).toInstance
+      }
+      println(s"   Returning $ret on $value")
+      ret
+    }
+  }
+  //def asInstance(proto: BaseModule):   core.Instance[BaseModule] = {
+  //  require(proto._parent.nonEmpty, s"Cannot call .asInstance on $proto because it has no parent! Try .toDefinition?")
+  //  proto match {
+  //    case i: InstanceProxy[BaseModule, BaseModule] with BaseModule => i.toInstance
+  //    case d: DefinitionProxy[BaseModule] with BaseModule => ??? //should be unreachable
+  //    case b: BaseModule =>
+  //      val definition = proto.toDefinition
+  //      ModuleTransparent(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]]).toInstance
+  //  }
+  //}
+
+  implicit def lookupInstance[U <: BaseModule] = new Lookuper[Instance[U]] {
+    type R = Instance[U]
+    def apply[P](value: Instance[U], hierarchy: Hierarchy[P]) = {
+      value.proxyAs[BaseModule]._parent match {
+        case None => println(value); ??? //ERROR, should be a definition?
+        case Some(p) =>
+          val newParentHierarchy = p match {
+            case b: Proxy[BaseModule] if b.proto == hierarchy.proto => hierarchy
+            case b: BaseModule if b == hierarchy.proto => hierarchy
+            case other => lookupBaseModule(p, hierarchy)
+          }
+          // Create mock, set up genesis etc with h as parent
+          ModuleMock(value.proxyAs[BaseModule], newParentHierarchy.proxyAs[BaseModule]).toInstance
       }
     }
   }
-  def asInstance(proto: BaseModule):   core.Instance[BaseModule] = {
-    require(proto._parent.nonEmpty, s"Cannot call .asInstance on $proto because it has no parent! Try .toDefinition?")
-    proto match {
-      case i: InstanceProxy[BaseModule, BaseModule] with BaseModule => i.toInstance
-      case d: DefinitionProxy[BaseModule] with BaseModule => ??? //should be unreachable
-      case b: BaseModule =>
-        val definition = proto.toDefinition
-        ModuleTransparent(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]]).toInstance
-    }
-  }
 
-  implicit def lookupInstance[U <: BaseModule](implicit mocker: Mocker[U, BaseModule], cmocker: Mocker[BaseModule, BaseModule], proxifier: Proxifier[BaseModule]) = new Lookuper[Instance[U]] {
-    type C = BaseModule
-    type R = Instance[U]
-    def apply[P](value: Instance[U], proxy: Proxy[P]) = {
-      proxy.ilookup(value.proxy.asInstanceOf[InstanceProxy[U, C] with C])(mocker, cmocker, proxifier).toInstance
-    }
-  }
-
-  implicit def lookupIsInstantiable[U <: IsInstantiable](implicit proxifier: Proxifier[BaseModule]) = new Lookuper[U] {
-    type C = BaseModule
-    type R = Instance[U]
-    def apply[P](value: U, proxy: Proxy[P]): Instance[U] = {
-      def getParent[X](i: X): BaseModule = i match {
-        case p: BaseModule => p
-        case InstantiableProxy(_, p) => getParent(p)
-      }
-      val p = getParent(proxy)
-      println(p)
-      InstantiableProxy(value, p).toInstance
-    }
-  }
 
   def cloneData[D <: Data](data: D, newParent: BaseModule, ioMap: Map[Data, Data] = Map.empty[Data, Data]): D = {
     def impl[C <: Data](d: C): C = d match {
@@ -187,50 +198,47 @@ package object hierarchy {
 
   implicit def lookuperData[V <: Data](
     implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions,
-    mocker: Mocker[BaseModule, BaseModule],
-    proxifier: Proxifier[BaseModule],
+    compileOptions: CompileOptions
   ) = new Lookuper[V] {
-    type C = BaseModule
     type R = V
-    def apply[P](value: V, proxy: Proxy[P]) = if(value._parent.isEmpty) value else ((proxy, proxy.proto == value._parent.get) match {
-      case (t: ModuleClone[_], true)        => cloneData(value, t, t.ioMap)
-      case (t: ModuleTransparent[_], true)  => value
-      case (t: ModuleTransparent[_], false) => value
-      case (t: ModuleDefinition[_], true)   => cloneData(value, t)
-      case (t: ModuleDefinition[_], false)  =>
-        val newParent = t.blookup(value._parent.get)(mocker, mocker, proxifier, proxifier)
-        cloneData(value, newParent.asInstanceOf[BaseModule])
-      case (t: ModuleMock[_], true)         => cloneData(value, t)
-      case (t: ModuleMock[_], false)        =>
-        val newParent = t.blookup(value._parent.get)(mocker, mocker, proxifier, proxifier)
-        cloneData(value, newParent.asInstanceOf[BaseModule])
-      case (InstantiableProxy(_, parent: Proxy[_]), _) => apply(value, parent)
-    })
+    def apply[P](value: V, hierarchy: Hierarchy[P]): V = value._parent match {
+      case None => value
+      case Some(p: BaseModule) =>
+        val newParentHierarchy = p match {
+          case b: Proxy[BaseModule] if b.proto == hierarchy.proto => hierarchy
+          case b: BaseModule if b == hierarchy.proto => hierarchy
+          case _ => lookupBaseModule(p, hierarchy)
+        }
+        newParentHierarchy.proxy match {
+          case m: ModuleClone[_]       => cloneData(value, m, m.ioMap)
+          case m: ModuleTransparent[_] => value
+          case m: ModuleMock[_]        => cloneData(value, m)
+          case m: ModuleDefinition[_]  => cloneData(value, m)
+          case _ => value
+        }
+    }
   }
 
   implicit def lookuperMem[V <: MemBase[_]](
     implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions,
-    mocker: Mocker[BaseModule, BaseModule],
-    proxifier: Proxifier[BaseModule],
+    compileOptions: CompileOptions
   ) = new Lookuper[V] {
-    type C = BaseModule
     type R = V
-    def apply[P](value: V, proxy: Proxy[P]) = if(value._parent.isEmpty) value else ((proxy, proxy.proto == value._parent.get) match {
-      case (t: ModuleClone[_], true)        => cloneMem(value, t)
-      case (t: ModuleTransparent[_], true)  => value
-      case (t: ModuleTransparent[_], false) => value
-      case (t: ModuleDefinition[_], true)   => cloneMem(value, t)
-      case (t: ModuleDefinition[_], false)  =>
-        val newParent = t.blookup(value._parent.get)(mocker, mocker, proxifier, proxifier)
-        cloneMem(value, newParent.asInstanceOf[BaseModule])
-      case (t: ModuleMock[_], true)         => cloneMem(value, t)
-      case (t: ModuleMock[_], false)        =>
-        val newParent = t.blookup(value._parent.get)(mocker, mocker, proxifier, proxifier)
-        cloneMem(value, newParent.asInstanceOf[BaseModule])
-      case (InstantiableProxy(_, parent: Proxy[_]), _) => apply(value, parent)
-    })
+    def apply[P](value: V, hierarchy: Hierarchy[P]) = value._parent match {
+      case None => value
+      case Some(p: BaseModule) =>
+        val newParentHierarchy = p match {
+          case b: Proxy[BaseModule] if b.proto == hierarchy.proto => hierarchy
+          case b: BaseModule if b == hierarchy.proto => hierarchy
+          case _ => lookupBaseModule(p, hierarchy)
+        }
+        newParentHierarchy.proxy match {
+          case m: ModuleClone[_]       => cloneMem(value, m)
+          case m: ModuleTransparent[_] => value
+          case m: ModuleMock[_]        => cloneMem(value, m)
+          case m: ModuleDefinition[_]  => cloneMem(value, m)
+        }
+    }
   }
 
   //implicit def lookuperIsInstantiable[V <: IsInstantiable](
@@ -272,7 +280,7 @@ package object hierarchy {
     import chisel3.experimental.hierarchy.core.{Definition, Instance}
     // Require proto is not a ContextStandIn, as ContextStandIn should always implement toInstance/toDefinition
     //require(!proto.isInstanceOf[ContextStandIn[_]], s"Cannot have $proto be a ContextStandIn, must be a proto!!")
-    def asInstanceProxy: core.InstanceProxy[P, BaseModule] = {
+    def asInstanceProxy: core.InstanceProxy[P] = {
       require(proto._parent.nonEmpty, s"Cannot call .asInstance on $proto because it has no parent! Try .toDefinition?")
       proto match {
         case i: Proxy[_] => ??? //should be unreachable
