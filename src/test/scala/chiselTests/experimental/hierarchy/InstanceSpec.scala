@@ -5,8 +5,7 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy._
-import chisel3.experimental.hierarchy.core._ // TODO figure out how to avoid doing this
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.aop.Select
 import chisel3.util.{DecoupledIO, Valid}
 import chisel3.internal.MacroGenerated
@@ -201,10 +200,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top(x: AddTwo) extends Module {
         val d = Definition(new ViewerParent(x, false, false))
         val parent = Instance(d)
-        val v = parent.viewer
-        val xxi0 = v.xi0
-        val iw = xxi0.innerWire
-        mark(iw, "third")
+        mark(parent.viewer.x.i0.innerWire, "third")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top(first))
       annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "third"))
@@ -376,7 +372,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     it("(4.a): should work on modules") {
       class Top() extends Module {
         val i = Module(new AddOne())
-        f(i.asInstance)
+        f(i.toInstance)
       }
       def f(i: Instance[AddOne]): Unit = mark(i.innerWire, "blah")
       val (_, annos) = getFirrtlAndAnnos(new Top)
@@ -395,7 +391,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
     it("(4.c): should work on seqs of modules") {
       class Top() extends Module {
-        val is = Seq(Module(new AddTwo()), Module(new AddTwo())).map(_.asInstance)
+        val is = Seq(Module(new AddTwo()), Module(new AddTwo())).map(_.toInstance)
         mark(f(is), "blah")
       }
       def f(i: Seq[Instance[AddTwo]]): Data = i.head.i0.innerWire
@@ -407,7 +403,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     it("(4.d): should work on seqs of IsInstantiable") {
       class Top() extends Module {
         val i = Module(new AddTwo())
-        val vs = Seq(new Viewer(i, false), new Viewer(i, false)).map(_.asInstance)
+        val vs = Seq(new Viewer(i, false), new Viewer(i, false)).map(_.toInstance)
         mark(f(vs), "blah")
       }
       def f(i: Seq[Instance[Viewer]]): Data = i.head.x.i0.innerWire
@@ -416,7 +412,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
     it("(4.e): should work on options of modules") {
       class Top() extends Module {
-        val is: Option[Instance[AddTwo]] = Some(Module(new AddTwo())).map(_.asInstance)
+        val is: Option[Instance[AddTwo]] = Some(Module(new AddTwo())).map(_.toInstance)
         mark(f(is), "blah")
       }
       def f(i: Option[Instance[AddTwo]]): Data = i.get.i0.innerWire
@@ -544,7 +540,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
     it("(6.c): A BlackBox that implements an @instantiable trait should be instantiable as that trait") {
       class Top extends Module {
-        val i: Instance[ModuleIntf] = Module(new BlackBoxWithCommonIntf).asInstance
+        val i: Instance[ModuleIntf] = Module(new BlackBoxWithCommonIntf).toInstance
         mark(i.io.in, "gotcha")
         mark(i, "module")
       }
@@ -561,8 +557,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val proto = Definition(new ModuleWithCommonIntf("X"))
         val insts: Seq[Instance[ModuleIntf]] = Vector(
-          Module(new ModuleWithCommonIntf("Y")).asInstance,
-          Module(new BlackBoxWithCommonIntf).asInstance,
+          Module(new ModuleWithCommonIntf("Y")).toInstance,
+          Module(new BlackBoxWithCommonIntf).toInstance,
           Instance(proto)
         )
         mark(insts(0).io.in, "foo")
