@@ -1095,18 +1095,17 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     it("(11.b): it should compose hierarchically") {
       class Top extends Module {
         val d = Definition(new IntermediateHierarchy)
-        val i0 = Instance(d)
-        val i1 = Instance.withContext(d)(
-          _.i0.index.edit(_ + i0.i1.index + 1),
-          _.i1.index.edit(_ + i0.i1.index + 1),
+        val x0 = Instance(d)
+        val x1 = Instance.withContext(d)(
+          _.i0.index.edit(_ + x0.i1.index + 1),
+          _.i1.index.edit(_ + x0.i1.index + 1),
         )
-        i0.i0.index should be(0)
-        i0.i1.index should be(1)
-        i1.i0.index should be(2)
-        i1.i1.index should be(3)
+        x0.i0.index should be(0)
+        x0.i1.index should be(1)
+        x1.i0.index should be(2)
+        x1.i1.index should be(3)
       }
       getFirrtlAndAnnos(new Top)
-
     }
   }
 }
