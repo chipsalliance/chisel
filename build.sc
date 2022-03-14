@@ -68,7 +68,7 @@ class firrtlCrossModule(val crossScalaVersion: String)
     override def ivyDeps = T {
       Agg(
         ivy"org.scalatest::scalatest:3.2.10",
-        ivy"org.scalatestplus::scalacheck-1-15:3.2.10.0"
+        ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
       )
     }
 
