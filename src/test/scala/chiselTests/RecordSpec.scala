@@ -27,6 +27,17 @@ trait RecordSpecUtils {
     io.out <> io.in
   }
 
+  class ConnectionTestModule(output: => Record, input: => Record) extends Module {
+    val io = IO(new Bundle {
+      val inMono = Input(input)
+      val outMono = Output(output)
+      val inBi = Input(input)
+      val outBi = Output(output)
+    })
+    io.outMono := io.inMono
+    io.outBi <> io.inBi
+  }
+
   class RecordSerializationTest extends BasicTester {
     val recordType = new CustomBundle("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
     val record = Wire(recordType)
@@ -108,6 +119,14 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
 
   they should "bulk connect to Bundles" in {
     ChiselStage.elaborate { new MyModule(new MyBundle, fooBarType) }
+  }
+
+  they should "emit FIRRTL bulk connects when possible" in {
+    val chirrtl = (new ChiselStage).emitChirrtl(
+      gen = new ConnectionTestModule(fooBarType, fooBarType)
+    )
+    chirrtl should include("io.outMono <= io.inMono @[RecordSpec.scala")
+    chirrtl should include("io.outBi <= io.inBi @[RecordSpec.scala")
   }
 
   they should "not allow aliased fields" in {

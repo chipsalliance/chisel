@@ -47,6 +47,13 @@ object Examples {
     val addOneDef = Seq.fill(3)(Definition(new AddOne))
     out := in + 1.U
   }
+  @instantiable
+  class AddOneBlackBox extends BlackBox {
+    @public val io = IO(new Bundle {
+      val in = Input(UInt(32.W))
+      val out = Output(UInt(32.W))
+    })
+  }
 
   @instantiable
   class AddTwo extends Module {

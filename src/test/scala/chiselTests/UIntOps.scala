@@ -199,6 +199,24 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new BadBoolConversion) }
   }
 
+  property("Out-of-bounds extraction from known-width UInts") {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new RawModule {
+        val u = IO(Input(UInt(2.W)))
+        u(2, 1)
+      })
+    }
+  }
+
+  property("Out-of-bounds single-bit extraction from known-width UInts") {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new RawModule {
+        val u = IO(Input(UInt(2.W)))
+        u(2)
+      })
+    }
+  }
+
   property("UIntOps should elaborate") {
     ChiselStage.elaborate { new UIntOps }
   }
