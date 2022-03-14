@@ -5,8 +5,11 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+import chisel3.experimental.hierarchy._
+import chisel3.experimental.hierarchy.core._ // TODO figure out how to avoid doing this
+import chisel3.aop.Select
 import chisel3.util.{DecoupledIO, Valid}
+import chisel3.internal.MacroGenerated
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -307,7 +310,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         annos should contain(e)
       }
     }
-    ignore("3.k: should work on vals in constructor arguments") {
+    it("3.k: should work on vals in constructor arguments") {
       class Top() extends Module {
         val i = Instance(Definition(new HasPublicConstructorArgs(10)))
         //mark(i.x, i.int.toString)
@@ -370,7 +373,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(4) toInstance") {
-    ignore("(4.a): should work on modules") {
+    it("(4.a): should work on modules") {
       class Top() extends Module {
         val i = Module(new AddOne())
         f(i.asInstance)
@@ -380,17 +383,16 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       //TODO: Should this be ~Top|Top/i:AddOne>innerWire ???
       annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddOne>innerWire".rt, "blah"))
     }
-    //ignore("(4.b): should work on IsHierarchicals") {
-    //  class Top() extends Module {
-    //    val i = Module(new AddTwo())
-    //    val v = new Viewer(i, false)
-    //    mark(f(v.asInstance), "blah")
-    //  }
-    //  def f(i: Instance[Viewer]): Data = i.x.i0.innerWire
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  //TODO: Should this be ~Top|Top... ??
-    //  annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
-    //}
+    it("(4.b): should work on IsInstantiable") {
+      class Top() extends Module {
+        val i = Module(new AddTwo())
+        val v = new Viewer(i, false)
+        mark(f(v.toInstance), "blah")
+      }
+      def f(i: Instance[Viewer]): Data = i.x.i0.innerWire
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
+    }
     it("(4.c): should work on seqs of modules") {
       class Top() extends Module {
         val is = Seq(Module(new AddTwo()), Module(new AddTwo())).map(_.asInstance)
@@ -402,16 +404,16 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       //TODO: Should this be ~Top|Top... ??
       annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
     }
-    //it("(4.d): should work on seqs of IsHierarchicals") {
-    //  class Top() extends Module {
-    //    val i = Module(new AddTwo())
-    //    val vs = Seq(new Viewer(i, false), new Viewer(i, false)).map(_.asInstance)
-    //    mark(f(vs), "blah")
-    //  }
-    //  def f(i: Seq[Instance[Viewer]]): Data = i.head.x.i0.innerWire
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
-    //}
+    it("(4.d): should work on seqs of IsInstantiable") {
+      class Top() extends Module {
+        val i = Module(new AddTwo())
+        val vs = Seq(new Viewer(i, false), new Viewer(i, false)).map(_.asInstance)
+        mark(f(vs), "blah")
+      }
+      def f(i: Seq[Instance[Viewer]]): Data = i.head.x.i0.innerWire
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
+    }
     it("(4.e): should work on options of modules") {
       class Top() extends Module {
         val is: Option[Instance[AddTwo]] = Some(Module(new AddTwo())).map(_.asInstance)
@@ -579,7 +581,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
   }
   // TODO don't forget to test this with heterogeneous Views (eg. viewing a tuple of a port and non-port as a single Bundle)
-  ignore("(7) @instantiable and @public should compose with DataView") {
+  it("(7) @instantiable and @public should compose with DataView") {
     import chisel3.experimental.dataview._
     it("(7.a): should work on simple Views") {
       @instantiable
@@ -620,7 +622,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
     }
 
-    ignore("(7.b): should work on Aggregate Views") {
+    it("(7.b): should work on Aggregate Views") {
       import chiselTests.experimental.FlatDecoupledDataView._
       type RegDecoupled = DecoupledIO[FizzBuzz]
       @instantiable
@@ -711,43 +713,43 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
     }
 
-    //it("(7.d): should work with DataView + implicit conversion") {
-    //  import chisel3.experimental.conversions._
-    //  @instantiable
-    //  class MyModule extends RawModule {
-    //    private val a = IO(Input(UInt(8.W)))
-    //    private val b = IO(Output(UInt(8.W)))
-    //    @public val ports = Seq(a, b)
-    //    b := a
-    //  }
-    //  class Top extends RawModule {
-    //    val foo = IO(Input(UInt(8.W)))
-    //    val bar = IO(Output(UInt(8.W)))
-    //    val i = Instance(Definition(new MyModule))
-    //    i.ports <> Seq(foo, bar)
-    //    mark(i.ports, "i.ports")
-    //  }
-    //  val expected = List(
-    //    // Not 1:1 so will get split out
-    //    "~Top|Top/i:MyModule>a".rt -> "i.ports",
-    //    "~Top|Top/i:MyModule>b".rt -> "i.ports"
-    //  )
-    //  val lines = List(
-    //    "i.a <= foo",
-    //    "bar <= i.b"
-    //  )
-    //  val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-    //  val text = chirrtl.serialize
-    //  for (line <- lines) {
-    //    text should include(line)
-    //  }
-    //  for (e <- expected.map(MarkAnnotation.tupled)) {
-    //    annos should contain(e)
-    //  }
-    //}
+    it("(7.d): should work with DataView + implicit conversion") {
+      import chisel3.experimental.conversions._
+      @instantiable
+      class MyModule extends RawModule {
+        private val a = IO(Input(UInt(8.W)))
+        private val b = IO(Output(UInt(8.W)))
+        @public val ports = Seq(a, b)
+        b := a
+      }
+      class Top extends RawModule {
+        val foo = IO(Input(UInt(8.W)))
+        val bar = IO(Output(UInt(8.W)))
+        val i = Instance(Definition(new MyModule))
+        i.ports <> Seq(foo, bar)
+        mark(i.ports, "i.ports")
+      }
+      val expected = List(
+        // Not 1:1 so will get split out
+        "~Top|Top/i:MyModule>a".rt -> "i.ports",
+        "~Top|Top/i:MyModule>b".rt -> "i.ports"
+      )
+      val lines = List(
+        "i.a <= foo",
+        "bar <= i.b"
+      )
+      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
+      val text = chirrtl.serialize
+      for (line <- lines) {
+        text should include(line)
+      }
+      for (e <- expected.map(MarkAnnotation.tupled)) {
+        annos should contain(e)
+      }
+    }
   }
 
-  ignore("(8) @instantiable and @public should compose with CloneModuleAsRecord") {
+  it("(8) @instantiable and @public should compose with CloneModuleAsRecord") {
     it("(8.a): it should support @public on a CMAR Record in Definitions") {
       @instantiable
       class HasCMAR extends Module {
@@ -957,7 +959,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       })
       intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
     }
-    ignore("(10.j): allInstancesOf.ios") {
+    it("(10.j): allInstancesOf.ios") {
       val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
         val abs = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] =>
           aop.Select.ios(i).map(_.toAbsoluteTarget)
@@ -1009,7 +1011,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       })
       getFirrtlAndAnnos(new AddFour, Seq(aspect))
     }
-    ignore("(10.k): allDefinitionsOf.ios") {
+    it("(10.k): allDefinitionsOf.ios") {
       val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
         val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] =>
           aop.Select.ios(i).map(_.toAbsoluteTarget)
@@ -1094,230 +1096,4 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
   }
-  describe("(11) Lense") {
-    it("(11.a): it should work on simple classes") {
-      class Top extends Module {
-        val d = Definition(new HasContextual)
-        d.index should be(0)
-        d.foo should be(1)
-
-        val i0 = Instance.withContext(d)(_.index.value = 2)
-        i0.index should be(2)
-        i0.foo should be(1)
-
-        val i1 = Instance.withContext(d)(_.index.value = 3, _.foo.edit(_ + 3))
-        i1.index should be(3)
-        i1.foo should be(4)
-      }
-      getFirrtlAndAnnos(new Top)
-    }
-    it("(11.b): it should compose hierarchically") {
-      class Top extends Module {
-        val d = Definition(new IntermediateHierarchy)
-        val x0 = Instance(d)
-        val x1 = Instance.withContext(d)(
-          _.i0.index.edit(_ + x0.i1.index + 1),
-          _.i1.index.edit(_ + x0.i1.index + 1),
-        )
-        x0.i0.index should be(0)
-        x0.i1.index should be(1)
-        x1.i0.index should be(2)
-        x1.i1.index should be(3)
-      }
-      getFirrtlAndAnnos(new Top)
-    }
-  }
 }
-//  describe("(11) Contextual") {
-//    import ContextualExamples._
-//    it("11.0: Example - Set in definition, read outside definition") {
-//      @instantiable
-//      class AddOne extends Module {
-//        @public val index = Contextual(0)
-//      }
-//      class Top extends Module {
-//        val d0 = Definition(new AddOne)
-//        d0.index should be (0)
-//        val d1 = d0//.withContext { case i: Int => i + 1}
-//        d1.index should be (1)
-//      }
-//      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-//    }
-//    it("11.1: Example - absolute indexes of instances") {
-//      import E1._
-//      class AbsoluteIndexer() {
-//        private var i = 0
-//        def get: Int = { i += 1; i - 1 }
-//      }
-//      class Top extends Module {
-//        val indexer = new AbsoluteIndexer()
-//        val definition = Definition(new Root)/*.withContext {
-//          case NoIndex => Index(indexer.get)
-//        }*/
-//        val answers = Map(
-//          ("~Top|Root/i0:Middle/i0:Leaf" -> Index(0)),
-//          ("~Top|Root/i0:Middle/i1:Leaf" -> Index(1)),
-//          ("~Top|Root/i1:Middle/i0:Leaf" -> Index(2)),
-//          ("~Top|Root/i1:Middle/i1:Leaf" -> Index(3))
-//        )
-//        Select.allInstancesOf[Leaf](definition).foreach { case l: Instance[Leaf] =>
-//          l.index should be (answers(l.toTarget.toString))
-//        }
-//      }
-//      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-//    }
-//    it("11.2: Example - physical design orientation?") {
-//      //TODO: To work with empty contextuals, we need a flatMap operation,
-//      // rather than the map operation (withContext)
-//      // Perhaps this is how we can implement collapse, as a call to flatMap
-//      import ContextualExamples._
-//
-//      class Top extends Module {
-//        val soc = Definition(new E2.SoC)
-//        val answers = Map[_root_.firrtl.annotations.IsModule, String](
-//          "~Top|SoC/cluster0:Cluster/tile0:Tile/sram0:SRAM".it -> "Left, Top",
-//          "~Top|SoC/cluster0:Cluster/tile0:Tile/sram1:SRAM".it -> "Left, Bottom",
-//          "~Top|SoC/cluster0:Cluster/tile1:Tile/sram0:SRAM".it -> "Right, Top",
-//          "~Top|SoC/cluster0:Cluster/tile1:Tile/sram1:SRAM".it -> "Right, Bottom",
-//          "~Top|SoC/cluster1:Cluster/tile0:Tile/sram0:SRAM".it -> "Right, Top",
-//          "~Top|SoC/cluster1:Cluster/tile0:Tile/sram1:SRAM".it -> "Right, Bottom",
-//          "~Top|SoC/cluster1:Cluster/tile1:Tile/sram0:SRAM".it -> "Left, Top",
-//          "~Top|SoC/cluster1:Cluster/tile1:Tile/sram1:SRAM".it -> "Left, Bottom"
-//        )
-//        val srams = Select.allInstancesOf[E2.SRAM](soc)
-//        require(srams.size == 8, srams)
-//        srams.foreach{ case i: Instance[E2.SRAM] =>
-//          s"${i.reflection}, ${i.placement}" should be (answers(i.toTarget))
-//        }
-//      }
-//      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-//    }
-//    it("11.3: Example - sibling references") {
-//      class Top extends Module {
-//        val definition = Definition(new E3.AddFour)
-//        val answers = Map(
-//          ("~Top|AddFour/i0:AddTwo/i0:AddOne" -> "NONE"),
-//          ("~Top|AddFour/i0:AddTwo/i1:AddOne" -> "~Top|AddFour/i0:AddTwo/i0:AddOne"),
-//          ("~Top|AddFour/i1:AddTwo/i0:AddOne" -> "~Top|AddFour/i0:AddTwo/i1:AddOne"),
-//          ("~Top|AddFour/i1:AddTwo/i1:AddOne" -> "~Top|AddFour/i1:AddTwo/i0:AddOne")
-//        )
-//        Select.allInstancesOf[E3.AddOne](definition).foreach { case l: Instance[E3.AddOne] =>
-//          l.previousAdder.elderString should be (answers(l.toTarget.toString))
-//        }
-//      }
-//      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-//    }
-//    it("11.4?: Example - no mutation!") { }
-//  }
-//}
-//
-//object Playground {
-//  @instantiable
-//  class Foo {
-//    @public val int = 10
-//  }
-//  object Foo {
-//    //@public def baz(i: Instance[Foo]): Unit = println(i.int)
-//  }
-//}
-//  object ContextualExamples {
-//    object E1 { // Unique Index Example
-//      trait UniqueIndex extends IsLookupable
-//      case object NoIndex extends UniqueIndex
-//      case class Index(index: Int) extends UniqueIndex
-//      @instantiable
-//      class Leaf extends Module {
-//        @public val index = Contextual[UniqueIndex](NoIndex)
-//      }
-//      @instantiable
-//      class Middle extends Module {
-//        val d = Definition(new Leaf)
-//        val i0 = Instance(d)
-//        val i1 = Instance(d)
-//      }
-//      @instantiable
-//      class Root extends Module {
-//        val definition = Definition(new Middle)
-//        val i0 = Instance(definition)
-//        val i1 = Instance(definition)
-//      }
-//    } // Unique Index Example
-//    object E2 { // Physical Design Example
-//      trait Reflection extends IsLookupable { def mirror: Reflection }
-//      case object Right extends Reflection { def mirror = Left }
-//      case object Left extends Reflection { def mirror = Right }
-//      case object NoReflection extends Reflection { def mirror = NoReflection}
-//
-//      trait Placement extends IsLookupable
-//      case object Top extends Placement
-//      case object Bottom extends Placement
-//      case object NoPlacement extends Placement
-//
-//      @instantiable
-//      class SRAM extends Module {
-//        @public val reflection = Contextual[Reflection](NoReflection)
-//        @public val placement = Contextual[Placement](NoPlacement)
-//      }
-//
-//      @instantiable
-//      class Tile extends Module {
-//        val sram = Definition(new SRAM)
-//        @public val sram0 = Instance(sram/*.withContext{case NoPlacement => Top}*/)
-//        @public val sram1 = Instance(sram/*.withContext{case NoPlacement => Bottom}*/)
-//      }
-//
-//      @instantiable
-//      class Cluster extends Module {
-//        val tile = Definition(new Tile)
-//        @public val tile0 = Instance(tile/*.withContext{case NoReflection => Left}*/)
-//        @public val tile1 = Instance(tile/*.withContext{case NoReflection => Right}*/)
-//      }
-//
-//      @instantiable
-//      class SoC extends Module {
-//        val cluster = Definition(new Cluster)
-//        @public val cluster0 = Instance(cluster)
-//        @public val cluster1 = Instance(cluster/*.withContext {
-//          case o: Reflection => o.mirror
-//        }*/)
-//      }
-//    } // Physical Design Example
-//    object E3 { // Elder Sibling Example
-//      trait Elder extends IsHierarchical
-//      object Elder {
-//        // This is the use case for @public on def in companion object, but we can use normal extension method syntax instead.
-//        implicit class ElderExtensions(h: Instance[Elder]) {
-//          def elderString: String = h match {
-//            case h: Instance[Sibling] if h.isA[Sibling] => h.inst.toTarget.toString
-//            case other => "NONE"
-//          }
-//        }
-//      }
-//      case object NoElder extends Elder with IsHierarchical
-//      @instantiable
-//      case class Sibling(i: Instance[AddOne]) extends Elder {
-//        @public val inst = i
-//        override def toString = s"Sibling(${i.toTarget})"
-//      }
-//      @instantiable
-//      class AddOne extends Module {
-//        @public val previousAdder = Contextual[Elder](NoElder)
-//      }
-//      @instantiable
-//      class AddTwo extends Module {
-//        val d = Definition(new AddOne)
-//        @public val i0 = Instance(d)
-//        @public val i1 = Instance(d/*.withContext {
-//          case NoElder => Sibling(i0)
-//        }*/)
-//      }
-//      @instantiable
-//      class AddFour extends Module {
-//        val definition = Definition(new AddTwo)
-//        val i0 = Instance(definition)
-//        val i1 = Instance(definition/*.withContext {
-//          case NoElder => Sibling(i0.i1)
-//        }*/)
-//      }
-//    } // Elder Sibling Example
-//  }
