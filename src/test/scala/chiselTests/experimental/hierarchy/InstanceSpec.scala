@@ -306,7 +306,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         annos should contain(e)
       }
     }
-    it("3.k: should work on vals in constructor arguments") {
+    it("(3.k): should work on vals in constructor arguments") {
       class Top() extends Module {
         val i = Instance(Definition(new HasPublicConstructorArgs(10)))
         //mark(i.x, i.int.toString)
@@ -577,7 +577,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
   }
   // TODO don't forget to test this with heterogeneous Views (eg. viewing a tuple of a port and non-port as a single Bundle)
-  it("(7) @instantiable and @public should compose with DataView") {
+  describe("(7) @instantiable and @public should compose with DataView") {
     import chisel3.experimental.dataview._
     it("(7.a): should work on simple Views") {
       @instantiable
@@ -745,7 +745,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
   }
 
-  it("(8) @instantiable and @public should compose with CloneModuleAsRecord") {
+  describe("(8) @instantiable and @public should compose with CloneModuleAsRecord") {
     it("(8.a): it should support @public on a CMAR Record in Definitions") {
       @instantiable
       class HasCMAR extends Module {
