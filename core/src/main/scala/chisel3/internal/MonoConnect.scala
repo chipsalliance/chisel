@@ -5,11 +5,13 @@ package chisel3.internal
 import chisel3._
 import chisel3.experimental.{Analog, BaseModule, EnumType, FixedPoint, Interval, UnsafeEnum}
 import chisel3.internal.Builder.pushCommand
-import chisel3.experimental.dataview.reify
-import chisel3.internal.firrtl.{Connect, DefInvalid}
+import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
+import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.SourceInfo
+import _root_.firrtl.passes.CheckTypes
+import scala.annotation.tailrec
 
 /**
   * MonoConnect.connect executes a mono-directional connection element-wise.
@@ -129,12 +131,28 @@ private[chisel3] object MonoConnect {
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if (sink_v.length != source_v.length) { throw MismatchedVecException }
-        for (idx <- 0 until sink_v.length) {
-          try {
-            implicit val compileOptions = connectCompileOptions
-            connect(sourceInfo, connectCompileOptions, sink_v(idx), source_v(idx), context_mod)
-          } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
+
+        val sinkReified:   Option[Aggregate] = if (isView(sink_v)) reifyToAggregate(sink_v) else Some(sink_v)
+        val sourceReified: Option[Aggregate] = if (isView(source_v)) reifyToAggregate(source_v) else Some(source_v)
+
+        if (
+          sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(
+            sinkReified.get,
+            sourceReified.get,
+            sourceInfo,
+            connectCompileOptions,
+            context_mod
+          )
+        ) {
+          pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
+        } else {
+          for (idx <- 0 until sink_v.length) {
+            try {
+              implicit val compileOptions = connectCompileOptions
+              connect(sourceInfo, connectCompileOptions, sink_v(idx), source_v(idx), context_mod)
+            } catch {
+              case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
+            }
           }
         }
       // Handle Vec connected to DontCare. Apply the DontCare to individual elements.
@@ -150,19 +168,34 @@ private[chisel3] object MonoConnect {
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
-        // For each field, descend with right
-        for ((field, sink_sub) <- sink_r.elements) {
-          try {
-            source_r.elements.get(field) match {
-              case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
-              case None => {
-                if (connectCompileOptions.connectFieldsMustMatch) {
-                  throw MissingFieldException(field)
+        val sinkReified:   Option[Aggregate] = if (isView(sink_r)) reifyToAggregate(sink_r) else Some(sink_r)
+        val sourceReified: Option[Aggregate] = if (isView(source_r)) reifyToAggregate(source_r) else Some(source_r)
+
+        if (
+          sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(
+            sinkReified.get,
+            sourceReified.get,
+            sourceInfo,
+            connectCompileOptions,
+            context_mod
+          )
+        ) {
+          pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
+        } else {
+          // For each field, descend with right
+          for ((field, sink_sub) <- sink_r.elements) {
+            try {
+              source_r.elements.get(field) match {
+                case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
+                case None => {
+                  if (connectCompileOptions.connectFieldsMustMatch) {
+                    throw MissingFieldException(field)
+                  }
                 }
               }
+            } catch {
+              case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
             }
-          } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
           }
         }
       // Handle Record connected to DontCare. Apply the DontCare to individual elements.
@@ -189,6 +222,143 @@ private[chisel3] object MonoConnect {
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink, source)
     }
+
+  /** Determine if a valid connection can be made between a source [[Aggregate]] and sink
+    * [[Aggregate]] given their parent module and directionality context
+    *
+    * @return whether the source and sink exist in an appropriate context to be connected
+    */
+  private[chisel3] def aggregateConnectContextCheck(
+    implicit sourceInfo:   SourceInfo,
+    connectCompileOptions: CompileOptions,
+    sink:                  Aggregate,
+    source:                Aggregate,
+    context_mod:           RawModule
+  ): Boolean = {
+    import ActualDirection.{Bidirectional, Input, Output}
+    // If source has no location, assume in context module
+    // This can occur if is a literal, unbound will error previously
+    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
+    val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
+
+    val sink_parent = Builder.retrieveParent(sink_mod, context_mod).getOrElse(None)
+    val source_parent = Builder.retrieveParent(source_mod, context_mod).getOrElse(None)
+
+    val sink_is_port = sink.topBinding match {
+      case PortBinding(_) => true
+      case _              => false
+    }
+    val source_is_port = source.topBinding match {
+      case PortBinding(_) => true
+      case _              => false
+    }
+
+    if (!checkWhenVisibility(sink)) {
+      throw SinkEscapedWhenScopeException(sink)
+    }
+
+    if (!checkWhenVisibility(source)) {
+      throw SourceEscapedWhenScopeException(source)
+    }
+
+    // CASE: Context is same module that both sink node and source node are in
+    if ((context_mod == sink_mod) && (context_mod == source_mod)) {
+      sink.direction != Input
+    }
+
+    // CASE: Context is same module as sink node and source node is in a child module
+    else if ((sink_mod == context_mod) && (source_parent == context_mod)) {
+      // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
+      // See: https://github.com/freechipsproject/firrtl/issues/1703
+      // Original behavior should just check if the sink direction is an Input
+      val sinkCanBeInput = sink.direction match {
+        case Input            => true
+        case Bidirectional(_) => true
+        case _                => false
+      }
+      // Thus, right node better be a port node and thus have a direction
+      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
+      else if (sinkCanBeInput) {
+        if (source.direction == Output) {
+          !connectCompileOptions.dontTryConnectionsSwapped
+        } else { false }
+      } else { true }
+    }
+
+    // CASE: Context is same module as source node and sink node is in child module
+    else if ((source_mod == context_mod) && (sink_parent == context_mod)) {
+      // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
+      // See: https://github.com/freechipsproject/firrtl/issues/1703
+      // Original behavior should just check if the sink direction is an Input
+      sink.direction match {
+        case Input            => true
+        case Bidirectional(_) => true
+        case _                => false
+      }
+    }
+
+    // CASE: Context is the parent module of both the module containing sink node
+    //                                        and the module containing source node
+    //   Note: This includes case when sink and source in same module but in parent
+    else if ((sink_parent == context_mod) && (source_parent == context_mod)) {
+      // Thus both nodes must be ports and have a direction
+      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
+      else if (sink_is_port) {
+        // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
+        // See: https://github.com/freechipsproject/firrtl/issues/1703
+        // Original behavior should just check if the sink direction is an Input
+        sink.direction match {
+          case Input            => true
+          case Bidirectional(_) => true // NOTE: Workaround for non-agnostified ports
+          case _                => false
+        }
+      } else { false }
+    }
+
+    // Not quite sure where left and right are compared to current module
+    // so just error out
+    else false
+  }
+
+  /** Trace flow from child Data to its parent. */
+  @tailrec private[chisel3] def traceFlow(currentlyFlipped: Boolean, data: Data, context_mod: RawModule): Boolean = {
+    import SpecifiedDirection.{Input => SInput, Flip => SFlip}
+    val sdir = data.specifiedDirection
+    val flipped = sdir == SInput || sdir == SFlip
+    data.binding.get match {
+      case ChildBinding(parent) => traceFlow(flipped ^ currentlyFlipped, parent, context_mod)
+      case PortBinding(enclosure) =>
+        val childPort = enclosure != context_mod
+        childPort ^ flipped ^ currentlyFlipped
+      case _ => true
+    }
+  }
+  def canBeSink(data:   Data, context_mod: RawModule): Boolean = traceFlow(true, data, context_mod)
+  def canBeSource(data: Data, context_mod: RawModule): Boolean = traceFlow(false, data, context_mod)
+
+  /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. (MonoConnect case)
+    *
+    * Mono-directional bulk connects only work if all signals of the sink are unidirectional
+    * In the case of a sink aggregate with bidirectional signals, e.g. `Decoupled`,
+    * a `BiConnect` is necessary.
+    */
+  private[chisel3] def canBulkConnectAggregates(
+    sink:                  Aggregate,
+    source:                Aggregate,
+    sourceInfo:            SourceInfo,
+    connectCompileOptions: CompileOptions,
+    context_mod:           RawModule
+  ): Boolean = {
+    // Assuming we're using a <>, check if a bulk connect is valid in that case
+    def biConnectCheck =
+      BiConnect.canBulkConnectAggregates(sink, source, sourceInfo, connectCompileOptions, context_mod)
+
+    // Check that the Aggregate can be driven (not bidirectional or an input) to match Chisel semantics
+    def sinkCanBeDrivenCheck: Boolean =
+      sink.direction == ActualDirection.Output || sink.direction == ActualDirection.Unspecified
+
+    biConnectCheck && sinkCanBeDrivenCheck
+  }
 
   // This function (finally) issues the connection operation
   private def issueConnect(sink: Element, source: Element)(implicit sourceInfo: SourceInfo): Unit = {

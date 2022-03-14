@@ -3,15 +3,14 @@
 package chisel3.internal
 
 import chisel3._
-import chisel3.experimental.dataview.reify
+import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 import chisel3.experimental.{attach, Analog, BaseModule}
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, DefInvalid}
+import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
-
-import scala.annotation.tailrec
+import _root_.firrtl.passes.CheckTypes
 
 /**
   * BiConnect.connect executes a bidirectional connection element-wise.
@@ -91,12 +90,28 @@ private[chisel3] object BiConnect {
         if (left_v.length != right_v.length) {
           throw MismatchedVecException
         }
-        for (idx <- 0 until left_v.length) {
-          try {
-            implicit val compileOptions = connectCompileOptions
-            connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
-          } catch {
-            case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
+
+        val leftReified:  Option[Aggregate] = if (isView(left_v)) reifyToAggregate(left_v) else Some(left_v)
+        val rightReified: Option[Aggregate] = if (isView(right_v)) reifyToAggregate(right_v) else Some(right_v)
+
+        if (
+          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectAggregates(
+            leftReified.get,
+            rightReified.get,
+            sourceInfo,
+            connectCompileOptions,
+            context_mod
+          )
+        ) {
+          pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
+        } else {
+          for (idx <- 0 until left_v.length) {
+            try {
+              implicit val compileOptions = connectCompileOptions
+              connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
+            } catch {
+              case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
+            }
           }
         }
       }
@@ -122,29 +137,31 @@ private[chisel3] object BiConnect {
           }
         }
       }
-      // Handle Records defined in Chisel._ code by emitting a FIRRTL partial connect
+      // Handle Records defined in Chisel._ code by emitting a FIRRTL bulk
+      // connect when possible and a partial connect otherwise
       case pair @ (left_r: Record, right_r: Record) =>
         val notStrict =
           Seq(left_r.compileOptions, right_r.compileOptions).contains(ExplicitCompileOptions.NotStrict)
-        if (notStrict) {
-          // Traces flow from a child Data to its parent
-          @tailrec def traceFlow(currentlyFlipped: Boolean, data: Data): Boolean = {
-            import SpecifiedDirection.{Input => SInput, Flip => SFlip}
-            val sdir = data.specifiedDirection
-            val flipped = sdir == SInput || sdir == SFlip
-            data.binding.get match {
-              case ChildBinding(parent) => traceFlow(flipped ^ currentlyFlipped, parent)
-              case PortBinding(enclosure) =>
-                val childPort = enclosure != context_mod
-                childPort ^ flipped ^ currentlyFlipped
-              case _ => true
-            }
-          }
-          def canBeSink(data:   Data): Boolean = traceFlow(true, data)
-          def canBeSource(data: Data): Boolean = traceFlow(false, data)
-          // chisel3 <> is commutative but FIRRTL <- is not
-          val flipConnection = !canBeSink(left_r) || !canBeSource(right_r)
-          val (newLeft, newRight) = if (flipConnection) pair.swap else pair
+
+        // chisel3 <> is commutative but FIRRTL <- is not
+        val flipConnection =
+          !MonoConnect.canBeSink(left_r, context_mod) || !MonoConnect.canBeSource(right_r, context_mod)
+        val (newLeft, newRight) = if (flipConnection) (right_r, left_r) else (left_r, right_r)
+
+        val leftReified:  Option[Aggregate] = if (isView(newLeft)) reifyToAggregate(newLeft) else Some(newLeft)
+        val rightReified: Option[Aggregate] = if (isView(newRight)) reifyToAggregate(newRight) else Some(newRight)
+
+        if (
+          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectAggregates(
+            leftReified.get,
+            rightReified.get,
+            sourceInfo,
+            connectCompileOptions,
+            context_mod
+          )
+        ) {
+          pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
+        } else if (notStrict) {
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
         } else {
           recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
@@ -216,6 +233,59 @@ private[chisel3] object BiConnect {
         case BiConnectException(message) => throw BiConnectException(s".$field$message")
       }
     }
+  }
+
+  /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. From the
+    * FIRRTL specification, the following must hold for bulk connection:
+    *
+    *   1. The types of the left-hand and right-hand side expressions must be
+    *       equivalent.
+    *   2. The bit widths of the two expressions must allow for data to always
+    *        flow from a smaller bit width to an equal size or larger bit width.
+    *   3. The flow of the left-hand side expression must be sink or duplex
+    *   4. Either the flow of the right-hand side expression is source or duplex,
+    *      or the right-hand side expression has a passive type.
+    */
+  private[chisel3] def canBulkConnectAggregates(
+    sink:                  Aggregate,
+    source:                Aggregate,
+    sourceInfo:            SourceInfo,
+    connectCompileOptions: CompileOptions,
+    context_mod:           RawModule
+  ): Boolean = {
+
+    // check that the aggregates have the same types
+    def typeCheck = CheckTypes.validConnect(
+      Converter.extractType(sink, sourceInfo),
+      Converter.extractType(source, sourceInfo)
+    )
+
+    // check records live in appropriate contexts
+    def contextCheck =
+      MonoConnect.aggregateConnectContextCheck(
+        sourceInfo,
+        connectCompileOptions,
+        sink,
+        source,
+        context_mod
+      )
+
+    // sink must be writable and must also not be a literal
+    def bindingCheck = sink.topBinding match {
+      case _: ReadOnlyBinding => false
+      case _ => true
+    }
+
+    // check data can flow between provided aggregates
+    def flow_check = MonoConnect.canBeSink(sink, context_mod) && MonoConnect.canBeSource(source, context_mod)
+
+    // do not bulk connect source literals (results in infinite recursion from calling .ref)
+    def sourceNotLiteralCheck = source.topBinding match {
+      case _: LitBinding => false
+      case _ => true
+    }
+
+    typeCheck && contextCheck && bindingCheck && flow_check && sourceNotLiteralCheck
   }
 
   // These functions (finally) issue the connection operation
