@@ -10,7 +10,8 @@ import chisel3._
   * Use `Flipped(new ExternalAxi4IO(...))` to obtain the signals for the server
   * (the destination of requests).
   */
-class ExternalAxi4IO(params: Axi4IOParameters, userBits: Axi4UserBitsParameters = Axi4UserBitsParameters()) extends Bundle {
+class ExternalAxi4IO(params: Axi4IOParameters, userBits: Axi4UserBitsParameters = Axi4UserBitsParameters())
+    extends Bundle {
   // write address channel
   val AWREADY = Input(Bool())
   val AWVALID = Output(Bool())
