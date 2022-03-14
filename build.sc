@@ -14,7 +14,7 @@ object v {
   val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.6-SNAPSHOT"
   val scalatest = ivy"org.scalatest::scalatest:3.2.11"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
-  val osLib = ivy"com.lihaoyi::os-lib:0.8.0"
+  val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
 }
 
@@ -22,27 +22,32 @@ object v {
 trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule {
   def firrtlModule: Option[PublishModule] = None
 
-  def firrtlIvyDeps = if (firrtlModule.isEmpty) Agg(
-    v.firrtl
-  ) else Agg.empty[Dep]
+  def firrtlIvyDeps = if (firrtlModule.isEmpty)
+    Agg(
+      v.firrtl
+    )
+  else Agg.empty[Dep]
 
   def treadleModule: Option[PublishModule] = None
 
-  def treadleIvyDeps = if (treadleModule.isEmpty) Agg(
-    v.chiseltest
-  ) else Agg.empty[Dep]
+  def treadleIvyDeps = if (treadleModule.isEmpty)
+    Agg(
+      v.chiseltest
+    )
+  else Agg.empty[Dep]
 
   def chiseltestModule: Option[PublishModule] = None
 
-  def chiseltestIvyDeps = if (chiseltestModule.isEmpty) Agg(
-    v.chiseltest
-  ) else Agg.empty[Dep]
-
+  def chiseltestIvyDeps = if (chiseltestModule.isEmpty)
+    Agg(
+      v.chiseltest
+    )
+  else Agg.empty[Dep]
 
   override def moduleDeps = super.moduleDeps ++ firrtlModule
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    v.osLib,
+    v.osLib
   ) ++ firrtlIvyDeps
 
   def publishVersion = "3.6-SNAPSHOT"
@@ -62,10 +67,9 @@ trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule
     ) ++ (if (majorVersion == 13) Agg("-Ymacro-annotations") else Agg.empty[String])
   }
 
+  override def compileIvyDeps = if (majorVersion == 13) super.compileIvyDeps else Agg(v.macroParadise)
 
-  override def compileIvyDeps = if(majorVersion == 13) super.compileIvyDeps else Agg(v.macroParadise)
-
-  override def scalacPluginIvyDeps = if(majorVersion == 13) super.compileIvyDeps else Agg(v.macroParadise)
+  override def scalacPluginIvyDeps = if (majorVersion == 13) super.compileIvyDeps else Agg(v.macroParadise)
 
   def pomSettings = PomSettings(
     description = artifactName(),
@@ -81,6 +85,7 @@ trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule
 
 class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule with BuildInfo {
   m =>
+
   /** Default behavior assumes `build.sc` in the upper path of `src`.
     * This override makes `src` folder stay with `build.sc` in the same directory,
     * If chisel3 is used as a sub-project, [[millSourcePath]] should be overridden to the folder where `src` located.
@@ -108,7 +113,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
 
     override def ivyDeps = m.ivyDeps() ++ Agg(
       v.scalatest,
-      v.scalacheck,
+      v.scalacheck
     ) ++ m.treadleIvyDeps
 
     override def moduleDeps = super.moduleDeps ++ treadleModule
@@ -120,7 +125,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def sources = T.sources(millSourcePath / "integration-tests" / "src" / "test" / "scala")
     override def ivyDeps = m.ivyDeps() ++ Agg(
       v.scalatest,
-      v.scalacheck,
+      v.scalacheck
     ) ++ m.treadleIvyDeps ++ m.chiseltestIvyDeps
 
     override def moduleDeps = super.moduleDeps ++ treadleModule ++ chiseltestModule
@@ -137,6 +142,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   }
 
   object macros extends CommonModule {
+
     /** millOuterCtx.segment.pathSegments didn't detect error here. */
     override def millSourcePath = m.millSourcePath / "macros"
 
@@ -146,6 +152,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   }
 
   object core extends CommonModule {
+
     /** millOuterCtx.segment.pathSegments didn't detect error here. */
     override def millSourcePath = m.millSourcePath / "core"
 
@@ -173,6 +180,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   }
 
   object plugin extends CommonModule {
+
     /** millOuterCtx.segment.pathSegments didn't detect error here. */
     override def millSourcePath = m.millSourcePath / "plugin"
 
@@ -181,8 +189,9 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def firrtlModule = m.firrtlModule
 
     override def ivyDeps = Agg(
-      ivy"${scalaOrganization()}:scala-library:$crossScalaVersion",
-    ) ++ (if (majorVersion == 13) Agg(ivy"${scalaOrganization()}:scala-compiler:$crossScalaVersion") else Agg.empty[Dep])
+      ivy"${scalaOrganization()}:scala-library:$crossScalaVersion"
+    ) ++ (if (majorVersion == 13) Agg(ivy"${scalaOrganization()}:scala-compiler:$crossScalaVersion")
+          else Agg.empty[Dep])
 
     def scalacOptions = T {
       Seq(
