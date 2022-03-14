@@ -52,7 +52,7 @@ class firrtlCrossModule(val crossScalaVersion: String)
       ivy"io.github.alexarchambault::data-class:0.2.5",
       ivy"org.antlr:antlr4-runtime:$antlr4Version",
       ivy"com.google.protobuf:protobuf-java:$protocVersion",
-      ivy"com.lihaoyi::os-lib:0.8.0"
+      ivy"com.lihaoyi::os-lib:0.8.1"
     ) ++ {
       if (majorVersion == 13)
         Agg(ivy"org.scala-lang.modules::scala-parallel-collections:1.0.4")
