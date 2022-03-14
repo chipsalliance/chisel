@@ -21,8 +21,11 @@ sealed trait Hierarchy[+A] {
     case Clone(i: IsClone[A]) => i.getProto
   }
 
-  /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
-  private[chisel3] val cache = HashMap[Data, Data]()
+  /** Updated by calls to [[_lookup]], to avoid recloning returned values */
+  private val cache = HashMap[Any, Any]()
+  private[chisel3] def returnValue[T](protoValue: Any, contextValue: => T): T = {
+    cache.getOrElseUpdate(protoValue, contextValue).asInstanceOf[T]
+  }
   private[chisel3] def getInnerDataContext: Option[BaseModule]
 
   /** Determine whether underlying proto is of type provided.

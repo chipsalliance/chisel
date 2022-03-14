@@ -364,6 +364,21 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|Top/i:HasMems>mem".rt, "Mem"))
       annos should contain(MarkAnnotation("~Top|Top/i:HasMems>syncReadMem".rt, "SyncReadMem"))
     }
+    it("3.14: equality should work with repeated lookups") {
+      class Top() extends Module {
+        val d = Definition(new AddFour())
+        val i = Instance(d)
+        i.i0 should be (i.i0)
+        i.i0.in should be (i.i0.in)
+        i.i0.i0 should be (i.i0.i0)
+        i.i0.i0.in should be (i.i0.i0.in)
+        d.i0 shouldNot be (i.i0)
+        d.i0.in shouldNot be (i.i0.in)
+        d.i0.i0 shouldNot be (i.i0.i0)
+        d.i0.i0.in shouldNot be (i.i0.i0.in)
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+    }
   }
   describe("4: toInstance") {
     it("4.0: should work on modules") {
