@@ -6,9 +6,7 @@ package experimental.hierarchy
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
-import chisel3.aop.Select
 import chisel3.util.{DecoupledIO, Valid}
-import chisel3.internal.MacroGenerated
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -232,22 +230,22 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/up:UsesParameters>x".rt, "hi0"))
     }
-    //it("(3.d): should work on lists") {
-    //  class Top() extends Module {
-    //    val i = Instance(Definition(new HasList()))
-    //    mark(i.x(1), i.y(1).toString)
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasList>x_1".rt, "2"))
-    //}
-    //it("(3.e): should work on seqs") {
-    //  class Top() extends Module {
-    //    val i = Instance(Definition(new HasSeq()))
-    //    mark(i.x(1), i.y(1).toString)
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasSeq>x_1".rt, "2"))
-    //}
+    it("(3.d): should work on lists") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasList()))
+        mark(i.x(1), i.y(1).toString)
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasList>x_1".rt, "2"))
+    }
+    it("(3.e): should work on seqs") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasSeq()))
+        mark(i.x(1), i.y(1).toString)
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasSeq>x_1".rt, "2"))
+    }
     it("(3.f): should work on options") {
       class Top() extends Module {
         val i = Instance(Definition(new HasOption()))
@@ -306,7 +304,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         annos should contain(e)
       }
     }
-    it("(3.k): should work on vals in constructor arguments") {
+    ignore("(3.k): should work on vals in constructor arguments") {
       class Top() extends Module {
         val i = Instance(Definition(new HasPublicConstructorArgs(10)))
         //mark(i.x, i.int.toString)
@@ -618,7 +616,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
     }
 
-    it("(7.b): should work on Aggregate Views") {
+    ignore("(7.b): should work on Aggregate Views") {
       import chiselTests.experimental.FlatDecoupledDataView._
       type RegDecoupled = DecoupledIO[FizzBuzz]
       @instantiable
@@ -740,6 +738,50 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         text should include(line)
       }
       for (e <- expected.map(MarkAnnotation.tupled)) {
+        annos should contain(e)
+      }
+    }
+
+    it("(7.e): should work on Views of BlackBoxes") {
+      @instantiable
+      class MyBlackBox extends BlackBox {
+        @public val io = IO(new Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        })
+        @public val innerView = io.viewAs
+        @public val foo = io.in.viewAs[UInt]
+        @public val bar = io.out.viewAs[UInt]
+      }
+      class Top extends RawModule {
+        val foo = IO(Input(UInt(8.W)))
+        val bar = IO(Output(UInt(8.W)))
+        val i = Instance(Definition(new MyBlackBox))
+        val outerView = i.io.viewAs
+        i.foo := foo
+        bar := i.bar
+        mark(i.foo, "i.foo")
+        mark(i.bar, "i.bar")
+        mark(i.innerView.in, "i.innerView.in")
+        mark(outerView.out, "outerView.out")
+      }
+      val inst = "~Top|Top/i:MyBlackBox"
+      val expectedAnnos = List(
+        s"$inst>in".rt -> "i.foo",
+        s"$inst>out".rt -> "i.bar",
+        s"$inst>in".rt -> "i.innerView.in",
+        s"$inst>out".rt -> "outerView.out"
+      )
+      val expectedLines = List(
+        "i.in <= foo",
+        "bar <= i.out"
+      )
+      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
+      val text = chirrtl.serialize
+      for (line <- expectedLines) {
+        text should include(line)
+      }
+      for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
         annos should contain(e)
       }
     }
