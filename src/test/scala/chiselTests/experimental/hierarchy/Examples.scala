@@ -158,14 +158,13 @@ object Examples {
   }
   @instantiable
   class Viewer(val y: AddTwo, markPlease: Boolean) extends IsInstantiable {
-    //@public val x = y
-    @public val xi0 = y.i0
-    if (markPlease) mark(xi0.innerWire, "first")
+    @public val x = y
+    if (markPlease) mark(x.i0.innerWire, "first")
   }
   @instantiable
   class ViewerParent(val x: AddTwo, markHere: Boolean, markThere: Boolean) extends Module {
     @public val viewer = new Viewer(x, markThere)
-    if (markHere) mark(viewer.xi0.innerWire, "second")
+    if (markHere) mark(viewer.x.i0.innerWire, "second")
   }
   @instantiable
   class MultiVal() extends Module {
@@ -174,7 +173,7 @@ object Examples {
   @instantiable
   class LazyVal() extends Module {
     @public val x = Wire(UInt(3.W))
-    @public val y = "Hi"
+    @public lazy val y = "Hi"
   }
   case class Parameters(string: String, int: Int) extends IsLookupable
   @instantiable
@@ -182,16 +181,16 @@ object Examples {
     @public val y = p
     @public val x = Wire(UInt(3.W))
   }
-  //@instantiable
-  //class HasList() extends Module {
-  //  @public val y = List(1, 2, 3)
-  //  @public val x = List.fill(3)(Wire(UInt(3.W)))
-  //}
-  //@instantiable
-  //class HasSeq() extends Module {
-  //  @public val y = Seq(1, 2, 3)
-  //  @public val x = Seq.fill(3)(Wire(UInt(3.W)))
-  //}
+  @instantiable
+  class HasList() extends Module {
+    @public val y = List(1, 2, 3)
+    @public val x = List.fill(3)(Wire(UInt(3.W)))
+  }
+  @instantiable
+  class HasSeq() extends Module {
+    @public val y = Seq(1, 2, 3)
+    @public val x = Seq.fill(3)(Wire(UInt(3.W)))
+  }
   @instantiable
   class HasOption() extends Module {
     @public val x: Option[UInt] = Some(Wire(UInt(3.W)))

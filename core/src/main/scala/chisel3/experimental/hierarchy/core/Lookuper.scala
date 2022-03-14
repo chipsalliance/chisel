@@ -26,14 +26,6 @@ object Lookuper {
     def getter[P](that: Int, lense: Lense[P]): G = that
     def apply[P](that: Int, hierarchy: Hierarchy[P]): R = that
   }
-  implicit val lookuperString = new Lookuper[String] {
-    type R = String
-    type S = String
-    type G = String
-    def setter[P](that: String, lense: Lense[P]): S = that
-    def getter[P](that: String, lense: Lense[P]): G = that
-    def apply[P](that: String, hierarchy: Hierarchy[P]): R = that
-  }
   implicit def lookuperOption[B](implicit lookuper: Lookuper[B]) = new Lookuper[Option[B]] {
     type R = Option[lookuper.R]
     type S = Option[lookuper.S]
@@ -82,16 +74,26 @@ object Lookuper {
       (lookuperX[P](that._1, hierarchy), lookuperY(that._2, hierarchy))
     }
   }
-  //import scala.language.higherKinds
-  //implicit def lookuperIterable[B, F[_] <: Iterable[_]](
-  //  implicit lookuper:          Lookuper[B]
-  //) = new Lookuper[F[B]] {
-  //  type R = F[lookuper.R]
-  //  def apply[P](that: F[B], hierarchy: Hierarchy[P]): R = {
-  //    val ret = that.asInstanceOf[Iterable[B]]
-  //    ret.map { x: B => lookuper[P](x, hierarchy) }.asInstanceOf[R]
-  //  }
-  //}
+  import scala.language.higherKinds
+  implicit def lookuperIterable[B, F[_] <: Iterable[_]](
+    implicit lookuper:          Lookuper[B]
+  ) = new Lookuper[F[B]] {
+    type R = F[lookuper.R]
+    type G = F[lookuper.G]
+    type S = F[lookuper.S]
+    def apply[P](that: F[B], hierarchy: Hierarchy[P]): R = {
+      val ret = that.asInstanceOf[Iterable[B]]
+      ret.map { x: B => lookuper[P](x, hierarchy) }.asInstanceOf[R]
+    }
+    def setter[P](that: F[B], lense: Lense[P]): S = {
+      val ret = that.asInstanceOf[Iterable[B]]
+      ret.map { x: B => lookuper.setter[P](x, lense) }.asInstanceOf[S]
+    }
+    def getter[P](that: F[B], lense: Lense[P]): G = {
+      val ret = that.asInstanceOf[Iterable[B]]
+      ret.map { x: B => lookuper.getter[P](x, lense) }.asInstanceOf[G]
+    }
+  }
   implicit def isLookupable[V <: IsLookupable] = new Lookuper[V] {
     type R = V
     type S = V
@@ -136,5 +138,14 @@ object Lookuper {
       m.toInstance
     }
   }
+  class SimpleLookuper[V] extends Lookuper[V] {
+    type R = V
+    type S = V
+    type G = V
+    def setter[P](that: V, lense: Lense[P]): S = that
+    def getter[P](that: V, lense: Lense[P]): G = that
+    def apply[P](that: V, hierarchy: Hierarchy[P]): R = that
+  }
+  implicit val lookuperString = new SimpleLookuper[String]()
 }
 

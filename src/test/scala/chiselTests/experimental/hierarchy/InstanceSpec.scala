@@ -178,10 +178,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top(x: AddTwo) extends Module {
         val d = Definition(new ViewerParent(x, false, false))
         val parent = Instance(d)
-        val v = parent.viewer
-        val xxi0 = v.xi0
-        val iw = xxi0.innerWire
-        mark(iw, "third")
+        mark(parent.viewer.x.i0.innerWire, "third")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top(first))
       annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "third"))
@@ -213,22 +210,22 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/up:UsesParameters>x".rt, "hi0"))
     }
-    //it("(3.d): should work on lists") {
-    //  class Top() extends Module {
-    //    val i = Instance(Definition(new HasList()))
-    //    mark(i.x(1), i.y(1).toString)
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasList>x_1".rt, "2"))
-    //}
-    //it("(3.e): should work on seqs") {
-    //  class Top() extends Module {
-    //    val i = Instance(Definition(new HasSeq()))
-    //    mark(i.x(1), i.y(1).toString)
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasSeq>x_1".rt, "2"))
-    //}
+    it("(3.d): should work on lists") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasList()))
+        mark(i.x(1), i.y(1).toString)
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasList>x_1".rt, "2"))
+    }
+    it("(3.e): should work on seqs") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasSeq()))
+        mark(i.x(1), i.y(1).toString)
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasSeq>x_1".rt, "2"))
+    }
     it("(3.f): should work on options") {
       class Top() extends Module {
         val i = Instance(Definition(new HasOption()))
@@ -383,16 +380,16 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       //TODO: Should this be ~Top|Top... ??
       annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
     }
-    //it("(4.d): should work on seqs of IsHierarchicals") {
-    //  class Top() extends Module {
-    //    val i = Module(new AddTwo())
-    //    val vs = Seq(new Viewer(i, false), new Viewer(i, false)).map(_.asInstance)
-    //    mark(f(vs), "blah")
-    //  }
-    //  def f(i: Seq[Instance[Viewer]]): Data = i.head.x.i0.innerWire
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
-    //}
+    it("(4.d): should work on seqs of IsHierarchicals") {
+      class Top() extends Module {
+        val i = Module(new AddTwo())
+        val vs = Seq(new Viewer(i, false), new Viewer(i, false)).map(_.toInstance)
+        mark(f(vs), "blah")
+      }
+      def f(i: Seq[Instance[Viewer]]): Data = i.head.x.i0.innerWire
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
+    }
     it("(4.e): should work on options of modules") {
       class Top() extends Module {
         val is: Option[Instance[AddTwo]] = Some(Module(new AddTwo())).map(_.asInstance)

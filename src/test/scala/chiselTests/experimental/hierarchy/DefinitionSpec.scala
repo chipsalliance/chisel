@@ -152,46 +152,46 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
     // Can you define an instantiable container? I think not.
     // Instead, we can test the instantiable container in a definition
-    //it("1.5: should work on an instantiable container, annotating a wire in the defintion") {
-    //  class Top extends Module {
-    //    val definition: Definition[AddOneWithInstantiableWire] = Definition(new AddOneWithInstantiableWire)
-    //    mark(definition.wireContainer.innerWire, "i0.innerWire")
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableWire>innerWire".rt, "i0.innerWire"))
-    //}
-    //it("1.6: should work on an instantiable container, annotating a module") {
-    //  class Top extends Module {
-    //    val definition = Definition(new AddOneWithInstantiableModule)
-    //    mark(definition.moduleContainer.i0, "i0.i0")
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableModule/i0:AddOne".it, "i0.i0"))
-    //}
-    //it("1.7: should work on an instantiable container, annotating an instance") {
-    //  class Top extends Module {
-    //    val definition = Definition(new AddOneWithInstantiableInstance)
-    //    mark(definition.instanceContainer.i0, "i0.i0")
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstance/i0:AddOne".it, "i0.i0"))
-    //}
-    //it("1.8: should work on an instantiable container, annotating an instantiable container's module") {
-    //  class Top extends Module {
-    //    val definition = Definition(new AddOneWithInstantiableInstantiable)
-    //    mark(definition.containerContainer.container.i0, "i0.i0")
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
-    //}
-    //it("1.9: should work on public member which references public member of another instance") {
-    //  class Top extends Module {
-    //    val definition = Definition(new AddOneWithInstantiableInstantiable)
-    //    mark(definition.containerContainer.container.i0, "i0.i0")
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
-    //}
+    it("1.5: should work on an instantiable container, annotating a wire in the defintion") {
+      class Top extends Module {
+        val definition: Definition[AddOneWithInstantiableWire] = Definition(new AddOneWithInstantiableWire)
+        mark(definition.wireContainer.innerWire, "i0.innerWire")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableWire>innerWire".rt, "i0.innerWire"))
+    }
+    it("1.6: should work on an instantiable container, annotating a module") {
+      class Top extends Module {
+        val definition = Definition(new AddOneWithInstantiableModule)
+        mark(definition.moduleContainer.i0, "i0.i0")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableModule/i0:AddOne".it, "i0.i0"))
+    }
+    it("1.7: should work on an instantiable container, annotating an instance") {
+      class Top extends Module {
+        val definition = Definition(new AddOneWithInstantiableInstance)
+        mark(definition.instanceContainer.i0, "i0.i0")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstance/i0:AddOne".it, "i0.i0"))
+    }
+    it("1.8: should work on an instantiable container, annotating an instantiable container's module") {
+      class Top extends Module {
+        val definition = Definition(new AddOneWithInstantiableInstantiable)
+        mark(definition.containerContainer.container.i0, "i0.i0")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
+    }
+    it("1.9: should work on public member which references public member of another instance") {
+      class Top extends Module {
+        val definition = Definition(new AddOneWithInstantiableInstantiable)
+        mark(definition.containerContainer.container.i0, "i0.i0")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
+    }
     it("1.10: should work for targets on definition to have correct circuit name") {
       class Top extends Module {
         val definition = Definition(new AddOneWithAnnotation)
@@ -217,15 +217,15 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top(first))
       annos should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "second"))
     }
-    //it("2.2: should work on an innerWire, marked in a different compilation, in instanced module") {
-    //  val first = elaborateAndGetModule(new AddTwo)
-    //  class Top(x: AddTwo) extends Module {
-    //    val parent = Definition(new ViewerParent(x, false, false))
-    //    mark(parent.viewer.x.i0.innerWire, "third")
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top(first))
-    //  annos should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "third"))
-    //}
+    it("2.2: should work on an innerWire, marked in a different compilation, in instanced module") {
+      val first = elaborateAndGetModule(new AddTwo)
+      class Top(x: AddTwo) extends Module {
+        val parent = Definition(new ViewerParent(x, false, false))
+        mark(parent.viewer.x.i0.innerWire, "third")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top(first))
+      annos should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "third"))
+    }
   }
   describe("3: @public") {
     it("3.0: should work on multi-vals") {
@@ -253,22 +253,22 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|UsesParameters>x".rt, "hi0"))
     }
-    //it("3.3: should work on lists") {
-    //  class Top() extends Module {
-    //    val i = Definition(new HasList())
-    //    mark(i.x(1), i.y(1).toString)
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos should contain(MarkAnnotation("~Top|HasList>x_1".rt, "2"))
-    //}
-    //it("3.4: should work on seqs") {
-    //  class Top() extends Module {
-    //    val i = Definition(new HasSeq())
-    //    mark(i.x(1), i.y(1).toString)
-    //  }
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  annos should contain(MarkAnnotation("~Top|HasSeq>x_1".rt, "2"))
-    //}
+    it("3.3: should work on lists") {
+      class Top() extends Module {
+        val i = Definition(new HasList())
+        mark(i.x(1), i.y(1).toString)
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|HasList>x_1".rt, "2"))
+    }
+    it("3.4: should work on seqs") {
+      class Top() extends Module {
+        val i = Definition(new HasSeq())
+        mark(i.x(1), i.y(1).toString)
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|HasSeq>x_1".rt, "2"))
+    }
     it("3.5: should work on options") {
       class Top() extends Module {
         val i = Definition(new HasOption())
