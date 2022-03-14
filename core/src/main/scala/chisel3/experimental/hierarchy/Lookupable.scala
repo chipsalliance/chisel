@@ -10,7 +10,7 @@ import scala.annotation.implicitNotFound
 import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifySingleData}
-import chisel3.internal.firrtl.{Arg, ILit, Index, Slot, ULit}
+import chisel3.internal.firrtl.{Arg, ILit, Index, ModuleIO, Slot, ULit}
 import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
@@ -19,7 +19,7 @@ import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBin
   */
 @implicitNotFound(
   "@public is only legal within a class or trait marked @instantiable, and only on vals of type" +
-    " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, or Either"
+    " Data, BaseModule, MemBase, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, Either, or Tuple2"
 )
 trait Lookupable[-B] {
   type C // Return type of the lookup
@@ -123,8 +123,8 @@ object Lookupable {
     def unrollCoordinates(res: List[Arg], d: Data): (List[Arg], Data) = d.binding.get match {
       case ChildBinding(parent) =>
         d.getRef match {
-          case arg @ (_: Slot | _: Index) => unrollCoordinates(arg :: res, parent)
-          case other => err(s"Unroll coordinates failed for '$arg'! Unexpected arg '$other'")
+          case arg @ (_: Slot | _: Index | _: ModuleIO) => unrollCoordinates(arg :: res, parent)
+          case other => err(s"unrollCoordinates failed for '$arg'! Unexpected arg '$other'")
         }
       case _ => (res, d)
     }
@@ -135,6 +135,7 @@ object Lookupable {
           val next = (coor.head, d) match {
             case (Slot(_, name), rec: Record) => rec.elements(name)
             case (Index(_, ILit(n)), vec: Vec[_]) => vec.apply(n.toInt)
+            case (ModuleIO(_, name), rec: Record) => rec.elements(name)
             case (arg, _) => err(s"Unexpected Arg '$arg' applied to '$d'! Root was '$start'.")
           }
           applyCoordinates(coor.tail, next)
@@ -348,6 +349,45 @@ object Lookupable {
       }
     }
 
+  private[chisel3] def cloneMemToContext[T <: MemBase[_]](
+    mem:     T,
+    context: BaseModule
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
+    mem._parent match {
+      case None => mem
+      case Some(parent) =>
+        val newParent = cloneModuleToContext(Proto(parent), context)
+        newParent match {
+          case Proto(p) if p == parent => mem
+          case Clone(mod: BaseModule) =>
+            val existingMod = Builder.currentModule
+            Builder.currentModule = Some(mod)
+            val newChild: T = mem match {
+              case m: Mem[_] => new Mem(m.t.asInstanceOf[Data].cloneTypeFull, m.length).asInstanceOf[T]
+              case m: SyncReadMem[_] =>
+                new SyncReadMem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, m.readUnderWrite).asInstanceOf[T]
+            }
+            Builder.currentModule = existingMod
+            newChild.setRef(mem.getRef, true)
+            newChild
+        }
+    }
+  }
+
+  implicit def lookupMem[B <: MemBase[_]](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    new Lookupable[B] {
+      type C = B
+      def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
+        cloneMemToContext(that(definition.proto), definition.getInnerDataContext.get)
+      }
+      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+        cloneMemToContext(that(instance.proto), instance.getInnerDataContext.get)
+      }
+    }
+
   import scala.language.higherKinds // Required to avoid warning for lookupIterable type parameter
   implicit def lookupIterable[B, F[_] <: Iterable[_]](
     implicit sourceInfo: SourceInfo,
@@ -402,6 +442,28 @@ object Lookupable {
       }
     }
   }
+
+  implicit def lookupTuple2[X, Y](
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions,
+    lookupableX:         Lookupable[X],
+    lookupableY:         Lookupable[Y]
+  ) = new Lookupable[(X, Y)] {
+    type C = (lookupableX.C, lookupableY.C)
+    def definitionLookup[A](that: A => (X, Y), definition: Definition[A]): C = {
+      val ret = that(definition.proto)
+      (
+        lookupableX.definitionLookup[A](_ => ret._1, definition),
+        lookupableY.definitionLookup[A](_ => ret._2, definition)
+      )
+    }
+    def instanceLookup[A](that: A => (X, Y), instance: Instance[A]): C = {
+      import instance._
+      val ret = that(proto)
+      (lookupableX.instanceLookup[A](_ => ret._1, instance), lookupableY.instanceLookup[A](_ => ret._2, instance))
+    }
+  }
+
   implicit def lookupIsInstantiable[B <: IsInstantiable](
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
