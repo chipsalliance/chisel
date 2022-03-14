@@ -459,7 +459,9 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         annos should contain(e)
       }
     }
-    it("(6.b): An @instantiable Module implementing an @instantiable trait should be able to use extension methods from both") {
+    it(
+      "(6.b): An @instantiable Module implementing an @instantiable trait should be able to use extension methods from both"
+    ) {
       class Top extends Module {
         val i: Definition[ModuleWithCommonIntf] = Definition(new ModuleWithCommonIntf)
         mark(i.io.in, "gotcha")
