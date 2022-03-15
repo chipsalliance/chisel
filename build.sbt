@@ -5,9 +5,9 @@ import com.typesafe.tools.mima.core._
 enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
-  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.5.1",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5.1",
-  "chiseltest" -> "edu.berkeley.cs" %% "chiseltest" % "0.5.1",
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.5.2",
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5.2",
+  "chiseltest" -> "edu.berkeley.cs" %% "chiseltest" % "0.5.2",
 )
 
 lazy val commonSettings = Seq (
@@ -16,7 +16,7 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.5.1",
+  version := "3.5.2",
   autoAPIMappings := true,
   scalaVersion := "2.12.15",
   crossScalaVersions := Seq("2.13.6", "2.12.15"),
