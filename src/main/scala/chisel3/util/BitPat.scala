@@ -5,6 +5,7 @@ package chisel3.util
 import scala.language.experimental.macros
 import chisel3._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import scala.collection.mutable
 
 object BitPat {
 
@@ -165,6 +166,8 @@ package experimental {
     /** whether this [[BitSet]] is empty (i.e. no value matches) */
     def isEmpty: Boolean = terms.forall(_.isEmpty)
 
+    def matches(input: UInt) = VecInit(terms.map(_ === input).toSeq).asUInt.orR
+
     /** Check whether this [[BitSet]] overlap with that [[BitSet]], i.e. !(intersect.isEmpty)
       *
       * @param that [[BitSet]] to be checked.
@@ -226,6 +229,51 @@ package experimental {
     }
   }
 
+  sealed class BitSetRange(val start: BigInt, val length: BigInt, val width: Int) extends BitSet { outer =>
+    override def terms = {
+      val collected = mutable.Set[BitPat]();
+      var ptr = start;
+      var left = length;
+      while (left > 0) {
+        var cur_pow = left.bitLength - 1
+        if (ptr != 0) {
+          val max_pow = ptr.lowestSetBit
+          if (max_pow < cur_pow) cur_pow = max_pow
+        }
+
+        val inc = BigInt(1) << cur_pow
+        assert((ptr & inc - 1) == 0)
+        val mask = (BigInt(1) << width) - inc
+        collected.add(new BitPat(ptr, mask, width))
+        ptr += inc
+        left -= inc
+      }
+
+      collected.toSet
+    }
+
+    // TODO: width!
+    override def toString: String = s"BitSetRange(0x${start.toString(16)} - 0x${(start + length).toString(16)})"
+  }
+
+  object BitSetRange {
+    def apply(
+      start:          BigInt,
+      length:         BigInt,
+      width:          Int = -1,
+      allowUnaligned: Boolean = false
+    ): BitSetRange = {
+      require(length > 0, "Cannot construct a empty BitSetRange")
+      val max_known_length = (start + length - 1).bitLength
+      val w = if (width >= 0) width else max_known_length
+      require(w >= max_known_length, "Cannot construct a BitSetRange with width smaller than its range end")
+      val ret = new BitSetRange(start, length, w)
+
+      if (!allowUnaligned) require(ret.terms.size == 1, "Unaligned BitSetRange")
+
+      ret
+    }
+  }
 }
 
 /** Bit patterns are literals with masks, used to represent values with don't
