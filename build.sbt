@@ -37,7 +37,7 @@ lazy val commonSettings = Seq(
 
 lazy val publishSettings = Seq(
   publishMavenStyle := true,
-  publishArtifact in Test := false,
+  Test / publishArtifact := false,
   pomIncludeRepository := { x => false },
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
@@ -70,7 +70,7 @@ lazy val chiselSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.11" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "com.lihaoyi" %% "os-lib" % "0.8.0"
+    "com.lihaoyi" %% "os-lib" % "0.8.1"
   )
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -110,7 +110,8 @@ lazy val pluginScalaVersions = Seq(
   "2.13.4",
   "2.13.5",
   "2.13.6",
-  "2.13.7"
+  "2.13.7",
+  "2.13.8"
 )
 
 lazy val plugin = (project in file("plugin"))
@@ -135,7 +136,7 @@ lazy val plugin = (project in file("plugin"))
   )
 
 lazy val usePluginSettings = Seq(
-  scalacOptions in Compile ++= {
+  Compile / scalacOptions ++= {
     val jar = (plugin / Compile / Keys.`package`).value
     val addPlugin = "-Xplugin:" + jar.getAbsolutePath
     // add plugin timestamp to compiler options to trigger recompile of
@@ -194,8 +195,9 @@ lazy val chisel = (project in file("."))
   .settings(
     mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",
-    scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
-    scalacOptions in Compile in doc ++= Seq(
+    Test / scalacOptions += "-P:chiselplugin:genBundleElements",
+    Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
+    Compile / doc / scalacOptions ++= Seq(
       "-diagrams",
       "-groups",
       "-skip-packages",
@@ -209,7 +211,7 @@ lazy val chisel = (project in file("."))
       "-doc-root-content",
       baseDirectory.value + "/root-doc.txt",
       "-sourcepath",
-      (baseDirectory in ThisBuild).value.toString,
+      (ThisBuild / baseDirectory).value.toString,
       "-doc-source-url", {
         val branch =
           if (version.value.endsWith("-SNAPSHOT")) {

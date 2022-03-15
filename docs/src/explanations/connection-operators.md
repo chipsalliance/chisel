@@ -24,7 +24,7 @@ import chisel3.util.DecoupledIO
 ```
 
 The diagram for the experiment can be viewed [here](https://docs.google.com/document/d/14C918Hdahk2xOGSJJBT-ZVqAx99_hg3JQIq-vaaifQU/edit?usp=sharing).
-![Experiment Image](https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/chisel_01.png?sanitize=true)
+![Experiment Image](https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/connection-operators-experiment.svg?sanitize=true)
 
 ```scala mdoc:silent
 

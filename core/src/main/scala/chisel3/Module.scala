@@ -101,8 +101,8 @@ object Module extends SourceInfoDoc {
     compileOptions:      CompileOptions
   ): T = {
     val parent = Builder.currentModule
-
     val module: T = bc // bc is actually evaluated here
+    if (!parent.isEmpty) { Builder.currentModule = parent }
 
     module
   }
@@ -229,6 +229,8 @@ package internal {
     // Private internal class to serve as a _parent for Data in cloned ports
     private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends PseudoModule with IsClone[T] {
       override def toString = s"ModuleClone(${getProto})"
+      // Do not call default addId function, which may modify a module that is already "closed"
+      override def addId(d: HasId): Unit = ()
       def getPorts = _portsRecord
       // ClonePorts that hold the bound ports for this module
       // Used for setting the refs of both this module and the Record
@@ -246,8 +248,14 @@ package internal {
       }
       // Maps proto ports to module clone's ports
       private[chisel3] lazy val ioMap: Map[Data, Data] = {
-        val name2Port = getPorts.elements
-        getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+        getProto match {
+          // BlackBox needs special handling for its pseduo-io Bundle
+          case protoBB: BlackBox =>
+            Map(protoBB._io.get -> getPorts.elements("io"))
+          case _ =>
+            val name2Port = getPorts.elements
+            getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+        }
       }
       // This module doesn't actually exist in the FIRRTL so no initialization to do
       private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
@@ -265,7 +273,17 @@ package internal {
           case bad       => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
         }
         // Set both the record and the module to have the same instance name
-        record.setRef(ModuleCloneIO(getProto, instName), force = true) // force because we did .forceName first
+        val ref = ModuleCloneIO(getProto, instName)
+        record.setRef(ref, force = true) // force because we did .forceName first
+        getProto match {
+          // BlackBox needs special handling for its pseduo-io Bundle
+          case _: BlackBox =>
+            // Override the io Bundle's ref so that it thinks it is the top for purposes of
+            // generating FIRRTL
+            record.elements("io").setRef(ref, force = true)
+          case _ => // Do nothing
+        }
+
         this.setRef(Ref(instName))
       }
     }
@@ -307,6 +325,8 @@ package internal {
       override def toString = s"DefinitionClone(${getProto})"
       // No addition components are generated
       private[chisel3] def generateComponent(): Option[Component] = None
+      // Do not call default addId function, which may modify a module that is already "closed"
+      override def addId(d: HasId): Unit = ()
       // Necessary for toTarget to work
       private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
       // Module name is the same as proto's module name
@@ -325,8 +345,8 @@ package internal {
       * @note These are not true Data (the Record doesn't correspond to anything in the emitted
       * FIRRTL yet its elements *do*) so have some very specialized behavior.
       */
-    private[chisel3] class ClonePorts(elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
-      val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
+    private[chisel3] class ClonePorts(elts: (String, Data)*)(implicit compileOptions: CompileOptions) extends Record {
+      val elements = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
       def apply(field: String) = elements(field)
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }
@@ -347,12 +367,18 @@ package internal {
       // Fake Module to serve as the _parent of the cloned ports
       // We don't create this inside the ModuleClone because we need the ref to be set by the
       // currentModule (and not clonePorts)
-      val clonePorts = new ClonePorts(proto.getModulePorts: _*)
+      val clonePorts = proto match {
+        // BlackBox needs special handling for its pseduo-io Bundle
+        case b: BlackBox =>
+          new ClonePorts(proto.getChiselPorts :+ ("io" -> b._io.get): _*)
+        case _ => new ClonePorts(proto.getChiselPorts: _*)
+      }
       clonePorts.bind(PortBinding(cloneParent))
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
       if (!compileOptions.explicitInvalidate) {
+        // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
       if (proto.isInstanceOf[Module]) {

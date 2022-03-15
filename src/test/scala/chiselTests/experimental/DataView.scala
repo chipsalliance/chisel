@@ -103,8 +103,8 @@ class DataViewSpec extends ChiselFlatSpec {
       buzz.viewAs[MyBundle] := in
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include("fizz.foo <= in.foo")
-    chirrtl should include("buzz.foo <= in.foo")
+    chirrtl should include("fizz <= in")
+    chirrtl should include("buzz <= in")
   }
 
   it should "handle viewing Vecs as their same concrete type" in {
@@ -116,8 +116,8 @@ class DataViewSpec extends ChiselFlatSpec {
       buzz.viewAs[Vec[UInt]] := in
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include("fizz[0] <= in[0]")
-    chirrtl should include("buzz[0] <= in[0]")
+    chirrtl should include("fizz <= in")
+    chirrtl should include("buzz <= in")
   }
 
   it should "handle viewing Vecs as Bundles and vice versa" in {

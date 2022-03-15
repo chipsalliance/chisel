@@ -14,7 +14,7 @@ import chisel3._
   * FillInterleaved(2, "b1 0 0 1".U)  // equivalent to "b11 00 00 11".U
   * FillInterleaved(2, myUIntWire)  // dynamic interleaved fill
   *
-  * FillInterleaved(2, Seq(true.B, false.B, false.B, false.B))  // equivalent to "b11 00 00 00".U
+  * FillInterleaved(2, Seq(false.B, false.B, false.B, true.B))  // equivalent to "b11 00 00 00".U
   * FillInterleaved(2, Seq(true.B, false.B, false.B, true.B))  // equivalent to "b11 00 00 11".U
   * }}}
   */
