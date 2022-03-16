@@ -46,8 +46,14 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
   }
   // Maps proto ports to module clone's ports
   private[chisel3] lazy val ioMap: Map[Data, Data] = {
-    val name2Port = getPorts.elements
-    proto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+    proto match {
+      // BlackBox needs special handling for its pseduo-io Bundle
+      case protoBB: BlackBox =>
+        Map(protoBB._io.get -> getPorts.elements("io"))
+      case _ =>
+        val name2Port = getPorts.elements
+        getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+    }
   }
   // This module doesn't actually exist in the FIRRTL so no initialization to do
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
@@ -65,7 +71,17 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
       case bad       => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
     }
     // Set both the record and the module to have the same instance name
-    record.setRef(ModuleCloneIO(proto, instName), force = true) // force because we did .forceName first
+    val ref = ModuleCloneIO(getProto, instName)
+    record.setRef(ref, force = true) // force because we did .forceName first
+    getProto match {
+      // BlackBox needs special handling for its pseduo-io Bundle
+      case _: BlackBox =>
+        // Override the io Bundle's ref so that it thinks it is the top for purposes of
+        // generating FIRRTL
+        record.elements("io").setRef(ref, force = true)
+      case _ => // Do nothing
+    }
+
     this.setRef(Ref(instName))
   }
 }

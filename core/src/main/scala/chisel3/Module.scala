@@ -209,8 +209,8 @@ package internal {
       * @note These are not true Data (the Record doesn't correspond to anything in the emitted
       * FIRRTL yet its elements *do*) so have some very specialized behavior.
       */
-    private[chisel3] class ClonePorts(elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
-      val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
+    private[chisel3] class ClonePorts(elts: (String, Data)*)(implicit compileOptions: CompileOptions) extends Record {
+      val elements = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
       def apply(field: String) = elements(field)
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }
@@ -242,12 +242,18 @@ package internal {
       // Fake Module to serve as the _parent of the cloned ports
       // We don't create this inside the experimental.hierarchy.ModuleClone because we need the ref to be set by the
       // currentModule (and not clonePorts)
-      val clonePorts = new ClonePorts(proto.getModulePorts: _*)
+      val clonePorts = proto match {
+        // BlackBox needs special handling for its pseduo-io Bundle
+        case b: BlackBox =>
+          new ClonePorts(proto.getChiselPorts :+ ("io" -> b._io.get): _*)
+        case _ => new ClonePorts(proto.getChiselPorts: _*)
+      }
       clonePorts.bind(PortBinding(cloneParent))
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
       if (!compileOptions.explicitInvalidate) {
+        // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
       if (proto.isInstanceOf[Module]) {

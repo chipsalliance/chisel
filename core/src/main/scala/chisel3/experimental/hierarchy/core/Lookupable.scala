@@ -18,15 +18,23 @@ trait Lookupable[-V] {
 
 // Typeclass Default Implementations
 object Lookupable {
-
-  implicit val lookupableInt = new Lookupable[Int] {
-    type R = Int
-    type S = Int
-    type G = Int
-    def setter[P](value: Int, lense:     Lense[P]):     S = value
-    def getter[P](value: Int, lense:     Lense[P]):     G = value
-    def apply[P](value:  Int, hierarchy: Hierarchy[P]): R = value
+  trait SimpleLookupable[V] extends Lookupable[V] {
+    type R = V
+    type S = V
+    type G = V
+    def setter[P](value: V, lense:     Lense[P]):     S = value
+    def getter[P](value: V, lense:     Lense[P]):     G = value
+    def apply[P](value:  V, hierarchy: Hierarchy[P]): R = value
   }
+
+  implicit val lookupableInt = new SimpleLookupable[Int]()
+  implicit val lookupableByte = new SimpleLookupable[Byte]()
+  implicit val lookupableShort = new SimpleLookupable[Short]()
+  implicit val lookupableLong = new SimpleLookupable[Long]()
+  implicit val lookupableFloat = new SimpleLookupable[Float]()
+  implicit val lookupableChar = new SimpleLookupable[Char]()
+  implicit val lookupableBoolean = new SimpleLookupable[Boolean]()
+  implicit val lookupableBigInt = new SimpleLookupable[BigInt]()
   implicit def lookupableOption[B](implicit lookupable: Lookupable[B]) = new Lookupable[Option[B]] {
     type R = Option[lookupable.R]
     type S = Option[lookupable.S]
