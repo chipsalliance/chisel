@@ -8,13 +8,12 @@ object Contextual {
   def apply[V](value: V): Contextual[V] = new Contextual(value)
 }
 
-
 /*
 Sleepless night thoughts
 
 1. Think of chaining contextual functions, rather that representing the solution
    within the contextual. this is important because you never know the answer; it
-   always depends on who is asking. thus, you chain it so that once you ahve a 
+   always depends on who is asking. thus, you chain it so that once you ahve a
    definite query, you can recurse asking/looking up the "genesis" or predecessing
    contextuals
 2. I'm missing a base case in my recursion, where 'this' is passed as an argument to a child.
@@ -27,4 +26,4 @@ Sleepless night thoughts
 5. My previous thought of holding contextual values paired with hierarchy is analogous
    to my previous error of solving the recursion incorrectly when looking up a non-local instance.
 6. Perhaps lenses are the right datastructure to pair hierarchy with values in merged contextuals.
-*/
+ */

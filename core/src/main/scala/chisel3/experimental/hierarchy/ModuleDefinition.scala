@@ -6,7 +6,7 @@ import scala.language.experimental.macros
 import chisel3._
 import chisel3.internal.sourceinfo.SourceInfo
 
-import chisel3.internal.{PseudoModule, HasId}
+import chisel3.internal.{HasId, PseudoModule}
 import chisel3.internal.firrtl._
 import chisel3.experimental.hierarchy.core._
 import scala.collection.mutable.HashMap
@@ -23,7 +23,9 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   * target whose root is the Definition. This DefinitionClone is used to represent the root parent of the
   * InstanceClone (which represents the returned module).
   */
-private[chisel3] final case class ModuleDefinition[T <: BaseModule](proto: T) extends PseudoModule with DefinitionProxy[T] {
+private[chisel3] final case class ModuleDefinition[T <: BaseModule](proto: T)
+    extends PseudoModule
+    with DefinitionProxy[T] {
   override def equals(a: Any): Boolean = {
     a match {
       case d: ModuleDefinition[_] if d.proto == proto && d._circuit == _circuit => true
@@ -31,7 +33,7 @@ private[chisel3] final case class ModuleDefinition[T <: BaseModule](proto: T) ex
     }
   }
 
-  def toInstance:   core.Instance[T] = ???
+  def toInstance: core.Instance[T] = ???
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
@@ -47,9 +49,12 @@ private[chisel3] final case class ModuleDefinition[T <: BaseModule](proto: T) ex
 }
 
 object ModuleDefinition {
-  def apply[T <: BaseModule](proto: T, circuit: Option[BaseModule])(
+  def apply[T <: BaseModule](
+    proto:   T,
+    circuit: Option[BaseModule]
+  )(
     implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions,
+    compileOptions:      CompileOptions
   ): ModuleDefinition[T] = {
     val newChild = Module.do_pseudo_apply(new ModuleDefinition(proto))
     newChild._circuit = circuit

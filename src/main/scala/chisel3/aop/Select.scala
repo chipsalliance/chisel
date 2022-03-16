@@ -54,9 +54,9 @@ object Select {
           case d: DefInstance =>
             d.id match {
               case p: core.Clone[_] =>
-                parent._lookup {
-                  x => new Instance(p).asInstanceOf[Instance[BaseModule]]
-                }//.addContext(parent.contexts)
+                parent._lookup { x =>
+                  new Instance(p).asInstanceOf[Instance[BaseModule]]
+                } //.addContext(parent.contexts)
               case other: BaseModule =>
                 new Instance(parent._lookup { x => other }.proxy)
             }
@@ -81,7 +81,9 @@ object Select {
           case d: DefInstance =>
             d.id match {
               case p: core.Clone[_] =>
-                val i = parent._lookup { x => new Instance(p).asInstanceOf[Instance[BaseModule]] }//.addContext(parent.contexts)
+                val i = parent._lookup { x =>
+                  new Instance(p).asInstanceOf[Instance[BaseModule]]
+                } //.addContext(parent.contexts)
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
               case other: BaseModule =>
                 val i = new Instance(parent._lookup { x => other }.proxy)
@@ -125,7 +127,7 @@ object Select {
               case p: core.Clone[BaseModule] =>
                 //TODO: Think about if returning parent definition's context is appropriate or not.
                 p.toDefinition
-                //parent._lookup { x => new Definition(core.StandIn(p)).asInstanceOf[Definition[BaseModule]] }
+              //parent._lookup { x => new Definition(core.StandIn(p)).asInstanceOf[Definition[BaseModule]] }
               case other: BaseModule =>
                 other.toDefinition
             }
@@ -291,7 +293,7 @@ object Select {
   def ios[T <: BaseModule](parent: Hierarchy[T]): Seq[Data] = {
     check(parent)
     implicit val mg = new chisel3.internal.MacroGenerated {}
-    ???//parent._lookup { x => ios(parent.proto) }
+    ??? //parent._lookup { x => ios(parent.proto) }
   }
 
   /** Selects all SyncReadMems directly contained within given module

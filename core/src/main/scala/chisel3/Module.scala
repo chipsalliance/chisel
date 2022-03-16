@@ -204,7 +204,6 @@ package internal {
 
   object BaseModule {
 
-
     /** Record type returned by CloneModuleAsRecord
       *
       * @note These are not true Data (the Record doesn't correspond to anything in the emitted
@@ -220,10 +219,10 @@ package internal {
     import chisel3.experimental.hierarchy.core.{Definition, TopLense}
     private[chisel3] def cloneIORecord(
       definition: Definition[BaseModule],
-      lenses: Seq[TopLense[BaseModule]]
+      lenses:     Seq[TopLense[BaseModule]]
     )(
       implicit sourceInfo: SourceInfo,
-      compileOptions:      CompileOptions,
+      compileOptions:      CompileOptions
       //proxifier: Proxifier[BaseModule]
     ): ClonePorts = {
       val proto = definition.proto
@@ -234,7 +233,9 @@ package internal {
       val parent = Builder.currentModule
       //import experimental.hierarchy.core.{Proto, Proxifier}
       import experimental.hierarchy._
-      val cloneParent = Module(new experimental.hierarchy.ModuleClone(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]], lenses))
+      val cloneParent = Module(
+        new experimental.hierarchy.ModuleClone(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]], lenses)
+      )
       cloneParent._parent = parent
       require(proto.isClosed, "Can't clone a module before module close")
       require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")
@@ -259,7 +260,6 @@ package internal {
 }
 
 package experimental {
-
 
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
@@ -426,7 +426,7 @@ package experimental {
       case m: experimental.hierarchy.ModuleTransparent[_] if m._parent.nonEmpty =>
         //toTarget
         ModuleTarget(this.getCircuit.get.circuitName, this.name)
-        //m._parent.get.getTarget.instOf(instanceName, name)
+      //m._parent.get.getTarget.instOf(instanceName, name)
       case m: experimental.hierarchy.ModuleMock[_] if m._parent.nonEmpty =>
         m._parent.get.getTarget.instOf(instanceName, name)
       case m: experimental.hierarchy.ModuleClone[_] if m._madeFromDefinition =>
@@ -434,7 +434,7 @@ package experimental {
       // Without this, we get the wrong CircuitName for the Definition
       case m: experimental.hierarchy.ModuleDefinition[_] if m.getCircuit.nonEmpty =>
         ModuleTarget(this.getCircuit.get.circuitName, this.name)
-      case m => 
+      case m =>
         //println(s"$m, ${m._parent}, ${m.getCircuit}")
         this.toTarget
     }

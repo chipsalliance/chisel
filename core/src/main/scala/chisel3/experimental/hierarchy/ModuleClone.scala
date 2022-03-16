@@ -3,7 +3,7 @@
 package chisel3.experimental.hierarchy
 import chisel3.experimental.hierarchy.core._
 import chisel3.internal.firrtl._
-import chisel3.internal.{PseudoModule, Namespace, HasId, throwException}
+import chisel3.internal.{throwException, HasId, Namespace, PseudoModule}
 import chisel3.experimental.BaseModule
 import chisel3._
 import Utils._
@@ -18,9 +18,10 @@ import Utils._
   * @param contexts
   */
 private[chisel3] final class ModuleClone[T <: BaseModule](
-    val genesis: ModuleDefinition[T],
-    val lenses: Seq[Lense[T]]
-) extends PseudoModule with Clone[T] {
+  val genesis: ModuleDefinition[T],
+  val lenses:  Seq[Lense[T]])
+    extends PseudoModule
+    with Clone[T] {
   // _parent is set outside, just like a normal module
 
   // ======== THINGS TO MAKE CHISEL WORK ========

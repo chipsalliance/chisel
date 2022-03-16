@@ -58,7 +58,7 @@ package object hierarchy {
     */
   class public extends chisel3.internal.public
 
-  implicit val mg = new chisel3.internal.MacroGenerated{}
+  implicit val mg = new chisel3.internal.MacroGenerated {}
   implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
   implicit val opt = chisel3.ExplicitCompileOptions.Strict
 
@@ -66,35 +66,37 @@ package object hierarchy {
 
   // TYPECLASSES for BaseModule
   // Required by Definition(..)
-  implicit def buildable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new ProxyDefiner[T] {
-    def apply(proto: => T): ModuleDefinition[T] = {
-      val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
-      Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
-      dynamicContext.inDefinition = true
-      val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
-      Builder.components ++= ir.components
-      Builder.annotations ++= ir.annotations
-      module._circuit = Builder.currentModule
-      dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-      ModuleDefinition(module, module._circuit)
+  implicit def buildable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    new ProxyDefiner[T] {
+      def apply(proto: => T): ModuleDefinition[T] = {
+        val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
+        Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
+        dynamicContext.inDefinition = true
+        val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
+        Builder.components ++= ir.components
+        Builder.annotations ++= ir.annotations
+        module._circuit = Builder.currentModule
+        dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
+        ModuleDefinition(module, module._circuit)
+      }
     }
-  }
-  
-  implicit def stampable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new ProxyInstancer[T] {
-    def apply(definition: Definition[T], lenses: Seq[TopLense[T]]): ModuleClone[T] = {
-      val ports = experimental.CloneModuleAsRecord(definition, lenses)
-      val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
-      clone._madeFromDefinition = true
-      clone
+
+  implicit def stampable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    new ProxyInstancer[T] {
+      def apply(definition: Definition[T], lenses: Seq[TopLense[T]]): ModuleClone[T] = {
+        val ports = experimental.CloneModuleAsRecord(definition, lenses)
+        val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
+        clone._madeFromDefinition = true
+        clone
+      }
     }
-  }
   class SimpleLookupable[V] extends Lookupable[V] {
     type R = V
     type S = V
     type G = V
-    def setter[P](that: V, lense: Lense[P]): S = that
-    def getter[P](that: V, lense: Lense[P]): G = that
-    def apply[P](that: V, hierarchy: Hierarchy[P]): R = that
+    def setter[P](that: V, lense:     Lense[P]):     S = that
+    def getter[P](that: V, lense:     Lense[P]):     G = that
+    def apply[P](that:  V, hierarchy: Hierarchy[P]): R = that
   }
   implicit val lookupableString = new SimpleLookupable[String]()
 
@@ -110,17 +112,18 @@ package object hierarchy {
     }
     def apply[P](value: BaseModule, hierarchy: Hierarchy[P]): Hierarchy[BaseModule] = {
       require(!value.isInstanceOf[Proxy[_]], "BAD!")
-      val h = hierarchy.getLineageOf{case h: Hierarchy[BaseModule] if h.isA[BaseModule] => h} match {
+      val h = hierarchy.getLineageOf { case h: Hierarchy[BaseModule] if h.isA[BaseModule] => h } match {
         case Some(h: Hierarchy[BaseModule]) => h
         case None => hierarchy
       }
       value match {
         case v: Proxy[BaseModule] if v.proto == h.proto => h.asInstanceOf[Hierarchy[BaseModule]]
-        case v: BaseModule if v == h.proto => h.asInstanceOf[Hierarchy[BaseModule]]
-        case other => value._parent match {
-          case None => value.toDefinition
-          case Some(p) => apply(value, h._lookup(_ => p)(lookupBaseModule, mg))
-        }
+        case v: BaseModule if v == h.proto              => h.asInstanceOf[Hierarchy[BaseModule]]
+        case other =>
+          value._parent match {
+            case None    => value.toDefinition
+            case Some(p) => apply(value, h._lookup(_ => p)(lookupBaseModule, mg))
+          }
       }
     }
   }
@@ -141,7 +144,7 @@ package object hierarchy {
       require(!value.isInstanceOf[Proxy[_]], "BAD!")
       (value._parent, value._parent == Some(hierarchy.proto), hierarchy) match {
         case (None, _, _) => println(value); ??? //ERROR
-        case (Some(p), true, h: Hierarchy[BaseModule])  =>
+        case (Some(p), true, h: Hierarchy[BaseModule]) =>
           // Create Mock, hierarchy proxy is parent
           val d = ModuleDefinition(value)
           val t = ModuleTransparent(d)
@@ -152,7 +155,9 @@ package object hierarchy {
           val newParentHierarchy = lookupBaseModule(p, hierarchy)
           val d = ModuleDefinition(value)
           val t = ModuleTransparent(d)
-          val lenses = newParentHierarchy.proxy.lenses.map { l: Lense[BaseModule] => l.getter(value)(this).asInstanceOf[Lense[V]] }
+          val lenses = newParentHierarchy.proxy.lenses.map { l: Lense[BaseModule] =>
+            l.getter(value)(this).asInstanceOf[Lense[V]]
+          }
           ModuleMock(t, newParentHierarchy.proxyAs[BaseModule], lenses).toInstance
       }
     }
@@ -174,16 +179,17 @@ package object hierarchy {
         case Some(p) =>
           val newParentHierarchy = p match {
             case b: Proxy[BaseModule] if b.proto == hierarchy.proto => hierarchy
-            case b: BaseModule if b == hierarchy.proto => hierarchy
+            case b: BaseModule if b == hierarchy.proto              => hierarchy
             case other => lookupBaseModule(p, hierarchy)
           }
-          val lenses = newParentHierarchy.proxy.lenses.map { l: Lense[_] => l.getter(value)(this).asInstanceOf[Lense[U]] }
+          val lenses = newParentHierarchy.proxy.lenses.map { l: Lense[_] =>
+            l.getter(value)(this).asInstanceOf[Lense[U]]
+          }
           // Create mock, set up genesis etc with h as parent
           ModuleMock(value.proxyAs[BaseModule], newParentHierarchy.proxyAs[BaseModule], lenses).toInstance
       }
     }
   }
-
 
   def cloneData[D <: Data](data: D, newParent: BaseModule, ioMap: Map[Data, Data] = Map.empty[Data, Data]): D = {
     def impl[C <: Data](d: C): C = d match {
@@ -203,7 +209,8 @@ package object hierarchy {
   }
 
   def cloneMem[M <: MemBase[_]](mem: M, newParent: BaseModule): M = {
-    if(mem._parent == Some(newParent)) mem else {
+    if (mem._parent == Some(newParent)) mem
+    else {
       val existingMod = Builder.currentModule
       Builder.currentModule = Some(newParent)
       val newChild: M = mem match {
@@ -219,19 +226,19 @@ package object hierarchy {
 
   implicit def lookupableData[V <: Data](
     implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions
+    compileOptions:      CompileOptions
   ) = new Lookupable[V] {
     type R = V
     type S = V
     type G = V
-    def setter[P](value: V, lense: Lense[P]): S = apply(value, lense.toHierarchy)
-    def getter[P](value: V, lense: Lense[P]): G = apply(value, lense.toHierarchy)
-    def apply[P](value: V, hierarchy: Hierarchy[P]): V = value._parent match {
+    def setter[P](value: V, lense:     Lense[P]): S = apply(value, lense.toHierarchy)
+    def getter[P](value: V, lense:     Lense[P]): G = apply(value, lense.toHierarchy)
+    def apply[P](value:  V, hierarchy: Hierarchy[P]): V = value._parent match {
       case None => value
       case Some(p: BaseModule) =>
         val newParentHierarchy = p match {
           case b: Proxy[_] if b.proto == hierarchy.proto => hierarchy
-          case b: BaseModule if b == hierarchy.proto => hierarchy
+          case b: BaseModule if b == hierarchy.proto     => hierarchy
           case _ => lookupBaseModule(p, hierarchy)
         }
         newParentHierarchy.proxy match {
@@ -246,19 +253,19 @@ package object hierarchy {
 
   implicit def lookupableMem[V <: MemBase[_]](
     implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions
+    compileOptions:      CompileOptions
   ) = new Lookupable[V] {
     type R = V
     type S = V
     type G = V
-    def setter[P](value: V, lense: Lense[P]): S = apply(value, lense.toHierarchy)
-    def getter[P](value: V, lense: Lense[P]): G = apply(value, lense.toHierarchy)
-    def apply[P](value: V, hierarchy: Hierarchy[P]) = value._parent match {
+    def setter[P](value: V, lense:     Lense[P]): S = apply(value, lense.toHierarchy)
+    def getter[P](value: V, lense:     Lense[P]): G = apply(value, lense.toHierarchy)
+    def apply[P](value:  V, hierarchy: Hierarchy[P]) = value._parent match {
       case None => value
       case Some(p: BaseModule) =>
         val newParentHierarchy = p match {
           case b: Proxy[BaseModule] if b.proto == hierarchy.proto => hierarchy
-          case b: BaseModule if b == hierarchy.proto => hierarchy
+          case b: BaseModule if b == hierarchy.proto              => hierarchy
           case _ => lookupBaseModule(p, hierarchy)
         }
         newParentHierarchy.proxy match {
@@ -282,7 +289,6 @@ package object hierarchy {
   val Contextual = core.Contextual
   type IsLookupable = core.IsLookupable
   type IsInstantiable = core.IsInstantiable
-
 
   // ========= Extensions =========
 
@@ -352,7 +358,7 @@ package object hierarchy {
     /** If this is an instance of a Module, returns the toTarget of this instance
       * @return target of this instance
       */
-    def toInstance: Instance[T] = ???
+    def toInstance:   Instance[T] = ???
     def toDefinition: Definition[T] = toInstance.toDefinition
   }
 

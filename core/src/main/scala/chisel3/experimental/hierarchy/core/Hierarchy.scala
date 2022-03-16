@@ -13,26 +13,29 @@ sealed trait Hierarchy[+P] {
   def open[T](contextual: Contextual[T]): T = proxy.compute(contextual, contextual).value
 
   /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
-  def _lookup[B](that: P => B)(
+  def _lookup[B](
+    that: P => B
+  )(
     implicit lookupable: Lookupable[B],
-    macroGenerated:  chisel3.internal.MacroGenerated
+    macroGenerated:      chisel3.internal.MacroGenerated
   ): lookupable.R = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(proto)
-    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.R] else {
+    if (cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.R]
+    else {
       val ret = lookupable(protoValue, this)
       cache.put(protoValue, ret)
       ret
     }
   }
 
-
   def getLineageOf[T](pf: PartialFunction[Any, Hierarchy[T]]): Option[Hierarchy[T]] = {
-    pf.lift(this).orElse(proxy.lineageOpt.flatMap {
-      case d: DefinitionProxy[_] => d.toDefinition.getLineageOf(pf)
-      case i: InstanceProxy[_] => i.toInstance.getLineageOf(pf)
-      case other => println(s"NONE!! $other"); None
-    })
+    pf.lift(this)
+      .orElse(proxy.lineageOpt.flatMap {
+        case d: DefinitionProxy[_] => d.toDefinition.getLineageOf(pf)
+        case i: InstanceProxy[_]   => i.toInstance.getLineageOf(pf)
+        case other => println(s"NONE!! $other"); None
+      })
   }
 
   def proxyAs[T]: Proxy[P] with T = proxy.asInstanceOf[Proxy[P] with T]
@@ -80,13 +83,14 @@ object Hierarchy {
   // E.g.
   // object Foo {
   //   object Bar {
-  //     class Baz() 
+  //     class Baz()
   //   }
   // }
   // Scala type will be Foo.Bar.Baz
   // Java type will be Foo.Bar$.Baz
   private def modifyNestedObjects(clz: String): String = {
-    if (clz != null) { clz.replace("$","") } else clz
+    if (clz != null) { clz.replace("$", "") }
+    else clz
   }
   private def calculateSuperClasses(clz: Class[_]): Set[String] = {
     if (clz != null) {
@@ -110,10 +114,15 @@ object Instance {
   def do_apply[P](definition: Definition[P])(implicit stampable: ProxyInstancer[P]): Instance[P] = {
     new Instance(stampable(definition, Nil))
   }
-  def withContext[P](definition: Definition[P])(fs: (TopLense[P] => Unit)*): Instance[P] = 
+  def withContext[P](definition: Definition[P])(fs: (TopLense[P] => Unit)*): Instance[P] =
     macro WithContextTransform.withContext[P]
-  def do_withContext[P](definition: Definition[P])(fs: (TopLense[P] => Unit)*)(implicit stampable: ProxyInstancer[P]): Instance[P] = {
-    val lenses = fs.map{ f => 
+  def do_withContext[P](
+    definition: Definition[P]
+  )(fs:         (TopLense[P] => Unit)*
+  )(
+    implicit stampable: ProxyInstancer[P]
+  ): Instance[P] = {
+    val lenses = fs.map { f =>
       val lense = TopLense(definition.proxy)
       f(lense)
       lense
@@ -123,7 +132,9 @@ object Instance {
   }
 }
 
-final case class Definition[+P] private[chisel3] (private[chisel3] proxy: DefinitionProxy[P]) extends IsLookupable with Hierarchy[P] {
+final case class Definition[+P] private[chisel3] (private[chisel3] proxy: DefinitionProxy[P])
+    extends IsLookupable
+    with Hierarchy[P] {
   def toDefinition = this
   override def proxyAs[T]: DefinitionProxy[P] with T = proxy.asInstanceOf[DefinitionProxy[P] with T]
 }

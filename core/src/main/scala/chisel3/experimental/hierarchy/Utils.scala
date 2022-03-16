@@ -12,6 +12,7 @@ import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBin
 import chisel3.experimental.hierarchy.core._
 
 private[chisel3] object Utils {
+
   /** Given a Data, find the root of its binding, apply a function to the root to get a "new root",
     * and find the equivalent child Data in the "new root"
     *
@@ -65,16 +66,16 @@ private[chisel3] object Utils {
   }
 
   def doLookupData[A, B <: Data](
-    data:    B,
-    ioMap:   Option[Map[Data, Data]],
-    self: BaseModule
+    data:  B,
+    ioMap: Option[Map[Data, Data]],
+    self:  BaseModule
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): B = {
     def impl[C <: Data](d: C): C = d match {
       case x: Data if ioMap.nonEmpty && ioMap.get.contains(x) => ioMap.get(x).asInstanceOf[C]
-      case _ => ???// cloneDataToContext(d, self)
+      case _ => ??? // cloneDataToContext(d, self)
     }
     data.binding match {
       case Some(_: ChildBinding) => mapRootAndExtractSubField(data, impl)

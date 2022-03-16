@@ -272,7 +272,7 @@ object Examples {
   @instantiable
   class HasContextual() extends Module {
     @public val index: Contextual[Int] = Contextual(0)
-    @public val foo: Contextual[Int] = Contextual(1)
+    @public val foo:   Contextual[Int] = Contextual(1)
   }
 
   @instantiable
@@ -287,13 +287,10 @@ object Examples {
   //Topper.top:Instance[Top].i0:Instance[IntermediateHierarchy].i0.index.value == 1
 }
 
-  @instantiable
-  class HasSibling() extends Module {
-    @public val sibling: Contextual[HasSibling] = Contextual(this)
-  }
-
-
-
+@instantiable
+class HasSibling() extends Module {
+  @public val sibling: Contextual[HasSibling] = Contextual(this)
+}
 
 //val myType = TypeDefinition(new MyType {..})
 //val inst: WireInstance[MyType] = WireInstance(myType)

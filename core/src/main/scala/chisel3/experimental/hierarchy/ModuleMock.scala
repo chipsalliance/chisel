@@ -8,7 +8,6 @@ import chisel3.internal.PseudoModule
 import chisel3.internal.firrtl._
 import chisel3._
 
-
 /** Represents a module viewed from a different instance context.
   *
   * @note Why do we need both experimental.hierarchy.ModuleClone and InstanceClone? If we are annotating a reference in a module-clone,
@@ -19,9 +18,10 @@ import chisel3._
   * for experimental.hierarchy.ModuleClone.
   */
 private[chisel3] final case class ModuleMock[T <: BaseModule] private (
-    val genesis: InstanceProxy[T] with BaseModule,
-    val lenses: Seq[Lense[T]]
-) extends PseudoModule with Mock[T] {
+  val genesis: InstanceProxy[T] with BaseModule,
+  val lenses:  Seq[Lense[T]])
+    extends PseudoModule
+    with Mock[T] {
   def lineage = _parent.get.asInstanceOf[Proxy[BaseModule]]
 
   // ======== THINGS TO MAKE CHISEL WORK ========
@@ -34,7 +34,7 @@ private[chisel3] final case class ModuleMock[T <: BaseModule] private (
   // This module doesn't acutally exist in the FIRRTL so no initialization to do
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
   // Module name is the same as proto's module name
-  override def desiredName: String = proto.name
+  override def desiredName:  String = proto.name
   override def instanceName: String = localProxy.asInstanceOf[BaseModule].instanceName
 }
 
@@ -42,10 +42,10 @@ private[chisel3] object ModuleMock {
   def apply[T <: BaseModule](
     genesis: InstanceProxy[T] with BaseModule,
     lineage: BaseModule,
-    lenses: Seq[Lense[T]]
+    lenses:  Seq[Lense[T]]
   )(
     implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions,
+    compileOptions:      CompileOptions
   ): ModuleMock[T] = {
     val x = Module.do_pseudo_apply(new ModuleMock(genesis, lenses))
     x._parent = Some(lineage)

@@ -54,7 +54,7 @@ package object experimental {
     import experimental.hierarchy.core.{Definition, TopLense}
     def apply(
       definition: Definition[BaseModule],
-      lenses: Seq[TopLense[BaseModule]]
+      lenses:     Seq[TopLense[BaseModule]]
     )(
       implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
       compileOptions:      CompileOptions

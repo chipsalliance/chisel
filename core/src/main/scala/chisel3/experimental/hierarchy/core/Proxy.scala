@@ -6,8 +6,8 @@ import java.util.IdentityHashMap
 sealed trait Proxy[+P] {
   def proto: P
   private[chisel3] def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T]
-  def lenses: Seq[Lense[P]]
-  def lineageOpt: Option[Proxy[Any]]
+  def lenses:       Seq[Lense[P]]
+  def lineageOpt:   Option[Proxy[Any]]
   def toDefinition: Definition[P]
 }
 
@@ -27,7 +27,7 @@ sealed trait InstanceProxy[+P] extends Proxy[P] {
   def toDefinition: Definition[P] = genesis.toDefinition
   def localProxy: InstanceProxy[P] = genesis match {
     case d: DefinitionProxy[P] => this
-    case i: InstanceProxy[P] => i.localProxy
+    case i: InstanceProxy[P]   => i.localProxy
   }
 }
 
@@ -54,9 +54,11 @@ trait DefinitionProxy[+P] extends Proxy[P] {
 }
 
 final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P]
-final case class InstantiableTransparent[P](genesis: InstantiableDefinition[P], lenses: Seq[Lense[P]]) extends InstanceProxy[P] {
+final case class InstantiableTransparent[P](genesis: InstantiableDefinition[P], lenses: Seq[Lense[P]])
+    extends InstanceProxy[P] {
   val lineageOpt = None
 }
-final case class InstantiableMock[P](genesis: InstanceProxy[P], lineage: Proxy[Any], lenses: Seq[Lense[P]]) extends InstanceProxy[P] {
+final case class InstantiableMock[P](genesis: InstanceProxy[P], lineage: Proxy[Any], lenses: Seq[Lense[P]])
+    extends InstanceProxy[P] {
   val lineageOpt = Some(lineage)
 }

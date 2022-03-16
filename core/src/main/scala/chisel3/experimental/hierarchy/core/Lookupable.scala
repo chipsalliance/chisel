@@ -7,25 +7,25 @@ import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
 
 // Typeclass Trait
-trait Lookupable[-V]  {
+trait Lookupable[-V] {
   type R
   type S
   type G
-  def apply[P](value: V, hierarchy: Hierarchy[P]): R
-  def setter[P](value: V, lense: Lense[P]): S
-  def getter[P](value: V, lense: Lense[P]): G
+  def apply[P](value:  V, hierarchy: Hierarchy[P]): R
+  def setter[P](value: V, lense:     Lense[P]):     S
+  def getter[P](value: V, lense:     Lense[P]):     G
 }
 
 // Typeclass Default Implementations
 object Lookupable {
-  
+
   implicit val lookupableInt = new Lookupable[Int] {
     type R = Int
     type S = Int
     type G = Int
-    def setter[P](value: Int, lense: Lense[P]): S = value
-    def getter[P](value: Int, lense: Lense[P]): G = value
-    def apply[P](value: Int, hierarchy: Hierarchy[P]): R = value
+    def setter[P](value: Int, lense:     Lense[P]):     S = value
+    def getter[P](value: Int, lense:     Lense[P]):     G = value
+    def apply[P](value:  Int, hierarchy: Hierarchy[P]): R = value
   }
   implicit def lookupableOption[B](implicit lookupable: Lookupable[B]) = new Lookupable[Option[B]] {
     type R = Option[lookupable.R]
@@ -41,43 +41,39 @@ object Lookupable {
       value.map { x: B => lookupable[P](x, hierarchy) }
     }
   }
-  implicit def lookupableEither[X, Y](implicit lookupableX: Lookupable[X], lookupableY: Lookupable[Y]) = new Lookupable[Either[X, Y]] {
-    type R = Either[lookupableX.R, lookupableY.R]
-    type S = Either[lookupableX.S, lookupableY.S]
-    type G = Either[lookupableX.G, lookupableY.G]
-    def setter[P](value: Either[X, Y], lense: Lense[P]): S = {
-      value.map { y: Y => lookupableY.setter(y, lense) }
-          .left
-          .map { x: X => lookupableX.setter(x, lense) }
+  implicit def lookupableEither[X, Y](implicit lookupableX: Lookupable[X], lookupableY: Lookupable[Y]) =
+    new Lookupable[Either[X, Y]] {
+      type R = Either[lookupableX.R, lookupableY.R]
+      type S = Either[lookupableX.S, lookupableY.S]
+      type G = Either[lookupableX.G, lookupableY.G]
+      def setter[P](value: Either[X, Y], lense: Lense[P]): S = {
+        value.map { y: Y => lookupableY.setter(y, lense) }.left.map { x: X => lookupableX.setter(x, lense) }
+      }
+      def getter[P](value: Either[X, Y], lense: Lense[P]): G = {
+        value.map { y: Y => lookupableY.getter(y, lense) }.left.map { x: X => lookupableX.getter(x, lense) }
+      }
+      def apply[P](value: Either[X, Y], hierarchy: Hierarchy[P]): R = {
+        value.map { y: Y => lookupableY[P](y, hierarchy) }.left.map { x: X => lookupableX[P](x, hierarchy) }
+      }
     }
-    def getter[P](value: Either[X, Y], lense: Lense[P]): G = {
-      value.map { y: Y => lookupableY.getter(y, lense) }
-          .left
-          .map { x: X => lookupableX.getter(x, lense) }
+  implicit def lookupableTuple2[X, Y](implicit lookupableX: Lookupable[X], lookupableY: Lookupable[Y]) =
+    new Lookupable[Tuple2[X, Y]] {
+      type R = Tuple2[lookupableX.R, lookupableY.R]
+      type S = Tuple2[lookupableX.S, lookupableY.S]
+      type G = Tuple2[lookupableX.G, lookupableY.G]
+      def setter[P](value: Tuple2[X, Y], lense: Lense[P]): S = {
+        (lookupableX.setter(value._1, lense), lookupableY.setter(value._2, lense))
+      }
+      def getter[P](value: Tuple2[X, Y], lense: Lense[P]): G = {
+        (lookupableX.getter(value._1, lense), lookupableY.getter(value._2, lense))
+      }
+      def apply[P](value: Tuple2[X, Y], hierarchy: Hierarchy[P]): R = {
+        (lookupableX[P](value._1, hierarchy), lookupableY(value._2, hierarchy))
+      }
     }
-    def apply[P](value: Either[X, Y], hierarchy: Hierarchy[P]): R = {
-      value.map { y: Y => lookupableY[P](y, hierarchy) }
-          .left
-          .map { x: X => lookupableX[P](x, hierarchy) }
-    }
-  }
-  implicit def lookupableTuple2[X, Y](implicit lookupableX: Lookupable[X], lookupableY: Lookupable[Y]) = new Lookupable[Tuple2[X, Y]] {
-    type R = Tuple2[lookupableX.R, lookupableY.R]
-    type S = Tuple2[lookupableX.S, lookupableY.S]
-    type G = Tuple2[lookupableX.G, lookupableY.G]
-    def setter[P](value: Tuple2[X, Y], lense: Lense[P]): S = {
-      (lookupableX.setter(value._1, lense), lookupableY.setter(value._2, lense))
-    }
-    def getter[P](value: Tuple2[X, Y], lense: Lense[P]): G = {
-      (lookupableX.getter(value._1, lense), lookupableY.getter(value._2, lense))
-    }
-    def apply[P](value: Tuple2[X, Y], hierarchy: Hierarchy[P]): R = {
-      (lookupableX[P](value._1, hierarchy), lookupableY(value._2, hierarchy))
-    }
-  }
   import scala.language.higherKinds
   implicit def lookupableIterable[B, F[_] <: Iterable[_]](
-    implicit lookupable:          Lookupable[B]
+    implicit lookupable: Lookupable[B]
   ) = new Lookupable[F[B]] {
     type R = F[lookupable.R]
     type G = F[lookupable.G]
@@ -99,9 +95,9 @@ object Lookupable {
     type R = V
     type S = V
     type G = V
-    def setter[P](value: V, lense: Lense[P]): V = value
-    def getter[P](value: V, lense: Lense[P]): V = value
-    def apply[P](value: V, hierarchy: Hierarchy[P]): R = value
+    def setter[P](value: V, lense:     Lense[P]):     V = value
+    def getter[P](value: V, lense:     Lense[P]):     V = value
+    def apply[P](value:  V, hierarchy: Hierarchy[P]): R = value
   }
 
   implicit def lookupableContextual[V] = new Lookupable[Contextual[V]] {

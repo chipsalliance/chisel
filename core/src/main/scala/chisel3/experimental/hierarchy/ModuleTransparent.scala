@@ -4,7 +4,7 @@ package chisel3.experimental.hierarchy
 
 import chisel3.experimental.hierarchy.core._
 import chisel3.internal.firrtl._
-import chisel3.internal.{PseudoModule, Namespace, HasId, throwException}
+import chisel3.internal.{throwException, HasId, Namespace, PseudoModule}
 import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.experimental.BaseModule
 import chisel3._
@@ -14,12 +14,13 @@ import Utils._
   * If representing either, it has IO accordingly.
   * For Normal modules, it shares the module's IO
   * For ModuleClones, it shares the standInClone's io
- */
+  */
 private[chisel3] final class ModuleTransparent[T <: BaseModule] private (
-    val genesis: ModuleDefinition[T]
-) extends PseudoModule with Transparent[T] {
+  val genesis: ModuleDefinition[T])
+    extends PseudoModule
+    with Transparent[T] {
   lazy val ioMap: Map[Data, Data] = proto.getChiselPorts.map { case (_, data) => data -> data }.toMap
-  val lenses: Seq[Lense[T]] = Nil
+  val lenses:     Seq[Lense[T]] = Nil
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
@@ -37,9 +38,11 @@ private[chisel3] final class ModuleTransparent[T <: BaseModule] private (
 }
 
 private[chisel3] object ModuleTransparent {
-  def apply[T <: BaseModule](genesis: ModuleDefinition[T])(
+  def apply[T <: BaseModule](
+    genesis: ModuleDefinition[T]
+  )(
     implicit sourceInfo: SourceInfo,
-    compileOptions: CompileOptions
+    compileOptions:      CompileOptions
   ): ModuleTransparent[T] = {
     val ret = Module.do_pseudo_apply(new ModuleTransparent(genesis))
     ret._parent = genesis.proto._parent
