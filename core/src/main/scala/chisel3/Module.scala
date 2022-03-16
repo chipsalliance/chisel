@@ -215,7 +215,6 @@ package internal {
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }
 
-    //import chisel3.experimental.hierarchy.proxifierModule
     import chisel3.experimental.hierarchy.core.{Definition, TopLense}
     private[chisel3] def cloneIORecord(
       definition: Definition[BaseModule],
@@ -223,7 +222,6 @@ package internal {
     )(
       implicit sourceInfo: SourceInfo,
       compileOptions:      CompileOptions
-      //proxifier: Proxifier[BaseModule]
     ): ClonePorts = {
       val proto = definition.proto
       require(proto.isClosed, "Can't clone a module before module close")
@@ -231,7 +229,6 @@ package internal {
       // We make this before clonePorts because we want it to come up first in naming in
       // currentModule
       val parent = Builder.currentModule
-      //import experimental.hierarchy.core.{Proto, Proxifier}
       import experimental.hierarchy._
       val cloneParent = Module(
         new experimental.hierarchy.ModuleClone(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]], lenses)

@@ -11,8 +11,8 @@ private[chisel3] object instantiableMacro {
   def impl(c: whitebox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
     import c.universe._
     def processBody(stats: Seq[Tree]): (Seq[Tree], Iterable[Tree]) = {
-      val hierarchyExtensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
-      hierarchyExtensions += q"implicit val mg = new chisel3.internal.MacroGenerated{}"
+      val extensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
+      extensions += q"implicit val mg = new chisel3.internal.MacroGenerated{}"
       // Note the triple `_` prefixing `module` is to avoid conflicts if a user marks a 'val module'
       //  with @public; in this case, the lookup code is ambiguous between the generated `def module`
       //  function and the argument to the generated implicit class.
@@ -29,14 +29,14 @@ private[chisel3] object instantiableMacro {
                 c.error(aVal.pos, s"Cannot mark a private or protected val as @public")
                 Nil
               case aVal: ValDef =>
-                hierarchyExtensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
+                extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
                 if (aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
               case other => Seq(other)
             }
           case other => Seq(other)
         }
       }
-      (resultStats, hierarchyExtensions)
+      (resultStats, extensions)
     }
     val result = {
       val (clz, objOpt) = annottees.map(_.tree).toList match {
@@ -47,26 +47,26 @@ private[chisel3] object instantiableMacro {
         case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname + c.freshName())
           val lensename = TypeName(tpname + c.freshName())
-          val (newStats, hierarchyExtensions) = processBody(stats)
+          val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
             q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$newStats } """,
             Seq(
-              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Hierarchy[$tpname[..$argTParams]]) { ..$hierarchyExtensions }""",
-              q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """
+              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Hierarchy[$tpname[..$argTParams]]) { ..$extensions }""",
+              q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$extensions } """
             ),
             tpname
           )
         case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname + c.freshName())
           val lensename = TypeName(tpname + c.freshName())
-          val (newStats, hierarchyExtensions) = processBody(stats)
+          val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
             q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$newStats }",
             Seq(
-              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Hierarchy[$tpname[..$argTParams]]) { ..$hierarchyExtensions }""",
-              q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """
+              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Hierarchy[$tpname[..$argTParams]]) { ..$extensions }""",
+              q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$extensions } """
             ),
             tpname
           )

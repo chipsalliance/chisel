@@ -418,7 +418,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     ignore("(4.a): should work on modules") {
       class Top() extends Module {
         val i = Module(new AddOne())
-        f(i.asInstance)
+        f(i.toInstance)
       }
       def f(i: Instance[AddOne]): Unit = mark(i.innerWire, "blah")
       val (_, annos) = getFirrtlAndAnnos(new Top)
@@ -429,7 +429,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     //  class Top() extends Module {
     //    val i = Module(new AddTwo())
     //    val v = new Viewer(i, false)
-    //    mark(f(v.asInstance), "blah")
+    //    mark(f(v.toInstance), "blah")
     //  }
     //  def f(i: Instance[Viewer]): Data = i.x.i0.innerWire
     //  val (_, annos) = getFirrtlAndAnnos(new Top)
@@ -438,7 +438,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     //}
     it("(4.c): should work on seqs of modules") {
       class Top() extends Module {
-        val is = Seq(Module(new AddTwo()), Module(new AddTwo())).map(_.asInstance)
+        val is = Seq(Module(new AddTwo()), Module(new AddTwo())).map(_.toInstance)
         mark(f(is), "blah")
       }
       def f(i: Seq[Instance[AddTwo]]): Data = i.head.i0.innerWire
@@ -463,7 +463,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
     it("(4.e): should work on options of modules") {
       class Top() extends Module {
-        val is: Option[Instance[AddTwo]] = Some(Module(new AddTwo())).map(_.asInstance)
+        val is: Option[Instance[AddTwo]] = Some(Module(new AddTwo())).map(_.toInstance)
         mark(f(is), "blah")
       }
       def f(i: Option[Instance[AddTwo]]): Data = i.get.i0.innerWire
@@ -607,7 +607,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
     it("(6.c): A BlackBox that implements an @instantiable trait should be instantiable as that trait") {
       class Top extends Module {
-        val i: Instance[ModuleIntf] = Module(new BlackBoxWithCommonIntf).asInstance
+        val i: Instance[ModuleIntf] = Module(new BlackBoxWithCommonIntf).toInstance
         mark(i.io.in, "gotcha")
         mark(i, "module")
       }
@@ -624,8 +624,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val proto = Definition(new ModuleWithCommonIntf("X"))
         val insts: Seq[Instance[ModuleIntf]] = Vector(
-          Module(new ModuleWithCommonIntf("Y")).asInstance,
-          Module(new BlackBoxWithCommonIntf).asInstance,
+          Module(new ModuleWithCommonIntf("Y")).toInstance,
+          Module(new BlackBoxWithCommonIntf).toInstance,
           Instance(proto)
         )
         mark(insts(0).io.in, "foo")

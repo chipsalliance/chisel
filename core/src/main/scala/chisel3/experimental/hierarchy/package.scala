@@ -34,7 +34,7 @@ package object hierarchy {
     * enable accessing these values from a [[Definition]] or [[Instance]] of the class.
     *
     * Only vals of the the following types can be marked [[@public]]:
-    *   1. IsContext
+    *   1. IsInstantiable
     *   2. IsLookupable
     *   3. Data
     *   4. BaseModule
@@ -303,7 +303,7 @@ package object hierarchy {
           ModuleTransparent(definition.proxy.asInstanceOf[ModuleDefinition[P]])
       }
     }
-    def asInstance:   core.Instance[P] = asInstanceProxy.toInstance
+    def toInstance:   core.Instance[P] = asInstanceProxy.toInstance
     def toDefinition: core.Definition[P] = core.Definition(ModuleDefinition(proto, proto.getCircuit))
   }
   implicit class HierarchyBaseModuleExtensions[T <: BaseModule](i: core.Hierarchy[T]) {
