@@ -19,7 +19,7 @@ import chisel3._
   */
 private[chisel3] final case class ModuleMock[T <: BaseModule] private (
   val genesis: InstanceProxy[T] with BaseModule,
-  val lenses:  Seq[Lense[T]])
+  val contexts:  Seq[Context[T]])
     extends PseudoModule
     with Mock[T] {
   def lineage = _parent.get.asInstanceOf[Proxy[BaseModule]]
@@ -42,12 +42,12 @@ private[chisel3] object ModuleMock {
   def apply[T <: BaseModule](
     genesis: InstanceProxy[T] with BaseModule,
     lineage: BaseModule,
-    lenses:  Seq[Lense[T]]
+    contexts:  Seq[Context[T]]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): ModuleMock[T] = {
-    val x = Module.do_pseudo_apply(new ModuleMock(genesis, lenses))
+    val x = Module.do_pseudo_apply(new ModuleMock(genesis, contexts))
     x._parent = Some(lineage)
     x
   }

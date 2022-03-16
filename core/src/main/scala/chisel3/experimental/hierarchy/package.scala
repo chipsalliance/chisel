@@ -83,8 +83,8 @@ package object hierarchy {
 
   implicit def stampable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
     new ProxyInstancer[T] {
-      def apply(definition: Definition[T], lenses: Seq[TopLense[T]]): ModuleClone[T] = {
-        val ports = experimental.CloneModuleAsRecord(definition, lenses)
+      def apply(definition: Definition[T], contexts: Seq[TopContext[T]]): ModuleClone[T] = {
+        val ports = experimental.CloneModuleAsRecord(definition, contexts)
         val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
         clone._madeFromDefinition = true
         clone
@@ -94,21 +94,21 @@ package object hierarchy {
     type R = V
     type S = V
     type G = V
-    def setter[P](that: V, lense:     Lense[P]):     S = that
-    def getter[P](that: V, lense:     Lense[P]):     G = that
+    def setter[P](that: V, context:     Context[P]):     S = that
+    def getter[P](that: V, context:     Context[P]):     G = that
     def apply[P](that:  V, hierarchy: Hierarchy[P]): R = that
   }
   implicit val lookupableString = new SimpleLookupable[String]()
 
   object lookupBaseModule extends Lookupable[BaseModule] {
     type R = Hierarchy[BaseModule]
-    type S = Lense[BaseModule]
-    type G = Lense[BaseModule]
-    def setter[P](value: BaseModule, lense: Lense[P]): S = {
-      NestedLense(apply(value, lense.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, lense.top)
+    type S = Context[BaseModule]
+    type G = Context[BaseModule]
+    def setter[P](value: BaseModule, context: Context[P]): S = {
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, context.top)
     }
-    def getter[P](value: BaseModule, lense: Lense[P]): G = {
-      NestedLense(apply(value, lense.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, lense.top)
+    def getter[P](value: BaseModule, context: Context[P]): G = {
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, context.top)
     }
     def apply[P](value: BaseModule, hierarchy: Hierarchy[P]): Hierarchy[BaseModule] = {
       require(!value.isInstanceOf[Proxy[_]], "BAD!")
@@ -130,13 +130,13 @@ package object hierarchy {
 
   implicit def lookupModule[V <: BaseModule] = new Lookupable[V] {
     type R = Instance[V]
-    type S = Lense[V]
-    type G = Lense[V]
-    def setter[P](value: V, lense: Lense[P]): S = {
-      NestedLense(apply(value, lense.toHierarchy).asInstanceOf[Instance[V]].proxy, lense.top)
+    type S = Context[V]
+    type G = Context[V]
+    def setter[P](value: V, context: Context[P]): S = {
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy, context.top)
     }
-    def getter[P](value: V, lense: Lense[P]): G = {
-      NestedLense(apply(value, lense.toHierarchy).asInstanceOf[Instance[V]].proxy, lense.top)
+    def getter[P](value: V, context: Context[P]): G = {
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy, context.top)
     }
     // Note if value is a Proxy, we are assuming V is BaseModule, not a specific Proxy type
     // If this is not the case, its an internal error and we should get a dynamic error
@@ -148,30 +148,30 @@ package object hierarchy {
           // Create Mock, hierarchy proxy is parent
           val d = ModuleDefinition(value)
           val t = ModuleTransparent(d)
-          val lenses = h.proxy.lenses.map { l: Lense[BaseModule] => l.getter(value)(this).asInstanceOf[Lense[V]] }
-          ModuleMock(t, h.proxyAs[BaseModule], lenses).toInstance
+          val contexts = h.proxy.contexts.map { l: Context[BaseModule] => l.getter(value)(this).asInstanceOf[Context[V]] }
+          ModuleMock(t, h.proxyAs[BaseModule], contexts).toInstance
         case (Some(p), false, h: Hierarchy[P]) =>
           // Create Mock, newParentHierarchy proxy is parent
           val newParentHierarchy = lookupBaseModule(p, hierarchy)
           val d = ModuleDefinition(value)
           val t = ModuleTransparent(d)
-          val lenses = newParentHierarchy.proxy.lenses.map { l: Lense[BaseModule] =>
-            l.getter(value)(this).asInstanceOf[Lense[V]]
+          val contexts = newParentHierarchy.proxy.contexts.map { l: Context[BaseModule] =>
+            l.getter(value)(this).asInstanceOf[Context[V]]
           }
-          ModuleMock(t, newParentHierarchy.proxyAs[BaseModule], lenses).toInstance
+          ModuleMock(t, newParentHierarchy.proxyAs[BaseModule], contexts).toInstance
       }
     }
   }
 
   implicit def lookupInstance[U <: BaseModule] = new Lookupable[Instance[U]] {
     type R = Instance[U]
-    type S = Lense[U]
-    type G = Lense[U]
-    def setter[P](value: Instance[U], lense: Lense[P]): S = {
-      NestedLense(apply(value, lense.toHierarchy).asInstanceOf[Instance[U]].proxy, lense.top)
+    type S = Context[U]
+    type G = Context[U]
+    def setter[P](value: Instance[U], context: Context[P]): S = {
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.top)
     }
-    def getter[P](value: Instance[U], lense: Lense[P]): G = {
-      NestedLense(apply(value, lense.toHierarchy).asInstanceOf[Instance[U]].proxy, lense.top)
+    def getter[P](value: Instance[U], context: Context[P]): G = {
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.top)
     }
     def apply[P](value: Instance[U], hierarchy: Hierarchy[P]) = {
       value.proxyAs[BaseModule]._parent match {
@@ -182,11 +182,11 @@ package object hierarchy {
             case b: BaseModule if b == hierarchy.proto              => hierarchy
             case other => lookupBaseModule(p, hierarchy)
           }
-          val lenses = newParentHierarchy.proxy.lenses.map { l: Lense[_] =>
-            l.getter(value)(this).asInstanceOf[Lense[U]]
+          val contexts = newParentHierarchy.proxy.contexts.map { l: Context[_] =>
+            l.getter(value)(this).asInstanceOf[Context[U]]
           }
           // Create mock, set up genesis etc with h as parent
-          ModuleMock(value.proxyAs[BaseModule], newParentHierarchy.proxyAs[BaseModule], lenses).toInstance
+          ModuleMock(value.proxyAs[BaseModule], newParentHierarchy.proxyAs[BaseModule], contexts).toInstance
       }
     }
   }
@@ -231,8 +231,8 @@ package object hierarchy {
     type R = V
     type S = V
     type G = V
-    def setter[P](value: V, lense:     Lense[P]): S = apply(value, lense.toHierarchy)
-    def getter[P](value: V, lense:     Lense[P]): G = apply(value, lense.toHierarchy)
+    def setter[P](value: V, context:     Context[P]): S = apply(value, context.toHierarchy)
+    def getter[P](value: V, context:     Context[P]): G = apply(value, context.toHierarchy)
     def apply[P](value:  V, hierarchy: Hierarchy[P]): V = value._parent match {
       case None => value
       case Some(p: BaseModule) =>
@@ -258,8 +258,8 @@ package object hierarchy {
     type R = V
     type S = V
     type G = V
-    def setter[P](value: V, lense:     Lense[P]): S = apply(value, lense.toHierarchy)
-    def getter[P](value: V, lense:     Lense[P]): G = apply(value, lense.toHierarchy)
+    def setter[P](value: V, context:     Context[P]): S = apply(value, context.toHierarchy)
+    def getter[P](value: V, context:     Context[P]): G = apply(value, context.toHierarchy)
     def apply[P](value:  V, hierarchy: Hierarchy[P]) = value._parent match {
       case None => value
       case Some(p: BaseModule) =>

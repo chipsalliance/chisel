@@ -59,7 +59,7 @@ sealed trait Hierarchy[+P] {
   /** @return Return the proxy Definition[P] of this Hierarchy[P] */
   def toDefinition: Definition[P]
 
-  //def toLense = Lense(proxy)
+  //def toContext = Context(proxy)
 
   private[chisel3] def proxy: Proxy[P]
   private[chisel3] def proto: P = proxy.proto
@@ -114,20 +114,20 @@ object Instance {
   def do_apply[P](definition: Definition[P])(implicit stampable: ProxyInstancer[P]): Instance[P] = {
     new Instance(stampable(definition, Nil))
   }
-  def withContext[P](definition: Definition[P])(fs: (TopLense[P] => Unit)*): Instance[P] =
+  def withContext[P](definition: Definition[P])(fs: (TopContext[P] => Unit)*): Instance[P] =
     macro WithContextTransform.withContext[P]
   def do_withContext[P](
     definition: Definition[P]
-  )(fs:         (TopLense[P] => Unit)*
+  )(fs:         (TopContext[P] => Unit)*
   )(
     implicit stampable: ProxyInstancer[P]
   ): Instance[P] = {
-    val lenses = fs.map { f =>
-      val lense = TopLense(definition.proxy)
-      f(lense)
-      lense
+    val contexts = fs.map { f =>
+      val context = TopContext(definition.proxy)
+      f(context)
+      context
     }
-    val i = new Instance(stampable(definition, lenses))
+    val i = new Instance(stampable(definition, contexts))
     i
   }
 }

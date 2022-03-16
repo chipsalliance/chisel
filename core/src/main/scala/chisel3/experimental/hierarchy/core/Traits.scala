@@ -29,5 +29,5 @@ trait ProxyDefiner[P] {
 
 // Implemented by a library so we can create an Instance of a Definition
 trait ProxyInstancer[P] {
-  def apply(definition: Definition[P], lenses: Seq[TopLense[P]]): Clone[P]
+  def apply(definition: Definition[P], contexts: Seq[TopContext[P]]): Clone[P]
 }

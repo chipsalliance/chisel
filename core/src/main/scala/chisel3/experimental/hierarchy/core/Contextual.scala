@@ -25,5 +25,5 @@ Sleepless night thoughts
 4. Support contextual.edit first, to demonstrate chaining of contextuals.
 5. My previous thought of holding contextual values paired with hierarchy is analogous
    to my previous error of solving the recursion incorrectly when looking up a non-local instance.
-6. Perhaps lenses are the right datastructure to pair hierarchy with values in merged contextuals.
+6. Perhaps contexts are the right datastructure to pair hierarchy with values in merged contextuals.
  */

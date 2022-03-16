@@ -415,7 +415,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(4) toInstance") {
-    ignore("(4.a): should work on modules") {
+    it("(4.a): should work on modules") {
       class Top() extends Module {
         val i = Module(new AddOne())
         f(i.toInstance)

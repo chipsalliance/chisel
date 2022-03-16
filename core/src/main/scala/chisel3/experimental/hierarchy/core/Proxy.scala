@@ -6,7 +6,7 @@ import java.util.IdentityHashMap
 sealed trait Proxy[+P] {
   def proto: P
   private[chisel3] def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T]
-  def lenses:       Seq[Lense[P]]
+  def contexts:       Seq[Context[P]]
   def lineageOpt:   Option[Proxy[Any]]
   def toDefinition: Definition[P]
 }
@@ -15,7 +15,7 @@ sealed trait InstanceProxy[+P] extends Proxy[P] {
   def genesis: Proxy[P]
   def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
     val genesisContextual = genesis.compute(key, contextual)
-    lenses.foldLeft(genesisContextual) { case (c, lense) => lense.compute(key, c) }
+    contexts.foldLeft(genesisContextual) { case (c, context) => context.compute(key, c) }
   }
   def proto = genesis.proto
   def lineageOfType[C](pf: PartialFunction[Any, C]): Option[C] = lineageOpt match {
@@ -45,20 +45,20 @@ trait Mock[+P] extends InstanceProxy[P] {
   def genesis: InstanceProxy[P]
 }
 trait DefinitionProxy[+P] extends Proxy[P] {
-  def lenses: Seq[Lense[P]] = Nil
+  def contexts: Seq[Context[P]] = Nil
   def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
-    lenses.foldLeft(contextual) { case (c, lense) => lense.compute(key, c) }
+    contexts.foldLeft(contextual) { case (c, context) => context.compute(key, c) }
   }
   def lineageOpt: Option[Proxy[Any]] = None
   def toDefinition = new Definition(this)
 }
 
 final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P]
-final case class InstantiableTransparent[P](genesis: InstantiableDefinition[P], lenses: Seq[Lense[P]])
+final case class InstantiableTransparent[P](genesis: InstantiableDefinition[P], contexts: Seq[Context[P]])
     extends InstanceProxy[P] {
   val lineageOpt = None
 }
-final case class InstantiableMock[P](genesis: InstanceProxy[P], lineage: Proxy[Any], lenses: Seq[Lense[P]])
+final case class InstantiableMock[P](genesis: InstanceProxy[P], lineage: Proxy[Any], contexts: Seq[Context[P]])
     extends InstanceProxy[P] {
   val lineageOpt = Some(lineage)
 }

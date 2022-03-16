@@ -4,9 +4,9 @@ package chisel3.experimental.hierarchy.core
 import scala.collection.mutable
 import java.util.IdentityHashMap
 
-trait Lense[+P] {
+trait Context[+P] {
   def proxy: Proxy[P]
-  def top:   TopLense[_]
+  def top:   TopContext[_]
   def toHierarchy: Hierarchy[P] = proxy match {
     case d: DefinitionProxy[P] => Definition(d)
     case i: InstanceProxy[P]   => Instance(i)
@@ -55,17 +55,17 @@ trait Lense[+P] {
     }
   }
 }
-final case class TopLense[+P](proxy: Proxy[P]) extends Lense[P] {
+final case class TopContext[+P](proxy: Proxy[P]) extends Context[P] {
   def top = this
 }
-final case class NestedLense[+P](proxy: Proxy[P], top: TopLense[_]) extends Lense[P] {}
+final case class NestedContext[+P](proxy: Proxy[P], top: TopContext[_]) extends Context[P] {}
 
-final case class Socket[T](contextual: Contextual[T], lense: Lense[_]) {
+final case class ContextualSetter[T](contextual: Contextual[T], context: Context[_]) {
   def value: T = contextual.value
-  def value_=(newValue: T): TopLense[_] = edit({ _: T => newValue })
-  def edit(f: T => T): TopLense[_] = {
-    lense.addEdit(contextual, f)
-    lense.top
+  def value_=(newValue: T): TopContext[_] = edit({ _: T => newValue })
+  def edit(f: T => T): TopContext[_] = {
+    context.addEdit(contextual, f)
+    context.top
   }
 }
 final case class Edit[T](contextual: Contextual[T], edit: T => T)
