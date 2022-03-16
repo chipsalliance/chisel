@@ -8,7 +8,7 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy._
-import chisel3.experimental.hierarchy.core._ // TODO figure out how to avoid doing this
+//import chisel3.experimental.hierarchy.core._ // TODO figure out how to avoid doing this
 import chisel3.internal.PseudoModule
 import firrtl.annotations.ReferenceTarget
 import scala.reflect.runtime.universe.TypeTag

@@ -6,7 +6,6 @@ package experimental.hierarchy
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy._
-import chisel3.experimental.hierarchy.core._ // TODO figure out how to avoid doing this
 import chisel3.aop.Select
 import chisel3.util.{DecoupledIO, Valid}
 import chisel3.internal.MacroGenerated
@@ -342,9 +341,16 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.syncReadMem, "SyncReadMem")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.foreach { x => println(x.serialize) }
       annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasMems>mem".rt, "Mem"))
       annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top/i:HasMems>syncReadMem".rt, "SyncReadMem"))
+    }
+    it("(3.p): should work with passing parent") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasParent(this)))
+        mark(i.parent, "Top")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|Top".mt, "Top"))
     }
   }
   describe("(4) toInstance") {
@@ -1072,7 +1078,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
   }
-  describe("(11) Lense") {
+  describe("(11) Lense and Contextuals") {
     it("(11.a): it should work on simple classes") {
       class Top extends Module {
         val d = Definition(new HasContextual)
@@ -1104,6 +1110,46 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       getFirrtlAndAnnos(new Top)
     }
+    //it("(11.c): it should work with Contextual Modules") {
+    //  class Top extends Module {
+    //    val d = Definition(new HasSibling)
+    //    val x0 = Instance(d)
+    //    val x1 = Instance.withContext(d)(_.sibling.value = x0)
+    //    val x2 = Instance.withContext(d)(_.sibling.value = x1)
+    //    val x3 = Instance.withContext(d)(_.sibling.value = x2)
+    //    x0.sibling.value should be(x0)
+    //    x1.sibling.value should be(x0)
+    //    x2.sibling.value should be(x1)
+    //    x3.sibling.value should be(x2)
+    //  }
+    //  getFirrtlAndAnnos(new Top)
+    //}
+    //it("(11.c): it should work with Contextual Modules") {
+    //  // IsContextual means lensing on it is supported,
+    //  // which requires a def copy(.. = ..) to be supported
+    //  case class Foo(val l: Int, val nlc: Contextual[Module]) extends IsContextual
+    //  object Foo {
+    //    implicit class ContextualFoo(c: Contextual[Foo]) {
+    //      def copy(l: TopLense[Foo]): Contextual[Foo] = ???
+    //      def ascend(f: Any): Contextual[Foo] = ???
+    //    }
+    //    implicit class LenseFoo(l: Lense[Foo]) {
+    //      def allContextualsOf[T]: Seq[Socket[T]]
+    //    }
+    //  }
+    //  class MyCache extends Module {
+    //    @public lazy val in  = Contextual.empty[Foo]
+    //    @public lazy val out = Contextual(Foo(10, this))
+    //  }
+    //  class MyParent extends Module {
+    //    val d = Definition(new MyModule).withContext(
+    //      
+    //    )
+
+    //    lazy val i0 = Instance.withContext(d)(_.in = this)
+    //    lazy val i1 = Instance.withContext(d)(_.foo.parent = i0.foo.parent)
+    //  }
+    //}
   }
 }
 //  describe("(11) Contextual") {

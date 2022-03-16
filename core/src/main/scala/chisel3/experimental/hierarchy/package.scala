@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3.experimental
 import chisel3._
 import chisel3.internal.{Builder, DynamicContext}
@@ -86,8 +88,17 @@ package object hierarchy {
       clone
     }
   }
+  class SimpleLookupable[V] extends Lookupable[V] {
+    type R = V
+    type S = V
+    type G = V
+    def setter[P](that: V, lense: Lense[P]): S = that
+    def getter[P](that: V, lense: Lense[P]): G = that
+    def apply[P](that: V, hierarchy: Hierarchy[P]): R = that
+  }
+  implicit val lookupableString = new SimpleLookupable[String]()
 
-  object lookupBaseModule extends Lookuper[BaseModule] {
+  object lookupBaseModule extends Lookupable[BaseModule] {
     type R = Hierarchy[BaseModule]
     type S = Lense[BaseModule]
     type G = Lense[BaseModule]
@@ -114,28 +125,7 @@ package object hierarchy {
     }
   }
 
-  //implicit def lenserModule[M <: BaseModule](implicit lookuper: Lookuper[M]) = new Lenser[M] {
-  //  type S = Lense[M]
-  //  type G = Lense[M]
-  //  def setter[P](value: M, lense: Lense[P]): S = {
-  //    NestedLense(lookuper(value, lense.toHierarchy).asInstanceOf[Instance[M]].proxy, lense.top)
-  //  }
-  //  def getter[P](value: M, lense: Lense[P]): G = {
-  //    NestedLense(lookuper(value, lense.toHierarchy).asInstanceOf[Instance[M]].proxy, lense.top)
-  //  }
-  //}
-  //object lenserBaseModule extends Lenser[BaseModule] {
-  //  type S = Lense[BaseModule]
-  //  type G = Lense[BaseModule]
-  //  def setter[P](value: BaseModule, lense: Lense[P]): S = {
-  //    NestedLense(lookuper(value, lense.toHierarchy).asInstanceOf[Instance[M]].proxy, lense.top)
-  //  }
-  //  def getter[P](value: BaseModule, lense: Lense[P]): G = {
-  //    NestedLense(lookuper(value, lense.toHierarchy).asInstanceOf[Instance[M]].proxy, lense.top)
-  //  }
-  //}
-
-  implicit def lookupModule[V <: BaseModule] = new Lookuper[V] {
+  implicit def lookupModule[V <: BaseModule] = new Lookupable[V] {
     type R = Instance[V]
     type S = Lense[V]
     type G = Lense[V]
@@ -168,7 +158,7 @@ package object hierarchy {
     }
   }
 
-  implicit def lookupInstance[U <: BaseModule] = new Lookuper[Instance[U]] {
+  implicit def lookupInstance[U <: BaseModule] = new Lookupable[Instance[U]] {
     type R = Instance[U]
     type S = Lense[U]
     type G = Lense[U]
@@ -227,10 +217,10 @@ package object hierarchy {
     }
   }
 
-  implicit def lookuperData[V <: Data](
+  implicit def lookupableData[V <: Data](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions
-  ) = new Lookuper[V] {
+  ) = new Lookupable[V] {
     type R = V
     type S = V
     type G = V
@@ -254,10 +244,10 @@ package object hierarchy {
     }
   }
 
-  implicit def lookuperMem[V <: MemBase[_]](
+  implicit def lookupableMem[V <: MemBase[_]](
     implicit sourceInfo: SourceInfo,
     compileOptions: CompileOptions
-  ) = new Lookuper[V] {
+  ) = new Lookupable[V] {
     type R = V
     type S = V
     type G = V
@@ -280,18 +270,24 @@ package object hierarchy {
     }
   }
 
-  //type Definition[P] = core.Definition[P]
-  //type Instance[P] = core.Instance[P]
-  //type Hierarchy[P] = core.Hierarchy[P]
-  //type IsContext = core.IsContext
+  // Exposing core hierarchy types to enable importing just hierarchy, not hierarchy.core
+
+  type Hierarchy[P] = core.Hierarchy[P]
+  val Hierarchy = core.Hierarchy
+  type Instance[P] = core.Instance[P]
+  val Instance = core.Instance
+  type Definition[P] = core.Definition[P]
+  val Definition = core.Definition
+  type Contextual[P] = core.Contextual[P]
+  val Contextual = core.Contextual
+  type IsLookupable = core.IsLookupable
+  type IsInstantiable = core.IsInstantiable
 
 
   // ========= Extensions =========
 
   implicit class BaseModuleExtensions[P <: BaseModule](proto: P) {
     import chisel3.experimental.hierarchy.core.{Definition, Instance}
-    // Require proto is not a ContextStandIn, as ContextStandIn should always implement toInstance/toDefinition
-    //require(!proto.isInstanceOf[ContextStandIn[_]], s"Cannot have $proto be a ContextStandIn, must be a proto!!")
     def asInstanceProxy: core.InstanceProxy[P] = {
       require(proto._parent.nonEmpty, s"Cannot call .asInstance on $proto because it has no parent! Try .toDefinition?")
       proto match {
@@ -302,7 +298,7 @@ package object hierarchy {
       }
     }
     def asInstance:   core.Instance[P] = asInstanceProxy.toInstance
-    def toDefinition: core.Definition[P] = Definition(ModuleDefinition(proto, proto.getCircuit))
+    def toDefinition: core.Definition[P] = core.Definition(ModuleDefinition(proto, proto.getCircuit))
   }
   implicit class HierarchyBaseModuleExtensions[T <: BaseModule](i: core.Hierarchy[T]) {
 

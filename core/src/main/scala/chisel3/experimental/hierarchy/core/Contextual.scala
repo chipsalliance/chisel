@@ -2,41 +2,29 @@ package chisel3.experimental.hierarchy.core
 
 import java.util.IdentityHashMap
 
-// Wrapper Class
 final class Contextual[+V](val value: V)
 
 object Contextual {
   def apply[V](value: V): Contextual[V] = new Contextual(value)
 }
 
-//final case class Edit[V](c: Contextual[V], f: V => V)
 
-//final case class Context(map: IdentityHashMap[Contextual[Any], Edit[Any]])
-//final case class AllEdits(ls: List[Edit[Any]])
-//object AllEdits {
-//  def empty = AllEdits(Nil)//new IdentityHashMap[Contextual[Any], Edit[Any]]()
-//}
+/*
+Sleepless night thoughts
 
-// Typeclass Trait
-//trait Contextualizer[V]  {
-//  type R
-//  def apply[P](value: V, hierarchy: Hierarchy[P]): R
-//}
-
-// Default Typeclass Implementations
-object Contextualizer {
-  //implicit def isLookupable[L <: IsLookupable] = new Contextualizer[L] {
-  //  type R = L
-  //  def apply[P](v: L, hierarchy: Hierarchy[P]): L = v
-  //}
-  //implicit def contextual[V] = new Contextualizer[Contextual[V]] {
-  //  type R = V
-  //  def apply[P](v: Contextual[V], hierarchy: Hierarchy[P]): V = {
-  //    hierarchy.proxy match {
-  //      case Proto(p: IsContext, _) => p.edit(v)
-  //      case StandIn(i: IsContext) => i.edit(v)
-  //      case other => v.value
-  //    }
-  //  }
-  //}
-}
+1. Think of chaining contextual functions, rather that representing the solution
+   within the contextual. this is important because you never know the answer; it
+   always depends on who is asking. thus, you chain it so that once you ahve a 
+   definite query, you can recurse asking/looking up the "genesis" or predecessing
+   contextuals
+2. I'm missing a base case in my recursion, where 'this' is passed as an argument to a child.
+   If we are querying a base module which has no parent, we need to try looking it up in
+   the lineage of the hierarchy
+3. If we address this, it may help with the merging function, where we don't really need to
+   add a hierarchy layer, but instead we can just keep the raw contextual. more thought needed
+   here.
+4. Support contextual.edit first, to demonstrate chaining of contextuals.
+5. My previous thought of holding contextual values paired with hierarchy is analogous
+   to my previous error of solving the recursion incorrectly when looking up a non-local instance.
+6. Perhaps lenses are the right datastructure to pair hierarchy with values in merged contextuals.
+*/

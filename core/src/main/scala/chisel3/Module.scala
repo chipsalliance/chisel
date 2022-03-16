@@ -217,7 +217,7 @@ package internal {
     }
 
     //import chisel3.experimental.hierarchy.proxifierModule
-    import chisel3.experimental.hierarchy.core.{Proxifier, Definition, TopLense}
+    import chisel3.experimental.hierarchy.core.{Definition, TopLense}
     private[chisel3] def cloneIORecord(
       definition: Definition[BaseModule],
       lenses: Seq[TopLense[BaseModule]]
@@ -264,7 +264,7 @@ package experimental {
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
-  abstract class BaseModule extends HasId with experimental.hierarchy.core.IsContext {
+  abstract class BaseModule extends HasId {
     _parent.foreach(_.addId(this))
 
     //

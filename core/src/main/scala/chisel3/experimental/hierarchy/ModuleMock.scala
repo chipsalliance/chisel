@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3.experimental.hierarchy
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.core._

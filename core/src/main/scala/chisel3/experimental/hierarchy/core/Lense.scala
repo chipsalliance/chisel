@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3.experimental.hierarchy.core
 import scala.collection.mutable
 import java.util.IdentityHashMap
 
-// Wrapper Class
 trait Lense[+P] {
   def proxy: Proxy[P]
   def top: TopLense[_]
@@ -25,24 +26,22 @@ trait Lense[+P] {
   private[chisel3] def compute[T](key: Contextual[T], c: Contextual[T]): Contextual[T] = new Contextual(getEdit(key).edit(c.value))
 
   def _lookup[B, C](that: P => B)(
-    implicit lookuper: Lookuper[B],
+    implicit lookupable: Lookupable[B],
     macroGenerated:  chisel3.internal.MacroGenerated
-  ): lookuper.S = {
+  ): lookupable.S = {
     val protoValue = that(this.proxy.proto)
-    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookuper.S] else {
-      val retValue = lookuper.setter(protoValue, this)
+    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.S] else {
+      val retValue = lookupable.setter(protoValue, this)
       cache.put(protoValue, retValue)
       retValue
     }
   }
   def getter[B, C](protoValue: B)(
-    implicit lookuper: Lookuper[B]
-  ): lookuper.G = {
-    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookuper.G] else {
-      println(protoValue)
-      val retValue = lookuper.getter(protoValue, this)
+    implicit lookupable: Lookupable[B]
+  ): lookupable.G = {
+    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.G] else {
+      val retValue = lookupable.getter(protoValue, this)
       cache.put(protoValue, retValue)
-      println(retValue)
       retValue
     }
   }
@@ -63,32 +62,3 @@ final case class Socket[T](contextual: Contextual[T], lense: Lense[_]) {
   }
 }
 final case class Edit[T](contextual: Contextual[T], edit: T => T)
-
-// Underlying Classes; For now, just use IsContext's until proven otherwise
-//
-// Typeclass Trait
-//trait Lenser[V]  {
-//}
-//object Lenser {
-//  implicit def instance[I](implicit lookuper: Lookuper[Instance[I]]) = new Lenser[Instance[I]] {
-//  }
-//}
-//  //implicit def lenserIterable[B, F[_] <: Iterable[_]](
-//  //  implicit lenser: Lenser[B]
-//  //) = new Lenser[F[B]] {
-//  //  type R = F[lenser.R]
-//  //  def apply[P](that: F[B], lense: Lense[P]): R = {
-//  //    val ret = that.asInstanceOf[Iterable[B]]
-//  //    ret.map { x: B => lenser[P](x, lense) }.asInstanceOf[R]
-//  //  }
-//  //}
-//
-//
-//
-////TODO: will need to handle lensing nested Contextuals with another typeclass
-//// TODO: nested contextuals
-////final case class ContextualLense[T, V](value: V, parent: Proxy[T, IsContext])
-//  // TODO: nested contextuals
-//  //implicit def isContextual[I <: IsContextual] = new Lensify[Contextual[I], Edit[I]] {
-//  //  def lensify[C](b: Contextual[I], hierarchy: Lense[C]): Edit[I] = Edit(b.value)
-//  //}

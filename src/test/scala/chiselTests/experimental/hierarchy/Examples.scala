@@ -5,7 +5,6 @@ package chiselTests.experimental.hierarchy
 import chisel3._
 import chisel3.util.Valid
 import chisel3.experimental.hierarchy._
-import chisel3.experimental.hierarchy.core._ // TODO figure out how to avoid doing this
 import chisel3.experimental.BaseModule
 
 object Examples {
@@ -173,7 +172,7 @@ object Examples {
   @instantiable
   class LazyVal() extends Module {
     @public val x = Wire(UInt(3.W))
-    @public lazy val y = "Hi"
+    @public lazy val y: String = "Hi"
   }
   case class Parameters(string: String, int: Int) extends IsLookupable
   @instantiable
@@ -265,6 +264,10 @@ object Examples {
     @public val mem = Mem(8, UInt(32.W))
     @public val syncReadMem = SyncReadMem(8, UInt(32.W))
   }
+  @instantiable
+  class HasParent(p: Module) extends Module {
+    @public val parent = p
+  }
 
   @instantiable
   class HasContextual() extends Module {
@@ -283,6 +286,11 @@ object Examples {
   //                     Top.i0:Instance[IntermediateHierarchy].i0.index.value == 1
   //Topper.top:Instance[Top].i0:Instance[IntermediateHierarchy].i0.index.value == 1
 }
+
+  @instantiable
+  class HasSibling() extends Module {
+    @public val sibling: Contextual[HasSibling] = Contextual(this)
+  }
 
 
 

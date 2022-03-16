@@ -14,13 +14,13 @@ sealed trait Hierarchy[+P] {
 
   /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
   def _lookup[B](that: P => B)(
-    implicit lookuper: Lookuper[B],
+    implicit lookupable: Lookupable[B],
     macroGenerated:  chisel3.internal.MacroGenerated
-  ): lookuper.R = {
+  ): lookupable.R = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(proto)
-    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookuper.R] else {
-      val ret = lookuper(protoValue, this)
+    if(cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.R] else {
+      val ret = lookupable(protoValue, this)
       cache.put(protoValue, ret)
       ret
     }
@@ -102,13 +102,7 @@ object Hierarchy {
 final case class Instance[+P] private[chisel3] (private[chisel3] proxy: InstanceProxy[P]) extends Hierarchy[P] {
   def toDefinition = proxy.toDefinition
   override def proxyAs[T]: InstanceProxy[P] with T = proxy.asInstanceOf[InstanceProxy[P] with T]
-  //def getContext[C: TypeTag]: Option[Hierarchy[C]] = {
-  //  if(isA[C]) Some(this) else lineage.flatMap(_.getContext[C])
-  //}
 }
-// Boxing as an Instance
-// Actual Instantiation of an underlying object
-// Deserialized thing in the future
 
 object Instance {
   def apply[P](definition: Definition[P]): Instance[P] =
@@ -131,11 +125,7 @@ object Instance {
 
 final case class Definition[+P] private[chisel3] (private[chisel3] proxy: DefinitionProxy[P]) extends IsLookupable with Hierarchy[P] {
   def toDefinition = this
-  //def toLense = new Lense(proxy)
   override def proxyAs[T]: DefinitionProxy[P] with T = proxy.asInstanceOf[DefinitionProxy[P] with T]
-  //def getContext[C: TypeTag]: Option[Hierarchy[C]] = {
-  //  if(isA[C]) Some(this) else None
-  //}
 }
 
 object Definition {

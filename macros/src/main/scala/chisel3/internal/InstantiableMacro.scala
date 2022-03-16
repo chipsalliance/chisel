@@ -46,30 +46,26 @@ private[chisel3] object instantiableMacro {
       val (newClz, implicitClzs, tpname) = clz match {
         case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname + c.freshName())
-          val instname = TypeName(tpname + c.freshName())
           val lensename = TypeName(tpname + c.freshName())
           val (newStats, hierarchyExtensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
             q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$newStats } """,
             Seq(
-              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Definition[$tpname[..$argTParams]]) { ..$hierarchyExtensions }""",
-              q"""implicit class $instname[..$tparams](___module: chisel3.experimental.hierarchy.core.Instance[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """,
+              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Hierarchy[$tpname[..$argTParams]]) { ..$hierarchyExtensions }""",
               q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """
             ),
             tpname
           )
         case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname + c.freshName())
-          val instname = TypeName(tpname + c.freshName())
           val lensename = TypeName(tpname + c.freshName())
           val (newStats, hierarchyExtensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
             q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$newStats }",
             Seq(
-              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Definition[$tpname[..$argTParams]]) { ..$hierarchyExtensions }""",
-              q"""implicit class $instname[..$tparams](___module: chisel3.experimental.hierarchy.core.Instance[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """,
+              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Hierarchy[$tpname[..$argTParams]]) { ..$hierarchyExtensions }""",
               q"""implicit class $lensename[..$tparams](___module: chisel3.experimental.hierarchy.core.Lense[$tpname[..$argTParams]]) { ..$hierarchyExtensions } """
             ),
             tpname
