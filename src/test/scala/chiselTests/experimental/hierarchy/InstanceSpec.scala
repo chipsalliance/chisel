@@ -425,17 +425,17 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       //TODO: Should this be ~Top|Top/i:AddOne>innerWire ???
       annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|AddOne>innerWire".rt, "blah"))
     }
-    //ignore("(4.b): should work on IsHierarchicals") {
-    //  class Top() extends Module {
-    //    val i = Module(new AddTwo())
-    //    val v = new Viewer(i, false)
-    //    mark(f(v.toInstance), "blah")
-    //  }
-    //  def f(i: Instance[Viewer]): Data = i.x.i0.innerWire
-    //  val (_, annos) = getFirrtlAndAnnos(new Top)
-    //  //TODO: Should this be ~Top|Top... ??
-    //  annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
-    //}
+    it("(4.b): should work on IsHierarchicals") {
+      class Top() extends Module {
+        val i = Module(new AddTwo())
+        val v = new Viewer(i, false)
+        mark(f(v.toInstance), "blah")
+      }
+      def f(i: Instance[Viewer]): Data = i.x.i0.innerWire
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      //TODO: Should this be ~Top|Top... ??
+      annos.collect{case c: MarkAnnotation => c} should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
+    }
     it("(4.c): should work on seqs of modules") {
       class Top() extends Module {
         val is = Seq(Module(new AddTwo()), Module(new AddTwo())).map(_.toInstance)

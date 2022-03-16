@@ -52,7 +52,7 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
         Map(protoBB._io.get -> getPorts.elements("io"))
       case _ =>
         val name2Port = getPorts.elements
-        getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+        proto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
     }
   }
   // This module doesn't actually exist in the FIRRTL so no initialization to do
@@ -71,9 +71,9 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
       case bad       => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
     }
     // Set both the record and the module to have the same instance name
-    val ref = ModuleCloneIO(getProto, instName)
+    val ref = ModuleCloneIO(proto, instName)
     record.setRef(ref, force = true) // force because we did .forceName first
-    getProto match {
+    proto match {
       // BlackBox needs special handling for its pseduo-io Bundle
       case _: BlackBox =>
         // Override the io Bundle's ref so that it thinks it is the top for purposes of

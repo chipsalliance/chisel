@@ -27,14 +27,14 @@ object Lookupable {
     def apply[P](value:  V, hierarchy: Hierarchy[P]): R = value
   }
 
-  implicit val lookupableInt = new SimpleLookupable[Int]()
-  implicit val lookupableByte = new SimpleLookupable[Byte]()
-  implicit val lookupableShort = new SimpleLookupable[Short]()
-  implicit val lookupableLong = new SimpleLookupable[Long]()
-  implicit val lookupableFloat = new SimpleLookupable[Float]()
-  implicit val lookupableChar = new SimpleLookupable[Char]()
-  implicit val lookupableBoolean = new SimpleLookupable[Boolean]()
-  implicit val lookupableBigInt = new SimpleLookupable[BigInt]()
+  implicit val lookupableInt = new SimpleLookupable[Int] {}
+  implicit val lookupableByte = new SimpleLookupable[Byte] {}
+  implicit val lookupableShort = new SimpleLookupable[Short] {}
+  implicit val lookupableLong = new SimpleLookupable[Long] {}
+  implicit val lookupableFloat = new SimpleLookupable[Float] {}
+  implicit val lookupableChar = new SimpleLookupable[Char] {}
+  implicit val lookupableBoolean = new SimpleLookupable[Boolean] {}
+  implicit val lookupableBigInt = new SimpleLookupable[BigInt] {}
   implicit def lookupableOption[B](implicit lookupable: Lookupable[B]) = new Lookupable[Option[B]] {
     type R = Option[lookupable.R]
     type S = Option[lookupable.S]
