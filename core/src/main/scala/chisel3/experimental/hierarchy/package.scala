@@ -83,7 +83,7 @@ package object hierarchy {
 
   implicit def stampable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
     new ProxyInstancer[T] {
-      def apply(definition: Definition[T], contexts: Seq[TopContext[T]]): ModuleClone[T] = {
+      def apply(definition: Definition[T], contexts: Seq[RootContext[T]]): ModuleClone[T] = {
         val ports = experimental.CloneModuleAsRecord(definition, contexts)
         val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
         clone._madeFromDefinition = true

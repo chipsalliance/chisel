@@ -51,10 +51,10 @@ package object experimental {
       import chisel3.experimental.hierarchy._
       apply(proto.toDefinition, Nil)(sourceInfo, compileOptions)
     }
-    import experimental.hierarchy.core.{Definition, TopContext}
+    import experimental.hierarchy.core.{Definition, RootContext}
     def apply(
       definition: Definition[BaseModule],
-      contexts:     Seq[TopContext[BaseModule]]
+      contexts:     Seq[RootContext[BaseModule]]
     )(
       implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
       compileOptions:      CompileOptions

@@ -114,16 +114,16 @@ object Instance {
   def do_apply[P](definition: Definition[P])(implicit stampable: ProxyInstancer[P]): Instance[P] = {
     new Instance(stampable(definition, Nil))
   }
-  def withContext[P](definition: Definition[P])(fs: (TopContext[P] => Unit)*): Instance[P] =
+  def withContext[P](definition: Definition[P])(fs: (RootContext[P] => Unit)*): Instance[P] =
     macro WithContextTransform.withContext[P]
   def do_withContext[P](
     definition: Definition[P]
-  )(fs:         (TopContext[P] => Unit)*
+  )(fs:         (RootContext[P] => Unit)*
   )(
     implicit stampable: ProxyInstancer[P]
   ): Instance[P] = {
     val contexts = fs.map { f =>
-      val context = TopContext(definition.proxy)
+      val context = RootContext(definition.proxy)
       f(context)
       context
     }

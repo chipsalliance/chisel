@@ -215,10 +215,10 @@ package internal {
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }
 
-    import chisel3.experimental.hierarchy.core.{Definition, TopContext}
+    import chisel3.experimental.hierarchy.core.{Definition, RootContext}
     private[chisel3] def cloneIORecord(
       definition: Definition[BaseModule],
-      contexts:     Seq[TopContext[BaseModule]]
+      contexts:     Seq[RootContext[BaseModule]]
     )(
       implicit sourceInfo: SourceInfo,
       compileOptions:      CompileOptions
