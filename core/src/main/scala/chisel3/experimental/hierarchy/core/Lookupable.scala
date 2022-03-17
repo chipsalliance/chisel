@@ -127,10 +127,10 @@ object Lookupable {
     type S = Context[U]
     type G = Context[U]
     def setter[P](value: U, context: Context[P]): S = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.top)
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.root)
     }
     def getter[P](value: U, context: Context[P]): G = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.top)
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.root)
     }
     def apply[P](value: U, hierarchy: Hierarchy[P]): Instance[U] = {
       val d = InstantiableDefinition(value)

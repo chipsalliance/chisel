@@ -105,10 +105,10 @@ package object hierarchy {
     type S = Context[BaseModule]
     type G = Context[BaseModule]
     def setter[P](value: BaseModule, context: Context[P]): S = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, context.top)
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, context.root)
     }
     def getter[P](value: BaseModule, context: Context[P]): G = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, context.top)
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, context.root)
     }
     def apply[P](value: BaseModule, hierarchy: Hierarchy[P]): Hierarchy[BaseModule] = {
       require(!value.isInstanceOf[Proxy[_]], "BAD!")
@@ -133,10 +133,10 @@ package object hierarchy {
     type S = Context[V]
     type G = Context[V]
     def setter[P](value: V, context: Context[P]): S = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy, context.top)
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy, context.root)
     }
     def getter[P](value: V, context: Context[P]): G = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy, context.top)
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy, context.root)
     }
     // Note if value is a Proxy, we are assuming V is BaseModule, not a specific Proxy type
     // If this is not the case, its an internal error and we should get a dynamic error
@@ -168,10 +168,10 @@ package object hierarchy {
     type S = Context[U]
     type G = Context[U]
     def setter[P](value: Instance[U], context: Context[P]): S = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.top)
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.root)
     }
     def getter[P](value: Instance[U], context: Context[P]): G = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.top)
+      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.root)
     }
     def apply[P](value: Instance[U], hierarchy: Hierarchy[P]) = {
       value.proxyAs[BaseModule]._parent match {

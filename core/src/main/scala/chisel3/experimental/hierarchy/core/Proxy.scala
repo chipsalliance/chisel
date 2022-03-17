@@ -3,62 +3,165 @@
 package chisel3.experimental.hierarchy.core
 import java.util.IdentityHashMap
 
+/** Representation of a hierarchical version of an object
+  * Has two subclasses, a DefinitionProxy and InstanceProxy, which are wrapped with Definition(..) and Instance(..)
+  */
 sealed trait Proxy[+P] {
+
+  /** @return Original object that we are proxy'ing */
   def proto: P
+
+  /** Computes the new contextual given the original, proto Contextual (key) and the current contextual (c)
+    *
+    * We need two values here because the edits are stored according to the identity of the original, proto contextual value.
+    * However, contextual values could be set in multiple contexts which grow in context. For example, a default
+    * contextual value can be given, but when we have nested instances, each proto in that hierarchy path can give an
+    * edit function. Thus, the contextual passed to the edit function may not be the same object as the original contextual.
+    *
+    * @param key original proto's contextual
+    * @param contextual current contextual containing a value to be edited
+    * @return a new contextual with the edited value
+    */
   private[chisel3] def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T]
+
+  // All user-specified contexts containing Contextual values
   def contexts:       Seq[Context[P]]
+
+  /** If this proxy was created by being looked up in a parent proxy, lineage refers to that parent proxy.
+    * @return parent proxy from whom this proxy was looked up from
+    */
   def lineageOpt:   Option[Proxy[Any]]
+
+  /** @return a Definition wrapping this Proxy */
   def toDefinition: Definition[P]
 }
 
+/** Proxy representing an Instance version of an object */
 sealed trait InstanceProxy[+P] extends Proxy[P] {
+
+  /** The proxy which refers to the same proto, but from a less-specific hierarchical path.
+    * 
+    * Example 0: if this Proxy refers to ~Top|Foo/bar:Bar, then genesis refers to ~Top|Bar
+    * Example 1: if this Proxy refers to ~Top|Top/foo:Foo/bar:Bar, then genesis refers to ~Top|Foo/bar:Bar
+    * 
+    * @return the genesis proxy of this proxy
+    */
   def genesis: Proxy[P]
-  def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
-    val genesisContextual = genesis.compute(key, contextual)
-    contexts.foldLeft(genesisContextual) { case (c, context) => context.compute(key, c) }
-  }
-  def proto = genesis.proto
+
+  /** Finds the closest parent Proxy which matches a partial function
+    *
+    * TODO: Rename lineageOfType to lineageMatching
+    * 
+    * @param pf selection partial function
+    * @return closest matching parent in lineage which matches pf, if one does
+    */
   def lineageOfType[C](pf: PartialFunction[Any, C]): Option[C] = lineageOpt match {
     case Some(a) if pf.isDefinedAt(a) => pf.lift(a)
     case Some(i: InstanceProxy[Any]) => i.lineageOfType[C](pf)
     case other => None
   }
+
+  /** @return an Instance wrapping this Proxy */
   def toInstance = new Instance(this)
-  def toDefinition: Definition[P] = genesis.toDefinition
+
+  /** @return the InstanceProxy closest to the proto in the chain of genesis proxy's */
   def localProxy: InstanceProxy[P] = genesis match {
     case d: DefinitionProxy[P] => this
     case i: InstanceProxy[P]   => i.localProxy
   }
+
+  override def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
+    val genesisContextual = genesis.compute(key, contextual)
+    contexts.foldLeft(genesisContextual) { case (c, context) => context.compute(key, c) }
+  }
+
+  override def proto = genesis.proto
+  override def toDefinition: Definition[P] = genesis.toDefinition
 }
 
+/** InstanceProxy representing a new Instance which was instantiated in a proto.
+  *
+  * Note: Clone's lineageOpt is always empty
+  * Note: Clone's genesis is always a DefinitionProxy
+  *
+  * E.g. it is the underlying proxy of Instance when a user writes:
+  *   val inst = Instance(..)
+  */
 trait Clone[+P] extends InstanceProxy[P] {
-  def lineageOpt: Option[Proxy[Any]] = None
-  def genesis: DefinitionProxy[P]
+  override def lineageOpt: Option[Proxy[Any]] = None
+
+  override def genesis: DefinitionProxy[P]
 }
+
+/** InstanceProxy representing an Instance which was created from converting an existing object into an Instance.
+  *
+  * Note: Transparent's lineageOpt is always empty
+  * Note: Transparent's genesis is always a DefinitionProxy
+  *
+  * E.g. it is the underlying proxy of Instance when a user writes:
+  *   val inst = myObject.toInstance
+  */
 trait Transparent[+P] extends InstanceProxy[P] {
-  def lineageOpt: Option[Proxy[Any]] = None
-  def genesis: DefinitionProxy[P]
+  override def lineageOpt: Option[Proxy[Any]] = None
+
+  override def genesis: DefinitionProxy[P]
 }
+
+/** InstanceProxy representing an Instance which was created when a proto is looked up from a Hierarchy or Context
+  *
+  * Note: Mock's always have a non-empty lineageOpt.
+  * Note: Mock's genesis is always an InstanceProxy
+  *
+  * E.g. it is the underlying proxy of child when a user writes:
+  *   val parent = Instance(..)
+  *   val child = parent.child
+  */
 trait Mock[+P] extends InstanceProxy[P] {
+  /** @return Lineage of this Mock, e.g. the parent proxy from whom this Mock was looked up from */
   def lineage: Proxy[Any]
-  def lineageOpt: Option[Proxy[Any]] = Some(lineage)
-  def genesis: InstanceProxy[P]
+
+  override def lineageOpt: Option[Proxy[Any]] = Some(lineage)
+
+  override def genesis: InstanceProxy[P]
 }
+
+/** DefinitionProxy underlying a Definition
+  *
+  * E.g. it is the underlying proxy of defn when a user writes:
+  *   val defn = Definition(..)
+  */
 trait DefinitionProxy[+P] extends Proxy[P] {
-  def contexts: Seq[Context[P]] = Nil
-  def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
+  override def contexts: Seq[Context[P]] = Nil
+  override def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
     contexts.foldLeft(contextual) { case (c, context) => context.compute(key, c) }
   }
-  def lineageOpt: Option[Proxy[Any]] = None
-  def toDefinition = new Definition(this)
+  override def lineageOpt: Option[Proxy[Any]] = None
+  override def toDefinition = new Definition(this)
 }
 
+/** DefinitionProxy implementation for all proto's which extend IsInstantiable
+  * 
+  * TODO Move to IsInstantiable.scala
+  * @param proto underlying object we are creating a proxy of
+  */
 final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P]
+
+/** Transparent implementation for all proto's which extend IsInstantiable
+  * 
+  * Note: Clone is not needed for IsInstantiables, as they cannot be instantiated via Instance(..)
+  *
+  * TODO Move to IsInstantiable.scala
+  * @param proto underlying object we are creating a proxy of
+  */
 final case class InstantiableTransparent[P](genesis: InstantiableDefinition[P], contexts: Seq[Context[P]])
-    extends InstanceProxy[P] {
-  val lineageOpt = None
-}
+    extends Transparent[P]
+
+/** Mock implementation for all proto's which extend IsInstantiable
+  *
+  * Note: Clone is not needed for IsInstantiables, as they cannot be instantiated via Instance(..)
+  *
+  * TODO Move to IsInstantiable.scala
+  * @param proto underlying object we are creating a proxy of
+  */
 final case class InstantiableMock[P](genesis: InstanceProxy[P], lineage: Proxy[Any], contexts: Seq[Context[P]])
-    extends InstanceProxy[P] {
-  val lineageOpt = Some(lineage)
-}
+    extends Mock[P]
