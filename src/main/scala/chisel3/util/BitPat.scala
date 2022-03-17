@@ -235,14 +235,14 @@ package experimental {
       var ptr = start;
       var left = length;
       while (left > 0) {
-        var cur_pow = left.bitLength - 1
+        var curPow = left.bitLength - 1
         if (ptr != 0) {
-          val max_pow = ptr.lowestSetBit
-          if (max_pow < cur_pow) cur_pow = max_pow
+          val maxPow = ptr.lowestSetBit
+          if (maxPow < curPow) curPow = maxPow
         }
 
-        val inc = BigInt(1) << cur_pow
-        assert((ptr & inc - 1) == 0)
+        val inc = BigInt(1) << curPow
+        require((ptr & inc - 1) == 0, "BitPatRange: Internal sanity check")
         val mask = (BigInt(1) << width) - inc
         collected.add(new BitPat(ptr, mask, width))
         ptr += inc
