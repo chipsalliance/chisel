@@ -15,13 +15,9 @@ import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.experimental.BaseModule
 import firrtl.annotations.{IsModule, ModuleTarget}
 
-/** Represents a Definition root module, when accessing something from a definition
+/** Proxy of Definition of a user-defined module.
   *
-  * @note This is necessary to distinguish between the toTarget behavior for a Module returned from a Definition,
-  * versus a normal Module. A normal Module.toTarget will always return a local target. If calling toTarget
-  * on a Module returned from a Definition (and thus wrapped in an Instance), we need to return the non-local
-  * target whose root is the Definition. This DefinitionClone is used to represent the root parent of the
-  * InstanceClone (which represents the returned module).
+  * @param proto Underlying module which this is the definition of
   */
 private[chisel3] final case class ModuleDefinition[T <: BaseModule](proto: T)
     extends PseudoModule

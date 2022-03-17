@@ -8,14 +8,12 @@ import chisel3.experimental.BaseModule
 import chisel3._
 import Utils._
 
-/** Represents a unique instance which is DIFFERENT from the underlying proto
-  * It has a different instance name and ports
-  * We do not mock up its parental lineage; to do that, we use StandInHierarchy
+/** Proxy of Instance built from a Definition of a user defined module.
   *
-  * Private internal class to serve as a _parent for Data in cloned ports
+  * Represents a unique local instance built by a parent Module.
   *
-  * @param proto
-  * @param contexts
+  * @param genesis Proxy of the Module Definition of the proto (original module)
+  * @param contexts contains contextual values when viewed from this proxy
   */
 private[chisel3] final class ModuleClone[T <: BaseModule](
   val genesis:  ModuleDefinition[T],

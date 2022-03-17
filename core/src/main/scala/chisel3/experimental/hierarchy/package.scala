@@ -90,16 +90,17 @@ package object hierarchy {
         clone
       }
     }
-  class SimpleLookupable[V] extends Lookupable[V] {
-    type R = V
-    type S = V
-    type G = V
-    def setter[P](that: V, context:   Context[P]):   S = that
-    def getter[P](that: V, context:   Context[P]):   G = that
-    def apply[P](that:  V, hierarchy: Hierarchy[P]): R = that
-  }
-  implicit val lookupableString = new SimpleLookupable[String]()
 
+  // There is an implicit resolution bug which causes this lookupable to
+  //   be confused with lookupableIterable
+  implicit val lookupableString = new Lookupable.SimpleLookupable[String] {}
+
+  // Non-implicit lookup of BaseModule. This has to be different than the
+  // implicit def on subclasses of BaseModule because Proxy's which also
+  // extend BaseModule will have a different return type. Instead of
+  // returning Hierarchy[Proxy[M]], we'd need to return Hierarchy[M].
+  // This usecase only occurs when looking up parents of other proto
+  // values, so always returning Hierarchy[BaseModule] is acceptable.
   object lookupBaseModule extends Lookupable[BaseModule] {
     type R = Hierarchy[BaseModule]
     type S = Context[BaseModule]

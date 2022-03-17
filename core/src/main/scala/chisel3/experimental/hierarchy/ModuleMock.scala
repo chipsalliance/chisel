@@ -8,21 +8,20 @@ import chisel3.internal.PseudoModule
 import chisel3.internal.firrtl._
 import chisel3._
 
-/** Represents a module viewed from a different instance context.
+/** Proxy of Instance when viewed from a different Hierarchy
   *
-  * @note Why do we need both experimental.hierarchy.ModuleClone and InstanceClone? If we are annotating a reference in a module-clone,
-  * all submodules must be also be 'cloned' so the toTarget can be computed properly. However, we don't need separate
-  * connectable ports for this instance; all that's different from the proto is the parent.
+  * Represents a non-local instance.
   *
-  * @note In addition, the instance name of an InstanceClone is going to be the SAME as the proto, but this is not true
-  * for experimental.hierarchy.ModuleClone.
+  * @param genesis Proxy of the same proto with a less-specific hierarchical path
+  * @param contexts contains contextual values when viewed from this proxy
   */
 private[chisel3] final case class ModuleMock[T <: BaseModule] private (
   val genesis:  InstanceProxy[T] with BaseModule,
   val contexts: Seq[Context[T]])
     extends PseudoModule
     with Mock[T] {
-  def lineage = _parent.get.asInstanceOf[Proxy[BaseModule]]
+  
+  override def lineage = _parent.get.asInstanceOf[Proxy[BaseModule]]
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 

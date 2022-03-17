@@ -10,17 +10,18 @@ import chisel3.experimental.BaseModule
 import chisel3._
 import Utils._
 
-/** Represents a normal Module within the current context
-  * If representing either, it has IO accordingly.
-  * For Normal modules, it shares the module's IO
-  * For ModuleClones, it shares the standInClone's io
+/** Proxy of Instance which was created by calling .toInstance from a module
+  *
+  * @param genesis Proxy of the Module Definition of the proto (original module)
   */
 private[chisel3] final class ModuleTransparent[T <: BaseModule] private (
   val genesis: ModuleDefinition[T])
     extends PseudoModule
     with Transparent[T] {
+
   lazy val ioMap: Map[Data, Data] = proto.getChiselPorts.map { case (_, data) => data -> data }.toMap
-  val contexts:   Seq[Context[T]] = Nil
+
+  override val contexts:   Seq[Context[T]] = Nil
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
