@@ -24,8 +24,8 @@ class BitSetRangeTest extends AnyFlatSpec with ChiselScalatestTester with Formal
   val cases = 128
   "BitSetRange" should "be identical as comparesions" in {
     for(i <- 1 to cases) {
-      val a = rng.nextLong(Long.MaxValue)
-      val b = rng.nextLong(Long.MaxValue)
+      val a = rng.nextLong() & Long.MaxValue
+      val b = rng.nextLong() & Long.MaxValue
       val start = a.min(b)
       val len = a.max(b) - start + 1
       verify(new BitSetRangeTestModule(start, len, 64), Seq(BoundedCheck(1)))
