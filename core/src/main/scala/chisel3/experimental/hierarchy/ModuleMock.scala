@@ -20,7 +20,7 @@ private[chisel3] final case class ModuleMock[T <: BaseModule] private (
   val contexts: Seq[Context[T]])
     extends PseudoModule
     with Mock[T] {
-  
+
   override def lineage = _parent.get.asInstanceOf[Proxy[BaseModule]]
 
   // ======== THINGS TO MAKE CHISEL WORK ========
