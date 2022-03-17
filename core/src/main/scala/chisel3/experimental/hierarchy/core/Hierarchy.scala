@@ -7,12 +7,25 @@ import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform, WithContextTransform}
 import java.util.IdentityHashMap
 
+/** Represents a view of a proto from a specific hierarchical path */
 sealed trait Hierarchy[+P] {
+
   private[chisel3] val cache = new IdentityHashMap[Any, Any]()
 
-  def open[T](contextual: Contextual[T]): T = proxy.compute(contextual, contextual).value
-
-  /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
+  /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
+    * Instead, mark the field you are accessing with [[@public]]
+    *
+    * Given a selector function (that) which selects a member from the original, return the
+    *   corresponding member from the hierarchy.
+    *
+    * Our @instantiable and @public macros generate the calls to this apply method
+    *
+    * By calling this function, we summon the proper Lookupable typeclass from our implicit scope.
+    *
+    * @param that a user-specified lookup function
+    * @param lookup typeclass which contains the correct lookup function, based on the types of A and B
+    * @param macroGenerated a value created in the macro, to make it harder for users to use this API
+    */
   def _lookup[B](
     that: P => B
   )(
@@ -29,6 +42,11 @@ sealed trait Hierarchy[+P] {
     }
   }
 
+  /** Finds the closest parent Instance/Hierarchy in proxy's lineage which matches a partial function
+    *
+    * @param pf selection partial function
+    * @return closest matching parent in lineage which matches pf, if one does
+    */
   def getLineageOf[T](pf: PartialFunction[Any, Hierarchy[T]]): Option[Hierarchy[T]] = {
     pf.lift(this)
       .orElse(proxy.lineageOpt.flatMap {
@@ -38,6 +56,10 @@ sealed trait Hierarchy[+P] {
       })
   }
 
+  /** Useful to view underlying proxy as another type it is representing
+    *
+    * @return proxy with a different type
+    */
   def proxyAs[T]: Proxy[P] with T = proxy.asInstanceOf[Proxy[P] with T]
 
   /** Determine whether proxy proto is of type provided.
@@ -59,10 +81,18 @@ sealed trait Hierarchy[+P] {
   /** @return Return the proxy Definition[P] of this Hierarchy[P] */
   def toDefinition: Definition[P]
 
-  //def toContext = Context(proxy)
+  /** Given a proto's contextual, return the contextuals value from this hierarchical path
+    * @param contextual proto's contextual
+    * @return contextual value from this hierarchical path
+    */
+  private[chisel3] def open[T](contextual: Contextual[T]): T = proxy.compute(contextual, contextual).value
 
+  /** @return Underlying proxy representing a proto in viewed from a hierarchical path */
   private[chisel3] def proxy: Proxy[P]
+
+  /** @return Underlying proto, which is the actual underlying object we are representing */
   private[chisel3] def proto: P = proxy.proto
+
   private lazy val superClasses = Hierarchy.calculateSuperClasses(proto.getClass())
 }
 
@@ -79,6 +109,7 @@ object Hierarchy {
       }
     } else clz
   }
+
   // Nested objects stick a '$' at the end of the object name, but this does not show up in the scala reflection type string
   // E.g.
   // object Foo {
@@ -92,6 +123,7 @@ object Hierarchy {
     if (clz != null) { clz.replace("$", "") }
     else clz
   }
+
   private def calculateSuperClasses(clz: Class[_]): Set[String] = {
     if (clz != null) {
       Set(modifyNestedObjects(modifyReplString(clz.getCanonicalName()))) ++
@@ -103,8 +135,14 @@ object Hierarchy {
   }
 }
 
+/** Represents an Instance of a proto, from a specific hierarchical path
+  *
+  * @param proxy underlying representation of proto with correct internal state
+  */
 final case class Instance[+P] private[chisel3] (private[chisel3] proxy: InstanceProxy[P]) extends Hierarchy[P] {
-  def toDefinition = proxy.toDefinition
+
+  override def toDefinition = proxy.toDefinition
+
   override def proxyAs[T]: InstanceProxy[P] with T = proxy.asInstanceOf[InstanceProxy[P] with T]
 }
 
@@ -132,10 +170,16 @@ object Instance {
   }
 }
 
+/** Represents a Definition of a proto, at the root of a hierarchical path
+  *
+  * @param proxy underlying representation of proto with correct internal state
+  */
 final case class Definition[+P] private[chisel3] (private[chisel3] proxy: DefinitionProxy[P])
     extends IsLookupable
     with Hierarchy[P] {
-  def toDefinition = this
+
+  override def toDefinition = this
+
   override def proxyAs[T]: DefinitionProxy[P] with T = proxy.asInstanceOf[DefinitionProxy[P] with T]
 }
 

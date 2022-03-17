@@ -48,19 +48,6 @@ sealed trait InstanceProxy[+P] extends Proxy[P] {
     */
   def genesis: Proxy[P]
 
-  /** Finds the closest parent Proxy which matches a partial function
-    *
-    * TODO: Rename lineageOfType to lineageMatching
-    *
-    * @param pf selection partial function
-    * @return closest matching parent in lineage which matches pf, if one does
-    */
-  def lineageOfType[C](pf: PartialFunction[Any, C]): Option[C] = lineageOpt match {
-    case Some(a) if pf.isDefinedAt(a) => pf.lift(a)
-    case Some(i: InstanceProxy[Any]) => i.lineageOfType[C](pf)
-    case other => None
-  }
-
   /** @return an Instance wrapping this Proxy */
   def toInstance = new Instance(this)
 
