@@ -41,35 +41,35 @@ sealed trait InstanceProxy[+P] extends Proxy[P] {
 
   /** The proxy which refers to the same proto, but from a less-specific hierarchical path.
     *
-    * Example 0: if this Proxy refers to ~Top|Foo/bar:Bar, then genesis refers to ~Top|Bar
-    * Example 1: if this Proxy refers to ~Top|Top/foo:Foo/bar:Bar, then genesis refers to ~Top|Foo/bar:Bar
+    * Example 0: if this Proxy refers to ~Top|Foo/bar:Bar, then narrowerProxy refers to ~Top|Bar
+    * Example 1: if this Proxy refers to ~Top|Top/foo:Foo/bar:Bar, then narrowerProxy refers to ~Top|Foo/bar:Bar
     *
-    * @return the genesis proxy of this proxy
+    * @return the narrowerProxy proxy of this proxy
     */
-  def genesis: Proxy[P]
+  def narrowerProxy: Proxy[P]
 
   /** @return an Instance wrapping this Proxy */
   def toInstance = new Instance(this)
 
-  /** @return the InstanceProxy closest to the proto in the chain of genesis proxy's */
-  def localProxy: InstanceProxy[P] = genesis match {
+  /** @return the InstanceProxy closest to the proto in the chain of narrowerProxy proxy's */
+  def localProxy: InstanceProxy[P] = narrowerProxy match {
     case d: DefinitionProxy[P] => this
     case i: InstanceProxy[P]   => i.localProxy
   }
 
   override def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
-    val genesisContextual = genesis.compute(key, contextual)
-    contexts.foldLeft(genesisContextual) { case (c, context) => context.compute(key, c) }
+    val narrowerProxyContextual = narrowerProxy.compute(key, contextual)
+    contexts.foldLeft(narrowerProxyContextual) { case (c, context) => context.compute(key, c) }
   }
 
-  override def proto = genesis.proto
-  override def toDefinition: Definition[P] = genesis.toDefinition
+  override def proto = narrowerProxy.proto
+  override def toDefinition: Definition[P] = narrowerProxy.toDefinition
 }
 
 /** InstanceProxy representing a new Instance which was instantiated in a proto.
   *
   * Note: Clone's lineageOpt is always empty
-  * Note: Clone's genesis is always a DefinitionProxy
+  * Note: Clone's narrowerProxy is always a DefinitionProxy
   *
   * E.g. it is the underlying proxy of Instance when a user writes:
   *   val inst = Instance(..)
@@ -77,13 +77,13 @@ sealed trait InstanceProxy[+P] extends Proxy[P] {
 trait Clone[+P] extends InstanceProxy[P] {
   override def lineageOpt: Option[Proxy[Any]] = None
 
-  override def genesis: DefinitionProxy[P]
+  override def narrowerProxy: DefinitionProxy[P]
 }
 
 /** InstanceProxy representing an Instance which was created from converting an existing object into an Instance.
   *
   * Note: Transparent's lineageOpt is always empty
-  * Note: Transparent's genesis is always a DefinitionProxy
+  * Note: Transparent's narrowerProxy is always a DefinitionProxy
   *
   * E.g. it is the underlying proxy of Instance when a user writes:
   *   val inst = myObject.toInstance
@@ -91,13 +91,13 @@ trait Clone[+P] extends InstanceProxy[P] {
 trait Transparent[+P] extends InstanceProxy[P] {
   override def lineageOpt: Option[Proxy[Any]] = None
 
-  override def genesis: DefinitionProxy[P]
+  override def narrowerProxy: DefinitionProxy[P]
 }
 
 /** InstanceProxy representing an Instance which was created when a proto is looked up from a Hierarchy or Context
   *
   * Note: Mock's always have a non-empty lineageOpt.
-  * Note: Mock's genesis is always an InstanceProxy
+  * Note: Mock's narrowerProxy is always an InstanceProxy
   *
   * E.g. it is the underlying proxy of child when a user writes:
   *   val parent = Instance(..)
@@ -110,7 +110,7 @@ trait Mock[+P] extends InstanceProxy[P] {
 
   override def lineageOpt: Option[Proxy[Any]] = Some(lineage)
 
-  override def genesis: InstanceProxy[P]
+  override def narrowerProxy: InstanceProxy[P]
 }
 
 /** DefinitionProxy underlying a Definition
@@ -141,7 +141,7 @@ final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P]
   * TODO Move to IsInstantiable.scala
   * @param proto underlying object we are creating a proxy of
   */
-final case class InstantiableTransparent[P](genesis: InstantiableDefinition[P], contexts: Seq[Context[P]])
+final case class InstantiableTransparent[P](narrowerProxy: InstantiableDefinition[P], contexts: Seq[Context[P]])
     extends Transparent[P]
 
 /** Mock implementation for all proto's which extend IsInstantiable
@@ -151,5 +151,5 @@ final case class InstantiableTransparent[P](genesis: InstantiableDefinition[P], 
   * TODO Move to IsInstantiable.scala
   * @param proto underlying object we are creating a proxy of
   */
-final case class InstantiableMock[P](genesis: InstanceProxy[P], lineage: Proxy[Any], contexts: Seq[Context[P]])
+final case class InstantiableMock[P](narrowerProxy: InstanceProxy[P], lineage: Proxy[Any], contexts: Seq[Context[P]])
     extends Mock[P]

@@ -12,12 +12,12 @@ import chisel3._
   *
   * Represents a non-local instance.
   *
-  * @param genesis Proxy of the same proto with a less-specific hierarchical path
+  * @param narrowerProxy Proxy of the same proto with a less-specific hierarchical path
   * @param contexts contains contextual values when viewed from this proxy
   */
 private[chisel3] final case class ModuleMock[T <: BaseModule] private (
-  val genesis:  InstanceProxy[T] with BaseModule,
-  val contexts: Seq[Context[T]])
+  val narrowerProxy: InstanceProxy[T] with BaseModule,
+  val contexts:      Seq[Context[T]])
     extends PseudoModule
     with Mock[T] {
 
@@ -39,14 +39,14 @@ private[chisel3] final case class ModuleMock[T <: BaseModule] private (
 
 private[chisel3] object ModuleMock {
   def apply[T <: BaseModule](
-    genesis:  InstanceProxy[T] with BaseModule,
-    lineage:  BaseModule,
-    contexts: Seq[Context[T]]
+    narrowerProxy: InstanceProxy[T] with BaseModule,
+    lineage:       BaseModule,
+    contexts:      Seq[Context[T]]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): ModuleMock[T] = {
-    val x = Module.do_pseudo_apply(new ModuleMock(genesis, contexts))
+    val x = Module.do_pseudo_apply(new ModuleMock(narrowerProxy, contexts))
     x._parent = Some(lineage)
     x
   }

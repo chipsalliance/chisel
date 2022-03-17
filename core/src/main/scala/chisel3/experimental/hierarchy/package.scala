@@ -188,7 +188,7 @@ package object hierarchy {
           val contexts = newParentHierarchy.proxy.contexts.map { l: Context[_] =>
             l.getter(value)(this).asInstanceOf[Context[U]]
           }
-          // Create mock, set up genesis etc with h as parent
+          // Create mock, set up narrowerProxy etc with h as parent
           ModuleMock(value.proxyAs[BaseModule], newParentHierarchy.proxyAs[BaseModule], contexts).toInstance
       }
     }

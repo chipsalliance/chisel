@@ -12,12 +12,12 @@ import Utils._
   *
   * Represents a unique local instance built by a parent Module.
   *
-  * @param genesis Proxy of the Module Definition of the proto (original module)
+  * @param narrowerProxy Proxy of the Module Definition of the proto (original module)
   * @param contexts contains contextual values when viewed from this proxy
   */
 private[chisel3] final class ModuleClone[T <: BaseModule](
-  val genesis:  ModuleDefinition[T],
-  val contexts: Seq[Context[T]])
+  val narrowerProxy: ModuleDefinition[T],
+  val contexts:      Seq[Context[T]])
     extends PseudoModule
     with Clone[T] {
   // _parent is set outside, just like a normal module

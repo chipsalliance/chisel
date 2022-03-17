@@ -12,10 +12,10 @@ import Utils._
 
 /** Proxy of Instance which was created by calling .toInstance from a module
   *
-  * @param genesis Proxy of the Module Definition of the proto (original module)
+  * @param narrowerProxy Proxy of the Module Definition of the proto (original module)
   */
 private[chisel3] final class ModuleTransparent[T <: BaseModule] private (
-  val genesis: ModuleDefinition[T])
+  val narrowerProxy: ModuleDefinition[T])
     extends PseudoModule
     with Transparent[T] {
 
@@ -40,13 +40,13 @@ private[chisel3] final class ModuleTransparent[T <: BaseModule] private (
 
 private[chisel3] object ModuleTransparent {
   def apply[T <: BaseModule](
-    genesis: ModuleDefinition[T]
+    narrowerProxy: ModuleDefinition[T]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): ModuleTransparent[T] = {
-    val ret = Module.do_pseudo_apply(new ModuleTransparent(genesis))
-    ret._parent = genesis.proto._parent
+    val ret = Module.do_pseudo_apply(new ModuleTransparent(narrowerProxy))
+    ret._parent = narrowerProxy.proto._parent
     ret
   }
 }
