@@ -25,12 +25,12 @@ sealed trait Proxy[+P] {
   private[chisel3] def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T]
 
   // All user-specified contexts containing Contextual values
-  def contexts:       Seq[Context[P]]
+  def contexts: Seq[Context[P]]
 
   /** If this proxy was created by being looked up in a parent proxy, lineage refers to that parent proxy.
     * @return parent proxy from whom this proxy was looked up from
     */
-  def lineageOpt:   Option[Proxy[Any]]
+  def lineageOpt: Option[Proxy[Any]]
 
   /** @return a Definition wrapping this Proxy */
   def toDefinition: Definition[P]
@@ -40,10 +40,10 @@ sealed trait Proxy[+P] {
 sealed trait InstanceProxy[+P] extends Proxy[P] {
 
   /** The proxy which refers to the same proto, but from a less-specific hierarchical path.
-    * 
+    *
     * Example 0: if this Proxy refers to ~Top|Foo/bar:Bar, then genesis refers to ~Top|Bar
     * Example 1: if this Proxy refers to ~Top|Top/foo:Foo/bar:Bar, then genesis refers to ~Top|Foo/bar:Bar
-    * 
+    *
     * @return the genesis proxy of this proxy
     */
   def genesis: Proxy[P]
@@ -51,7 +51,7 @@ sealed trait InstanceProxy[+P] extends Proxy[P] {
   /** Finds the closest parent Proxy which matches a partial function
     *
     * TODO: Rename lineageOfType to lineageMatching
-    * 
+    *
     * @param pf selection partial function
     * @return closest matching parent in lineage which matches pf, if one does
     */
@@ -117,6 +117,7 @@ trait Transparent[+P] extends InstanceProxy[P] {
   *   val child = parent.child
   */
 trait Mock[+P] extends InstanceProxy[P] {
+
   /** @return Lineage of this Mock, e.g. the parent proxy from whom this Mock was looked up from */
   def lineage: Proxy[Any]
 
@@ -140,14 +141,14 @@ trait DefinitionProxy[+P] extends Proxy[P] {
 }
 
 /** DefinitionProxy implementation for all proto's which extend IsInstantiable
-  * 
+  *
   * TODO Move to IsInstantiable.scala
   * @param proto underlying object we are creating a proxy of
   */
 final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P]
 
 /** Transparent implementation for all proto's which extend IsInstantiable
-  * 
+  *
   * Note: Clone is not needed for IsInstantiables, as they cannot be instantiated via Instance(..)
   *
   * TODO Move to IsInstantiable.scala

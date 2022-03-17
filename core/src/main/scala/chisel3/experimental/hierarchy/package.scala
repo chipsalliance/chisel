@@ -94,8 +94,8 @@ package object hierarchy {
     type R = V
     type S = V
     type G = V
-    def setter[P](that: V, context:     Context[P]):     S = that
-    def getter[P](that: V, context:     Context[P]):     G = that
+    def setter[P](that: V, context:   Context[P]):   S = that
+    def getter[P](that: V, context:   Context[P]):   G = that
     def apply[P](that:  V, hierarchy: Hierarchy[P]): R = that
   }
   implicit val lookupableString = new SimpleLookupable[String]()
@@ -148,7 +148,9 @@ package object hierarchy {
           // Create Mock, hierarchy proxy is parent
           val d = ModuleDefinition(value)
           val t = ModuleTransparent(d)
-          val contexts = h.proxy.contexts.map { l: Context[BaseModule] => l.getter(value)(this).asInstanceOf[Context[V]] }
+          val contexts = h.proxy.contexts.map { l: Context[BaseModule] =>
+            l.getter(value)(this).asInstanceOf[Context[V]]
+          }
           ModuleMock(t, h.proxyAs[BaseModule], contexts).toInstance
         case (Some(p), false, h: Hierarchy[P]) =>
           // Create Mock, newParentHierarchy proxy is parent
@@ -231,8 +233,8 @@ package object hierarchy {
     type R = V
     type S = V
     type G = V
-    def setter[P](value: V, context:     Context[P]): S = apply(value, context.toHierarchy)
-    def getter[P](value: V, context:     Context[P]): G = apply(value, context.toHierarchy)
+    def setter[P](value: V, context:   Context[P]): S = apply(value, context.toHierarchy)
+    def getter[P](value: V, context:   Context[P]): G = apply(value, context.toHierarchy)
     def apply[P](value:  V, hierarchy: Hierarchy[P]): V = value._parent match {
       case None => value
       case Some(p: BaseModule) =>
@@ -258,8 +260,8 @@ package object hierarchy {
     type R = V
     type S = V
     type G = V
-    def setter[P](value: V, context:     Context[P]): S = apply(value, context.toHierarchy)
-    def getter[P](value: V, context:     Context[P]): G = apply(value, context.toHierarchy)
+    def setter[P](value: V, context:   Context[P]): S = apply(value, context.toHierarchy)
+    def getter[P](value: V, context:   Context[P]): G = apply(value, context.toHierarchy)
     def apply[P](value:  V, hierarchy: Hierarchy[P]) = value._parent match {
       case None => value
       case Some(p: BaseModule) =>

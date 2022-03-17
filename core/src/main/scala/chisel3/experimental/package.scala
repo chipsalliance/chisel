@@ -54,7 +54,7 @@ package object experimental {
     import experimental.hierarchy.core.{Definition, RootContext}
     def apply(
       definition: Definition[BaseModule],
-      contexts:     Seq[RootContext[BaseModule]]
+      contexts:   Seq[RootContext[BaseModule]]
     )(
       implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
       compileOptions:      CompileOptions

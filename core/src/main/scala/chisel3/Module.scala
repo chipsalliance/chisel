@@ -218,7 +218,7 @@ package internal {
     import chisel3.experimental.hierarchy.core.{Definition, RootContext}
     private[chisel3] def cloneIORecord(
       definition: Definition[BaseModule],
-      contexts:     Seq[RootContext[BaseModule]]
+      contexts:   Seq[RootContext[BaseModule]]
     )(
       implicit sourceInfo: SourceInfo,
       compileOptions:      CompileOptions

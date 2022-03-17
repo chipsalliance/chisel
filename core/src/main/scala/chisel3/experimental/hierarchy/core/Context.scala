@@ -12,16 +12,17 @@ import java.util.IdentityHashMap
   *   can also be analyzed.
   */
 trait Context[+P] {
-  /** @return Underlying proxy at this context. Used when creating children contexts.  */
+
+  /** @return Underlying proxy at this context. Used when creating children contexts. */
   private[chisel3] def proxy: Proxy[P]
 
   /** All Contexts have a pointer to their RootContext, so that when a value is set, we can return the entire context
     *  starting from the root can be provided.
     * @return root of this context
     */
-  private[chisel3] def root:   RootContext[_]
+  private[chisel3] def root: RootContext[_]
 
-  /** @return Return the Hierarchy representation of this Context.  */
+  /** @return Return the Hierarchy representation of this Context. */
   private[chisel3] def toHierarchy: Hierarchy[P] = proxy match {
     case d: DefinitionProxy[P] => Definition(d)
     case i: InstanceProxy[P]   => Instance(i)
@@ -65,7 +66,6 @@ trait Context[+P] {
   private[chisel3] val cache = new IdentityHashMap[Any, Any]()
   private[chisel3] val getterCache = new IdentityHashMap[Any, Any]()
 
-
   /** Lookup function called by the macro-generated extension methods on Context[P]
     *
     * Returns the context version of the value looked up in the proto
@@ -101,10 +101,11 @@ trait Context[+P] {
   )(
     implicit lookupable: Lookupable[B]
   ): lookupable.G = {
-    if (getterCache.containsKey(protoValue)) getterCache.get(protoValue).asInstanceOf[lookupable.G]
+    //TODO figure out why switching cache -> getterCache breaks test (11.b)
+    if (cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.G]
     else {
       val retValue = lookupable.getter(protoValue, this)
-      getterCache.put(protoValue, retValue)
+      cache.put(protoValue, retValue)
       retValue
     }
   }
