@@ -31,3 +31,7 @@ trait ProxyDefiner[P] {
 trait ProxyInstancer[P] {
   def apply(definition: Definition[P], contexts: Seq[RootContext[P]]): Clone[P]
 }
+
+trait ContextualInstancer[V, P] {
+  def apply(value: V): Contextual[V, P]
+}

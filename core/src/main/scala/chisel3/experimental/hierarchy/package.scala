@@ -288,7 +288,7 @@ package object hierarchy {
   val Instance = core.Instance
   type Definition[P] = core.Definition[P]
   val Definition = core.Definition
-  type Contextual[P] = core.Contextual[P]
+  type Contextual[V, P] = core.Contextual[V, P]
   val Contextual = core.Contextual
   type IsLookupable = core.IsLookupable
   type IsInstantiable = core.IsInstantiable

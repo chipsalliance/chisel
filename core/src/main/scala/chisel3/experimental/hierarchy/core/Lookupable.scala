@@ -145,15 +145,15 @@ object Lookupable {
   }
 
   // Lookups for hierarchy.core objects
-  implicit def lookupableContextual[V] = new Lookupable[Contextual[V]] {
+  implicit def lookupableContextual[V] = new Lookupable[Contextual[V, _]] {
     override type R = V
-    override def apply[P](v: Contextual[V], hierarchy: Hierarchy[P]): V = hierarchy.open(v)
+    override def apply[P](v: Contextual[V, _], hierarchy: Hierarchy[P]): V = hierarchy.open(v)
 
-    override type S = ContextualSetter[V]
-    override def setter[P](value: Contextual[V], context: Context[P]): S = ContextualSetter(value, context)
+    override type S = ContextualSetter[V, _]
+    override def setter[P](value: Contextual[V, _], context: Context[P]): S = ContextualSetter(value, context)
 
-    override type G = Edit[V]
-    override def getter[P](value: Contextual[V], context: Context[P]): G = context.getEdit(value)
+    override type G = Contextual[V, _]
+    override def getter[P](value: Contextual[V, _], context: Context[P]): G = context.lookupContextual(value)
   }
 
   implicit def isLookupable[V <: IsLookupable] = new SimpleLookupable[V] {}

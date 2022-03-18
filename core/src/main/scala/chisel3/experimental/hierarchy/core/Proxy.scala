@@ -11,6 +11,8 @@ sealed trait Proxy[+P] {
   /** @return Original object that we are proxy'ing */
   def proto: P
 
+  def narrowerProxyOpt: Option[Proxy[P]]
+
   /** Computes the new contextual given the original, proto Contextual (key) and the current contextual (c)
     *
     * We need two values here because the edits are stored according to the identity of the original, proto contextual value.
@@ -22,7 +24,13 @@ sealed trait Proxy[+P] {
     * @param contextual current contextual containing a value to be edited
     * @return a new contextual with the edited value
     */
-  private[chisel3] def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T]
+  //private[chisel3] def lookupContextual[T](key: Contextual[T, P]): Contextual[T, P]
+  def lookupContextual[T, X](key: Contextual[T, X]): Contextual[T, P] = {
+    require(key.protoParent == proto)
+    val narrowerProxyContextual = narrowerProxyOpt.map(_.lookupContextual(key)).getOrElse(key)
+    contexts.foldLeft(narrowerProxyContextual.asInstanceOf[Contextual[T, P]]) { case (c, context) => context.lookupContextual(c) }
+  }
+
 
   // All user-specified contexts containing Contextual values
   def contexts: Seq[Context[P]]
@@ -34,6 +42,7 @@ sealed trait Proxy[+P] {
 
   /** @return a Definition wrapping this Proxy */
   def toDefinition: Definition[P]
+  def toHierarchy: Hierarchy[P]
 }
 
 /** Proxy representing an Instance version of an object */
@@ -48,8 +57,7 @@ sealed trait InstanceProxy[+P] extends Proxy[P] {
     */
   def narrowerProxy: Proxy[P]
 
-  /** @return an Instance wrapping this Proxy */
-  def toInstance = new Instance(this)
+  override def narrowerProxyOpt = Some(narrowerProxy)
 
   /** @return the InstanceProxy closest to the proto in the chain of narrowerProxy proxy's */
   def localProxy: InstanceProxy[P] = narrowerProxy match {
@@ -57,13 +65,14 @@ sealed trait InstanceProxy[+P] extends Proxy[P] {
     case i: InstanceProxy[P]   => i.localProxy
   }
 
-  override def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
-    val narrowerProxyContextual = narrowerProxy.compute(key, contextual)
-    contexts.foldLeft(narrowerProxyContextual) { case (c, context) => context.compute(key, c) }
-  }
-
   override def proto = narrowerProxy.proto
+
+  /** @return an Instance wrapping this Proxy */
+  def toInstance = new Instance(this)
+
   override def toDefinition: Definition[P] = narrowerProxy.toDefinition
+
+  override def toHierarchy: Hierarchy[P] = toInstance
 }
 
 /** InstanceProxy representing a new Instance which was instantiated in a proto.
@@ -120,11 +129,13 @@ trait Mock[+P] extends InstanceProxy[P] {
   */
 trait DefinitionProxy[+P] extends Proxy[P] {
   override def contexts: Seq[Context[P]] = Nil
-  override def compute[T](key: Contextual[T], contextual: Contextual[T]): Contextual[T] = {
-    contexts.foldLeft(contextual) { case (c, context) => context.compute(key, c) }
-  }
+  override def narrowerProxyOpt = None
+  //override def build[T](key: Contextual[T, P]): Contextual[T, P] = {
+  //  contexts.foldLeft(key) { case (c, context) => context.build(c) }
+  //}
   override def lineageOpt: Option[Proxy[Any]] = None
   override def toDefinition = new Definition(this)
+  override def toHierarchy: Hierarchy[P] = toDefinition
 }
 
 /** DefinitionProxy implementation for all proto's which extend IsInstantiable

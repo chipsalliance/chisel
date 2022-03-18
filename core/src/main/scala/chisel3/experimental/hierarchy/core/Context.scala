@@ -29,22 +29,19 @@ trait Context[+P] {
   }
 
   // All stored contextual edit functions for contextuals defined within the proxy's proto
-  private[chisel3] val edits = new IdentityHashMap[Contextual[Any], Any => Any]()
+  private[chisel3] val edits = new IdentityHashMap[Contextual[_, _], EditValue[_, _]]()
 
   // Store an edit function for a given contextual, at this context
   // Can only set this function once per contextual, at this context
-  private[chisel3] def addEdit[T](contextual: Contextual[T], edit: T => T): Unit = {
-    require(!edits.containsKey(contextual), s"Cannot set $contextual more than once!")
-    edits.put(contextual, edit.asInstanceOf[Any => Any])
+  private[chisel3] def addEdit[T](contextual: EditValue[T, _]): Unit = {
+    require(!edits.containsKey(contextual.proto), s"Cannot set $contextual more than once!")
+    edits.put(contextual.proto, contextual)
   }
 
   // Return an edit function for a given contextual, at this context
   // If no function is defined, return an identity function
-  private[chisel3] def getEdit[T](contextual: Contextual[T]): Edit[T] = {
-    if (edits.containsKey(contextual)) Edit(contextual, edits.get(contextual).asInstanceOf[T => T])
-    else {
-      Edit(contextual, { t: T => t })
-    }
+  private[chisel3] def lookupContextual[T, X](protoContextual: Contextual[T, X]): Contextual[T, P] = {
+    if (edits.containsKey(protoContextual.proto)) edits.get(protoContextual.proto).asInstanceOf[EditValue[T, P]] else protoContextual.asInstanceOf[Contextual[T, P]]
   }
 
   /** Computes the new contextual given the original, proto Contextual (key) and the current contextual (c)
@@ -58,9 +55,6 @@ trait Context[+P] {
     * @param c current contextual containing a value to be edited
     * @return a new contextual with the edited value
     */
-  private[chisel3] def compute[T](key: Contextual[T], c: Contextual[T]): Contextual[T] = new Contextual(
-    getEdit(key).edit(c.value)
-  )
 
   // Caching returned values from lookup'ed values
   private[chisel3] val cache = new IdentityHashMap[Any, Any]()
@@ -101,7 +95,6 @@ trait Context[+P] {
   )(
     implicit lookupable: Lookupable[B]
   ): lookupable.G = {
-    //TODO figure out why switching cache -> getterCache breaks test (11.b)
     if (cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.G]
     else {
       val retValue = lookupable.getter(protoValue, this)
@@ -125,11 +118,11 @@ final case class NestedContext[+P](proxy: Proxy[P], root: RootContext[_]) extend
   * @param contextual The proto's version of this contextual
   * @param context The context from which you are setting the value
   */
-final case class ContextualSetter[T](contextual: Contextual[T], context: Context[_]) {
-  def value: T = contextual.value
+final case class ContextualSetter[T, P](contextual: Contextual[T, P], context: Context[P]) {
+  def value: T = contextual.compute(context.toHierarchy).get
   def value_=(newValue: T): RootContext[_] = edit({ _: T => newValue })
   def edit(f: T => T): RootContext[_] = {
-    context.addEdit(contextual, f)
+    context.addEdit(new EditValue(f, context.proxy.lookupContextual(contextual)))
     context.root
   }
 }
@@ -139,4 +132,4 @@ final case class ContextualSetter[T](contextual: Contextual[T], context: Context
   * @param contextual the key, or the proto's version of this contextual
   * @param edit the function which edits a contextual's value
   */
-final case class Edit[T](contextual: Contextual[T], edit: T => T)
+final case class Edit[T, P](contextual: Contextual[T, P], edit: T => T)

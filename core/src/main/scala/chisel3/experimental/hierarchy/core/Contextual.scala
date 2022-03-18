@@ -2,10 +2,75 @@ package chisel3.experimental.hierarchy.core
 
 import java.util.IdentityHashMap
 
-final class Contextual[+V](val value: V)
+trait Contextual[V, +P] {
+  def proto: Contextual[V, P]
+  def protoParent: P
+  def compute[X](hierarchy: Hierarchy[X]): Option[V]
+  //def edit(f: V => V): EditValue[V, P]
+  //def broaden(h: Hierarchy[P]): BroadenedValue[V, P]
+  //def narrow(h: Hierarchy[P]): NarrowedValue[V, P]
+  //def merge(other: Contextual[V, P]): MergedValue[V, P]
+}
+
+trait PrimitiveContextual[V, +P] extends Contextual[V, P] {
+  override def proto = this
+}
+trait ComputedContextual[V, +P] extends Contextual[V, P] {
+  def protoParent: P = proto.protoParent
+}
+final class EmptyValue[V, +P](val protoParent: P) extends PrimitiveContextual[V, P] {
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = None
+}
+final class DefaultValue[V, +P](val value: V, val protoParent: P) extends PrimitiveContextual[V, P] {
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
+    require(protoParent == hierarchy.proto)
+    Some(value)
+  }
+}
+
+final class EditValue[V, +P](val f: V => V, value: Contextual[V, P]) extends ComputedContextual[V, P] {
+  def proto = this
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = value.compute(hierarchy).map(f)
+}
+
+final class BroadenedValue[V, +P](val context: Hierarchy[P], value: Contextual[V, P]) extends ComputedContextual[V, P] {
+  require(context.proto == value.protoParent)
+  def proto = value.proto
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
+    require(hierarchy.proto == context.proto)
+    if(context.isNarrowerOrEquivalentTo(hierarchy)) value.compute(hierarchy) else None
+  }
+}
+
+final class NarrowedValue[V, +P](val context: Hierarchy[P], value: Contextual[V, P]) extends ComputedContextual[V, P] {
+  require(context.proto == value.protoParent)
+  def proto = value.proto
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
+    require(hierarchy.proto == context.proto)
+    if(hierarchy.isNarrowerOrEquivalentTo(context)) value.compute(hierarchy) else None
+  }
+}
+
+final class MergedValue[V, +P](val contextuals: Set[Contextual[_, _]]) extends ComputedContextual[V, P] {
+  def proto = contextuals.head.proto.asInstanceOf[Contextual[V, P]]
+  require(contextuals.forall(c => c.proto == proto), s"Cannot create a MergedValue with contextuals which don't share a proto")
+
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
+    val newValues = contextuals.flatMap(_.compute(hierarchy).map(_.asInstanceOf[V]))
+    require(newValues.size <= 1, s"Not enough context to determine proper contextual value")
+    newValues.headOption
+  }
+  def merge[X](other: Contextual[V, X]): MergedValue[V, P] = {
+    require(other.proto == proto && other.protoParent == protoParent)
+    other match {
+      case o: MergedValue[V, P] => new MergedValue(contextuals ++ o.contextuals)
+      case other: Contextual[V, P] => new MergedValue(contextuals + other)
+    }
+  }
+}
 
 object Contextual {
-  def apply[V](value: V): Contextual[V] = new Contextual(value)
+  def apply[V, P](value: V)(implicit contextualInstancer: ContextualInstancer[V, P]): Contextual[V, P] = contextualInstancer(value)
 }
 
 /*

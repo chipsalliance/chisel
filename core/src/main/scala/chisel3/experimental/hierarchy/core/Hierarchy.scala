@@ -78,6 +78,19 @@ sealed trait Hierarchy[+P] {
     superClasses.contains(name)
   }
 
+  def isNarrowerOrEquivalentTo[X](other: Hierarchy[X]): Boolean = {
+    (this, other, this.proto == other.proto) match {
+      case (_,                _,                false) => false
+      case (t: Definition[P], o: Definition[P], true)  => true
+      case (t: Definition[P], o: Instance[P],   true)  => true
+      case (t: Instance[P],   o: Definition[P], true)  => false
+      case (t: Instance[P],   o: Instance[P],   true)  => (t.proxy.lineageOpt, o.proxy.lineageOpt) match {
+        case (Some(lt), Some(lo)) => lt.toHierarchy.isNarrowerOrEquivalentTo(lo.toHierarchy)
+        case (_,        _)        => false
+      }
+    }
+  }
+
   /** @return Return the proxy Definition[P] of this Hierarchy[P] */
   def toDefinition: Definition[P]
 
@@ -85,7 +98,10 @@ sealed trait Hierarchy[+P] {
     * @param contextual proto's contextual
     * @return contextual value from this hierarchical path
     */
-  private[chisel3] def open[T](contextual: Contextual[T]): T = proxy.compute(contextual, contextual).value
+  private[chisel3] def open[T, X](contextual: Contextual[T, X]): T = {
+    require(contextual.protoParent == proto)
+    proxy.lookupContextual(contextual.asInstanceOf[Contextual[T, P]]).compute(this).get
+  }
 
   /** @return Underlying proxy representing a proto in viewed from a hierarchical path */
   private[chisel3] def proxy: Proxy[P]
