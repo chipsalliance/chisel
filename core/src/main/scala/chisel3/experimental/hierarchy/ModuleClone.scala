@@ -17,7 +17,7 @@ import Utils._
   */
 private[chisel3] final class ModuleClone[T <: BaseModule](
   val narrowerProxy: ModuleDefinition[T],
-  val contexts:      Seq[Context[T]])
+  val contextOpt:      Option[Context[T]])
     extends PseudoModule
     with Clone[T] {
   // _parent is set outside, just like a normal module

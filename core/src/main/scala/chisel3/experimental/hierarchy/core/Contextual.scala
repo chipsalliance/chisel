@@ -2,75 +2,115 @@ package chisel3.experimental.hierarchy.core
 
 import java.util.IdentityHashMap
 
-trait Contextual[V, +P] {
-  def proto: Contextual[V, P]
-  def protoParent: P
+sealed trait Contextual[V] {
+  implicit val mg = new chisel3.internal.MacroGenerated {}
+  def proto: Contextual[V]
+  def protoParent: Any
   def compute[X](hierarchy: Hierarchy[X]): Option[V]
-  //def edit(f: V => V): EditValue[V, P]
-  //def broaden(h: Hierarchy[P]): BroadenedValue[V, P]
-  //def narrow(h: Hierarchy[P]): NarrowedValue[V, P]
-  //def merge(other: Contextual[V, P]): MergedValue[V, P]
+
+  def edit(f: V => V): EditValue[V] = new EditValue(f, this)
+  def broaden[P](h: Hierarchy[P], value: Contextual[V]): BroaderValue[V] = new BroaderValue(h, value, this)
+  //def narrow[P](h: Hierarchy[P]): NarrowedValue[V] = new NarrowedValue(h, this)
+  //def merge(other: Contextual[V]): MergedValue[V] = {
+  //  require(other.proto == proto && other.protoParent == protoParent)
+  //  (this, other) match {
+  //    case (t: MergedValue[V], o: MergedValue[V]) => new MergedValue(t.contextuals ++ o.contextuals)
+  //    case (t: MergedValue[V], o)                 => new MergedValue(t.contextuals + other)
+  //    case (t,                 o: MergedValue[V]) => new MergedValue(o.contextuals + t)
+  //    case (t,                 o)                 => new MergedValue(Set(t, o))
+  //  }
+  //}
+  override def toString: String = serialize(0)
+  def serialize(n: Int): String
+  def carriage(n: Int): String = "\n" + indent(n)
+  def indent(n: Int): String = (" " * n)
 }
 
-trait PrimitiveContextual[V, +P] extends Contextual[V, P] {
-  override def proto = this
+sealed trait PrimitiveContextual[V] extends Contextual[V] {
+  def proto = this
 }
-trait ComputedContextual[V, +P] extends Contextual[V, P] {
-  def protoParent: P = proto.protoParent
+
+sealed trait ComputedContextual[V] extends Contextual[V] {
+  def protoParent: Any = proto.protoParent
 }
-final class EmptyValue[V, +P](val protoParent: P) extends PrimitiveContextual[V, P] {
-  def compute[X](hierarchy: Hierarchy[X]): Option[V] = None
-}
-final class DefaultValue[V, +P](val value: V, val protoParent: P) extends PrimitiveContextual[V, P] {
+final class EmptyValue[V](val protoParent: Any) extends PrimitiveContextual[V] {
   def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
     require(protoParent == hierarchy.proto)
-    Some(value)
-  }
-}
-
-final class EditValue[V, +P](val f: V => V, value: Contextual[V, P]) extends ComputedContextual[V, P] {
-  def proto = this
-  def compute[X](hierarchy: Hierarchy[X]): Option[V] = value.compute(hierarchy).map(f)
-}
-
-final class BroadenedValue[V, +P](val context: Hierarchy[P], value: Contextual[V, P]) extends ComputedContextual[V, P] {
-  require(context.proto == value.protoParent)
-  def proto = value.proto
-  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
-    require(hierarchy.proto == context.proto)
-    if(context.isNarrowerOrEquivalentTo(hierarchy)) value.compute(hierarchy) else None
-  }
-}
-
-final class NarrowedValue[V, +P](val context: Hierarchy[P], value: Contextual[V, P]) extends ComputedContextual[V, P] {
-  require(context.proto == value.protoParent)
-  def proto = value.proto
-  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
-    require(hierarchy.proto == context.proto)
-    if(hierarchy.isNarrowerOrEquivalentTo(context)) value.compute(hierarchy) else None
-  }
-}
-
-final class MergedValue[V, +P](val contextuals: Set[Contextual[_, _]]) extends ComputedContextual[V, P] {
-  def proto = contextuals.head.proto.asInstanceOf[Contextual[V, P]]
-  require(contextuals.forall(c => c.proto == proto), s"Cannot create a MergedValue with contextuals which don't share a proto")
-
-  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
-    val newValues = contextuals.flatMap(_.compute(hierarchy).map(_.asInstanceOf[V]))
-    require(newValues.size <= 1, s"Not enough context to determine proper contextual value")
-    newValues.headOption
-  }
-  def merge[X](other: Contextual[V, X]): MergedValue[V, P] = {
-    require(other.proto == proto && other.protoParent == protoParent)
-    other match {
-      case o: MergedValue[V, P] => new MergedValue(contextuals ++ o.contextuals)
-      case other: Contextual[V, P] => new MergedValue(contextuals + other)
+    hierarchy.toContext.getter(this) match {
+       case x if x == this => None
+       case other => other.compute(hierarchy)
     }
   }
+  def serialize(n: Int): String = indent(n) + this.toString
+}
+final class DefaultValue[V](val value: V, predecessor: Contextual[V]) extends PrimitiveContextual[V] {
+  def protoParent: Any = predecessor.protoParent
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
+    require(protoParent == hierarchy.proto)
+    hierarchy.toContext.getter(this) match {
+       case x if x == this =>
+          //println(s"Here: $x, $value")
+          Some(value)
+       case other => 
+          //println(s"There: $other, $this")
+          other.compute(hierarchy)
+    }
+  }
+  def serialize(n: Int): String = indent(n) + this.toString + s"($value, \n${predecessor.serialize(n+ 1)}" + carriage(n) + ")"
 }
 
+final class EditValue[V](val f: V => V, predecessor: Contextual[V]) extends PrimitiveContextual[V] {
+  def protoParent: Any = predecessor.protoParent
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
+    hierarchy.toContext.getter(this) match {
+       case x if x == this => predecessor.compute(hierarchy).map(f)
+       case other => other.compute(hierarchy)
+    }
+   }
+  def serialize(n: Int): String = indent(n) + this.toString + s"($f, \n${predecessor.serialize(n+ 1)}" + carriage(n) + ")"
+}
+
+final class ContextualValue[V](val f: V => V, predecessor: Contextual[V]) extends ComputedContextual[V] {
+  def proto = predecessor.proto
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = predecessor.compute(hierarchy).map(f)
+  def serialize(n: Int): String = indent(n) + this.toString + s"($f, \n${predecessor.serialize(n+ 1)}" + carriage(n) + ")"
+}
+
+final class BroaderValue[V](val context: Hierarchy[Any], value: Contextual[V], predecessor: Contextual[V]) extends ComputedContextual[V] {
+  require(context.proto == predecessor.protoParent)
+  def proto = predecessor.proto
+  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
+    require(hierarchy.proto == context.proto)
+    if(context.isNarrowerOrEquivalentTo(hierarchy))
+      value.compute(hierarchy)
+    else predecessor.compute(hierarchy)
+  }
+  def serialize(n: Int): String = indent(n) + this.toString + s"($context, $value, \n${predecessor.serialize(n+ 1)}" + carriage(n) + ")"
+}
+
+//final class NarrowedValue[V](val context: Hierarchy[Any], predecessor: Contextual[V]) extends ComputedContextual[V] {
+//  require(context.proto == predecessor.protoParent)
+//  def proto = predecessor.proto
+//  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
+//    require(hierarchy.proto == context.proto)
+//    if(hierarchy.isNarrowerOrEquivalentTo(context)) predecessor.compute(hierarchy) else None
+//  }
+//}
+//
+//final class MergedValue[V](val contextuals: Set[Contextual[_]]) extends ComputedContextual[V] {
+//  def proto = contextuals.head.proto.asInstanceOf[Contextual[V]]
+//  require(contextuals.forall(c => c.proto == proto), s"Cannot create a MergedValue with contextuals which don't share a proto")
+//
+//  def compute[X](hierarchy: Hierarchy[X]): Option[V] = {
+//    val newValues = contextuals.flatMap(_.compute(hierarchy).map(_.asInstanceOf[V]))
+//    require(newValues.size <= 1, s"Not enough context to determine proper contextual value")
+//    newValues.headOption
+//  }
+//}
+//
 object Contextual {
-  def apply[V, P](value: V)(implicit contextualInstancer: ContextualInstancer[V, P]): Contextual[V, P] = contextualInstancer(value)
+  def apply[V](value: V)(implicit contextualInstancer: ContextualInstancer[V]): Contextual[V] = contextualInstancer(value)
+  def empty[V](implicit contextualInstancer: ContextualInstancer[V]): Contextual[V] = contextualInstancer.empty[V]
 }
 
 /*

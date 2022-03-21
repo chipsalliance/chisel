@@ -24,25 +24,42 @@ trait Context[+P] {
 
   /** @return Return the Hierarchy representation of this Context. */
   private[chisel3] def toHierarchy: Hierarchy[P] = proxy match {
-    case d: DefinitionProxy[P] => Definition(d)
-    case i: InstanceProxy[P]   => Instance(i)
+    case d: DefinitionProxy[P] => new Definition(d)
+    case i: InstanceProxy[P]   => new Instance(i)
   }
 
   // All stored contextual edit functions for contextuals defined within the proxy's proto
-  private[chisel3] val edits = new IdentityHashMap[Contextual[_, _], EditValue[_, _]]()
+  private[chisel3] val edits = new IdentityHashMap[Contextual[_], Any => Any]()
 
   // Store an edit function for a given contextual, at this context
   // Can only set this function once per contextual, at this context
-  private[chisel3] def addEdit[T](contextual: EditValue[T, _]): Unit = {
+  private[chisel3] def addDerivation[T](contextual: Contextual[T], f: Any => Any): Unit = {
     require(!edits.containsKey(contextual.proto), s"Cannot set $contextual more than once!")
-    edits.put(contextual.proto, contextual)
+    edits.put(contextual.proto, f)
+  }
+
+  private[chisel3] def buildContextual[T](contextual: Contextual[T]): Contextual[T] = (edits.containsKey(contextual.proto), proxy.narrowerProxyOpt) match {
+    case (false, None)    => contextual
+    case (false, Some(p)) => p.toHierarchy.toContext.buildContextual(contextual)
+    case (true, None)     => new BroaderValue(this, new ContextualValue(edits.get(contextual.proto).asInstanceOf[T => T], newPredecessor), newPredecessor)
+  }
+    val newPredecessor = if(edits.containsKey(contextual.proto)) {
+      proxy.narrowerProxyOpt.map {
+        p => 
+          p.toHierarchy.toContext.buildContextual(contextual)
+      }.getOrElse(contextual)
+    } else contextual
+      println("HERE", contextual)
+    } else {
+      contextual
+    }
   }
 
   // Return an edit function for a given contextual, at this context
   // If no function is defined, return an identity function
-  private[chisel3] def lookupContextual[T, X](protoContextual: Contextual[T, X]): Contextual[T, P] = {
-    if (edits.containsKey(protoContextual.proto)) edits.get(protoContextual.proto).asInstanceOf[EditValue[T, P]] else protoContextual.asInstanceOf[Contextual[T, P]]
-  }
+  //private[chisel3] def lookupContextual[T, X](protoContextual: Contextual[T]): Option[Contextual[T]] = {
+  //  if (edits.containsKey(protoContextual.proto)) Some(edits.get(protoContextual.proto).asInstanceOf[Contextual[T]]) else None
+  //}
 
   /** Computes the new contextual given the original, proto Contextual (key) and the current contextual (c)
     *
@@ -95,10 +112,10 @@ trait Context[+P] {
   )(
     implicit lookupable: Lookupable[B]
   ): lookupable.G = {
-    if (cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.G]
+    if (getterCache.containsKey(protoValue)) getterCache.get(protoValue).asInstanceOf[lookupable.G]
     else {
       val retValue = lookupable.getter(protoValue, this)
-      cache.put(protoValue, retValue)
+      getterCache.put(protoValue, retValue)
       retValue
     }
   }
@@ -118,11 +135,11 @@ final case class NestedContext[+P](proxy: Proxy[P], root: RootContext[_]) extend
   * @param contextual The proto's version of this contextual
   * @param context The context from which you are setting the value
   */
-final case class ContextualSetter[T, P](contextual: Contextual[T, P], context: Context[P]) {
+final case class ContextualSetter[T](contextual: Contextual[T], context: Context[Any]) {
   def value: T = contextual.compute(context.toHierarchy).get
   def value_=(newValue: T): RootContext[_] = edit({ _: T => newValue })
   def edit(f: T => T): RootContext[_] = {
-    context.addEdit(new EditValue(f, context.proxy.lookupContextual(contextual)))
+    context.addDerivation(contextual, f.asInstanceOf[Any => Any])
     context.root
   }
 }
@@ -132,4 +149,4 @@ final case class ContextualSetter[T, P](contextual: Contextual[T, P], context: C
   * @param contextual the key, or the proto's version of this contextual
   * @param edit the function which edits a contextual's value
   */
-final case class Edit[T, P](contextual: Contextual[T, P], edit: T => T)
+final case class Edit[T, P](contextual: Contextual[T], edit: T => T)

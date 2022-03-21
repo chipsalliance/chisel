@@ -21,7 +21,7 @@ private[chisel3] final class ModuleTransparent[T <: BaseModule] private (
 
   lazy val ioMap: Map[Data, Data] = proto.getChiselPorts.map { case (_, data) => data -> data }.toMap
 
-  override val contexts: Seq[Context[T]] = Nil
+  override val contextOpt: Option[Context[T]] = None
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 

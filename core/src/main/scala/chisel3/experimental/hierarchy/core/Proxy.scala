@@ -25,15 +25,25 @@ sealed trait Proxy[+P] {
     * @return a new contextual with the edited value
     */
   //private[chisel3] def lookupContextual[T](key: Contextual[T, P]): Contextual[T, P]
-  def lookupContextual[T, X](key: Contextual[T, X]): Contextual[T, P] = {
-    require(key.protoParent == proto)
-    val narrowerProxyContextual = narrowerProxyOpt.map(_.lookupContextual(key)).getOrElse(key)
-    contexts.foldLeft(narrowerProxyContextual.asInstanceOf[Contextual[T, P]]) { case (c, context) => context.lookupContextual(c) }
-  }
+  //def lookupContextual[T](contextual: Contextual[T]): Contextual[T] = {
+  //  require(contextual.protoParent == proto)
+  //  val narrowerProxyContextual = narrowerProxyOpt.map(_.lookupContextual(contextual)).getOrElse(contextual)
+  //  println("proxy " + narrowerProxyContextual)
+  //  contexts.map { case (context) => context.lookupContextual(narrowerProxyContextual) }.collectFirst{case Some(c) => c}.getOrElse(narrowerProxyContextual)
+  //}
 
+  //private[chisel3] def buildContextual[T](contextual: Contextual[T]): Contextual[T] = {
+  //  contextOpt.flatMap( context =>
+  //    context.buildContextual(contextual)
+  //  ).getOrElse(newPredecessor(contextual))
+  //}
+
+  //private[chisel3] def newPredecessor[T](contextual: Contextual[T]): Contextual[T] = narrowerProxyOpt.map {
+  //  p => p.buildContextual(contextual)
+  //}.getOrElse(contextual)
 
   // All user-specified contexts containing Contextual values
-  def contexts: Seq[Context[P]]
+  def contextOpt: Option[Context[P]]
 
   /** If this proxy was created by being looked up in a parent proxy, lineage refers to that parent proxy.
     * @return parent proxy from whom this proxy was looked up from
@@ -128,7 +138,7 @@ trait Mock[+P] extends InstanceProxy[P] {
   *   val defn = Definition(..)
   */
 trait DefinitionProxy[+P] extends Proxy[P] {
-  override def contexts: Seq[Context[P]] = Nil
+  override def contextOpt: Option[Context[P]] = None
   override def narrowerProxyOpt = None
   //override def build[T](key: Contextual[T, P]): Contextual[T, P] = {
   //  contexts.foldLeft(key) { case (c, context) => context.build(c) }
@@ -152,7 +162,7 @@ final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P]
   * TODO Move to IsInstantiable.scala
   * @param proto underlying object we are creating a proxy of
   */
-final case class InstantiableTransparent[P](narrowerProxy: InstantiableDefinition[P], contexts: Seq[Context[P]])
+final case class InstantiableTransparent[P](narrowerProxy: InstantiableDefinition[P], contextOpt: Option[Context[P]])
     extends Transparent[P]
 
 /** Mock implementation for all proto's which extend IsInstantiable
@@ -162,5 +172,5 @@ final case class InstantiableTransparent[P](narrowerProxy: InstantiableDefinitio
   * TODO Move to IsInstantiable.scala
   * @param proto underlying object we are creating a proxy of
   */
-final case class InstantiableMock[P](narrowerProxy: InstanceProxy[P], lineage: Proxy[Any], contexts: Seq[Context[P]])
+final case class InstantiableMock[P](narrowerProxy: InstanceProxy[P], lineage: Proxy[Any], contextOpt: Option[Context[P]])
     extends Mock[P]

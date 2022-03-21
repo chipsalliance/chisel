@@ -94,14 +94,18 @@ sealed trait Hierarchy[+P] {
   /** @return Return the proxy Definition[P] of this Hierarchy[P] */
   def toDefinition: Definition[P]
 
+  def toContext: Context[P] = proxy.contextOpt.getOrElse(new RootContext(proxy))
+
   /** Given a proto's contextual, return the contextuals value from this hierarchical path
     * @param contextual proto's contextual
     * @return contextual value from this hierarchical path
     */
-  private[chisel3] def open[T, X](contextual: Contextual[T, X]): T = {
-    require(contextual.protoParent == proto)
-    proxy.lookupContextual(contextual.asInstanceOf[Contextual[T, P]]).compute(this).get
-  }
+  //private[chisel3] def open[T](contextual: Contextual[T]): T = {
+  //  val c = proxy.contexts.map { case (context) => context.lookupContextual(contextual) }.collectFirst{case Some(c) => c}.getOrElse(contextual)
+  //  c.compute(this).get
+  //}
+
+
 
   /** @return Underlying proxy representing a proto in viewed from a hierarchical path */
   private[chisel3] def proxy: Proxy[P]
@@ -166,7 +170,7 @@ object Instance {
   def apply[P](definition: Definition[P]): Instance[P] =
     macro InstanceTransform.apply[P]
   def do_apply[P](definition: Definition[P])(implicit stampable: ProxyInstancer[P]): Instance[P] = {
-    new Instance(stampable(definition, Nil))
+    new Instance(stampable(definition, None))
   }
   def withContext[P](definition: Definition[P])(fs: (RootContext[P] => Unit)*): Instance[P] =
     macro WithContextTransform.withContext[P]
@@ -176,12 +180,11 @@ object Instance {
   )(
     implicit stampable: ProxyInstancer[P]
   ): Instance[P] = {
-    val contexts = fs.map { f =>
-      val context = RootContext(definition.proxy)
+    val context = RootContext(definition.proxy)
+    fs.foreach { f =>
       f(context)
-      context
     }
-    val i = new Instance(stampable(definition, contexts))
+    val i = new Instance(stampable(definition, Some(context)))
     i
   }
 }

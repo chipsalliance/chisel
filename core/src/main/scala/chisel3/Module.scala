@@ -218,7 +218,7 @@ package internal {
     import chisel3.experimental.hierarchy.core.{Definition, RootContext}
     private[chisel3] def cloneIORecord(
       definition: Definition[BaseModule],
-      contexts:   Seq[RootContext[BaseModule]]
+      contextOpt:   Option[RootContext[BaseModule]]
     )(
       implicit sourceInfo: SourceInfo,
       compileOptions:      CompileOptions
@@ -231,7 +231,7 @@ package internal {
       val parent = Builder.currentModule
       import experimental.hierarchy._
       val cloneParent = Module(
-        new experimental.hierarchy.ModuleClone(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]], contexts)
+        new experimental.hierarchy.ModuleClone(definition.proxy.asInstanceOf[ModuleDefinition[BaseModule]], contextOpt)
       )
       cloneParent._parent = parent
       require(proto.isClosed, "Can't clone a module before module close")

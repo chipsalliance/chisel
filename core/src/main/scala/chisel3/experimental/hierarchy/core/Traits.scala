@@ -29,9 +29,10 @@ trait ProxyDefiner[P] {
 
 // Implemented by a library so we can create an Instance of a Definition
 trait ProxyInstancer[P] {
-  def apply(definition: Definition[P], contexts: Seq[RootContext[P]]): Clone[P]
+  def apply(definition: Definition[P], contextOpt: Option[RootContext[P]]): Clone[P]
 }
 
-trait ContextualInstancer[V, P] {
-  def apply(value: V): Contextual[V, P]
+trait ContextualInstancer[V] {
+  def apply(value: V): DefaultValue[V]
+  def empty[V]: EmptyValue[V]
 }

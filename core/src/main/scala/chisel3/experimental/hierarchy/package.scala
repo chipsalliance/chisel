@@ -83,11 +83,22 @@ package object hierarchy {
 
   implicit def stampable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
     new ProxyInstancer[T] {
-      def apply(definition: Definition[T], contexts: Seq[RootContext[T]]): ModuleClone[T] = {
-        val ports = experimental.CloneModuleAsRecord(definition, contexts)
+      def apply(definition: Definition[T], contextOpt: Option[RootContext[T]]): ModuleClone[T] = {
+        val ports = experimental.CloneModuleAsRecord(definition, contextOpt)
         val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
         clone._madeFromDefinition = true
         clone
+      }
+    }
+
+  implicit def contextualInstancer[V] =
+    new ContextualInstancer[V] {
+      def apply(value: V): DefaultValue[V] = {
+        new DefaultValue(value, empty[V])
+      }
+      def empty[V]: EmptyValue[V] = {
+        val parent = Builder.currentModule.get
+        new EmptyValue(parent)
       }
     }
 
@@ -149,19 +160,19 @@ package object hierarchy {
           // Create Mock, hierarchy proxy is parent
           val d = ModuleDefinition(value)
           val t = ModuleTransparent(d)
-          val contexts = h.proxy.contexts.map { l: Context[BaseModule] =>
+          val contextOpt = h.proxy.contextOpt.map { l: Context[BaseModule] =>
             l.getter(value)(this).asInstanceOf[Context[V]]
           }
-          ModuleMock(t, h.proxyAs[BaseModule], contexts).toInstance
+          ModuleMock(t, h.proxyAs[BaseModule], contextOpt).toInstance
         case (Some(p), false, h: Hierarchy[P]) =>
           // Create Mock, newParentHierarchy proxy is parent
           val newParentHierarchy = lookupBaseModule(p, hierarchy)
           val d = ModuleDefinition(value)
           val t = ModuleTransparent(d)
-          val contexts = newParentHierarchy.proxy.contexts.map { l: Context[BaseModule] =>
+          val contextOpt = newParentHierarchy.proxy.contextOpt.map { l: Context[BaseModule] =>
             l.getter(value)(this).asInstanceOf[Context[V]]
           }
-          ModuleMock(t, newParentHierarchy.proxyAs[BaseModule], contexts).toInstance
+          ModuleMock(t, newParentHierarchy.proxyAs[BaseModule], contextOpt).toInstance
       }
     }
   }
@@ -185,11 +196,11 @@ package object hierarchy {
             case b: BaseModule if b == hierarchy.proto              => hierarchy
             case other => lookupBaseModule(p, hierarchy)
           }
-          val contexts = newParentHierarchy.proxy.contexts.map { l: Context[_] =>
+          val contextOpt = newParentHierarchy.proxy.contextOpt.map { l: Context[_] =>
             l.getter(value)(this).asInstanceOf[Context[U]]
           }
           // Create mock, set up narrowerProxy etc with h as parent
-          ModuleMock(value.proxyAs[BaseModule], newParentHierarchy.proxyAs[BaseModule], contexts).toInstance
+          ModuleMock(value.proxyAs[BaseModule], newParentHierarchy.proxyAs[BaseModule], contextOpt).toInstance
       }
     }
   }
@@ -288,7 +299,7 @@ package object hierarchy {
   val Instance = core.Instance
   type Definition[P] = core.Definition[P]
   val Definition = core.Definition
-  type Contextual[V, P] = core.Contextual[V, P]
+  type Contextual[V] = core.Contextual[V]
   val Contextual = core.Contextual
   type IsLookupable = core.IsLookupable
   type IsInstantiable = core.IsInstantiable

@@ -145,15 +145,24 @@ object Lookupable {
   }
 
   // Lookups for hierarchy.core objects
-  implicit def lookupableContextual[V] = new Lookupable[Contextual[V, _]] {
+  implicit def lookupableContextual[V] = new Lookupable[Contextual[V]] {
     override type R = V
-    override def apply[P](v: Contextual[V, _], hierarchy: Hierarchy[P]): V = hierarchy.open(v)
+    override def apply[P](v: Contextual[V], hierarchy: Hierarchy[P]): V = {
+      println("BUILDING")
+      val contextual = hierarchy.toContext.buildContextual(v)
+      println("Done BUILDING")
+      // TODO: make sure contextual's parent is same as hierarchy, or else look up hierarchy parent
+      println(contextual)
+      contextual.compute(hierarchy).get
+    }
 
-    override type S = ContextualSetter[V, _]
-    override def setter[P](value: Contextual[V, _], context: Context[P]): S = ContextualSetter(value, context)
+    override type S = ContextualSetter[V]
+    override def setter[P](value: Contextual[V], context: Context[P]): S = ContextualSetter(value, context)
 
-    override type G = Contextual[V, _]
-    override def getter[P](value: Contextual[V, _], context: Context[P]): G = context.lookupContextual(value)
+    override type G = Contextual[V]
+    override def getter[P](value: Contextual[V], context: Context[P]): G = {
+      context.buildContextual(value)
+    }
   }
 
   implicit def isLookupable[V <: IsLookupable] = new SimpleLookupable[V] {}
@@ -162,9 +171,9 @@ object Lookupable {
     override type R = Instance[U]
     override def apply[P](value: U, hierarchy: Hierarchy[P]): Instance[U] = {
       val d = InstantiableDefinition(value)
-      val newContexts = hierarchy.proxy.contexts.map { l: Context[P] => l.getter(value)(this).asInstanceOf[Context[U]] }
+      val newContexts = hierarchy.proxy.contextOpt.map { l: Context[P] => l.getter(value)(this).asInstanceOf[Context[U]] }
       val t = InstantiableTransparent(d, newContexts)
-      val m = InstantiableMock(t, hierarchy.proxy, Nil)
+      val m = InstantiableMock(t, hierarchy.proxy, None)
       m.toInstance
     }
 
