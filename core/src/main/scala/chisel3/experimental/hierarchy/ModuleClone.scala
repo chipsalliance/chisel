@@ -16,8 +16,8 @@ import Utils._
   * @param contexts contains contextual values when viewed from this proxy
   */
 private[chisel3] final class ModuleClone[T <: BaseModule](
-  val narrowerProxy: ModuleDefinition[T],
-  val contextOpt:      Option[Context[T]])
+  val narrowerProxy: ModuleDefinition[T]
+)
     extends PseudoModule
     with Clone[T] {
   // _parent is set outside, just like a normal module

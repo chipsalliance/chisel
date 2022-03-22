@@ -83,8 +83,8 @@ package object hierarchy {
 
   implicit def stampable[T <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
     new ProxyInstancer[T] {
-      def apply(definition: Definition[T], contextOpt: Option[RootContext[T]]): ModuleClone[T] = {
-        val ports = experimental.CloneModuleAsRecord(definition, contextOpt)
+      def apply(definition: Definition[T]): ModuleClone[T] = {
+        val ports = experimental.CloneModuleAsRecord(definition)
         val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
         clone._madeFromDefinition = true
         clone
@@ -117,10 +117,10 @@ package object hierarchy {
     type S = Context[BaseModule]
     type G = Context[BaseModule]
     def setter[P](value: BaseModule, context: Context[P]): S = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, context.root)
+      apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy.toContext
     }
     def getter[P](value: BaseModule, context: Context[P]): G = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy, context.root)
+      apply(value, context.toHierarchy).asInstanceOf[Instance[BaseModule]].proxy.toContext
     }
     def apply[P](value: BaseModule, hierarchy: Hierarchy[P]): Hierarchy[BaseModule] = {
       require(!value.isInstanceOf[Proxy[_]], "BAD!")
@@ -145,10 +145,10 @@ package object hierarchy {
     type S = Context[V]
     type G = Context[V]
     def setter[P](value: V, context: Context[P]): S = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy, context.root)
+      apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy.toContext
     }
     def getter[P](value: V, context: Context[P]): G = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy, context.root)
+      apply(value, context.toHierarchy).asInstanceOf[Instance[V]].proxy.toContext
     }
     // Note if value is a Proxy, we are assuming V is BaseModule, not a specific Proxy type
     // If this is not the case, its an internal error and we should get a dynamic error
@@ -160,19 +160,17 @@ package object hierarchy {
           // Create Mock, hierarchy proxy is parent
           val d = ModuleDefinition(value)
           val t = ModuleTransparent(d)
-          val contextOpt = h.proxy.contextOpt.map { l: Context[BaseModule] =>
-            l.getter(value)(this).asInstanceOf[Context[V]]
-          }
-          ModuleMock(t, h.proxyAs[BaseModule], contextOpt).toInstance
+          //val contextOpt = h.proxy.toContext.getter(value)(this).asInstanceOf[Context[V]]
+          ModuleMock(t, h.proxyAs[BaseModule]).toInstance
         case (Some(p), false, h: Hierarchy[P]) =>
           // Create Mock, newParentHierarchy proxy is parent
           val newParentHierarchy = lookupBaseModule(p, hierarchy)
           val d = ModuleDefinition(value)
           val t = ModuleTransparent(d)
-          val contextOpt = newParentHierarchy.proxy.contextOpt.map { l: Context[BaseModule] =>
-            l.getter(value)(this).asInstanceOf[Context[V]]
-          }
-          ModuleMock(t, newParentHierarchy.proxyAs[BaseModule], contextOpt).toInstance
+          //val contextOpt = newParentHierarchy.proxy.contextOpt.map { l: Context[BaseModule] =>
+          //  l.getter(value)(this).asInstanceOf[Context[V]]
+          //}
+          ModuleMock(t, newParentHierarchy.proxyAs[BaseModule]).toInstance
       }
     }
   }
@@ -182,10 +180,10 @@ package object hierarchy {
     type S = Context[U]
     type G = Context[U]
     def setter[P](value: Instance[U], context: Context[P]): S = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.root)
+      apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy.toContext
     }
     def getter[P](value: Instance[U], context: Context[P]): G = {
-      NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.root)
+      apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy.toContext
     }
     def apply[P](value: Instance[U], hierarchy: Hierarchy[P]) = {
       value.proxyAs[BaseModule]._parent match {
@@ -196,11 +194,9 @@ package object hierarchy {
             case b: BaseModule if b == hierarchy.proto              => hierarchy
             case other => lookupBaseModule(p, hierarchy)
           }
-          val contextOpt = newParentHierarchy.proxy.contextOpt.map { l: Context[_] =>
-            l.getter(value)(this).asInstanceOf[Context[U]]
-          }
+          //val context = newParentHierarchy.proxy.toContext.getter(value)(this).asInstanceOf[Context[U]]
           // Create mock, set up narrowerProxy etc with h as parent
-          ModuleMock(value.proxyAs[BaseModule], newParentHierarchy.proxyAs[BaseModule], contextOpt).toInstance
+          ModuleMock(value.proxyAs[BaseModule], newParentHierarchy.proxyAs[BaseModule]).toInstance
       }
     }
   }

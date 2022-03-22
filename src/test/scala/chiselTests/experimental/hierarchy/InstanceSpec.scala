@@ -1224,14 +1224,14 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val d = Definition(new IntermediateHierarchy)
         val x0 = Instance(d)
-        //val x1 = Instance.withContext(d)(
-        //  _.i0.index.edit(_ + x0.i1.index + 1),
-        //  _.i1.index.edit(_ + x0.i1.index + 1)
-        //)
+        val x1 = Instance.withContext(d)(
+          _.i0.index.editWithString(_ + x0.i1.index + 1 , "x1.i0: _ + 2"),
+          _.i1.index.editWithString(_ + x0.i1.index + 1 , "x1.i1: _ + 2"),
+        )
         x0.i0.index should be(0)
-        //x0.i1.index should be(1)
-        //x1.i0.index should be(2)
-        //x1.i1.index should be(3)
+        x0.i1.index should be(1)
+        x1.i0.index should be(2)
+        x1.i1.index should be(3)
       }
       getFirrtlAndAnnos(new Top)
     }
@@ -1245,8 +1245,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val d = Definition(new Foo)
         val x0 = Instance.withContext(d)(_.i.value = 0)
-        //println(x0.i)
-        println(x0.j)
+        x0.i should be (0)
+        x0.j should be (1)
       }
       getFirrtlAndAnnos(new Top)
     }

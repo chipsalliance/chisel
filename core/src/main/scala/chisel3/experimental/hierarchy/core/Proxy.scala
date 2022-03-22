@@ -11,6 +11,7 @@ sealed trait Proxy[+P] {
   /** @return Original object that we are proxy'ing */
   def proto: P
 
+  //GENESIS
   def narrowerProxyOpt: Option[Proxy[P]]
 
   /** Computes the new contextual given the original, proto Contextual (key) and the current contextual (c)
@@ -24,26 +25,73 @@ sealed trait Proxy[+P] {
     * @param contextual current contextual containing a value to be edited
     * @return a new contextual with the edited value
     */
-  //private[chisel3] def lookupContextual[T](key: Contextual[T, P]): Contextual[T, P]
-  //def lookupContextual[T](contextual: Contextual[T]): Contextual[T] = {
-  //  require(contextual.protoParent == proto)
-  //  val narrowerProxyContextual = narrowerProxyOpt.map(_.lookupContextual(contextual)).getOrElse(contextual)
-  //  println("proxy " + narrowerProxyContextual)
-  //  contexts.map { case (context) => context.lookupContextual(narrowerProxyContextual) }.collectFirst{case Some(c) => c}.getOrElse(narrowerProxyContextual)
-  //}
 
-  //private[chisel3] def buildContextual[T](contextual: Contextual[T]): Contextual[T] = {
-  //  contextOpt.flatMap( context =>
-  //    context.buildContextual(contextual)
-  //  ).getOrElse(newPredecessor(contextual))
-  //}
+  // All stored contextual edit functions for contextuals defined within the proxy's proto
+  private[chisel3] val edits  = new IdentityHashMap[Contextual[_], (Any => Any, String)]()
+  private[chisel3] val values = new IdentityHashMap[Contextual[_], (Any, String)]()
+  private[chisel3] val proxyCache = new IdentityHashMap[Any, Proxy[Any]]()
+  private[chisel3] val cache = new IdentityHashMap[Any, Any]()
 
-  //private[chisel3] def newPredecessor[T](contextual: Contextual[T]): Contextual[T] = narrowerProxyOpt.map {
-  //  p => p.buildContextual(contextual)
-  //}.getOrElse(contextual)
+  def cacheMe[V, R](protoValue: V, retValue: R): Unit = retValue match {
+    case h: Hierarchy[_] => proxyCache.put(protoValue, h.proxy)
+    case h: Context[_] => proxyCache.put(protoValue, h.proxy)
+    case other => protoValue match {
+      case c: Contextual[_] => // Never store contextuals
+      case _ => cache.put(protoValue, other)
+    }
+  }
+  def retrieveMeAsContext[V](protoValue: V): Option[Any] = {
+    if(proxyCache.containsKey(protoValue)) Some(proxyCache.get(protoValue).toContext) else None
+  }
+  def retrieveMeAsHierarchy[V](protoValue: V): Option[Any] = {
+    if(proxyCache.containsKey(protoValue)) Some(proxyCache.get(protoValue).toHierarchy) else None
+  }
+  def retrieveMe[V](protoValue: V): Option[Any] = {
+    if(cache.containsKey(protoValue)) Some(cache.get(protoValue)) else None
+  }
+  def isCached(protoValue: Any): Boolean = {
+    edits.containsKey(protoValue) || values.containsKey(protoValue)
+  }
 
-  // All user-specified contexts containing Contextual values
-  def contextOpt: Option[Context[P]]
+  // Store an edit function for a given contextual, at this context
+  // Can only set this function once per contextual, at this context
+  private[chisel3] def addDerivation[T](contextual: Contextual[T], f: Any => Any, description: String): Unit = {
+    //println("---")
+    //println(s"Adding derivation $f, $this")
+    //println(s"$contextual")
+    require(!isCached(contextual.proto), s"Cannot set $contextual more than once!")
+    edits.put(contextual.proto, (f, description))
+  }
+
+  private[chisel3] def addValue[T](contextual: Contextual[T], value: Any, description: String): Unit = {
+    //println("---")
+    //println(s"Adding derivation $f, $this")
+    //println(s"$contextual")
+    require(!isCached(contextual.proto), s"Cannot set $contextual more than once!")
+    values.put(contextual.proto, (value, description))
+  }
+
+  private[chisel3] def buildContextual[T](contextual: Contextual[T]): Contextual[T] = (isCached(contextual.proto), narrowerProxyOpt) match {
+    case (false, None)    => contextual
+    case (false, Some(p)) =>
+      //println("HERE")
+      p.buildContextual(contextual)
+    case (true, None)     => ??? //Illegal?
+    case (true, Some(p)) if edits.containsKey(contextual.proto) =>
+      val (f, des) = edits.get(contextual.proto).asInstanceOf[(T => T, String)]
+      //println(s"THERE, ${this.getClass.getSimpleName()}, $des")
+      val newPredecessor = p.buildContextual(contextual)
+      //println(p == this)
+      //println(s"HERE: $newPredecessor")
+      new BroaderValue(this, p, new ContextualEdit(f, des, newPredecessor), newPredecessor)
+    case (true, Some(p)) if values.containsKey(contextual.proto) =>
+      val (value, des) = values.get(contextual.proto).asInstanceOf[(T, String)]
+      //println(s"THERE, ${this.getClass.getSimpleName()}, $des")
+      val newPredecessor = p.buildContextual(contextual)
+      //println(p == this)
+      //println(s"HERE: $newPredecessor")
+      new BroaderValue(this, p, new ContextualValue(value, des, newPredecessor), newPredecessor)
+  }
 
   /** If this proxy was created by being looked up in a parent proxy, lineage refers to that parent proxy.
     * @return parent proxy from whom this proxy was looked up from
@@ -53,6 +101,7 @@ sealed trait Proxy[+P] {
   /** @return a Definition wrapping this Proxy */
   def toDefinition: Definition[P]
   def toHierarchy: Hierarchy[P]
+  def toContext: Context[P] = new Context(this)
 }
 
 /** Proxy representing an Instance version of an object */
@@ -138,7 +187,6 @@ trait Mock[+P] extends InstanceProxy[P] {
   *   val defn = Definition(..)
   */
 trait DefinitionProxy[+P] extends Proxy[P] {
-  override def contextOpt: Option[Context[P]] = None
   override def narrowerProxyOpt = None
   //override def build[T](key: Contextual[T, P]): Contextual[T, P] = {
   //  contexts.foldLeft(key) { case (c, context) => context.build(c) }

@@ -10,7 +10,7 @@ import java.util.IdentityHashMap
 /** Represents a view of a proto from a specific hierarchical path */
 sealed trait Hierarchy[+P] {
 
-  private[chisel3] val cache = new IdentityHashMap[Any, Any]()
+  //private[chisel3] val cache = new IdentityHashMap[Any, Any]()
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
@@ -34,12 +34,11 @@ sealed trait Hierarchy[+P] {
   ): lookupable.R = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(proto)
-    if (cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.R]
-    else {
-      val ret = lookupable(protoValue, this)
-      cache.put(protoValue, ret)
-      ret
-    }
+    proxy.retrieveMeAsHierarchy(protoValue).orElse(proxy.retrieveMe(protoValue)).orElse {
+      val retValue = lookupable.apply(protoValue, this)
+      proxy.cacheMe(protoValue, retValue)
+      Some(retValue)
+    }.get.asInstanceOf[lookupable.R]
   }
 
   /** Finds the closest parent Instance/Hierarchy in proxy's lineage which matches a partial function
@@ -80,13 +79,15 @@ sealed trait Hierarchy[+P] {
 
   def isNarrowerOrEquivalentTo[X](other: Hierarchy[X]): Boolean = {
     (this, other, this.proto == other.proto) match {
-      case (_,                _,                false) => false
-      case (t: Definition[P], o: Definition[P], true)  => true
-      case (t: Definition[P], o: Instance[P],   true)  => true
-      case (t: Instance[P],   o: Definition[P], true)  => false
+      case (_,                _,                false) => /*println(0);*/ false
+      case (t: Definition[P], o: Definition[P], true)  => /*println(1);*/ true
+      case (t: Definition[P], o: Instance[P],   true)  => /*println(2);*/ true
+      case (t: Instance[P],   o: Definition[P], true)  => /*println(3);*/ false
       case (t: Instance[P],   o: Instance[P],   true)  => (t.proxy.lineageOpt, o.proxy.lineageOpt) match {
-        case (Some(lt), Some(lo)) => lt.toHierarchy.isNarrowerOrEquivalentTo(lo.toHierarchy)
-        case (_,        _)        => false
+        case (Some(lt), Some(lo)) => /*println(4);*/ lt.toHierarchy.isNarrowerOrEquivalentTo(lo.toHierarchy)
+        case (Some(_),     None)  => /*println(5);*/ false
+        case (None,     Some(_))  => /*println(6);*/ true
+        case (None,  None)        => /*println(7);*/ true
       }
     }
   }
@@ -94,7 +95,7 @@ sealed trait Hierarchy[+P] {
   /** @return Return the proxy Definition[P] of this Hierarchy[P] */
   def toDefinition: Definition[P]
 
-  def toContext: Context[P] = proxy.contextOpt.getOrElse(new RootContext(proxy))
+  def toContext: Context[P] = Context(proxy)
 
   /** Given a proto's contextual, return the contextuals value from this hierarchical path
     * @param contextual proto's contextual
@@ -170,21 +171,22 @@ object Instance {
   def apply[P](definition: Definition[P]): Instance[P] =
     macro InstanceTransform.apply[P]
   def do_apply[P](definition: Definition[P])(implicit stampable: ProxyInstancer[P]): Instance[P] = {
-    new Instance(stampable(definition, None))
+    new Instance(stampable(definition))
   }
-  def withContext[P](definition: Definition[P])(fs: (RootContext[P] => Unit)*): Instance[P] =
+  def withContext[P](definition: Definition[P])(fs: (Context[P] => Unit)*): Instance[P] =
     macro WithContextTransform.withContext[P]
   def do_withContext[P](
     definition: Definition[P]
-  )(fs:         (RootContext[P] => Unit)*
+  )(fs:         (Context[P] => Unit)*
   )(
     implicit stampable: ProxyInstancer[P]
   ): Instance[P] = {
-    val context = RootContext(definition.proxy)
+    val i = new Instance(stampable(definition))
+    val context = i.proxy.toContext
     fs.foreach { f =>
       f(context)
     }
-    val i = new Instance(stampable(definition, Some(context)))
+    //println(i.proxy.edits.values())
     i
   }
 }

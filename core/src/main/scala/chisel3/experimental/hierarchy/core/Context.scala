@@ -11,16 +11,9 @@ import java.util.IdentityHashMap
   * Stored in InstanceProxy, so that when a value is looked up from that InstanceProxy, corresponding Contexts
   *   can also be analyzed.
   */
-trait Context[+P] {
+final case class Context[+P](proxy: Proxy[P]) {
 
   /** @return Underlying proxy at this context. Used when creating children contexts. */
-  private[chisel3] def proxy: Proxy[P]
-
-  /** All Contexts have a pointer to their RootContext, so that when a value is set, we can return the entire context
-    *  starting from the root can be provided.
-    * @return root of this context
-    */
-  private[chisel3] def root: RootContext[_]
 
   /** @return Return the Hierarchy representation of this Context. */
   private[chisel3] def toHierarchy: Hierarchy[P] = proxy match {
@@ -28,38 +21,6 @@ trait Context[+P] {
     case i: InstanceProxy[P]   => new Instance(i)
   }
 
-  // All stored contextual edit functions for contextuals defined within the proxy's proto
-  private[chisel3] val edits = new IdentityHashMap[Contextual[_], Any => Any]()
-
-  // Store an edit function for a given contextual, at this context
-  // Can only set this function once per contextual, at this context
-  private[chisel3] def addDerivation[T](contextual: Contextual[T], f: Any => Any): Unit = {
-    require(!edits.containsKey(contextual.proto), s"Cannot set $contextual more than once!")
-    edits.put(contextual.proto, f)
-  }
-
-  private[chisel3] def buildContextual[T](contextual: Contextual[T]): Contextual[T] = (edits.containsKey(contextual.proto), proxy.narrowerProxyOpt) match {
-    case (false, None)    => contextual
-    case (false, Some(p)) => p.toHierarchy.toContext.buildContextual(contextual)
-    case (true, None)     => new BroaderValue(this, new ContextualValue(edits.get(contextual.proto).asInstanceOf[T => T], newPredecessor), newPredecessor)
-  }
-    val newPredecessor = if(edits.containsKey(contextual.proto)) {
-      proxy.narrowerProxyOpt.map {
-        p => 
-          p.toHierarchy.toContext.buildContextual(contextual)
-      }.getOrElse(contextual)
-    } else contextual
-      println("HERE", contextual)
-    } else {
-      contextual
-    }
-  }
-
-  // Return an edit function for a given contextual, at this context
-  // If no function is defined, return an identity function
-  //private[chisel3] def lookupContextual[T, X](protoContextual: Contextual[T]): Option[Contextual[T]] = {
-  //  if (edits.containsKey(protoContextual.proto)) Some(edits.get(protoContextual.proto).asInstanceOf[Contextual[T]]) else None
-  //}
 
   /** Computes the new contextual given the original, proto Contextual (key) and the current contextual (c)
     *
@@ -74,8 +35,8 @@ trait Context[+P] {
     */
 
   // Caching returned values from lookup'ed values
-  private[chisel3] val cache = new IdentityHashMap[Any, Any]()
-  private[chisel3] val getterCache = new IdentityHashMap[Any, Any]()
+  //private[chisel3] val cache = new IdentityHashMap[Any, Any]()
+  //private[chisel3] val getterCache = new IdentityHashMap[Any, Any]()
 
   /** Lookup function called by the macro-generated extension methods on Context[P]
     *
@@ -93,12 +54,11 @@ trait Context[+P] {
     macroGenerated:      chisel3.internal.MacroGenerated
   ): lookupable.S = {
     val protoValue = that(this.proxy.proto)
-    if (cache.containsKey(protoValue)) cache.get(protoValue).asInstanceOf[lookupable.S]
-    else {
+    proxy.retrieveMeAsContext(protoValue).orElse(proxy.retrieveMe(protoValue)).orElse {
       val retValue = lookupable.setter(protoValue, this)
-      cache.put(protoValue, retValue)
-      retValue
-    }
+      proxy.cacheMe(protoValue, retValue)
+      Some(retValue)
+    }.get.asInstanceOf[lookupable.S]
   }
 
   /** Lookup function called by Lookupable's of Contextuals, which need to compute a contextual value
@@ -112,22 +72,13 @@ trait Context[+P] {
   )(
     implicit lookupable: Lookupable[B]
   ): lookupable.G = {
-    if (getterCache.containsKey(protoValue)) getterCache.get(protoValue).asInstanceOf[lookupable.G]
-    else {
+    proxy.retrieveMeAsContext(protoValue).orElse(proxy.retrieveMe(protoValue)).orElse {
       val retValue = lookupable.getter(protoValue, this)
-      getterCache.put(protoValue, retValue)
-      retValue
-    }
+      proxy.cacheMe(protoValue, retValue)
+      Some(retValue)
+    }.get.asInstanceOf[lookupable.G]
   }
 }
-
-/** The top-most context in a context path. This is a separate type so functions can require a root */
-final case class RootContext[+P](proxy: Proxy[P]) extends Context[P] {
-  def root = this
-}
-
-/** The a nested context */
-final case class NestedContext[+P](proxy: Proxy[P], root: RootContext[_]) extends Context[P] {}
 
 /** The returned value from Contextual._lookup, when looking up a Contextual.
   * This enables users to specify a Contextual's value from a given context.
@@ -136,17 +87,12 @@ final case class NestedContext[+P](proxy: Proxy[P], root: RootContext[_]) extend
   * @param context The context from which you are setting the value
   */
 final case class ContextualSetter[T](contextual: Contextual[T], context: Context[Any]) {
-  def value: T = contextual.compute(context.toHierarchy).get
-  def value_=(newValue: T): RootContext[_] = edit({ _: T => newValue })
-  def edit(f: T => T): RootContext[_] = {
-    context.addDerivation(contextual, f.asInstanceOf[Any => Any])
-    context.root
+  def value: T = contextual.compute(context.toHierarchy, context).get
+  def value_=(newValue: T): Unit = {
+    context.proxy.addValue(contextual, newValue, newValue.toString)
+  }
+  def edit(f: T => T): Unit = editWithString(f, f.toString)
+  def editWithString(f: T => T, description: String): Unit = {
+    context.proxy.addDerivation(contextual, f.asInstanceOf[Any => Any], description)
   }
 }
-
-/** An edit of a contextual.
-  *
-  * @param contextual the key, or the proto's version of this contextual
-  * @param edit the function which edits a contextual's value
-  */
-final case class Edit[T, P](contextual: Contextual[T], edit: T => T)

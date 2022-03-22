@@ -49,17 +49,16 @@ package object experimental {
       compileOptions:      CompileOptions
     ): ClonePorts = {
       import chisel3.experimental.hierarchy._
-      apply(proto.toDefinition, None)(sourceInfo, compileOptions)
+      apply(proto.toDefinition)(sourceInfo, compileOptions)
     }
-    import experimental.hierarchy.core.{Definition, RootContext}
+    import experimental.hierarchy.core.Definition
     def apply(
-      definition: Definition[BaseModule],
-      contextOpt:   Option[RootContext[BaseModule]]
+      definition: Definition[BaseModule]
     )(
       implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
       compileOptions:      CompileOptions
     ): ClonePorts = {
-      BaseModule.cloneIORecord(definition, contextOpt)
+      BaseModule.cloneIORecord(definition)
     }
   }
 

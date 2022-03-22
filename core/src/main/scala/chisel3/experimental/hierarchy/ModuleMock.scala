@@ -17,7 +17,7 @@ import chisel3._
   */
 private[chisel3] final case class ModuleMock[T <: BaseModule] private (
   val narrowerProxy: InstanceProxy[T] with BaseModule,
-  val contextOpt:      Option[Context[T]])
+)
     extends PseudoModule
     with Mock[T] {
 
@@ -40,13 +40,12 @@ private[chisel3] final case class ModuleMock[T <: BaseModule] private (
 private[chisel3] object ModuleMock {
   def apply[T <: BaseModule](
     narrowerProxy: InstanceProxy[T] with BaseModule,
-    lineage:       BaseModule,
-    contextOpt:      Option[Context[T]]
+    lineage:       BaseModule
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): ModuleMock[T] = {
-    val x = Module.do_pseudo_apply(new ModuleMock(narrowerProxy, contextOpt))
+    val x = Module.do_pseudo_apply(new ModuleMock(narrowerProxy))
     x._parent = Some(lineage)
     x
   }
