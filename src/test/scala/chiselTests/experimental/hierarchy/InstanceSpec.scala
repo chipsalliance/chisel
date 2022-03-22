@@ -1244,9 +1244,9 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       
       class Top extends Module {
         val d = Definition(new Foo)
-        val x0 = Instance.withContext(d)(_.i.value = 0)
-        x0.i should be (0)
-        x0.j should be (1)
+        val x0 = Instance.withContext(d)(_.i.value = 3)
+        x0.i should be (3)
+        x0.j should be (4)
       }
       getFirrtlAndAnnos(new Top)
     }
@@ -1291,6 +1291,46 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     //  }
     //}
   }
+  /*
+  describe("(Sandbox)") {
+    it("(11.a): Processing conversation with Wes") {
+
+      case class EdgeParam(name: String, width: Int, sibling: Instance[Module]) extends IsContextual
+
+      e: Contextual[EdgeParam]
+      e.name: Contextual[String]
+
+
+      trait Node[E] {
+        def edge: Contextual[E]
+      }
+
+      @instantiable
+      class MyLazyModule(p: MyParams) {
+        @public val node: AdapterNode[EdgeParam] = ??? //EX
+        node.edge.value //Illegal anyways
+      }
+      object MyLazyModule {
+        @public def module(d: Definition[MyLazyModule]) = {
+          new LazyModuleImp(d) {
+            // d.buildChildren <- this is done in LazyModuleImp constructor
+            d.node.edge.blah
+          }
+        }
+      }
+      class Top extends LazyModule {
+        val d = LazyDefinition(new MyLazyModule(..))(
+          _.node.edge.name.clean(),
+          _.node.edge.width.max(), // Is this bad? could be we should require width widgets
+          _.node.edge.sibling.contextualize() // This may be unnecessary, as default is to preserve all values in the contextual type
+        )
+        val i0 = LazyInstance(d)
+        foo := i0.node := bar
+      }
+      
+    }
+  }
+    */
 }
 //  describe("(11) Contextual") {
 //    import ContextualExamples._

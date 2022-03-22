@@ -170,25 +170,21 @@ object Lookupable {
 
   implicit def lookupIsInstantiable[U <: IsInstantiable] = new Lookupable[U] {
     override type R = Instance[U]
-    override def apply[P](value: U, hierarchy: Hierarchy[P]): Instance[U] = ???
-    //{
-    //  val d = InstantiableDefinition(value)
-    //  val newContexts = hierarchy.toContext.getter(value)(this).asInstanceOf[Context[U]]
-    //  val t = InstantiableTransparent(d, newContexts)
-    //  val m = InstantiableMock(t, hierarchy.proxy, None)
-    //  m.toInstance
-    //}
+    override def apply[P](value: U, hierarchy: Hierarchy[P]): Instance[U] = {
+      val d = InstantiableDefinition(value)
+      val t = InstantiableTransparent(d)
+      val m = InstantiableMock(t, hierarchy.proxy)
+      m.toInstance
+    }
 
     override type S = Context[U]
-    override def getter[P](value: U, context: Context[P]): G = ???
-    //{
-    //  NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.root)
-    //}
+    override def getter[P](value: U, context: Context[P]): G = {
+      apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy.toContext
+    }
 
     override type G = Context[U]
-    override def setter[P](value: U, context: Context[P]): S = ???
-    //{
-    //  NestedContext(apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy, context.root)
-    //}
+    override def setter[P](value: U, context: Context[P]): S = {
+      apply(value, context.toHierarchy).asInstanceOf[Instance[U]].proxy.toContext
+    }
   }
 }

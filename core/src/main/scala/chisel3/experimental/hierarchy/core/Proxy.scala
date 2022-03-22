@@ -210,8 +210,7 @@ final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P]
   * TODO Move to IsInstantiable.scala
   * @param proto underlying object we are creating a proxy of
   */
-final case class InstantiableTransparent[P](narrowerProxy: InstantiableDefinition[P], contextOpt: Option[Context[P]])
-    extends Transparent[P]
+final case class InstantiableTransparent[P](narrowerProxy: InstantiableDefinition[P]) extends Transparent[P]
 
 /** Mock implementation for all proto's which extend IsInstantiable
   *
@@ -220,5 +219,4 @@ final case class InstantiableTransparent[P](narrowerProxy: InstantiableDefinitio
   * TODO Move to IsInstantiable.scala
   * @param proto underlying object we are creating a proxy of
   */
-final case class InstantiableMock[P](narrowerProxy: InstanceProxy[P], lineage: Proxy[Any], contextOpt: Option[Context[P]])
-    extends Mock[P]
+final case class InstantiableMock[P](narrowerProxy: InstanceProxy[P], lineage: Proxy[Any]) extends Mock[P]
