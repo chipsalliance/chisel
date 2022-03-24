@@ -124,3 +124,5 @@ object CIRCTHandover extends HasShellOptions {
 }
 
 case class CIRCTHandover(handover: CIRCTHandover.Type) extends NoTargetAnnotation with CIRCTOption
+
+case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption

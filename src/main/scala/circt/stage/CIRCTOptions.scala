@@ -16,7 +16,8 @@ class CIRCTOptions private[stage](
   val outputFile: Option[File] = None,
   val disableLowerTypes: Boolean = false,
   val target: Option[CIRCTTarget.Type] = None,
-  val handover: Option[CIRCTHandover.Type] = None
+  val handover: Option[CIRCTHandover.Type] = None,
+  val firtoolOptions: Seq[String] = Seq.empty
 ) {
 
   private[stage] def copy(
@@ -24,7 +25,8 @@ class CIRCTOptions private[stage](
     outputFile: Option[File] = outputFile,
     disableLowerTypes: Boolean = disableLowerTypes,
     target: Option[CIRCTTarget.Type] = target,
-    handover: Option[CIRCTHandover.Type] = handover
-  ): CIRCTOptions = new CIRCTOptions(inputFile, outputFile, disableLowerTypes, target, handover)
+    handover: Option[CIRCTHandover.Type] = handover,
+    firtoolOptions: Seq[String] = firtoolOptions
+  ): CIRCTOptions = new CIRCTOptions(inputFile, outputFile, disableLowerTypes, target, handover, firtoolOptions )
 
 }

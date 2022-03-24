@@ -4,7 +4,10 @@ package circtTests.stage
 
 import chisel3.stage.ChiselGeneratorAnnotation
 
-import circt.stage.ChiselStage
+import circt.stage.{
+  ChiselStage,
+  FirtoolOption
+}
 
 import firrtl.annotations.DeletedAnnotation
 import firrtl.EmittedVerilogCircuitAnnotation
@@ -28,6 +31,13 @@ object ChiselStageSpec {
     val a = IO(new FooBundle)
     val b = IO(Flipped(new FooBundle))
     b <> a
+  }
+
+  class Bar extends RawModule {
+    val sel = IO(Input(UInt(3.W)))
+    val in = IO(Input(Vec(8, UInt(8.W))))
+    val out = IO(Output(UInt(8.W)))
+    out := in(sel)
   }
 
 }
@@ -96,6 +106,24 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
       info(s"'$expectedOutput' exists")
       expectedOutput should (exist)
 
+    }
+
+    it("should support custom firtool options") {
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target", "systemverilog",
+        "--target-dir", targetDir.toString
+      )
+
+      info(s"output contains a case statement using --lowering-options=disallowPackedArrays")
+      (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Bar),
+                           FirtoolOption("--lowering-options=disallowPackedArrays")))
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }.get
+        .value should include ("case")
     }
   }
 

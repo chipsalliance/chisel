@@ -36,6 +36,7 @@ package object stage {
             case CIRCTTargetAnnotation(a) => acc.copy(target = Some(a))
             case DisableLowerTypes        => acc.copy(disableLowerTypes = true)
             case CIRCTHandover(a)         => acc.copy(handover = Some(a))
+            case FirtoolOption(a)         => acc.copy(firtoolOptions = acc.firtoolOptions :+ a)
             case _                        => acc
           }
         }

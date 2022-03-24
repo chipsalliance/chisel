@@ -123,6 +123,7 @@ class CIRCT extends Phase {
 
     val cmd =
       Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-verify-each=false") ++
+        circtOptions.firtoolOptions ++
         logLevel.toCIRCTOptions ++
         /* The following options are on by default, so we disable them if they are false. */
         (circtOptions.disableLowerTypes).option("-lower-types=0") ++
