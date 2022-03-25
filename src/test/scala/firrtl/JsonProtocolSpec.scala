@@ -31,6 +31,8 @@ object JsonProtocolTestClasses {
       with HasSerializationHints {
     def typeHints = Seq(param.getClass)
   }
+
+  case class SimpleAnnotation(alpha: String) extends NoTargetAnnotation
 }
 
 import JsonProtocolTestClasses._
@@ -66,6 +68,16 @@ class JsonProtocolSpec extends AnyFlatSpec {
   it should "serialize and deserialize with type hints" in {
     val anno = TypeParameterizedAnnotationWithTypeHints(ChildA(1))
     val deserAnno = serializeAndDeserialize(anno)
+    assert(anno == deserAnno)
+  }
+
+  "JSON object order" should "not affect deserialization" in {
+    val anno = SimpleAnnotation("hello")
+    val serializedAnno = """[{
+      "alpha": "hello",
+      "class": "firrtlTests.JsonProtocolTestClasses$SimpleAnnotation"
+    }]"""
+    val deserAnno = JsonProtocol.deserialize(serializedAnno).head
     assert(anno == deserAnno)
   }
 }
