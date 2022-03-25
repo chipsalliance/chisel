@@ -4,8 +4,7 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
-import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
-  BlackBoxNotFoundException}
+import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxNotFoundException, BlackBoxPathAnno, BlackBoxSourceHelper}
 import firrtl.annotations.ModuleName
 import java.io.{File, FileNotFoundException}
 import logger.LazyLogging
