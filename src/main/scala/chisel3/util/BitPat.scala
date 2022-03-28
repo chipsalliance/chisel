@@ -227,6 +227,35 @@ package experimental {
         case _ => false
       }
     }
+
+    /**
+     * Calculate the inverse of this pattern set.
+     * 
+     * @return A BitSet matching all value (of the given with) iff it doesn't match this pattern.
+     */
+    def inverse: BitSet = {
+      val total = BitPat("b" + ("?".repeat(this.getWidth)))
+      total.subtract(this)
+    }
+
+    /**
+      * Calculate lowest posible value to match this pattern seset.
+      *
+      * @throws UnsupportedOperationException if this this is an empty pattern set.
+      * @return The matched value
+      */
+    def lowerbound: BigInt = terms.map(_.lowerbound).min
+
+    /**
+      * Convert arbitrary BitSet into continous ranges
+      * 
+      * @note Due to the potential large number of generated ranges, this method return an iterator.
+      * API user should be careful when the number of the ranges are not guarenteed.
+      *
+      * @return An iterator yielding all continous ranges in this pattern. The ranges are guaranteed to be increasing,
+      *     non-overlaping, and all of them will precisely cover the entire BitSet.
+      */
+    def toRanges: Iterator[BitSetRange] = new BitSetRangeIterator(this)
   }
 
   sealed class BitSetRange(val start: BigInt, val length: BigInt, val width: Int) extends BitSet { outer =>
@@ -272,6 +301,19 @@ package experimental {
       if (!allowUnaligned) require(ret.terms.size == 1, "Unaligned BitSetRange")
 
       ret
+    }
+  }
+
+  class BitSetRangeIterator(var remaining: BitSet) extends Iterator[BitSetRange] {
+
+    override def hasNext: Boolean = !remaining.isEmpty
+
+    override def next(): BitSetRange = {
+      val posLB = remaining.lowerbound
+      val negLB = remaining.inverse.subtract(BitSetRange(0, posLB, remaining.getWidth, true)).lowerbound
+      remaining = remaining.subtract(BitSetRange(0, negLB, remaining.getWidth, true))
+
+      BitSetRange(posLB, negLB - posLB, remaining.getWidth)
     }
   }
 }
@@ -394,6 +436,8 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
   }
 
   override def isEmpty: Boolean = false
+
+  override def lowerbound: BigInt = value & mask
 
   /** Generate raw string of a [[BitPat]]. */
   def rawString: String = Seq
