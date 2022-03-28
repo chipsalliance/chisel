@@ -234,7 +234,7 @@ package experimental {
      * @return A BitSet matching all value (of the given with) iff it doesn't match this pattern.
      */
     def inverse: BitSet = {
-      val total = BitPat("b" + ("?".repeat(this.getWidth)))
+      val total = BitPat("b" + ("?" * this.getWidth))
       total.subtract(this)
     }
 
@@ -244,7 +244,7 @@ package experimental {
       * @throws UnsupportedOperationException if this this is an empty pattern set.
       * @return The matched value
       */
-    def lowerbound: BigInt = terms.map(_.lowerbound).min
+    private[chisel3] def lowerbound: BigInt = terms.map(_.lowerbound).min
 
     /**
       * Convert arbitrary BitSet into continous ranges
@@ -255,7 +255,7 @@ package experimental {
       * @return An iterator yielding all continous ranges in this pattern. The ranges are guaranteed to be increasing,
       *     non-overlaping, and all of them will precisely cover the entire BitSet.
       */
-    def toRanges: Iterator[BitSetRange] = new BitSetRangeIterator(this)
+    def toBitSetRanges: Iterator[BitSetRange] = new BitSetRangeIterator(this)
   }
 
   sealed class BitSetRange(val start: BigInt, val length: BigInt, val width: Int) extends BitSet { outer =>
@@ -304,7 +304,7 @@ package experimental {
     }
   }
 
-  class BitSetRangeIterator(var remaining: BitSet) extends Iterator[BitSetRange] {
+  private[chisel3] class BitSetRangeIterator(var remaining: BitSet) extends Iterator[BitSetRange] {
 
     override def hasNext: Boolean = !remaining.isEmpty
 
@@ -437,7 +437,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
 
   override def isEmpty: Boolean = false
 
-  override def lowerbound: BigInt = value & mask
+  override private[chisel3] def lowerbound: BigInt = value & mask
 
   /** Generate raw string of a [[BitPat]]. */
   def rawString: String = Seq
