@@ -47,7 +47,7 @@ class BitSetRangeTest extends AnyFlatSpec with ChiselScalatestTester with Formal
     for(i <- 1 to cases) {
       // Randomly generates 4 patterns with length of 8
       val tmpls = for(j <- 1 to 4) yield {
-        val tmpl = for(k <- 1 to 8) yield Seq('?', '0', '1')(rng.between(0, 3))
+        val tmpl = for(k <- 1 to 8) yield Seq('?', '0', '1')(rng.nextInt().max(0).min(2))
         "b" + tmpl.mkString
       }
 
