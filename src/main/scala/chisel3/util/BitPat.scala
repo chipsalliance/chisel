@@ -229,10 +229,10 @@ package experimental {
     }
 
     /**
-     * Calculate the inverse of this pattern set.
-     * 
-     * @return A BitSet matching all value (of the given with) iff it doesn't match this pattern.
-     */
+      * Calculate the inverse of this pattern set.
+      *
+      * @return A BitSet matching all value (of the given with) iff it doesn't match this pattern.
+      */
     def inverse: BitSet = {
       val total = BitPat("b" + ("?" * this.getWidth))
       total.subtract(this)
@@ -248,14 +248,14 @@ package experimental {
 
     /**
       * Convert arbitrary BitSet into continous ranges
-      * 
+      *
       * @note Due to the potential large number of generated ranges, this method return an iterator.
       * API user should be careful when the number of the ranges are not guarenteed.
       *
       * @return An iterator yielding all continous ranges in this pattern. The ranges are guaranteed to be increasing,
-      *     non-overlaping, and all of them will precisely cover the entire BitSet.
+      *     non-overlaping, non-adjacent, and the union of all of them will precisely cover the entire BitSet.
       */
-    def toBitSetRanges: Iterator[BitSetRange] = new BitSetRangeIterator(this)
+    def toBitSetRanges: Iterator[BitSetRange] = new BitSetRangeIterator(this, this.getWidth)
   }
 
   sealed class BitSetRange(val start: BigInt, val length: BigInt, val width: Int) extends BitSet { outer =>
@@ -281,39 +281,45 @@ package experimental {
       collected.toSet
     }
 
-    // TODO: width!
+    def isAligned: Boolean = isPow2(length) && (start & (length - 1)) == 0
+
+    override def getWidth: Int = width
+
     override def toString: String = s"BitSetRange(0x${start.toString(16)} - 0x${(start + length).toString(16)})"
   }
 
   object BitSetRange {
     def apply(
-      start:          BigInt,
-      length:         BigInt,
-      width:          Int = -1,
-      allowUnaligned: Boolean = false
+      start:  BigInt,
+      length: BigInt,
+      width:  Int = -1
     ): BitSetRange = {
       require(length > 0, "Cannot construct a empty BitSetRange")
       val max_known_length = (start + length - 1).bitLength
       val w = if (width >= 0) width else max_known_length
-      require(w >= max_known_length, "Cannot construct a BitSetRange with width smaller than its range end")
+      require(
+        w >= max_known_length,
+        s"Cannot construct a BitSetRange with width($w) smaller than its range end(b${(start + length - 1).toString(2)})"
+      )
       val ret = new BitSetRange(start, length, w)
-
-      if (!allowUnaligned) require(ret.terms.size == 1, "Unaligned BitSetRange")
 
       ret
     }
   }
 
-  private[chisel3] class BitSetRangeIterator(var remaining: BitSet) extends Iterator[BitSetRange] {
+  private[chisel3] class BitSetRangeIterator(var remaining: BitSet, val width: Int) extends Iterator[BitSetRange] {
 
     override def hasNext: Boolean = !remaining.isEmpty
 
     override def next(): BitSetRange = {
       val posLB = remaining.lowerbound
-      val negLB = remaining.inverse.subtract(BitSetRange(0, posLB, remaining.getWidth, true)).lowerbound
-      remaining = remaining.subtract(BitSetRange(0, negLB, remaining.getWidth, true))
+      val inv = remaining.inverse
+      val neg = if (posLB == 0) inv else inv.subtract(BitSetRange(0, posLB, width))
+      val negLB = if (neg.isEmpty) BigInt(1) << width else neg.lowerbound
+      require(negLB > posLB, "BitSetRangeIterator: Internal sanity check")
+      remaining = remaining.subtract(BitSetRange(0, negLB, width))
 
-      BitSetRange(posLB, negLB - posLB, remaining.getWidth)
+      BitSetRange(posLB, negLB - posLB, width)
     }
   }
 }
