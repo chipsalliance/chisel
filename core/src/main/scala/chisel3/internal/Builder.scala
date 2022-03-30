@@ -104,17 +104,10 @@ private[chisel3] trait HasId extends InstanceId {
   private var prefix_seed: Prefix = Nil
 
   // Post-seed hooks called to carry the suggested seeds to other candidates as needed
-<<<<<<< HEAD
-  private val suggest_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
-
-  // Post-seed hooks called to carry the auto seeds to other candidates as needed
-  private val auto_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
-=======
   private var suggest_postseed_hooks: List[String => Unit] = Nil
 
   // Post-seed hooks called to carry the auto seeds to other candidates as needed
   private var auto_postseed_hooks: List[String => Unit] = Nil
->>>>>>> cf410180 (Use var List instead of ListBuffer to save memory (#2465))
 
   /** Takes the last seed suggested. Multiple calls to this function will take the last given seed, unless
     * this HasId is a module port (see overridden method in Data.scala).
@@ -132,13 +125,8 @@ private[chisel3] trait HasId extends InstanceId {
   // Bypass the overridden behavior of autoSeed in [[Data]], apply autoSeed even to ports
   private[chisel3] def forceAutoSeed(seed: String): this.type = {
     auto_seed = Some(seed)
-<<<<<<< HEAD
-    for(hook <- auto_postseed_hooks) { hook(seed) }
+    for(hook <- auto_postseed_hooks.reverse) { hook(seed) }
     prefix_seed = Builder.getPrefix()
-=======
-    for (hook <- auto_postseed_hooks.reverse) { hook(seed) }
-    prefix_seed = Builder.getPrefix
->>>>>>> cf410180 (Use var List instead of ListBuffer to save memory (#2465))
     this
   }
 
@@ -152,17 +140,10 @@ private[chisel3] trait HasId extends InstanceId {
     * @param seed The seed for the name of this component
     * @return this object
     */
-<<<<<<< HEAD
   def suggestName(seed: =>String): this.type = {
     if(suggested_seed.isEmpty) suggested_seed = Some(seed)
     prefix_seed = Builder.getPrefix()
-    for(hook <- suggest_postseed_hooks) { hook(seed) }
-=======
-  def suggestName(seed: => String): this.type = {
-    if (suggested_seed.isEmpty) suggested_seed = Some(seed)
-    prefix_seed = Builder.getPrefix
-    for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
->>>>>>> cf410180 (Use var List instead of ListBuffer to save memory (#2465))
+    for(hook <- suggest_postseed_hooks.reverse) { hook(seed) }
     this
   }
 
