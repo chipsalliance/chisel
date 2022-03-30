@@ -115,10 +115,10 @@ private[chisel3] trait HasId extends InstanceId {
   private var prefix_seed: Prefix = Nil
 
   // Post-seed hooks called to carry the suggested seeds to other candidates as needed
-  private val suggest_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String => Unit]
+  private var suggest_postseed_hooks: List[String => Unit] = Nil
 
   // Post-seed hooks called to carry the auto seeds to other candidates as needed
-  private val auto_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String => Unit]
+  private var auto_postseed_hooks: List[String => Unit] = Nil
 
   /** Takes the last seed suggested. Multiple calls to this function will take the last given seed, unless
     * this HasId is a module port (see overridden method in Data.scala).
@@ -136,7 +136,7 @@ private[chisel3] trait HasId extends InstanceId {
   // Bypass the overridden behavior of autoSeed in [[Data]], apply autoSeed even to ports
   private[chisel3] def forceAutoSeed(seed: String): this.type = {
     auto_seed = Some(seed)
-    for (hook <- auto_postseed_hooks) { hook(seed) }
+    for (hook <- auto_postseed_hooks.reverse) { hook(seed) }
     prefix_seed = Builder.getPrefix
     this
   }
@@ -154,7 +154,7 @@ private[chisel3] trait HasId extends InstanceId {
   def suggestName(seed: => String): this.type = {
     if (suggested_seed.isEmpty) suggested_seed = Some(seed)
     prefix_seed = Builder.getPrefix
-    for (hook <- suggest_postseed_hooks) { hook(seed) }
+    for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
     this
   }
 
@@ -211,8 +211,8 @@ private[chisel3] trait HasId extends InstanceId {
 
   private[chisel3] def hasAutoSeed: Boolean = auto_seed.isDefined
 
-  private[chisel3] def addSuggestPostnameHook(hook: String => Unit): Unit = suggest_postseed_hooks += hook
-  private[chisel3] def addAutoPostnameHook(hook:    String => Unit): Unit = auto_postseed_hooks += hook
+  private[chisel3] def addSuggestPostnameHook(hook: String => Unit): Unit = suggest_postseed_hooks ::= hook
+  private[chisel3] def addAutoPostnameHook(hook:    String => Unit): Unit = auto_postseed_hooks ::= hook
 
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
