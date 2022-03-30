@@ -192,13 +192,9 @@ private[chisel3] trait HasId extends InstanceId {
 
   private[chisel3] def hasAutoSeed: Boolean = auto_seed.isDefined
 
-<<<<<<< HEAD
-  private[chisel3] def addSuggestPostnameHook(hook: String=>Unit): Unit = suggest_postseed_hooks += hook
-  private[chisel3] def addAutoPostnameHook(hook: String=>Unit): Unit = auto_postseed_hooks += hook
-=======
-  private[chisel3] def addSuggestPostnameHook(hook: String => Unit): Unit = suggest_postseed_hooks ::= hook
-  private[chisel3] def addAutoPostnameHook(hook:    String => Unit): Unit = auto_postseed_hooks ::= hook
->>>>>>> cf410180 (Use var List instead of ListBuffer to save memory (#2465))
+
+  private[chisel3] def addSuggestPostnameHook(hook: String=>Unit): Unit = suggest_postseed_hooks ::= hook
+  private[chisel3] def addAutoPostnameHook(hook: String=>Unit): Unit = auto_postseed_hooks ::= hook
 
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
