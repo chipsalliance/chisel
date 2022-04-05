@@ -283,8 +283,12 @@ case class FirrtlCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation 
   /* Caching the hashCode for a large circuit is necessary due to repeated queries, e.g., in
    * [[Compiler.propagateAnnotations]]. Not caching the hashCode will cause severe performance degredations for large
    * [[Annotations]].
+   * @note Uses the hashCode of the name of the circuit. Creating a HashMap with different Circuits
+   *       that nevertheless have the same name is extremely uncommon so collisions are not a concern.
+   *       Include productPrefix so that this doesn't collide with other types that use a similar
+   *       strategy and hash the same String.
    */
-  override lazy val hashCode: Int = circuit.hashCode
+  override lazy val hashCode: Int = (this.productPrefix + circuit.main).hashCode
 
 }
 
