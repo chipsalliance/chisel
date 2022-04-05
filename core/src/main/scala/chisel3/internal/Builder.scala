@@ -35,7 +35,7 @@ private[chisel3] class Namespace(keywords: Set[String]) {
     // TODO what character set does FIRRTL truly support? using ANSI C for now
     def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
     def legal(c:      Char) = legalStart(c) || (c >= '0' && c <= '9')
-    val res = s.filter(legal)
+    val res = if (s.forall(legal)) s else s.filter(legal)
     val headOk = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
     if (headOk) res else s"_$res"
   }
@@ -45,12 +45,9 @@ private[chisel3] class Namespace(keywords: Set[String]) {
   // leadingDigitOk is for use in fields of Records
   def name(elem: String, leadingDigitOk: Boolean = false): String = {
     val sanitized = sanitize(elem, leadingDigitOk)
-    if (this contains sanitized) {
-      name(rename(sanitized))
-    } else {
-      names(sanitized) = 1
-      sanitized
-    }
+    val result = if (this.contains(sanitized)) rename(sanitized) else sanitized
+    names(result) = 1
+    result
   }
 }
 
