@@ -9,7 +9,6 @@ import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy._
 import chisel3.internal.PseudoModule
-import chisel3.internal.BaseModule.ModuleClone
 import firrtl.annotations.ReferenceTarget
 import scala.reflect.runtime.universe.TypeTag
 
@@ -53,10 +52,12 @@ object Select {
         d.commands.collect {
           case d: DefInstance =>
             d.id match {
-              case p: chisel3.internal.BaseModule.IsClone[_] =>
-                parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
+              case p: core.Clone[_] =>
+                parent._lookup { x =>
+                  new Instance(p).asInstanceOf[Instance[BaseModule]]
+                }
               case other: BaseModule =>
-                parent._lookup { x => other }
+                new Instance(parent._lookup { x => other }.proxy)
             }
         }
       case other => Nil
@@ -78,11 +79,13 @@ object Select {
         d.commands.flatMap {
           case d: DefInstance =>
             d.id match {
-              case p: chisel3.internal.BaseModule.IsClone[_] =>
-                val i = parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
+              case p: core.Clone[_] =>
+                val i = parent._lookup { x =>
+                  new Instance(p).asInstanceOf[Instance[BaseModule]]
+                }
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
               case other: BaseModule =>
-                val i = parent._lookup { x => other }
+                val i = new Instance(parent._lookup { x => other }.proxy)
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
             }
           case other => None
@@ -99,7 +102,10 @@ object Select {
     * @param root top of the hierarchy to search for instances/modules of given type
     */
   def allInstancesOf[T <: BaseModule: TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
-    val soFar = if (root.isA[T]) Seq(root.toInstance.asInstanceOf[Instance[T]]) else Nil
+    val soFar = root match {
+      case i: Instance[BaseModule] if i.isA[T] => Seq(i.asInstanceOf[Instance[T]])
+      case _ => Nil
+    }
     val allLocalInstances = instancesIn(root)
     soFar ++ (allLocalInstances.flatMap(allInstancesOf[T]))
   }
@@ -117,10 +123,9 @@ object Select {
         d.commands.collect {
           case i: DefInstance =>
             i.id match {
-              case p: chisel3.internal.BaseModule.IsClone[_] =>
-                parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
+              case p:     core.Clone[BaseModule] => p.toDefinition
               case other: BaseModule =>
-                parent._lookup { x => other.toDefinition }
+                other.toDefinition
             }
         }
       case other => Nil
@@ -148,11 +153,11 @@ object Select {
         d.commands.flatMap {
           case d: DefInstance =>
             d.id match {
-              case p: chisel3.internal.BaseModule.IsClone[_] =>
-                val d = parent._lookup { x => new Definition(Clone(p)).asInstanceOf[Definition[BaseModule]] }
+              case p: core.Clone[_] =>
+                val d = p.toDefinition
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
               case other: BaseModule =>
-                val d = parent._lookup { x => other.toDefinition }
+                val d = other.toDefinition
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
             }
           case other => None
@@ -246,7 +251,7 @@ object Select {
         d.commands.flatMap {
           case i: DefInstance =>
             i.id match {
-              case m: ModuleClone[_] if !m._madeFromDefinition => None
+              case m: experimental.hierarchy.ModuleClone[_] if !m._madeFromDefinition => None
               case _: PseudoModule =>
                 throw new Exception(
                   "instances, collectDeep, and getDeep are currently incompatible with Definition/Instance!"

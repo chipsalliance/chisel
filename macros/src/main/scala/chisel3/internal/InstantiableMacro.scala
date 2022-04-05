@@ -46,27 +46,27 @@ private[chisel3] object instantiableMacro {
       val (newClz, implicitClzs, tpname) = clz match {
         case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname + c.freshName())
-          val instname = TypeName(tpname + c.freshName())
+          val contextname = TypeName(tpname + c.freshName())
           val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
-            q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats } """,
+            q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$newStats } """,
             Seq(
-              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.Definition[$tpname[..$argTParams]]) { ..$extensions }""",
-              q"""implicit class $instname[..$tparams](___module: chisel3.experimental.hierarchy.Instance[$tpname[..$argTParams]]) { ..$extensions } """
+              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Hierarchy[$tpname[..$argTParams]]) { ..$extensions }""",
+              q"""implicit class $contextname[..$tparams](___module: chisel3.experimental.hierarchy.core.Context[$tpname[..$argTParams]]) { ..$extensions } """
             ),
             tpname
           )
         case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname + c.freshName())
-          val instname = TypeName(tpname + c.freshName())
+          val contextname = TypeName(tpname + c.freshName())
           val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
-            q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats }",
+            q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$newStats }",
             Seq(
-              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.Definition[$tpname[..$argTParams]]) { ..$extensions }""",
-              q"""implicit class $instname[..$tparams](___module: chisel3.experimental.hierarchy.Instance[$tpname[..$argTParams]]) { ..$extensions } """
+              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Hierarchy[$tpname[..$argTParams]]) { ..$extensions }""",
+              q"""implicit class $contextname[..$tparams](___module: chisel3.experimental.hierarchy.core.Context[$tpname[..$argTParams]]) { ..$extensions } """
             ),
             tpname
           )

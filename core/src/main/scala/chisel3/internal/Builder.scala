@@ -6,7 +6,6 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.{Clone, Instance}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -92,6 +91,14 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
   private[chisel3] var _circuit: Option[BaseModule] = None
+  private[chisel3] def getCircuit: Option[BaseModule] = _circuit.orElse(_parent match {
+    case None =>
+      this match {
+        case b: BaseModule => Some(b)
+        case other => None
+      }
+    case Some(p) => p.getCircuit
+  })
 
   private[chisel3] val _id: Long = Builder.idGen.next
 
@@ -637,10 +644,13 @@ private[chisel3] object Builder extends LazyLogging {
     * innermost element is of type HasId
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
+  import chisel3.experimental.hierarchy.core.{Instance}
+  import chisel3.experimental.hierarchy.{ModuleClone, ModuleTransparent}
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
     case (id: Instance[_]) =>
-      id.underlying match {
-        case Clone(m: internal.BaseModule.ModuleClone[_]) => namer(m.getPorts, prefix)
+      id.proxy match {
+        case m: ModuleClone[_]       => namer(m.getPorts, prefix)
+        case m: ModuleTransparent[_] => namer(m.proto, prefix)
         case _ =>
       }
     case (id: HasId) => namer(id, prefix)

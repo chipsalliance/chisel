@@ -6,6 +6,7 @@ import chisel3.{withClockAndReset, Module, ModuleAspect, RawModule}
 import chisel3.aop._
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
+import chisel3.experimental.hierarchy._
 import chisel3.stage.{ChiselOptions, DesignAnnotation}
 import firrtl.annotations.ModuleTarget
 import firrtl.stage.RunFirrtlTransformAnnotation

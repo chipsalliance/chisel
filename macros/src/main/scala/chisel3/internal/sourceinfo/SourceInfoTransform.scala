@@ -51,16 +51,8 @@ object DefinitionTransform
 class DefinitionTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($proto)($implicitSourceInfo, $implicitCompileOptions)"
-  }
-}
-
-object DefinitionWrapTransform
-// Module instantiation transform
-class DefinitionWrapTransform(val c: Context) extends SourceInfoTransformMacro {
-  import c.universe._
-  def wrap[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
-    q"$thisObj.do_wrap($proto)($implicitSourceInfo)"
+    val tt: Type = weakTypeOf[T]
+    q"$thisObj.do_apply($proto)(implicitly[_root_.chisel3.experimental.hierarchy.core.ProxyDefiner[$tt]])"
   }
 }
 
@@ -70,7 +62,18 @@ object InstanceTransform
 class InstanceTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](definition: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($definition)($implicitSourceInfo, $implicitCompileOptions)"
+    val tt: Type = weakTypeOf[T]
+    q"$thisObj.do_apply($definition)(implicitly[_root_.chisel3.experimental.hierarchy.core.ProxyInstancer[$tt]])"
+  }
+}
+
+// Workaround for https://github.com/sbt/sbt/issues/3966
+object WithContextTransform
+class WithContextTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def withContext[T: c.WeakTypeTag](definition: c.Tree)(fs: c.Tree*): c.Tree = {
+    val tt: Type = weakTypeOf[T]
+    q"$thisObj.do_withContext($definition)(..$fs)(implicitly[_root_.chisel3.experimental.hierarchy.core.ProxyInstancer[$tt]])"
   }
 }
 
