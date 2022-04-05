@@ -183,7 +183,10 @@ private[chisel3] trait HasId extends InstanceId {
       */
     def buildName(seed: String, prefix: Prefix): String = {
       val builder = new StringBuilder()
-      prefix.foreach(builder ++= _ + "_")
+      prefix.foreach { p =>
+        builder ++= p
+        builder += '_'
+      }
       builder ++= seed
       builder.toString
     }
