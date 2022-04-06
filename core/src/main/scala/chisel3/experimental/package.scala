@@ -57,6 +57,34 @@ package object experimental {
   type Direction = ActualDirection
   val Direction = ActualDirection
 
+  /** The same as [[IO]] except there is no prefix for the name of the val */
+  def FlatIO[T <: Record](gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = noPrefix {
+    import dataview._
+    def coerceDirection(d: Data) = {
+      import chisel3.{SpecifiedDirection => SD}
+      DataMirror.specifiedDirectionOf(gen) match {
+        case SD.Flip   => Flipped(d)
+        case SD.Input  => Input(d)
+        case SD.Output => Output(d)
+        case _         => d
+      }
+    }
+    val ports: Seq[Data] =
+      gen.elements.toSeq.reverse.map {
+        case (name, data) =>
+          val p = IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
+          p.suggestName(name)
+          p
+
+      }
+
+    implicit val dv: DataView[Seq[Data], T] = DataView.mapping(
+      _ => chiselTypeClone(gen).asInstanceOf[T],
+      (seq, rec) => seq.zip(rec.elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
+    )
+    ports.viewAs[T]
+  }
+
   implicit class ChiselRange(val sc: StringContext) extends AnyVal {
 
     import scala.language.experimental.macros
