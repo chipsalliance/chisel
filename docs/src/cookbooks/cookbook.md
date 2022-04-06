@@ -26,6 +26,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * [How do I unpack a value ("reverse concatenation") like in Verilog?](#how-do-i-unpack-a-value-reverse-concatenation-like-in-verilog)
 * [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
+* [How do I create I/O without a prefix?](#how-do-i-create-io-without-a-prefix)
 * [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
 * Predictable Naming
   * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
@@ -544,6 +545,50 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 
   out := in.getOrElse(false.B)
 }
+```
+
+### How do I create I/O without a prefix?
+
+In most cases, you can simply call `IO` multiple times:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyModule extends Module {
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+
+  out := in +% 1.U
+}
+```
+
+```scala mdoc:verilog
+getVerilogString(new MyModule)
+```
+
+If you have a `Bundle` from which you would like to create ports without the
+normal `val` prefix, you can use `FlatIO`:
+
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.experimental.FlatIO
+
+class MyBundle extends Bundle {
+  val foo = Input(UInt(8.W))
+  val bar = Output(UInt(8.W))
+}
+
+class MyModule extends Module {
+  val io = FlatIO(new MyBundle)
+
+  io.bar := io.foo +% 1.U
+}
+```
+
+Note that `io_` is nowhere to be seen!
+
+```scala mdoc:verilog
+getVerilogString(new MyModule)
 ```
 
 ### How do I minimize the number of bits used in an output vector?
