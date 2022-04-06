@@ -141,11 +141,16 @@ case class DontCareBinding() extends UnconstrainedBinding
 private[chisel3] case class ViewBinding(target: Element) extends UnconstrainedBinding
 
 /** Binding for Aggregate Views
-  * @param childMap Mapping from children of this view to each child's target
+  * @param childMap Mapping from children of this view to their respective targets
   * @param target Optional Data this Aggregate views if the view is total and the target is a Data
+  * @note For any Elements in the childMap, both key and value must be Elements
+  * @note The types of key and value need not match for the top Data in a total view of type
+  *       Aggregate
   */
-private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Element], target: Option[Data])
-    extends UnconstrainedBinding
+private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Data]) extends UnconstrainedBinding {
+  // Helper lookup function since types of Elements always match
+  def lookup(key: Element): Option[Element] = childMap.get(key).map(_.asInstanceOf[Element])
+}
 
 /** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
 private[chisel3] case object CrossModuleBinding extends TopBinding {
