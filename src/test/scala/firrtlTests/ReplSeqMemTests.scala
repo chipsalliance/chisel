@@ -693,4 +693,16 @@ circuit Top :
          |""".stripMargin
     compileAndEmit(CircuitState(parse(input), ChirrtlForm))
   }
+
+  "MemPorts" should "serialize in a deterministic order regardless" in {
+    def compare(seq1: Seq[MemPort]) {
+      val m1 = MemConf("memconf", 8, 16, seq1.map(s => s -> 1).toMap, None)
+      val m2 = MemConf("memconf", 8, 16, seq1.reverse.map(s => s -> 1).toMap, None)
+      m1.toString should be(m2.toString)
+    }
+
+    compare(Seq(ReadPort, WritePort))
+    compare(Seq(MaskedWritePort, ReadWritePort))
+    compare(Seq(MaskedReadWritePort, WritePort, ReadWritePort))
+  }
 }
