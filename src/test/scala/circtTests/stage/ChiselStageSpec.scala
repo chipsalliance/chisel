@@ -6,7 +6,8 @@ import chisel3.stage.ChiselGeneratorAnnotation
 
 import circt.stage.{
   ChiselStage,
-  FirtoolOption
+  FirtoolOption,
+  PreserveAggregate
 }
 
 import firrtl.annotations.DeletedAnnotation
@@ -40,6 +41,16 @@ object ChiselStageSpec {
     out := in(sel)
   }
 
+  class BazBundle extends Bundle {
+    val a = Input(UInt(3.W))
+    val b = Input(UInt(4.W))
+  }
+
+  class Baz extends RawModule {
+    val in = IO(Input(new BazBundle))
+    val out = IO(Output(new BazBundle))
+    out := in
+  }
 }
 
 class ChiselStageSpec extends AnyFunSpec with Matchers {
@@ -124,6 +135,24 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
           case EmittedVerilogCircuitAnnotation(a) => a
         }.get
         .value should include ("case")
+    }
+
+    it("should support aggregate preservation mode") {
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target", "systemverilog",
+        "--target-dir", targetDir.toString
+      )
+
+      info(s"output contains a verilog struct using preserve-aggregate option")
+      (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Baz),
+                           PreserveAggregate))
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }.get
+        .value should include ("struct")
     }
   }
 

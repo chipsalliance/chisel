@@ -19,7 +19,7 @@ trait CLI { this: Shell =>
   parser.note("CIRCT (MLIR FIRRTL Compiler) options")
   Seq(
     CIRCTTargetAnnotation,
-    DisableLowerTypes,
+    PreserveAggregate,
     ChiselGeneratorAnnotation,
     CIRCTHandover
   ).foreach(_.addOptions(parser))

@@ -126,7 +126,8 @@ class CIRCT extends Phase {
         circtOptions.firtoolOptions ++
         logLevel.toCIRCTOptions ++
         /* The following options are on by default, so we disable them if they are false. */
-        (circtOptions.disableLowerTypes).option("-lower-types=0") ++
+        (circtOptions.preserveAggregate).option("-preserve-aggregate=1") ++
+        (circtOptions.preserveAggregate).option("-preserve-public-types=0") ++
         (!inferReadWrite).option("-infer-rw=0") ++
         (!imcp).option("-imcp=0") ++
         /* The following options are off by default, so we enable them if they are true. */

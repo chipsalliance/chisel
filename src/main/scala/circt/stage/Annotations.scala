@@ -20,15 +20,14 @@ import firrtl.stage.FirrtlOptions
 /** An option consumed by [[circt.stage.CIRCTStage CIRCTStage]]*/
 sealed trait CIRCTOption extends Unserializable { this: Annotation => }
 
-/** Turns off type lowering in CIRCT. The option `-enable-lower-types` is passed by default to CIRCT and this annotation
-  * turns that off.
+/** Preserve passive aggregate types in CIRCT.
   */
-case object DisableLowerTypes extends NoTargetAnnotation with CIRCTOption with HasShellOptions {
+case object PreserveAggregate extends NoTargetAnnotation with CIRCTOption with HasShellOptions {
 
   override def options = Seq(
     new ShellOption[Unit](
-      longOption = "disable-lower-types",
-      toAnnotationSeq = _ => Seq(DisableLowerTypes),
+      longOption = "preserve-aggregate",
+      toAnnotationSeq = _ => Seq(PreserveAggregate),
       helpText = "Do not lower aggregate types to ground types"
     )
   )
