@@ -97,10 +97,15 @@ package object dataview {
     val targetContains:  Data => Boolean = implicitly[DataProduct[T]].dataSet(target)
 
     // Resulting bindings for each Element of the View
-    val childBindings =
+    // Kept separate from Aggregates for totality checking
+    val elementBindings =
       new mutable.HashMap[Data, mutable.ListBuffer[Element]] ++
         viewFieldLookup.view.collect { case (elt: Element, _) => elt }
           .map(_ -> new mutable.ListBuffer[Element])
+
+    // Record any Aggregates that correspond 1:1 for reification
+    // Using Data instead of Aggregate to avoid unnecessary checks
+    val aggregateMappings = mutable.ArrayBuffer.empty[(Data, Data)]
 
     def viewFieldName(d: Data): String =
       viewFieldLookup.get(d).map(_ + " ").getOrElse("") + d.toString
@@ -130,7 +135,7 @@ package object dataview {
           s"View field $fieldName has width ${vwidth} that is incompatible with target value $tex's width ${twidth}"
         )
       }
-      childBindings(vex) += tex
+      elementBindings(vex) += tex
     }
 
     mapping.foreach {
@@ -145,7 +150,7 @@ package object dataview {
         }
         getMatchedFields(aa, ba).foreach {
           case (aelt: Element, belt: Element) => onElt(aelt, belt)
-          case _ => // Ignore matching of Aggregates
+          case (t, v) => aggregateMappings += (v -> t)
         }
     }
 
@@ -155,7 +160,7 @@ package object dataview {
 
     val targetSeen: Option[mutable.Set[Data]] = if (total) Some(mutable.Set.empty[Data]) else None
 
-    val resultBindings = childBindings.map {
+    val elementResult = elementBindings.map {
       case (data, targets) =>
         val targetsx = targets match {
           case collection.Seq(target: Element) => target
@@ -183,23 +188,25 @@ package object dataview {
     }
 
     view match {
-      case elt: Element   => view.bind(ViewBinding(resultBindings(elt)))
+      case elt: Element   => view.bind(ViewBinding(elementResult(elt)))
       case agg: Aggregate =>
-        // We record total Data mappings to provide a better .toTarget
-        val topt = target match {
-          case d: Data if total => Some(d)
+        // Don't forget the potential mapping of the view to the target!
+        target match {
+          case d: Data if total =>
+            aggregateMappings += (agg -> d)
           case _ =>
-            // Record views that don't have the simpler .toTarget for later renaming
-            Builder.unnamedViews += view
-            None
         }
-        // TODO We must also record children as unnamed, some could be namable but this requires changes to the Binding
+
+        val fullResult = elementResult ++ aggregateMappings
+
+        // We need to record any Aggregates that don't have a 1-1 mapping (including the view
+        // itself)
         getRecursiveFields.lazily(view, "_").foreach {
-          case (agg: Aggregate, _) if agg != view =>
-            Builder.unnamedViews += agg
+          case (unnamed: Aggregate, _) if !fullResult.contains(unnamed) =>
+            Builder.unnamedViews += unnamed
           case _ => // Do nothing
         }
-        agg.bind(AggregateViewBinding(resultBindings, topt))
+        agg.bind(AggregateViewBinding(fullResult))
     }
   }
 
@@ -208,8 +215,8 @@ package object dataview {
   private def unfoldView(elt: Element): LazyList[Element] = {
     def rec(e: Element): LazyList[Element] = e.topBindingOpt match {
       case Some(ViewBinding(target)) => target #:: rec(target)
-      case Some(AggregateViewBinding(mapping, _)) =>
-        val target = mapping(e)
+      case Some(avb: AggregateViewBinding) =>
+        val target = avb.lookup(e).get
         target #:: rec(target)
       case Some(_) | None => LazyList.empty
     }
@@ -246,15 +253,11 @@ package object dataview {
     */
   private[chisel3] def reifySingleData(data: Data): Option[Data] = {
     val candidate: Option[Data] =
-      data.binding.collect { // First check if this is a total mapping of an Aggregate
-        case AggregateViewBinding(_, Some(t)) => t
-      }.orElse { // Otherwise look via top binding
-        data.topBindingOpt match {
-          case None                                  => None
-          case Some(ViewBinding(target))             => Some(target)
-          case Some(AggregateViewBinding(lookup, _)) => lookup.get(data)
-          case Some(_)                               => None
-        }
+      data.topBindingOpt match {
+        case None                               => None
+        case Some(ViewBinding(target))          => Some(target)
+        case Some(AggregateViewBinding(lookup)) => lookup.get(data)
+        case Some(_)                            => None
       }
     candidate.flatMap { d =>
       // Candidate may itself be a view, keep tracing in those cases
