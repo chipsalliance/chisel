@@ -173,12 +173,12 @@ object Lookupable {
     // We have to lookup the target(s) of the view since they may need to be underlying into the current context
     val newBinding = data.topBinding match {
       case ViewBinding(target) => ViewBinding(lookupData(reify(target)))
-      case avb @ AggregateViewBinding(map, targetOpt) =>
+      case avb @ AggregateViewBinding(map) =>
         data match {
-          case _: Element   => ViewBinding(lookupData(reify(map(data))))
+          case e: Element   => ViewBinding(lookupData(reify(avb.lookup(e).get)))
           case _: Aggregate =>
             // Provide a 1:1 mapping if possible
-            val singleTargetOpt = targetOpt.filter(_ => avb == data.binding.get).flatMap(reifySingleData)
+            val singleTargetOpt = map.get(data).filter(_ => avb == data.binding.get).flatMap(reifySingleData)
             singleTargetOpt match {
               case Some(singleTarget) => // It is 1:1!
                 // This is a little tricky because the values in newMap need to point to Elements of newTarget
@@ -187,15 +187,15 @@ object Lookupable {
                   case (res, from) =>
                     (res: Data) -> mapRootAndExtractSubField(map(from), _ => newTarget)
                 }.toMap
-                AggregateViewBinding(newMap, Some(newTarget))
+                AggregateViewBinding(newMap + (result -> newTarget))
 
               case None => // No 1:1 mapping so we have to do a flat binding
                 // Just remap each Element of this aggregate
                 val newMap = coiterate(result, data).map {
                   // Upcast res to Data since Maps are invariant in the Key type parameter
-                  case (res, from) => (res: Data) -> lookupData(reify(map(from)))
+                  case (res, from) => (res: Data) -> lookupData(reify(avb.lookup(from).get))
                 }.toMap
-                AggregateViewBinding(newMap, None)
+                AggregateViewBinding(newMap)
             }
         }
     }
@@ -204,8 +204,8 @@ object Lookupable {
     // We must also mark non-1:1 and child Aggregates in the view for renaming
     newBinding match {
       case _: ViewBinding => // Do nothing
-      case AggregateViewBinding(_, target) =>
-        if (target.isEmpty) {
+      case AggregateViewBinding(childMap) =>
+        if (!childMap.contains(result)) {
           Builder.unnamedViews += result
         }
         // Binding does not capture 1:1 for child aggregates views
