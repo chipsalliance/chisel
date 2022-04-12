@@ -105,11 +105,10 @@ private[chisel3] trait HasId extends InstanceId {
   // Contains the seed computed automatically by the compiler plugin
   private var auto_seed: Option[String] = None
 
-  // Prefix at time when this class is constructed
-  private val construction_prefix: Prefix = Builder.getPrefix
-
-  // Prefix when the latest [[suggestSeed]] or [[autoSeed]] is called
-  private var prefix_seed: Prefix = Nil
+  // Prefix for use in naming
+  // - Defaults to prefix at time when object is created
+  // - Overridden when [[suggestSeed]] or [[autoSeed]] is called
+  private var naming_prefix: Prefix = Builder.getPrefix
 
   // Post-seed hooks called to carry the suggested seeds to other candidates as needed
   private var suggest_postseed_hooks: List[String => Unit] = Nil
@@ -134,7 +133,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def forceAutoSeed(seed: String): this.type = {
     auto_seed = Some(seed)
     for (hook <- auto_postseed_hooks.reverse) { hook(seed) }
-    prefix_seed = Builder.getPrefix
+    naming_prefix = Builder.getPrefix
     this
   }
 
@@ -150,7 +149,7 @@ private[chisel3] trait HasId extends InstanceId {
     */
   def suggestName(seed: => String): this.type = {
     if (suggested_seed.isEmpty) suggested_seed = Some(seed)
-    prefix_seed = Builder.getPrefix
+    naming_prefix = Builder.getPrefix
     for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
     this
   }
@@ -189,12 +188,12 @@ private[chisel3] trait HasId extends InstanceId {
     }
 
     if (hasSeed) {
-      Some(buildName(seedOpt.get, prefix_seed.reverse))
+      Some(buildName(seedOpt.get, naming_prefix.reverse))
     } else {
       defaultSeed.map { default =>
         defaultPrefix match {
-          case Some(p) => buildName(default, p :: construction_prefix.reverse)
-          case None    => buildName(default, construction_prefix.reverse)
+          case Some(p) => buildName(default, p :: naming_prefix.reverse)
+          case None    => buildName(default, naming_prefix.reverse)
         }
       }
     }
@@ -222,6 +221,8 @@ private[chisel3] trait HasId extends InstanceId {
       val candidate_name = _computeName(prefix, Some(default)).get
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
+      // Clear naming prefix to free memory
+      naming_prefix = Nil
     }
 
   private var _ref: Option[Arg] = None
