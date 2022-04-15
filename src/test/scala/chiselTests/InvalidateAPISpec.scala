@@ -214,4 +214,12 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
     firrtlOutput should include("is invalid")
   }
+
+  property("a clock should be able to be connected to a DontCare") {
+    class ClockConnectedToDontCare extends Module {
+      val io = IO(new Bundle { val foo = Output(Clock()) })
+      io.foo := DontCare
+    }
+    myGenerateFirrtl(new ClockConnectedToDontCare) should include("io.foo is invalid")
+  }
 }
