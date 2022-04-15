@@ -204,6 +204,7 @@ package internal {
   object BaseModule {
 
     import chisel3.experimental.hierarchy._
+
     /** Record type returned by CloneModuleAsRecord
       *
       * @note These are not true Data (the Record doesn't correspond to anything in the emitted
