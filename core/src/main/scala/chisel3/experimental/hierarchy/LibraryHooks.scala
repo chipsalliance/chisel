@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental.hierarchy.core
+package chisel3.experimental.hierarchy
 
 import chisel3.experimental.hierarchy.core.Underlying
 import scala.annotation.implicitNotFound
