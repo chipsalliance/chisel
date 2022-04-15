@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental.hierarchy
+package chisel3.experimental.hierarchy.core
 
 import chisel3._
 import scala.collection.mutable.{HashMap, HashSet}

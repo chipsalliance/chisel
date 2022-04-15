@@ -201,7 +201,7 @@ package experimental {
 
 package internal {
   import chisel3.experimental.BaseModule
-  import chisel3.experimental.hierarchy.{Clone, IsInstantiable, Proto}
+  import chisel3.experimental.hierarchy.core.{Clone, IsInstantiable, Proto}
 
   object BaseModule {
 
@@ -392,11 +392,11 @@ package internal {
 
 package experimental {
 
-  import chisel3.experimental.hierarchy.{IsInstantiable, Proto}
+  import chisel3.experimental.hierarchy.core.{IsInstantiable, Proto}
 
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
-      import chisel3.experimental.hierarchy.{Definition, Instance}
+      import chisel3.experimental.hierarchy.core.{Definition, Instance}
       def toInstance:   Instance[T] = new Instance(Proto(b))
       def toDefinition: Definition[T] = new Definition(Proto(b))
     }
