@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental.hierarchy
+package chisel3.experimental.hierarchy.core
 
 /** A User-extendable trait to mark metadata-containers, e.g. parameter case classes, as valid to return unchanged
   * from an instance.

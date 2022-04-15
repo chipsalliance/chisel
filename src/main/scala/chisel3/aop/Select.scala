@@ -7,7 +7,7 @@ import chisel3.internal.{HasId}
 import chisel3.experimental.BaseModule
 import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
-import chisel3.experimental.hierarchy._
+import chisel3.experimental.hierarchy.core._
 import chisel3.internal.PseudoModule
 import chisel3.internal.BaseModule.ModuleClone
 import firrtl.annotations.ReferenceTarget
