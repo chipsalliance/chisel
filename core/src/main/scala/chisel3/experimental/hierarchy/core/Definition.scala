@@ -9,7 +9,6 @@ import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
 import chisel3.experimental.BaseModule
-import chisel3.internal.BaseModule.IsClone
 import firrtl.annotations.{IsModule, ModuleTarget}
 
 /** User-facing Definition type.
@@ -50,7 +49,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
     case value: BaseModule =>
-      val newChild = Module.do_pseudo_apply(new internal.BaseModule.DefinitionClone(value))(
+      val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value))(
         chisel3.internal.sourceinfo.UnlocatableSourceInfo,
         chisel3.ExplicitCompileOptions.Strict
       )
