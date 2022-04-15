@@ -2,8 +2,6 @@
 
 package chisel3.experimental.hierarchy.core
 
-import chisel3.internal.BaseModule.IsClone
-
 /** Represents the underlying implementation of a Definition or Instance */
 sealed trait Underlying[+T]
 

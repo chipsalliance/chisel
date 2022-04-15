@@ -4,7 +4,7 @@ package chisel3.experimental.hierarchy.core
 
 import chisel3.experimental.BaseModule
 import chisel3.internal.sourceinfo.SourceInfo
-import chisel3.internal.BaseModule.{InstanceClone, InstantiableClone, IsClone, ModuleClone}
+import chisel3.experimental.hierarchy.{InstanceClone, InstantiableClone, ModuleClone}
 
 import scala.annotation.implicitNotFound
 import scala.collection.mutable.HashMap
@@ -244,7 +244,7 @@ object Lookupable {
     // Recursive call
     def rec[A <: BaseModule](m: A): Underlying[A] = {
       def clone(x: A, p: Option[BaseModule], name: () => String): Underlying[A] = {
-        val newChild = Module.do_pseudo_apply(new internal.BaseModule.InstanceClone(x, name))
+        val newChild = Module.do_pseudo_apply(new experimental.hierarchy.InstanceClone(x, name))
         newChild._parent = p
         Clone(newChild)
       }
