@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental.hierarchy.core
+package chisel3.experimental.hierarchy
 
+import chisel3.experimental.hierarchy.core.Underlying
 import scala.annotation.implicitNotFound
 
 @implicitNotFound("These functions are only for building hierarchy-compatible Chisel libraries! Users beware!")
