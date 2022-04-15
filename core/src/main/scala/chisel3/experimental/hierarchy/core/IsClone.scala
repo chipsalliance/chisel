@@ -2,7 +2,6 @@
 
 package chisel3.experimental.hierarchy.core
 
-
 /** Represents a clone of an underlying object. This is used to support CloneModuleAsRecord and Instance/Definition.
   *
   * @note We don't actually "clone" anything in the traditional sense but is a placeholder so we lazily clone internal state
