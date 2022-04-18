@@ -18,4 +18,7 @@ Please select the item best describing the issue in each category and delete the
     - OS: `Linux knight 4.4.0-92-generic #115-Ubuntu SMP Thu Aug 10 09:04:33 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux`
 -->
 
+**Other Information**
+<!-- include detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, Scastie (https://scastie.scala-lang.org/KtzZQ3nFTea9KoNh0tRqtg) -->
+
 **What is the use case for changing the behavior?**
