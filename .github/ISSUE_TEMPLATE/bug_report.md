@@ -4,8 +4,6 @@ Please select the item best describing the issue in each category and delete the
 -->
 **Type of issue**: bug report
 
-<!-- choose one -->
-**Impact**: no functional change | API addition (no impact on existing code) | API modification | unknown
 
 **Other information**
  <!-- include detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, Scastie (https://scastie.scala-lang.org/KtzZQ3nFTea9KoNh0tRqtg) -->
