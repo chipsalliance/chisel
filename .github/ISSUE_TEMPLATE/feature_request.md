@@ -1,6 +1,6 @@
 <!-- Note: for support questions, you are strongly advised to use [Stack Overflow](https://stackoverflow.com/questions/tagged/chisel). -->
 
-**Type of issue**: Feature request
+**Type of issue**: Feature Request
 
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
