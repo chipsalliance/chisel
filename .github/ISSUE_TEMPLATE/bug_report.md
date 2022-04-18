@@ -4,8 +4,6 @@ Please select the item best describing the issue in each category and delete the
 -->
 **Type of issue**: bug report
 
-
-
 **Please provide the steps to reproduce the problem:**
 
 **What is the current behavior?**
