@@ -2,112 +2,41 @@
 
 package chisel3.experimental.hierarchy.core
 
-import scala.language.experimental.macros
-import chisel3._
-
 import scala.collection.mutable.HashMap
-import chisel3.internal.{Builder, DynamicContext}
-import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
-import chisel3.experimental.BaseModule
-import firrtl.annotations.{IsModule, ModuleTarget}
+import scala.reflect.runtime.universe.TypeTag
+import scala.language.experimental.macros
+import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
+import java.util.IdentityHashMap
 
-/** User-facing Definition type.
-  * Represents a definition of an object of type [[A]] which are marked as @instantiable
-  * Can be created using Definition.apply method.
+/** Represents a Definition of a proto, at the root of a hierarchical path
   *
-  * These definitions are then used to create multiple [[Instance]]s.
-  *
-  * @param underlying The internal representation of the definition, which may be either be directly the object, or a clone of an object
+  * @param proxy underlying representation of proto with correct internal state
   */
-final case class Definition[+A] private[chisel3] (private[chisel3] underlying: Underlying[A])
-    extends IsLookupable
-    with SealedHierarchy[A] {
-
-  /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
-    * Instead, mark the field you are accessing with [[@public]]
-    *
-    * Given a selector function (that) which selects a member from the original, return the
-    *   corresponding member from the instance.
-    *
-    * Our @instantiable and @public macros generate the calls to this apply method
-    *
-    * By calling this function, we summon the proper Lookupable typeclass from our implicit scope.
-    *
-    * @param that a user-specified lookup function
-    * @param lookup typeclass which contains the correct lookup function, based on the types of A and B
-    * @param macroGenerated a value created in the macro, to make it harder for users to use this API
-    */
-  def _lookup[B, C](
-    that: A => B
-  )(
-    implicit lookup: Lookupable[B],
-    macroGenerated:  chisel3.internal.MacroGenerated
-  ): lookup.C = {
-    lookup.definitionLookup(that, this)
-  }
-
-  /** @return the context of any Data's return from inside the instance */
-  private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
-    case value: BaseModule =>
-      val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value))(
-        chisel3.internal.sourceinfo.UnlocatableSourceInfo,
-        chisel3.ExplicitCompileOptions.Strict
-      )
-      newChild._circuit = value._circuit.orElse(Some(value))
-      newChild._parent = None
-      Some(newChild)
-    case value: IsInstantiable => None
-  }
-
-  override def toDefinition: Definition[A] = this
-  override def toInstance:   Instance[A] = new Instance(underlying)
-
+final case class Definition[+P] private[chisel3] (private[chisel3] proxy: DefinitionProxy[P]) extends Root[P] {
+  override def toDefinition = this
 }
 
-/** Factory methods for constructing [[Definition]]s */
-object Definition extends SourceInfoDoc {
-  implicit class DefinitionBaseModuleExtensions[T <: BaseModule](d: Definition[T]) {
-
-    /** If this is an instance of a Module, returns the toTarget of this instance
-      * @return target of this instance
-      */
-    def toTarget: ModuleTarget = d.proto.toTarget
-
-    /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
-      * @return absoluteTarget of this instance
-      */
-    def toAbsoluteTarget: IsModule = d.proto.toAbsoluteTarget
+object Definition {
+  def apply[P](proto: => P): Definition[P] =
+    macro DefinitionTransform.apply[P]
+  def do_apply[P](proto: => P)(implicit extensions: HierarchicalExtensions[P,_]): Definition[P] = {
+    (new Definition(extensions.buildDefinition(proto)))
   }
-
-  /** A construction method to build a Definition of a Module
-    *
-    * @param proto the Module being defined
-    *
-    * @return the input module as a Definition
-    */
-  def apply[T <: BaseModule with IsInstantiable](proto: => T): Definition[T] = macro DefinitionTransform.apply[T]
-
-  /** A construction method to build a Definition of a Module
-    *
-    * @param bc the Module being defined
-    *
-    * @return the input module as a Definition
-    */
-  def do_apply[T <: BaseModule with IsInstantiable](
-    proto: => T
-  )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
-  ): Definition[T] = {
-    val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
-    Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
-    dynamicContext.inDefinition = true
-    val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
-    Builder.components ++= ir.components
-    Builder.annotations ++= ir.annotations
-    module._circuit = Builder.currentModule
-    dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-    new Definition(Proto(module))
-  }
-
-}
+  //OLD
+  //def withContext[P](proto: => P)(fs: (Context[P] => Unit)*): Definition[P] =
+  //  macro WithContextDefinitionTransform.withContext[P]
+  //def do_withContext[P](
+  //  proto: => P
+  //)(fs:         (Context[P] => Unit)*
+  //)(
+  //  implicit buildable: ProxyDefiner[P]
+  //): Definition[P] = {
+  //  val d = new Definition(buildable(proto))
+  //  val context = d.proxy.toContext
+  //  fs.foreach { f =>
+  //    f(context)
+  //  }
+  //  //println(i.proxy.edits.values())
+  //  d
+  //}
+} 

@@ -133,8 +133,8 @@ trait RootProxy[+P] extends HierarchicalProxy[P] {
 }
 
 
-trait DeclarationProxy[+P] extends RootProxy[P] {
-  def toInterfaceProxy: InterfaceProxy[P]
+trait DefinitionProxy[+P] extends RootProxy[P] {
+  //def toInterfaceProxy: InterfaceProxy[P]
   def builder: Option[ImplementationBuilder[P]]
 
   private var canInstantiateVar = true
@@ -143,45 +143,45 @@ trait DeclarationProxy[+P] extends RootProxy[P] {
     canInstantiateVar = false
   }
   def predecessorOption = None
-  override def toHierarchy: Declaration[P] = new Declaration(this)
+  override def toHierarchy: Definition[P] = new Definition(this)
 }
 
-trait InterfaceProxy[+P] extends RootProxy[P] {
-  def predecessor: DeclarationProxy[P]
-  def toImplementationProxy: ImplementationProxy[P]
+//trait InterfaceProxy[+P] extends RootProxy[P] {
+//  def predecessor: DeclarationProxy[P]
+//  def toImplementationProxy: ImplementationProxy[P]
+//
+//  def proto: P = predecessor.proto
+//  def builder: Option[ImplementationBuilder[P]] = predecessor.builder
+//  def predecessorOption = Some(predecessor)
+//  def toHierarchy: Interface[P] = new Interface(this)
+//  def canInstantiate: Boolean = true
+//}
+//
+//trait ImplementationProxy[+P] extends RootProxy[P] {
+//  def predecessor: InterfaceProxy[P]
+//  def toDefinitionProxy: DefinitionProxy[P]
+//
+//  def proto: P = predecessor.proto
+//  def builder: Option[ImplementationBuilder[P]] = None
+//  def predecessorOption = Some(predecessor)
+//  def toHierarchy: Implementation[P] = new Implementation(this)
+//  def canInstantiate: Boolean = true
+//}
+//
+//trait DefinitionProxy[+P] extends RootProxy[P] {
+//  def predecessor: ImplementationProxy[P]
+//
+//  def proto: P = predecessor.proto
+//  def builder: Option[ImplementationBuilder[P]] = None
+//  def predecessorOption = Some(predecessor)
+//  def toHierarchy: Definition[P] = new Definition(this)
+//  //override def toSetter: HierarchySetter[P] = HierarchySetter(this)
+//  def canInstantiate: Boolean = true
+//}
 
-  def proto: P = predecessor.proto
-  def builder: Option[ImplementationBuilder[P]] = predecessor.builder
-  def predecessorOption = Some(predecessor)
-  def toHierarchy: Interface[P] = new Interface(this)
-  def canInstantiate: Boolean = true
-}
-
-trait ImplementationProxy[+P] extends RootProxy[P] {
-  def predecessor: InterfaceProxy[P]
-  def toDefinitionProxy: DefinitionProxy[P]
-
-  def proto: P = predecessor.proto
-  def builder: Option[ImplementationBuilder[P]] = None
-  def predecessorOption = Some(predecessor)
-  def toHierarchy: Implementation[P] = new Implementation(this)
-  def canInstantiate: Boolean = true
-}
-
-trait DefinitionProxy[+P] extends RootProxy[P] {
-  def predecessor: ImplementationProxy[P]
-
-  def proto: P = predecessor.proto
-  def builder: Option[ImplementationBuilder[P]] = None
-  def predecessorOption = Some(predecessor)
-  def toHierarchy: Definition[P] = new Definition(this)
-  //override def toSetter: HierarchySetter[P] = HierarchySetter(this)
-  def canInstantiate: Boolean = true
-}
-
-/** DefinitionProxy implementation for all proto's which extend IsInstantiable
+/** DefinitionProxy implementation for all proto's which extend IsWrappable
   *
-  * TODO Move to IsInstantiable.scala
+  * TODO Move to IsWrappable.scala
   * @param proto underlying object we are creating a proxy of
   */
 //final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P] {
@@ -189,20 +189,20 @@ trait DefinitionProxy[+P] extends RootProxy[P] {
 //  def buildImplementation: DefinitionProxy[P] = this
 //}
 
-/** Transparent implementation for all proto's which extend IsInstantiable
+/** Transparent implementation for all proto's which extend IsWrappable
   *
-  * Note: Clone is not needed for IsInstantiables, as they cannot be instantiated via Instance(..)
+  * Note: Clone is not needed for IsWrappables, as they cannot be instantiated via Instance(..)
   *
-  * TODO Move to IsInstantiable.scala
+  * TODO Move to IsWrappable.scala
   * @param proto underlying object we are creating a proxy of
   */
 //final case class InstantiableTransparent[P](suffixProxy: InstantiableDefinition[P]) extends Transparent[P]
 
-/** Mock implementation for all proto's which extend IsInstantiable
+/** Mock implementation for all proto's which extend IsWrappable
   *
-  * Note: Clone is not needed for IsInstantiables, as they cannot be instantiated via Instance(..)
+  * Note: Clone is not needed for IsWrappables, as they cannot be instantiated via Instance(..)
   *
-  * TODO Move to IsInstantiable.scala
+  * TODO Move to IsWrappable.scala
   * @param proto underlying object we are creating a proxy of
   */
 //final case class InstantiableMock[P](suffixProxy: InstanceProxy[P], parent: Proxy[Any]) extends Mock[P]

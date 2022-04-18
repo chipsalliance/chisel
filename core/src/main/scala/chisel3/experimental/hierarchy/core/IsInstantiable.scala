@@ -7,10 +7,10 @@ package chisel3.experimental.hierarchy.core
   *
   * This trait indicates whether a class can be returned from an Instance.
   */
-trait IsInstantiable
+//trait IsWrappable
 
-object IsInstantiable {
-  implicit class IsInstantiableExtensions[T <: IsInstantiable](i: T) {
-    def toInstance: Instance[T] = new Instance(Proto(i))
-  }
-}
+//object IsWrappable {
+//  implicit class IsWrappableExtensions[T <: IsWrappable](i: T) {
+//    def toInstance: Instance[T] = new Instance(Proto(i))
+//  }
+//}

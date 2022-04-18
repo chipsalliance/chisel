@@ -77,7 +77,7 @@ object Lookupable {
     }
   }
 
-  implicit def lookupIsInstantiable[U <: IsInstantiable] = new Lookupable[U] {
+  implicit def lookupIsWrappable[U <: IsWrappable] = new Lookupable[U] {
     override type H = Instance[U]
     override def apply[P](getter: Wrapper[P], value: U): Instance[U] = {
       //val d = InstantiableDefinition(value)
@@ -102,13 +102,13 @@ object Lookupable {
     }
   }
 
-  implicit def lookupDefinitive[V, P] = new Lookupable[Definitive[V]] {
-    type H = Definitive[V]
-    def apply[P](getter: Wrapper[P], value: Definitive[V]) = {
-      // it is a definitive value, so we can return it!
-      value
-    }
-  }
+  //implicit def lookupDefinitive[V, P] = new Lookupable[Definitive[V]] {
+  //  type H = Definitive[V]
+  //  def apply[P](getter: Wrapper[P], value: Definitive[V]) = {
+  //    // it is a definitive value, so we can return it!
+  //    value
+  //  }
+  //}
 
   //Used for looking up modules
   implicit def lookupUncloneableValue[V, P](implicit extensions: HierarchicalExtensions[V, P]): HierarchicalLookupable[V] = new HierarchicalLookupable[V] {
@@ -119,7 +119,7 @@ object Lookupable {
           case None => getter
         }
       }
-      //TODO This may be unnecessary if IsInstantiables record a parent
+      //TODO This may be unnecessary if IsWrappables record a parent
       value match {
         case v if shareProto(v, h) => h.asInstanceOf[Hierarchy[V]]
         case other =>

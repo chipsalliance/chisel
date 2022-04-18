@@ -8,7 +8,7 @@ import scala.language.experimental.macros
 import scala.annotation.nowarn
 import chisel3.experimental.BaseModule
 import chisel3.internal._
-import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
+import chisel3.experimental.hierarchy.{ModuleMock, ModuleClone}
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
@@ -82,7 +82,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     for (id <- getIds) {
       id match {
         case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
-        case id: InstanceClone[_] => id.setAsInstanceRef()
+        case id: ModuleMock[_]    => id.setAsInstanceRef()
         case id: BaseModule       => id.forceName(None, default = id.desiredName, _namespace)
         case id: MemBase[_]       => id.forceName(None, default = "MEM", _namespace)
         case id: stop.Stop        => id.forceName(None, default = "stop", _namespace)

@@ -415,7 +415,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       //TODO: Should this be ~Top|Top/i:AddOne>innerWire ???
       annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|AddOne>innerWire".rt, "blah"))
     }
-    it("(4.b): should work on IsInstantiable") {
+    it("(4.b): should work on IsWrappable") {
       class Top() extends Module {
         val i = Module(new AddTwo())
         val v = new Viewer(i, false)
@@ -440,7 +440,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah")
       )
     }
-    it("(4.d): should work on seqs of IsInstantiable") {
+    it("(4.d): should work on seqs of IsWrappable") {
       class Top() extends Module {
         val i = Module(new AddTwo())
         val vs = Seq(new Viewer(i, false), new Viewer(i, false)).map(_.toInstance)

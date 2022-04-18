@@ -1,5 +1,3 @@
-package chisel3.experimental.hierarchy.core
-
 // SPDX-License-Identifier: Apache-2.0
 
 package chisel3.experimental.hierarchy.core
@@ -34,7 +32,7 @@ trait Wrapper[+P] {
   ): lookupable.H = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(proto)
-    proxy.retrieveMeAsGetter(protoValue).orElse(proxy.retrieveMe(protoValue)).orElse {
+    proxy.retrieveMeAsWrapper(protoValue).orElse(proxy.retrieveMe(protoValue)).orElse {
       val retValue = lookupable.apply(this, protoValue)
       proxy.cacheMe(protoValue, retValue)
       Some(retValue)

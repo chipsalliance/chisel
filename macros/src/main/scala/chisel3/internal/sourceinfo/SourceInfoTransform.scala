@@ -51,16 +51,8 @@ object DefinitionTransform
 class DefinitionTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($proto)($implicitSourceInfo, $implicitCompileOptions)"
-  }
-}
-
-object DefinitionWrapTransform
-// Module instantiation transform
-class DefinitionWrapTransform(val c: Context) extends SourceInfoTransformMacro {
-  import c.universe._
-  def wrap[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
-    q"$thisObj.do_wrap($proto)($implicitSourceInfo)"
+    val tt: Type = weakTypeOf[T]
+    q"$thisObj.do_apply($proto)(implicitly[_root_.chisel3.experimental.hierarchy.core.HierarchicalExtensions[$tt, _]])"
   }
 }
 
@@ -69,8 +61,9 @@ object InstanceTransform
 // Module instantiation transform
 class InstanceTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def apply[T: c.WeakTypeTag](definition: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($definition)($implicitSourceInfo, $implicitCompileOptions)"
+  def apply[T: c.WeakTypeTag](root: c.Tree): c.Tree = {
+    val tt: Type = weakTypeOf[T]
+    q"$thisObj.do_apply($root)(implicitly[_root_.chisel3.experimental.hierarchy.core.HierarchicalExtensions[$tt, _]])"
   }
 }
 

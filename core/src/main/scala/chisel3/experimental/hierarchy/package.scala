@@ -6,13 +6,14 @@ import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.core._
-import chisel3.experimental.dataview.{isView, reify, reifySingleData}
-import chisel3.internal.firrtl.{Arg, ILit, Index, Slot, ULit}
-import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
+import chisel3.experimental.hierarchy._
+import dataview.{isView, reify, reifySingleData}
+import internal.firrtl.{Arg, ILit, Index, Slot, ULit}
+import internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
 import _root_.firrtl.annotations._
 
 package object hierarchy {
-  import chisel3.experimental.hierarchy.Utils._
+  import hierarchy.Utils._
 
   /** Classes or traits which will be used with the [[Definition]] + [[Instance]] api should be marked
     * with the [[@instantiable]] annotation at the class/trait definition.
@@ -31,7 +32,7 @@ package object hierarchy {
     def getParent(value: V): Option[BaseModule] = value._parent
     def getProxyParent(value: Proxy[V]): Option[BaseModule] = value.asInstanceOf[BaseModule]._parent
 
-    def buildDeclaration(proto: => V): ModuleDeclaration[V] = {
+    def buildDefinition(proto: => V): ModuleDefinition[V] = {
       val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
       Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
       dynamicContext.inDefinition = true
@@ -40,7 +41,7 @@ package object hierarchy {
       Builder.annotations ++= ir.annotations
       module._circuit = Builder.currentModule
       dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-      ModuleDeclaration(module, module._circuit)
+      ModuleDefinition(module, module._circuit)
     }
     def buildInstance(root: Root[V]): ModuleClone[V] = {
       val ports = experimental.CloneModuleAsRecord(root)
@@ -65,7 +66,7 @@ package object hierarchy {
       ModuleMock(value.proxyAs[BaseModule], parent.proxyAs[BaseModule]).toInstance
     }
     def mockValue[P](value: V, parent: Hierarchy[P]): Instance[V] = {
-      val d = (new ModuleDeclaration(value, None)).toDefinition
+      val d = (new ModuleDefinition(value, None)).toDefinition
       val t = ModuleTransparent(d.proxyAs[ModuleRoot[V]])
       ModuleMock(t, parent.proxyAs[BaseModule]).toInstance
     }
@@ -152,19 +153,19 @@ package object hierarchy {
   val Instance = core.Instance
   type Definition[P] = core.Definition[P]
   val Definition = core.Definition
-  type Declaration[P] = core.Declaration[P]
-  val Declaration = core.Declaration
-  type Interface[P] = core.Interface[P]
-  val Interface = core.Interface
-  type Implementation[P] = core.Implementation[P]
-  val Implementation = core.Implementation
-  type Definitive[V] = core.Definitive[V]
-  val Definitive = core.Definitive
+  //type Declaration[P] = core.Declaration[P]
+  //val Declaration = core.Declaration
+  //type Interface[P] = core.Interface[P]
+  //val Interface = core.Interface
+  //type Implementation[P] = core.Implementation[P]
+  //val Implementation = core.Implementation
+  //type Definitive[V] = core.Definitive[V]
+  //val Definitive = core.Definitive
   type IsLookupable = core.IsLookupable
-  type IsInstantiable = core.IsInstantiable
-  type ImplementationBuilder[P] = core.ImplementationBuilder[P]
-  val Folder = core.Folder
-  type Folder[P] = core.Folder[P]
+  type IsWrappable = core.IsWrappable
+  //type ImplementationBuilder[P] = core.ImplementationBuilder[P]
+  //val Folder = core.Folder
+  //type Folder[P] = core.Folder[P]
 
   // ========= Extensions =========
 
@@ -180,7 +181,7 @@ package object hierarchy {
       }
     }
     def toInstance:   core.Instance[P] = asInstanceProxy.toInstance
-    def toDefinition: core.Definition[P] = ModuleDeclaration(proto, proto.getCircuit).toDefinition
+    def toDefinition: core.Definition[P] = ModuleDefinition(proto, proto.getCircuit).toDefinition
   }
   implicit class HierarchyBaseModuleExtensions[T <: BaseModule](i: core.Hierarchy[T]) {
 
@@ -229,7 +230,7 @@ package object hierarchy {
     def toAbsoluteTarget: IsModule = d.proto.toTarget
   }
 
-  implicit class IsInstantiableExtensions[T <: IsInstantiable](i: T) {
+  implicit class IsWrappableExtensions[T <: IsWrappable](i: T) {
 
     /** If this is an instance of a Module, returns the toTarget of this instance
       * @return target of this instance

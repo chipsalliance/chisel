@@ -217,16 +217,21 @@ package internal {
     }
 
     private[chisel3] def cloneIORecord(
-      proto: BaseModule
+      root: Root[BaseModule]
     )(
       implicit sourceInfo: SourceInfo,
       compileOptions:      CompileOptions
     ): ClonePorts = {
+      val proto = root.proto
       require(proto.isClosed, "Can't clone a module before module close")
       // Fake Module to serve as the _parent of the cloned ports
       // We make this before clonePorts because we want it to come up first in naming in
       // currentModule
-      val cloneParent = Module(new ModuleClone(proto))
+      val parent = Builder.currentModule
+      import experimental.hierarchy._
+      val cloneParent = Module(
+        new experimental.hierarchy.ModuleClone(root.proxy.asInstanceOf[ModuleRoot[BaseModule]])
+      )
       require(proto.isClosed, "Can't clone a module before module close")
       require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")
       // Fake Module to serve as the _parent of the cloned ports
@@ -257,20 +262,10 @@ package internal {
 
 package experimental {
 
-  import chisel3.experimental.hierarchy.core.{IsInstantiable, Proto}
-
-  object BaseModule {
-    implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
-      import chisel3.experimental.hierarchy.core.{Definition, Instance}
-      def toInstance:   Instance[T] = new Instance(Proto(b))
-      def toDefinition: Definition[T] = new Definition(Proto(b))
-    }
-  }
-
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
-  abstract class BaseModule extends HasId with IsInstantiable {
+  abstract class BaseModule extends HasId {
     _parent.foreach(_.addId(this))
 
     //
@@ -410,10 +405,10 @@ package experimental {
       * @note Should not be called until circuit elaboration is complete
       */
     final def toTarget: ModuleTarget = this match {
-      case m: experimental.hierarchy.InstanceClone[_] =>
-        throwException(s"Internal Error! It's not legal to call .toTarget on an InstanceClone. $m")
-      case m: experimental.hierarchy.DefinitionClone[_] =>
-        throwException(s"Internal Error! It's not legal to call .toTarget on an DefinitionClone. $m")
+      case m: experimental.hierarchy.ModuleMock[_] =>
+        throwException(s"Internal Error! It's not legal to call .toTarget on a ModuleMock. $m")
+      case m: experimental.hierarchy.ModuleDefinition[_] =>
+        throwException(s"Internal Error! It's not legal to call .toTarget on a ModuleDefinition. $m")
       case _ => ModuleTarget(this.circuitName, this.name)
     }
 
@@ -429,13 +424,15 @@ package experimental {
       * the correct [[InstanceTarget]]s whenever using the Definition/Instance API.
       */
     private[chisel3] def getTarget: IsModule = this match {
-      case m: experimental.hierarchy.InstanceClone[_] if m._parent.nonEmpty =>
+      case m: experimental.hierarchy.ModuleTransparent[_] if m._parent.nonEmpty =>
+        ModuleTarget(this._circuit.get.circuitName, this.name)
+      case m: experimental.hierarchy.ModuleMock[_] if m._parent.nonEmpty =>
         m._parent.get.getTarget.instOf(instanceName, name)
       case m: experimental.hierarchy.ModuleClone[_] if m._madeFromDefinition =>
         m._parent.get.getTarget.instOf(instanceName, name)
       // Without this, we get the wrong CircuitName for the Definition
-      case m: experimental.hierarchy.DefinitionClone[_] if m._circuit.nonEmpty =>
-        ModuleTarget(this._circuit.get.circuitName, this.name)
+      case m: experimental.hierarchy.ModuleDefinition[_] if m.getCircuit.nonEmpty =>
+        ModuleTarget(this.getCircuit.get.circuitName, this.name)
       case _ => this.toTarget
     }
 
