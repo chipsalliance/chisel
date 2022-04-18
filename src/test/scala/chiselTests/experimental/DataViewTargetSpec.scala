@@ -125,9 +125,7 @@ class DataViewTargetSpec extends ChiselFlatSpec {
     val pairs = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sortBy(_._1)
     val expected = Seq(
       0 -> "~MyParent|MyChild>out.foo",
-      // The child of the view that was itself an Aggregate got split because 1:1 is lacking here
-      1 -> "~MyParent|MyChild>out.foo[0]",
-      1 -> "~MyParent|MyChild>out.foo[1]",
+      1 -> "~MyParent|MyChild>out.foo",
       2 -> "~MyParent|MyParent/inst:MyChild>out.foo",
       3 -> "~MyParent|MyParent/inst:MyChild>out"
     )

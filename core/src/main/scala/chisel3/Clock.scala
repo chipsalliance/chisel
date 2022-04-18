@@ -23,7 +23,7 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
 
   override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit =
     that match {
-      case _: Clock => super.connect(that)(sourceInfo, connectCompileOptions)
+      case _: Clock | DontCare => super.connect(that)(sourceInfo, connectCompileOptions)
       case _ => super.badConnect(that)(sourceInfo)
     }
 
