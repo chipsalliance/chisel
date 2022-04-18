@@ -2,7 +2,7 @@
 <!--
 Please select the item best describing the issue in each category and delete the other items.
 -->
-**Type of issue**: bug report
+**Type of issue**: Bug Report
 
 **Please provide the steps to reproduce the problem:**
 
