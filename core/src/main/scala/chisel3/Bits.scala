@@ -1324,7 +1324,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
   /** Logical or operator
     *
     * @param that a hardware $coll
-    * @return the lgocial or of this $coll and `that`
+    * @return the logical or of this $coll and `that`
     * @note this is equivalent to [[Bool!.|(that:chisel3\.Bool)* Bool.|)]]
     * @group Logical
     */
@@ -1336,7 +1336,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
   /** Logical and operator
     *
     * @param that a hardware $coll
-    * @return the lgocial and of this $coll and `that`
+    * @return the logical and of this $coll and `that`
     * @note this is equivalent to [[Bool!.&(that:chisel3\.Bool)* Bool.&]]
     * @group Logical
     */
