@@ -7,11 +7,21 @@ import logger.LazyLogging
 
 case object EspressoNotFoundException extends Exception
 
+/** A [[Minimizer]] implementation to use espresso to minimize the [[TruthTable]].
+  *
+  * espresso uses heuristic algorithm providing a sub-optimized) result.
+  * For implementation details, please refer to:
+  * [[https://www.springerprofessional.de/en/logic-minimization-algorithms-for-vlsi-synthesis/13780088]]
+  *
+  * a espresso executable should be downloaded from [[https://github.com/chipsalliance/espresso]]
+  *
+  * If user want to user the this [[Minimizer]], a espresso executable should be added to system PATH environment.
+  */
 object EspressoMinimizer extends Minimizer with LazyLogging {
   def minimize(table: TruthTable): TruthTable =
-    TruthTable.merge(TruthTable.split(table).map{case (table, indexes) => (espresso(table), indexes)})
+    TruthTable.merge(TruthTable.split(table).map { case (table, indexes) => (espresso(table), indexes) })
 
-  def espresso(table: TruthTable): TruthTable = {
+  private def espresso(table: TruthTable): TruthTable = {
     def writeTable(table: TruthTable): String = {
       def invert(string: String) = string
         .replace('0', 't')
@@ -24,10 +34,9 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
       }
       val tableType: String = defaultType match {
         case '?' => "fr"
-        case _ => "fd"
+        case _   => "fd"
       }
-      val rawTable = table
-        .toString
+      val rawTable = table.toString
         .split("\n")
         .filter(_.contains("->"))
         .mkString("\n")
@@ -45,26 +54,36 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
          |""".stripMargin ++ (if (defaultType == '1') invertRawTable else rawTable)
     }
 
-    def readTable(espressoTable: String): Map[BitPat, BitPat] = {
+    def readTable(espressoTable: String) = {
       def bitPat(espresso: String): BitPat = BitPat("b" + espresso.replace('-', '?'))
 
-      espressoTable
+      val out = espressoTable
         .split("\n")
         .filterNot(_.startsWith("."))
         .map(_.split(' '))
         .map(row => bitPat(row(0)) -> bitPat(row(1)))
-        .toMap
+      // special case for 0 and DontCare, if output is not couple to input
+      if (out.isEmpty)
+        Array(
+          (
+            BitPat(s"b${"?" * table.inputWidth}"),
+            BitPat(s"b${"0" * table.outputWidth}")
+          )
+        )
+      else out
     }
 
     val input = writeTable(table)
     logger.trace(s"""espresso input table:
                     |$input
                     |""".stripMargin)
-    val output = try {
-      os.proc("espresso").call(stdin = input).out.chunks.mkString
-    } catch {
-      case e: java.io.IOException if e.getMessage.contains("error=2, No such file or directory") => throw EspressoNotFoundException
-    }
+    val output =
+      try {
+        os.proc("espresso").call(stdin = input).out.chunks.mkString
+      } catch {
+        case e: java.io.IOException if e.getMessage.contains("error=2, No such file or directory") =>
+          throw EspressoNotFoundException
+      }
     logger.trace(s"""espresso output table:
                     |$output
                     |""".stripMargin)

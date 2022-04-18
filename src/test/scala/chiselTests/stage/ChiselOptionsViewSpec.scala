@@ -2,7 +2,6 @@
 
 package chiselTests.stage
 
-
 import firrtl.options.Viewer.view
 import firrtl.RenameMap
 
@@ -13,7 +12,7 @@ import org.scalatest.matchers.should.Matchers
 
 class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
 
-  behavior of ChiselOptionsView.getClass.getName
+  behavior.of(ChiselOptionsView.getClass.getName)
 
   it should "construct a view from an AnnotationSeq" in {
     val bar = Circuit("bar", Seq.empty, Seq.empty, RenameMap())
@@ -26,16 +25,16 @@ class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
     val out = view[ChiselOptions](annotations)
 
     info("runFirrtlCompiler was set to false")
-    out.runFirrtlCompiler should be (false)
+    out.runFirrtlCompiler should be(false)
 
     info("printFullStackTrace was set to true")
-    out.printFullStackTrace should be (true)
+    out.printFullStackTrace should be(true)
 
     info("outputFile was set to 'foo'")
-    out.outputFile should be (Some("foo"))
+    out.outputFile should be(Some("foo"))
 
     info("chiselCircuit was set to circuit 'bar'")
-    out.chiselCircuit should be (Some(bar))
+    out.chiselCircuit should be(Some(bar))
 
   }
 

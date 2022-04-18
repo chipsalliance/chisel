@@ -7,9 +7,9 @@ import chisel3.testers.BasicTester
 
 class MulLookup(val w: Int) extends Module {
   val io = IO(new Bundle {
-    val x   = Input(UInt(w.W))
-    val y   = Input(UInt(w.W))
-    val z   = Output(UInt((2 * w).W))
+    val x = Input(UInt(w.W))
+    val y = Input(UInt(w.W))
+    val z = Output(UInt((2 * w).W))
   })
   val tbl = VecInit(
     for {
@@ -32,7 +32,7 @@ class MulLookupSpec extends ChiselPropSpec {
 
   property("Mul lookup table should return the correct result") {
     forAll(smallPosInts, smallPosInts) { (x: Int, y: Int) =>
-      assertTesterPasses{ new MulLookupTester(3, x, y) }
+      assertTesterPasses { new MulLookupTester(3, x, y) }
     }
   }
 }

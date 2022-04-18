@@ -10,7 +10,7 @@ import chiseltest._
 import chiseltest.formal._
 
 class DecoderSpec extends AnyFlatSpec with ChiselScalatestTester with Formal  {
-  val xor = TruthTable(
+  val xor = TruthTable.fromString(
     """10->1
       |01->1
       |    0""".stripMargin)
@@ -42,7 +42,7 @@ class DecoderSpec extends AnyFlatSpec with ChiselScalatestTester with Formal  {
         """10->1
           |01->1
           |    0""".stripMargin,
-        QMCMinimizer.minimize(TruthTable(
+        QMCMinimizer.minimize(TruthTable.fromString(
           """10->1
             |01->1
             |    0""".stripMargin)).toString

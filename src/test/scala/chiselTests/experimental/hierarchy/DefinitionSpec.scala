@@ -5,7 +5,7 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, public}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -13,15 +13,15 @@ import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, publi
 class DefinitionSpec extends ChiselFunSpec with Utils {
   import Annotations._
   import Examples._
-  describe("0: Definition instantiation") {
-    it("0.0: module name of a definition should be correct") {
+  describe("(0): Definition instantiation") {
+    it("(0.a): module name of a definition should be correct") {
       class Top extends Module {
         val definition = Definition(new AddOne)
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("module AddOne :")
+      chirrtl.serialize should include("module AddOne :")
     }
-    it("0.2: accessing internal fields through non-generated means is hard to do") {
+    it("(0.b): accessing internal fields through non-generated means is hard to do") {
       class Top extends Module {
         val definition = Definition(new AddOne)
         //definition.lookup(_.in) // Uncommenting this line will give the following error:
@@ -29,20 +29,70 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         definition.in
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("module AddOne :")
+      chirrtl.serialize should include("module AddOne :")
     }
-    it("0.2: reset inference is not defaulted to Bool for definitions") {
+    it("(0.c): reset inference is not defaulted to Bool for definitions") {
       class Top extends Module with RequireAsyncReset {
         val definition = Definition(new HasUninferredReset)
         val i0 = Instance(definition)
         i0.in := 0.U
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include ("inst i0 of HasUninferredReset")
+      chirrtl.serialize should include("inst i0 of HasUninferredReset")
+    }
+    it("(0.d): module names of repeated definition should be sequential") {
+      class Top extends Module {
+        val k = Module(
+          new AddTwoParameterized(
+            4,
+            (x: Int) =>
+              Seq.tabulate(x) { j =>
+                val addOneDef = Definition(new AddOneParameterized(x + j))
+                val addOne = Instance(addOneDef)
+                addOne
+              }
+          )
+        )
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include("module AddOneParameterized :")
+      chirrtl.serialize should include("module AddOneParameterized_1 :")
+      chirrtl.serialize should include("module AddOneParameterized_2 :")
+      chirrtl.serialize should include("module AddOneParameterized_3 :")
+    }
+    it("(0.e): multiple instantiations should have sequential names") {
+      class Top extends Module {
+        val addOneDef = Definition(new AddOneParameterized(4))
+        val addOne = Instance(addOneDef)
+        val otherAddOne = Module(new AddOneParameterized(4))
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include("module AddOneParameterized :")
+      chirrtl.serialize should include("module AddOneParameterized_1 :")
+    }
+    it("(0.f): nested definitions should have sequential names") {
+      class Top extends Module {
+        val k = Module(
+          new AddTwoWithNested(
+            4,
+            (x: Int) =>
+              Seq.tabulate(x) { j =>
+                val addOneDef = Definition(new AddOneWithNested(x + j))
+                val addOne = Instance(addOneDef)
+                addOne
+              }
+          )
+        )
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include("module AddOneWithNested :")
+      chirrtl.serialize should include("module AddOneWithNested_1 :")
+      chirrtl.serialize should include("module AddOneWithNested_2 :")
+      chirrtl.serialize should include("module AddOneWithNested_3 :")
     }
   }
-  describe("1: Annotations on definitions in same chisel compilation") {
-    it("1.0: should work on a single definition, annotating the definition") {
+  describe("(1): Annotations on definitions in same chisel compilation") {
+    it("(1.a): should work on a single definition, annotating the definition") {
       class Top extends Module {
         val definition: Definition[AddOne] = Definition(new AddOne)
         mark(definition, "mark")
@@ -50,7 +100,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOne".mt, "mark"))
     }
-    it("1.1: should work on a single definition, annotating an inner wire") {
+    it("(1.b): should work on a single definition, annotating an inner wire") {
       class Top extends Module {
         val definition: Definition[AddOne] = Definition(new AddOne)
         mark(definition.innerWire, "i0.innerWire")
@@ -58,7 +108,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOne>innerWire".rt, "i0.innerWire"))
     }
-    it("1.2: should work on a two nested definitions, annotating the definition") {
+    it("(1.c): should work on a two nested definitions, annotating the definition") {
       class Top extends Module {
         val definition: Definition[AddTwo] = Definition(new AddTwo)
         mark(definition.definition, "i0.i0")
@@ -66,7 +116,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOne".mt, "i0.i0"))
     }
-    it("1.2: should work on an instance in a definition, annotating the instance") {
+    it("(1.d): should work on an instance in a definition, annotating the instance") {
       class Top extends Module {
         val definition: Definition[AddTwo] = Definition(new AddTwo)
         mark(definition.i0, "i0.i0")
@@ -74,7 +124,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne".it, "i0.i0"))
     }
-    it("1.2: should work on a definition in an instance, annotating the definition") {
+    it("(1.e): should work on a definition in an instance, annotating the definition") {
       class Top extends Module {
         val definition: Definition[AddTwo] = Definition(new AddTwo)
         val i0 = Instance(definition)
@@ -83,7 +133,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOne".mt, "i0.i0"))
     }
-    it("1.3: should work on a wire in an instance in a definition") {
+    it("(1.f): should work on a wire in an instance in a definition") {
       class Top extends Module {
         val definition: Definition[AddTwo] = Definition(new AddTwo)
         mark(definition.i0.innerWire, "i0.i0.innerWire")
@@ -91,17 +141,17 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "i0.i0.innerWire"))
     }
-    it("1.4: should work on a nested module in a definition, annotating the module") {
+    it("(1.g): should work on a nested module in a definition, annotating the module") {
       class Top extends Module {
         val definition: Definition[AddTwoMixedModules] = Definition(new AddTwoMixedModules)
         mark(definition.i1, "i0.i1")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_2".it, "i0.i1"))
+      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_1".it, "i0.i1"))
     }
     // Can you define an instantiable container? I think not.
     // Instead, we can test the instantiable container in a definition
-    it("1.5: should work on an instantiable container, annotating a wire in the defintion") {
+    it("(1.h): should work on an instantiable container, annotating a wire in the defintion") {
       class Top extends Module {
         val definition: Definition[AddOneWithInstantiableWire] = Definition(new AddOneWithInstantiableWire)
         mark(definition.wireContainer.innerWire, "i0.innerWire")
@@ -109,7 +159,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableWire>innerWire".rt, "i0.innerWire"))
     }
-    it("1.6: should work on an instantiable container, annotating a module") {
+    it("(1.i): should work on an instantiable container, annotating a module") {
       class Top extends Module {
         val definition = Definition(new AddOneWithInstantiableModule)
         mark(definition.moduleContainer.i0, "i0.i0")
@@ -117,7 +167,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableModule/i0:AddOne".it, "i0.i0"))
     }
-    it("1.7: should work on an instantiable container, annotating an instance") {
+    it("(1.j): should work on an instantiable container, annotating an instance") {
       class Top extends Module {
         val definition = Definition(new AddOneWithInstantiableInstance)
         mark(definition.instanceContainer.i0, "i0.i0")
@@ -125,7 +175,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstance/i0:AddOne".it, "i0.i0"))
     }
-    it("1.8: should work on an instantiable container, annotating an instantiable container's module") {
+    it("(1.k): should work on an instantiable container, annotating an instantiable container's module") {
       class Top extends Module {
         val definition = Definition(new AddOneWithInstantiableInstantiable)
         mark(definition.containerContainer.container.i0, "i0.i0")
@@ -133,7 +183,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
     }
-    it("1.9: should work on public member which references public member of another instance") {
+    it("(1.l): should work on public member which references public member of another instance") {
       class Top extends Module {
         val definition = Definition(new AddOneWithInstantiableInstantiable)
         mark(definition.containerContainer.container.i0, "i0.i0")
@@ -141,7 +191,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0"))
     }
-    it("1.10: should work for targets on definition to have correct circuit name"){
+    it("(1.m): should work for targets on definition to have correct circuit name") {
       class Top extends Module {
         val definition = Definition(new AddOneWithAnnotation)
       }
@@ -149,8 +199,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|AddOneWithAnnotation>innerWire".rt, "innerWire"))
     }
   }
-  describe("2: Annotations on designs not in the same chisel compilation") {
-    it("2.0: should work on an innerWire, marked in a different compilation") {
+  describe("(2): Annotations on designs not in the same chisel compilation") {
+    it("(2.a): should work on an innerWire, marked in a different compilation") {
       val first = elaborateAndGetModule(new AddTwo)
       class Top(x: AddTwo) extends Module {
         val parent = Definition(new ViewerParent(x, false, true))
@@ -158,7 +208,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top(first))
       annos should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "first"))
     }
-    it("2.1: should work on an innerWire, marked in a different compilation, in instanced instantiable") {
+    it("(2.b): should work on an innerWire, marked in a different compilation, in instanced instantiable") {
       val first = elaborateAndGetModule(new AddTwo)
       class Top(x: AddTwo) extends Module {
         val parent = Definition(new ViewerParent(x, true, false))
@@ -166,7 +216,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top(first))
       annos should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "second"))
     }
-    it("2.2: should work on an innerWire, marked in a different compilation, in instanced module") {
+    it("(2.c): should work on an innerWire, marked in a different compilation, in instanced module") {
       val first = elaborateAndGetModule(new AddTwo)
       class Top(x: AddTwo) extends Module {
         val parent = Definition(new ViewerParent(x, false, false))
@@ -176,8 +226,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "third"))
     }
   }
-  describe("3: @public") {
-    it("3.0: should work on multi-vals") {
+  describe("(3): @public") {
+    it("(3.a): should work on multi-vals") {
       class Top() extends Module {
         val mv = Definition(new MultiVal())
         mark(mv.x, "mv.x")
@@ -185,7 +235,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|MultiVal>x".rt, "mv.x"))
     }
-    it("3.1: should work on lazy vals") {
+    it("(3.b): should work on lazy vals") {
       class Top() extends Module {
         val lv = Definition(new LazyVal())
         mark(lv.x, lv.y)
@@ -193,7 +243,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|LazyVal>x".rt, "Hi"))
     }
-    it("3.2: should work on islookupables") {
+    it("(3.c): should work on islookupables") {
       class Top() extends Module {
         val p = Parameters("hi", 0)
         val up = Definition(new UsesParameters(p))
@@ -202,7 +252,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|UsesParameters>x".rt, "hi0"))
     }
-    it("3.3: should work on lists") {
+    it("(3.d): should work on lists") {
       class Top() extends Module {
         val i = Definition(new HasList())
         mark(i.x(1), i.y(1).toString)
@@ -210,7 +260,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasList>x_1".rt, "2"))
     }
-    it("3.4: should work on seqs") {
+    it("(3.e): should work on seqs") {
       class Top() extends Module {
         val i = Definition(new HasSeq())
         mark(i.x(1), i.y(1).toString)
@@ -218,7 +268,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasSeq>x_1".rt, "2"))
     }
-    it("3.5: should work on options") {
+    it("(3.f): should work on options") {
       class Top() extends Module {
         val i = Definition(new HasOption())
         i.x.map(x => mark(x, "x"))
@@ -226,7 +276,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasOption>x".rt, "x"))
     }
-    it("3.6: should work on vecs") {
+    it("(3.g): should work on vecs") {
       class Top() extends Module {
         val i = Definition(new HasVec())
         mark(i.x, "blah")
@@ -234,7 +284,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasVec>x".rt, "blah"))
     }
-    it("3.7: should work on statically indexed vectors external to module") {
+    it("(3.h): should work on statically indexed vectors external to module") {
       class Top() extends Module {
         val i = Definition(new HasVec())
         mark(i.x(1), "blah")
@@ -242,7 +292,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasVec>x[1]".rt, "blah"))
     }
-    it("3.8: should work on statically indexed vectors internal to module") {
+    it("(3.i): should work on statically indexed vectors internal to module") {
       class Top() extends Module {
         val i = Definition(new HasIndexedVec())
         mark(i.y, "blah")
@@ -250,7 +300,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasIndexedVec>x[1]".rt, "blah"))
     }
-    ignore("3.9: should work on vals in constructor arguments") {
+    ignore("(3.j): should work on vals in constructor arguments") {
       class Top() extends Module {
         val i = Definition(new HasPublicConstructorArgs(10))
         //mark(i.x, i.int.toString)
@@ -258,7 +308,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasPublicConstructorArgs>x".rt, "10"))
     }
-    it("3.10: should work on unimplemented vals in abstract classes/traits") {
+    it("(3.k): should work on unimplemented vals in abstract classes/traits") {
       class Top() extends Module {
         val i = Definition(new ConcreteHasBlah())
         def f(d: Definition[HasBlah]): Unit = {
@@ -269,9 +319,52 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|ConcreteHasBlah".mt, "10"))
     }
+    it("(3.l): should work on eithers") {
+      class Top() extends Module {
+        val i = Definition(new HasEither())
+        i.x.map(x => mark(x, "xright")).left.map(x => mark(x, "xleft"))
+        i.y.map(x => mark(x, "yright")).left.map(x => mark(x, "yleft"))
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|HasEither>x".rt, "xright"))
+      annos should contain(MarkAnnotation("~Top|HasEither>y".rt, "yleft"))
+    }
+    it("(3.m): should work on tuple2") {
+      class Top() extends Module {
+        val i = Definition(new HasTuple2())
+        mark(i.xy._1, "x")
+        mark(i.xy._2, "y")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|HasTuple2>x".rt, "x"))
+      annos should contain(MarkAnnotation("~Top|HasTuple2>y".rt, "y"))
+    }
+    it("(3.n): should work on Mems/SyncReadMems") {
+      class Top() extends Module {
+        val i = Definition(new HasMems())
+        mark(i.mem, "Mem")
+        mark(i.syncReadMem, "SyncReadMem")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|HasMems>mem".rt, "Mem"))
+      annos should contain(MarkAnnotation("~Top|HasMems>syncReadMem".rt, "SyncReadMem"))
+    }
+    it("(3.o): should not create memory ports") {
+      class Top() extends Module {
+        val i = Definition(new HasMems())
+        i.mem(0) := 100.U // should be illegal!
+      }
+      val failure = intercept[ChiselException] {
+        getFirrtlAndAnnos(new Top)
+      }
+      assert(
+        failure.getMessage ==
+          "Cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
+      )
+    }
   }
-  describe("4: toDefinition") {
-    it("4.0: should work on modules") {
+  describe("(4): toDefinition") {
+    it("(4.a): should work on modules") {
       class Top() extends Module {
         val i = Module(new AddOne())
         f(i.toDefinition)
@@ -280,7 +373,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOne>innerWire".rt, "blah"))
     }
-    it("4.2: should work on seqs of modules") {
+    it("(4.b): should work on seqs of modules") {
       class Top() extends Module {
         val is = Seq(Module(new AddTwo()), Module(new AddTwo())).map(_.toDefinition)
         mark(f(is), "blah")
@@ -289,7 +382,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
     }
-    it("4.2: should work on options of modules") {
+    it("(4.c): should work on options of modules") {
       class Top() extends Module {
         val is: Option[Definition[AddTwo]] = Some(Module(new AddTwo())).map(_.toDefinition)
         mark(f(is), "blah")
@@ -299,8 +392,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
     }
   }
-  describe("5: Absolute Targets should work as expected") {
-    it("5.0: toAbsoluteTarget on a port of a definition") {
+  describe("(5): Absolute Targets should work as expected") {
+    it("(5.a): toAbsoluteTarget on a port of a definition") {
       class Top() extends Module {
         val i = Definition(new AddTwo())
         amark(i.in, "blah")
@@ -308,7 +401,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddTwo>in".rt, "blah"))
     }
-    it("5.1: toAbsoluteTarget on a subinstance's data within a definition") {
+    it("(5.b): toAbsoluteTarget on a subinstance's data within a definition") {
       class Top() extends Module {
         val i = Definition(new AddTwo())
         amark(i.i0.innerWire, "blah")
@@ -316,24 +409,24 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah"))
     }
-    it("5.2: toAbsoluteTarget on a submodule's data within a definition") {
+    it("(5.c): toAbsoluteTarget on a submodule's data within a definition") {
       class Top() extends Module {
         val i = Definition(new AddTwoMixedModules())
         amark(i.i1.in, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_2>in".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|AddTwoMixedModules/i1:AddOne_1>in".rt, "blah"))
     }
-    it("5.3: toAbsoluteTarget on a submodule's data, in an aggregate, within a definition") {
+    it("(5.d): toAbsoluteTarget on a submodule's data, in an aggregate, within a definition") {
       class Top() extends Module {
         val i = Definition(new InstantiatesHasVec())
         amark(i.i1.x.head, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|InstantiatesHasVec/i1:HasVec_2>x[0]".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|InstantiatesHasVec/i1:HasVec_1>x[0]".rt, "blah"))
     }
   }
-  describe("6: @instantiable traits should work as expected") {
+  describe("(6): @instantiable traits should work as expected") {
     class MyBundle extends Bundle {
       val in = Input(UInt(8.W))
       val out = Output(UInt(8.W))
@@ -351,7 +444,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
     class BlackBoxWithCommonIntf extends BlackBox with ModuleIntf
 
-    it("6.0: A Module that implements an @instantiable trait should be definable as that trait") {
+    it("(6.a): A Module that implements an @instantiable trait should be definable as that trait") {
       class Top extends Module {
         val i: Definition[ModuleIntf] = Definition(new ModuleWithCommonIntf)
         mark(i.io.in, "gotcha")
@@ -363,10 +456,12 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
-    it("6.1 An @instantiable Module that implements an @instantiable trait should be able to use extension methods from both") {
+    it(
+      "(6.b): An @instantiable Module implementing an @instantiable trait should be able to use extension methods from both"
+    ) {
       class Top extends Module {
         val i: Definition[ModuleWithCommonIntf] = Definition(new ModuleWithCommonIntf)
         mark(i.io.in, "gotcha")
@@ -380,10 +475,10 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
-    it("6.2 A BlackBox that implements an @instantiable trait should be instantiable as that trait") {
+    it("(6.c): A BlackBox that implements an @instantiable trait should be instantiable as that trait") {
       class Top extends Module {
         val m: ModuleIntf = Module(new BlackBoxWithCommonIntf)
         val d: Definition[ModuleIntf] = m.toDefinition
@@ -396,10 +491,10 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
-    it("6.3 It should be possible to have Vectors of @instantiable traits mixing concrete subclasses") {
+    it("(6.d): It should be possible to have Vectors of @instantiable traits mixing concrete subclasses") {
       class Top extends Module {
         val definition = Definition(new ModuleWithCommonIntf("X"))
         val insts: Seq[Definition[ModuleIntf]] = Vector(
@@ -418,13 +513,13 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
   }
-  describe("7: @instantiable and @public should compose with DataView") {
+  describe("(7): @instantiable and @public should compose with DataView") {
     import chisel3.experimental.dataview._
-    ignore("7.0: should work on simple Views") {
+    ignore("(7.a): should work on simple Views") {
       @instantiable
       class MyModule extends RawModule {
         val in = IO(Input(UInt(8.W)))
@@ -457,13 +552,13 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
       for (line <- expectedLines) {
-        text should include (line)
+        text should include(line)
       }
       for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
-    ignore("7.1: should work on Aggregate Views that are mapped 1:1") {
+    ignore("(7.b): should work on Aggregate Views that are mapped 1:1") {
       import chiselTests.experimental.SimpleBundleDataView._
       @instantiable
       class MyModule extends RawModule {
@@ -485,7 +580,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       }
       val expectedAnnos = List(
         "~Top|MyModule>a".rt -> "in",
-        "~Top|MyModule>a.foo".rt -> "in_bar",
+        "~Top|MyModule>a.foo".rt -> "in_bar"
       )
       val expectedLines = List(
         "i.a <= foo",
@@ -494,10 +589,10 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
       for (line <- expectedLines) {
-        text should include (line)
+        text should include(line)
       }
       for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
-        annos should contain (e)
+        annos should contain(e)
       }
     }
   }

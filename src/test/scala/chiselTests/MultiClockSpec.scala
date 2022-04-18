@@ -18,11 +18,11 @@ class ClockDividerTest extends BasicTester {
   val reg2 = withClock(clock2) { RegInit(0.U(8.W)) }
   reg2 := reg2 + 1.U
 
-  when (reg1 < 10.U) {
+  when(reg1 < 10.U) {
     assert(reg2 === reg1 / 2.U) // 1:2 clock relationship
   }
 
-  when (reg1 === 10.U) {
+  when(reg1 === 10.U) {
     stop()
   }
 }
@@ -45,7 +45,7 @@ class MultiClockSubModuleTest extends BasicTester {
 
   val inst = withClockAndReset(otherClock, otherReset) { Module(new SubModule) }
 
-  when (done) {
+  when(done) {
     // The counter in inst should come out of reset later and increment at half speed
     assert(inst.io.out === 3.U)
     stop()
@@ -59,14 +59,14 @@ class WithResetTest extends BasicTester {
   reg := reg + 1.U
 
   val (cycle, done) = Counter(true.B, 10)
-  when (cycle < 7.U) {
+  when(cycle < 7.U) {
     assert(reg === cycle)
-  } .elsewhen (cycle === 7.U) {
+  }.elsewhen(cycle === 7.U) {
     reset2 := true.B
-  } .elsewhen (cycle === 8.U) {
+  }.elsewhen(cycle === 8.U) {
     assert(reg === 0.U)
   }
-  when (done) { stop() }
+  when(done) { stop() }
 }
 
 /** Test Mem ports with different clocks */
@@ -82,7 +82,7 @@ class MultiClockMemTest extends BasicTester {
   // Write port 1 walks through writing 123
   val waddr = RegInit(0.U(3.W))
   waddr := waddr + 1.U
-  when (cycle < 8.U) {
+  when(cycle < 8.U) {
     mem(waddr) := 123.U
   }
 
@@ -90,30 +90,30 @@ class MultiClockMemTest extends BasicTester {
   val rdata = mem(raddr)
 
   // Check each write from write port 1
-  when (cycle > 0.U && cycle < 9.U) {
+  when(cycle > 0.U && cycle < 9.U) {
     assert(rdata === 123.U)
   }
 
   // Write port 2 walks through writing 456 on 2nd time through
   withClock(clock2) {
-    when (cycle >= 8.U && cycle < 16.U) {
+    when(cycle >= 8.U && cycle < 16.U) {
       mem(waddr) := 456.U // write 456 to different address
     }
   }
 
   // Check that every even address gets 456
-  when (cycle > 8.U && cycle < 17.U) {
-    when (raddr % 2.U === 0.U) {
+  when(cycle > 8.U && cycle < 17.U) {
+    when(raddr % 2.U === 0.U) {
       assert(rdata === 456.U)
-    } .otherwise {
+    }.otherwise {
       assert(rdata === 123.U)
     }
   }
 
-  when (done) { stop() }
+  when(done) { stop() }
 }
 
-class MultiClockSpec extends ChiselFlatSpec {
+class MultiClockSpec extends ChiselFlatSpec with Utils {
 
   "withClock" should "scope the clock of registers" in {
     assertTesterPasses(new ClockDividerTest)
@@ -127,6 +127,114 @@ class MultiClockSpec extends ChiselFlatSpec {
     ChiselStage.elaborate(new BasicTester {
       assert(withClock(this.clock) { 5 } == 5)
     })
+  }
+
+  "Differing clocks at memory and port instantiation" should "warn" in {
+    class modMemDifferingClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
+      val port0 = mem(0.U)
+    }
+    val (logMemDifferingClock, _) = grabLog(ChiselStage.elaborate(new modMemDifferingClock))
+    logMemDifferingClock should include("memory is different")
+
+    class modSyncReadMemDifferingClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
+      val port0 = mem(0.U)
+    }
+    val (logSyncReadMemDifferingClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemDifferingClock))
+    logSyncReadMemDifferingClock should include("memory is different")
+  }
+
+  "Differing clocks at memory and write accessor instantiation" should "warn" in {
+    class modMemWriteDifferingClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
+      mem(1.U) := 1.U
+    }
+    val (logMemWriteDifferingClock, _) = grabLog(ChiselStage.elaborate(new modMemWriteDifferingClock))
+    logMemWriteDifferingClock should include("memory is different")
+
+    class modSyncReadMemWriteDifferingClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
+      mem.write(1.U, 1.U)
+    }
+    val (logSyncReadMemWriteDifferingClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemWriteDifferingClock))
+    logSyncReadMemWriteDifferingClock should include("memory is different")
+  }
+
+  "Differing clocks at memory and read accessor instantiation" should "warn" in {
+    class modMemReadDifferingClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
+      val readVal = mem.read(0.U)
+    }
+    val (logMemReadDifferingClock, _) = grabLog(ChiselStage.elaborate(new modMemReadDifferingClock))
+    logMemReadDifferingClock should include("memory is different")
+
+    class modSyncReadMemReadDifferingClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
+      val readVal = mem.read(0.U)
+    }
+    val (logSyncReadMemReadDifferingClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemReadDifferingClock))
+    logSyncReadMemReadDifferingClock should include("memory is different")
+  }
+
+  "Passing clock parameter to memory port instantiation" should "not warn" in {
+    class modMemPortClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = Mem(4, UInt(8.W))
+      val port0 = mem(0.U, myClock)
+    }
+    val (logMemPortClock, _) = grabLog(ChiselStage.elaborate(new modMemPortClock))
+    (logMemPortClock should not).include("memory is different")
+
+    class modSyncReadMemPortClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = SyncReadMem(4, UInt(8.W))
+      val port0 = mem(0.U, myClock)
+    }
+    val (logSyncReadMemPortClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemPortClock))
+    (logSyncReadMemPortClock should not).include("memory is different")
+  }
+
+  "Passing clock parameter to memory write accessor" should "not warn" in {
+    class modMemWriteClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = Mem(4, UInt(8.W))
+      mem.write(0.U, 0.U, myClock)
+    }
+    val (logMemWriteClock, _) = grabLog(ChiselStage.elaborate(new modMemWriteClock))
+    (logMemWriteClock should not).include("memory is different")
+
+    class modSyncReadMemWriteClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = SyncReadMem(4, UInt(8.W))
+      mem.write(0.U, 0.U, myClock)
+    }
+    val (logSyncReadMemWriteClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemWriteClock))
+    (logSyncReadMemWriteClock should not).include("memory is different")
+  }
+
+  "Passing clock parameter to memory read accessor" should "not warn" in {
+    class modMemReadClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = Mem(4, UInt(8.W))
+      val readVal = mem.read(0.U, myClock)
+    }
+    val (logMemReadClock, _) = grabLog(ChiselStage.elaborate(new modMemReadClock))
+    (logMemReadClock should not).include("memory is different")
+
+    class modSyncReadMemReadClock extends Module {
+      val myClock = IO(Input(Clock()))
+      val mem = SyncReadMem(4, UInt(8.W))
+      val readVal = mem.read(0.U, myClock)
+    }
+    val (logSyncReadMemReadClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemReadClock))
+    (logSyncReadMemReadClock should not).include("memory is different")
   }
 
   "withReset" should "scope the reset of registers" in {
@@ -151,7 +259,7 @@ class MultiClockSpec extends ChiselFlatSpec {
       // The reg is always in reset so will never decrement
       chisel3.assert(reg === 6.U)
       val (_, done) = Counter(true.B, 4)
-      when (done) { stop() }
+      when(done) { stop() }
     })
   }
 
@@ -168,7 +276,7 @@ class MultiClockSpec extends ChiselFlatSpec {
         chisel3.assert(0.U === 1.U)
       }
       val (_, done) = Counter(true.B, 2)
-      when (done) { stop() }
+      when(done) { stop() }
     })
     // Check that reset will block
     assertTesterPasses(new BasicTester {
@@ -176,7 +284,7 @@ class MultiClockSpec extends ChiselFlatSpec {
         chisel3.assert(0.U === 1.U)
       }
       val (_, done) = Counter(true.B, 2)
-      when (done) { stop() }
+      when(done) { stop() }
     })
     // Check that no rising edge will block
     assertTesterPasses(new BasicTester {
@@ -184,7 +292,7 @@ class MultiClockSpec extends ChiselFlatSpec {
         chisel3.assert(0.U === 1.U)
       }
       val (_, done) = Counter(true.B, 2)
-      when (done) { stop() }
+      when(done) { stop() }
     })
   }
 }

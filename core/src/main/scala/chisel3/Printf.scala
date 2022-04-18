@@ -12,10 +12,10 @@ import chisel3.internal.sourceinfo.SourceInfo
   * See apply methods for use
   */
 object printf {
+
   /** Helper for packing escape characters */
   private[chisel3] def format(formatIn: String): String = {
-    require(formatIn forall (c => c.toInt > 0 && c.toInt < 128),
-      "format strings must comprise non-null ASCII values")
+    require(formatIn.forall(c => c.toInt > 0 && c.toInt < 128), "format strings must comprise non-null ASCII values")
     def escaped(x: Char) = {
       require(x.toInt >= 0, s"char ${x} to Int ${x.toInt} must be >= 0")
       if (x == '"' || x == '\\') {
@@ -25,15 +25,18 @@ object printf {
       } else if (x == '\t') {
         "\\t"
       } else {
-        require(x.toInt >= 32, s"char ${x} to Int ${x.toInt} must be >= 32") // TODO \xNN once FIRRTL issue #59 is resolved
+        require(
+          x.toInt >= 32,
+          s"char ${x} to Int ${x.toInt} must be >= 32"
+        ) // TODO \xNN once FIRRTL issue #59 is resolved
         x
       }
     }
-    formatIn map escaped mkString ""
+    formatIn.map(escaped).mkString("")
   }
 
   /** Named class for [[printf]]s. */
-  final class Printf private[chisel3](val pable: Printable) extends VerificationStatement
+  final class Printf private[chisel3] (val pable: Printable) extends VerificationStatement
 
   /** Prints a message in simulation
     *
@@ -73,7 +76,8 @@ object printf {
     * @param data format string varargs containing data to print
     */
   def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
-    apply(Printable.pack(fmt, data:_*))
+    apply(Printable.pack(fmt, data: _*))
+
   /** Prints a message in simulation
     *
     * Prints a message every cycle. If defined within the scope of a [[when]] block, the message
@@ -90,18 +94,29 @@ object printf {
     */
   def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf = {
     var printfId: Printf = null
-    when (!Module.reset.asBool) {
+    when(!Module.reset.asBool) {
       printfId = printfWithoutReset(pable)
     }
     printfId
   }
 
-  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf = {
+  private[chisel3] def printfWithoutReset(
+    pable: Printable
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Printf = {
     val clock = Builder.forcedClock
     val printfId = new Printf(pable)
     pushCommand(chisel3.internal.firrtl.Printf(printfId, sourceInfo, clock.ref, pable))
     printfId
   }
-  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
-    printfWithoutReset(Printable.pack(fmt, data:_*))
+  private[chisel3] def printfWithoutReset(
+    fmt:  String,
+    data: Bits*
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Printf =
+    printfWithoutReset(Printable.pack(fmt, data: _*))
 }

@@ -17,19 +17,23 @@ Historically, due to a mistake in versioning with chisel-iotesters as well as so
 the compatible versions of Chisel-related projects has not been obvious.
 We are taking steps to improve the situation by bringing the major versions more in line (the `B` part in `A.B.C`),
 but the inconsistencies remain in previously published versions.
+Beginning with Chisel 3.5, the major versions for all projects are aligned on `A.5`).
 
 Please use the following table to determine which versions of the related projects are compatible.
 In particular, versions of projects in this table were compiled against the version of any dependencies listed in the same row.
 For example, `chisel-iotesters` version 1.4 was compiled against `chisel3` version 3.3.
 
-| chisel3 | chiseltest | chisel-iotesters | firrtl | treadle | diagrammer | firrtl-interpreter<sup>2</sup> |
-| ------- | ---------- | ---------------- | ------ | ------- | ---------- | ----- |
-| 3.4     | 0.3        | 1.5              | 1.4    | 1.3     | 1.3        | 1.4 |
-| 3.3     | 0.2        | 1.4              | 1.3    | 1.2     | 1.2        | 1.3 |
-| 3.2     | 0.1<sup>1</sup>  | 1.3        | 1.2    | 1.1     | 1.1        | 1.2 |
-| 3.1     | -          | 1.2              | 1.1    | 1.0     | 1.0        | 1.1 |
-| 3.0     | -          | 1.1              | 1.0    | -<sup>3</sup> | -    | 1.0 |
+| chisel3 | chiseltest      | chisel-iotesters<sup>3</sup> | firrtl | treadle | diagrammer | firrtl-interpreter<sup>2</sup> |
+| ------- | ----------      | ----------------             | ------ | ------- | ---------- | ----- |
+| 3.5     | 0.5<sup>4</sup> | 2.5<sup>5</sup>              | 1.5    | 1.5<sup>4</sup> | 1.5<sup>4</sup> | - |
+| 3.4     | 0.3             | 1.5                          | 1.4    | 1.3     | 1.3        | 1.4 |
+| 3.3     | 0.2             | 1.4                          | 1.3    | 1.2     | 1.2        | 1.3 |
+| 3.2     | 0.1<sup>1</sup> | 1.3                          | 1.2    | 1.1     | 1.1        | 1.2 |
+| 3.1     | -               | 1.2                          | 1.1    | 1.0     | 1.0        | 1.1 |
+| 3.0     | -               | 1.1                          | 1.0    | -       | -          | 1.0 |
 
 <sup>1</sup> chiseltest 0.1 was published under artifact name [chisel-testers2](https://search.maven.org/search?q=a:chisel-testers2_2.12) (0.2 was published under both artifact names)    
-<sup>2</sup> Replaced by Treadle, in maintenance mode only since version 1.1    
-<sup>3</sup> Treadle was preceded by the firrtl-interpreter    
+<sup>2</sup> Replaced by Treadle, in maintenance mode only since version 1.1, final version is 1.4    
+<sup>3</sup> Replaced by chiseltest, final version is 2.5    
+<sup>4</sup> chiseltest, treadle, and diagrammer skipped X.4 to have a consistent major version with Chisel    
+<sup>5</sup> chisel-iotesters skipped from 1.5 to 2.5 to have a consistent major version with Chisel    

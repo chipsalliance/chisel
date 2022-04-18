@@ -5,7 +5,18 @@ package chisel3.experimental
 import chisel3.internal.firrtl.Width
 import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.internal._
-import chisel3.{ActualDirection, Bits, CompileOptions, Data, Element, PString, Printable, RawModule, SpecifiedDirection, UInt}
+import chisel3.{
+  ActualDirection,
+  Bits,
+  CompileOptions,
+  Data,
+  Element,
+  PString,
+  Printable,
+  RawModule,
+  SpecifiedDirection,
+  UInt
+}
 
 import scala.collection.mutable
 
@@ -27,9 +38,7 @@ import scala.collection.mutable
 final class Analog private (private[chisel3] val width: Width) extends Element {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
-  override def toString: String = {
-    s"Analog$width$bindingToString"
-  }
+  override def toString: String = stringAccessor(s"Analog$width")
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width
@@ -49,7 +58,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     _parent.foreach(_.addId(this))
     SpecifiedDirection.fromParent(parentDirection, specifiedDirection) match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
-      case x => throwException(s"Analog may not have explicit direction, got '$x'")
+      case x                                                        => throwException(s"Analog may not have explicit direction, got '$x'")
     }
     val targetTopBinding = target match {
       case target: TopBinding => target
@@ -69,8 +78,12 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     throwException("Analog does not support asUInt")
 
-  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): Unit = {
+  private[chisel3] override def connectFromBits(
+    that: Bits
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Unit = {
     throwException("Analog does not support connectFromBits")
   }
 

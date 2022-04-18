@@ -47,7 +47,7 @@ object log2Up {
 object log2Ceil {
   def apply(in: BigInt): Int = {
     require(in > 0)
-    (in-1).bitLength
+    (in - 1).bitLength
   }
   def apply(in: Int): Int = apply(BigInt(in))
 }
@@ -82,7 +82,7 @@ object log2Down {
   */
 object log2Floor {
   def apply(in: BigInt): Int = log2Ceil(in) - (if (isPow2(in)) 0 else 1)
-  def apply(in: Int): Int = apply(BigInt(in))
+  def apply(in: Int):    Int = apply(BigInt(in))
 }
 
 /** Returns whether a Scala integer is a power of two.
@@ -95,12 +95,12 @@ object log2Floor {
   * }}}
   */
 object isPow2 {
-  def apply(in: BigInt): Boolean = in > 0 && ((in & (in-1)) == 0)
-  def apply(in: Int): Boolean = apply(BigInt(in))
+  def apply(in: BigInt): Boolean = in > 0 && ((in & (in - 1)) == 0)
+  def apply(in: Int):    Boolean = apply(BigInt(in))
 }
 
-
 object unsignedBitLength {
+
   /** Return the number of bits required to encode a specific value, assuming no sign bit is required.
     *
     * Basically, `n.bitLength`. NOTE: This will return 0 for a value of 0.
@@ -115,6 +115,7 @@ object unsignedBitLength {
 }
 
 object signedBitLength {
+
   /** Return the number of bits required to encode a specific value, assuming a sign bit is required.
     *
     * Basically, 0 for 0, 1 for -1, and `n.bitLength` + 1 for everything else.
@@ -124,9 +125,9 @@ object signedBitLength {
     */
   def apply(in: BigInt): Int = {
     in.toInt match {
-      case 0 => 0
+      case 0  => 0
       case -1 => 1
-      case _ => in.bitLength + 1
+      case _  => in.bitLength + 1
     }
 
   }

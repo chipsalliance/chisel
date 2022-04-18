@@ -39,7 +39,7 @@ object ModuleDataProductSpec {
 class ModuleDataProductSpec extends ChiselFlatSpec {
   import ModuleDataProductSpec._
 
-  behavior of "DataProduct"
+  behavior.of("DataProduct")
 
   it should "work for UserModules (recursively)" in {
     val m = elaborateAndGetModule(new MyUserModule)
@@ -62,7 +62,7 @@ class ModuleDataProductSpec extends ChiselFlatSpec {
     val impl = implicitly[DataProduct[MyUserModule]]
     val set = impl.dataSet(m)
     for ((d, _) <- expected) {
-      set(d) should be (true)
+      set(d) should be(true)
     }
     val it = impl.dataIterator(m, "m")
     it.toList should contain theSameElementsAs (expected)
@@ -82,7 +82,7 @@ class ModuleDataProductSpec extends ChiselFlatSpec {
     val impl = implicitly[DataProduct[MyExtModule]]
     val set = impl.dataSet(m)
     for ((d, _) <- expected) {
-      set(d) should be (true)
+      set(d) should be(true)
     }
     val it = impl.dataIterator(m, "m")
     it.toList should contain theSameElementsAs (expected)

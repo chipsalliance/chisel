@@ -28,7 +28,7 @@ class AspectPhase extends Phase {
         Nil
       case other => Seq(other)
     }
-    if(dut.isDefined) {
+    if (dut.isDefined) {
       val newAnnotations = aspects.flatMap { _.resolveAspect(dut.get, remainingAnnotations) }
       remainingAnnotations ++ newAnnotations
     } else annotations

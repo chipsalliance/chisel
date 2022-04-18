@@ -6,9 +6,8 @@ import java.io.File
 
 import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.util.experimental.{loadMemoryFromFile,loadMemoryFromFileInline}
+import chisel3.util.experimental.{loadMemoryFromFile, loadMemoryFromFileInline}
 import chisel3.util.log2Ceil
-import firrtl.FirrtlExecutionSuccess
 import firrtl.annotations.MemoryLoadFileType
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -16,9 +15,9 @@ import org.scalatest.matchers.should.Matchers
 class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
-    val value1  = Output(memoryType)
-    val value2  = Output(memoryType)
-    val value3  = Output(memoryType)
+    val value1 = Output(memoryType)
+    val value2 = Output(memoryType)
+    val value3 = Output(memoryType)
   })
 
   val memory1 = Mem(memoryDepth, memoryType)
@@ -33,12 +32,17 @@ class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
   io.value3 := memory3(io.address)
 }
 
-class UsesThreeMemsInline(memoryDepth: Int, memoryType: Data, memoryFile: String, hexOrBinary: MemoryLoadFileType.FileType) extends Module {
+class UsesThreeMemsInline(
+  memoryDepth: Int,
+  memoryType:  Data,
+  memoryFile:  String,
+  hexOrBinary: MemoryLoadFileType.FileType)
+    extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
-    val value1  = Output(memoryType)
-    val value2  = Output(memoryType)
-    val value3  = Output(memoryType)
+    val value1 = Output(memoryType)
+    val value2 = Output(memoryType)
+    val value3 = Output(memoryType)
   })
 
   val memory1 = Mem(memoryDepth, memoryType)
@@ -56,9 +60,9 @@ class UsesThreeMemsInline(memoryDepth: Int, memoryType: Data, memoryFile: String
 class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
-    val value   = Output(memoryType)
-    val value1  = Output(memoryType)
-    val value2  = Output(memoryType)
+    val value = Output(memoryType)
+    val value1 = Output(memoryType)
+    val value2 = Output(memoryType)
   })
 
   val memory = Mem(memoryDepth, memoryType)
@@ -78,7 +82,7 @@ class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
 class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
-    val value   = Output(memoryType)
+    val value = Output(memoryType)
   })
 
   val memory = Mem(memoryDepth, memoryType)
@@ -91,8 +95,8 @@ class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
 class FileHasSuffix(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
-    val value   = Output(memoryType)
-    val value2  = Output(memoryType)
+    val value = Output(memoryType)
+    val value2 = Output(memoryType)
   })
 
   val memory = Mem(memoryDepth, memoryType)
@@ -116,7 +120,7 @@ class MemoryShape extends Bundle {
 class HasComplexMemory(memoryDepth: Int) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(log2Ceil(memoryDepth).W))
-    val value   = Output(new MemoryShape)
+    val value = Output(new MemoryShape)
   })
 
   val memory = Mem(memoryDepth, new MemoryShape)
@@ -129,7 +133,7 @@ class HasComplexMemory(memoryDepth: Int) extends Module {
 class HasBinarySupport(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
-    val value   = Output(memoryType)
+    val value = Output(memoryType)
   })
 
   val memory = Mem(memoryDepth, memoryType)
@@ -139,7 +143,6 @@ class HasBinarySupport(memoryDepth: Int, memoryType: Data) extends Module {
   io.value := memory(io.address)
 }
 
-
 /**
   * The following tests are a bit incomplete and check that the output verilog is properly constructed
   * For more complete working examples
@@ -148,12 +151,12 @@ class HasBinarySupport(memoryDepth: Int, memoryType: Data) extends Module {
 class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   def fileExistsWithMem(file: File, mem: Option[String] = None): Unit = {
     info(s"$file exists")
-    file.exists() should be (true)
-    mem.foreach( m => {
+    file.exists() should be(true)
+    mem.foreach(m => {
       info(s"Memory $m is referenced in $file")
       val found = io.Source.fromFile(file).getLines.exists { _.contains(s"""readmemh("$m"""") }
-      found should be (true)
-    } )
+      found should be(true)
+    })
     file.delete()
   }
 
@@ -181,10 +184,10 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     )
 
     val dir = new File(testDirName)
-    fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory1.v"), Some("./mem1"))
-    fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory2.v"), Some("./mem1"))
-    fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory3.v"), Some("./mem1"))
-    fileExistsWithMem( new File(dir, "firrtl_black_box_resource_files.f"))
+    fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory1.v"), Some("./mem1"))
+    fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory2.v"), Some("./mem1"))
+    fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory3.v"), Some("./mem1"))
+    fileExistsWithMem(new File(dir, "firrtl_black_box_resource_files.f"))
 
   }
 
@@ -201,9 +204,9 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
 
     memoryElements.foreach { element =>
       val file = new File(dir, s"HasComplexMemory.HasComplexMemory.memory_$element.v")
-      file.exists() should be (true)
+      file.exists() should be(true)
       val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-      fileText should include (s"""$$readmemh("./mem_$element", HasComplexMemory.memory_$element);""")
+      fileText should include(s"""$$readmemh("./mem_$element", HasComplexMemory.memory_$element);""")
       file.delete()
     }
 
@@ -219,9 +222,9 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
 
     val dir = new File(testDirName)
     val file = new File(dir, s"HasBinarySupport.HasBinarySupport.memory.v")
-    file.exists() should be (true)
+    file.exists() should be(true)
     val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include (s"""$$readmemb("./mem", HasBinarySupport.memory);""")
+    fileText should include(s"""$$readmemb("./mem", HasBinarySupport.memory);""")
     file.delete()
   }
 
@@ -230,15 +233,19 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
 
     val result = (new ChiselStage).execute(
       args = Array("-X", "verilog", "--target-dir", testDirName),
-      annotations = Seq(ChiselGeneratorAnnotation(() => new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "./testmem.h", MemoryLoadFileType.Hex)))
+      annotations = Seq(
+        ChiselGeneratorAnnotation(() =>
+          new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "./testmem.h", MemoryLoadFileType.Hex)
+        )
+      )
     )
     val dir = new File(testDirName)
     val file = new File(dir, s"UsesThreeMemsInline.v")
-    file.exists() should be (true)
+    file.exists() should be(true)
     val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include (s"""$$readmemh("./testmem.h", memory1);""")
-    fileText should include (s"""$$readmemh("./testmem.h", memory2);""")
-    fileText should include (s"""$$readmemh("./testmem.h", memory3);""")
+    fileText should include(s"""$$readmemh("./testmem.h", memory1);""")
+    fileText should include(s"""$$readmemh("./testmem.h", memory2);""")
+    fileText should include(s"""$$readmemh("./testmem.h", memory3);""")
   }
 
   "Module with more than one bin memory inline should work" in {
@@ -246,14 +253,18 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
 
     val result = (new ChiselStage).execute(
       args = Array("-X", "verilog", "--target-dir", testDirName),
-      annotations = Seq(ChiselGeneratorAnnotation(() => new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "testmem.bin", MemoryLoadFileType.Binary)))
+      annotations = Seq(
+        ChiselGeneratorAnnotation(() =>
+          new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "testmem.bin", MemoryLoadFileType.Binary)
+        )
+      )
     )
     val dir = new File(testDirName)
     val file = new File(dir, s"UsesThreeMemsInline.v")
-    file.exists() should be (true)
+    file.exists() should be(true)
     val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include (s"""$$readmemb("testmem.bin", memory1);""")
-    fileText should include (s"""$$readmemb("testmem.bin", memory2);""")
-    fileText should include (s"""$$readmemb("testmem.bin", memory3);""")
+    fileText should include(s"""$$readmemb("testmem.bin", memory1);""")
+    fileText should include(s"""$$readmemb("testmem.bin", memory2);""")
+    fileText should include(s"""$$readmemb("testmem.bin", memory3);""")
   }
 }

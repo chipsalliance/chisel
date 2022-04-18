@@ -11,17 +11,17 @@ import chisel3.util.Valid
   */
 class PRNGIO(val n: Int) extends Bundle {
 
-  /** A [[chisel3.util.Valid Valid]] interface that can be used to set the seed (internal PRNG state) 
+  /** A [[chisel3.util.Valid Valid]] interface that can be used to set the seed (internal PRNG state)
     * @group Signals
     */
   val seed: Valid[Vec[Bool]] = Input(Valid(Vec(n, Bool())))
 
-  /** When asserted, the PRNG will increment by one 
+  /** When asserted, the PRNG will increment by one
     * @group Signals
     */
   val increment: Bool = Input(Bool())
 
-  /** The current state of the PRNG 
+  /** The current state of the PRNG
     * @group Signals
     */
   val out: Vec[Bool] = Output(Vec(n, Bool()))
@@ -34,7 +34,8 @@ class PRNGIO(val n: Int) extends Bundle {
   * @param updateSeed if true, when loading the seed the state will be updated as if the seed were the current state, if
   * false, the state will be set to the seed
   */
-abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int = 1, updateSeed: Boolean = false) extends Module {
+abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int = 1, updateSeed: Boolean = false)
+    extends Module {
   require(width > 0, s"Width must be greater than zero! (Found '$width')")
   require(step > 0, s"Step size must be greater than one! (Found '$step')")
 
@@ -51,7 +52,7 @@ abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int = 1, upd
     * the PRNG state should be manually reset to a safe value. [[LFSR]] handles this by, based on the chosen reduction
     * operator, either sets or resets the least significant bit of the state.
     */
-  private [random] val state: Vec[Bool] = RegInit(resetValue)
+  private[random] val state: Vec[Bool] = RegInit(resetValue)
 
   /** State update function
     * @param s input state
@@ -63,14 +64,15 @@ abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int = 1, upd
     * @param s input state
     * @return the next state after `step` applications of [[PRNG.delta]]
     */
-  final def nextState(s: Seq[Bool]): Seq[Bool] = (0 until step).foldLeft(s){ case (s, _) => delta(s) }
+  final def nextState(s: Seq[Bool]): Seq[Bool] = (0 until step).foldLeft(s) { case (s, _) => delta(s) }
 
-  when (io.increment) {
+  when(io.increment) {
     state := nextState(state)
   }
 
-  when (io.seed.fire) {
-    state := (if (updateSeed) { nextState(io.seed.bits) } else { io.seed.bits })
+  when(io.seed.fire) {
+    state := (if (updateSeed) { nextState(io.seed.bits) }
+              else { io.seed.bits })
   }
 
   io.out := state

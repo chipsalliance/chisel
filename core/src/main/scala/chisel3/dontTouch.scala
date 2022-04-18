@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.experimental.{ChiselAnnotation, annotate, requireIsHardware}
+import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation}
 import firrtl.transforms.DontTouchAnnotation
 
 /** Marks that a signal is an optimization barrier to Chisel and the FIRRTL compiler. This has the effect of
@@ -26,6 +26,7 @@ import firrtl.transforms.DontTouchAnnotation
   * dontTouch.
   */
 object dontTouch {
+
   /** Mark a signal as an optimization barrier to Chisel and FIRRTL.
     *
     * @note Requires the argument to be bound to hardware

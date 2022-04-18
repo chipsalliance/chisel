@@ -15,6 +15,7 @@ import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
 object Module extends SourceInfoDoc {
+
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
@@ -25,12 +26,12 @@ object Module extends SourceInfoDoc {
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: BaseModule](bc: => T)
-                               (implicit sourceInfo: SourceInfo,
-                                         compileOptions: CompileOptions): T = {
+  def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (Builder.readyForModuleConstr) {
-      throwException("Error: Called Module() twice without instantiating a Module." +
-                     sourceInfo.makeMessage(" See " + _))
+      throwException(
+        "Error: Called Module() twice without instantiating a Module." +
+          sourceInfo.makeMessage(" See " + _)
+      )
     }
     Builder.readyForModuleConstr = true
 
@@ -38,7 +39,7 @@ object Module extends SourceInfoDoc {
     val parentWhenStack = Builder.whenStack
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
-    val (saveClock, saveReset)  = (Builder.currentClock, Builder.currentReset)
+    val (saveClock, saveReset) = (Builder.currentClock, Builder.currentReset)
     val savePrefix = Builder.getPrefix
     Builder.clearPrefix()
     Builder.currentClock = None
@@ -49,19 +50,21 @@ object Module extends SourceInfoDoc {
     //   - unset readyForModuleConstr
     //   - reset whenStack to be empty
     //   - set currentClockAndReset
-    val module: T = bc  // bc is actually evaluated here
+    val module: T = bc // bc is actually evaluated here
 
     if (Builder.whenDepth != 0) {
       throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
     }
     if (Builder.readyForModuleConstr) {
-      throwException("Error: attempted to instantiate a Module, but nothing happened. " +
-                     "This is probably due to rewrapping a Module instance with Module()." +
-                     sourceInfo.makeMessage(" See " + _))
+      throwException(
+        "Error: attempted to instantiate a Module, but nothing happened. " +
+          "This is probably due to rewrapping a Module instance with Module()." +
+          sourceInfo.makeMessage(" See " + _)
+      )
     }
     Builder.currentModule = parent // Back to parent!
     Builder.whenStack = parentWhenStack
-    Builder.currentClock = saveClock   // Back to clock and reset scope
+    Builder.currentClock = saveClock // Back to clock and reset scope
     Builder.currentReset = saveReset
 
     // Only add the component if the module generates one
@@ -84,17 +87,22 @@ object Module extends SourceInfoDoc {
 
   /** Returns the implicit Clock */
   def clock: Clock = Builder.forcedClock
+
   /** Returns the implicit Reset */
   def reset: Reset = Builder.forcedReset
+
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
 
-  private[chisel3] def do_pseudo_apply[T <: BaseModule](bc: => T)
-                               (implicit sourceInfo: SourceInfo,
-                                         compileOptions: CompileOptions): T = {
+  private[chisel3] def do_pseudo_apply[T <: BaseModule](
+    bc: => T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
     val parent = Builder.currentModule
-
-    val module: T = bc  // bc is actually evaluated here
+    val module: T = bc // bc is actually evaluated here
+    if (!parent.isEmpty) { Builder.currentModule = parent }
 
     module
   }
@@ -150,12 +158,12 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   }
 }
 
-
 package experimental {
 
   import chisel3.internal.requireIsChiselType // Fix ambiguous import
 
   object IO {
+
     /** Constructs a port for the current Module
       *
       * This must wrap the datatype used to set the io field of any Module.
@@ -170,20 +178,21 @@ package experimental {
       * requested (so that all calls to ports will return the same information).
       * Internal API.
       */
-    def apply[T<:Data](iodef: T): T = {
+    def apply[T <: Data](iodef: T): T = {
       val module = Module.currentModule.get // Impossible to fail
       require(!module.isClosed, "Can't add more ports after module close")
       requireIsChiselType(iodef, "io type")
 
       // Clone the IO so we preserve immutability of data types
-      val iodefClone = try {
-        iodef.cloneTypeFull
-      } catch {
-        // For now this is going to be just a deprecation so we don't suddenly break everyone's code
-        case e: AutoClonetypeException =>
-          Builder.deprecated(e.getMessage, Some(s"${iodef.getClass}"))
-          iodef
-      }
+      val iodefClone =
+        try {
+          iodef.cloneTypeFull
+        } catch {
+          // For now this is going to be just a deprecation so we don't suddenly break everyone's code
+          case e: AutoClonetypeException =>
+            Builder.deprecated(e.getMessage, Some(s"${iodef.getClass}"))
+            iodef
+        }
       module.bindIoInPlace(iodefClone)
       iodefClone
     }
@@ -191,135 +200,28 @@ package experimental {
 }
 
 package internal {
-  import chisel3.experimental.BaseModule
-  import chisel3.experimental.hierarchy.{IsInstantiable, Proto, Clone}
 
   object BaseModule {
-    /** Represents a clone of an underlying object. This is used to support CloneModuleAsRecord and Instance/Definition.
-      *
-      * @note We don't actually "clone" anything in the traditional sense but is a placeholder so we lazily clone internal state
-      */
-    trait IsClone[+T] {
-      // Underlying object of which this is a clone of
-      private[chisel3] def getProto: T
 
-      /** Determines whether another object is a clone of the same underlying proto
-        *
-        * @param a
-        */
-      def hasSameProto(a: Any): Boolean = {
-        val aProto = a match {
-          case x: IsClone[BaseModule] => x.getProto
-          case o => o
-        }
-        this == aProto || getProto == aProto
-      }
-    }
-
-    // Private internal class to serve as a _parent for Data in cloned ports
-    private[chisel3] class ModuleClone[T <: BaseModule] (val getProto: T) extends PseudoModule with IsClone[T] {
-      override def toString = s"ModuleClone(${getProto})"
-      def getPorts = _portsRecord
-      // ClonePorts that hold the bound ports for this module
-      // Used for setting the refs of both this module and the Record
-      private[BaseModule] var _portsRecord: Record = _
-      // This is necessary for correctly supporting .toTarget on a Module Clone. If it is made from the
-      // Instance/Definition API, it should return an instanceTarget. If made from CMAR, it should return a
-      // ModuleTarget.
-      private[chisel3]    var _madeFromDefinition: Boolean = false
-      // Don't generate a component, but point to the one for the cloned Module
-      private[chisel3] def generateComponent(): Option[Component] = {
-        require(!_closed, "Can't generate module more than once")
-        _closed = true
-        _component = getProto._component
-        None
-      }
-      // Maps proto ports to module clone's ports
-      private[chisel3] lazy val ioMap: Map[Data, Data] = {
-        val name2Port = getPorts.elements
-        getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
-      }
-      // This module doesn't actually exist in the FIRRTL so no initialization to do
-      private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
-
-      // Name of this instance's module is the same as the proto's name
-      override def desiredName: String = getProto.name
-
-      private[chisel3] def setRefAndPortsRef(namespace: Namespace): Unit = {
-        val record = _portsRecord
-        // Use .forceName to re-use default name resolving behavior
-        record.forceName(None, default=this.desiredName, namespace)
-        // Now take the Ref that forceName set and convert it to the correct Arg
-        val instName = record.getRef match {
-          case Ref(name) => name
-          case bad => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
-        }
-        // Set both the record and the module to have the same instance name
-        record.setRef(ModuleCloneIO(getProto, instName), force=true) // force because we did .forceName first
-        this.setRef(Ref(instName))
-      }
-    }
-
-    /** Represents a module viewed from a different instance context.
-      *
-      * @note Why do we need both ModuleClone and InstanceClone? If we are annotating a reference in a module-clone,
-      * all submodules must be also be 'cloned' so the toTarget can be computed properly. However, we don't need separate
-      * connectable ports for this instance; all that's different from the proto is the parent.
-      *
-      * @note In addition, the instance name of an InstanceClone is going to be the SAME as the proto, but this is not true
-      * for ModuleClone.
-      */
-    private[chisel3] final class InstanceClone[T <: BaseModule] (val getProto: T, val instName: () => String) extends PseudoModule with IsClone[T] {
-      override def toString = s"InstanceClone(${getProto})"
-      // No addition components are generated
-      private[chisel3] def generateComponent(): Option[Component] = None
-      // Necessary for toTarget to work
-      private[chisel3] def setAsInstanceRef(): Unit = { this.setRef(Ref(instName())) }
-      // This module doesn't acutally exist in the FIRRTL so no initialization to do
-      private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
-      // Instance name is the same as proto's instance name
-      override def instanceName = instName()
-      // Module name is the same as proto's module name
-      override def desiredName: String = getProto.name
-    }
-
-    /** Represents a Definition root module, when accessing something from a definition
-      *
-      * @note This is necessary to distinguish between the toTarget behavior for a Module returned from a Definition,
-      * versus a normal Module. A normal Module.toTarget will always return a local target. If calling toTarget
-      * on a Module returned from a Definition (and thus wrapped in an Instance), we need to return the non-local
-      * target whose root is the Definition. This DefinitionClone is used to represent the root parent of the
-      * InstanceClone (which represents the returned module).
-      */
-    private[chisel3] class DefinitionClone[T <: BaseModule] (val getProto: T) extends PseudoModule with IsClone[T] {
-      override def toString = s"DefinitionClone(${getProto})"
-      // No addition components are generated
-      private[chisel3] def generateComponent(): Option[Component] = None
-      // Necessary for toTarget to work
-      private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
-      // Module name is the same as proto's module name
-      override def desiredName: String = getProto.name
-    }
-
-    /** @note If we are cloning a non-module, we need another object which has the proper _parent set!
-      */
-    trait InstantiableClone[T <: IsInstantiable] extends IsClone[T] {
-      private[chisel3] def _innerContext: experimental.hierarchy.Hierarchy[_]
-      private[chisel3] def getInnerContext: Option[BaseModule] = _innerContext.getInnerDataContext
-    }
+    import chisel3.experimental.hierarchy._
 
     /** Record type returned by CloneModuleAsRecord
       *
       * @note These are not true Data (the Record doesn't correspond to anything in the emitted
       * FIRRTL yet its elements *do*) so have some very specialized behavior.
       */
-    private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
-      val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
+    private[chisel3] class ClonePorts(elts: (String, Data)*)(implicit compileOptions: CompileOptions) extends Record {
+      val elements = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
       def apply(field: String) = elements(field)
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }
 
-    private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
+    private[chisel3] def cloneIORecord(
+      proto: BaseModule
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): ClonePorts = {
       require(proto.isClosed, "Can't clone a module before module close")
       // Fake Module to serve as the _parent of the cloned ports
       // We make this before clonePorts because we want it to come up first in naming in
@@ -330,12 +232,18 @@ package internal {
       // Fake Module to serve as the _parent of the cloned ports
       // We don't create this inside the ModuleClone because we need the ref to be set by the
       // currentModule (and not clonePorts)
-      val clonePorts = new ClonePorts(proto.getModulePorts: _*)
+      val clonePorts = proto match {
+        // BlackBox needs special handling for its pseduo-io Bundle
+        case b: BlackBox =>
+          new ClonePorts(proto.getChiselPorts :+ ("io" -> b._io.get): _*)
+        case _ => new ClonePorts(proto.getChiselPorts: _*)
+      }
       clonePorts.bind(PortBinding(cloneParent))
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
       if (!compileOptions.explicitInvalidate) {
+        // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
       if (proto.isInstanceOf[Module]) {
@@ -349,15 +257,16 @@ package internal {
 
 package experimental {
 
-  import chisel3.experimental.hierarchy.{IsInstantiable, Proto}
+  import chisel3.experimental.hierarchy.core.{IsInstantiable, Proto}
 
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
-      import chisel3.experimental.hierarchy.{Instance, Definition}
-      def toInstance: Instance[T] = new Instance(Proto(b))
+      import chisel3.experimental.hierarchy.core.{Definition, Instance}
+      def toInstance:   Instance[T] = new Instance(Proto(b))
       def toDefinition: Definition[T] = new Definition(Proto(b))
     }
   }
+
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
@@ -461,30 +370,34 @@ package experimental {
       val baseName = this.getClass.getName
 
       /* A sequence of string filters applied to the name */
-      val filters: Seq[String => String] = Seq(
-        ((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon")) // Merge the "$$anon" name with previous name
-      )
+      val filters: Seq[String => String] =
+        Seq(((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon")) // Merge the "$$anon" name with previous name
+        )
 
       filters
-        .foldLeft(baseName){ case (str, filter) => filter(str) } // 1. Apply filters to baseName
-        .split("\\.|\\$")                                        // 2. Split string at '.' or '$'
-        .filterNot(_.forall(_.isDigit))                          // 3. Drop purely numeric names
-        .last                                                    // 4. Use the last name
+        .foldLeft(baseName) { case (str, filter) => filter(str) } // 1. Apply filters to baseName
+        .split("\\.|\\$") // 2. Split string at '.' or '$'
+        .filterNot(_.forall(_.isDigit)) // 3. Drop purely numeric names
+        .last // 4. Use the last name
     }
 
     /** Legalized name of this module. */
-    final lazy val name = try {
-      // PseudoModules are not "true modules" and thus should share
-      // their original modules names without uniquification
-      this match {
-        case _: PseudoModule => desiredName
-        case _ => Builder.globalNamespace.name(desiredName)
+    final lazy val name =
+      try {
+        // PseudoModules are not "true modules" and thus should share
+        // their original modules names without uniquification
+        this match {
+          case _: PseudoModule => desiredName
+          case _ => Builder.globalNamespace.name(desiredName)
+        }
+      } catch {
+        case e: NullPointerException =>
+          throwException(
+            s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?",
+            e
+          )
+        case t: Throwable => throw t
       }
-    } catch {
-      case e: NullPointerException => throwException(
-        s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)
-      case t: Throwable => throw t
-    }
 
     /** Returns a FIRRTL ModuleName that references this object
       *
@@ -497,8 +410,10 @@ package experimental {
       * @note Should not be called until circuit elaboration is complete
       */
     final def toTarget: ModuleTarget = this match {
-      case m: internal.BaseModule.InstanceClone[_] => throwException(s"Internal Error! It's not legal to call .toTarget on an InstanceClone. $m")
-      case m: internal.BaseModule.DefinitionClone[_] => throwException(s"Internal Error! It's not legal to call .toTarget on an DefinitionClone. $m")
+      case m: experimental.hierarchy.InstanceClone[_] =>
+        throwException(s"Internal Error! It's not legal to call .toTarget on an InstanceClone. $m")
+      case m: experimental.hierarchy.DefinitionClone[_] =>
+        throwException(s"Internal Error! It's not legal to call .toTarget on an DefinitionClone. $m")
       case _ => ModuleTarget(this.circuitName, this.name)
     }
 
@@ -514,10 +429,13 @@ package experimental {
       * the correct [[InstanceTarget]]s whenever using the Definition/Instance API.
       */
     private[chisel3] def getTarget: IsModule = this match {
-      case m: internal.BaseModule.InstanceClone[_] if m._parent.nonEmpty => m._parent.get.getTarget.instOf(instanceName, name)
-      case m: internal.BaseModule.ModuleClone[_] if m._madeFromDefinition => m._parent.get.getTarget.instOf(instanceName, name)
+      case m: experimental.hierarchy.InstanceClone[_] if m._parent.nonEmpty =>
+        m._parent.get.getTarget.instOf(instanceName, name)
+      case m: experimental.hierarchy.ModuleClone[_] if m._madeFromDefinition =>
+        m._parent.get.getTarget.instOf(instanceName, name)
       // Without this, we get the wrong CircuitName for the Definition
-      case m: internal.BaseModule.DefinitionClone[_] if m._circuit.nonEmpty => ModuleTarget(this._circuit.get.circuitName, this.name)
+      case m: experimental.hierarchy.DefinitionClone[_] if m._circuit.nonEmpty =>
+        ModuleTarget(this._circuit.get.circuitName, this.name)
       case _ => this.toTarget
     }
 
@@ -528,7 +446,7 @@ package experimental {
     final def toAbsoluteTarget: IsModule = {
       _parent match {
         case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, name)
-        case None =>
+        case None         =>
           // FIXME Special handling for Views - evidence of "weirdness" of .toAbsoluteTarget
           // In theory, .toAbsoluteTarget should not be necessary, .toTarget combined with the
           // target disambiguation in FIRRTL's deduplication transform should ensure that .toTarget
@@ -619,17 +537,19 @@ package experimental {
         data match {
           case data: Element if insideCompat => data._assignCompatibilityExplicitDirection
           case data: Element => // Not inside a compatibility Bundle, nothing to be done
-          case data: Aggregate => data.specifiedDirection match {
-            // Recurse into children to ensure explicit direction set somewhere
-            case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => data match {
-              case record: Record =>
-                val compatRecord = !record.compileOptions.dontAssumeDirectionality
-                record.getElements.foreach(assignCompatDir(_, compatRecord))
-              case vec: Vec[_] =>
-                vec.getElements.foreach(assignCompatDir(_, insideCompat))
+          case data: Aggregate =>
+            data.specifiedDirection match {
+              // Recurse into children to ensure explicit direction set somewhere
+              case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
+                data match {
+                  case record: Record =>
+                    val compatRecord = !record.compileOptions.dontAssumeDirectionality
+                    record.getElements.foreach(assignCompatDir(_, compatRecord))
+                  case vec: Vec[_] =>
+                    vec.getElements.foreach(assignCompatDir(_, insideCompat))
+                }
+              case SpecifiedDirection.Input | SpecifiedDirection.Output => // forced assign, nothing to do
             }
-            case SpecifiedDirection.Input | SpecifiedDirection.Output => // forced assign, nothing to do
-          }
         }
       }
 
@@ -669,10 +589,12 @@ package experimental {
 
     /** Signal name (for simulation). */
     override def instanceName: String =
-      if (_parent == None) name else _component match {
-        case None => getRef.name
-        case Some(c) => getRef fullName c
-      }
+      if (_parent == None) name
+      else
+        _component match {
+          case None    => getRef.name
+          case Some(c) => getRef.fullName(c)
+        }
 
   }
 }

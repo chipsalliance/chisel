@@ -20,6 +20,7 @@ import scala.reflect.macros.blackbox.Context
 /** Abstract base class for generalized source information.
   */
 sealed trait SourceInfo {
+
   /** A prettier toString
     *
     * Make a useful message if SourceInfo is available, nothing otherwise

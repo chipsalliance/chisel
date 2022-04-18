@@ -10,7 +10,6 @@ _New in Chisel 3.5_
 
 ```scala mdoc:invisible
 import chisel3._
-import chisel3.stage.ChiselStage.emitVerilog
 ```
 
 ## Introduction
@@ -91,7 +90,7 @@ class MyModule extends RawModule {
 Of course, this would result in very different looking Verilog:
 
 ```scala mdoc:verilog
-emitVerilog(new MyModule {
+getVerilogString(new MyModule {
   override def desiredName = "MyModule"
   axi := DontCare // Just to generate Verilog in this stub
 })
@@ -147,7 +146,7 @@ class AXIStub extends RawModule {
 This will generate Verilog that matches the standard naming convention:
 
 ```scala mdoc:verilog
-emitVerilog(new AXIStub)
+getVerilogString(new AXIStub)
 ```
 
 Note that if both the _Target_ and the _View_ types are subtypes of `Data` (as they are in this example),
@@ -175,7 +174,7 @@ class ConnectionExample extends RawModule {
 This results in the corresponding fields being connected in the emitted Verilog:
 
 ```scala mdoc:verilog
-emitVerilog(new ConnectionExample)
+getVerilogString(new ConnectionExample)
 ```
 
 ## Other Use Cases
@@ -205,17 +204,6 @@ class TupleExample extends RawModule {
 The issue, is that Chisel primitives like `Mux` and `:=` only operate on subtypes of `Data` and
 Tuples (as members of the Scala standard library), are not subclasses of `Data`.
 `DataView` provides a mechanism to _view_ a `Tuple` as if it were a `Data`:
-
-<!-- TODO replace this with stdlib import -->
-
-```scala mdoc:invisible
-// ProductDataProduct
-implicit val productDataProduct: DataProduct[Product] = new DataProduct[Product] {
-  def dataIterator(a: Product, path: String): Iterator[(Data, String)] = {
-    a.productIterator.zipWithIndex.collect { case (d: Data, i) => d -> s"$path._$i" }
-  }
-}
-```
 
 ```scala mdoc
 // We need a type to represent the Tuple
@@ -259,15 +247,23 @@ class TupleExample extends RawModule {
 
 ```scala mdoc:invisible
 // Always emit Verilog to make sure it actually works
-emitVerilog(new TupleExample)
+getVerilogString(new TupleExample)
 ```
 
 Note that this example ignored `DataProduct` which is another required piece (see [the documentation
 about it below](#dataproduct)).
 
-All of this is slated to be included the Chisel standard library.
+All of this is available to users via a single import:
+```scala mdoc:reset
+import chisel3.experimental.conversions._
+```
 
 ## Totality and PartialDataView
+
+```scala mdoc:reset:invisible
+import chisel3._
+import chisel3.experimental.dataview._
+```
 
 A `DataView` is _total_ if all fields of the _Target_ type and all fields of the _View_ type are 
 included in the mapping.
@@ -293,7 +289,7 @@ class BadMapping extends Module {
    out := in.viewAs[BundleB]
 }
 // We must run Chisel to see the error
-emitVerilog(new BadMapping)
+getVerilogString(new BadMapping)
 ```
 
 As that error suggests, if we *want* the view to be non-total, we can use a `PartialDataView`:
@@ -309,7 +305,7 @@ class PartialDataViewModule extends Module {
 ```
 
 ```scala mdoc:verilog
-emitVerilog(new PartialDataViewModule)
+getVerilogString(new PartialDataViewModule)
 ```
 
 While `PartialDataViews` need not be total for the _Target_, both `PartialDataViews` and `DataViews`
@@ -327,7 +323,7 @@ class PartialDataViewModule2 extends Module {
    out.viewAs[BundleA] := in
 }
 // We must run Chisel to see the error
-emitVerilog(new PartialDataViewModule2)
+getVerilogString(new PartialDataViewModule2)
 ```
 
 As noted, the mapping must **always** be total for the `View`.
@@ -440,7 +436,7 @@ class FooToBar extends Module {
 ```
 
 ```scala mdoc:verilog
-emitVerilog(new FooToBar)
+getVerilogString(new FooToBar)
 ```
 
 However, it's possible that some user of `Foo` and `Bar` wants different behavior,
@@ -460,7 +456,7 @@ class FooToBarSwizzled extends Module {
 ```
 
 ```scala mdoc:verilog
-emitVerilog(new FooToBarSwizzled)
+getVerilogString(new FooToBarSwizzled)
 ```
 
 ### DataProduct

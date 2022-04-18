@@ -19,7 +19,7 @@ class DecodeTestModule(minimizer: Minimizer, table: TruthTable) extends Module {
   chisel3.experimental.verification.assert(
     // for each instruction, if input matches, output should match, not no matched, fallback to default
     (table.table.map { case (key, value) => (i === key) && (minimizedO === value) } ++
-      Seq(table.table.keys.map(i =/= _).reduce(_ && _) && minimizedO === table.default)).reduce(_ || _)
+      Seq(table.table.map(_._1).map(i =/= _).reduce(_ && _) && minimizedO === table.default)).reduce(_ || _)
   )
 }
 
@@ -270,6 +270,41 @@ trait MinimizerSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
         SRAI_RV32 -> Seq(Y, N, N, N, N, N, N, Y, N, A2_IMM, A1_RS1, IMM_I, DW_XPR, FN_SRA, N, M_X, N, N, N, N, N, N, Y, CSR_N, N, N, N, N),
       ).map { case (k, v) => BitPat(s"b$k") -> BitPat(s"b${v.reduce(_ + _)}") },
       BitPat(s"b${Seq(N, X, X, X, X, X, X, X, X, A2_X, A1_X, IMM_X, DW_X, FN_X, N, M_X, X, X, X, X, X, X, X, CSR_X, X, X, X, X).reduce(_ + _)}")
+    ))
+  }
+
+  "output is 0" should "pass" in {
+    minimizerTest(TruthTable.fromString(
+      """00->0
+        |01->?
+        |10->0
+        |11->0
+        |    ?
+        |""".stripMargin
+
+    ))
+  }
+  "output is 1" should "pass" in {
+    minimizerTest(TruthTable.fromString(
+      """00->1
+        |01->?
+        |10->1
+        |11->1
+        |    ?
+        |""".stripMargin
+
+    ))
+  }
+  // I know this seems to be crazy, but if user is crazy as well...
+  "output is dont care" should "pass" in {
+    minimizerTest(TruthTable.fromString(
+      """00->?
+        |01->?
+        |10->?
+        |11->?
+        |    ?
+        |""".stripMargin
+
     ))
   }
 }

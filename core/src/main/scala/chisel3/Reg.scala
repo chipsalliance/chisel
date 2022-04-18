@@ -27,9 +27,9 @@ import chisel3.internal.sourceinfo.SourceInfo
   * // Width of r4.unknown is inferred
   * // Width of r4.known is set to 8
   * }}}
-  *
   */
 object Reg {
+
   /** Construct a [[Reg]] from a type template with no initialization value (reset is ignored).
     * Value will not change unless the [[Reg]] is given a connection.
     * @param t The template from which to construct this wire
@@ -74,6 +74,7 @@ object Reg {
   * }}}
   */
 object RegNext {
+
   /** Returns a register ''with an unset width'' connected to the signal `next` and with no reset value. */
   def apply[T <: Data](next: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (next match {
@@ -94,7 +95,7 @@ object RegNext {
       case next: Bits => next.cloneTypeWidth(Width())
       case next => next.cloneTypeFull
     }).asInstanceOf[T]
-    val reg = RegInit(model, init)  // TODO: this makes NO sense
+    val reg = RegInit(model, init) // TODO: this makes NO sense
 
     requireIsHardware(next, "reg next")
     reg := next
@@ -162,6 +163,7 @@ object RegNext {
   * }}}
   */
 object RegInit {
+
   /** Construct a [[Reg]] from a type template initialized to the specified value on reset
     * @param t The type template used to construct this [[Reg]]
     * @param init The value the [[Reg]] is initialized to on reset

@@ -10,6 +10,7 @@ import chisel3.internal.sourceinfo._
 import chisel3.internal.plugin.autoNameRecursively
 
 private[chisel3] object SeqUtils {
+
   /** Concatenates the data elements of the input sequence, in sequence order, together.
     * The first element of the sequence forms the least significant bits, while the last element
     * in the sequence forms the most significant bits.
@@ -27,10 +28,10 @@ private[chisel3] object SeqUtils {
       in.head.asUInt
     } else {
       val lo = autoNameRecursively("lo")(prefix("lo") {
-        asUInt(in.slice(0, in.length/2))
+        asUInt(in.slice(0, in.length / 2))
       })
       val hi = autoNameRecursively("hi")(prefix("hi") {
-        asUInt(in.slice(in.length/2, in.length))
+        asUInt(in.slice(in.length / 2, in.length))
       })
       hi ## lo
     }
@@ -45,7 +46,7 @@ private[chisel3] object SeqUtils {
     case 0 => 0.U
     case 1 => in.head
     case n =>
-      val sum = count(in take n/2) +& count(in drop n/2)
+      val sum = count(in.take(n / 2)) +& count(in.drop(n / 2))
       sum(BigInt(n).bitLength - 1, 0)
   }
 
@@ -54,8 +55,12 @@ private[chisel3] object SeqUtils {
   def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
   /** @group SourceInfoTransformMacros */
-  def do_priorityMux[T <: Data](in: Seq[(Bool, T)])
-                               (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_priorityMux[T <: Data](
+    in: Seq[(Bool, T)]
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
     if (in.size == 1) {
       in.head._2
     } else {
@@ -72,13 +77,16 @@ private[chisel3] object SeqUtils {
   def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
   /** @group SourceInfoTransformMacros */
-  def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])
-                             (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_oneHotMux[T <: Data](
+    in: Iterable[(Bool, T)]
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
     if (in.tail.isEmpty) {
       in.head._2
-    }
-    else {
-      val output = cloneSupertype(in.toSeq map { _._2}, "oneHotMux")
+    } else {
+      val output = cloneSupertype(in.toSeq.map { _._2 }, "oneHotMux")
 
       def buildAndOrMultiplexor[TT <: Data](inputs: Iterable[(Bool, TT)]): T = {
         val masked = for ((s, i) <- inputs) yield Mux(s, i.asUInt, 0.U)
@@ -89,8 +97,9 @@ private[chisel3] object SeqUtils {
         case _: SInt =>
           // SInt's have to be managed carefully so sign extension works
 
-          val sInts: Iterable[(Bool, SInt)] = in.collect { case (s: Bool, f: SInt) =>
-            (s, f.asTypeOf(output).asInstanceOf[SInt])
+          val sInts: Iterable[(Bool, SInt)] = in.collect {
+            case (s: Bool, f: SInt) =>
+              (s, f.asTypeOf(output).asInstanceOf[SInt])
           }
 
           val masked = for ((s, i) <- sInts) yield Mux(s, i, 0.S)
@@ -99,20 +108,20 @@ private[chisel3] object SeqUtils {
         case _: FixedPoint =>
           val (sels, possibleOuts) = in.toSeq.unzip
 
-          val (intWidths, binaryPoints) = in.toSeq.map { case (_, o) =>
-            val fo = o.asInstanceOf[FixedPoint]
-            require(fo.binaryPoint.known, "Mux1H requires width/binary points to be defined")
-            (fo.getWidth - fo.binaryPoint.get, fo.binaryPoint.get)
+          val (intWidths, binaryPoints) = in.toSeq.map {
+            case (_, o) =>
+              val fo = o.asInstanceOf[FixedPoint]
+              require(fo.binaryPoint.known, "Mux1H requires width/binary points to be defined")
+              (fo.getWidth - fo.binaryPoint.get, fo.binaryPoint.get)
           }.unzip
 
           if (intWidths.distinct.length == 1 && binaryPoints.distinct.length == 1) {
             buildAndOrMultiplexor(in)
-          }
-          else {
+          } else {
             val maxIntWidth = intWidths.max
             val maxBP = binaryPoints.max
             val inWidthMatched = Seq.fill(intWidths.length)(Wire(FixedPoint((maxIntWidth + maxBP).W, maxBP.BP)))
-            inWidthMatched.zipWithIndex foreach { case (e, idx) => e := possibleOuts(idx).asInstanceOf[FixedPoint] }
+            inWidthMatched.zipWithIndex.foreach { case (e, idx) => e := possibleOuts(idx).asInstanceOf[FixedPoint] }
             buildAndOrMultiplexor(sels.zip(inWidthMatched))
           }
 
@@ -123,12 +132,12 @@ private[chisel3] object SeqUtils {
             val (sel, inData) = in.unzip
             val inElts = inData.map(_.asInstanceOf[Aggregate].getElements)
             // We want to iterate on the columns of inElts, so we transpose
-            out.getElements.zip(inElts.transpose).foreach { case (outElt, elts) =>
-              outElt := oneHotMux(sel.zip(elts))
+            out.getElements.zip(inElts.transpose).foreach {
+              case (outElt, elts) =>
+                outElt := oneHotMux(sel.zip(elts))
             }
             out.asInstanceOf[T]
-          }
-          else {
+          } else {
             throwException(s"Cannot Mux1H with aggregates with inferred widths")
           }
 
