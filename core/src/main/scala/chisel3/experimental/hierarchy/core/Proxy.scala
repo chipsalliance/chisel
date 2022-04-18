@@ -127,7 +127,7 @@ trait RootProxy[+P] extends HierarchicalProxy[P] {
   def toRoot: Root[P] = toHierarchy
   def toDefinition: Definition[P] = toHierarchy.toDefinition
   def predecessorOption: Option[RootProxy[P]]
-  def builder: Option[ImplementationBuilder[P]]
+  def builder: Option[Implementation]
   def parentOpt: Option[Proxy[Any]] = None
   def canInstantiate: Boolean
 }
@@ -135,7 +135,7 @@ trait RootProxy[+P] extends HierarchicalProxy[P] {
 
 trait DefinitionProxy[+P] extends RootProxy[P] {
   //def toInterfaceProxy: InterfaceProxy[P]
-  def builder: Option[ImplementationBuilder[P]]
+  def builder: Option[Implementation]
 
   private var canInstantiateVar = true
   def canInstantiate: Boolean = canInstantiateVar

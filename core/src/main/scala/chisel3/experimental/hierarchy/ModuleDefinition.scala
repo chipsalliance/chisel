@@ -19,7 +19,7 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   *
   * @param proto Underlying module which this is the definition of
   */
-private[chisel3] final case class ModuleDefinition[T <: BaseModule](proto: T, builder: Option[ImplementationBuilder[T]])
+private[chisel3] final case class ModuleDefinition[T <: BaseModule](proto: T, builder: Option[Implementation])
     extends ModuleRoot[T]
     with DefinitionProxy[T] {
   override def equals(a: Any): Boolean = {
@@ -49,7 +49,7 @@ object ModuleDefinition {
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions,
-    builder: Option[ImplementationBuilder[T]] = None
+    builder: Option[Implementation] = None
   ): ModuleDefinition[T] = {
     val newChild = Module.do_pseudo_apply(new ModuleDefinition(proto, builder))
     newChild._circuit = circuit

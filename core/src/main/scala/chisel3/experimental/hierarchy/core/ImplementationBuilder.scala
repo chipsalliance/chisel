@@ -6,4 +6,9 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.language.experimental.macros
 import java.util.IdentityHashMap
 
-class ImplementationBuilder[P](f: Definition[P] => Unit)
+sealed trait Implementation {
+  type P
+  def implement(d: Definition[P]): Unit
+}
+
+trait CustomImplementation extends Implementation

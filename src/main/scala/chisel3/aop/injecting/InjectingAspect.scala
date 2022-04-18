@@ -8,6 +8,7 @@ import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
 import chisel3.stage.{ChiselOptions, DesignAnnotation}
 import firrtl.annotations.ModuleTarget
+import chisel3.experimental.hierarchy._
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.options.Viewer.view
 import firrtl.{ir, _}
