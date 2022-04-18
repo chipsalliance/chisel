@@ -5,8 +5,6 @@ Please select the item best describing the issue in each category and delete the
 **Type of issue**: bug report
 
 
-**Other information**
- <!-- include detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, Scastie (https://scastie.scala-lang.org/KtzZQ3nFTea9KoNh0tRqtg) -->
 
 **Please provide the steps to reproduce the problem:**
 
