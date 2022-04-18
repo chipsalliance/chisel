@@ -2,7 +2,6 @@
 <!--
 Please select the item best describing the issue in each category and delete the other items.
 -->
-<!-- choose all that apply -->
 **Type of issue**: bug report
 
 <!-- choose one -->
