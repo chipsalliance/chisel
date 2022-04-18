@@ -92,8 +92,8 @@ object assert {
   ): Assert = {
     val id = new Assert()
     when(!Module.reset.asBool()) {
-      Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
       failureMessage("Assertion", line, cond, message, data)
+      Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
     id
   }
@@ -178,8 +178,8 @@ object assume {
   ): Assume = {
     val id = new Assume()
     when(!Module.reset.asBool()) {
-      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
       failureMessage("Assumption", line, cond, message, data)
+      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
     id
   }
