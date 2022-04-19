@@ -586,9 +586,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
-        case MonoConnectException(message) =>
+        case e@MonoConnectException(message) =>
+          println(e.getStackTrace().mkString("\n"))
           throwException(
-            s"Connection between sink ($this) and source ($that) failed @: $message"
+            s"Connection between sink ($this), ${this._parent} and source ($that), ${that._parent} failed @: $message"
           )
       }
     } else {

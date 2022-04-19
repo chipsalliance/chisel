@@ -5,8 +5,9 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+import chisel3.experimental.hierarchy._
 import chisel3.util.{DecoupledIO, Valid}
+import scala.reflect.api.TypeTags
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -1194,4 +1195,32 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
   }
+  describe("(S)") {
+    it("(S.a): Implementation") {
+      val (chirrtl, _) = getFirrtlAndAnnos(new Sandbox.Top)
+      println(chirrtl.serialize)
+      chirrtl.serialize should include("inst i0 of AddOne")
+      chirrtl.serialize should include("""out <= UInt<1>("h1")""")
+    }
+  }
 }
+
+object Sandbox {
+  @instantiable
+  class Top extends Module {
+    @public val out = IO(Output(UInt(3.W)))
+
+    val definition = Definition(new Examples.AddOne)
+    val i0 = Instance(definition)
+    override val implementation: Option[Implementation] = Some(TopImp)
+  }
+
+  object TopImp extends CustomImplementation {
+    type P = Top
+    
+    def implement(d: ResolvedDefinition[P]): Unit = {
+      d.out := 1.U
+    }
+  }
+}
+

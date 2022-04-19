@@ -9,6 +9,7 @@ import scala.annotation.nowarn
 import chisel3.experimental.BaseModule
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{ModuleMock, ModuleClone}
+import chisel3.experimental.hierarchy.core.Implementation
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
@@ -20,6 +21,7 @@ import _root_.firrtl.annotations.{IsModule, ModuleTarget}
   */
 @nowarn("msg=class Port") // delete when Port becomes private
 abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends BaseModule {
+  val implementation: Option[Implementation] = None
   //
   // RTL construction internals
   //
@@ -142,7 +144,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
         Seq()
       }
     }
-    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
+    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands, implementation)
     _component = Some(component)
     _component
   }
@@ -319,7 +321,7 @@ package object internal {
     // Sigil to mark views, starts with '_' to make it a legal FIRRTL target
     override def desiredName = "_$$View$$_"
 
-    private[chisel3] val fakeComponent: Component = DefModule(this, desiredName, Nil, Nil)
+    private[chisel3] val fakeComponent: Component = DefModule(this, desiredName, Nil, Nil, None)
   }
 
   /** Special internal object representing the parent of all views

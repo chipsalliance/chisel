@@ -21,6 +21,7 @@ package object hierarchy {
     * }}}
     */
   class public extends chisel3.internal.public
+  class instantiable extends chisel3.internal.instantiable
 
   implicit val mg = new chisel3.internal.MacroGenerated {}
   implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
@@ -90,6 +91,7 @@ package object hierarchy {
       case m: ModuleClone[_]       => cloneData(value, m, m.ioMap)
       case m: ModuleTransparent[_] => value
       case m: ModuleMock[_]        => cloneData(value, m)
+      case m: ModuleDefinition[_] if m.isResolved => value
       case m: ModuleDefinition[_]  => cloneData(value, m)
       case _ => value
     }
@@ -153,6 +155,8 @@ package object hierarchy {
   val Instance = core.Instance
   type Definition[P] = core.Definition[P]
   val Definition = core.Definition
+  type ResolvedDefinition[P] = core.ResolvedDefinition[P]
+  val ResolvedDefinition = core.ResolvedDefinition
   //type Declaration[P] = core.Declaration[P]
   //val Declaration = core.Declaration
   //type Interface[P] = core.Interface[P]
@@ -163,7 +167,8 @@ package object hierarchy {
   //val Definitive = core.Definitive
   type IsLookupable = core.IsLookupable
   type IsWrappable = core.IsWrappable
-  //type ImplementationBuilder[P] = core.ImplementationBuilder[P]
+  type Implementation = core.Implementation
+  type CustomImplementation = core.CustomImplementation
   //val Folder = core.Folder
   //type Folder[P] = core.Folder[P]
 

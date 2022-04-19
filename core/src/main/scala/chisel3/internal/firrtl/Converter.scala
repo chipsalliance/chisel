@@ -3,6 +3,7 @@
 package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
+import chisel3.experimental.hierarchy._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
@@ -336,25 +337,56 @@ private[chisel3] object Converter {
     fir.Port(fir.NoInfo, getRef(port.id, info).name, dir, tpe)
   }
 
-  def convert(component: Component): fir.DefModule = component match {
-    case ctx @ DefModule(_, name, ports, cmds) =>
-      fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx))
+  def convert(component: Component): Seq[fir.DefModule] = component match {
+    case ctx @ DefModule(module, name, ports, cmds, implementationOpt) =>
+      implementationOpt.map { i => 
+        val dynamicContext = new chisel3.internal.DynamicContext(Nil, true)
+        // Add existing module names into the namespace. If injection logic instantiates new modules
+        //  which would share the same name, they will get uniquified accordingly
+        //moduleNames.foreach { n =>
+        //  dynamicContext.globalNamespace.name(n)
+        //}
+
+        val d = module.toDefinition.toResolvedDefinition
+        d.proxy.isResolved = true
+        val (chiselIR, _) = chisel3.internal.Builder.build(
+          Module(new ModuleAspect(module) {
+            module match {
+              case x: Module    =>
+                withClockAndReset(x.clock, x.reset) {
+                  i.implement(d.asInstanceOf[hierarchy.ResolvedDefinition[i.P]])
+                }
+              case x: RawModule =>
+                i.implement(d.asInstanceOf[hierarchy.ResolvedDefinition[i.P]])
+            }
+          }),
+          dynamicContext
+        )
+        val comps = chiselIR.components.map {
+          case x: DefModule if x.name == module.name => DefModule(module, name, ports ++ x.ports, cmds ++ x.commands, None)
+          case other => other
+        }
+        comps.flatMap(convert)
+      }.getOrElse(
+        Seq(fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx)))
+      )
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
-      fir.ExtModule(
+      Seq(fir.ExtModule(
         fir.NoInfo,
         name,
         ports.map(p => convert(p, topDir)),
         id.desiredName,
         params.map { case (name, p) => convert(name, p) }.toSeq
-      )
+      ))
   }
 
-  def convert(circuit: Circuit): fir.Circuit =
-    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name)
+  def convert(circuit: Circuit): fir.Circuit = {
+    fir.Circuit(fir.NoInfo, circuit.components.flatMap(convert), circuit.name)
+  }
 
   // TODO Unclear if this should just be the default
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
-    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name)
+    fir.Circuit(fir.NoInfo, lazyModules.flatMap(convert), circuit.name)
   }
 }

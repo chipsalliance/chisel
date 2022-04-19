@@ -14,6 +14,7 @@ import _root_.firrtl.annotations.Annotation
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
+import chisel3.experimental.hierarchy.core.Implementation
 
 case class PrimOp(name: String) {
   override def toString: String = name
@@ -851,7 +852,7 @@ abstract class Component extends Arg {
   def ports: Seq[Port]
 }
 @nowarn("msg=class Port") // delete when Port becomes private
-case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command], implementation: Option[Implementation]) extends Component
 @nowarn("msg=class Port") // delete when Port becomes private
 case class DefBlackBox(
   id:     BaseBlackBox,

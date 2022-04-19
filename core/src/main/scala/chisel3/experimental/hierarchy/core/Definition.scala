@@ -14,6 +14,10 @@ import java.util.IdentityHashMap
   */
 final case class Definition[+P] private[chisel3] (private[chisel3] proxy: DefinitionProxy[P]) extends Root[P] {
   override def toDefinition = this
+  private[chisel3] def toResolvedDefinition = {
+    proxy.isResolved = true
+    new ResolvedDefinition(proxy)
+  }
 }
 
 object Definition {

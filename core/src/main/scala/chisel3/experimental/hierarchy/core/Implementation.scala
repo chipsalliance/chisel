@@ -8,8 +8,7 @@ import java.util.IdentityHashMap
 
 sealed trait Implementation {
   type P
-  val tt: TypeTag[P]
-  def implement(d: Definition[P]): Unit
+  def implement(d: ResolvedDefinition[P]): Unit
 }
 
 trait CustomImplementation extends Implementation

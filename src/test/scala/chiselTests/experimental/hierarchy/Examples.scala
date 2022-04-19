@@ -114,7 +114,7 @@ object Examples {
     io.out := io.in
   }
   @instantiable
-  class WireContainer {
+  class WireContainer extends IsWrappable {
     @public val innerWire = Wire(UInt(32.W))
   }
   @instantiable
@@ -126,7 +126,7 @@ object Examples {
     out := wireContainer.innerWire
   }
   @instantiable
-  class AddOneContainer {
+  class AddOneContainer extends IsWrappable {
     @public val i0 = Module(new AddOne)
   }
   @instantiable
@@ -138,7 +138,7 @@ object Examples {
     out := moduleContainer.i0.out
   }
   @instantiable
-  class AddOneInstanceContainer {
+  class AddOneInstanceContainer extends IsWrappable {
     val definition = Definition(new AddOne)
     @public val i0 = Instance(definition)
   }
@@ -151,7 +151,7 @@ object Examples {
     out := instanceContainer.i0.out
   }
   @instantiable
-  class AddOneContainerContainer {
+  class AddOneContainerContainer extends IsWrappable {
     @public val container = new AddOneContainer
   }
   @instantiable
@@ -163,7 +163,7 @@ object Examples {
     out := containerContainer.container.i0.out
   }
   @instantiable
-  class Viewer(val y: AddTwo, markPlease: Boolean) {
+  class Viewer(val y: AddTwo, markPlease: Boolean) extends IsWrappable {
     @public val x = y
     if (markPlease) mark(x.i0.innerWire, "first")
   }
