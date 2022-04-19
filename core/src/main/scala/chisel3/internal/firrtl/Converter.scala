@@ -338,20 +338,24 @@ private[chisel3] object Converter {
   }
 
   def convert(component: Component): Seq[fir.DefModule] = component match {
-    case ctx @ DefModule(module, name, ports, cmds, implementationOpt) =>
-      implementationOpt.map { i => 
-        val dynamicContext = new chisel3.internal.DynamicContext(Nil, true)
-        // Add existing module names into the namespace. If injection logic instantiates new modules
-        //  which would share the same name, they will get uniquified accordingly
-        //moduleNames.foreach { n =>
-        //  dynamicContext.globalNamespace.name(n)
-        //}
+    case ctx @ DefModule(module, name, ports, cmds, Some(i)) =>
+      val comps = module.myComponents match {
+        case None =>
+          val dynamicContext = new chisel3.internal.DynamicContext(Nil, true)
+          // Add existing module names into the namespace. If injection logic instantiates new modules
+          //  which would share the same name, they will get uniquified accordingly
+          //moduleNames.foreach { n =>
+          //  dynamicContext.globalNamespace.name(n)
+          //}
 
-        val d = module.toDefinition.toResolvedDefinition
-        d.proxy.isResolved = true
-        val (chiselIR, _) = chisel3.internal.Builder.build(
-          Module(new ModuleAspect(module) {
-            module match {
+          val d = module.toDefinition.toResolvedDefinition
+          d.proxy.isResolved = true
+          import internal.Builder
+          //val (chiselIR, _) = chisel3.internal.Builder.build(
+          Builder.dynamicContextVar.withValue(Some(dynamicContext)) {
+            module._closed = false
+            internal.Builder.currentModule = Some(module)
+            val mod = module match {
               case x: Module    =>
                 withClockAndReset(x.clock, x.reset) {
                   i.implement(d.asInstanceOf[hierarchy.ResolvedDefinition[i.P]])
@@ -359,17 +363,19 @@ private[chisel3] object Converter {
               case x: RawModule =>
                 i.implement(d.asInstanceOf[hierarchy.ResolvedDefinition[i.P]])
             }
-          }),
-          dynamicContext
-        )
-        val comps = chiselIR.components.map {
-          case x: DefModule if x.name == module.name => DefModule(module, name, ports ++ x.ports, cmds ++ x.commands, None)
-          case other => other
-        }
-        comps.flatMap(convert)
-      }.getOrElse(
-        Seq(fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx)))
-      )
+            Builder.currentModule = None
+            val comp = module.generateComponent().get match {
+              case x @ DefModule(module, name, ports, cmds, implementationOpt) => DefModule(module, name, ports, cmds, None)
+            }
+            val comps = Builder.components ++ Seq(comp)
+            module.myComponents = Some(comps)
+            comps
+          }
+        case Some(c) => c
+      }
+      comps.flatMap(convert)
+    case ctx @ DefModule(module, name, ports, cmds, None) =>
+      Seq(fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx)))
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       Seq(fir.ExtModule(
         fir.NoInfo,

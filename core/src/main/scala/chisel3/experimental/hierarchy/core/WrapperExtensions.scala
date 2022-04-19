@@ -30,6 +30,8 @@ trait CloneableExtensions[V, P] extends Extensions[V, P] {
 
 trait HierarchicalExtensions[V, P] extends Extensions[V, P] {
   def getProxyParent(x: Proxy[V]): Option[P]
+  def buildDefinitiveFrom[X, Y](d: Definitive[X], f: X => Y): DefinitiveProxy[Y]
+  def buildDefinitive[X](x: Option[X]): DefinitiveProxy[X]
   def buildDefinition(f: => V): DefinitionProxy[V]
   def buildInstance(root: Root[V]): Clone[V]
   def mock[P](value: Any, parent: Hierarchy[P]): Instance[V] = value match {

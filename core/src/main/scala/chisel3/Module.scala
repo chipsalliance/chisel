@@ -11,6 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
+import chisel3.experimental.hierarchy.Definitive
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -196,6 +197,7 @@ package experimental {
       module.bindIoInPlace(iodefClone)
       iodefClone
     }
+    def apply[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.whenKnown(d => apply(d))
   }
 }
 
@@ -267,6 +269,7 @@ package experimental {
   // TODO: seal this?
   abstract class BaseModule extends HasId {
     _parent.foreach(_.addId(this))
+    private[chisel3] val definitives: ArrayBuffer[Definitive[_]] = ArrayBuffer[Definitive[_]]()
 
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
@@ -288,7 +291,8 @@ package experimental {
     //
     // Module Construction Internals
     //
-    protected var _closed = false
+    private[chisel3] var _closed = false
+    private[chisel3] var myComponents: Option[Seq[firrtl.Component]] = None
 
     /** Internal check if a Module is closed */
     private[chisel3] def isClosed = _closed
@@ -576,6 +580,7 @@ package experimental {
       * are problematic.
       */
     protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef)
+    protected def IO[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.whenKnown(x => IO(x))
 
     //
     // Internal Functions

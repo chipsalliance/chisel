@@ -102,13 +102,13 @@ object Lookupable {
     }
   }
 
-  //implicit def lookupDefinitive[V, P] = new Lookupable[Definitive[V]] {
-  //  type H = Definitive[V]
-  //  def apply[P](getter: Wrapper[P], value: Definitive[V]) = {
-  //    // it is a definitive value, so we can return it!
-  //    value
-  //  }
-  //}
+  implicit def lookupDefinitive[V, P] = new Lookupable[Definitive[V]] {
+    type H = Definitive[V]
+    def apply[P](getter: Wrapper[P], value: Definitive[V]) = {
+      // it is a definitive value, so we can return it!
+      value
+    }
+  }
 
   //Used for looking up modules
   implicit def lookupUncloneableValue[V, P](implicit extensions: HierarchicalExtensions[V, P]): HierarchicalLookupable[V] = new HierarchicalLookupable[V] {

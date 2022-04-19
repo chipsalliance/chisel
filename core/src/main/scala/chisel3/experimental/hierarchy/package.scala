@@ -32,6 +32,22 @@ package object hierarchy {
   def buildExtension[V <: BaseModule](isBaseModule: Boolean): HierarchicalExtensions[V, BaseModule] = new HierarchicalExtensions[V, BaseModule] {
     def getParent(value: V): Option[BaseModule] = value._parent
     def getProxyParent(value: Proxy[V]): Option[BaseModule] = value.asInstanceOf[BaseModule]._parent
+    def buildDefinitiveFrom[X, Y](d: Definitive[X], f: X => Y): DefinitiveProxy[Y] = {
+      val parent = Builder.currentModule
+      val x: ModuleDefinitive[Y] = new ModuleDefinitive(Some((d.proxy, {any: Any =>
+        val prev = Builder.currentModule
+        Builder.currentModule = parent
+        val ret = f(any.asInstanceOf[X])
+        Builder.currentModule = prev
+        ret
+      })))
+      x
+    }
+    def buildDefinitive[X](v: Option[X]): DefinitiveProxy[X] = {
+      val x = new ModuleDefinitive[X](None)
+      x.valueOpt = v
+      x
+    }
 
     def buildDefinition(proto: => V): ModuleDefinition[V] = {
       val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
@@ -161,10 +177,8 @@ package object hierarchy {
   //val Declaration = core.Declaration
   //type Interface[P] = core.Interface[P]
   //val Interface = core.Interface
-  //type Implementation[P] = core.Implementation[P]
-  //val Implementation = core.Implementation
-  //type Definitive[V] = core.Definitive[V]
-  //val Definitive = core.Definitive
+  type Definitive[V] = core.Definitive[V]
+  val Definitive = core.Definitive
   type IsLookupable = core.IsLookupable
   type IsWrappable = core.IsWrappable
   type Implementation = core.Implementation

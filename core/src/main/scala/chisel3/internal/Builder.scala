@@ -403,7 +403,7 @@ private[chisel3] object Builder extends LazyLogging {
   type Prefix = List[String]
 
   // All global mutable state must be referenced via dynamicContextVar!!
-  private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
+  private[chisel3] val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
   private def dynamicContext: DynamicContext = {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
@@ -646,22 +646,40 @@ private[chisel3] object Builder extends LazyLogging {
     * innermost element is of type HasId
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
-  import chisel3.experimental.hierarchy.core.{Instance}
-  import chisel3.experimental.hierarchy.{ModuleClone, ModuleTransparent}
+  import chisel3.experimental.hierarchy.{ModuleClone, ModuleTransparent, Instance, Definitive}
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
+    case (id: Definitive[_]) =>
+      //println("here")
+      id.proxy.namer += {x: Any =>
+        x match {
+          //case d: Data => println(s"Before $prefix, $namer: " + d.getOptionRef)
+          case other =>
+        }
+        nameRecursively(prefix, x, namer)
+        x match {
+          //case d: Data => println(s"After $prefix, $namer: " + d.getOptionRef)
+          case other =>
+        }
+      }
+      println(s"Doing something for $id, $prefix")
+      println(id.proxy.namer)
     case (id: Instance[_]) =>
       id.proxy match {
         case m: ModuleClone[_]       => namer(m.getPorts, prefix)
         case m: ModuleTransparent[_] => namer(m.proto, prefix)
         case _ =>
       }
-    case (id: HasId) => namer(id, prefix)
+    case (id: HasId) =>
+      //println(s"there: $id")
+      namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>
       for ((elt, i) <- iter.zipWithIndex) {
         nameRecursively(s"${prefix}_${i}", elt, namer)
       }
-    case _ => // Do nothing
+    case x => 
+      println(s"Doing nothing for $x, $prefix")
+      // Do nothing
   }
 
   def errors: ErrorLog = dynamicContext.errors

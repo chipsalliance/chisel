@@ -2,6 +2,7 @@
 
 package chisel3.experimental.hierarchy.core
 import java.util.IdentityHashMap
+import scala.collection.mutable
 
 /** Representation of a hierarchical version of an object
   * Has two subclasses, a DefinitionProxy and InstanceProxy, which are wrapped with Definition(..) and Instance(..)
@@ -141,6 +142,35 @@ trait DefinitionProxy[+P] extends RootProxy[P] {
   override def toHierarchy: Definition[P] = new Definition(this)
 }
 
+trait DefinitiveProxy[P] extends Proxy[P] {
+  def parent: Any
+  def predecessorOption: Option[(DefinitiveProxy[_], Any => P)]
+  var valueOpt: Option[P] = None
+
+  def proto = {
+    try {
+      require(nonEmpty, s"Not empty!")
+    } catch {
+      case e: Exception =>
+        println(e.getStackTrace().mkString("\n"))
+        throw e
+    }
+
+    val ret = valueOpt.orElse(predecessorOption.map { case (p, f) => f(p.proto) } ).get
+    //println(s"All namers of $this, ${namer.size}: ${namer.toList}")
+    namer.map(f => f(ret))
+    ret
+  }
+
+  private[chisel3] val namer: mutable.ArrayBuffer[Any => Unit] = mutable.ArrayBuffer[Any => Unit]()
+
+  def nonEmpty: Boolean = {
+    valueOpt.nonEmpty || (predecessorOption.nonEmpty && predecessorOption.get._1.nonEmpty)
+  }
+  def isEmpty = !nonEmpty
+  def toWrapper = Definitive(this)
+}
+//TODO: In order to have nested definitive's, e.g. a definitive case class, we need to avoid using the proto as the key in the lookup.
 //trait InterfaceProxy[+P] extends RootProxy[P] {
 //  def predecessor: DeclarationProxy[P]
 //  def toImplementationProxy: ImplementationProxy[P]

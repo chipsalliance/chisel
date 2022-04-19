@@ -7,6 +7,7 @@ import chisel3.internal.firrtl.BinaryPoint
 package object chisel3 {
   import internal.firrtl.{Port, Width}
   import internal.Builder
+  import experimental.hierarchy.Definitive
 
   import scala.language.implicitConversions
 
@@ -173,6 +174,10 @@ package object chisel3 {
 
   implicit class fromIntToWidth(int: Int) {
     def W: Width = Width(int)
+  }
+
+  implicit class fromDIntToDWidth(int: Definitive[Int]) {
+    def W: Definitive[Width] = int.whenKnown(i => Width(i))
   }
 
   val WireInit = WireDefault

@@ -1200,27 +1200,38 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, _) = getFirrtlAndAnnos(new Sandbox.Top)
       println(chirrtl.serialize)
       chirrtl.serialize should include("inst i0 of AddOne")
-      chirrtl.serialize should include("""out <= UInt<1>("h1")""")
+      //chirrtl.serialize should include("""out <= UInt<1>("h1")""")
     }
   }
 }
 
 object Sandbox {
   @instantiable
+  class AddOne extends Module {
+    @public val width = Definitive.empty[Int]
+    @public val in = IO(Input(UInt(width.W)))
+    @public val out = IO(Output(UInt(width.W)))
+    override val implementation: Option[Implementation] = Some(AddOneImp)
+  }
+  object AddOneImp extends CustomImplementation {
+    type P = AddOne
+    
+    def implement(d: ResolvedDefinition[P]): Unit = {
+      println("IN THE IMPLEMENTATION")
+      println(d.width.value)
+      //val out2 = experimental.IO(Output(UInt(2.W)))
+      d.out.value := d.in.value + 1.U
+      println("OUT OF THE IMPLEMENTATION")
+    }
+  }
+  @instantiable
   class Top extends Module {
     @public val out = IO(Output(UInt(3.W)))
 
-    val definition = Definition(new Examples.AddOne)
-    val i0 = Instance(definition)
-    override val implementation: Option[Implementation] = Some(TopImp)
+    val definition = Definition(new AddOne)
+    definition.width.value = 3
+    @public val i0 = Instance(definition)
   }
 
-  object TopImp extends CustomImplementation {
-    type P = Top
-    
-    def implement(d: ResolvedDefinition[P]): Unit = {
-      d.out := 1.U
-    }
-  }
 }
 

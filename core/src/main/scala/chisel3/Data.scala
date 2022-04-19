@@ -6,6 +6,7 @@ import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
 import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
+import chisel3.experimental.hierarchy.Definitive
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
@@ -404,10 +405,16 @@ object Input {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
     SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
   }
+  def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions): Definitive[T] = {
+    source.whenKnown(s => apply(s))
+  }
 }
 object Output {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
     SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
+  }
+  def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions): Definitive[T] = {
+    source.whenKnown(s => apply(s))
   }
 }
 
