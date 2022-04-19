@@ -43,9 +43,9 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
   val compileOptions = moduleCompileOptions
 
-  private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
+  private[chisel3] def namePorts(): Unit = {
     for (port <- getModulePorts) {
-      port._computeName(None, None).orElse(names.get(port)) match {
+      port._computeName(None, None) match {
         case Some(name) =>
           if (_namespace.contains(name)) {
             Builder.error(
@@ -68,15 +68,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    val names = nameIds(classOf[RawModule])
-
-    // Ports get first naming priority, since they are part of a Module's IO spec
-    namePorts(names)
-
-    // Then everything else gets named
-    for ((node, name) <- names) {
-      node.suggestName(name)
-    }
+    namePorts()
 
     // All suggestions are in, force names to every node.
     for (id <- getIds) {
@@ -109,8 +101,6 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       }
       id._onModuleClose
     }
-
-    closeUnboundIds(names)
 
     val firrtlPorts = getModulePorts.map { port: Data =>
       // Special case Vec to make FIRRTL emit the direction of its

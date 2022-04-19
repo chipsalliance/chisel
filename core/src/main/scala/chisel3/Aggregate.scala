@@ -1266,41 +1266,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   /* The old, reflective implementation of Bundle.elements
    * This method is optionally overwritten by the compiler plugin for much better performance
    */
-  protected def _elementsImpl: Iterable[(String, Any)] = {
-    val nameMap = LinkedHashMap[String, Data]()
-    for (m <- getPublicFields(classOf[Bundle])) {
-      getBundleField(m) match {
-        case Some(d: Data) =>
-          requireIsChiselType(d)
-
-          if (nameMap contains m.getName) {
-            require(nameMap(m.getName) eq d)
-          } else {
-            nameMap(m.getName) = d
-          }
-        case None =>
-          if (!ignoreSeq) {
-            m.invoke(this) match {
-              case s: scala.collection.Seq[Any] if s.nonEmpty =>
-                s.head match {
-                  // Ignore empty Seq()
-                  case d: Data =>
-                    throwException(
-                      "Public Seq members cannot be used to define Bundle elements " +
-                        s"(found public Seq member '${m.getName}'). " +
-                        "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
-                        "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
-                        "IgnoreSeqInBundle."
-                    )
-                  case _ => // don't care about non-Data Seq
-                }
-              case _ => // not a Seq
-            }
-          }
-      }
-    }
-    VectorMap(nameMap.toSeq.sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
-  }
+  protected def _elementsImpl: Iterable[(String, Any)] = ???
 
   /**
     * Overridden by [[IgnoreSeqInBundle]] to allow arbitrary Seqs of Chisel elements.
