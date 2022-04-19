@@ -298,26 +298,6 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(ViewParent) => reifyParent.circuitName
     case Some(p)          => p.circuitName
   }
-
-  private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
-    // Suggest names to nodes using runtime reflection
-    def getValNames(c: Class[_]): Set[String] = {
-      if (c == rootClass) {
-        Set()
-      } else {
-        getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
-      }
-    }
-    val valNames = getValNames(this.getClass)
-    def isPublicVal(m: java.lang.reflect.Method) = {
-      val noParameters = m.getParameterTypes.isEmpty
-      val aVal = valNames.contains(m.getName)
-      val notAssignable = !m.getDeclaringClass.isAssignableFrom(rootClass)
-      val notWeirdVal = !m.getName.contains('$')
-      noParameters && aVal && notAssignable && notWeirdVal
-    }
-    this.getClass.getMethods.filter(isPublicVal).sortWith(_.getName < _.getName)
-  }
 }
 
 /** Holds the implementation of toNamed for Data and MemBase */
@@ -650,6 +630,7 @@ private[chisel3] object Builder extends LazyLogging {
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
     case (id: Definitive[_]) =>
       //println("here")
+      println(s"Adding to namer of ${id.proxy}")
       id.proxy.namer += {x: Any =>
         x match {
           //case d: Data => println(s"Before $prefix, $namer: " + d.getOptionRef)
@@ -678,7 +659,7 @@ private[chisel3] object Builder extends LazyLogging {
         nameRecursively(s"${prefix}_${i}", elt, namer)
       }
     case x => 
-      println(s"Doing nothing for $x, $prefix")
+      //println(s"Doing nothing for $x, $prefix")
       // Do nothing
   }
 

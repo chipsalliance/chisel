@@ -319,7 +319,9 @@ package experimental {
 
     private[chisel3] def getIds = {
       require(_closed, "Can't get ids before module close")
-      _ids.toSeq
+      _ids.toSeq ++ definitives.collect {
+        case d: Definitive[HasId] if d.nonEmpty && d.isA[HasId] => d.value
+      }
     }
 
     private val _ports = new ArrayBuffer[Data]()
@@ -327,7 +329,9 @@ package experimental {
     // getPorts unfortunately already used for tester compatibility
     protected[chisel3] def getModulePorts = {
       require(_closed, "Can't get ports before module close")
-      _ports.toSeq
+      val x = _ports.toSeq
+      //println(s"Ports! $x")
+      x
     }
 
     // These methods allow checking some properties of ports before the module is closed,
@@ -471,46 +475,6 @@ package experimental {
       require(_closed, "Can't get ports before module close")
       _component.get.ports.map { port =>
         (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
-      }
-    }
-
-    /** Called at the Module.apply(...) level after this Module has finished elaborating.
-      * Returns a map of nodes -> names, for named nodes.
-      *
-      * Helper method.
-      */
-    protected def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
-      val names = new HashMap[HasId, String]()
-
-      def name(node: HasId, name: String) {
-        // First name takes priority, like suggestName
-        // TODO: DRYify with suggestName
-        if (!names.contains(node)) {
-          names.put(node, name)
-        }
-      }
-
-      /** Scala generates names like chisel3$util$Queue$$ram for private vals
-        * This extracts the part after $$ for names like this and leaves names
-        * without $$ unchanged
-        */
-      def cleanName(name: String): String = name.split("""\$\$""").lastOption.getOrElse(name)
-
-      for (m <- getPublicFields(rootClass)) {
-        Builder.nameRecursively(cleanName(m.getName), m.invoke(this), name)
-      }
-
-      names
-    }
-
-    /** Invokes _onModuleClose on HasIds found via reflection but not bound to hardware
-      * (thus not part of _ids)
-      * This maintains old naming behavior for non-hardware Data
-      */
-    private[chisel3] def closeUnboundIds(names: HashMap[HasId, String]): Unit = {
-      val idLookup = _ids.toSet
-      for ((id, _) <- names if !idLookup(id)) {
-        id._onModuleClose
       }
     }
 

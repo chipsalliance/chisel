@@ -1206,31 +1206,34 @@ class InstanceSpec extends ChiselFunSpec with Utils {
 }
 
 object Sandbox {
+  
+
   @instantiable
   class AddOne extends Module {
     @public val width = Definitive.empty[Int]
-    @public val in = IO(Input(UInt(width.W)))
+    @public val in  = IO(Input(UInt(width.W)))
     @public val out = IO(Output(UInt(width.W)))
+
     override val implementation: Option[Implementation] = Some(AddOneImp)
   }
   object AddOneImp extends CustomImplementation {
     type P = AddOne
     
     def implement(d: ResolvedDefinition[P]): Unit = {
-      println("IN THE IMPLEMENTATION")
-      println(d.width.value)
-      //val out2 = experimental.IO(Output(UInt(2.W)))
+      println(s"Definition width: ${d.width.value}")
       d.out.value := d.in.value + 1.U
-      println("OUT OF THE IMPLEMENTATION")
     }
   }
   @instantiable
   class Top extends Module {
-    @public val out = IO(Output(UInt(3.W)))
+    @public val port = IO(Output(UInt(3.W)))
 
     val definition = Definition(new AddOne)
     definition.width.value = 3
     @public val i0 = Instance(definition)
+    if(i0.width.nonEmpty) {
+      println(s"Instance width: ${i0.width.value}")
+    }
   }
 
 }

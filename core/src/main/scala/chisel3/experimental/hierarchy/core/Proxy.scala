@@ -148,18 +148,14 @@ trait DefinitiveProxy[P] extends Proxy[P] {
   var valueOpt: Option[P] = None
 
   def proto = {
-    try {
-      require(nonEmpty, s"Not empty!")
-    } catch {
-      case e: Exception =>
-        println(e.getStackTrace().mkString("\n"))
-        throw e
+    require(nonEmpty, s"Not empty!")
+    if(cache.containsKey("value")) cache.get("value").asInstanceOf[P] else {
+      val ret = valueOpt.orElse(predecessorOption.map { case (p, f) => f(p.proto) } ).get
+      //println(s"All namers of $this, ${namer.size}: ${namer.toList}")
+      namer.map(f => chisel3.experimental.noPrefix { f(ret) } )
+      cache.put("value", ret)
+      ret
     }
-
-    val ret = valueOpt.orElse(predecessorOption.map { case (p, f) => f(p.proto) } ).get
-    //println(s"All namers of $this, ${namer.size}: ${namer.toList}")
-    namer.map(f => f(ret))
-    ret
   }
 
   private[chisel3] val namer: mutable.ArrayBuffer[Any => Unit] = mutable.ArrayBuffer[Any => Unit]()

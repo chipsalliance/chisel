@@ -10,7 +10,8 @@ import scala.collection.mutable
 
 private[plugin] case class ChiselPluginArguments(
   val skipFiles:         mutable.HashSet[String] = mutable.HashSet.empty,
-  var genBundleElements: Boolean = false) {
+  // TODO this must always be true, warn on the Scalac Option
+  var genBundleElements: Boolean = true) {
   def useBundlePluginOpt = "useBundlePlugin"
   def useBundlePluginFullOpt = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
   def genBundleElementsOpt = "genBundleElements"
