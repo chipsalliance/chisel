@@ -15,7 +15,7 @@ object RegEnable {
     * val regWithEnable = RegEnable(nextVal, ena)
     * }}}
     */
-  final def apply[T <: Data](next: T, enable: Bool): T = macro SourceInfoTransform.nextEnableArg
+  def apply[T <: Data](next: T, enable: Bool): T = macro SourceInfoTransform.nextEnableArg
 
   def do_apply[T <: Data](next: T, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val r = Reg(chiselTypeOf(next))
@@ -29,7 +29,7 @@ object RegEnable {
     * val regWithEnableAndReset = RegEnable(nextVal, 0.U, ena)
     * }}}
     */
-  final def apply[T <: Data](next: T, init: T, enable: Bool): T = macro SourceInfoTransform.nextInitEnableArg
+  def apply[T <: Data](next: T, init: T, enable: Bool): T = macro SourceInfoTransform.nextInitEnableArg
 
   def do_apply[T <: Data](
     next:   T,

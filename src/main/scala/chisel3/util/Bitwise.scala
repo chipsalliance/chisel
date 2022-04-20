@@ -26,7 +26,7 @@ object FillInterleaved {
     *
     * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
     */
-  final def apply(n: Int, in: UInt): UInt = macro SourceInfoTransform.nInArg
+  def apply(n: Int, in: UInt): UInt = macro SourceInfoTransform.nInArg
 
   def do_apply(n: Int, in: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     _apply_impl(n, in.asBools)
@@ -35,7 +35,7 @@ object FillInterleaved {
     *
     * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
     */
-  final def apply(n: Int, in: Seq[Bool]): UInt = macro SourceInfoTransform.nInArg
+  def apply(n: Int, in: Seq[Bool]): UInt = macro SourceInfoTransform.nInArg
 
   def do_apply(n: Int, in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     _apply_impl(n, in)
@@ -61,12 +61,15 @@ object FillInterleaved {
   * }}}
   */
 object PopCount {
-  final def apply(in: Iterable[Bool]): UInt = macro SourceInfoTransform.inArg
+  
+  def apply(in: Iterable[Bool]): UInt = macro SourceInfoTransform.inArg
+  
   def do_apply(in:    Iterable[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
     in.toSeq
   )
 
-  final def apply(in: Bits): UInt = macro SourceInfoTransform.inArg
+  def apply(in: Bits): UInt = macro SourceInfoTransform.inArg
+  
   def do_apply(in:    Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
     (0 until in.getWidth).map(in(_))
   )
@@ -139,6 +142,7 @@ object Reverse {
         Cat(doit(in(half - 1, 0), half), doit(in(length - 1, half), length - half))
     }
 
-  final def apply(in: UInt): UInt = macro SourceInfoTransform.inArg
+  def apply(in: UInt): UInt = macro SourceInfoTransform.inArg
+
   def do_apply(in:    UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = doit(in, in.getWidth)
 }
