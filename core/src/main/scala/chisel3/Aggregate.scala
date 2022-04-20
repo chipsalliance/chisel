@@ -14,6 +14,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 
+import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
 
 class AliasedAggregateFieldException(message: String) extends ChiselException(message)
@@ -381,11 +382,30 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     compileOptions:      CompileOptions
   ): T = {
     require(!isEmpty, "Cannot apply reduction on a vec of size 0")
-    var curLayer: Seq[T] = this
-    while (curLayer.length > 1) {
-      curLayer = curLayer.grouped(2).map(x => if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))).toSeq
+
+    def recReduce[T](s: Seq[T], op: (T, T) => T, lop: (T) => T): T = {
+
+      val n = s.length
+      n match {
+        case 1 => lop(s(0))
+        case 2 => op(s(0), s(1))
+        case _ =>
+          val m = pow(2, floor(log10(n - 1) / log10(2))).toInt // number of nodes in next level, will be a power of 2
+          val p = 2 * m - n // number of nodes promoted
+
+          val l = s.take(p).map(lop)
+          val r = s
+            .drop(p)
+            .grouped(2)
+            .map {
+              case Seq(a, b) => op(a, b)
+            }
+            .toVector
+          recReduce(l ++ r, op, lop)
+      }
     }
-    curLayer(0)
+
+    recReduce(this, redOp, layerOp)
   }
 
   /** Creates a Vec literal of this type with specified values. this must be a chisel type.
