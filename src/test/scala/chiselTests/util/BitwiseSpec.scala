@@ -2,7 +2,7 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.util.{Fill,FillInterleaved, PopCount}
+import chisel3.util.{Fill,FillInterleaved, PopCount, Reverse}
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -73,6 +73,21 @@ class FillSpec extends AnyFlatSpec with Matchers {
       class MyModule extends RawModule {
           val  out = IO(Output(UInt()))
           out := Fill(2, "b1000".U)
+      }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val cat = """cat.*BitwiseSpec\.scala""".r
+    (chirrtl should include).regex(cat)
+    chirrtl should not include("Bitwise.scala")
+  }
+}
+
+class ReverseSpec extends AnyFlatSpec with Matchers {
+  behavior.of("util.Reverse")
+
+  it should "have source locators when passed a UInt" in {
+      class MyModule extends RawModule {
+          val  out = IO(Output(UInt()))
+          out := Reverse("b1101".U)
       }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     val cat = """cat.*BitwiseSpec\.scala""".r
