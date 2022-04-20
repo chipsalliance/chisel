@@ -24,7 +24,7 @@ class RegEnableSpec extends AnyFlatSpec with Matchers {
     (chirrtl should not).include("Reg.scala")
   }
 
-    it should "have source locators when passed next, init, enable" in {
+  it should "have source locators when passed next, init, enable" in {
     class MyModule extends Module {
       val in = IO(Input(Bool()))
       val out = IO(Output(Bool()))
@@ -56,7 +56,7 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
     (chirrtl should not).include("Reg.scala")
   }
 
-    it should "have source locators when passed in, n" in {
+  it should "have source locators when passed in, n" in {
     class MyModule extends Module {
       val in = IO(Input(Bool()))
       val out = IO(Output(Bool()))
@@ -103,7 +103,7 @@ class ShiftRegistersSpec extends AnyFlatSpec with Matchers {
     (chirrtl should not).include("Reg.scala")
   }
 
-    it should "have source locators when passed in, n" in {
+  it should "have source locators when passed in, n" in {
     class MyModule extends Module {
       val in = IO(Input(Bool()))
       val out = IO(Output(Bool()))
@@ -117,7 +117,7 @@ class ShiftRegistersSpec extends AnyFlatSpec with Matchers {
     (chirrtl should not).include("Reg.scala")
   }
 
-      it should "have source locators when passed in, n, resetData, en" in {
+  it should "have source locators when passed in, n, resetData, en" in {
     class MyModule extends Module {
       val in = IO(Input(Bool()))
       val out = IO(Output(Bool()))
@@ -130,7 +130,5 @@ class ShiftRegistersSpec extends AnyFlatSpec with Matchers {
     (chirrtl should include).regex(update)
     (chirrtl should not).include("Reg.scala")
   }
-
-
 
 }
