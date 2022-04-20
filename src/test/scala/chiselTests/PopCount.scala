@@ -9,7 +9,7 @@ import chisel3.testers.BasicTester
 class PopCountTester(n: Int) extends BasicTester {
   val x = RegInit(0.U(n.W))
   x := x + 1.U
-  when (RegNext(x === ~0.U(n.W))) { stop() }
+  when(RegNext(x === ~0.U(n.W))) { stop() }
 
   val result = PopCount(x.asBools)
   val expected = x.asBools.foldLeft(0.U)(_ +& _)
@@ -20,6 +20,6 @@ class PopCountTester(n: Int) extends BasicTester {
 
 class PopCountSpec extends ChiselPropSpec {
   property("Mul lookup table should return the correct result") {
-    forAll(smallPosInts) { (n: Int) =>  assertTesterPasses { new PopCountTester(n) } }
+    forAll(smallPosInts) { (n: Int) => assertTesterPasses { new PopCountTester(n) } }
   }
 }

@@ -7,7 +7,7 @@ import chisel3.stage.ChiselStage
 
 class Padder extends Module {
   val io = IO(new Bundle {
-    val a   = Input(UInt(4.W))
+    val a = Input(UInt(4.W))
     val asp = Output(SInt(8.W))
     val aup = Output(UInt(8.W))
   })
@@ -31,7 +31,7 @@ class PadsTester(c: Pads) extends Tester(c) {
     expect(c.io.aup, test_a)
   }
 }
-*/
+ */
 
 class PadderSpec extends ChiselPropSpec {
 
@@ -39,5 +39,5 @@ class PadderSpec extends ChiselPropSpec {
     ChiselStage.elaborate { new Padder }
   }
 
-  ignore("PadderTester should return the correct result") { }
+  ignore("PadderTester should return the correct result") {}
 }

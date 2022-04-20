@@ -19,13 +19,13 @@ object SimpleBundle {
 
 class WidthSpec extends ChiselFlatSpec {
   "Literals without specified widths" should "get the minimum legal width" in {
-    "hdeadbeef".U.getWidth should be (32)
-    "h_dead_beef".U.getWidth should be (32)
-    "h0a".U.getWidth should be (4)
-    "h1a".U.getWidth should be (5)
-    "h0".U.getWidth should be (1)
-    1.U.getWidth should be (1)
-    1.S.getWidth should be (2)
+    "hdeadbeef".U.getWidth should be(32)
+    "h_dead_beef".U.getWidth should be(32)
+    "h0a".U.getWidth should be(4)
+    "h1a".U.getWidth should be(5)
+    "h0".U.getWidth should be(1)
+    1.U.getWidth should be(1)
+    1.S.getWidth should be(2)
   }
 }
 
@@ -33,7 +33,7 @@ abstract class WireRegWidthSpecImpl extends ChiselFlatSpec {
   def name: String
   def builder[T <: Data](x: T): T
 
-  behavior of name
+  behavior.of(name)
 
   it should "set the width if the template type has a set width" in {
     assertKnownWidth(4) {
@@ -83,7 +83,7 @@ abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
   def builder1[T <: Data](x: T): T
   def builder2[T <: Data](x: T, y: T): T
 
-  behavior of s"$name (Single Argument)"
+  behavior.of(s"$name (Single Argument)")
 
   it should "set width if passed a literal with forced width" in {
     assertKnownWidth(4) {
@@ -129,7 +129,7 @@ abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
     }
   }
 
-  behavior of s"$name (Double Argument)"
+  behavior.of(s"$name (Double Argument)")
 
   it should "set the width if the template type has a set width" in {
     assertKnownWidth(4) {
@@ -152,7 +152,10 @@ abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
 
   it should "infer the width if the template type has no width" in {
     val templates = Seq(
-      () => 0.U, () => 0.U(2.W), () => WireDefault(0.U), () => WireDefault(0.U(2.W))
+      () => 0.U,
+      () => 0.U(2.W),
+      () => WireDefault(0.U),
+      () => WireDefault(0.U(2.W))
     )
     for (gen <- templates) {
       assertInferredWidth(4) {

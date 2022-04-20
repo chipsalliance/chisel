@@ -1,3 +1,7 @@
+queue_rules:
+- name: default
+  conditions:
+  - status-success=all tests passed
 pull_request_rules:
 - name: automatic squash-and-merge on CI success and review
   conditions:
@@ -9,11 +13,27 @@ pull_request_rules:
   - label!="DO NOT MERGE"
   - label!="bp-conflict"
   actions:
-    merge:
+    queue:
+      name: default
       method: squash
-      strict: smart
-      strict_method: merge
-- name: backport to 3.4.x
+      update_method: merge
+- name: backport to 3.5.x
+  conditions:
+  - merged
+  - base=master
+  - milestone=3.5.x
+  actions:
+    backport:
+      branches:
+      - 3.5.x
+      labels:
+      - Backport
+      ignore_conflicts: true
+      label_conflicts: bp-conflict
+    label:
+      add:
+      - Backported
+- name: backport to 3.4.x, 3.5.x
   conditions:
   - merged
   - base=master
@@ -22,6 +42,7 @@ pull_request_rules:
     backport:
       branches:
       - 3.4.x
+      - 3.5.x
       labels:
       - Backport
       ignore_conflicts: true
@@ -29,7 +50,7 @@ pull_request_rules:
     label:
       add:
       - Backported
-- name: backport to 3.3.x, 3.4.x
+- name: backport to 3.3.x, 3.4.x, 3.5.x
   conditions:
   - merged
   - base=master
@@ -39,6 +60,7 @@ pull_request_rules:
       branches:
       - 3.3.x
       - 3.4.x
+      - 3.5.x
       labels:
       - Backport
       ignore_conflicts: true
@@ -46,37 +68,6 @@ pull_request_rules:
     label:
       add:
       - Backported
-- name: backport to 3.2.x, 3.3.x, 3.4.x
-  conditions:
-  - merged
-  - base=master
-  - milestone=3.2.x
-  actions:
-    backport:
-      branches:
-      - 3.2.x
-      - 3.3.x
-      - 3.4.x
-      labels:
-      - Backport
-      ignore_conflicts: true
-      label_conflicts: bp-conflict
-    label:
-      add:
-      - Backported
-- name: automatic squash-and-mege of 3.2.x backport PRs
-  conditions:
-  - status-success=all tests passed
-  - '#changes-requested-reviews-by=0'
-  - base=3.2.x
-  - label="Backport"
-  - label!="DO NOT MERGE"
-  - label!="bp-conflict"
-  actions:
-    merge:
-      method: squash
-      strict: smart
-      strict_method: merge
 - name: automatic squash-and-mege of 3.3.x backport PRs
   conditions:
   - status-success=all tests passed
@@ -86,10 +77,10 @@ pull_request_rules:
   - label!="DO NOT MERGE"
   - label!="bp-conflict"
   actions:
-    merge:
+    queue:
+      name: default
       method: squash
-      strict: smart
-      strict_method: merge
+      update_method: merge
 - name: automatic squash-and-mege of 3.4.x backport PRs
   conditions:
   - status-success=all tests passed
@@ -99,8 +90,21 @@ pull_request_rules:
   - label!="DO NOT MERGE"
   - label!="bp-conflict"
   actions:
-    merge:
+    queue:
+      name: default
       method: squash
-      strict: smart
-      strict_method: merge
+      update_method: merge
+- name: automatic squash-and-mege of 3.5.x backport PRs
+  conditions:
+  - status-success=all tests passed
+  - '#changes-requested-reviews-by=0'
+  - base=3.5.x
+  - label="Backport"
+  - label!="DO NOT MERGE"
+  - label!="bp-conflict"
+  actions:
+    queue:
+      name: default
+      method: squash
+      update_method: merge
 

@@ -2,7 +2,6 @@
 
 package chiselTests.stage.phases
 
-
 import chisel3.RawModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{AddImplicitOutputAnnotationFile, Elaborate}
@@ -18,26 +17,25 @@ class AddImplicitOutputAnnotationFileSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new AddImplicitOutputAnnotationFile }
 
-  behavior of classOf[AddImplicitOutputAnnotationFile].toString
+  behavior.of(classOf[AddImplicitOutputAnnotationFile].toString)
 
   it should "not override an existing OutputAnnotationFileAnnotation" in new Fixture {
-    val annotations: AnnotationSeq = Seq(
-      ChiselGeneratorAnnotation(() => new Foo),
-      OutputAnnotationFileAnnotation("Bar") )
+    val annotations: AnnotationSeq =
+      Seq(ChiselGeneratorAnnotation(() => new Foo), OutputAnnotationFileAnnotation("Bar"))
 
-    Seq( new Elaborate, phase )
+    Seq(new Elaborate, phase)
       .foldLeft(annotations)((a, p) => p.transform(a))
-      .collect{ case a: OutputAnnotationFileAnnotation => a.file }
-      .toSeq should be (Seq("Bar"))
+      .collect { case a: OutputAnnotationFileAnnotation => a.file }
+      .toSeq should be(Seq("Bar"))
   }
 
   it should "generate an OutputAnnotationFileAnnotation from a ChiselCircuitAnnotation" in new Fixture {
-    val annotations: AnnotationSeq = Seq( ChiselGeneratorAnnotation(() => new Foo) )
+    val annotations: AnnotationSeq = Seq(ChiselGeneratorAnnotation(() => new Foo))
 
-    Seq( new Elaborate, phase )
+    Seq(new Elaborate, phase)
       .foldLeft(annotations)((a, p) => p.transform(a))
-      .collect{ case a: OutputAnnotationFileAnnotation => a.file }
-      .toSeq should be (Seq("Foo"))
+      .collect { case a: OutputAnnotationFileAnnotation => a.file }
+      .toSeq should be(Seq("Foo"))
   }
 
 }

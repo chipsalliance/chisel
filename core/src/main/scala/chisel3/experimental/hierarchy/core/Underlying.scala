@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental.hierarchy
-
-import chisel3.internal.BaseModule.IsClone
+package chisel3.experimental.hierarchy.core
 
 /** Represents the underlying implementation of a Definition or Instance */
 sealed trait Underlying[+T]

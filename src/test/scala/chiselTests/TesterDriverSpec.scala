@@ -42,4 +42,3 @@ class TesterDriverSpec extends ChiselFlatSpec {
     }
   }
 }
-

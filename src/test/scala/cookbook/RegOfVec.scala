@@ -22,11 +22,11 @@ class RegOfVec extends CookbookTester(2) {
   val initRegOfVec = RegInit(VecInit(Seq.fill(4)(0.U(32.W))))
 
   // Simple test (cycle comes from superclass)
-  when (cycle === 2.U) { assert(regOfVec(2) === 123.U) }
+  when(cycle === 2.U) { assert(regOfVec(2) === 123.U) }
   for (elt <- initRegOfVec) { assert(elt === 0.U) }
 }
 
-class RegOfVecSpec  extends CookbookSpec {
+class RegOfVecSpec extends CookbookSpec {
   "RegOfVec" should "work" in {
     assertTesterPasses { new RegOfVec }
   }

@@ -15,7 +15,8 @@ module ${prefix};
 endmodule
 """, ".v") _
 
-  def makeFailingVerilog: (File => File) = makeHarness((prefix: String) => s"""
+  def makeFailingVerilog: (File => File) = makeHarness(
+    (prefix: String) => s"""
 module $prefix;
   initial begin
     assert (1 == 0) else $$error("My specific, expected error message!");
@@ -23,9 +24,12 @@ module $prefix;
     $$finish;
   end
 endmodule
-""", ".v") _
+""",
+    ".v"
+  ) _
 
-  def makeCppHarness: (File => File) = makeHarness((prefix: String) => s"""
+  def makeCppHarness: (File => File) = makeHarness(
+    (prefix: String) => s"""
 #include "V$prefix.h"
 #include "verilated.h"
 
@@ -44,7 +48,9 @@ void vl_finish(const char* filename, int linenum, const char* hier) {
   Verilated::flushCall();
   exit(0);
 }
-""", ".cpp") _
+""",
+    ".cpp"
+  ) _
 
   /** Compiles a C++ emulator from Verilog and returns the path to the
     * executable and the executable filename as a tuple.
@@ -77,4 +83,3 @@ void vl_finish(const char* filename, int linenum, const char* hier) {
     assert(!executeExpectingFailure(target, path, "A string that doesn't match any test output"))
   }
 }
-

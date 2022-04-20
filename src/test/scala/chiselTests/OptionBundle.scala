@@ -55,7 +55,7 @@ class OptionBundleSpec extends ChiselFlatSpec with Utils {
   }
 
   "A Bundle with an Option field" should "assert out accessing a None Option field" in {
-    a [Exception] should be thrownBy extractCause[Exception] {
+    a[Exception] should be thrownBy extractCause[Exception] {
       ChiselStage.elaborate { new InvalidOptionBundleTester() }
     }
   }

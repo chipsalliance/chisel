@@ -12,10 +12,12 @@ import firrtl.AnnotationSeq
   * @tparam T Type of top-level module
   */
 abstract class Aspect[T <: RawModule] extends Annotation with Unserializable with NoTargetAnnotation {
+
   /** variable to save [[AnnotationSeq]] from [[chisel3.stage.phases.AspectPhase]]
     * to be used at [[chisel3.aop.injecting.InjectorAspect]], exposes annotations to [[chisel3.internal.DynamicContext]]
     */
   private[aop] var annotationsInAspect: AnnotationSeq = Seq()
+
   /** Convert this Aspect to a seq of FIRRTL annotation
     * @param top
     * @return

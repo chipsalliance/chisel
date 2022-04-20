@@ -16,8 +16,8 @@ class DirectionHaver extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(32.W))
     val out = Output(UInt(32.W))
-    val inBundle = Input(new DirectionedBundle)  // should override elements
-    val outBundle = Output(new DirectionedBundle)  // should override elements
+    val inBundle = Input(new DirectionedBundle) // should override elements
+    val outBundle = Output(new DirectionedBundle) // should override elements
   })
 }
 
@@ -51,10 +51,10 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Inputs should not be assignable") {
     a[Exception] should be thrownBy extractCause[Exception] {
-     ChiselStage.elaborate(new BadDirection)
+      ChiselStage.elaborate(new BadDirection)
     }
     a[Exception] should be thrownBy extractCause[Exception] {
-     ChiselStage.elaborate(new BadSubDirection)
+      ChiselStage.elaborate(new BadSubDirection)
     }
   }
 
@@ -84,7 +84,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Empty Vecs with no direction on the sample_element *should* cause direction errors") {
-    an [Exception] should be thrownBy extractCause[Exception] {
+    an[Exception] should be thrownBy extractCause[Exception] {
       ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {
           val foo = Input(UInt(8.W))
@@ -118,7 +118,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Explicitly directioned but empty Bundles should cause direction errors") {
-    an [Exception] should be thrownBy extractCause[Exception] {
+    an[Exception] should be thrownBy extractCause[Exception] {
       ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {
           val foo = UInt(8.W)
@@ -241,18 +241,20 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     }
 
     val emitted: String = ChiselStage.emitChirrtl(new MyModule)
-    val firrtl: String = ChiselStage.convert(new MyModule).serialize
+    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
-    Seq(emitted, firrtl).foreach { o => {
-      // Chisel Emitter formats spacing a little differently than the
-      // FIRRTL Emitter :-(
-      val s = o.replace("{flip a", "{ flip a")
-      assert(s.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
-      assert(s.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
-      assert(s.contains("input flippedVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
-      assert(s.contains("output flippedVecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
-    } }
+    Seq(emitted, firrtl).foreach { o =>
+      {
+        // Chisel Emitter formats spacing a little differently than the
+        // FIRRTL Emitter :-(
+        val s = o.replace("{flip a", "{ flip a")
+        assert(s.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+        assert(s.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+        assert(s.contains("input flippedVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+        assert(s.contains("output flippedVecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+      }
+    }
   }
 
   property("Vec with Input/Output should calculate directions properly") {
@@ -308,19 +310,21 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     }
 
     val emitted: String = ChiselStage.emitChirrtl(new MyModule)
-    val firrtl: String = ChiselStage.convert(new MyModule).serialize
+    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
-    Seq(emitted, firrtl).foreach { o => {
-      // Chisel Emitter formats spacing a little differently than the
-      // FIRRTL Emitter :-(
-      val s = o.replace("{a", "{ a")
-      assert(s.contains("input inputVec : { a : UInt<1>, b : UInt<1>}[2]"))
-      assert(s.contains("input vecInput : { a : UInt<1>, b : UInt<1>}[2]"))
-      assert(s.contains("input vecInputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
-      assert(s.contains("output outputVec : { a : UInt<1>, b : UInt<1>}[2]"))
-      assert(s.contains("output vecOutput : { a : UInt<1>, b : UInt<1>}[2]"))
-      assert(s.contains("output vecOutputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
-    } }
+    Seq(emitted, firrtl).foreach { o =>
+      {
+        // Chisel Emitter formats spacing a little differently than the
+        // FIRRTL Emitter :-(
+        val s = o.replace("{a", "{ a")
+        assert(s.contains("input inputVec : { a : UInt<1>, b : UInt<1>}[2]"))
+        assert(s.contains("input vecInput : { a : UInt<1>, b : UInt<1>}[2]"))
+        assert(s.contains("input vecInputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
+        assert(s.contains("output outputVec : { a : UInt<1>, b : UInt<1>}[2]"))
+        assert(s.contains("output vecOutput : { a : UInt<1>, b : UInt<1>}[2]"))
+        assert(s.contains("output vecOutputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
+      }
+    }
   }
 }

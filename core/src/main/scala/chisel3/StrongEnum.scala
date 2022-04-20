@@ -10,11 +10,11 @@ import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId, throwException}
+import chisel3.internal.{throwException, Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId}
 import firrtl.annotations._
 
-
 object EnumAnnotations {
+
   /** An annotation for strong enum instances that are ''not'' inside of Vecs
     *
     * @param target the enum instance being annotated
@@ -31,7 +31,7 @@ object EnumAnnotations {
   /** An annotation for Vecs of strong enums.
     *
     * The ''fields'' parameter deserves special attention, since it may be difficult to understand. Suppose you create a the following Vec:
-
+    *
     *               {{{
     *               VecInit(new Bundle {
     *                 val e = MyEnum()
@@ -47,13 +47,14 @@ object EnumAnnotations {
     * @param target the Vec being annotated
     * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
     * @param fields a list of all chains of elements leading from the Vec instance to its inner enum fields.
-    *
     */
-  case class EnumVecAnnotation(target: Named, typeName: String, fields: Seq[Seq[String]]) extends SingleTargetAnnotation[Named] {
+  case class EnumVecAnnotation(target: Named, typeName: String, fields: Seq[Seq[String]])
+      extends SingleTargetAnnotation[Named] {
     def duplicate(n: Named): EnumVecAnnotation = this.copy(target = n)
   }
 
-  case class EnumVecChiselAnnotation(target: InstanceId, typeName: String, fields: Seq[Seq[String]]) extends ChiselAnnotation {
+  case class EnumVecChiselAnnotation(target: InstanceId, typeName: String, fields: Seq[Seq[String]])
+      extends ChiselAnnotation {
     override def toFirrtl: EnumVecAnnotation = EnumVecAnnotation(target.toNamed, typeName, fields)
   }
 
@@ -70,7 +71,6 @@ object EnumAnnotations {
 }
 import EnumAnnotations._
 
-
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
 
   // Use getSimpleName instead of enumTypeName because for debugging purposes
@@ -78,10 +78,11 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   //  Enum annotation), and it's more consistent with Bundle printing.
   override def toString: String = {
     litOption match {
-      case Some(value) => factory.nameOfValue(value) match {
-        case Some(name) => s"${factory.getClass.getSimpleName.init}($value=$name)"
-        case None => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=(invalid))")
-      }
+      case Some(value) =>
+        factory.nameOfValue(value) match {
+          case Some(name) => s"${factory.getClass.getSimpleName.init}($value=$name)"
+          case None       => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=(invalid))")
+        }
       case _ => stringAccessor(s"${factory.getClass.getSimpleName.init}")
     }
   }
@@ -92,7 +93,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
 
-    if(!this.typeEquivalent(other)) {
+    if (!this.typeEquivalent(other)) {
       throwException(s"Enum types are not equivalent: ${this.enumTypeName}, ${other.enumTypeName}")
     }
 
@@ -104,24 +105,34 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     this.factory == that.asInstanceOf[EnumType].factory
   }
 
-  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): Unit = {
+  private[chisel3] override def connectFromBits(
+    that: Bits
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Unit = {
     this := factory.apply(that.asUInt)
   }
 
-  final def === (that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def =/= (that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def < (that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def <= (that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def > (that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def >= (that: EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def ===(that: EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def =/=(that: EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def <(that:   EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def <=(that:  EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def >(that:   EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def >=(that:  EnumType): Bool = macro SourceInfoTransform.thatArg
 
-  def do_=== (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
-  def do_=/= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
-  def do_< (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
-  def do_> (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
-  def do_<= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
-  def do_>= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
+  def do_===(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, EqualOp, that)
+  def do_=/=(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, NotEqualOp, that)
+  def do_<(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, LessOp, that)
+  def do_>(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, GreaterOp, that)
+  def do_<=(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, LessEqOp, that)
+  def do_>=(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    compop(sourceInfo, GreaterEqOp, that)
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
@@ -151,21 +162,26 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     * @param u2 zero or more additional values to look for
     * @return a hardware [[Bool]] that indicates if this value matches any of the given values
     */
-  final def isOneOf(u1: EnumType, u2: EnumType*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-    = isOneOf(u1 +: u2.toSeq)
+  final def isOneOf(
+    u1: EnumType,
+    u2: EnumType*
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Bool = isOneOf(u1 +: u2.toSeq)
 
   def next(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     if (litOption.isDefined) {
       val index = factory.all.indexOf(this)
 
-      if (index < factory.all.length-1) {
+      if (index < factory.all.length - 1) {
         factory.all(index + 1).asInstanceOf[this.type]
       } else {
         factory.all.head.asInstanceOf[this.type]
       }
     } else {
-      val enums_with_nexts = factory.all zip (factory.all.tail :+ factory.all.head)
-      val next_enum = SeqUtils.priorityMux(enums_with_nexts.map { case (e,n) => (this === e, n) } )
+      val enums_with_nexts = factory.all.zip(factory.all.tail :+ factory.all.head)
+      val next_enum = SeqUtils.priorityMux(enums_with_nexts.map { case (e, n) => (this === e, n) })
       next_enum.asInstanceOf[this.type]
     }
   }
@@ -175,7 +191,10 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     lit.bindLitArg(this)
   }
 
-  override private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit = {
+  override private[chisel3] def bind(
+    target:          Binding,
+    parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified
+  ): Unit = {
     super.bind(target, parentDirection)
 
     // Make sure we only annotate hardware and not literals
@@ -186,10 +205,11 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
 
   // This function conducts a depth-wise search to find all enum-type fields within a vector or bundle (or vector of bundles)
   private def enumFields(d: Aggregate): Seq[Seq[String]] = d match {
-    case v: Vec[_] => v.sample_element match {
-      case b: Bundle => enumFields (b)
-      case _ => Seq ()
-    }
+    case v: Vec[_] =>
+      v.sample_element match {
+        case b: Bundle => enumFields(b)
+        case _ => Seq()
+      }
     case b: Bundle =>
       b.elements.collect {
         case (name, e: EnumType) if this.typeEquivalent(e) => Seq(Seq(name))
@@ -205,10 +225,11 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     }
 
     d.binding match {
-      case Some(ChildBinding(parent)) => outerMostVec(parent) match {
-        case outer @ Some(_) => outer
-        case None => currentVecOpt
-      }
+      case Some(ChildBinding(parent)) =>
+        outerMostVec(parent) match {
+          case outer @ Some(_) => outer
+          case None            => currentVecOpt
+        }
       case _ => currentVecOpt
     }
   }
@@ -216,7 +237,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   private def annotateEnum(): Unit = {
     val anno = outerMostVec() match {
       case Some(v) => EnumVecChiselAnnotation(v, enumTypeName, enumFields(v))
-      case None => EnumComponentChiselAnnotation(this, enumTypeName)
+      case None    => EnumComponentChiselAnnotation(this, enumTypeName)
     }
 
     if (!Builder.annotations.contains(anno)) {
@@ -233,14 +254,13 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
 }
 
-
 abstract class EnumFactory {
   class Type extends EnumType(this)
   object Type {
     def apply(): Type = EnumFactory.this.apply()
   }
 
-  private var id: BigInt = 0
+  private var id:             BigInt = 0
   private[chisel3] var width: Width = 0.W
 
   private case class EnumRecord(inst: Type, name: String)
@@ -255,7 +275,7 @@ abstract class EnumFactory {
   // Do all bitvectors of this Enum's width represent legal states?
   private[chisel3] def isTotal: Boolean = {
     (this.getWidth < 31) && // guard against Integer overflow
-      (enumRecords.size == (1 << this.getWidth))
+    (enumRecords.size == (1 << this.getWidth))
   }
 
   private[chisel3] def globalAnnotation: EnumDefChiselAnnotation =
@@ -280,7 +300,7 @@ abstract class EnumFactory {
 
     enumRecords.append(EnumRecord(result, name))
 
-    width = (1 max id.bitLength).W
+    width = (1.max(id.bitLength)).W
     id += 1
 
     result
@@ -302,11 +322,17 @@ abstract class EnumFactory {
 
   def apply(): Type = new Type
 
-  private def castImpl(n: UInt, warn: Boolean)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
+  private def castImpl(
+    n:    UInt,
+    warn: Boolean
+  )(
+    implicit sourceInfo:      SourceInfo,
+    connectionCompileOptions: CompileOptions
+  ): Type = {
     if (n.litOption.isDefined) {
       enumInstances.find(_.litValue == n.litValue) match {
         case Some(result) => result
-        case None => throwException(s"${n.litValue} is not a valid value for $enumTypeName")
+        case None         => throwException(s"${n.litValue} is not a valid value for $enumTypeName")
       }
     } else if (!n.isWidthKnown) {
       throwException(s"Non-literal UInts being cast to $enumTypeName must have a defined width")
@@ -314,7 +340,9 @@ abstract class EnumFactory {
       throwException(s"The UInt being cast to $enumTypeName is wider than $enumTypeName's width ($getWidth)")
     } else {
       if (warn && !this.isTotal) {
-        Builder.warning(s"Casting non-literal UInt to $enumTypeName. You can use $enumTypeName.safe to cast without this warning.")
+        Builder.warning(
+          s"Casting non-literal UInt to $enumTypeName. You can use $enumTypeName.safe to cast without this warning."
+        )
       }
       val glue = Wire(new UnsafeEnum(width))
       glue := n
@@ -330,7 +358,8 @@ abstract class EnumFactory {
     * @param n the UInt to cast
     * @return the equivalent Enum to the value of the cast UInt
     */
-  def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = castImpl(n, warn = true)
+  def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type =
+    castImpl(n, warn = true)
 
   /** Safely cast an [[UInt]] to the type of this Enum
     *
@@ -344,9 +373,8 @@ abstract class EnumFactory {
   }
 }
 
-
 private[chisel3] object EnumMacros {
-  def ValImpl(c: Context) : c.Tree = {
+  def ValImpl(c: Context): c.Tree = {
     import c.universe._
 
     // Much thanks to michael_s for this solution:
@@ -374,7 +402,6 @@ private[chisel3] object EnumMacros {
     q"""this.do_Value($name, $id)"""
   }
 }
-
 
 // This is an enum type that can be connected directly to UInts. It is used as a "glue" to cast non-literal UInts
 // to enums.
