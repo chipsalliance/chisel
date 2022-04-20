@@ -143,6 +143,57 @@ package experimental {
       bs.getWidth
       bs
     }
+
+    /**
+      * Construct a [[BitSet]] matching a range of value
+      *
+      * @param start The smallest matching value
+      * @param length The length of the matching range
+      * @param width The width of the constructed [[BitSet]]. If not given, the returned [[BitSet]] have the width of the maximum possible matching value.
+      * @return A [[BitSet]] matching exactly all inputs in range [start, start + length)
+      */
+    def fromRange(
+      start:  BigInt,
+      length: BigInt,
+      width:  Int = -1
+    ): BitSet = {
+      require(length > 0, "Cannot construct a empty BitSetRange")
+      val max_known_length = (start + length - 1).bitLength
+      val w = if (width >= 0) width else max_known_length
+      require(
+        w >= max_known_length,
+        s"Cannot construct a BitSetRange with width($w) smaller than its range end(b${(start + length - 1).toString(2)})"
+      )
+
+      // Break down to individual bitpats
+      val atoms = {
+        val collected = mutable.Set[BitPat]();
+        var ptr = start;
+        var left = length;
+        while (left > 0) {
+          var curPow = left.bitLength - 1
+          if (ptr != 0) {
+            val maxPow = ptr.lowestSetBit
+            if (maxPow < curPow) curPow = maxPow
+          }
+
+          val inc = BigInt(1) << curPow
+          require((ptr & inc - 1) == 0, "BitPatRange: Internal sanity check")
+          val mask = (BigInt(1) << w) - inc
+          collected.add(new BitPat(ptr, mask, w))
+          ptr += inc
+          left -= inc
+        }
+
+        collected.toSet
+      }
+
+      new BitSet {
+        def terms = atoms
+        override def getWidth: Int = w
+        override def toString: String = s"BitSetRange(0x${start.toString(16)} - 0x${(start + length).toString(16)})"
+      }
+    }
   }
 
   /** A Set of [[BitPat]] represents a set of bit vector with mask. */
@@ -236,90 +287,6 @@ package experimental {
     def inverse: BitSet = {
       val total = BitPat("b" + ("?" * this.getWidth))
       total.subtract(this)
-    }
-
-    /**
-      * Calculate lowest posible value to match this pattern seset.
-      *
-      * @throws UnsupportedOperationException if this this is an empty pattern set.
-      * @return The matched value
-      */
-    private[chisel3] def lowerbound: BigInt = terms.map(_.lowerbound).min
-
-    /**
-      * Convert arbitrary BitSet into continous ranges
-      *
-      * @note Due to the potential large number of generated ranges, this method return an iterator.
-      * API user should be careful when the number of the ranges are not guarenteed.
-      *
-      * @return An iterator yielding all continous ranges in this pattern. The ranges are guaranteed to be increasing,
-      *     non-overlaping, non-adjacent, and the union of all of them will precisely cover the entire BitSet.
-      */
-    def toBitSetRanges: Iterator[BitSetRange] = new BitSetRangeIterator(this, this.getWidth)
-  }
-
-  sealed class BitSetRange(val start: BigInt, val length: BigInt, val width: Int) extends BitSet { outer =>
-    override def terms = {
-      val collected = mutable.Set[BitPat]();
-      var ptr = start;
-      var left = length;
-      while (left > 0) {
-        var curPow = left.bitLength - 1
-        if (ptr != 0) {
-          val maxPow = ptr.lowestSetBit
-          if (maxPow < curPow) curPow = maxPow
-        }
-
-        val inc = BigInt(1) << curPow
-        require((ptr & inc - 1) == 0, "BitPatRange: Internal sanity check")
-        val mask = (BigInt(1) << width) - inc
-        collected.add(new BitPat(ptr, mask, width))
-        ptr += inc
-        left -= inc
-      }
-
-      collected.toSet
-    }
-
-    def isAligned: Boolean = isPow2(length) && (start & (length - 1)) == 0
-
-    override def getWidth: Int = width
-
-    override def toString: String = s"BitSetRange(0x${start.toString(16)} - 0x${(start + length).toString(16)})"
-  }
-
-  object BitSetRange {
-    def apply(
-      start:  BigInt,
-      length: BigInt,
-      width:  Int = -1
-    ): BitSetRange = {
-      require(length > 0, "Cannot construct a empty BitSetRange")
-      val max_known_length = (start + length - 1).bitLength
-      val w = if (width >= 0) width else max_known_length
-      require(
-        w >= max_known_length,
-        s"Cannot construct a BitSetRange with width($w) smaller than its range end(b${(start + length - 1).toString(2)})"
-      )
-      val ret = new BitSetRange(start, length, w)
-
-      ret
-    }
-  }
-
-  private[chisel3] class BitSetRangeIterator(var remaining: BitSet, val width: Int) extends Iterator[BitSetRange] {
-
-    override def hasNext: Boolean = !remaining.isEmpty
-
-    override def next(): BitSetRange = {
-      val posLB = remaining.lowerbound
-      val inv = remaining.inverse
-      val neg = if (posLB == 0) inv else inv.subtract(BitSetRange(0, posLB, width))
-      val negLB = if (neg.isEmpty) BigInt(1) << width else neg.lowerbound
-      require(negLB > posLB, "BitSetRangeIterator: Internal sanity check")
-      remaining = remaining.subtract(BitSetRange(0, negLB, width))
-
-      BitSetRange(posLB, negLB - posLB, width)
     }
   }
 }
@@ -442,8 +409,6 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
   }
 
   override def isEmpty: Boolean = false
-
-  override private[chisel3] def lowerbound: BigInt = value & mask
 
   /** Generate raw string of a [[BitPat]]. */
   def rawString: String = Seq
