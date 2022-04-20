@@ -400,7 +400,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
             .map {
               case Seq(a, b) => op(a, b)
             }
-            .toSeq
+            .toVector
           recReduce(l ++ r, op, lop)
       }
     }
