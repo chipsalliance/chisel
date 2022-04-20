@@ -158,10 +158,10 @@ package experimental {
       width:  Int = -1
     ): BitSet = {
       require(length > 0, "Cannot construct a empty BitSetRange")
-      val max_known_length = (start + length - 1).bitLength
-      val w = if (width >= 0) width else max_known_length
+      val maxKnownLength = (start + length - 1).bitLength
+      val w = if (width >= 0) width else maxKnownLength
       require(
-        w >= max_known_length,
+        w >= maxKnownLength,
         s"Cannot construct a BitSetRange with width($w) smaller than its range end(b${(start + length - 1).toString(2)})"
       )
 
