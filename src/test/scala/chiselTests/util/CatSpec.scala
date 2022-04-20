@@ -62,7 +62,7 @@ class CatSpec extends ChiselFlatSpec {
 
   it should "have a source locator when passing a seq" in {
     class MyModule extends RawModule {
-      val in = IO(Input(Vec(2, UInt(8.W))))
+      val in = IO(Input(Vec(8, UInt(8.W))))
       val out = IO(Output(UInt()))
 
       // noPrefix to avoid `out` as prefix
@@ -75,7 +75,7 @@ class CatSpec extends ChiselFlatSpec {
 
   it should "have a source locator when passing args" in {
     class MyModule extends RawModule {
-      val in = IO(Input(Vec(2, UInt(8.W))))
+      val in = IO(Input(Vec(8, UInt(8.W))))
       val out = IO(Output(UInt()))
       out := Cat(in(0), in(1))
     }

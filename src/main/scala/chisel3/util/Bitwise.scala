@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Creates repetitions of each bit of the input in order.
   *
@@ -24,13 +25,13 @@ object FillInterleaved {
     *
     * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
     */
-  def apply(n: Int, in: UInt): UInt = apply(n, in.asBools)
+  def apply(n: Int, in: UInt)(implicit sourceInfo: SourceInfo): UInt = apply(n, in.asBools)
 
   /** Creates n repetitions of each bit of x in order.
     *
     * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
     */
-  def apply(n: Int, in: Seq[Bool]): UInt = Cat(in.map(Fill(n, _)).reverse)
+  def apply(n: Int, in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = Cat(in.map(Fill(n, _)).reverse)
 }
 
 /** Returns the number of bits set (value is 1 or true) in the input signal.
@@ -45,9 +46,9 @@ object FillInterleaved {
   * }}}
   */
 object PopCount {
-  def apply(in: Iterable[Bool]): UInt = SeqUtils.count(in.toSeq)
+  def apply(in: Iterable[Bool])(implicit sourceInfo: SourceInfo): UInt = SeqUtils.count(in.toSeq)
 
-  def apply(in: Bits): UInt = apply((0 until in.getWidth).map(in(_)))
+  def apply(in: Bits)(implicit sourceInfo: SourceInfo): UInt = apply((0 until in.getWidth).map(in(_)))
 }
 
 /** Create repetitions of the input using a tree fanout topology.
@@ -65,7 +66,7 @@ object Fill {
     * Output data-equivalent to x ## x ## ... ## x (n repetitions).
     * @throws java.lang.IllegalArgumentException if `n` is less than zero
     */
-  def apply(n: Int, x: UInt): UInt = {
+  def apply(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): UInt = {
     n match {
       case _ if n < 0 => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
       case 0          => UInt(0.W)
@@ -111,5 +112,5 @@ object Reverse {
       Cat(doit(in(half - 1, 0), half), doit(in(length - 1, half), length - half))
   }
 
-  def apply(in: UInt): UInt = doit(in, in.getWidth)
+  def apply(in: UInt)(implicit sourceInfo: SourceInfo): UInt = doit(in, in.getWidth)
 }
