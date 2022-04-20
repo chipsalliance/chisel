@@ -61,16 +61,16 @@ object FillInterleaved {
   * }}}
   */
 object PopCount {
-  
+
   def apply(in: Iterable[Bool]): UInt = macro SourceInfoTransform.inArg
-  
-  def do_apply(in:    Iterable[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
+
+  def do_apply(in: Iterable[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
     in.toSeq
   )
 
   def apply(in: Bits): UInt = macro SourceInfoTransform.inArg
-  
-  def do_apply(in:    Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
+
+  def do_apply(in: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
     (0 until in.getWidth).map(in(_))
   )
 
@@ -144,5 +144,5 @@ object Reverse {
 
   def apply(in: UInt): UInt = macro SourceInfoTransform.inArg
 
-  def do_apply(in:    UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = doit(in, in.getWidth)
+  def do_apply(in: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = doit(in, in.getWidth)
 }
