@@ -18,11 +18,11 @@ addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.15")
 
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
 
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.3.1")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.3.2")
 
 addSbtPlugin("com.eed3si9n" % "sbt-sriracha" % "0.1.0")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.1")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.0")
 
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.10")
 

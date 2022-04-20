@@ -56,7 +56,9 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     with SourceInfoDoc {
   _parent.foreach(_.addId(this))
 
-  private val clockInst: Clock = Builder.forcedClock
+  // if the memory is created in a scope with an implicit clock (-> clockInst is defined), we will perform checks that
+  // ensure memory ports are created with the same clock unless explicitly specified to use a different clock
+  private val clockInst: Option[Clock] = Builder.currentClock
 
   protected def clockWarning(sourceInfo: Option[SourceInfo]): Unit = {
     // Turn into pretty String if possible, if not, Builder.deprecated will find one via stack trace
@@ -132,7 +134,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): T = {
-    if (warn && clock != clockInst) {
+    if (warn && clockInst.isDefined && clock != clockInst.get) {
       clockWarning(Some(sourceInfo))
     }
     makePort(sourceInfo, idx, dir, clock)
@@ -164,7 +166,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   )(
     implicit compileOptions: CompileOptions
   ): Unit = {
-    if (warn && clock != clockInst) {
+    if (warn && clockInst.isDefined && clock != clockInst.get) {
       clockWarning(None)
     }
     implicit val sourceInfo = UnlocatableSourceInfo
@@ -223,7 +225,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     compileOptions:    CompileOptions
   ): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
-    if (warn && clock != clockInst) {
+    if (warn && clockInst.isDefined && clock != clockInst.get) {
       clockWarning(None)
     }
     val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE, clock).asInstanceOf[Vec[Data]]

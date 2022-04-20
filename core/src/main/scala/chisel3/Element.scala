@@ -36,10 +36,15 @@ abstract class Element extends Data {
         case Some(litArg) => Some(ElementLitBinding(litArg))
         case _            => Some(DontCareBinding())
       }
-    case Some(b @ AggregateViewBinding(viewMap, _)) =>
+    // TODO Do we even need this? Looking up things in the AggregateViewBinding is fine
+    case Some(b @ AggregateViewBinding(viewMap)) =>
       viewMap.get(this) match {
-        case Some(elt) => Some(ViewBinding(elt))
-        case _         => throwException(s"Internal Error! $this missing from topBinding $b")
+        case Some(elt: Element) => Some(ViewBinding(elt))
+        // TODO We could generate a reduced AggregateViewBinding, but is there a point?
+        // Generating the new object would be somewhat slow, it's not clear if we should do this
+        //   matching anyway
+        case Some(data: Aggregate) => Some(b)
+        case _ => throwException(s"Internal Error! $this missing from topBinding $b")
       }
     case topBindingOpt => topBindingOpt
   }

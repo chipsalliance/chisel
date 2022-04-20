@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental.hierarchy
+package chisel3.experimental.hierarchy.core
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.language.experimental.macros
 import chisel3._
-import chisel3.internal.BaseModule.{InstantiableClone, IsClone, ModuleClone}
+import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
 import chisel3.internal.sourceinfo.{InstanceTransform, SourceInfo}
 import chisel3.experimental.BaseModule
 import firrtl.annotations.IsModule
