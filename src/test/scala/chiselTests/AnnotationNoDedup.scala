@@ -9,7 +9,6 @@ import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-
 class MuchUsedModule extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(16.W))
@@ -35,7 +34,7 @@ class UsesMuchUsedModule(addAnnos: Boolean) extends Module {
   mod3.io.in := mod2.io.out
   io.out := mod3.io.out
 
-  if(addAnnos) {
+  if (addAnnos) {
     doNotDedup(mod1)
     doNotDedup(mod3)
   }
@@ -46,29 +45,35 @@ class AnnotationNoDedup extends AnyFreeSpec with Matchers {
   "Firrtl provides transform that reduces identical modules to a single instance" - {
     "Annotations can be added which will prevent this deduplication for specific modules instances" in {
       val lowFirrtl = stage
-        .execute(Array("-X", "low", "--target-dir", "test_run_dir"),
-                 Seq(ChiselGeneratorAnnotation(() => new UsesMuchUsedModule(addAnnos = true))))
+        .execute(
+          Array("-X", "low", "--target-dir", "test_run_dir"),
+          Seq(ChiselGeneratorAnnotation(() => new UsesMuchUsedModule(addAnnos = true)))
+        )
         .collectFirst {
           case FirrtlCircuitAnnotation(circuit) => circuit.serialize
-        }.getOrElse(fail)
-      lowFirrtl should include ("module MuchUsedModule :")
-      lowFirrtl should include ("module MuchUsedModule_1 :")
-      lowFirrtl should include ("module MuchUsedModule_3 :")
-      lowFirrtl should not include "module MuchUsedModule_2 :"
-      lowFirrtl should not include "module MuchUsedModule_4 :"
+        }
+        .getOrElse(fail)
+      lowFirrtl should include("module MuchUsedModule :")
+      lowFirrtl should include("module MuchUsedModule_1 :")
+      lowFirrtl should include("module MuchUsedModule_3 :")
+      (lowFirrtl should not).include("module MuchUsedModule_2 :")
+      (lowFirrtl should not).include("module MuchUsedModule_4 :")
     }
     "Turning off these annotations dedups all the occurrences" in {
       val lowFirrtl = stage
-        .execute(Array("-X", "low", "--target-dir", "test_run_dir"),
-                 Seq(ChiselGeneratorAnnotation(() => new UsesMuchUsedModule(addAnnos = false))))
+        .execute(
+          Array("-X", "low", "--target-dir", "test_run_dir"),
+          Seq(ChiselGeneratorAnnotation(() => new UsesMuchUsedModule(addAnnos = false)))
+        )
         .collectFirst {
           case FirrtlCircuitAnnotation(circuit) => circuit.serialize
-        }.getOrElse(fail)
-      lowFirrtl should include ("module MuchUsedModule :")
-      lowFirrtl should not include "module MuchUsedModule_1 :"
-      lowFirrtl should not include "module MuchUsedModule_3 :"
-      lowFirrtl should not include "module MuchUsedModule_2 :"
-      lowFirrtl should not include "module MuchUsedModule_4 :"
+        }
+        .getOrElse(fail)
+      lowFirrtl should include("module MuchUsedModule :")
+      (lowFirrtl should not).include("module MuchUsedModule_1 :")
+      (lowFirrtl should not).include("module MuchUsedModule_3 :")
+      (lowFirrtl should not).include("module MuchUsedModule_2 :")
+      (lowFirrtl should not).include("module MuchUsedModule_4 :")
     }
   }
 }

@@ -65,11 +65,10 @@ class SharedConstantValDedupTop extends Module {
   io.out := inst0.io.out + inst1.io.out
 }
 
-
 class DedupSpec extends ChiselFlatSpec {
   private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
   def countModules(verilog: String): Int =
-    (verilog split "\n"  collect { case ModuleRegex(name) => name }).size
+    (verilog.split("\n").collect { case ModuleRegex(name) => name }).size
 
   "Deduplication" should "occur" in {
     assert(countModules(compile { new DedupQueues(4) }) === 2)
@@ -80,7 +79,6 @@ class DedupSpec extends ChiselFlatSpec {
   }
 
   it should "dedup modules that share a literal" in {
-    assert(countModules(compile { new SharedConstantValDedupTop  }) === 2)
+    assert(countModules(compile { new SharedConstantValDedupTop }) === 2)
   }
 }
-

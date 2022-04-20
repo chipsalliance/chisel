@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import firrtl.Transform
 import firrtl.passes.{InlineAnnotation, InlineInstances}
-import firrtl.transforms.{NoDedupAnnotation, FlattenAnnotation, Flatten}
+import firrtl.transforms.{Flatten, FlattenAnnotation, NoDedupAnnotation}
 import firrtl.annotations.Annotation
 
 /** Inlines an instance of a module
@@ -40,11 +40,15 @@ import firrtl.annotations.Annotation
   * }}}
   */
 trait InlineInstance { self: BaseModule =>
-  Seq(new ChiselAnnotation with RunFirrtlTransform {
-        def toFirrtl: Annotation = InlineAnnotation(self.toNamed)
-        def transformClass: Class[_ <: Transform] = classOf[InlineInstances] },
-      new ChiselAnnotation {
-        def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed) })
+  Seq(
+    new ChiselAnnotation with RunFirrtlTransform {
+      def toFirrtl:       Annotation = InlineAnnotation(self.toNamed)
+      def transformClass: Class[_ <: Transform] = classOf[InlineInstances]
+    },
+    new ChiselAnnotation {
+      def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed)
+    }
+  )
     .map(chisel3.experimental.annotate(_))
 }
 
@@ -75,10 +79,14 @@ trait InlineInstance { self: BaseModule =>
   * }}}
   */
 trait FlattenInstance { self: BaseModule =>
-  Seq(new ChiselAnnotation with RunFirrtlTransform {
-        def toFirrtl: Annotation = FlattenAnnotation(self.toNamed)
-        def transformClass: Class[_ <: Transform] = classOf[Flatten] },
-      new ChiselAnnotation {
-        def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed) })
-  .map(chisel3.experimental.annotate(_))
+  Seq(
+    new ChiselAnnotation with RunFirrtlTransform {
+      def toFirrtl:       Annotation = FlattenAnnotation(self.toNamed)
+      def transformClass: Class[_ <: Transform] = classOf[Flatten]
+    },
+    new ChiselAnnotation {
+      def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed)
+    }
+  )
+    .map(chisel3.experimental.annotate(_))
 }

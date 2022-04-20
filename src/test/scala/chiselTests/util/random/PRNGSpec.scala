@@ -28,15 +28,15 @@ class PRNGStepTest extends BasicTester {
 
   val (_, done) = Counter(true.B, 16)
 
-  when (count2 === 0.U) {
+  when(count2 === 0.U) {
     assert(a === b, "1-step and 2-step PRNGs did not agree! (0b%b != 0b%b)", a, b)
   }
 
-  when (count4 === 0.U) {
+  when(count4 === 0.U) {
     assert(a === c, "1-step and 4-step PRNGs did not agree!")
   }
 
-  when (done) {
+  when(done) {
     stop()
   }
 
@@ -52,11 +52,11 @@ class PRNGUpdateSeedTest(updateSeed: Boolean, seed: BigInt, expected: BigInt) ex
   a.io.seed.valid := count === 2.U
   a.io.seed.bits := seed.U(a.width.W).asBools
 
-  when (count === 3.U) {
+  when(count === 3.U) {
     assert(a.io.out.asUInt === expected.U, "Output didn't match!")
   }
 
-  when (done) {
+  when(done) {
     stop()
   }
 
@@ -64,18 +64,22 @@ class PRNGUpdateSeedTest(updateSeed: Boolean, seed: BigInt, expected: BigInt) ex
 
 class PRNGSpec extends ChiselFlatSpec with Utils {
 
-  behavior of "PRNG"
+  behavior.of("PRNG")
 
   it should "throw an exception if the step size is < 1" in {
-    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-       ChiselStage.elaborate(new CyclePRNG(0, Some(1), 1, true)) }
-    }.getMessage should include ("Width must be greater than zero!")
+    {
+      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+        ChiselStage.elaborate(new CyclePRNG(0, Some(1), 1, true))
+      }
+    }.getMessage should include("Width must be greater than zero!")
   }
 
   it should "throw an exception if the step size is <= 0" in {
-    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-       ChiselStage.elaborate(new CyclePRNG(1, Some(1), 0, true)) }
-    }.getMessage should include ("Step size must be greater than one!")
+    {
+      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+        ChiselStage.elaborate(new CyclePRNG(1, Some(1), 0, true))
+      }
+    }.getMessage should include("Step size must be greater than one!")
   }
 
   it should "handle non-unary steps" in {

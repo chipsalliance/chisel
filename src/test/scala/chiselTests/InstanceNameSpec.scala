@@ -23,7 +23,7 @@ class InstanceNameModule extends Module {
 }
 
 class InstanceNameSpec extends ChiselFlatSpec {
-  behavior of "instanceName"
+  behavior.of("instanceName")
   val moduleName = "InstanceNameModule"
   var m: InstanceNameModule = _
   ChiselStage.elaborate { m = new InstanceNameModule; m }

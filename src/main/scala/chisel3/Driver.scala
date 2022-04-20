@@ -17,7 +17,8 @@ trait BackendCompilationUtilities extends LazyLogging {
   lazy val TestDirectory = FirrtlBackendCompilationUtilities.TestDirectory
   def timeStamp:            String = FirrtlBackendCompilationUtilities.timeStamp
   def loggingProcessLogger: ProcessLogger = FirrtlBackendCompilationUtilities.loggingProcessLogger
-  def copyResourceToFile(name:      String, file: File): Unit = FirrtlBackendCompilationUtilities.copyResourceToFile(name, file)
+  def copyResourceToFile(name: String, file: File): Unit =
+    FirrtlBackendCompilationUtilities.copyResourceToFile(name, file)
   def createTestDirectory(testName: String): File = FirrtlBackendCompilationUtilities.createTestDirectory(testName)
   def makeHarness(template:         String => String, post: String)(f: File): File =
     FirrtlBackendCompilationUtilities.makeHarness(template, post)(f)
@@ -98,10 +99,9 @@ trait BackendCompilationUtilities extends LazyLogging {
     import firrtl.stage.FirrtlCircuitAnnotation
 
     options.collectFirst { case a: FirrtlCircuitAnnotation => a.circuit } match {
-      case None => false
+      case None    => false
       case Some(_) => true
     }
     // *********************************************************************************************
   }
 }
-

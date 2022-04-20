@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package chiselTests
 
-
 import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.TransitName
@@ -12,7 +11,7 @@ import org.scalatest.matchers.should.Matchers
 class TransitNameSpec extends AnyFlatSpec with Matchers {
 
   class MyModule extends RawModule {
-    val io = IO(new Bundle{})
+    val io = IO(new Bundle {})
     override val desiredName: String = "MyModule"
   }
 
@@ -42,13 +41,13 @@ class TransitNameSpec extends AnyFlatSpec with Matchers {
       .emitFirrtl(new Top, Array("--target-dir", "test_run_dir/TransitNameSpec"))
 
     info("""output FIRRTL includes "inst MyModule"""")
-    firrtl should include ("inst MyModule of MyModule")
+    firrtl should include("inst MyModule of MyModule")
 
     info("""output FIRRTL includes "inst bar"""")
-    firrtl should include ("inst bar of MyModule")
+    firrtl should include("inst bar of MyModule")
 
     info("""output FIRRTL includes "inst baz_generated"""")
-    firrtl should include ("inst baz_generated of MyModule")
+    firrtl should include("inst baz_generated of MyModule")
   }
 
 }

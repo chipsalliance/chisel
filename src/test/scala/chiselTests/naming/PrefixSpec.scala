@@ -28,8 +28,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) {
-      top: Test => Select.wires(top).map(_.instanceName) should be (List("x1_first_wire1", "x1", "x2_second_wire1", "x2"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x1_first_wire1", "x1", "x2_second_wire1", "x2"))
     }
   }
 
@@ -50,20 +50,19 @@ class PrefixSpec extends ChiselPropSpec with Utils {
       { val x1 = builder() }
       { val x2 = builder() }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (
-          List(
-            "x1_wire1",
-            "x1_wire2",
-            "x1_foo_wire1",
-            "x1",
-            "x2_wire1",
-            "x2_wire2",
-            "x2_foo_wire1",
-            "x2"
-          )
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(
+        List(
+          "x1_wire1",
+          "x1_wire2",
+          "x1_foo_wire1",
+          "x1",
+          "x2_wire1",
+          "x2_wire2",
+          "x2_foo_wire1",
+          "x2"
         )
+      )
     }
   }
 
@@ -85,9 +84,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("x1", "x1_wire", "x2", "x2_wire"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x1", "x1_wire", "x2", "x2_wire"))
     }
   }
 
@@ -105,9 +103,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         val JACOB = builder()
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("ADAM_a", "ADAM", "JACOB_a", "JACOB"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("ADAM_a", "ADAM", "JACOB_a", "JACOB"))
     }
   }
 
@@ -122,9 +119,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
       { val noprefix = builder() }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("a", "noprefix"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("a", "noprefix"))
     }
   }
 
@@ -139,12 +135,13 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
       { val blah = builder() }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.ops(top).map(x => (x._1, x._2.instanceName)) should be (List(
+    aspectTest(() => new Test) { top: Test =>
+      Select.ops(top).map(x => (x._1, x._2.instanceName)) should be(
+        List(
           ("mul", "_blah_T"),
           ("add", "blah")
-        ))
+        )
+      )
     }
   }
 
@@ -162,9 +159,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(Select.instances(top).head).map(_.instanceName) should be (List("wire"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(Select.instances(top).head).map(_.instanceName) should be(List("wire"))
     }
   }
 
@@ -182,9 +178,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         val child = Module(module)
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(Select.instances(top).head).map(_.instanceName) should be (List("wire"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(Select.instances(top).head).map(_.instanceName) should be(List("wire"))
     }
   }
 
@@ -204,12 +199,10 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         val child = Module(module)
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.ios(Select.instances(top).head).map(_.instanceName) should be (List("clock", "reset", "io"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.ios(Select.instances(top).head).map(_.instanceName) should be(List("clock", "reset", "io"))
     }
   }
-
 
   property("Prefixing should not be caused by nested Iterable[Iterable[Any]]") {
     class Test extends Module {
@@ -220,9 +213,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("wire"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("wire"))
     }
   }
 
@@ -235,9 +227,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("iia_wire"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("iia_wire"))
     }
   }
 
@@ -250,10 +241,9 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("mywire"))
-        Select.wires(top).map(_.instanceName) shouldNot be (List("wire_mywire"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("mywire"))
+      Select.wires(top).map(_.instanceName) shouldNot be(List("wire_mywire"))
     }
   }
 
@@ -268,8 +258,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) {
-      top: Test => Select.wires(top).map(_.instanceName) should be (List("wire_mywire", "mywire2"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("wire_mywire", "mywire2"))
     }
   }
 
@@ -288,15 +278,16 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         wire.vec(1.U) := RegNext(3.U)
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.registers(top).map(_.instanceName) should be (List(
+    aspectTest(() => new Test) { top: Test =>
+      Select.registers(top).map(_.instanceName) should be(
+        List(
           "wire_x_REG",
           "wire_y_REG",
           "wire_vec_0_REG",
           "wire_vec_REG",
           "wire_vec_1_REG"
-        ))
+        )
+      )
     }
   }
 
@@ -312,14 +303,17 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         child.in := RegNext(3.U)
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.registers(top).map(_.instanceName) should be (List(
+    aspectTest(() => new Test) { top: Test =>
+      Select.registers(top).map(_.instanceName) should be(
+        List(
           "child_in_REG"
-        ))
-        Select.registers(Select.instances(top).head).map(_.instanceName) should be (List(
+        )
+      )
+      Select.registers(Select.instances(top).head).map(_.instanceName) should be(
+        List(
           "out_REG"
-        ))
+        )
+      )
     }
   }
 
@@ -335,14 +329,17 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         child.in <> RegNext(3.U)
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.registers(top).map(_.instanceName) should be (List(
+    aspectTest(() => new Test) { top: Test =>
+      Select.registers(top).map(_.instanceName) should be(
+        List(
           "child_in_REG"
-        ))
-        Select.registers(Select.instances(top).head).map(_.instanceName) should be (List(
+        )
+      )
+      Select.registers(Select.instances(top).head).map(_.instanceName) should be(
+        List(
           "out_REG"
-        ))
+        )
+      )
     }
   }
 
@@ -357,9 +354,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("foo_x", "foo_x_w"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("foo_x", "foo_x_w"))
     }
   }
 
@@ -374,12 +370,10 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("foo_x", "foo_x_bar_w"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("foo_x", "foo_x_bar_w"))
     }
   }
-
 
   property("Prefixing with wires in recursive functions should grow linearly") {
     class Test extends Module {
@@ -394,9 +388,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
       val in = IO(Input(Vec(4, Bool())))
       val x = func(in)
     }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("x", "x_w_w", "x_w_w_w", "x_w_w_w_w"))
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x", "x_w_w", "x_w_w_w", "x_w_w_w_w"))
     }
 
   }

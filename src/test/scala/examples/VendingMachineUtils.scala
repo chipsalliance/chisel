@@ -24,7 +24,7 @@ object VendingMachineUtils {
     for (input <- inputs) {
       val incValue = input match {
         case Some(coin) => coin.value
-        case None => 0
+        case None       => 0
       }
       if (value >= sodaCost) {
         outputs.append(true)

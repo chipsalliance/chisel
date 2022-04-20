@@ -8,17 +8,16 @@ import chisel3.testers.BasicTester
 
 class GCD extends Module {
   val io = IO(new Bundle {
-    val a  = Input(UInt(32.W))
-    val b  = Input(UInt(32.W))
-    val e  = Input(Bool())
-    val z  = Output(UInt(32.W))
-    val v  = Output(Bool())
+    val a = Input(UInt(32.W))
+    val b = Input(UInt(32.W))
+    val e = Input(Bool())
+    val z = Output(UInt(32.W))
+    val v = Output(Bool())
   })
   val x = Reg(UInt(32.W))
   val y = Reg(UInt(32.W))
-  when (x > y)   { x := x -% y }
-  .otherwise     { y := y -% x }
-  when (io.e) { x := io.a; y := io.b }
+  when(x > y) { x := x -% y }.otherwise { y := y -% x }
+  when(io.e) { x := io.a; y := io.b }
   io.z := x
   io.v := y === 0.U
 }
@@ -39,21 +38,22 @@ class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
 class GCDSpec extends ChiselPropSpec {
 
   //TODO: use generators and this function to make z's
-  def gcd(a: Int, b: Int): Int = if(b == 0) a else gcd(b, a%b)
+  def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 
   val gcds = Table(
-    ("a", "b", "z"),  // First tuple defines column names
-    ( 64,  48,  16),  // Subsequent tuples define the data
-    ( 12,   9,   3),
-    ( 48,  64,  16))
+    ("a", "b", "z"), // First tuple defines column names
+    (64, 48, 16), // Subsequent tuples define the data
+    (12, 9, 3),
+    (48, 64, 16)
+  )
 
   property("GCD should elaborate") {
     ChiselStage.elaborate { new GCD }
   }
 
   property("GCDTester should return the correct result") {
-    forAll (gcds) { (a: Int, b: Int, z: Int) =>
-      assertTesterPasses{ new GCDTester(a, b, z) }
+    forAll(gcds) { (a: Int, b: Int, z: Int) =>
+      assertTesterPasses { new GCDTester(a, b, z) }
     }
   }
 }

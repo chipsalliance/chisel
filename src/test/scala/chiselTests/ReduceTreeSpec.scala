@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
 
-class Arbiter[T <: Data : Manifest](n: Int, private val gen: T) extends Module {
+class Arbiter[T <: Data: Manifest](n: Int, private val gen: T) extends Module {
   val io = IO(new Bundle {
     val in = Flipped(Vec(n, new DecoupledIO(gen)))
     val out = new DecoupledIO(gen)
@@ -28,7 +28,7 @@ class Arbiter[T <: Data : Manifest](n: Int, private val gen: T) extends Module {
         when(a.valid) {
           regData := a.bits
           regState := hasA
-        } otherwise {
+        }.otherwise {
           regState := idleB
         }
       }
@@ -36,7 +36,7 @@ class Arbiter[T <: Data : Manifest](n: Int, private val gen: T) extends Module {
         when(b.valid) {
           regData := b.bits
           regState := hasB
-        } otherwise {
+        }.otherwise {
           regState := idleA
         }
       }

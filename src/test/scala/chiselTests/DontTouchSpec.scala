@@ -32,7 +32,7 @@ class HasDeadCode(withDontTouch: Boolean) extends Module {
   }
 }
 
-class DontTouchSpec extends ChiselFlatSpec with Utils{
+class DontTouchSpec extends ChiselFlatSpec with Utils {
   val deadSignals = List(
     "io_c_0",
     "io_c_1",
@@ -41,20 +41,20 @@ class DontTouchSpec extends ChiselFlatSpec with Utils{
   "Dead code" should "be removed by default" in {
     val verilog = compile(new HasDeadCode(false))
     for (signal <- deadSignals) {
-      verilog should not include (signal)
+      (verilog should not).include(signal)
     }
   }
   it should "NOT be removed if marked dontTouch" in {
     val verilog = compile(new HasDeadCode(true))
     for (signal <- deadSignals) {
-      verilog should include (signal)
+      verilog should include(signal)
     }
   }
   "Dont touch" should "only work on bound hardware" in {
-    a [chisel3.BindingException] should be thrownBy extractCause[BindingException] {
+    a[chisel3.BindingException] should be thrownBy extractCause[BindingException] {
       ChiselStage.elaborate(new Module {
-        val io = IO(new Bundle { })
-        dontTouch(new Bundle { val a = UInt(32.W) } )
+        val io = IO(new Bundle {})
+        dontTouch(new Bundle { val a = UInt(32.W) })
       })
     }
   }

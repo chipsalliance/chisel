@@ -9,8 +9,10 @@ import firrtl.ir.{Closed, IntWidth, Open}
 
 // This is currently a factory because both Bits and UInt inherit it.
 trait UIntFactory {
+
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(Width())
+
   /** Create a UInt port with specified width. */
   def apply(width: Width): UInt = new UInt(width)
 
@@ -21,6 +23,7 @@ trait UIntFactory {
     // Bind result to being an Literal
     lit.bindLitArg(result)
   }
+
   /** Create a UInt with the specified range, validate that range is effectively > 0
     */
   def apply(range: IntervalRange): UInt = {
@@ -34,8 +37,8 @@ trait UIntFactory {
     }
 
     // because this is a UInt we don't have to take into account the lower bound
-    val newWidth = if(range.upperBound.isInstanceOf[IsKnown]) {
-      KnownWidth(Utils.getUIntWidth(range.maxAdjusted.get).max(1))  // max(1) handles range"[0,0]"
+    val newWidth = if (range.upperBound.isInstanceOf[IsKnown]) {
+      KnownWidth(Utils.getUIntWidth(range.maxAdjusted.get).max(1)) // max(1) handles range"[0,0]"
     } else {
       UnknownWidth()
     }

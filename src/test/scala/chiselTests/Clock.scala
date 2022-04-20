@@ -24,7 +24,6 @@ class WithClockAndNoReset extends RawModule {
   out := a
 }
 
-
 class ClockSpec extends ChiselPropSpec {
   property("Bool.asClock.asUInt should pass a signal through unaltered") {
     assertTesterPasses { new ClockAsUIntTester }
@@ -32,6 +31,6 @@ class ClockSpec extends ChiselPropSpec {
 
   property("Should be able to use withClock in a module with no reset") {
     val circuit = ChiselStage.emitChirrtl(new WithClockAndNoReset)
-    circuit.contains("reg a : UInt<1>, clock2") should be (true)
+    circuit.contains("reg a : UInt<1>, clock2") should be(true)
   }
 }

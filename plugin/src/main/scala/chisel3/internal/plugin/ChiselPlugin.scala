@@ -8,10 +8,13 @@ import nsc.plugins.{Plugin, PluginComponent}
 import scala.reflect.internal.util.NoPosition
 import scala.collection.mutable
 
-private[plugin] case class ChiselPluginArguments(val skipFiles: mutable.HashSet[String] = mutable.HashSet.empty) {
+private[plugin] case class ChiselPluginArguments(
+  val skipFiles:         mutable.HashSet[String] = mutable.HashSet.empty,
+  var genBundleElements: Boolean = false) {
   def useBundlePluginOpt = "useBundlePlugin"
   def useBundlePluginFullOpt = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
-
+  def genBundleElementsOpt = "genBundleElements"
+  def genBundleElementsFullOpt = s"-P:${ChiselPlugin.name}:$genBundleElementsOpt"
   // Annoying because this shouldn't be used by users
   def skipFilePluginOpt = "INTERNALskipFile:"
   def skipFilePluginFullOpt = s"-P:${ChiselPlugin.name}:$skipFilePluginOpt"
@@ -20,8 +23,12 @@ private[plugin] case class ChiselPluginArguments(val skipFiles: mutable.HashSet[
 object ChiselPlugin {
   val name = "chiselplugin"
 
-  // Also logs why the compoennt was not run
-  private[plugin] def runComponent(global: Global, arguments: ChiselPluginArguments)(unit: global.CompilationUnit): Boolean = {
+  // Also logs why the component was not run
+  private[plugin] def runComponent(
+    global:    Global,
+    arguments: ChiselPluginArguments
+  )(unit:      global.CompilationUnit
+  ): Boolean = {
     // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
     // instead we just check the version and if its an early Scala version, the plugin does nothing
     val scalaVersion = scala.util.Properties.versionNumberString.split('.')
@@ -63,13 +70,12 @@ class ChiselPlugin(val global: Global) extends Plugin {
         // Be annoying and warn because users are not supposed to use this
         val msg = s"Option -P:${ChiselPlugin.name}:$option should only be used for internal chisel3 compiler purposes!"
         global.reporter.warning(NoPosition, msg)
+      } else if (option == arguments.genBundleElementsOpt) {
+        arguments.genBundleElements = true
       } else {
         error(s"Option not understood: '$option'")
       }
     }
     true
   }
-
-
 }
-
