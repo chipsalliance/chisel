@@ -30,6 +30,7 @@ trait CloneableExtensions[V, P] extends Extensions[V, P] {
 
 trait HierarchicalExtensions[V, P] extends Extensions[V, P] {
   def getProxyParent(x: Proxy[V]): Option[P]
+  def buildDefinitiveFrom[X, Y](d: Definitive[X], f: DefinitiveFunction[X,Y]): DefinitiveProxy[Y]
   def buildDefinitiveFrom[X, Y](d: Definitive[X], f: X => Y): DefinitiveProxy[Y]
   def buildDefinitive[X](x: Option[X]): DefinitiveProxy[X]
   def buildDefinition(f: => V): DefinitionProxy[V]

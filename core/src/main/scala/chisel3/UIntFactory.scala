@@ -18,7 +18,7 @@ trait UIntFactory {
   def apply(width: Width): UInt = new UInt(width)
 
   /** Create a UInt port with specified width. */
-  def apply(width: Definitive[Width]): Definitive[UInt] = width.whenKnown(w => new UInt(w))
+  def apply(width: Definitive[Width]): Definitive[UInt] = width.whenKnown(w => apply(w))
 
   /** Create a UInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {

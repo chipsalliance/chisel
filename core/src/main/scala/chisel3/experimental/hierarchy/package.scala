@@ -34,17 +34,24 @@ package object hierarchy {
     def getProxyParent(value: Proxy[V]): Option[BaseModule] = value.asInstanceOf[BaseModule]._parent
     def buildDefinitiveFrom[X, Y](d: Definitive[X], f: X => Y): DefinitiveProxy[Y] = {
       val parent = Builder.currentModule
-      val x: ModuleDefinitive[Y] = new ModuleDefinitive(Some((d.proxy, {any: Any =>
-        val prev = Builder.currentModule
-        Builder.currentModule = parent
-        val ret = f(any.asInstanceOf[X])
-        Builder.currentModule = prev
-        ret
-      })))
+      val x: NonSerializableDefinitive[Y] = new NonSerializableDefinitive(Some((d.proxy, {any: Any => execute(f(any.asInstanceOf[X]), parent) })))
+      x
+    }
+    def execute[X](x: => X, parent: Option[BaseModule]): X = {
+      val prev = Builder.currentModule
+      Builder.currentModule = parent
+      val ret = x
+      Builder.currentModule = prev
+      ret
+    }
+    def buildDefinitiveFrom[X, Y](d: Definitive[X], f: DefinitiveFunction[X, Y]): DefinitiveProxy[Y] = {
+      val parent = Builder.currentModule
+      require(d.proxy.isInstanceOf[SerializableDefinitiveProxy[X]])
+      val x: SerializableDefinitive[Y] = new SerializableDefinitive(Some((d.proxyAs[SerializableDefinitiveProxy[X]], f.asInstanceOf[DefinitiveFunction[Any, Any]])))
       x
     }
     def buildDefinitive[X](v: Option[X]): DefinitiveProxy[X] = {
-      val x = new ModuleDefinitive[X](None)
+      val x = new SerializableDefinitive[X](None)
       x.valueOpt = v
       x
     }
@@ -177,6 +184,7 @@ package object hierarchy {
   //val Declaration = core.Declaration
   //type Interface[P] = core.Interface[P]
   //val Interface = core.Interface
+  type DefinitiveFunction[X, Y] = core.DefinitiveFunction[X, Y]
   type Definitive[V] = core.Definitive[V]
   val Definitive = core.Definitive
   type IsLookupable = core.IsLookupable

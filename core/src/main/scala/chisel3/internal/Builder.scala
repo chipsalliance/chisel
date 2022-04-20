@@ -630,7 +630,7 @@ private[chisel3] object Builder extends LazyLogging {
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
     case (id: Definitive[_]) =>
       //println("here")
-      println(s"Adding to namer of ${id.proxy}")
+      //println(s"Adding to namer of ${id.proxy}")
       id.proxy.namer += {x: Any =>
         x match {
           //case d: Data => println(s"Before $prefix, $namer: " + d.getOptionRef)
@@ -642,8 +642,8 @@ private[chisel3] object Builder extends LazyLogging {
           case other =>
         }
       }
-      println(s"Doing something for $id, $prefix")
-      println(id.proxy.namer)
+      //println(s"Doing something for $id, $prefix")
+      //println(id.proxy.namer)
     case (id: Instance[_]) =>
       id.proxy match {
         case m: ModuleClone[_]       => namer(m.getPorts, prefix)

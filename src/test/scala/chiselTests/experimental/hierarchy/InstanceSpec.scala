@@ -1205,14 +1205,33 @@ class InstanceSpec extends ChiselFunSpec with Utils {
   }
 }
 
-object Sandbox {
-  
+object Sandbox { 
+
+  object PlusOne extends DefinitiveFunction[Int, Int] {
+    def apply(in: Int): Int = in + 1
+    override def toString = "PlusOne"
+  }
+  case class PlusN(n: Int) extends DefinitiveFunction[Int, Int] {
+    def apply(in: Int): Int = in + n
+  }
+
+
+  implicit class DefinitiveIntExtensions(d: Definitive[Int]) {
+    def + (i: Int): Definitive[Int] = d.modify(PlusOne)
+  }
+
 
   @instantiable
   class AddOne extends Module {
     @public val width = Definitive.empty[Int]
+    @public val widthPlusOne = width.modify(PlusOne)
+    @public val widthPlusN = width.modify(PlusN(3))
+
     @public val in  = IO(Input(UInt(width.W)))
-    @public val out = IO(Output(UInt(width.W)))
+    @public val out = IO(Output(UInt(widthPlusOne.W)))
+    println(s"AddOne.width:        \t\t\t\t$width")
+    println(s"AddOne.widthPlusOne: \t\t\t\t$widthPlusOne")
+    println(s"AddOne.widthPlusN:   \t\t\t\t$widthPlusN")
 
     override val implementation: Option[Implementation] = Some(AddOneImp)
   }
@@ -1220,20 +1239,24 @@ object Sandbox {
     type P = AddOne
     
     def implement(d: ResolvedDefinition[P]): Unit = {
-      println(s"Definition width: ${d.width.value}")
+      println(s"ResolvedDefinition[AddOne].width:        \t${d.width}")
+      println(s"ResolvedDefinition[AddOne].widthPlusOne: \t${d.widthPlusOne}")
+      println(s"ResolvedDefinition[AddOne].widthPlusN:   \t${d.widthPlusN}")
       d.out.value := d.in.value + 1.U
     }
   }
   @instantiable
   class Top extends Module {
     @public val port = IO(Output(UInt(3.W)))
+    @public val width = Definitive.empty[Int]
 
     val definition = Definition(new AddOne)
-    definition.width.value = 3
+    definition.width.setAs(width)
+    width.value = 3
     @public val i0 = Instance(definition)
-    if(i0.width.nonEmpty) {
-      println(s"Instance width: ${i0.width.value}")
-    }
+    println(s"Instance[AddOne].width:        \t\t\t${i0.width}")
+    println(s"Instance[AddOne].widthPlusOne: \t\t\t${i0.widthPlusOne}")
+    println(s"Instance[AddOne].widthPlusN:   \t\t\t${i0.widthPlusN}")
   }
 
 }

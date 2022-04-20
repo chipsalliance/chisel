@@ -144,13 +144,28 @@ trait DefinitionProxy[+P] extends RootProxy[P] {
 
 trait DefinitiveProxy[P] extends Proxy[P] {
   def parent: Any
-  def predecessorOption: Option[(DefinitiveProxy[_], Any => P)]
   var valueOpt: Option[P] = None
+  var predecessorOpt: Option[DefinitiveProxy[_]] = None
+
+  private[chisel3] val namer: mutable.ArrayBuffer[Any => Unit] = mutable.ArrayBuffer[Any => Unit]()
+
+  def nonEmpty: Boolean = {
+    valueOpt.nonEmpty || (predecessorOpt.nonEmpty && predecessorOpt.get.nonEmpty)
+  }
+  def isEmpty = !nonEmpty
+  def isSet = {
+    valueOpt.nonEmpty || predecessorOpt.nonEmpty
+  }
+  def toWrapper = Definitive(this)
+}
+
+trait SerializableDefinitiveProxy[P] extends DefinitiveProxy[P] {
+  var func: Option[DefinitiveFunction[Any, Any]] = None
 
   def proto = {
     require(nonEmpty, s"Not empty!")
     if(cache.containsKey("value")) cache.get("value").asInstanceOf[P] else {
-      val ret = valueOpt.orElse(predecessorOption.map { case (p, f) => f(p.proto) } ).get
+      val ret = valueOpt.orElse(predecessorOpt.map { case (p) => func.get(p.proto).asInstanceOf[P] } ).get
       //println(s"All namers of $this, ${namer.size}: ${namer.toList}")
       namer.map(f => chisel3.experimental.noPrefix { f(ret) } )
       cache.put("value", ret)
@@ -158,13 +173,20 @@ trait DefinitiveProxy[P] extends Proxy[P] {
     }
   }
 
-  private[chisel3] val namer: mutable.ArrayBuffer[Any => Unit] = mutable.ArrayBuffer[Any => Unit]()
+}
+trait NonSerializableDefinitiveProxy[P] extends DefinitiveProxy[P] {
+  var func: Option[Any => Any] = None
 
-  def nonEmpty: Boolean = {
-    valueOpt.nonEmpty || (predecessorOption.nonEmpty && predecessorOption.get._1.nonEmpty)
+  def proto = {
+    require(nonEmpty, s"Not empty!")
+    if(cache.containsKey("value")) cache.get("value").asInstanceOf[P] else {
+      val ret = valueOpt.orElse(predecessorOpt.map { case (p) => func.get(p.proto).asInstanceOf[P] } ).get
+      //println(s"All namers of $this, ${namer.size}: ${namer.toList}")
+      namer.map(f => chisel3.experimental.noPrefix { f(ret) } )
+      cache.put("value", ret)
+      ret
+    }
   }
-  def isEmpty = !nonEmpty
-  def toWrapper = Definitive(this)
 }
 //TODO: In order to have nested definitive's, e.g. a definitive case class, we need to avoid using the proto as the key in the lookup.
 //trait InterfaceProxy[+P] extends RootProxy[P] {
