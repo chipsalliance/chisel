@@ -2,7 +2,7 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.util.{FillInterleaved, PopCount}
+import chisel3.util.{Fill,FillInterleaved, PopCount}
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -63,6 +63,20 @@ class PopCountSpec extends AnyFlatSpec with Matchers {
     (chirrtl should include).regex(add)
     val bits = """bits.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(bits)
+    chirrtl should not include("Bitwise.scala")
+  }
+}
+
+class FillSpec extends AnyFlatSpec with Matchers {
+  behavior.of("util.Fill")
+  it should "have source locators when passed a Bits" in {
+      class MyModule extends RawModule {
+          val  out = IO(Output(UInt()))
+          out := Fill(2, "b1000".U)
+      }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val cat = """cat.*BitwiseSpec\.scala""".r
+    (chirrtl should include).regex(cat)
     chirrtl should not include("Bitwise.scala")
   }
 }
