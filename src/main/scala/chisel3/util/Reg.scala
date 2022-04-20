@@ -57,7 +57,7 @@ object ShiftRegister {
     * val regDelayTwo = ShiftRegister(nextVal, 2, ena)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): T = macro SourceInfoTransform.inNEnArg
+  def apply[T <: Data](in: T, n: Int, en: Bool): T = macro SourceInfoTransform.inNEnArg
 
   def do_apply[T <: Data](
     in: T,
