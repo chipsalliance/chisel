@@ -70,7 +70,7 @@ class CatSpec extends ChiselFlatSpec {
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     chirrtl should include("cat(in[0], in[1]) @[CatSpec.scala")
-    chirrtl should not include("Cat.scala")
+    (chirrtl should not).include("Cat.scala")
   }
 
   it should "have a source locator when passing args" in {
@@ -81,7 +81,7 @@ class CatSpec extends ChiselFlatSpec {
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     chirrtl should include("cat(in[0], in[1]) @[CatSpec.scala")
-    chirrtl should not include("Cat.scala")
+    (chirrtl should not).include("Cat.scala")
   }
 
 }

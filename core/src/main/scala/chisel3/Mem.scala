@@ -367,7 +367,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
   def do_read(idx: UInt, en: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     _read_impl(idx, en, Builder.forcedClock, true)
 
-  def read(idx: UInt, en: Bool, clock: Clock): T = macro SourceInfoTransform.xyzArg
+  def read(idx: UInt, en: Bool, clock: Clock): T = macro SourceInfoTransform.idxEnClockArg
 
   /** @group SourceInfoTransformMacro */
   def do_read(idx: UInt, en: Bool, clock: Clock)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
