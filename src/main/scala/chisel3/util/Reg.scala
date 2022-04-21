@@ -17,6 +17,7 @@ object RegEnable {
     */
   def apply[T <: Data](next: T, enable: Bool): T = macro SourceInfoTransform.nextEnableArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](next: T, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val r = Reg(chiselTypeOf(next))
     when(enable) { r := next }
@@ -31,6 +32,7 @@ object RegEnable {
     */
   def apply[T <: Data](next: T, init: T, enable: Bool): T = macro SourceInfoTransform.nextInitEnableArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     next:   T,
     init:   T,
@@ -59,6 +61,7 @@ object ShiftRegister {
     */
   def apply[T <: Data](in: T, n: Int, en: Bool): T = macro SourceInfoTransform.inNEnArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     in: T,
     n:  Int,
@@ -82,6 +85,7 @@ object ShiftRegister {
     */
   def apply[T <: Data](in: T, n: Int): T = macro SourceInfoTransform.inNArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](in: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     _apply_impl(in, n)
 
@@ -108,6 +112,7 @@ object ShiftRegister {
     */
   def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T = macro SourceInfoTransform.inNResetDataEnArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     in:        T,
     n:         Int,
@@ -130,6 +135,7 @@ object ShiftRegisters {
     */
   def apply[T <: Data](in: T, n: Int, en: Bool): Seq[T] = macro SourceInfoTransform.inNEnArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     in: T,
     n:  Int,
@@ -158,6 +164,7 @@ object ShiftRegisters {
     */
   def apply[T <: Data](in: T, n: Int): Seq[T] = macro SourceInfoTransform.inNArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](in: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[T] =
     _apply_impl(in, n)
 
@@ -170,6 +177,7 @@ object ShiftRegisters {
     */
   def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): Seq[T] = macro SourceInfoTransform.inNResetDataEnArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     in:        T,
     n:         Int,

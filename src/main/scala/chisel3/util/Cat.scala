@@ -24,6 +24,7 @@ object Cat {
     */
   def apply[T <: Bits](a: T, r: T*): UInt = macro SourceInfoTransform.arArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Bits](a: T, r: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     _apply_impl(a :: r.toList)
 
@@ -36,6 +37,7 @@ object Cat {
     */
   def apply[T <: Bits](r: Seq[T]): UInt = macro SourceInfoTransform.rArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Bits](r: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     _apply_impl(r)
 

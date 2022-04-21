@@ -28,6 +28,7 @@ object FillInterleaved {
     */
   def apply(n: Int, in: UInt): UInt = macro SourceInfoTransform.nInArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(n: Int, in: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     _apply_impl(n, in.asBools)
 
@@ -37,6 +38,7 @@ object FillInterleaved {
     */
   def apply(n: Int, in: Seq[Bool]): UInt = macro SourceInfoTransform.nInArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(n: Int, in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     _apply_impl(n, in)
 
@@ -64,12 +66,14 @@ object PopCount {
 
   def apply(in: Iterable[Bool]): UInt = macro SourceInfoTransform.inArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(in: Iterable[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
     in.toSeq
   )
 
   def apply(in: Bits): UInt = macro SourceInfoTransform.inArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(in: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
     (0 until in.getWidth).map(in(_))
   )
@@ -95,6 +99,7 @@ object Fill {
     */
   def apply(n: Int, x: UInt): UInt = macro SourceInfoTransform.nxArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(n: Int, x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     n match {
       case _ if n < 0 => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
@@ -122,6 +127,7 @@ object Fill {
   * }}}
   */
 object Reverse {
+
   private def doit(in: UInt, length: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     length match {
       case _ if length < 0                                    => throw new IllegalArgumentException(s"length (=$length) must be nonnegative integer.")
@@ -144,5 +150,6 @@ object Reverse {
 
   def apply(in: UInt): UInt = macro SourceInfoTransform.inArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(in: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = doit(in, in.getWidth)
 }
