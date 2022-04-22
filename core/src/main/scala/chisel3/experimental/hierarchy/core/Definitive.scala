@@ -10,7 +10,7 @@ import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
 import java.util.IdentityHashMap
 
 object Identity extends DefinitiveFunction[Any, Any] {
-  def apply(i: Any): Any = i
+  def applyIt(i: Any): Any = i
 }
 case class Definitive[P] private[chisel3] (proxy: DefinitiveProxy[P]) extends Wrapper[P] {
   def value_=(v: P) = {
@@ -41,8 +41,15 @@ case class Definitive[P] private[chisel3] (proxy: DefinitiveProxy[P]) extends Wr
   def modify[X](f: DefinitiveFunction[P, X]): Definitive[X] = Definitive.buildFrom(this, f)
 }
 
-trait DefinitiveFunction[-I, +O] {
-  def apply(i: I): O
+sealed trait DefinitiveFunction[-I, +O] {
+  def applyIt(i: I): O
+}
+
+trait CustomDefinitiveFunction[-I, +O] extends DefinitiveFunction[I, O]
+
+case class DerivedDefinitiveFunction[-I, +O](f: I => O) extends DefinitiveFunction[I, O] {
+  def applyIt(i: I): O = f(i)
+  override def toString = f.getClass().getName()
 }
 
 object Definitive {

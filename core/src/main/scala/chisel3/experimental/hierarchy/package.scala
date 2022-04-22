@@ -27,6 +27,16 @@ package object hierarchy {
   implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
   implicit val opt = chisel3.ExplicitCompileOptions.Strict
 
+  //import scala.language.implicitConversions
+  //implicit def toDefinitiveFunction[X, Y](f: X => Y): DefinitiveFunction[X, Y] = {
+  //  new DefinitiveFunction[X, Y] {
+  //    def apply(x: X): Y = {
+  //      println("HEREHEHREHRERH")
+  //      f(x)
+  //    }
+  //    override def toString = f.getClass.getName()
+  //  }
+  //}
   // TYPECLASS Basics
 
   def buildExtension[V <: BaseModule](isBaseModule: Boolean): HierarchicalExtensions[V, BaseModule] = new HierarchicalExtensions[V, BaseModule] {

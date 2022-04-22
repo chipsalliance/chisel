@@ -165,7 +165,7 @@ trait SerializableDefinitiveProxy[P] extends DefinitiveProxy[P] {
   def proto = {
     require(nonEmpty, s"Not empty!")
     if(cache.containsKey("value")) cache.get("value").asInstanceOf[P] else {
-      val ret = valueOpt.orElse(predecessorOpt.map { case (p) => func.get(p.proto).asInstanceOf[P] } ).get
+      val ret = valueOpt.orElse(predecessorOpt.map { case (p) => func.get.applyIt(p.proto).asInstanceOf[P] } ).get
       //println(s"All namers of $this, ${namer.size}: ${namer.toList}")
       namer.map(f => chisel3.experimental.noPrefix { f(ret) } )
       cache.put("value", ret)

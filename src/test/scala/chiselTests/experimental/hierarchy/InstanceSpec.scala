@@ -1207,28 +1207,35 @@ class InstanceSpec extends ChiselFunSpec with Utils {
 
 object Sandbox { 
 
-  object PlusOne extends DefinitiveFunction[Int, Int] {
-    def apply(in: Int): Int = in + 1
+
+  //class DefinitiveIntExtensions(d: Definitive[Int]) {
+  //  def + (i: Int): Definitive[Int] = {
+  //    val op = mlir.PlusOp(d, i)
+  //    Builder.add(op)
+  //    op.result: Definitive[Int]
+  //  }
+  //}
+
+
+  //@definitiveFunction[PlusOne]
+  //def plusOne(i: Int): Int = i + 1
+  //Generated Below from @definitiveFunction macro
+  object PlusOne extends core.CustomDefinitiveFunction[Int, Int] {
+    def applyIt(in: Int): Int = in + 1
     override def toString = "PlusOne"
   }
-  case class PlusN(n: Int) extends DefinitiveFunction[Int, Int] {
-    def apply(in: Int): Int = in + n
+  case class PlusN(n: Int) extends core.CustomDefinitiveFunction[Int, Int] {
+    def applyIt(in: Int): Int = in + n
   }
-
-
-  implicit class DefinitiveIntExtensions(d: Definitive[Int]) {
-    def + (i: Int): Definitive[Int] = d.modify(PlusOne)
-  }
-
 
   @instantiable
   class AddOne extends Module {
-    @public val width = Definitive.empty[Int]
+    @public val width: Definitive[Int] = Definitive.empty[Int]
     @public val widthPlusOne = width.modify(PlusOne)
     @public val widthPlusN = width.modify(PlusN(3))
 
     @public val in  = IO(Input(UInt(width.W)))
-    @public val out = IO(Output(UInt(widthPlusOne.W)))
+    @public val out = IO(Output(UInt(width.W)))
     println(s"AddOne.width:        \t\t\t\t$width")
     println(s"AddOne.widthPlusOne: \t\t\t\t$widthPlusOne")
     println(s"AddOne.widthPlusN:   \t\t\t\t$widthPlusN")
@@ -1248,11 +1255,11 @@ object Sandbox {
   @instantiable
   class Top extends Module {
     @public val port = IO(Output(UInt(3.W)))
-    @public val width = Definitive.empty[Int]
+    //@public val width = Definitive.empty[Int]
 
     val definition = Definition(new AddOne)
-    definition.width.setAs(width)
-    width.value = 3
+    definition.width.value = 3 //.setAs(width)
+    //width.value = 3
     @public val i0 = Instance(definition)
     println(s"Instance[AddOne].width:        \t\t\t${i0.width}")
     println(s"Instance[AddOne].widthPlusOne: \t\t\t${i0.widthPlusOne}")
