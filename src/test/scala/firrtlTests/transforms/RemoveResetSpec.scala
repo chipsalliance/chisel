@@ -8,7 +8,7 @@ import firrtl.testutils.FirrtlFlatSpec
 import firrtl.testutils.FirrtlCheckers._
 
 import firrtl.{CircuitState, WRef}
-import firrtl.ir.{Connect, DefRegister, Mux}
+import firrtl.ir.{Connect, DefRegister, IsInvalid, Mux, UIntLiteral}
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
 
 class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
@@ -45,6 +45,32 @@ class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
 
     Then("'foo' is NOT connected to a reset mux")
     outputState shouldNot containTree { case Connect(_, WRef("foo", _, _, _), Mux(_, _, _, _)) => true }
+  }
+
+  it should "generate a reset mux for a sync reset register with an invalid connection" in {
+    Given("an 8-bit register 'foo' initialized to UInt(3) with an invalid connection")
+    val input =
+      """|circuit Example :
+         |  module Example :
+         |    input clock : Clock
+         |    input rst : UInt<1>
+         |    input in : UInt<8>
+         |    output out : UInt<8>
+         |
+         |    reg foo : UInt<8>, clock with : (reset => (rst, UInt(3)))
+         |    foo is invalid
+         |    out <= foo""".stripMargin
+
+    val outputState = toLowFirrtl(input)
+
+    Then("'foo' should not have a reset")
+    outputState should containTree {
+      case DefRegister(_, "foo", _, _, UIntLiteral(value, _), WRef("foo", _, _, _)) if value == 0 => true
+    }
+    And("'foo' is connected to a mux with its old reset value")
+    outputState should containTree {
+      case Connect(_, WRef("foo", _, _, _), Mux(_, UIntLiteral(value, _), _, _)) if value == 3 => true
+    }
   }
 
   it should "generate a reset mux for only the portion of an invalid aggregate that is reset" in {

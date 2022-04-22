@@ -52,6 +52,7 @@ object RemoveReset extends Transform with DependencyAPIMigration {
     val resets = mutable.HashMap.empty[String, Reset]
     val asyncResets = mutable.HashMap.empty[String, Reset]
     val invalids = computeInvalids(m)
+    lazy val namespace = Namespace(m)
     def onStmt(stmt: Statement): Statement = {
       stmt match {
         case reg @ DefRegister(_, name, _, _, reset, init) if isPreset(name) =>
@@ -93,6 +94,17 @@ object RemoveReset extends Transform with DependencyAPIMigration {
           // addUpdate(info, Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), Seq.empty)
           val infox = MultiInfo(reset.info, reset.info, info)
           Connect(infox, ref, expr)
+        /* Synchronously reset register that has reset value but only an invalid connection */
+        case IsInvalid(iinfo, ref @ WRef(rname, tpe, RegKind, _)) if resets.contains(rname) =>
+          // We need to mux with the invalid value to be consistent with async reset registers
+          val dummyWire = DefWire(iinfo, namespace.newName(rname), tpe)
+          val wireRef = Reference(dummyWire).copy(flow = SourceFlow)
+          val invalid = IsInvalid(iinfo, wireRef)
+          // Now mux between the invalid wire and the reset value
+          val Reset(cond, init, info) = resets(rname)
+          val muxType = Utils.mux_type_and_widths(init, wireRef)
+          val connect = Connect(info, ref, Mux(cond, init, wireRef, muxType))
+          Block(Seq(dummyWire, invalid, connect))
         case other => other.map(onStmt)
       }
     }
