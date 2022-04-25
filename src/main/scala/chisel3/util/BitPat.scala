@@ -144,8 +144,7 @@ package experimental {
       bs
     }
 
-    /**
-      * Construct a [[BitSet]] matching a range of value
+    /**  Construct a [[BitSet]] matching a range of value
       *
       * @param start The smallest matching value
       * @param length The length of the matching range
@@ -167,9 +166,9 @@ package experimental {
 
       // Break down to individual bitpats
       val atoms = {
-        val collected = mutable.Set[BitPat]();
-        var ptr = start;
-        var left = length;
+        val collected = mutable.Set[BitPat]()
+        var ptr = start
+        var left = length
         while (left > 0) {
           var curPow = left.bitLength - 1
           if (ptr != 0) {
