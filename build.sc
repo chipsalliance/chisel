@@ -12,7 +12,7 @@ object v {
   val firrtl = ivy"edu.berkeley.cs::firrtl:1.6-SNAPSHOT"
   val treadle = ivy"edu.berkeley.cs::treadle:1.6-SNAPSHOT"
   val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.6-SNAPSHOT"
-  val scalatest = ivy"org.scalatest::scalatest:3.2.11"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.12"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
   val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
