@@ -125,7 +125,7 @@ class NamingTransforms(val c: Context) {
     q"""
     val $contextVar = $globalNamingStack.pushContext()
     ..$transformedBody
-    if($globalNamingStack.length == 1){
+    if($globalNamingStack.length() == 1){
       $contextVar.namePrefix("")
     }
     $globalNamingStack.popReturnContext(this, $contextVar)
