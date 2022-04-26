@@ -111,7 +111,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     override def transform(tree: Tree): Tree = tree match {
 
-      case bundle: ClassDef if isBundle(bundle.symbol) =>
+      case bundle: ClassDef if isBundle(bundle.symbol) && !bundle.mods.hasFlag(Flag.ABSTRACT) =>
         // ==================== Generate _cloneTypeImpl ====================
         val (con, params) = getConstructorAndParams(bundle.impl.body)
         if (con.isEmpty) {

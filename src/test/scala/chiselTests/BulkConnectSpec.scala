@@ -94,6 +94,26 @@ class BulkConnectSpec extends ChiselPropSpec {
     chirrtl should include("deq <= enq")
   }
 
+  property("Chisel connects should not emit a FIRRTL bulk connect for BlackBox IO Bundles") {
+    class MyBundle extends Bundle {
+      val O: Bool = Output(Bool())
+      val I: Bool = Input(Bool())
+    }
+
+    val chirrtl = ChiselStage.emitChirrtl(new Module {
+      val io: MyBundle = IO(Flipped(new MyBundle))
+
+      val bb = Module(new BlackBox {
+        val io: MyBundle = IO(Flipped(new MyBundle))
+      })
+
+      io <> bb.io
+    })
+    // There won't be a bb.io Bundle in FIRRTL, so connections have to be done element-wise
+    chirrtl should include("bb.O <= io.O")
+    chirrtl should include("io.I <= bb.I")
+  }
+
   property("MonoConnect should bulk connect undirectioned internal wires") {
     val chirrtl = ChiselStage.emitChirrtl(new Module {
       val io = IO(new Bundle {})
