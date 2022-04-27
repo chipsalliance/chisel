@@ -68,7 +68,7 @@ lazy val publishSettings = Seq(
 lazy val chiselSettings = Seq(
   name := "chisel3",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.11" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.12" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "os-lib" % "0.8.1"
   )
