@@ -145,6 +145,17 @@ class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawPara
   })
 }
 
+class BlackBoxNoIO extends BlackBox {
+  // Whoops! typo
+  val ioo = IO(new Bundle {
+    val out = Output(UInt(8.W))
+  })
+}
+
+class BlackBoxUIntIO extends BlackBox {
+  val io = IO(Output(UInt(8.W)))
+}
+
 class BlackBoxWithParamsTester extends BasicTester {
   val blackBoxOne = Module(new BlackBoxConstant(1))
   val blackBoxFour = Module(new BlackBoxConstant(4))
@@ -192,7 +203,23 @@ class BlackBoxSpec extends ChiselFlatSpec {
       assert(DataMirror.modulePorts(m) == Seq("in" -> m.io.in, "out" -> m.io.out))
     })
   }
-  "A BlackBoxed using suggestName(\"io\")" should "work (but don't do this)" in {
+  "A BlackBox using suggestName(\"io\")" should "work (but don't do this)" in {
     assertTesterPasses({ new BlackBoxTesterSuggestName }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+  }
+
+  "A BlackBox with no 'val io'" should "give a reasonable error message" in {
+    (the[ChiselException] thrownBy {
+      ChiselStage.elaborate(new Module {
+        val inst = Module(new BlackBoxNoIO)
+      })
+    }).getMessage should include("must have a port named 'io' of type Record")
+  }
+
+  "A BlackBox with non-Record 'val io'" should "give a reasonable error message" in {
+    (the[ChiselException] thrownBy {
+      ChiselStage.elaborate(new Module {
+        val inst = Module(new BlackBoxUIntIO)
+      })
+    }).getMessage should include("must have a port named 'io' of type Record")
   }
 }
