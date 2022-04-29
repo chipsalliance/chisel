@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, verification => formal}
+import chisel3.experimental.ChiselAnnotation
 import chisel3.stage.ChiselStage
 import firrtl.annotations.{ReferenceTarget, SingleTargetAnnotation}
 import org.scalatest.matchers.should.Matchers
