@@ -126,7 +126,7 @@ object Select {
           case i: DefInstance =>
             i.id match {
               case p:     core.Clone[BaseModule] => p.toDefinition
-              case other: BaseModule => other.toDefinition
+              case other: BaseModule             => other.toDefinition
             }
         }
       case other => Nil

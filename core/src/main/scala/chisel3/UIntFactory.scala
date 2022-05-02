@@ -6,7 +6,7 @@ import chisel3.internal.firrtl.{IntervalRange, KnownWidth, ULit, UnknownWidth, W
 import firrtl.Utils
 import firrtl.constraint.IsKnown
 import firrtl.ir.{Closed, IntWidth, Open}
-import experimental.hierarchy.{Definitive, func}
+import experimental.hierarchy.{func, Definitive}
 
 // This is currently a factory because both Bits and UInt inherit it.
 object Foo {

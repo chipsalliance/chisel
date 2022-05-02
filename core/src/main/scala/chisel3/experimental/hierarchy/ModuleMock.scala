@@ -16,8 +16,7 @@ import chisel3._
   * @param contexts contains contextual values when viewed from this proxy
   */
 private[chisel3] final class ModuleMock[T <: BaseModule] private (
-  val suffixProxy: InstanceProxy[T] with BaseModule,
-)
+  val suffixProxy: InstanceProxy[T] with BaseModule)
     extends PseudoModule
     with Mock[T] {
   contextuals ++= suffixProxy.contextuals
@@ -41,7 +40,7 @@ private[chisel3] final class ModuleMock[T <: BaseModule] private (
 private[chisel3] object ModuleMock {
   def apply[T <: BaseModule](
     suffixProxy: InstanceProxy[T] with BaseModule,
-    parent:       BaseModule
+    parent:      BaseModule
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions

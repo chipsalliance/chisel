@@ -11,8 +11,8 @@ import firrtl.annotations.Named
 import firrtl.annotations.IsMember
 
 private[chisel3] final class ChiselDefinitive[P] private[chisel3] (
-    val providedDerivation: Option[DefinitiveDerivation]
-) extends DefinitiveProtoProxy[P] {
+  val providedDerivation: Option[DefinitiveDerivation])
+    extends DefinitiveProtoProxy[P] {
   derivation = providedDerivation
 
   val parent = internal.Builder.currentModule

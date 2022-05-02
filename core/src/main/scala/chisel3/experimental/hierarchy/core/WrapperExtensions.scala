@@ -18,34 +18,33 @@ trait IsWrappable
 // Additional library-facing traits are not in this file
 // ==========================================
 
-
 trait Extensions[V, P] {
   def getParent(x: V): Option[P]
   def parentExtensions: HierarchicalExtensions[P, P]
-  def parentSelection: PartialFunction[Any, Hierarchy[P]]
+  def parentSelection:  PartialFunction[Any, Hierarchy[P]]
 }
 trait CloneableExtensions[V, P] extends Extensions[V, P] {
   def clone(value: V, hierarchy: Hierarchy[P]): V
 }
 trait HierarchicalExtensions[V, P] extends Extensions[V, P] {
-  def getProxyParent(x: Proxy[V]): Option[P]
-  def buildDefinition(f: => V): DefinitionProxy[V]
+  def getProxyParent(x:   Proxy[V]): Option[P]
+  def buildDefinition(f:  => V):     DefinitionProxy[V]
   def buildInstance(root: Root[V]): Clone[V]
-  def mock[P](value: Any, parent: Hierarchy[P]): Instance[V] = value match {
+  def mock[P](value:      Any, parent: Hierarchy[P]): Instance[V] = value match {
     case p: InstanceProxy[V] => mockInstance(p.toInstance, parent)
     case o: V                => mockValue(o, parent)
   }
   def mockInstance[P](value: Instance[V], parent: Hierarchy[P]): Instance[V]
-  def mockValue[P](value: V, parent: Hierarchy[P]): Instance[V]
-  def toDefinition(value: V): Definition[V]
+  def mockValue[P](value:    V, parent: Hierarchy[P]): Instance[V]
+  def toDefinition(value:    V): Definition[V]
 }
 
 trait ParameterExtensions[V, P] extends Extensions[V, P] {
-  def getProxyParent(x: Proxy[V]): Option[P]
-  def mockContextual[P](value: Contextual[V], parent: Hierarchy[P]): Contextual[V]
+  def getProxyParent(x:            Proxy[V]): Option[P]
+  def mockContextual[P](value:     Contextual[V], parent: Hierarchy[P]): Contextual[V]
   def buildDefinitiveFrom[X, Y](d: Definitive[X], f: ParameterFunction): DefinitiveProxy[Y]
   def buildDefinitiveFrom[X, Y](c: Contextual[X], f: CombinerFunction): DefinitiveProxy[Y]
-  def buildDefinitive[X](x: Option[X]): DefinitiveProxy[X]
+  def buildDefinitive[X](x:        Option[X]): DefinitiveProxy[X]
   def buildContextualFrom[X, Y](d: Contextual[X], f: ParameterFunction): ContextualProxy[Y]
-  def buildContextual[X](x: Option[X]): ContextualProxy[X]
+  def buildContextual[X](x:        Option[X]): ContextualProxy[X]
 }

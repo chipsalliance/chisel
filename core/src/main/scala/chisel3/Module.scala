@@ -11,7 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{Definitive, Contextual}
+import chisel3.experimental.hierarchy.{Contextual, Definitive}
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -198,7 +198,8 @@ package experimental {
       iodefClone
     }
     def apply[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.modify(Apply())
-    case class Apply[T <: Data]() extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, Definitive[T]] {
+    case class Apply[T <: Data]()
+        extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, Definitive[T]] {
       val args = Nil
       type I = T
       type O = T
@@ -550,7 +551,7 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef)
+    protected def IO[T <: Data](iodef: T):             T = chisel3.experimental.IO.apply(iodef)
     protected def IO[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.modify(chisel3.experimental.IO.Apply())
 
     //

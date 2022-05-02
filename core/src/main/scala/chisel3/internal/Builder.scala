@@ -626,12 +626,12 @@ private[chisel3] object Builder extends LazyLogging {
     * innermost element is of type HasId
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
-  import chisel3.experimental.hierarchy.{ModuleClone, ModuleTransparent, Instance, Definitive}
+  import chisel3.experimental.hierarchy.{Definitive, Instance, ModuleClone, ModuleTransparent}
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
     case (id: Definitive[_]) =>
       //println("here")
       //println(s"Adding to namer of ${id.proxy}")
-      id.proxy.namer += {x: Any =>
+      id.proxy.namer += { x: Any =>
         x match {
           //case d: Data => println(s"Before $prefix, $namer: " + d.getOptionRef)
           case other =>
@@ -642,8 +642,8 @@ private[chisel3] object Builder extends LazyLogging {
           case other =>
         }
       }
-      //println(s"Doing something for $id, $prefix")
-      //println(id.proxy.namer)
+    //println(s"Doing something for $id, $prefix")
+    //println(id.proxy.namer)
     case (id: Instance[_]) =>
       id.proxy match {
         case m: ModuleClone[_]       => namer(m.getPorts, prefix)
@@ -658,9 +658,9 @@ private[chisel3] object Builder extends LazyLogging {
       for ((elt, i) <- iter.zipWithIndex) {
         nameRecursively(s"${prefix}_${i}", elt, namer)
       }
-    case x => 
-      //println(s"Doing nothing for $x, $prefix")
-      // Do nothing
+    case x =>
+    //println(s"Doing nothing for $x, $prefix")
+    // Do nothing
   }
 
   def errors: ErrorLog = dynamicContext.errors

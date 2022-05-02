@@ -9,7 +9,7 @@ import scala.reflect.internal.util.NoPosition
 import scala.collection.mutable
 
 private[plugin] case class ChiselPluginArguments(
-  val skipFiles:         mutable.HashSet[String] = mutable.HashSet.empty,
+  val skipFiles: mutable.HashSet[String] = mutable.HashSet.empty,
   // TODO this must always be true, warn on the Scalac Option
   var genBundleElements: Boolean = true) {
   def useBundlePluginOpt = "useBundlePlugin"

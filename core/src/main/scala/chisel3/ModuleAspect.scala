@@ -12,7 +12,10 @@ import chisel3.internal.{Builder, PseudoModule}
   * @param module Module for which this object is an aspect of
   * @param moduleCompileOptions
   */
-abstract class ModuleAspect private[chisel3] (module: chisel3.experimental.BaseModule)(implicit moduleCompileOptions: CompileOptions)
+abstract class ModuleAspect private[chisel3] (
+  module: chisel3.experimental.BaseModule
+)(
+  implicit moduleCompileOptions: CompileOptions)
     extends RawModule
     with PseudoModule {
 

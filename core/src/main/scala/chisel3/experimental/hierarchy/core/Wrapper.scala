@@ -33,12 +33,16 @@ trait Wrapper[+P] {
   ): lookupable.H = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(proto)
-    proxy.retrieveMe(protoValue).orElse {
-      val retValue = lookupable.apply(this, protoValue)
-      proxy.cacheMe(protoValue, retValue)
-      //println(s"Caching $retValue for $protoValue in $proxy")
-      Some(retValue)
-    }.get.asInstanceOf[lookupable.H]
+    proxy
+      .retrieveMe(protoValue)
+      .orElse {
+        val retValue = lookupable.apply(this, protoValue)
+        proxy.cacheMe(protoValue, retValue)
+        //println(s"Caching $retValue for $protoValue in $proxy")
+        Some(retValue)
+      }
+      .get
+      .asInstanceOf[lookupable.H]
   }
 
   //def query(path: String) = proxy.query(path)
@@ -58,7 +62,7 @@ trait Wrapper[+P] {
       Some(retValue)
     }.get.asInstanceOf[lookupable.H]
   }
-  */
+   */
 
   /** Useful to view underlying proxy as another type it is representing
     *

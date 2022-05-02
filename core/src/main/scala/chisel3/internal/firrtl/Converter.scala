@@ -358,7 +358,7 @@ private[chisel3] object Converter {
             module._closed = false
             internal.Builder.currentModule = Some(module)
             val mod = module match {
-              case x: Module    =>
+              case x: Module =>
                 withClockAndReset(x.clock, x.reset) {
                   i.implement(d.asInstanceOf[hierarchy.ResolvedDefinition[i.P]])
                 }
@@ -367,7 +367,8 @@ private[chisel3] object Converter {
             }
             Builder.currentModule = None
             val comp = module.generateComponent().get match {
-              case x @ DefModule(module, name, ports, cmds, implementationOpt) => DefModule(module, name, ports, cmds, None)
+              case x @ DefModule(module, name, ports, cmds, implementationOpt) =>
+                DefModule(module, name, ports, cmds, None)
             }
             val comps = Builder.components ++ Seq(comp)
             module.myComponents = Some(comps.toList)
@@ -379,13 +380,15 @@ private[chisel3] object Converter {
     case ctx @ DefModule(module, name, ports, cmds, None) =>
       Seq(fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx)))
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
-      Seq(fir.ExtModule(
-        fir.NoInfo,
-        name,
-        ports.map(p => convert(p, topDir)),
-        id.desiredName,
-        params.map { case (name, p) => convert(name, p) }.toSeq
-      ))
+      Seq(
+        fir.ExtModule(
+          fir.NoInfo,
+          name,
+          ports.map(p => convert(p, topDir)),
+          id.desiredName,
+          params.map { case (name, p) => convert(name, p) }.toSeq
+        )
+      )
   }
 
   def convert(circuit: Circuit): fir.Circuit = {

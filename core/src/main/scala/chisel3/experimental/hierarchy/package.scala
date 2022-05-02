@@ -17,7 +17,7 @@ package object hierarchy {
 
   /** Classes or traits which will be used with the [[Definition]] + [[Instance]] api should be marked
     * with the [[@instantiable]] annotation at the class/trait definition.
-@@ -45,4 +57,254 @@ package object hierarchy {
+    * @@ -45,4 +57,254 @@ package object hierarchy {
     * }}}
     */
   class public extends chisel3.internal.public
@@ -40,62 +40,64 @@ package object hierarchy {
   //}
   // TYPECLASS Basics
 
-  def buildExtension[V <: BaseModule](isBaseModule: Boolean): HierarchicalExtensions[V, BaseModule] = new HierarchicalExtensions[V, BaseModule] {
-    def getParent(value: V): Option[BaseModule] = value._parent
-    def getProxyParent(value: Proxy[V]): Option[BaseModule] = value.asInstanceOf[BaseModule]._parent
-    def execute[X](x: => X, parent: Option[BaseModule]): X = {
-      val prev = Builder.currentModule
-      Builder.currentModule = parent
-      val ret = x
-      Builder.currentModule = prev
-      ret
-    }
-    def buildDefinition(proto: => V): ModuleDefinition[V] = {
-      val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
-      Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
-      dynamicContext.inDefinition = true
-      val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
-      Builder.components ++= ir.components
-      Builder.annotations ++= ir.annotations
-      module._circuit = Builder.currentModule
-      dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-      ModuleDefinition(module, module._circuit)
-    }
-    def buildInstance(root: Root[V]): ModuleClone[V] = {
-      val ports = experimental.CloneModuleAsRecord(root)
-      val clone = ports._parent.get.asInstanceOf[ModuleClone[V]]
-      clone._madeFromDefinition = true
-      clone
-    }
-    //def define(proto: V): ModuleDefinition[V] = ???
-    //def transparent(proto: V): ModuleTransparent[V] = ???
-    def clone[P](value: Hierarchy[V], hierarchy: Hierarchy[P]): InstanceProxy[V] = {
-      (value, hierarchy.proxy) match {
-        case (d: Root[V], t: ModuleTransparent[V]) =>
-          val ports = experimental.CloneModuleAsRecord(d)
-          val clone = ports._parent.get.asInstanceOf[ModuleClone[V]]
-          clone._madeFromDefinition = true
-          clone
-        case (i: Instance[V], _) =>
-          ModuleMock(i.proxyAs[BaseModule], hierarchy.proxyAs[BaseModule])
+  def buildExtension[V <: BaseModule](isBaseModule: Boolean): HierarchicalExtensions[V, BaseModule] =
+    new HierarchicalExtensions[V, BaseModule] {
+      def getParent(value:      V):        Option[BaseModule] = value._parent
+      def getProxyParent(value: Proxy[V]): Option[BaseModule] = value.asInstanceOf[BaseModule]._parent
+      def execute[X](x: => X, parent: Option[BaseModule]): X = {
+        val prev = Builder.currentModule
+        Builder.currentModule = parent
+        val ret = x
+        Builder.currentModule = prev
+        ret
+      }
+      def buildDefinition(proto: => V): ModuleDefinition[V] = {
+        val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
+        Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
+        dynamicContext.inDefinition = true
+        val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
+        Builder.components ++= ir.components
+        Builder.annotations ++= ir.annotations
+        module._circuit = Builder.currentModule
+        dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
+        ModuleDefinition(module, module._circuit)
+      }
+      def buildInstance(root: Root[V]): ModuleClone[V] = {
+        val ports = experimental.CloneModuleAsRecord(root)
+        val clone = ports._parent.get.asInstanceOf[ModuleClone[V]]
+        clone._madeFromDefinition = true
+        clone
+      }
+      //def define(proto: V): ModuleDefinition[V] = ???
+      //def transparent(proto: V): ModuleTransparent[V] = ???
+      def clone[P](value: Hierarchy[V], hierarchy: Hierarchy[P]): InstanceProxy[V] = {
+        (value, hierarchy.proxy) match {
+          case (d: Root[V], t: ModuleTransparent[V]) =>
+            val ports = experimental.CloneModuleAsRecord(d)
+            val clone = ports._parent.get.asInstanceOf[ModuleClone[V]]
+            clone._madeFromDefinition = true
+            clone
+          case (i: Instance[V], _) =>
+            ModuleMock(i.proxyAs[BaseModule], hierarchy.proxyAs[BaseModule])
+        }
+      }
+      def mockInstance[P](value: Instance[V], parent: Hierarchy[P]): Instance[V] = {
+        ModuleMock(value.proxyAs[BaseModule], parent.proxyAs[BaseModule]).toInstance
+      }
+      def mockValue[P](value: V, parent: Hierarchy[P]): Instance[V] = {
+        val d = (new ModuleDefinition(core.Raw(value), None)).toDefinition
+        val t = ModuleTransparent(d.proxyAs[ModuleRoot[V]])
+        ModuleMock(t, parent.proxyAs[BaseModule]).toInstance
+      }
+      def parentSelection: PartialFunction[Any, Hierarchy[BaseModule]] = {
+        case h: Hierarchy[BaseModule] if h.isA[BaseModule] => h
+      }
+      def toDefinition(value: V): Definition[V] = value.toDefinition
+      def parentExtensions: HierarchicalExtensions[BaseModule, BaseModule] = {
+        if (isBaseModule) this.asInstanceOf[HierarchicalExtensions[BaseModule, BaseModule]]
+        else buildExtension[BaseModule](true)
       }
     }
-    def mockInstance[P](value: Instance[V], parent: Hierarchy[P]): Instance[V] = {
-      ModuleMock(value.proxyAs[BaseModule], parent.proxyAs[BaseModule]).toInstance
-    }
-    def mockValue[P](value: V, parent: Hierarchy[P]): Instance[V] = {
-      val d = (new ModuleDefinition(core.Raw(value), None)).toDefinition
-      val t = ModuleTransparent(d.proxyAs[ModuleRoot[V]])
-      ModuleMock(t, parent.proxyAs[BaseModule]).toInstance
-    }
-    def parentSelection: PartialFunction[Any, Hierarchy[BaseModule]] = {
-      case h: Hierarchy[BaseModule] if h.isA[BaseModule] => h
-    }
-    def toDefinition(value: V): Definition[V] = value.toDefinition
-    def parentExtensions: HierarchicalExtensions[BaseModule, BaseModule] = {
-      if(isBaseModule) this.asInstanceOf[HierarchicalExtensions[BaseModule, BaseModule]] else buildExtension[BaseModule](true)
-    }
-  }
 
   implicit def moduleExtensions[V <: BaseModule]: HierarchicalExtensions[V, BaseModule] = buildExtension[V](false)
   implicit def dataExtensions[V <: Data] = new CloneableExtensions[V, BaseModule] {
@@ -105,14 +107,18 @@ package object hierarchy {
       case h: Hierarchy[BaseModule] if h.isA[BaseModule] => h
     }
     def clone(value: V, hierarchy: Hierarchy[BaseModule]): V = hierarchy.proxy match {
-      case m: ModuleClone[_]       => cloneData(value, m, m.ioMap)
-      case m: ModuleTransparent[_] => value
-      case m: ModuleMock[_]        => cloneData(value, m)
+      case m: ModuleClone[_]                      => cloneData(value, m, m.ioMap)
+      case m: ModuleTransparent[_]                => value
+      case m: ModuleMock[_]                       => cloneData(value, m)
       case m: ModuleDefinition[_] if m.isResolved => value
-      case m: ModuleDefinition[_]  => cloneData(value, m)
+      case m: ModuleDefinition[_]                 => cloneData(value, m)
       case _ => value
     }
-    private def cloneData[D <: Data](data: D, newParent: BaseModule, ioMap: Map[Data, Data] = Map.empty[Data, Data]): D = {
+    private def cloneData[D <: Data](
+      data:      D,
+      newParent: BaseModule,
+      ioMap:     Map[Data, Data] = Map.empty[Data, Data]
+    ): D = {
       def impl[C <: Data](d: C): C = d match {
         case x: Data if ioMap.contains(x) => ioMap(x).asInstanceOf[C]
         case x if x._parent == Some(newParent) => x
@@ -168,30 +174,40 @@ package object hierarchy {
     }
     def getProxyParent(value: Proxy[V]): Option[BaseModule] = value match {
       case p: ChiselContextual[_] => p.parent
-      case p: ContextualValue[_] => None
+      case p: ContextualValue[_]  => None
     }
     def buildDefinitiveFrom[X, Y](c: Contextual[X], f: CombinerFunction): DefinitiveProxy[Y] = {
       val x: DefinitiveProxy[Y] = new ChiselDefinitive(Some(ContextualToDefinitiveDerivation(c.proxy, f)))
       x
     }
     def buildDefinitiveFrom[X, Y](d: Definitive[X], f: ParameterFunction): DefinitiveProxy[Y] = {
-      val x: DefinitiveProxy[Y] = new ChiselDefinitive(Some(DefinitiveToDefinitiveDerivation(d.proxyAs[DefinitiveProxy[X]], f.asInstanceOf[ParameterFunction])))
+      val x: DefinitiveProxy[Y] = new ChiselDefinitive(
+        Some(DefinitiveToDefinitiveDerivation(d.proxyAs[DefinitiveProxy[X]], f.asInstanceOf[ParameterFunction]))
+      )
       x
     }
     def buildDefinitive[X](v: Option[X]): DefinitiveProxy[X] = {
       v match {
         case None => new ChiselDefinitive[X](None)
-        case Some(value) => new ChiselDefinitive[X](Some(DefinitiveToDefinitiveDerivation(DefinitiveValue(value), Identity())))
+        case Some(value) =>
+          new ChiselDefinitive[X](Some(DefinitiveToDefinitiveDerivation(DefinitiveValue(value), Identity())))
       }
     }
     def buildContextualFrom[X, Y](c: Contextual[X], f: ParameterFunction): ContextualProxy[Y] = {
-      val x: ContextualProxy[Y] = new ChiselContextual(Some(ContextualToContextualDerivation(c.proxyAs[ContextualProxy[X]], f.asInstanceOf[ParameterFunction])), Builder.currentModule)
+      val x: ContextualProxy[Y] = new ChiselContextual(
+        Some(ContextualToContextualDerivation(c.proxyAs[ContextualProxy[X]], f.asInstanceOf[ParameterFunction])),
+        Builder.currentModule
+      )
       x
     }
     def buildContextual[X](v: Option[X]): ContextualProxy[X] = {
       v match {
         case None => new ChiselContextual[X](None, Builder.currentModule)
-        case Some(value) => new ChiselContextual[X](Some(ContextualToContextualDerivation(ContextualValue(value), Identity())), Builder.currentModule)
+        case Some(value) =>
+          new ChiselContextual[X](
+            Some(ContextualToContextualDerivation(ContextualValue(value), Identity())),
+            Builder.currentModule
+          )
       }
     }
     def mockContextual[P](value: Contextual[V], parent: Hierarchy[P]): Contextual[V] = {
@@ -299,8 +315,8 @@ package object hierarchy {
     /** If this is an instance of a Module, returns the toTarget of this instance
       * @return target of this instance
       */
-    def toInstance:   Instance[T] = ???
-    def toRoot: Root[T] = toInstance.toRoot
+    def toInstance: Instance[T] = ???
+    def toRoot:     Root[T] = toInstance.toRoot
   }
 
 }

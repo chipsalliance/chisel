@@ -15,4 +15,4 @@ trait Root[+P] extends IsLookupable with Hierarchy[P] {
   def toRoot: Root[P] = this
 
   override def proxyAs[T]: DefinitionProxy[P] with T = proxy.asInstanceOf[DefinitionProxy[P] with T]
-} 
+}

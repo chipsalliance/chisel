@@ -16,8 +16,7 @@ import Utils._
   * @param contexts contains contextual values when viewed from this proxy
   */
 private[chisel3] final class ModuleClone[T <: BaseModule](
-  val suffixProxy: ModuleRoot[T]
-)
+  val suffixProxy: ModuleRoot[T])
     extends PseudoModule
     with Clone[T] {
   // _parent is set outside, just like a normal module
@@ -66,9 +65,9 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
     record.forceName(None, default = this.desiredName, namespace)
     // Now take the Ref that forceName set and convert it to the correct Arg
     val instName = record.getRef match {
-      case Ref(name) => name
+      case Ref(name)           => name
       case ModuleCloneIO(m, n) => n
-      case bad => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
+      case bad                 => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
     }
     // Set both the record and the module to have the same instance name
     val ref = ModuleCloneIO(proto, instName)

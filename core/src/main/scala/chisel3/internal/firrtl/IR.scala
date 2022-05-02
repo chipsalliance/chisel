@@ -227,7 +227,7 @@ case class Index(imm: Arg, value: Arg) extends Arg {
 
 object Width {
   @definitive def make()(x: Int): Width = KnownWidth(x)
-  def apply(x: Int): Width = KnownWidth(x)
+  def apply(x:              Int): Width = KnownWidth(x)
   def apply(): Width = UnknownWidth()
 }
 
@@ -853,7 +853,13 @@ abstract class Component extends Arg {
   def ports: Seq[Port]
 }
 @nowarn("msg=class Port") // delete when Port becomes private
-case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command], implementation: Option[Implementation]) extends Component
+case class DefModule(
+  id:             RawModule,
+  name:           String,
+  ports:          Seq[Port],
+  commands:       Seq[Command],
+  implementation: Option[Implementation])
+    extends Component
 @nowarn("msg=class Port") // delete when Port becomes private
 case class DefBlackBox(
   id:     BaseBlackBox,

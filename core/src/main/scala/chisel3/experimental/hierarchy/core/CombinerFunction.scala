@@ -18,15 +18,14 @@ sealed trait CombinerFunction { self =>
   } catch {
     case e: Exception => throw e
   }
-  
+
   type I
   type O
-  def apply(i: List[I]): O
+  def apply(i:      List[I]): O
   def applyAny(any: List[Any]): Any = apply(any.asInstanceOf[List[I]])
 }
 
-trait CustomCombinerFunction[-I, +O] extends CombinerFunction {
-}
+trait CustomCombinerFunction[-I, +O] extends CombinerFunction {}
 
 object CombinerFunction {
   def build(className: String, args: List[Any]): CombinerFunction = {

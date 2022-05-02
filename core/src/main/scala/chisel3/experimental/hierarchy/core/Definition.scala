@@ -23,7 +23,7 @@ final case class Definition[+P] private[chisel3] (private[chisel3] proxy: Defini
 object Definition {
   def apply[P](proto: => P): Definition[P] =
     macro DefinitionTransform.apply[P]
-  def do_apply[P](proto: => P)(implicit extensions: HierarchicalExtensions[P,_]): Definition[P] = {
+  def do_apply[P](proto: => P)(implicit extensions: HierarchicalExtensions[P, _]): Definition[P] = {
     (new Definition(extensions.buildDefinition(proto)))
   }
   //OLD
@@ -43,4 +43,4 @@ object Definition {
   //  //println(i.proxy.edits.values())
   //  d
   //}
-} 
+}

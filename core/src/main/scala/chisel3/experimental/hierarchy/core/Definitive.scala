@@ -9,8 +9,6 @@ import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
 import java.util.IdentityHashMap
 
-
-
 case class Definitive[P] private[chisel3] (proxy: DefinitiveProxy[P]) extends Wrapper[P] {
   def value_=(v: P) = {
     require(!proxy.hasDerivation, s"Cannot set a definitive twice!")
@@ -28,11 +26,22 @@ case class Definitive[P] private[chisel3] (proxy: DefinitiveProxy[P]) extends Wr
   def modify[X](f: ParameterFunction): Definitive[X] = Definitive.buildFromDF(this, f)
 }
 
-
 object Definitive {
-  def buildFromDF[P, X](d: Definitive[P], f: ParameterFunction)(implicit extensions: ParameterExtensions[_,_]): Definitive[X] = extensions.buildDefinitiveFrom(d, f).toWrapper
-  def buildFromCF[P, X](c: Contextual[P], f: CombinerFunction)(implicit extensions: ParameterExtensions[_,_]): Definitive[X] =
+  def buildFromDF[P, X](
+    d: Definitive[P],
+    f: ParameterFunction
+  )(
+    implicit extensions: ParameterExtensions[_, _]
+  ): Definitive[X] = extensions.buildDefinitiveFrom(d, f).toWrapper
+  def buildFromCF[P, X](
+    c: Contextual[P],
+    f: CombinerFunction
+  )(
+    implicit extensions: ParameterExtensions[_, _]
+  ): Definitive[X] =
     extensions.buildDefinitiveFrom(c, f).toWrapper
-  def apply[P](p: P)(implicit extensions: ParameterExtensions[_,_]): Definitive[P] = extensions.buildDefinitive(Some(p)).toWrapper
-  def empty[P](implicit extensions: ParameterExtensions[_,_]): Definitive[P] = extensions.buildDefinitive(None).toWrapper
-} 
+  def apply[P](p: P)(implicit extensions: ParameterExtensions[_, _]): Definitive[P] =
+    extensions.buildDefinitive(Some(p)).toWrapper
+  def empty[P](implicit extensions: ParameterExtensions[_, _]): Definitive[P] =
+    extensions.buildDefinitive(None).toWrapper
+}

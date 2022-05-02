@@ -17,13 +17,13 @@ private[chisel3] object definitiveMacro {
         case Seq(c)    => (c, None)
       }
       deff match {
-        case aDef: DefDef => 
+        case aDef: DefDef =>
           val name = aDef.name
           val clzname = TypeName(name + "___MACRO_GENERATED")
           val args = aDef.vparamss
-          val firstArgs = args.dropRight(1).map(x => x.map(y => q"${y.name}: ${y.tpt}" ))
+          val firstArgs = args.dropRight(1).map(x => x.map(y => q"${y.name}: ${y.tpt}"))
           val lastArg = args.last.head
-          val input  = (lastArg.name, lastArg.tpt)
+          val input = (lastArg.name, lastArg.tpt)
           q"""
             $aDef
             case class $clzname(...$firstArgs) extends chisel3.experimental.hierarchy.core.CustomParameterFunction[${input._2}, ${aDef.tpt}] {
@@ -35,7 +35,7 @@ private[chisel3] object definitiveMacro {
             def $name(...$firstArgs): $clzname = ${clzname.toTermName}(...$firstArgs)
           """
 
-        case other        => other
+        case other => other
       }
       //deff
     }

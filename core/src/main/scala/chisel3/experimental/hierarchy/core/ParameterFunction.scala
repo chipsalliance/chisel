@@ -18,10 +18,10 @@ sealed trait ParameterFunction { self =>
   } catch {
     case e: Exception => throw e
   }
-  
+
   type I
   type O
-  def apply(i: I): O
+  def apply(i:      I): O
   def applyAny(any: Any): Any = apply(any.asInstanceOf[I])
 }
 
@@ -66,5 +66,3 @@ import scala.reflect.runtime.{universe => ru}
 //  def apply(i: I): O = {
 //  }
 //}
-
-

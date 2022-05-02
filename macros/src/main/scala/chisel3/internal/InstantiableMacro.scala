@@ -10,7 +10,11 @@ private[chisel3] object instantiableMacro {
 
   def impl(c: whitebox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
     import c.universe._
-    def processBody(tpname: TypeName, tparams: Iterable[Tree], stats: Seq[Tree]): (Seq[Tree], Iterable[Tree], Iterable[Tree]) = {
+    def processBody(
+      tpname:  TypeName,
+      tparams: Iterable[Tree],
+      stats:   Seq[Tree]
+    ): (Seq[Tree], Iterable[Tree], Iterable[Tree]) = {
       val extensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
       extensions += q"implicit val mg = new chisel3.internal.MacroGenerated{}"
 
@@ -35,7 +39,9 @@ private[chisel3] object instantiableMacro {
                 extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
                 val name = Literal(Constant(aVal.name.decodedName.toString))
                 val wildcards = tparams.map(_ => "_")
-                nameMappings += atPos(aVal.pos)(q"___nameToFunc(${name}) = { x: Any => x.asInstanceOf[$tpname[..$wildcards]].${aVal.name} }")
+                nameMappings += atPos(aVal.pos)(
+                  q"___nameToFunc(${name}) = { x: Any => x.asInstanceOf[$tpname[..$wildcards]].${aVal.name} }"
+                )
                 if (aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
               case other => Seq(other)
             }
@@ -71,7 +77,7 @@ private[chisel3] object instantiableMacro {
                 def toUnderlying(x: X) = {
                   new chisel3.experimental.hierarchy.core.Freezable[X](x, ___nameToFunc.toMap)
                 }
-              }""",
+              }"""
             ),
             tpname
           )
@@ -82,7 +88,7 @@ private[chisel3] object instantiableMacro {
           (
             q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$newStats }",
             Seq(
-              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Wrapper[$tpname[..$argTParams]]) { ..$extensions }""",
+              q"""implicit class $defname[..$tparams](___module: chisel3.experimental.hierarchy.core.Wrapper[$tpname[..$argTParams]]) { ..$extensions }"""
             ),
             tpname
           )

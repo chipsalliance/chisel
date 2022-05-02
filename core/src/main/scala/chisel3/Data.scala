@@ -408,7 +408,8 @@ object Input {
   def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions): Definitive[T] = {
     source.modify(Apply(compileOptions))
   }
-  case class Apply[T <: Data](compileOptions: CompileOptions) extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, T] {
+  case class Apply[T <: Data](compileOptions: CompileOptions)
+      extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, T] {
     val args = Nil
     type I = T
     type O = T
@@ -422,7 +423,8 @@ object Output {
   def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions): Definitive[T] = {
     source.modify(Apply(compileOptions))
   }
-  case class Apply[T <: Data](compileOptions: CompileOptions) extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, T] {
+  case class Apply[T <: Data](compileOptions: CompileOptions)
+      extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, T] {
     val args = Nil
     type I = T
     type O = T
@@ -605,7 +607,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
-        case e@MonoConnectException(message) =>
+        case e @ MonoConnectException(message) =>
           println(e.getStackTrace().mkString("\n"))
           throwException(
             s"Connection between sink ($this), ${this._parent} and source ($that), ${that._parent} failed @: $message"

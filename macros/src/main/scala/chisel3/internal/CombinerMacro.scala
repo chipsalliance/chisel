@@ -18,7 +18,7 @@ private[chisel3] object cfuncMacro {
         case Seq(c)    => (c, None)
       }
       deff match {
-        case aDef: DefDef => 
+        case aDef: DefDef =>
           val name = aDef.name
           val clzname = TypeName(name + "___MACRO_GENERATED")
           val args = aDef.vparamss
@@ -47,4 +47,4 @@ private[chisel3] object cfuncMacro {
 private[chisel3] class cfunc extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro cfuncMacro.impl
 }
-*/
+ */

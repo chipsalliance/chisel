@@ -18,7 +18,7 @@ trait Lookupable[-V] {
   }
 
   type H
-  def apply[P](getter: Wrapper[P],   value: V): H
+  def apply[P](getter: Wrapper[P], value: V): H
 }
 
 trait HierarchicalLookupable[V] extends Lookupable[V] {
@@ -31,12 +31,12 @@ trait ContextualLookupable[V] extends Lookupable[V] {
 
 /** Default implementations of Lookupable */
 object Lookupable {
-    implicit val mg = new chisel3.internal.MacroGenerated {}
+  implicit val mg = new chisel3.internal.MacroGenerated {}
 
   /** Simple Lookupable implementation where the value is always returned, without modification */
   trait SimpleLookupable[V] extends Lookupable[V] {
     override type H = V
-    override def apply[P](getter: Wrapper[P],   value: V): H = value
+    override def apply[P](getter: Wrapper[P], value: V): H = value
   }
 
   // Lookups for primitive and simple objects
@@ -94,24 +94,29 @@ object Lookupable {
 
   implicit def isLookupable[V <: IsLookupable] = new SimpleLookupable[V] {}
 
-  type IAux[V] = Lookupable[Instance[V]]{ type H = Instance[V]}
+  type IAux[V] = Lookupable[Instance[V]] { type H = Instance[V] }
 
-  implicit def lookupInstance[V, P](implicit extensions: HierarchicalExtensions[V, P]): IAux[V] = new Lookupable[Instance[V]] {
-    type H = Instance[V]
-    def apply[P](getter: Wrapper[P], value: Instance[V]) = {
-      // Converting Wrapper to Instance shouldn't error, as you can't create an Instance(this)
-      if(shareProto(value.proxy, getter)) getter.asInstanceOf[Instance[V]] else {
-        // Value should always have a parent because it is an instance, so this is safe to get
-        val newParentWrapper = getter._lookup { _ => extensions.getProxyParent(value.proxy).get }(lookupUncloneableValue(extensions.parentExtensions), mg)
-        val suffix = newParentWrapper match {
-          case Instance(proxy) => proxy.suffixProxy.toHierarchy._lookup { _ => value }(lookupInstance(extensions), mg)
-          case Definition(proxy) => value
-          case ResolvedDefinition(proxy) => value
+  implicit def lookupInstance[V, P](implicit extensions: HierarchicalExtensions[V, P]): IAux[V] =
+    new Lookupable[Instance[V]] {
+      type H = Instance[V]
+      def apply[P](getter: Wrapper[P], value: Instance[V]) = {
+        // Converting Wrapper to Instance shouldn't error, as you can't create an Instance(this)
+        if (shareProto(value.proxy, getter)) getter.asInstanceOf[Instance[V]]
+        else {
+          // Value should always have a parent because it is an instance, so this is safe to get
+          val newParentWrapper = getter._lookup { _ => extensions.getProxyParent(value.proxy).get }(
+            lookupUncloneableValue(extensions.parentExtensions),
+            mg
+          )
+          val suffix = newParentWrapper match {
+            case Instance(proxy)           => proxy.suffixProxy.toHierarchy._lookup { _ => value }(lookupInstance(extensions), mg)
+            case Definition(proxy)         => value
+            case ResolvedDefinition(proxy) => value
+          }
+          extensions.mock(suffix.proxy, newParentWrapper)
         }
-        extensions.mock(suffix.proxy, newParentWrapper)
       }
     }
-  }
 
   implicit def lookupDefinitive[V, P] = new Lookupable[Definitive[V]] {
     type H = Definitive[V]
@@ -120,22 +125,25 @@ object Lookupable {
       value
     }
   }
-  type Aux[I, O] = Lookupable[I] {type H = O}
+  type Aux[I, O] = Lookupable[I] { type H = O }
 
-  implicit def lookupContextual[V, P](implicit extensions: ParameterExtensions[V, P]): Aux[Contextual[V], Contextual[V]]  = new Lookupable[Contextual[V]] {
+  implicit def lookupContextual[V, P](
+    implicit extensions: ParameterExtensions[V, P]
+  ): Aux[Contextual[V], Contextual[V]] = new Lookupable[Contextual[V]] {
     type H = Contextual[V]
     def apply[P](getter: Wrapper[P], value: Contextual[V]) = {
       // Converting Wrapper to Contextual shouldn't error, as you can't create an Instance(this)
       extensions.getProxyParent(value.proxy) match {
-        case None => value
+        case None                         => value
         case Some(p) if p == getter.proxy => value
-        case Some(p) =>
+        case Some(p)                      =>
           // Value should always have a parent because it is an instance, so this is safe to get
           val newParentWrapper = getter._lookup { _ => p }(lookupUncloneableValue(extensions.parentExtensions), mg)
 
           val suffixProxy = newParentWrapper match {
-            case Instance(proxy) => proxy.suffixProxy.toHierarchy._lookup { _ => value }(lookupContextual(extensions), mg)
-            case Definition(proxy) => value
+            case Instance(proxy) =>
+              proxy.suffixProxy.toHierarchy._lookup { _ => value }(lookupContextual(extensions), mg)
+            case Definition(proxy)         => value
             case ResolvedDefinition(proxy) => value
           }
           val x = extensions.mockContextual(suffixProxy, newParentWrapper)
@@ -146,32 +154,38 @@ object Lookupable {
   }
 
   //Used for looking up modules
-  implicit def lookupUncloneableValue[V, P](implicit extensions: HierarchicalExtensions[V, P]): HierarchicalLookupable[V] = new HierarchicalLookupable[V] {
+  implicit def lookupUncloneableValue[V, P](
+    implicit extensions: HierarchicalExtensions[V, P]
+  ): HierarchicalLookupable[V] = new HierarchicalLookupable[V] {
     def apply[P](getter: Wrapper[P], value: V) = {
       val relevantGetter = getter match {
-        case x: Hierarchy[_] => x.getClosestParentOf(extensions.parentSelection) match {
-          case Some(h: Hierarchy[_]) => h
-          case None => getter
-        }
+        case x: Hierarchy[_] =>
+          x.getClosestParentOf(extensions.parentSelection) match {
+            case Some(h: Hierarchy[_]) => h
+            case None => getter
+          }
       }
       //TODO This may be unnecessary if IsWrappables record a parent
       value match {
         case v if shareProto(v, relevantGetter) => relevantGetter.asInstanceOf[Hierarchy[V]]
         case other =>
           extensions.getParent(value) match {
-              // I think i'm missing a case here, where a parent is a constructor argument to a child,
-              // looked up from the grandparent.
-              // In this case, we need to lookup value from getter's parent
-            case None => relevantGetter match {
-              case i: Instance[_] => i.proxy.parentOpt match {
-                case None => extensions.toDefinition(value)
-                case Some(p: Proxy[_]) =>
-                  p.toWrapper._lookup(_ => value)(lookupUncloneableValue(extensions), mg)
+            // I think i'm missing a case here, where a parent is a constructor argument to a child,
+            // looked up from the grandparent.
+            // In this case, we need to lookup value from getter's parent
+            case None =>
+              relevantGetter match {
+                case i: Instance[_] =>
+                  i.proxy.parentOpt match {
+                    case None => extensions.toDefinition(value)
+                    case Some(p: Proxy[_]) =>
+                      p.toWrapper._lookup(_ => value)(lookupUncloneableValue(extensions), mg)
+                  }
+                case other => extensions.toDefinition(value)
               }
-              case other => extensions.toDefinition(value)
-            }
-            case Some(p) => 
-              val newParentHierarchy = relevantGetter._lookup(_ => p)(lookupUncloneableValue(extensions.parentExtensions), mg)
+            case Some(p) =>
+              val newParentHierarchy =
+                relevantGetter._lookup(_ => p)(lookupUncloneableValue(extensions.parentExtensions), mg)
               extensions.mockValue(value, newParentHierarchy)
           }
       }

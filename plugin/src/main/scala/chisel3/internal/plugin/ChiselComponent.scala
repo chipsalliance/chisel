@@ -82,7 +82,9 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     private val shouldMatchDataOrMem: Type => Boolean = shouldMatchGen(tq"chisel3.Data", tq"chisel3.MemBase[_]")
     private val shouldMatchModule:    Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
     private val shouldMatchInstance:  Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
-    private val shouldMatchDefinitive:Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Definitive[_]")
+    private val shouldMatchDefinitive: Type => Boolean = shouldMatchGen(
+      tq"chisel3.experimental.hierarchy.Definitive[_]"
+    )
 
     // Given a type tree, infer the type and return it
     private def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe

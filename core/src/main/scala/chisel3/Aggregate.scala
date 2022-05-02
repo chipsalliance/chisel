@@ -156,7 +156,13 @@ trait VecFactory extends SourceInfoDoc {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int)(gen: Definitive[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Definitive[Vec[T]] = {
+  def apply[T <: Data](
+    n:   Int
+  )(gen: Definitive[T]
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Definitive[Vec[T]] = {
     gen.modify(VecDefinitives.Apply(n)(compileOptions))
   }
 

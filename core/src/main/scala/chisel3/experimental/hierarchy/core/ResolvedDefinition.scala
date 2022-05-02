@@ -19,7 +19,7 @@ final case class ResolvedDefinition[+P] private[chisel3] (private[chisel3] proxy
 object ResolvedDefinition {
   def apply[P](proto: => P): ResolvedDefinition[P] =
     macro DefinitionTransform.apply[P]
-  def do_apply[P](proto: => P)(implicit extensions: HierarchicalExtensions[P,_]): ResolvedDefinition[P] = {
+  def do_apply[P](proto: => P)(implicit extensions: HierarchicalExtensions[P, _]): ResolvedDefinition[P] = {
     (new ResolvedDefinition(extensions.buildDefinition(proto)))
   }
-} 
+}

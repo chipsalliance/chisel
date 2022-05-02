@@ -11,21 +11,20 @@ import firrtl.annotations.Named
 import firrtl.annotations.IsMember
 
 private[chisel3] final class ChiselContextual[P] private[chisel3] (
-    val constructionDerivation: Option[ContextualDerivation],
-    val parent: Option[BaseModule]
-) extends ContextualProtoProxy[P] {
+  val constructionDerivation: Option[ContextualDerivation],
+  val parent:                 Option[BaseModule])
+    extends ContextualProtoProxy[P] {
 
   derivation = constructionDerivation
 
   parent.map(_.asInstanceOf[BaseModule].contextuals += this.toWrapper)
 }
 
-
 private[chisel3] final class ChiselMockContextual[P] private[chisel3] (
-    val constructionDerivation: Option[ContextualDerivation],
-    override val suffixProxyOpt: Option[ContextualProxy[P]],
-    override val parentOpt: Option[Proxy[BaseModule]]
-) extends ContextualMockProxy[P] {
+  val constructionDerivation:  Option[ContextualDerivation],
+  override val suffixProxyOpt: Option[ContextualProxy[P]],
+  override val parentOpt:      Option[Proxy[BaseModule]])
+    extends ContextualMockProxy[P] {
 
   derivation = constructionDerivation
 }

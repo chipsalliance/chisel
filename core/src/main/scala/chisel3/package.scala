@@ -184,7 +184,8 @@ package object chisel3 {
 
   object Vec extends VecFactory
   object VecDefinitives {
-    case class Apply[T <: Data](n: Int)(compileOptions: CompileOptions) extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, T] {
+    case class Apply[T <: Data](n: Int)(compileOptions: CompileOptions)
+        extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, T] {
       val args = Nil
       type I = T
       type O = Vec[T]
