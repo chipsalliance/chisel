@@ -21,10 +21,11 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
     extends PseudoModule
     with Clone[T] {
   // _parent is set outside, just like a normal module
+  contextuals ++= suffixProxy.contextuals
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
-  override def toString = s"experimental.hierarchy.ModuleClone(${proto})"
+  //override def toString = s"experimental.hierarchy.ModuleClone(${proto})"
   // Do not call default addId function, which may modify a module that is already "closed"
   override def addId(d: HasId): Unit = ()
   def getPorts = _portsRecord
@@ -66,7 +67,8 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
     // Now take the Ref that forceName set and convert it to the correct Arg
     val instName = record.getRef match {
       case Ref(name) => name
-      case bad       => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
+      case ModuleCloneIO(m, n) => n
+      case bad => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
     }
     // Set both the record and the module to have the same instance name
     val ref = ModuleCloneIO(proto, instName)

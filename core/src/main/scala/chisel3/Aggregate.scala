@@ -4,6 +4,7 @@ package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewException}
+import chisel3.experimental.hierarchy.Definitive
 
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
@@ -149,6 +150,14 @@ trait VecFactory extends SourceInfoDoc {
       requireIsChiselType(gen, "vec type")
     }
     new Vec(gen.cloneTypeFull, n)
+  }
+
+  /** Creates a new [[Vec]] with `n` entries of the specified data type.
+    *
+    * @note elements are NOT assigned by default and have no value
+    */
+  def apply[T <: Data](n: Int)(gen: Definitive[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Definitive[Vec[T]] = {
+    gen.modify(VecDefinitives.Apply(n)(compileOptions))
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */

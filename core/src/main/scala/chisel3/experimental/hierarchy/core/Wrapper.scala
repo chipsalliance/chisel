@@ -9,6 +9,7 @@ import java.util.IdentityHashMap
 
 /** Represents a view of a proto from a specific hierarchical path */
 trait Wrapper[+P] {
+  //def _lookup[B](name: String): Any => Any = that.asInstanceOf[Any => Any]
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
@@ -32,12 +33,32 @@ trait Wrapper[+P] {
   ): lookupable.H = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(proto)
+    proxy.retrieveMe(protoValue).orElse {
+      val retValue = lookupable.apply(this, protoValue)
+      proxy.cacheMe(protoValue, retValue)
+      //println(s"Caching $retValue for $protoValue in $proxy")
+      Some(retValue)
+    }.get.asInstanceOf[lookupable.H]
+  }
+
+  //def query(path: String) = proxy.query(path)
+
+  /*
+  def _nameLookup[B](
+    name: String
+  )(
+    implicit lookupable: Lookupable[B],
+    macroGenerated:      chisel3.internal.MacroGenerated
+  ): lookupable.H = {
+    // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
+    val protoValue = that(proto)
     proxy.retrieveMeAsWrapper(protoValue).orElse(proxy.retrieveMe(protoValue)).orElse {
       val retValue = lookupable.apply(this, protoValue)
       proxy.cacheMe(protoValue, retValue)
       Some(retValue)
     }.get.asInstanceOf[lookupable.H]
   }
+  */
 
   /** Useful to view underlying proxy as another type it is representing
     *

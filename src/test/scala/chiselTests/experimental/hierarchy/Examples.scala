@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.util.Valid
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.BaseModule
+import chisel3.internal.instantiable
 
 object Examples {
   import Annotations._
@@ -253,7 +254,7 @@ object Examples {
   }
   @instantiable
   class HasTypeParams[D <: Data](d: D) extends Module {
-    @public val blah = Wire(d)
+    //@public val blah = Wire(d)
   }
 
   @instantiable
@@ -270,5 +271,47 @@ object Examples {
   class HasMems() extends Module {
     @public val mem = Mem(8, UInt(32.W))
     @public val syncReadMem = SyncReadMem(8, UInt(32.W))
+  }
+}
+
+
+object ContextualExamples {
+  @func def max()(ls: List[Int]): Int = ls.max
+  case class Max() extends core.CustomCombinerFunction[Int, Int] {
+    type I = Int
+    type O = Int
+    def apply(i: List[I]): O = i.max
+  }
+
+  @instantiable
+  class Child extends Module {
+    @public val index = Contextual.empty[Int]
+    @public val maxIndex: Definitive[Int] = index.combine(Max())
+    override val implementation = Some(ChildImp)
+  }
+  object ChildImp extends CustomImplementation {
+    type P = Child
+    def implement(d: ResolvedDefinition[Child]): Unit = {
+      val w = WireInit(d.maxIndex.value.U)
+    }
+  }
+
+  @instantiable
+  class Parent(index0: Option[Int], index1: Option[Int]) extends Module {
+    val definition = Definition(new Child)
+    @public val c0 = Instance(definition)
+    index0.map{ i => c0.index.value = i }
+    @public val c1 = Instance(definition)
+    index1.map{ i => c1.index.value = i }
+  }
+
+  @instantiable
+  class DerivingParent(index0: Option[Int], index1: Option[Int]) extends Module {
+    val definition = Definition(new Child)
+    @public val pindex = Contextual.empty[Int]
+    val c0 = Instance(definition)
+    pindex.setAs(c0.index)
+    val c1 = Instance(definition)
+    c1.index.setAs(pindex)
   }
 }

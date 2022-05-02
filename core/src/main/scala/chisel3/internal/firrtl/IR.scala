@@ -226,6 +226,7 @@ case class Index(imm: Arg, value: Arg) extends Arg {
 }
 
 object Width {
+  @definitive def make()(x: Int): Width = KnownWidth(x)
   def apply(x: Int): Width = KnownWidth(x)
   def apply(): Width = UnknownWidth()
 }

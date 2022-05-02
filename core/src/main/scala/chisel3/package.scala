@@ -177,12 +177,25 @@ package object chisel3 {
   }
 
   implicit class fromDIntToDWidth(int: Definitive[Int]) {
-    def W: Definitive[Width] = int.whenKnown(i => Width(i))
+    def W: Definitive[Width] = int.modify(Width.make())
   }
 
   val WireInit = WireDefault
 
   object Vec extends VecFactory
+  object VecDefinitives {
+    case class Apply[T <: Data](n: Int)(compileOptions: CompileOptions) extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, T] {
+      val args = Nil
+      type I = T
+      type O = Vec[T]
+      override def apply(gen: I): O = {
+        if (compileOptions.declaredTypeMustBeUnbound) {
+          chisel3.internal.requireIsChiselType(gen, "vec type")
+        }
+        new Vec(gen.cloneTypeFull, n)
+      }
+    }
+  }
 
   // Some possible regex replacements for the literal specifier deprecation:
   // (note: these are not guaranteed to handle all edge cases! check all replacements!)

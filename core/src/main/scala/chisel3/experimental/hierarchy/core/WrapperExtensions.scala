@@ -27,12 +27,8 @@ trait Extensions[V, P] {
 trait CloneableExtensions[V, P] extends Extensions[V, P] {
   def clone(value: V, hierarchy: Hierarchy[P]): V
 }
-
 trait HierarchicalExtensions[V, P] extends Extensions[V, P] {
   def getProxyParent(x: Proxy[V]): Option[P]
-  def buildDefinitiveFrom[X, Y](d: Definitive[X], f: DefinitiveFunction[X,Y]): DefinitiveProxy[Y]
-  def buildDefinitiveFrom[X, Y](d: Definitive[X], f: X => Y): DefinitiveProxy[Y]
-  def buildDefinitive[X](x: Option[X]): DefinitiveProxy[X]
   def buildDefinition(f: => V): DefinitionProxy[V]
   def buildInstance(root: Root[V]): Clone[V]
   def mock[P](value: Any, parent: Hierarchy[P]): Instance[V] = value match {
@@ -44,3 +40,12 @@ trait HierarchicalExtensions[V, P] extends Extensions[V, P] {
   def toDefinition(value: V): Definition[V]
 }
 
+trait ParameterExtensions[V, P] extends Extensions[V, P] {
+  def getProxyParent(x: Proxy[V]): Option[P]
+  def mockContextual[P](value: Contextual[V], parent: Hierarchy[P]): Contextual[V]
+  def buildDefinitiveFrom[X, Y](d: Definitive[X], f: ParameterFunction): DefinitiveProxy[Y]
+  def buildDefinitiveFrom[X, Y](c: Contextual[X], f: CombinerFunction): DefinitiveProxy[Y]
+  def buildDefinitive[X](x: Option[X]): DefinitiveProxy[X]
+  def buildContextualFrom[X, Y](d: Contextual[X], f: ParameterFunction): ContextualProxy[Y]
+  def buildContextual[X](x: Option[X]): ContextualProxy[X]
+}

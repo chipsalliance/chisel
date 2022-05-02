@@ -19,7 +19,7 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   *
   * @param proto Underlying module which this is the definition of
   */
-private[chisel3] final case class ModuleDefinition[T <: BaseModule](proto: T, builder: Option[Implementation])
+private[chisel3] final class ModuleDefinition[T <: BaseModule](val underlying: Underlying[T], val builder: Option[Implementation])
     extends ModuleRoot[T]
     with DefinitionProxy[T] {
   override def equals(a: Any): Boolean = {
@@ -28,6 +28,7 @@ private[chisel3] final case class ModuleDefinition[T <: BaseModule](proto: T, bu
       case _ => false
     }
   }
+  contextuals ++= underlying.proto.contextuals
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
@@ -51,7 +52,7 @@ object ModuleDefinition {
     compileOptions:      CompileOptions,
     builder: Option[Implementation] = None
   ): ModuleDefinition[T] = {
-    val newChild = Module.do_pseudo_apply(new ModuleDefinition(proto, builder))
+    val newChild = Module.do_pseudo_apply(new ModuleDefinition(new core.Raw(proto), builder))
     newChild._circuit = circuit
     newChild._parent = None
     newChild

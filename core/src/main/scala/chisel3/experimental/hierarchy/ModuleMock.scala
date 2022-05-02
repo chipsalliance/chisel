@@ -15,17 +15,18 @@ import chisel3._
   * @param suffixProxy Proxy of the same proto with a less-specific hierarchical path
   * @param contexts contains contextual values when viewed from this proxy
   */
-private[chisel3] final case class ModuleMock[T <: BaseModule] private (
+private[chisel3] final class ModuleMock[T <: BaseModule] private (
   val suffixProxy: InstanceProxy[T] with BaseModule,
 )
     extends PseudoModule
     with Mock[T] {
+  contextuals ++= suffixProxy.contextuals
 
   override def parent = _parent.get.asInstanceOf[Proxy[BaseModule]]
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
-  override def toString = s"ModuleMock(${proto})"
+  //override def toString = s"ModuleMock(${proto})"
   // No addition components are generated
   private[chisel3] def generateComponent(): Option[Component] = None
   // Necessary for toTarget to work

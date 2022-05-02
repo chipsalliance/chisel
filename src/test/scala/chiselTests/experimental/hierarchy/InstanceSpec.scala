@@ -8,6 +8,8 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy._
 import chisel3.util.{DecoupledIO, Valid}
 import scala.reflect.api.TypeTags
+import scala.reflect.runtime.{universe => ru}
+
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -191,7 +193,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val definition = Definition(new HasTypeParams[UInt](UInt(3.W)))
         val i0 = Instance(definition)
-        mark(i0.blah, "blah")
+        //mark(i0.blah, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos.collect { case c: MarkAnnotation => c } should contain(
@@ -1195,50 +1197,170 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
   }
+  describe("(11) Contextuals") {
+    import ContextualExamples._
+    it("(11.a): Setting contextuals from parent, collapsed to definitive") {
+      class Top extends Module {
+        val definition = Definition(new Child)
+        val i0 = Instance(definition)
+        i0.index.value = 0
+        val i1 = Instance(definition)
+        i1.index.value = 1
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include("""w <= UInt<1>("h1")""")
+    }
+    it("(11.b): Setting contextuals from grandparent, collapsed to definitive") {
+      class Top extends Module {
+        val definition = Definition(new Parent(None, None))
+        val p0 = Instance(definition)
+        p0.c0.index.value = 0
+        p0.c1.index.value = 1
+        val p1 = Instance(definition)
+        p1.c0.index.value = 2
+        p1.c1.index.value = 3
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include("""w <= UInt<2>("h3")""")
+    }
+    it("(11.c): Setting contextuals from grandparent and parent, collapsed to definitive") {
+      class Top extends Module {
+        val definition = Definition(new Parent(Some(5), None))
+        val p0 = Instance(definition)
+        p0.c0.index.value = 0
+        // Not setting p0.c0.index, relying on setting from Parent
+        val p1 = Instance(definition)
+        p1.c0.index.value = 2
+        p1.c1.index.value = 3
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include("""w <= UInt<3>("h5")""")
+    }
+  }
   describe("(S)") {
-    it("(S.a): Implementation") {
+    it("(S.a): Implementation + Definitives") {
       val (chirrtl, _) = getFirrtlAndAnnos(new Sandbox.Top)
       println(chirrtl.serialize)
       chirrtl.serialize should include("inst i0 of AddOne")
-      //chirrtl.serialize should include("""out <= UInt<1>("h1")""")
     }
+    it("(S.b): Implementation + Contextuals") {
+      val (chirrtl, _) = getFirrtlAndAnnos(new SandboxContextuals.Top(2, 2))
+      println(chirrtl.serialize)
+      chirrtl.serialize should include("""w <= UInt<2>("h2")""")
+    }
+    it("(S.c): Implementation + Contextuals") {
+      val (chirrtl, _) = getFirrtlAndAnnos(new SandboxContextuals.WidgetTop())
+      println(chirrtl.serialize)
+      chirrtl.serialize should include("inst i0 of Widget")
+    }
+  }
+}
+
+object SandboxContextuals {
+
+
+  //Generated Below from @definitive macro
+  @func def plusN(n: Int)(in: Int): Int = n + in
+  @func def timesN(n: Int)(in: Int): Int = n * in
+  @func def log2Ceil()(in: Int): Int = {
+    chisel3.util.log2Ceil(in)
+  }
+  case class Max() extends core.CustomCombinerFunction[Int, Int] {
+    type I = Int
+    type O = Int
+    def apply(l: List[I]): O = l.max
+  }
+
+  @instantiable
+  class Widget extends Module {
+    @public val windex: Contextual[Int] = Contextual(0)
+    @public val addressSize: Definitive[Int] = windex.combine(Max()).modify(log2Ceil())
+    override val implementation: Option[Implementation] = Some(WidgetImp)
+  }
+  object WidgetImp extends CustomImplementation {
+    type P = Widget
+    
+    def implement(d: ResolvedDefinition[P]): Unit = {
+      println("WINDEX: " + d.windex.values)
+      println(d.addressSize.value)
+      val w = WireInit(d.addressSize.value.U)
+    }
+  }
+
+  @instantiable
+  class Parent(nWidgets: Int, definition: Definition[Widget]) extends Module {
+    @public val pindex = Contextual(0)
+    val relativeWidgetIndex = pindex.modify(timesN(nWidgets))
+
+    @public val widgets = List.range(0, nWidgets).map { i: Int =>
+      @public val w = Instance(definition)
+      w.windex.setAs(relativeWidgetIndex.modify(plusN(i)))
+      w
+    }
+    override val implementation = Some(ParentImp)
+  }
+
+
+  @instantiable
+  class Top(val nParents: Int, nWidgetsPerParent: Int) extends Module {
+    val widget = Definition(new Widget)
+    val parent = Definition(new Parent(nWidgetsPerParent, widget))
+    @public val tindex = Contextual(0)
+    val relativeParentIndex = tindex.modify(timesN(nParents))
+    @public val parents = List.range(0, nParents).map { i: Int =>
+      val p = Instance(parent)
+      println(s"${p.proxyAs[Any]}, ${p.pindex} = $i")
+      p.pindex.setAs(relativeParentIndex.modify(plusN(i)))
+      p
+    }
+  }
+
+  object ParentImp extends CustomImplementation {
+    type P = Parent
+    def implement(d: ResolvedDefinition[P]): Unit = {
+      println(s"ParentImp.pindex.values: ${d.pindex.values}")
+      //List.range(0, d.nWidgets).foreach { i: Int  =>
+      //  //d.widgets(i).in.value := d.in.value(i)
+      //}
+    }
+  }
+  //object TopImp extends CustomImplementation {
+  //  type P = Top
+  //  def implement(d: ResolvedDefinition[P]): Unit = {
+  //    List.range(0, d.nParents).foreach { i =>
+  //      //d.parents(i).in.value := d.in.value(i)
+  //    }
+  //  }
+  //}
+
+
+  @instantiable
+  class WidgetTop() extends Module {
+    val widget = Definition(new Widget)
+    val i0 = Instance(widget)
+    i0.windex.value = 10
+    val i1 = Instance(widget)
+    i1.windex.value = 20
   }
 }
 
 object Sandbox { 
 
-
-  //class DefinitiveIntExtensions(d: Definitive[Int]) {
-  //  def + (i: Int): Definitive[Int] = {
-  //    val op = mlir.PlusOp(d, i)
-  //    Builder.add(op)
-  //    op.result: Definitive[Int]
-  //  }
-  //}
-
-
-  //@definitiveFunction[PlusOne]
-  //def plusOne(i: Int): Int = i + 1
-  //Generated Below from @definitiveFunction macro
-  object PlusOne extends core.CustomDefinitiveFunction[Int, Int] {
-    def applyIt(in: Int): Int = in + 1
-    override def toString = "PlusOne"
-  }
-  case class PlusN(n: Int) extends core.CustomDefinitiveFunction[Int, Int] {
-    def applyIt(in: Int): Int = in + n
-  }
+  //Generated Below from @definitive macro
+  @func def plusN(n: Int)(in: Int): Int = n + in
 
   @instantiable
   class AddOne extends Module {
     @public val width: Definitive[Int] = Definitive.empty[Int]
-    @public val widthPlusOne = width.modify(PlusOne)
-    @public val widthPlusN = width.modify(PlusN(3))
+    @public val widthPlusOne = width.modify(plusN(1))
+    @public val widthPlusN = width.modify(plusN(3))
 
     @public val in  = IO(Input(UInt(width.W)))
     @public val out = IO(Output(UInt(width.W)))
     println(s"AddOne.width:        \t\t\t\t$width")
     println(s"AddOne.widthPlusOne: \t\t\t\t$widthPlusOne")
     println(s"AddOne.widthPlusN:   \t\t\t\t$widthPlusN")
+    println(s"AddOne.in:           \t\t\t\t$in")
 
     override val implementation: Option[Implementation] = Some(AddOneImp)
   }
@@ -1246,9 +1368,9 @@ object Sandbox {
     type P = AddOne
     
     def implement(d: ResolvedDefinition[P]): Unit = {
-      println(s"ResolvedDefinition[AddOne].width:        \t${d.width}")
-      println(s"ResolvedDefinition[AddOne].widthPlusOne: \t${d.widthPlusOne}")
-      println(s"ResolvedDefinition[AddOne].widthPlusN:   \t${d.widthPlusN}")
+      //println(s"ResolvedDefinition[AddOne].width:        \t${d.width}")
+      //println(s"ResolvedDefinition[AddOne].widthPlusOne: \t${d.widthPlusOne}")
+      //println(s"ResolvedDefinition[AddOne].widthPlusN:   \t${d.widthPlusN}")
       d.out.value := d.in.value + 1.U
     }
   }
@@ -1261,10 +1383,20 @@ object Sandbox {
     definition.width.value = 3 //.setAs(width)
     //width.value = 3
     @public val i0 = Instance(definition)
-    println(s"Instance[AddOne].width:        \t\t\t${i0.width}")
-    println(s"Instance[AddOne].widthPlusOne: \t\t\t${i0.widthPlusOne}")
-    println(s"Instance[AddOne].widthPlusN:   \t\t\t${i0.widthPlusN}")
+    //println(s"Instance[AddOne].width:        \t\t\t${i0.width}")
+    //println(s"Instance[AddOne].widthPlusOne: \t\t\t${i0.widthPlusOne}")
+    //println(s"Instance[AddOne].widthPlusN:   \t\t\t${i0.widthPlusN}")
+
+
+    //val addOne = Module(new AddOne)
+    //addOne.width.value = 1
+    //val f = addOne.toFreezable
+    //println(new PlusN(List(1)).getClass)
+    //println(Class.forName("chiselTests.experimental.hierarchy.Sandbox$PLUSN").getConstructor(classOf[List[Any]]).newInstance(List(1)).asInstanceOf[core.ParameterFunction].applyAny(42))
   }
 
 }
+
+
+
 

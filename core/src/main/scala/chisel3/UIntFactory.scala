@@ -6,9 +6,19 @@ import chisel3.internal.firrtl.{IntervalRange, KnownWidth, ULit, UnknownWidth, W
 import firrtl.Utils
 import firrtl.constraint.IsKnown
 import firrtl.ir.{Closed, IntWidth, Open}
-import experimental.hierarchy.Definitive
+import experimental.hierarchy.{Definitive, func}
 
 // This is currently a factory because both Bits and UInt inherit it.
+object Foo {
+
+  case class Apply() extends chisel3.experimental.hierarchy.core.CustomParameterFunction[Width, UInt] {
+    val args = Nil
+    type I = Width
+    type O = UInt
+    override def apply(width: I): O = new UInt(width)
+  }
+
+}
 trait UIntFactory {
 
   /** Create a UInt type with inferred width. */
@@ -18,7 +28,7 @@ trait UIntFactory {
   def apply(width: Width): UInt = new UInt(width)
 
   /** Create a UInt port with specified width. */
-  def apply(width: Definitive[Width]): Definitive[UInt] = width.whenKnown(w => apply(w))
+  def apply(width: Definitive[Width]): Definitive[UInt] = width.modify(Foo.Apply())
 
   /** Create a UInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {

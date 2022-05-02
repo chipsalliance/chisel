@@ -12,20 +12,26 @@ trait Proxy[+P] {
   /** @return Original object that we are proxy'ing */
   def proto: P
 
-  private[chisel3] val proxyCache = new IdentityHashMap[Any, Proxy[Any]]()
   private[chisel3] val cache = new IdentityHashMap[Any, Any]()
 
-  def cacheMe[V, R](protoValue: V, retValue: R): Unit = retValue match {
-    case h: Hierarchy[_] => proxyCache.put(protoValue, h.proxy)
-    case other => protoValue match {
-      case _ => cache.put(protoValue, other)
-    }
+  private[chisel3] val protoToName = new IdentityHashMap[Any, String]()
+  private[chisel3] val nameToProto = new IdentityHashMap[Any, String]()
+
+  def getIdentity(value: Any): Any = value match {
+    case w: Wrapper[_] => w.proxy
+    case other => other
   }
-  def retrieveMeAsWrapper[V](protoValue: V): Option[Any] = {
-    if(proxyCache.containsKey(protoValue)) Some(proxyCache.get(protoValue).toWrapper) else None
+  def cacheMe[V, R](protoValue: V, retValue: R): Unit = {
+    cache.put(getIdentity(protoValue), getIdentity(retValue))
   }
   def retrieveMe[V](protoValue: V): Option[Any] = {
-    if(cache.containsKey(protoValue)) Some(cache.get(protoValue)) else None
+    val key = getIdentity(protoValue)
+    if(cache.containsKey(key)) {
+      cache.get(key) match {
+        case p: Proxy[_] => Some(p.toWrapper)
+        case other => Some(other)
+      }
+    } else None
   }
 
   /** @return a Definition wrapping this Proxy */
@@ -35,10 +41,13 @@ trait Proxy[+P] {
 
 trait HierarchicalProxy[+P] extends Proxy[P] {
   //override def toSetter: HierarchySetter[P]
+  def underlying: Underlying[P]
+  final def proto: P = underlying.proto
   def toHierarchy: Hierarchy[P]
   def toRoot: Root[P]
   def parentOpt: Option[Proxy[Any]]
   def toWrapper: Hierarchy[P] = toHierarchy
+  def isResolved: Boolean
 }
 
 /** Proxy representing an Instance version of an object */
@@ -52,6 +61,7 @@ sealed trait InstanceProxy[+P] extends HierarchicalProxy[P] {
     * @return the suffixProxy proxy of this proxy
     */
   def suffixProxy: HierarchicalProxy[P]
+  def isResolved: Boolean = suffixProxy.isResolved
 
   /** @return the InstanceProxy closest to the proto in the chain of suffixProxy proxy's */
   def localProxy: InstanceProxy[P] = suffixProxy match {
@@ -59,7 +69,7 @@ sealed trait InstanceProxy[+P] extends HierarchicalProxy[P] {
     case i: InstanceProxy[P]   => i.localProxy
   }
 
-  override def proto = suffixProxy.proto
+  override def underlying = suffixProxy.underlying
 
   /** @return an Instance wrapping this Proxy */
   def toInstance = new Instance(this)
@@ -137,57 +147,154 @@ trait DefinitionProxy[+P] extends RootProxy[P] {
   //def toInterfaceProxy: InterfaceProxy[P]
   def builder: Option[Implementation]
 
-  private[chisel3] var isResolved = false
+  var isResolved = false
   def predecessorOption = None
   override def toHierarchy: Definition[P] = new Definition(this)
 }
 
-trait DefinitiveProxy[P] extends Proxy[P] {
-  def parent: Any
-  var valueOpt: Option[P] = None
-  var predecessorOpt: Option[DefinitiveProxy[_]] = None
+//sealed trait ParameterProxy[P] extends Proxy[P] {
+//  def parentOpt: Option[Proxy[Any]]
+//  def compute[H](h: Hierarchy[H]): Option[P]
+//  def hasDerivation: Boolean
+//  def derivation: Option[Derivation]
+//  def isResolved: Boolean
+//}
 
+
+
+
+sealed trait DefinitiveProxy[P] extends Proxy[P] {
+  def compute: Option[P]
+  var derivation: Option[DefinitiveDerivation]
+  def isResolved: Boolean = compute.nonEmpty
   private[chisel3] val namer: mutable.ArrayBuffer[Any => Unit] = mutable.ArrayBuffer[Any => Unit]()
 
-  def nonEmpty: Boolean = {
-    valueOpt.nonEmpty || (predecessorOpt.nonEmpty && predecessorOpt.get.nonEmpty)
-  }
-  def isEmpty = !nonEmpty
-  def isSet = {
-    valueOpt.nonEmpty || predecessorOpt.nonEmpty
-  }
-  def toWrapper = Definitive(this)
+  final def compute[H](h: Hierarchy[H]): Option[P] = compute
+  def parentOpt: Option[Proxy[Any]] = None
+  def hasDerivation = derivation.nonEmpty
+  def toWrapper = toDefinitive
+  def toDefinitive = Definitive(this)
 }
 
-trait SerializableDefinitiveProxy[P] extends DefinitiveProxy[P] {
-  var func: Option[DefinitiveFunction[Any, Any]] = None
+case class DefinitiveValue[P](value: P) extends DefinitiveProxy[P] {
+  var derivation: Option[DefinitiveDerivation] = None
+  def compute: Option[P] = Some(value)
+  override def hasDerivation = true
+  def proto = value
+}
 
-  def proto = {
-    require(nonEmpty, s"Not empty!")
-    if(cache.containsKey("value")) cache.get("value").asInstanceOf[P] else {
-      val ret = valueOpt.orElse(predecessorOpt.map { case (p) => func.get.applyIt(p.proto).asInstanceOf[P] } ).get
-      //println(s"All namers of $this, ${namer.size}: ${namer.toList}")
-      namer.map(f => chisel3.experimental.noPrefix { f(ret) } )
-      cache.put("value", ret)
-      ret
+trait DefinitiveProtoProxy[P] extends DefinitiveProxy[P] {
+  var derivation: Option[DefinitiveDerivation] = None
+
+  def compute: Option[P] = {
+    if(cache.containsKey("value")) cache.get("value").asInstanceOf[Some[P]] else {
+      derivation match {
+        case None => None
+        case Some(d) => d.compute match {
+          case None => None
+          case Some(v) =>
+            namer.map(f => chisel3.experimental.noPrefix { f(v) } )
+            val ret = Some(v)
+            cache.put("value", ret)
+            ret.asInstanceOf[Some[P]]
+        }
+      }
     }
   }
 
-}
-trait NonSerializableDefinitiveProxy[P] extends DefinitiveProxy[P] {
-  var func: Option[Any => Any] = None
-
   def proto = {
-    require(nonEmpty, s"Not empty!")
-    if(cache.containsKey("value")) cache.get("value").asInstanceOf[P] else {
-      val ret = valueOpt.orElse(predecessorOpt.map { case (p) => func.get(p.proto).asInstanceOf[P] } ).get
-      //println(s"All namers of $this, ${namer.size}: ${namer.toList}")
-      namer.map(f => chisel3.experimental.noPrefix { f(ret) } )
-      cache.put("value", ret)
-      ret
-    }
+    val ret = compute
+    require(ret.nonEmpty, s"Illegal access to proto on $this: value is not known")
+    ret.get
   }
 }
+
+
+sealed trait ContextualProxy[P] extends Proxy[P] {
+  def parentOpt: Option[Proxy[Any]]
+  val suffixProxyOpt: Option[ContextualProxy[P]]
+  var derivation: Option[ContextualDerivation]
+  var isResolved: Boolean = false
+  def hasDerivation = derivation.nonEmpty
+  def values: List[P]
+  def setValue[H](value: P): Unit
+  def toWrapper = toContextual
+  def toContextual = Contextual(this)
+  def compute[H](h: Hierarchy[H]): Option[P]
+  def markResolved(): Unit = {
+    isResolved = true
+    suffixProxyOpt.map(p => p.markResolved())
+  }
+}
+
+case class ContextualValue[P](value: P) extends ContextualProxy[P] {
+  def parentOpt: Option[Proxy[Any]] = None
+  def proto = value
+  isResolved = true
+  def values: List[P] = ??? // Should never call .values on a ContextualValue
+  override def compute[H](h: Hierarchy[H]): Option[P] = Some(value)
+  var derivation: Option[ContextualDerivation] = None
+  override def hasDerivation = true
+  def setValue[H](value: P): Unit = Unit
+  val suffixProxyOpt: Option[ContextualProxy[P]] = None
+}
+
+trait ContextualUserProxy[P] extends ContextualProxy[P] {
+  def parentOpt: Option[Proxy[Any]]
+
+  var derivation: Option[ContextualDerivation] = None
+  val absoluteValues: mutable.ArrayBuffer[P] = mutable.ArrayBuffer[P]()
+
+  def compute[H](h: Hierarchy[H]): Option[P] = {
+    if(cache.containsKey(h.proxy)) cache.get(h.proxy).asInstanceOf[Some[P]] else {
+      val absoluteValue = derivation match {
+        case None => suffixProxyOpt match {
+          case None => None
+          case Some(suffixProxy) => suffixProxy.compute(h)
+        }
+        case Some(p) => p.compute(h)
+      }
+      absoluteValue match {
+        case None => None
+        case Some(v) =>
+          cache.put(h.proxy, Some(v))
+          Some(v.asInstanceOf[P])
+      }
+    }
+  }
+  def setValue[H](value: P): Unit = {
+    absoluteValues += value
+    suffixProxyOpt.map(p => p.setValue(value))
+  }
+
+  def values: List[P] = {
+    require(isResolved, s"$this is not resolved")
+    if(cache.containsKey("values")) cache.get("values").asInstanceOf[List[P]] else {
+      val allValuesList = absoluteValues.toList
+      cache.put("values", allValuesList)
+      allValuesList
+    }
+  }
+  // Returns value of this contextual, with all predecessor values computed.
+  def proto: P = ???
+}
+
+trait ContextualMockProxy[P] extends ContextualUserProxy[P] {
+  isResolved = suffixProxyOpt.map(_.isResolved).getOrElse(false)
+  if(isResolved) {
+    absoluteValues ++= suffixProxyOpt.get.values
+  }
+}
+
+trait ContextualProtoProxy[P] extends ContextualUserProxy[P] {
+  def parentOpt: Option[Proxy[Any]] = None
+  val suffixProxyOpt: Option[ContextualProxy[P]] = None
+  isResolved = false
+}
+
+
+
+
 //TODO: In order to have nested definitive's, e.g. a definitive case class, we need to avoid using the proto as the key in the lookup.
 //trait InterfaceProxy[+P] extends RootProxy[P] {
 //  def predecessor: DeclarationProxy[P]

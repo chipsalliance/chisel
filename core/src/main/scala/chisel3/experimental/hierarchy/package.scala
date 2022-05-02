@@ -22,14 +22,15 @@ package object hierarchy {
     */
   class public extends chisel3.internal.public
   class instantiable extends chisel3.internal.instantiable
+  class func extends chisel3.internal.definitive
 
   implicit val mg = new chisel3.internal.MacroGenerated {}
   implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
   implicit val opt = chisel3.ExplicitCompileOptions.Strict
 
   //import scala.language.implicitConversions
-  //implicit def toDefinitiveFunction[X, Y](f: X => Y): DefinitiveFunction[X, Y] = {
-  //  new DefinitiveFunction[X, Y] {
+  //implicit def toParameterFunction[X, Y](f: X => Y): ParameterFunction[X, Y] = {
+  //  new ParameterFunction[X, Y] {
   //    def apply(x: X): Y = {
   //      println("HEREHEHREHRERH")
   //      f(x)
@@ -42,11 +43,6 @@ package object hierarchy {
   def buildExtension[V <: BaseModule](isBaseModule: Boolean): HierarchicalExtensions[V, BaseModule] = new HierarchicalExtensions[V, BaseModule] {
     def getParent(value: V): Option[BaseModule] = value._parent
     def getProxyParent(value: Proxy[V]): Option[BaseModule] = value.asInstanceOf[BaseModule]._parent
-    def buildDefinitiveFrom[X, Y](d: Definitive[X], f: X => Y): DefinitiveProxy[Y] = {
-      val parent = Builder.currentModule
-      val x: NonSerializableDefinitive[Y] = new NonSerializableDefinitive(Some((d.proxy, {any: Any => execute(f(any.asInstanceOf[X]), parent) })))
-      x
-    }
     def execute[X](x: => X, parent: Option[BaseModule]): X = {
       val prev = Builder.currentModule
       Builder.currentModule = parent
@@ -54,18 +50,6 @@ package object hierarchy {
       Builder.currentModule = prev
       ret
     }
-    def buildDefinitiveFrom[X, Y](d: Definitive[X], f: DefinitiveFunction[X, Y]): DefinitiveProxy[Y] = {
-      val parent = Builder.currentModule
-      require(d.proxy.isInstanceOf[SerializableDefinitiveProxy[X]])
-      val x: SerializableDefinitive[Y] = new SerializableDefinitive(Some((d.proxyAs[SerializableDefinitiveProxy[X]], f.asInstanceOf[DefinitiveFunction[Any, Any]])))
-      x
-    }
-    def buildDefinitive[X](v: Option[X]): DefinitiveProxy[X] = {
-      val x = new SerializableDefinitive[X](None)
-      x.valueOpt = v
-      x
-    }
-
     def buildDefinition(proto: => V): ModuleDefinition[V] = {
       val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
       Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
@@ -100,7 +84,7 @@ package object hierarchy {
       ModuleMock(value.proxyAs[BaseModule], parent.proxyAs[BaseModule]).toInstance
     }
     def mockValue[P](value: V, parent: Hierarchy[P]): Instance[V] = {
-      val d = (new ModuleDefinition(value, None)).toDefinition
+      val d = (new ModuleDefinition(core.Raw(value), None)).toDefinition
       val t = ModuleTransparent(d.proxyAs[ModuleRoot[V]])
       ModuleMock(t, parent.proxyAs[BaseModule]).toInstance
     }
@@ -176,6 +160,46 @@ package object hierarchy {
     }
   }
 
+  implicit def parameterExtensions[V] = new ParameterExtensions[V, BaseModule] {
+    def parentExtensions: HierarchicalExtensions[BaseModule, BaseModule] = buildExtension[BaseModule](true)
+    def getParent(value: V): Option[BaseModule] = ???
+    def parentSelection: PartialFunction[Any, Hierarchy[BaseModule]] = {
+      case h: Hierarchy[BaseModule] if h.isA[BaseModule] => h
+    }
+    def getProxyParent(value: Proxy[V]): Option[BaseModule] = value match {
+      case p: ChiselContextual[_] => p.parent
+      case p: ContextualValue[_] => None
+    }
+    def buildDefinitiveFrom[X, Y](c: Contextual[X], f: CombinerFunction): DefinitiveProxy[Y] = {
+      val x: DefinitiveProxy[Y] = new ChiselDefinitive(Some(ContextualToDefinitiveDerivation(c.proxy, f)))
+      x
+    }
+    def buildDefinitiveFrom[X, Y](d: Definitive[X], f: ParameterFunction): DefinitiveProxy[Y] = {
+      val x: DefinitiveProxy[Y] = new ChiselDefinitive(Some(DefinitiveToDefinitiveDerivation(d.proxyAs[DefinitiveProxy[X]], f.asInstanceOf[ParameterFunction])))
+      x
+    }
+    def buildDefinitive[X](v: Option[X]): DefinitiveProxy[X] = {
+      v match {
+        case None => new ChiselDefinitive[X](None)
+        case Some(value) => new ChiselDefinitive[X](Some(DefinitiveToDefinitiveDerivation(DefinitiveValue(value), Identity())))
+      }
+    }
+    def buildContextualFrom[X, Y](c: Contextual[X], f: ParameterFunction): ContextualProxy[Y] = {
+      val x: ContextualProxy[Y] = new ChiselContextual(Some(ContextualToContextualDerivation(c.proxyAs[ContextualProxy[X]], f.asInstanceOf[ParameterFunction])), Builder.currentModule)
+      x
+    }
+    def buildContextual[X](v: Option[X]): ContextualProxy[X] = {
+      v match {
+        case None => new ChiselContextual[X](None, Builder.currentModule)
+        case Some(value) => new ChiselContextual[X](Some(ContextualToContextualDerivation(ContextualValue(value), Identity())), Builder.currentModule)
+      }
+    }
+    def mockContextual[P](value: Contextual[V], parent: Hierarchy[P]): Contextual[V] = {
+      new ChiselMockContextual(None, Some(value.proxy), Some(parent.proxy.asInstanceOf[Proxy[BaseModule]])).toContextual
+    }
+
+  }
+
   // There is an implicit resolution bug which causes this lookupable to
   //   be confused with lookupableIterable
   implicit val lookupableString = new Lookupable.SimpleLookupable[String] {}
@@ -194,9 +218,12 @@ package object hierarchy {
   //val Declaration = core.Declaration
   //type Interface[P] = core.Interface[P]
   //val Interface = core.Interface
-  type DefinitiveFunction[X, Y] = core.DefinitiveFunction[X, Y]
+  type CombinerFunction = core.CombinerFunction
+  type ParameterFunction = core.ParameterFunction
   type Definitive[V] = core.Definitive[V]
   val Definitive = core.Definitive
+  type Contextual[V] = core.Contextual[V]
+  val Contextual = core.Contextual
   type IsLookupable = core.IsLookupable
   type IsWrappable = core.IsWrappable
   type Implementation = core.Implementation

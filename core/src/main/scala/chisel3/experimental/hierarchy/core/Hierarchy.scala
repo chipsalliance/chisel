@@ -22,6 +22,19 @@ trait Hierarchy[+P] extends Wrapper[P] {
         case other => println(s"NONE!! $other"); None
       })
   }
+  def printSuffix: Unit = {
+    println(">" + this)
+    val keys = this.proxy.cache.keySet().toArray().toList
+    val values = keys.map(k => (k, proxy.cache.get(k)))
+
+    values.foreach { x =>
+      println("c>" + x)
+    }
+    this match {
+      case i: Instance[_] => i.proxy.suffixProxy.toHierarchy.printSuffix
+      case other =>
+    }
+  }
 
   /** @return Return the proxy Definition[P] of this Hierarchy[P] */
   def toRoot: Root[P]

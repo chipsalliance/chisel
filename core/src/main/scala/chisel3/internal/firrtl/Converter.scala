@@ -7,8 +7,10 @@ import chisel3.experimental.hierarchy._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
+import scala.reflect.runtime.universe.TypeTag
 
 import scala.annotation.{nowarn, tailrec}
+import scala.collection.mutable
 import scala.collection.immutable.Queue
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
@@ -368,12 +370,12 @@ private[chisel3] object Converter {
               case x @ DefModule(module, name, ports, cmds, implementationOpt) => DefModule(module, name, ports, cmds, None)
             }
             val comps = Builder.components ++ Seq(comp)
-            module.myComponents = Some(comps)
+            module.myComponents = Some(comps.toList)
             comps
           }
         case Some(c) => c
       }
-      comps.flatMap(convert)
+      comps.toList.flatMap(convert)
     case ctx @ DefModule(module, name, ports, cmds, None) =>
       Seq(fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx)))
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
@@ -387,6 +389,8 @@ private[chisel3] object Converter {
   }
 
   def convert(circuit: Circuit): fir.Circuit = {
+    // Last one is the top, by convention. Obviously, this is a bad API.
+    computeContextuals(circuit.components.last.id)
     fir.Circuit(fir.NoInfo, circuit.components.flatMap(convert), circuit.name)
   }
 
@@ -394,5 +398,69 @@ private[chisel3] object Converter {
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
     fir.Circuit(fir.NoInfo, lazyModules.flatMap(convert), circuit.name)
+  }
+
+  def computeContextuals(m: BaseModule): Unit = {
+    def absolutize(h: Hierarchy[BaseModule]): Unit = {
+      h.proxyAs[BaseModule].contextuals.foreach { c: Contextual[_] =>
+        import chisel3.experimental.hierarchy.core.Lookupable
+        val myC = h._lookup { _ => c.asInstanceOf[Contextual[Any]] }
+        myC.absolutize(h)
+      }
+    }
+    def resolve(h: Hierarchy[BaseModule]): Unit = {
+      h.proxyAs[BaseModule].contextuals.foreach { c: Contextual[_] =>
+        import chisel3.experimental.hierarchy.core.Lookupable
+        val myC = h._lookup { _ => c.asInstanceOf[Contextual[Any]] }
+        myC.proxy.markResolved()
+      }
+    }
+    println("COMPUTING CONTEXTUALS")
+    val d = m.toDefinition
+    absolutize(d)
+    allInstancesOf[BaseModule](d).foreach { case i: Instance[BaseModule] => absolutize(i) }
+    resolve(d)
+    allInstancesOf[BaseModule](d).foreach { case i: Instance[BaseModule] => resolve(i) }
+    println("DONE COMPUTING CONTEXTUALS")
+  }
+
+  /** Selects all instances/modules directly instantiated within given definition
+    *
+    * @param parent
+    */
+  def instancesIn(parent: Hierarchy[BaseModule]): Seq[Instance[BaseModule]] = {
+    implicit val mg = new chisel3.internal.MacroGenerated {}
+    parent.proto._component.get match {
+      case d: DefModule =>
+        d.commands.collect {
+          case d: DefInstance =>
+            d.id match {
+              case p: core.Clone[_] =>
+                parent._lookup { x =>
+                  new Instance(p).asInstanceOf[Instance[BaseModule]]
+                }
+              case other: BaseModule =>
+                new Instance(parent._lookup { x => other }.asInstanceOf[Instance[BaseModule]].proxy)
+
+            }
+        }
+      case other => Nil
+    }
+  }
+
+  /** Selects all Instances directly and indirectly instantiated within given root hierarchy, of provided type
+    *
+    * @note IMPORTANT: this function requires summoning a TypeTag[T], which will fail if T is an inner class.
+    * @note IMPORTANT: this function ignores type parameters. E.g. allInstancesOf[List[Int]] would return List[String].
+    *
+    * @param root top of the hierarchy to search for instances/modules of given type
+    */
+  def allInstancesOf[T <: BaseModule: TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
+    val soFar = root match {
+      case i: Instance[BaseModule] if i.isA[T] => Seq(i.asInstanceOf[Instance[T]])
+      case _ => Nil
+    }
+    val allLocalInstances = instancesIn(root)
+    soFar ++ (allLocalInstances.flatMap(allInstancesOf[T]))
   }
 }

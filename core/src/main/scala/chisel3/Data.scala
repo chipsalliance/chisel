@@ -406,7 +406,13 @@ object Input {
     SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
   }
   def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions): Definitive[T] = {
-    source.whenKnown(s => apply(s))
+    source.modify(Apply(compileOptions))
+  }
+  case class Apply[T <: Data](compileOptions: CompileOptions) extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, T] {
+    val args = Nil
+    type I = T
+    type O = T
+    override def apply(source: I): O = Input.apply(source)(compileOptions)
   }
 }
 object Output {
@@ -414,7 +420,13 @@ object Output {
     SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
   }
   def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions): Definitive[T] = {
-    source.whenKnown(s => apply(s))
+    source.modify(Apply(compileOptions))
+  }
+  case class Apply[T <: Data](compileOptions: CompileOptions) extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, T] {
+    val args = Nil
+    type I = T
+    type O = T
+    override def apply(source: I): O = Output.apply(source)(compileOptions)
   }
 }
 

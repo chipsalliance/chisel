@@ -11,7 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.Definitive
+import chisel3.experimental.hierarchy.{Definitive, Contextual}
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -197,7 +197,13 @@ package experimental {
       module.bindIoInPlace(iodefClone)
       iodefClone
     }
-    def apply[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.whenKnown(d => apply(d))
+    def apply[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.modify(Apply())
+    case class Apply[T <: Data]() extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, Definitive[T]] {
+      val args = Nil
+      type I = T
+      type O = T
+      override def apply(source: I): O = IO.apply(source)
+    }
   }
 }
 
@@ -270,6 +276,7 @@ package experimental {
   abstract class BaseModule extends HasId {
     _parent.foreach(_.addId(this))
     private[chisel3] val definitives: ArrayBuffer[Definitive[_]] = ArrayBuffer[Definitive[_]]()
+    private[chisel3] val contextuals: ArrayBuffer[Contextual[_]] = ArrayBuffer[Contextual[_]]()
 
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
@@ -320,7 +327,7 @@ package experimental {
     private[chisel3] def getIds = {
       require(_closed, "Can't get ids before module close")
       _ids.toSeq ++ definitives.collect {
-        case d: Definitive[HasId] if d.nonEmpty && d.isA[HasId] => d.value
+        case d: Definitive[HasId] if d.valueOpt.nonEmpty && d.isA[HasId] => d.value
       }
     }
 
@@ -544,7 +551,7 @@ package experimental {
       * are problematic.
       */
     protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef)
-    protected def IO[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.whenKnown(x => IO(x))
+    protected def IO[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.modify(chisel3.experimental.IO.Apply())
 
     //
     // Internal Functions
