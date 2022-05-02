@@ -18,21 +18,23 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   describe("(0): Elaborating an Instance separately from its Definition") {
     it("should result in an instantiation in FIRRTL without a module declaration.") {
       val testDir = createTestDirectory(this.getClass.getSimpleName).toString
-      val dutAnnos = (new ChiselStage).run(Seq(
-        ChiselGeneratorAnnotation(() => new AddOne),
-        TargetDirAnnotation(testDir),
-      ))
+      val dutAnnos = (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new AddOne),
+          TargetDirAnnotation(testDir)
+        )
+      )
 
       // Grab DUT definition to pass into testbench
-      val designAnnos = dutAnnos.flatMap { a =>
+      val designDefs = dutAnnos.flatMap { a =>
         a match {
           case a: DesignAnnotation[_] =>
             Some(a.design.asInstanceOf[AddOne].toDefinition)
           case _ => None
         }
       }
-      require(designAnnos.length == 1, s"Exactly one DesignAnnotation should exist, but found: $designAnnos.")
-      val dutDef = designAnnos.head
+      require(designDefs.length == 1, s"Exactly one DesignAnnotation should exist, but found: $designDefs.")
+      val dutDef = designDefs.head
 
       class Testbench(defn: Definition[AddOne]) extends Module {
         // Make sure names do not conflict
@@ -44,17 +46,19 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         inst.in := 0.U
       }
 
-      (new ChiselStage).run(Seq(
-        ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
-        TargetDirAnnotation(testDir),
-        ImportedDefinitionAnnotation(dutDef)
-      ))
+      (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
+          TargetDirAnnotation(testDir),
+          ImportedDefinitionAnnotation(dutDef)
+        )
+      )
 
       // Check that the output RTL has only a module instantiation and no
       // module declaration.
       val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
       tb_rtl should include("AddOne inst (")
-      tb_rtl should not include("module AddOne")
+      (tb_rtl should not).include("module AddOne")
     }
   }
 
@@ -70,18 +74,20 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       // If there is a repeat module definition, FIRRTL emission will fail
       (new ChiselStage).emitFirrtl(
         gen = new Top,
-        args = Array("-td", testDir),
+        args = Array("-td", testDir)
       )
     }
   }
 
   describe("(2): Elaborating multiple Instances separately from its Definition") {
-    it ("should not result in a repeat definition of the module.") {
+    it("should not result in a repeat definition of the module.") {
       val testDir = createTestDirectory(this.getClass.getSimpleName).toString
-      val dutAnnos = (new ChiselStage).run(Seq(
-        ChiselGeneratorAnnotation(() => new AddOne),
-        TargetDirAnnotation(testDir),
-      ))
+      val dutAnnos = (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new AddOne),
+          TargetDirAnnotation(testDir)
+        )
+      )
 
       // Grab DUT definition to pass into testbench
       val designAnnos = dutAnnos.flatMap { a =>

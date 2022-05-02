@@ -108,16 +108,16 @@ object Instance extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): Instance[T] = {
-    // Check to see if the module is already defined
+    // Check to see if the module is already defined internally or externally
     val existingMod = Builder.components.map {
-      case c: DefModule if c.id == definition.proto => Some(c)
+      case c: DefModule if c.id == definition.proto          => Some(c)
       case c: DefBlackBox if c.name == definition.proto.name => Some(c)
       case _ => None
     }.flatten
 
     if (existingMod.isEmpty) {
-      // Add a module that will get extracted later on so that FIRRTL does not
-      // complain about a missing element
+      // Add a Definition that will get emitted as an ExtModule so that FIRRTL
+      // does not complain about a missing element
       class EmptyExtModule extends ExtModule {
         override def generateComponent(): Option[Component] = {
           require(!_closed, "Can't generate module more than once")

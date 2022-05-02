@@ -9,7 +9,15 @@ import chisel3.experimental._
 import chisel3.experimental.hierarchy.core.{Clone, Instance, IsInstantiable}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
-import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, NoTargetAnnotation, ReferenceTarget}
+import _root_.firrtl.annotations.{
+  CircuitName,
+  ComponentName,
+  IsMember,
+  ModuleName,
+  Named,
+  NoTargetAnnotation,
+  ReferenceTarget
+}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.{AnnotationSeq, RenameMap}
 import chisel3.experimental.dataview.{reify, reifySingleData}
@@ -367,15 +375,17 @@ private[chisel3] class ChiselContext() {
 /** Stores a [[Definition]] that is imported so that its Instances can be
   * compiled separately.
   */
-case class ImportedDefinitionAnnotation[T <: BaseModule with IsInstantiable](importedDefinition: Definition[T]) extends NoTargetAnnotation
+case class ImportedDefinitionAnnotation[T <: BaseModule with IsInstantiable](importedDefinition: Definition[T])
+    extends NoTargetAnnotation
 
 private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq, val throwOnFirstError: Boolean) {
-  val importedDefinitionsAnno = annotationSeq.collect{case a: ImportedDefinitionAnnotation[_] => a}
+  val importedDefinitionAnnos = annotationSeq.collect { case a: ImportedDefinitionAnnotation[_] => a }
   val globalNamespace = Namespace.empty
 
-  // Ensure imported Definitions get the same name as their modules so that
-  // they can be properly linked to Instances that are separately compiled
-  importedDefinitionsAnno.foreach { importedDef =>
+  // Ensure imported Definitions emit as ExtModules with the correct name so
+  // that instantiations will also use the correct name and prevent any name
+  // conflicts with Modules/Definitions in this elaboration
+  importedDefinitionAnnos.foreach { importedDef =>
     globalNamespace.name(importedDef.importedDefinition.proto.name)
   }
 
