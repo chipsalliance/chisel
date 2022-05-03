@@ -223,7 +223,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       val dutAnnos1 = (new ChiselStage).run(
         Seq(
           ChiselGeneratorAnnotation(() => new AddOneParameterized(8)),
-          TargetDirAnnotation(s"$testDir/dutDef1"),
+          TargetDirAnnotation(s"$testDir/dutDef1")
         )
       )
 
@@ -247,22 +247,24 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         inst1.in := 0.U
       }
 
-      // TODO assertThrows()
-      (new ChiselStage).run(
-        Seq(
-          ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
-          TargetDirAnnotation(testDir),
-          ImportedDefinitionAnnotation(dutDef0),
-          ImportedDefinitionAnnotation(dutDef1)
-        )
-      )
-
       // Because these elaborations have no knowledge of each other, they create
       // modules of the same name
       val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
       dutDef0_rtl should include("module AddOneParameterized(")
-      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines.mkString
+      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized.v").getLines.mkString
       dutDef1_rtl should include("module AddOneParameterized(")
+
+      val errMsg = intercept[ChiselException] {
+        (new ChiselStage).run(
+          Seq(
+            ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
+            TargetDirAnnotation(testDir),
+            ImportedDefinitionAnnotation(dutDef0),
+            ImportedDefinitionAnnotation(dutDef1)
+          )
+        )
+      }
+      errMsg.getMessage should include("Imported Definitions must have distinct names.")
     }
   }
 

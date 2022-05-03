@@ -365,13 +365,20 @@ private[chisel3] class ChiselContext() {
 
 private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq, val throwOnFirstError: Boolean) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportedDefinitionAnnotation[_] => a }
+
+  // Ensure there are no repeated names for imported Definitions
+  val importedDefinitionNames = importedDefinitionAnnos.map { a => a.importedDefinition.proto.name }
+  if (importedDefinitionNames.distinct.length < importedDefinitionNames.length) {
+    throwException("Imported Definitions must have distinct names.")
+  }
+
   val globalNamespace = Namespace.empty
 
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-  importedDefinitionAnnos.foreach { importedDef =>
-    globalNamespace.name(importedDef.importedDefinition.proto.name)
+  importedDefinitionNames.foreach { importedDefName =>
+    globalNamespace.name(importedDefName)
   }
 
   val components = ArrayBuffer[Component]()

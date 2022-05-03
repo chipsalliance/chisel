@@ -108,6 +108,7 @@ object Instance extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): Instance[T] = {
+    // TODO do we want to use a hash map instead of linear lookup?
     // Check to see if the module is already defined internally or externally
     val existingMod = Builder.components.map {
       case c: DefModule if c.id == definition.proto          => Some(c)
