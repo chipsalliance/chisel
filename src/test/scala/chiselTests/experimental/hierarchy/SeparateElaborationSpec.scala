@@ -264,7 +264,9 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
           )
         )
       }
-      errMsg.getMessage should include("Imported Definitions must have distinct names.")
+      errMsg.getMessage should include(
+        "Expected distinct imported Definition names but found duplicates for: AddOneParameterized"
+      )
     }
   }
 

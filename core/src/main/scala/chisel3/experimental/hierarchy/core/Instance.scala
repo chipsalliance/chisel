@@ -119,14 +119,14 @@ object Instance extends SourceInfoDoc {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
       // does not complain about a missing element
       class EmptyExtModule extends ExtModule {
+        override def desiredName: String = definition.proto.name
         override def generateComponent(): Option[Component] = {
-          require(!_closed, "Can't generate module more than once")
+          require(!_closed, s"Can't generate $desiredName module more than once")
           _closed = true
           val firrtlPorts = definition.proto.getModulePorts.map { port => Port(port, port.specifiedDirection) }
           val component = DefBlackBox(this, definition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
           Some(component)
         }
-        override def desiredName: String = definition.proto.name
       }
       Definition(new EmptyExtModule() {})
     }

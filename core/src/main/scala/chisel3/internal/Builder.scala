@@ -369,7 +369,8 @@ private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq, val thro
   // Ensure there are no repeated names for imported Definitions
   val importedDefinitionNames = importedDefinitionAnnos.map { a => a.importedDefinition.proto.name }
   if (importedDefinitionNames.distinct.length < importedDefinitionNames.length) {
-    throwException("Imported Definitions must have distinct names.")
+    val duplicates = importedDefinitionNames.diff(importedDefinitionNames.distinct).mkString(", ")
+    throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
   }
 
   val globalNamespace = Namespace.empty
