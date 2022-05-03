@@ -144,7 +144,19 @@ package experimental {
       bs
     }
 
-    /**  Construct a [[BitSet]] matching a range of value
+    /** Construct a [[BitSet]] matching a range of value
+      * automatically infer width by the bit length of (start + length - 1)
+      *
+      * @param start The smallest matching value
+      * @param length The length of the matching range
+      * @return A [[BitSet]] matching exactly all inputs in range [start, start + length)
+      */
+    def fromRange(
+      start:  BigInt,
+      length: BigInt
+    ): BitSet = fromRange(start, length, (start + length - 1).bitLength)
+
+    /** Construct a [[BitSet]] matching a range of value
       *
       * @param start The smallest matching value
       * @param length The length of the matching range
@@ -154,14 +166,13 @@ package experimental {
     def fromRange(
       start:  BigInt,
       length: BigInt,
-      width:  Int = -1
+      width:  Int
     ): BitSet = {
       require(length > 0, "Cannot construct a empty BitSetRange")
       val maxKnownLength = (start + length - 1).bitLength
-      val w = if (width >= 0) width else maxKnownLength
       require(
-        w >= maxKnownLength,
-        s"Cannot construct a BitSetRange with width($w) smaller than its range end(b${(start + length - 1).toString(2)})"
+        width >= maxKnownLength,
+        s"Cannot construct a BitSetRange with width($width) smaller than its range end(b${(start + length - 1).toString(2)})"
       )
 
       // Break down to individual bitpats
@@ -178,8 +189,8 @@ package experimental {
 
           val inc = BigInt(1) << curPow
           require((ptr & inc - 1) == 0, "BitPatRange: Internal sanity check")
-          val mask = (BigInt(1) << w) - inc
-          collected.add(new BitPat(ptr, mask, w))
+          val mask = (BigInt(1) << width) - inc
+          collected.add(new BitPat(ptr, mask, width))
           ptr += inc
           left -= inc
         }
@@ -189,7 +200,7 @@ package experimental {
 
       new BitSet {
         def terms = atoms
-        override def getWidth: Int = w
+        override def getWidth: Int = width
         override def toString: String = s"BitSetRange(0x${start.toString(16)} - 0x${(start + length).toString(16)})"
       }
     }
