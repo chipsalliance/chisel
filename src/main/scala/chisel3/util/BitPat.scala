@@ -150,6 +150,7 @@ package experimental {
     /** all [[BitPat]] elements in [[terms]] make up this [[BitSet]].
       * all [[terms]] should be have the same width.
       */
+    @deprecated("terms will be removed in 3.6", "Chisel 3.5")
     def terms: Set[BitPat]
 
     /** Get specified width of said BitSet */
