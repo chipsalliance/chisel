@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental.hierarchy
+package chisel3.experimental.hierarchy.core
 
 /** While this is public, it is not recommended for users to extend directly.
   * Instead, use the [[@instantiable]] annotation on your trait or class.

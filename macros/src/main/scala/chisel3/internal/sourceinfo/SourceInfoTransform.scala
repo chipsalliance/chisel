@@ -200,13 +200,58 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     q"$thisObj.$doFuncTerm($x, $y)($implicitSourceInfo, $implicitCompileOptions)"
   }
 
-  def xyzArg(idx: c.Tree, en: c.Tree, clock: c.Tree): c.Tree = {
+  def nxArg(n: c.Tree, x: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($n, $x)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def idxEnClockArg(idx: c.Tree, en: c.Tree, clock: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($idx, $en, $clock)($implicitSourceInfo, $implicitCompileOptions)"
   }
 
   def xEnArg(x: c.Tree, en: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($x, $en)($implicitSourceInfo, $implicitCompileOptions)"
   }
+
+  def arArg(a: c.Tree, r: c.Tree*): c.Tree = {
+    q"$thisObj.$doFuncTerm($a, ..$r)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def rArg(r: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($r)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def nInArg(n: c.Tree, in: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($n, $in)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def nextEnableArg(next: c.Tree, enable: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($next, $enable)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def nextInitEnableArg(next: c.Tree, init: c.Tree, enable: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($next, $init, $enable)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def inNArg(in: c.Tree, n: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($in, $n)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def inNEnArg(in: c.Tree, n: c.Tree, en: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($in, $n, $en)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def inNResetEnArg(in: c.Tree, n: c.Tree, reset: c.Tree, en: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($in, $n, $reset, $en)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def inNResetDataArg(in: c.Tree, n: c.Tree, resetData: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($in, $n, $resetData)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def inNResetDataEnArg(in: c.Tree, n: c.Tree, resetData: c.Tree, en: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($in, $n, $resetData, $en)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966

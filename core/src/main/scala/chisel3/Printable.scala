@@ -18,7 +18,7 @@ import java.util.{MissingFormatArgumentException, UnknownFormatConversionExcepti
   * }}}
   * This is equivalent to writing:
   * {{{
-  *   printf(p"The value of wire = %d\n", wire)
+  *   printf("The value of wire = %d\n", wire)
   * }}}
   * All Chisel data types have a method `.toPrintable` that gives a default pretty print that can be
   * accessed via `p"..."`. This works even for aggregate types, for example:
