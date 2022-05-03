@@ -150,7 +150,7 @@ package experimental {
     /** all [[BitPat]] elements in [[terms]] make up this [[BitSet]].
       * all [[terms]] should be have the same width.
       */
-    def terms: Set[BitPat]
+    private[chisel3] def terms: Set[BitPat]
 
     /** Get specified width of said BitSet */
     def getWidth: Int = {
