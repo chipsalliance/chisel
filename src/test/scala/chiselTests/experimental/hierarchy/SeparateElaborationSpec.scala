@@ -4,9 +4,11 @@ package chiselTests.experimental.hierarchy
 
 import chiselTests.ChiselFunSpec
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
+import chisel3.experimental.BaseModule
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
 import chisel3.experimental.hierarchy.{Definition, Instance}
-import chisel3.experimental.hierarchy.core.ImportedDefinitionAnnotation
+import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+import firrtl.AnnotationSeq
 import firrtl.options.TargetDirAnnotation
 
 import java.nio.file.Paths
@@ -15,8 +17,20 @@ import scala.io.Source
 class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   import Examples._
 
+  /** Return a [[DesignAnnotation]] from a list of annotations. */
+  private def getDesignAnnotation[T <: RawModule](annos: AnnotationSeq): DesignAnnotation[T] = {
+    val designAnnos = annos.flatMap { a =>
+      a match {
+        case a: DesignAnnotation[T] => Some(a)
+        case _ => None
+      }
+    }
+    require(designAnnos.length == 1, s"Exactly one DesignAnnotation should exist, but found: $designAnnos.")
+    designAnnos.head
+  }
+
   /** Elaborates [[AddOne]] and returns its [[Definition]]. */
-  def getAddOneDefinition(testDir: String): Definition[AddOne] = {
+  private def getAddOneDefinition(testDir: String): Definition[AddOne] = {
     val dutAnnos = (new ChiselStage).run(
       Seq(
         ChiselGeneratorAnnotation(() => new AddOne),
@@ -25,15 +39,18 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
     )
 
     // Grab DUT definition to pass into testbench
-    val designDefs = dutAnnos.flatMap { a =>
+    getDesignAnnotation(dutAnnos).design.asInstanceOf[AddOne].toDefinition
+  }
+
+  /** Return [[Definition]]s of all modules in a circuit. */
+  private def allModulesToImportedDefs(annos: AnnotationSeq): Seq[ImportDefinitionAnnotation[_]] = {
+    annos.flatMap { a =>
       a match {
-        case a: DesignAnnotation[_] =>
-          Some(a.design.asInstanceOf[AddOne].toDefinition)
-        case _ => None
+        case a: ChiselCircuitAnnotation =>
+          a.circuit.components.map { c => ImportDefinitionAnnotation(c.id.toDefinition) }
+        case _ => Seq.empty
       }
     }
-    require(designDefs.length == 1, s"Exactly one DesignAnnotation should exist, but found: $designDefs.")
-    designDefs.head
   }
 
   describe("(0): Name conflicts") {
@@ -56,7 +73,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         Seq(
           ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
           TargetDirAnnotation(testDir),
-          ImportedDefinitionAnnotation(dutDef)
+          ImportDefinitionAnnotation(dutDef)
         )
       )
 
@@ -88,7 +105,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         Seq(
           ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
           TargetDirAnnotation(testDir),
-          ImportedDefinitionAnnotation(dutDef)
+          ImportDefinitionAnnotation(dutDef)
         )
       )
 
@@ -118,12 +135,12 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       (new ChiselStage).emitFirrtl(
         gen = new Testbench(dutDef),
         args = Array("-td", testDir, "--full-stacktrace"),
-        annotations = Seq(ImportedDefinitionAnnotation(dutDef))
+        annotations = Seq(ImportDefinitionAnnotation(dutDef))
       )
     }
   }
 
-  describe("(2): Multiple imported Definitions") {
+  describe("(2): Multiple imported Definitions of modules without submodules") {
     it(
       "(2.a): should work if a list of imported Definitions is passed between Stages."
     ) {
@@ -135,37 +152,17 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
           TargetDirAnnotation(s"$testDir/dutDef0")
         )
       )
-
-      // Grab DUT definition to pass into testbench
-      val designDefs0 = dutAnnos0.flatMap { a =>
-        a match {
-          case a: DesignAnnotation[_] =>
-            Some(a.design.asInstanceOf[AddOneParameterized].toDefinition)
-          case _ => None
-        }
-      }
-      require(designDefs0.length == 1, s"Exactly one DesignAnnotation should exist, but found: $designDefs0.")
-      val dutDef0 = designDefs0.head
+      val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
       val dutAnnos1 = (new ChiselStage).run(
         Seq(
           ChiselGeneratorAnnotation(() => new AddOneParameterized(8)),
           TargetDirAnnotation(s"$testDir/dutDef1"),
           // pass in previously elaborated Definitions
-          ImportedDefinitionAnnotation(dutDef0)
+          ImportDefinitionAnnotation(dutDef0)
         )
       )
-
-      // Grab DUT definition to pass into testbench
-      val designDefs1 = dutAnnos1.flatMap { a =>
-        a match {
-          case a: DesignAnnotation[_] =>
-            Some(a.design.asInstanceOf[AddOneParameterized].toDefinition)
-          case _ => None
-        }
-      }
-      require(designDefs1.length == 1, s"Exactly one DesignAnnotation should exist, but found: $designDefs1.")
-      val dutDef1 = designDefs1.head
+      val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
 
       class Testbench(defn0: Definition[AddOneParameterized], defn1: Definition[AddOneParameterized]) extends Module {
         val inst0 = Instance(defn0)
@@ -180,8 +177,8 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         Seq(
           ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
           TargetDirAnnotation(testDir),
-          ImportedDefinitionAnnotation(dutDef0),
-          ImportedDefinitionAnnotation(dutDef1)
+          ImportDefinitionAnnotation(dutDef0),
+          ImportDefinitionAnnotation(dutDef1)
         )
       )
 
@@ -208,17 +205,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
           TargetDirAnnotation(s"$testDir/dutDef0")
         )
       )
-
-      // Grab DUT definition to pass into testbench
-      val designDefs0 = dutAnnos0.flatMap { a =>
-        a match {
-          case a: DesignAnnotation[_] =>
-            Some(a.design.asInstanceOf[AddOneParameterized].toDefinition)
-          case _ => None
-        }
-      }
-      require(designDefs0.length == 1, s"Exactly one DesignAnnotation should exist, but found: $designDefs0.")
-      val dutDef0 = designDefs0.head
+      val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
       val dutAnnos1 = (new ChiselStage).run(
         Seq(
@@ -226,17 +213,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
           TargetDirAnnotation(s"$testDir/dutDef1")
         )
       )
-
-      // Grab DUT definition to pass into testbench
-      val designDefs1 = dutAnnos1.flatMap { a =>
-        a match {
-          case a: DesignAnnotation[_] =>
-            Some(a.design.asInstanceOf[AddOneParameterized].toDefinition)
-          case _ => None
-        }
-      }
-      require(designDefs1.length == 1, s"Exactly one DesignAnnotation should exist, but found: $designDefs1.")
-      val dutDef1 = designDefs1.head
+      val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
 
       class Testbench(defn0: Definition[AddOneParameterized], defn1: Definition[AddOneParameterized]) extends Module {
         val inst0 = Instance(defn0)
@@ -259,8 +236,8 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
           Seq(
             ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
             TargetDirAnnotation(testDir),
-            ImportedDefinitionAnnotation(dutDef0),
-            ImportedDefinitionAnnotation(dutDef1)
+            ImportDefinitionAnnotation(dutDef0),
+            ImportDefinitionAnnotation(dutDef1)
           )
         )
       }
@@ -268,6 +245,114 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         "Expected distinct imported Definition names but found duplicates for: AddOneParameterized"
       )
     }
+  }
+
+  describe("(3): Multiple imported Definitions of modules with submodules") {
+    it(
+      "(3.a): should work if a list of imported Definitions for all modules is passed between Stages."
+    ) {
+      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+
+      val dutAnnos0 = (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new AddTwoMixedModules),
+          TargetDirAnnotation(s"$testDir/dutDef0")
+        )
+      )
+      val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddTwoMixedModules].toDefinition
+      val importDefinitionAnnos0 = allModulesToImportedDefs(dutAnnos0)
+
+      val dutAnnos1 = (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new AddTwoMixedModules),
+          TargetDirAnnotation(s"$testDir/dutDef1")
+        ) ++ importDefinitionAnnos0
+      )
+      val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddTwoMixedModules].toDefinition
+      val importDefinitionAnnos1 = allModulesToImportedDefs(dutAnnos1)
+
+      class Testbench(defn0: Definition[AddTwoMixedModules], defn1: Definition[AddTwoMixedModules]) extends Module {
+        val inst0 = Instance(defn0)
+        val inst1 = Instance(defn1)
+
+        // Tie inputs to a value so ChiselStage does not complain
+        inst0.in := 0.U
+        inst1.in := 0.U
+      }
+
+      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.v").getLines.mkString
+      dutDef0_rtl should include("module AddOne(")
+      dutDef0_rtl should include("module AddTwoMixedModules(")
+      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.v").getLines.mkString
+      dutDef1_rtl should include("module AddOne_2(")
+      dutDef1_rtl should include("module AddTwoMixedModules_1(")
+
+      (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
+          TargetDirAnnotation(testDir)
+        ) ++ importDefinitionAnnos0 ++ importDefinitionAnnos1
+      )
+
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      tb_rtl should include("AddTwoMixedModules inst0 (")
+      tb_rtl should include("AddTwoMixedModules_1 inst1 (")
+      (tb_rtl should not).include("module AddTwoMixedModules(")
+      (tb_rtl should not).include("module AddTwoMixedModules_1(")
+    }
+  }
+
+  it(
+    "(3.b): should throw an exception if submodules are not passed between Definition elaborations."
+  ) {
+    val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+
+    val dutAnnos0 = (new ChiselStage).run(
+      Seq(
+        ChiselGeneratorAnnotation(() => new AddTwoMixedModules),
+        TargetDirAnnotation(s"$testDir/dutDef0")
+      )
+    )
+    val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddTwoMixedModules].toDefinition
+    val importDefinitionAnnos0 = allModulesToImportedDefs(dutAnnos0)
+
+    val dutAnnos1 = (new ChiselStage).run(
+      Seq(
+        ChiselGeneratorAnnotation(() => new AddTwoMixedModules),
+        ImportDefinitionAnnotation(dutDef0),
+        TargetDirAnnotation(s"$testDir/dutDef1")
+      )
+    )
+    val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddTwoMixedModules].toDefinition
+    val importDefinitionAnnos1 = allModulesToImportedDefs(dutAnnos1)
+
+    class Testbench(defn0: Definition[AddTwoMixedModules], defn1: Definition[AddTwoMixedModules]) extends Module {
+      val inst0 = Instance(defn0)
+      val inst1 = Instance(defn1)
+
+      // Tie inputs to a value so ChiselStage does not complain
+      inst0.in := 0.U
+      inst1.in := 0.U
+    }
+
+    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.v").getLines.mkString
+    dutDef0_rtl should include("module AddOne(")
+    dutDef0_rtl should include("module AddTwoMixedModules(")
+    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.v").getLines.mkString
+    dutDef1_rtl should include("module AddOne(")
+    dutDef1_rtl should include("module AddTwoMixedModules_1(")
+
+    val errMsg = intercept[ChiselException] {
+      (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
+          TargetDirAnnotation(testDir)
+        ) ++ importDefinitionAnnos0 ++ importDefinitionAnnos1
+      )
+    }
+    errMsg.getMessage should include(
+      "Expected distinct imported Definition names but found duplicates for: AddOne"
+    )
   }
 
 }
