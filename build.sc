@@ -143,7 +143,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
       v.scalacheck
     ) ++ m.treadleIvyDeps ++ m.chiseltestIvyDeps
 
-    override def moduleDeps = super.moduleDeps ++ Agg(m.stdlib) ++ treadleModule ++ chiseltestModule
+    override def moduleDeps = super.moduleDeps ++ treadleModule ++ chiseltestModule
   }
 
   override def buildInfoPackageName = Some("chisel3")

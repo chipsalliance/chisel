@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.util.experimental
+package chisel3.std
 
 import chisel3._
 import chisel3.util._
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
-import chisel3.util.experimental.BarrelShifter
+import chisel3.std.BarrelShifter
 
 class VecLeftRotater[T <: Data](len: Int, gen: T, layerSize: Int = 1) extends Module {
   require(len > 1)

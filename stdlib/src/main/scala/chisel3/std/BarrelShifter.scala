@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.util.experimental
+package chisel3.std
 
 import chisel3._
 import chisel3.util.{Mux1H, UIntToOH}
