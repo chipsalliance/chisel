@@ -41,7 +41,16 @@ object assert {
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): Assert = macro _applyMacroWithMessage
+  ): Assert = macro _applyMacroWithStringMessage
+
+  def apply(
+    cond:    Bool,
+    message: Printable
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Assert = macro _applyMacroWithPrintableMessage
+
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Assert =
     macro _applyMacroWithNoMessage
 
@@ -56,6 +65,10 @@ object assert {
 
   import VerificationStatement._
 
+  @deprecated(
+    "This method has been deprecated in favor of _applyMacroWithStringMessage. Please use the same.",
+    "Chisel 3.5"
+  )
   def _applyMacroWithMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -66,7 +79,32 @@ object assert {
   ): c.Tree = {
     import c.universe._
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
-    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message), ..$data)($sourceInfo, $compileOptions)"
+    q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo, $compileOptions)"
+  }
+
+  def _applyMacroWithStringMessage(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo, $compileOptions)"
+  }
+
+  def _applyMacroWithPrintableMessage(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo, $compileOptions)"
   }
 
   def _applyMacroWithNoMessage(
@@ -84,15 +122,14 @@ object assert {
   def _applyWithSourceLine(
     cond:    Bool,
     line:    SourceLineInfo,
-    message: Option[String],
-    data:    Bits*
+    message: Option[Printable]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): Assert = {
     val id = new Assert()
     when(!Module.reset.asBool()) {
-      failureMessage("Assertion", line, cond, message, data)
+      failureMessage("Assertion", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
     id
@@ -127,7 +164,16 @@ object assume {
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): Assume = macro _applyMacroWithMessage
+  ): Assume = macro _applyMacroWithStringMessage
+
+  def apply(
+    cond:    Bool,
+    message: Printable
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Assume = macro _applyMacroWithPrintableMessage
+
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Assume =
     macro _applyMacroWithNoMessage
 
@@ -142,6 +188,10 @@ object assume {
 
   import VerificationStatement._
 
+  @deprecated(
+    "This method has been deprecated in favor of _applyMacroWithStringMessage. Please use the same.",
+    "Chisel 3.5"
+  )
   def _applyMacroWithMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -152,7 +202,32 @@ object assume {
   ): c.Tree = {
     import c.universe._
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
-    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message), ..$data)($sourceInfo, $compileOptions)"
+    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
+  }
+
+  def _applyMacroWithStringMessage(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
+  }
+
+  def _applyMacroWithPrintableMessage(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo, $compileOptions)"
   }
 
   def _applyMacroWithNoMessage(
@@ -170,15 +245,14 @@ object assume {
   def _applyWithSourceLine(
     cond:    Bool,
     line:    SourceLineInfo,
-    message: Option[String],
-    data:    Bits*
+    message: Option[Printable]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): Assume = {
     val id = new Assume()
     when(!Module.reset.asBool()) {
-      failureMessage("Assumption", line, cond, message, data)
+      failureMessage("Assumption", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
     id
@@ -299,13 +373,11 @@ private object VerificationStatement {
     (p.source.file.name, p.line, p.lineContent.trim)
   }
 
-  // creates a printf to inform the user of a failed assertion or assumption
   def failureMessage(
     kind:     String,
     lineInfo: SourceLineInfo,
     cond:     Bool,
-    message:  Option[String],
-    data:     Seq[Bits]
+    message:  Option[Printable]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
@@ -314,11 +386,11 @@ private object VerificationStatement {
     val lineMsg = s"$filename:$line $content".replaceAll("%", "%%")
     val fmt = message match {
       case Some(msg) =>
-        s"$kind failed: $msg\n    at $lineMsg\n"
-      case None => s"$kind failed\n    at $lineMsg\n"
+        p"$kind failed: $msg\n    at $lineMsg\n"
+      case None => p"$kind failed\n    at $lineMsg\n"
     }
     when(!cond) {
-      printf.printfWithoutReset(fmt, data: _*)
+      printf.printfWithoutReset(fmt)
     }
   }
 }
