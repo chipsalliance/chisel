@@ -6,7 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.core.{Clone, Instance}
+import chisel3.experimental.hierarchy.core.{Clone, ImportDefinitionAnnotation, Instance}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -364,7 +364,24 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq, val throwOnFirstError: Boolean) {
+  val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+
+  // Ensure there are no repeated names for imported Definitions
+  val importDefinitionNames = importDefinitionAnnos.map { a => a.definition.proto.name }
+  if (importDefinitionNames.distinct.length < importDefinitionNames.length) {
+    val duplicates = importDefinitionNames.diff(importDefinitionNames.distinct).mkString(", ")
+    throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
+  }
+
   val globalNamespace = Namespace.empty
+
+  // Ensure imported Definitions emit as ExtModules with the correct name so
+  // that instantiations will also use the correct name and prevent any name
+  // conflicts with Modules/Definitions in this elaboration
+  importDefinitionNames.foreach { importDefName =>
+    globalNamespace.name(importDefName)
+  }
+
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
