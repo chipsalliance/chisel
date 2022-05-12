@@ -81,13 +81,38 @@ jobs:
       - name: Integration Tests
         run: sbt integrationTests/test
 
+  std:
+    name: Standard Library Tests
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        scala: [ "2.13.6", "2.12.15" ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
+        uses: YosysHQ/setup-oss-cad-suite@v1
+        with:
+          osscadsuite-version: '2021-11-09'
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.11"
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Check Formatting (Scala 2.12 only)
+        if: startsWith(matrix.scala, '2.12')
+        run: sbt ++${{ matrix.scala }} standardLibrary/scalafmtCheckAll
+      - name: Unit Tests
+        run: sbt ++${{ matrix.scala }} standardLibrary/test
+
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
   #
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [ci, integration]
+    needs: [ci, integration, std]
     runs-on: ubuntu-20.04
     steps:
       - run: echo Success!
