@@ -61,6 +61,17 @@ class BadUnescapedPercentAssertTester extends BasicTester {
   stop()
 }
 
+class PrintableFormattedAssertTester extends BasicTester {
+  val foobar = Wire(UInt(32.W))
+  foobar := 123.U
+  assert(foobar === 123.U, p"Error! Wire foobar =/= ${Hexadecimal(foobar)} This is 100%% wrong.\n")
+  stop()
+}
+
+class PrintableBadUnescapedPercentAssertTester extends BasicTester {
+  assert(1.U === 1.U, p"I'm 110% sure this is an invalid message")
+  stop()
+}
 class AssertSpec extends ChiselFlatSpec with Utils {
   "A failing assertion" should "fail the testbench" in {
     assert(!runTester { new FailingAssertTester })
@@ -84,4 +95,16 @@ class AssertSpec extends ChiselFlatSpec with Utils {
       }
     }
   }
+
+  they should "allow printable format strings with arguments" in {
+    assertTesterPasses { new FormattedAssertTester }
+  }
+  they should "not allow unescaped % in the printable message" in {
+    a[java.util.UnknownFormatConversionException] should be thrownBy {
+      extractCause[java.util.UnknownFormatConversionException] {
+        ChiselStage.elaborate { new BadUnescapedPercentAssertTester }
+      }
+    }
+  }
+
 }
