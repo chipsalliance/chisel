@@ -42,7 +42,7 @@ object assert {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): Assert = macro _applyMacroWithStringMessage
-    
+
   def apply(
     cond:    Bool,
     message: Printable
@@ -98,7 +98,7 @@ object assert {
   def _applyMacroWithPrintableMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
-    message:        c.Tree,
+    message:        c.Tree
   )(sourceInfo:     c.Tree,
     compileOptions: c.Tree
   ): c.Tree = {
@@ -117,7 +117,6 @@ object assert {
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo, $compileOptions)"
   }
-
 
   /** Used by our macros. Do not call directly! */
   def _applyWithSourceLine(
@@ -222,7 +221,7 @@ object assume {
   def _applyMacroWithPrintableMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
-    message:        c.Tree,
+    message:        c.Tree
   )(sourceInfo:     c.Tree,
     compileOptions: c.Tree
   ): c.Tree = {
@@ -230,8 +229,6 @@ object assume {
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo, $compileOptions)"
   }
-
-
 
   def _applyMacroWithNoMessage(
     c:              blackbox.Context
