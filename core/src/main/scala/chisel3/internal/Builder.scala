@@ -6,11 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-<<<<<<< HEAD
-import chisel3.experimental.hierarchy.{Clone, Instance}
-=======
-import chisel3.experimental.hierarchy.core.{Clone, ImportDefinitionAnnotation, Instance}
->>>>>>> a0aa4d15 (Support separately elaborating definition and instance in ChiselStage (#2512))
+import chisel3.experimental.hierarchy.{Clone, ImportDefinitionAnnotation, Instance}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}

@@ -4,12 +4,8 @@ package chisel3.experimental.hierarchy
 
 import scala.language.experimental.macros
 import chisel3._
-<<<<<<< HEAD:core/src/main/scala/chisel3/experimental/hierarchy/Instance.scala
 import chisel3.internal.BaseModule.{InstantiableClone, IsClone, ModuleClone}
-=======
-import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
 import chisel3.internal.Builder
->>>>>>> a0aa4d15 (Support separately elaborating definition and instance in ChiselStage (#2512)):core/src/main/scala/chisel3/experimental/hierarchy/core/Instance.scala
 import chisel3.internal.sourceinfo.{InstanceTransform, SourceInfo}
 import chisel3.experimental.{BaseModule, ExtModule}
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefModule, Port}
