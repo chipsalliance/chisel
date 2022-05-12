@@ -65,6 +65,23 @@ object assert {
 
   import VerificationStatement._
 
+  @deprecated(
+    "This method has been deprecated in favor of _applyMacroWithStringMessage. Please use the same.",
+    "Chisel 3.5"
+  )
+  def _applyMacroWithMessage(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo, $compileOptions)"
+  }
+
   def _applyMacroWithStringMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -171,6 +188,23 @@ object assume {
   final class Assume private[chisel3] () extends VerificationStatement
 
   import VerificationStatement._
+
+  @deprecated(
+    "This method has been deprecated in favor of _applyMacroWithStringMessage. Please use the same.",
+    "Chisel 3.5"
+  )
+  def _applyMacroWithMessage(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
+  }
 
   def _applyMacroWithStringMessage(
     c:              blackbox.Context
