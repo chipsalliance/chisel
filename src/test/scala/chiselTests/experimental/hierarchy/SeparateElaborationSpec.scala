@@ -4,14 +4,12 @@ package chiselTests.experimental.hierarchy
 
 import chiselTests.ChiselFunSpec
 import chisel3._
-import chisel3.experimental.BaseModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
 import chisel3.experimental.hierarchy.{Definition, Instance}
-import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+import chisel3.experimental.hierarchy.ImportDefinitionAnnotation
 import firrtl.AnnotationSeq
 import firrtl.options.TargetDirAnnotation
 
-import java.nio.file.Paths
 import scala.io.Source
 
 class SeparateElaborationSpec extends ChiselFunSpec with Utils {

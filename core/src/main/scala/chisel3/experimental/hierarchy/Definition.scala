@@ -9,13 +9,9 @@ import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
 import chisel3.experimental.BaseModule
-<<<<<<< HEAD:core/src/main/scala/chisel3/experimental/hierarchy/Definition.scala
 import chisel3.internal.BaseModule.IsClone
 import firrtl.annotations.{IsModule, ModuleTarget}
-=======
-import chisel3.experimental.hierarchy.Definition
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
->>>>>>> a0aa4d15 (Support separately elaborating definition and instance in ChiselStage (#2512)):core/src/main/scala/chisel3/experimental/hierarchy/core/Definition.scala
 
 /** User-facing Definition type.
   * Represents a definition of an object of type [[A]] which are marked as @instantiable
