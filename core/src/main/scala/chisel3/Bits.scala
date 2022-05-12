@@ -89,15 +89,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     binop(sourceInfo, UInt(Width(n)), HeadOp, n)
   }
 
-  /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
-    *
-    * @param x an index
-    * @return the specified bit
-    */
-  final def apply(x: BigInt): Bool = macro SourceInfoTransform.xArg
-
-  /** @group SourceInfoTransformMacro */
-  final def do_apply(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def extract(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
     }
@@ -116,6 +108,17 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
     }
   }
+
+  /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
+    *
+    * @param x an index
+    * @return the specified bit
+    */
+  final def apply(x: BigInt): Bool = macro SourceInfoTransform.xArg
+
+  /** @group SourceInfoTransformMacro */
+  final def do_apply(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    extract(x)
 
   /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
     *
