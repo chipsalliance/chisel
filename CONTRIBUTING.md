@@ -12,8 +12,11 @@
 
 5. You can peruse the [good-first-issues](https://github.com/chipsalliance/chisel3/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) for easy tasks to start with. Another easy thing to start with is doing your own pass of the [website](https://www.chisel-lang.org/chisel3/docs/introduction.html) looking for typos, pages missing their titles, etc. The sources for the website are [here](https://github.com/chipsalliance/chisel3/tree/master/docs).
 
-6. Please make your PRs against the `master` branch. The project admins, when reviewing your PR, will decide which stable version (if any) your change should be backported to. The backports will be opened automatically on your behalf and you may need to do some cleanup, but focus first on your `master` PR.
+6. Please make your PRs against the `master` branch. The project admins, when reviewing your PR, will decide which stable version (if any) your change should be backported to. The backports will be opened automatically on your behalf once your `master` PR is merged.
 
+7. If your backport PR(s) get labeled with `bp-conflict`, it means they cannot be automatically be merged. You can help get them merged by openening a PR against the already-existing backport branch (will be named something like `mergify/bp/3.5.x/pr-2512`) with the necessary cleanup changes. The admins will merge your cleanup PR and remove the `bp-conflict` label if appropriate.
+
+ 
 ### Frequently Asked Questions
 
 #### I'm failing the scalafmt check. How do I make sure my code is formatted?
