@@ -43,6 +43,25 @@ object assert {
     compileOptions:      CompileOptions
   ): Assert = macro _applyMacroWithStringMessage
 
+  /** Checks for a condition to be valid in the circuit at all times. If the
+    * condition evaluates to false, the circuit simulation stops with an error.
+    *
+    * Does not fire when in reset (defined as the encapsulating Module's
+    * reset). If your definition of reset is not the encapsulating Module's
+    * reset, you will need to gate this externally.
+    *
+    * May be called outside of a Module (like defined in a function), so
+    * functions using assert make the standard Module assumptions (single clock
+    * and single reset).
+    *
+    * @param cond condition, assertion fires (simulation fails) when false
+    * @param message optional chisel Printable type message
+    *
+    * @note See [[printf.apply(fmt:Printable)]] for documentation on printf using Printables
+    * @note currently cannot be used in core Chisel / libraries because macro
+    * defs need to be compiled first and the SBT project is not set up to do
+    * that
+    */
   def apply(
     cond:    Bool,
     message: Printable
@@ -78,10 +97,11 @@ object assert {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo, $compileOptions)"
   }
 
+  /** Used by our macros. Do not call directly! */
   def _applyMacroWithStringMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -91,10 +111,11 @@ object assert {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo, $compileOptions)"
   }
 
+  /** Used by our macros. Do not call directly! */
   def _applyMacroWithPrintableMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -103,7 +124,7 @@ object assert {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo, $compileOptions)"
   }
 
@@ -114,12 +135,30 @@ object assert {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo, $compileOptions)"
   }
 
-  /** Used by our macros. Do not call directly! */
+  /** This will be removed in Chisel 3.6 in favor of the Printable version */
   def _applyWithSourceLine(
+    cond:    Bool,
+    line:    SourceLineInfo,
+    message: Option[String],
+    data:    Bits*
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Assert = {
+    val id = new Assert()
+    when(!Module.reset.asBool()) {
+      failureMessage("Assertion", line, cond, message.map(Printable.pack(_, data: _*)))
+      Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
+    }
+    id
+  }
+
+  /** Used by our macros. Do not call directly! */
+  def _applyWithSourceLinePrintable(
     cond:    Bool,
     line:    SourceLineInfo,
     message: Option[Printable]
@@ -166,6 +205,23 @@ object assume {
     compileOptions:      CompileOptions
   ): Assume = macro _applyMacroWithStringMessage
 
+  /** Assumes a condition to be valid in the circuit at all times.
+    * Acts like an assertion in simulation and imposes a declarative
+    * assumption on the state explored by formal tools.
+    *
+    * Does not fire when in reset (defined as the encapsulating Module's
+    * reset). If your definition of reset is not the encapsulating Module's
+    * reset, you will need to gate this externally.
+    *
+    * May be called outside of a Module (like defined in a function), so
+    * functions using assert make the standard Module assumptions (single clock
+    * and single reset).
+    *
+    * @param cond condition, assertion fires (simulation fails) when false
+    * @param message optional Printable type message when the assertion fires
+    *
+    * @note See [[printf.apply(fmt:Printable]] for documentation on printf using Printables
+    */
   def apply(
     cond:    Bool,
     message: Printable
@@ -201,10 +257,11 @@ object assume {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
   }
 
+  /** Used by our macros. Do not call directly! */
   def _applyMacroWithStringMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -214,10 +271,11 @@ object assume {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
   }
 
+  /** Used by our macros. Do not call directly! */
   def _applyMacroWithPrintableMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -226,7 +284,7 @@ object assume {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo, $compileOptions)"
   }
 
@@ -237,12 +295,30 @@ object assume {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo, $compileOptions)"
   }
 
-  /** Used by our macros. Do not call directly! */
+  /** This will be removed in Chisel 3.6 in favor of the Printable version */
   def _applyWithSourceLine(
+    cond:    Bool,
+    line:    SourceLineInfo,
+    message: Option[String],
+    data:    Bits*
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Assume = {
+    val id = new Assume()
+    when(!Module.reset.asBool()) {
+      failureMessage("Assumption", line, cond, message.map(Printable.pack(_, data: _*)))
+      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
+    }
+    id
+  }
+
+  /** Used by our macros. Do not call directly! */
+  def _applyWithSourceLinePrintable(
     cond:    Bool,
     line:    SourceLineInfo,
     message: Option[Printable]
