@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import chisel3.internal.firrtl.BinaryPoint
-
+import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 /** This package contains the main chisel3 API.
   */
 package object chisel3 {
@@ -229,6 +229,106 @@ package object chisel3 {
       // eg. Seq(sc.parts(0), pargs(0), sc.parts(1), pargs(1), ...)
       val seq = for { // append None because sc.parts.size == pargs.size + 1
         (literal, arg) <- parts.zip(pargs :+ None)
+        optPable <- Seq(Some(PString(literal)), arg)
+        pable <- optPable // Remove Option[_]
+      } yield pable
+      Printables(seq)
+    }
+
+     /** Custom string interpolator for generating formatted Printables : cf"..."
+     * High level algorithm is as follows 
+     * Extending the algorithm mentioned in the regular scala "f" interpolator - except this has to be enhanced for handling Chisel Data types and Printables.
+     * /** The formatted string interpolator.
+     *  The `f` method works by assembling a format string from all the `parts` strings and using
+     *  `java.lang.String.format` to format all arguments with that format string. The format string is
+     *  obtained by concatenating all `parts` strings, and performing two transformations:
+     *   1. Let a _formatting position_ be a start of any `parts` string except the first one.
+     *      If a formatting position does not refer to a `%` character (which is assumed to
+     *      start a format specifier), then the string format specifier `%s` is inserted. This means any string with no format specifiers should behave same as p interpolator. 
+     *   2. If format specifiers specifically target Chisel types - Like Data/Bits -  specific internal methods are called on that argument (like FirrtlFormat)
+     *   3. If format specifers target regular scala data types - java.lang.String.format method is called with specifier and argument to get the formatted string. 
+     * 
+     * Yet to document all the corener cases which this code tries to cover - but here are few of them
+     * 1. Allow calling %f or %2.2f (or something similar) on Int type data (Int, Short, Long) - this requires doing an explicit cast of the data before calling String.format
+     * 2. For bits - if no format specifier given (%s i.e) call .toPrintable to pick the default one. For regular data - let the String.format handle canonical case of %s too. 
+     * Still testing this code - I am pretty sure this can be refactored and made more efficient / readable. WIP. 
+     *
+    *
+    */
+    */
+    def cf(args: Any*): Printable = {
+      sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
+      val parts = sc.parts.map(StringContext.treatEscapes)
+
+      // The 1st part is assumed never to contain a format specifier. 
+      // If the 1st part of a string is an argument - then the 1st part will be an empty String. 
+      // So we need to parse parts following the 1st one to get the format specifiers if any 
+      val partsAfterFirst = parts.slice(1,parts.size)
+
+      // Align parts to their potential specifiers
+      val partsAndSpecifierSeq = partsAfterFirst.zip(args).map {
+        case (part,arg) =>  {
+
+          // Check if part starts with a format specifier (with % - disambiguate with literal % checking the next character if needed to be %)
+          // In the case of %f specifier there is a chance that we need more information - so capture till the 1st letter (a-zA-Z). 
+          // Example cf"This is $val%2.2f here" - parts - Seq("This is ","%2.2f here") - the format specifier here is %2.2f. 
+          val idx_of_fmt_str = if(!part.isEmpty()  && part.charAt(0) == '%' && (part.size == 1 || (part.size >= 2 && part.charAt(1) != '%')) )part.indexWhere {_.isLetter} else -1
+          
+          // If no format specifier - pick default - %s
+
+          val fmt = if(idx_of_fmt_str >= 0) part.substring(0,idx_of_fmt_str+1) else "%s"
+          val fmtArgs : Printable = arg match {
+            case b : Bits => {
+              require(fmt.size == 2, "In the case of bits, only single format char allowed!")
+              fmt match {
+                case "%s" =>  b.toPrintable
+                case "%n" =>  Name(b)
+                case "%N" =>  FullName(b)
+                // Default - let FirrtlFormat check validity of the format string to avoid repeating checks. 
+                case f =>  FirrtlFormat(f.substring(1,2),b)   
+              }
+            }
+            case d : Data => {
+              require(fmt == "%s" || fmt == "%n" || fmt == "%N","Non-bits only  allowed with (%s,%n, %N) format specifiers!") 
+              fmt match {
+              case "%n" =>  Name(d)
+              case "%N" =>  FullName(d)
+              case "%s" =>  d.toPrintable
+              case x => {
+                 val msg = s"Illegal format specifier '$x'!\n"
+                throw new UnknownFormatConversionException(msg)
+              }
+              }
+            }
+            case p : Printable => {
+              require(fmt == "%s","Printables not allowed with format specifiers!") 
+              p 
+            }
+            case t => {
+                val castedT = (fmt.takeRight(1),t) match {
+                  case ("f",v : Int)  => v.asInstanceOf[Double]
+                  case ("f",v : Short)  => v.asInstanceOf[Double]
+                  case ("f",v : Byte)  => v.asInstanceOf[Double]
+                  case ("f",v : Long)  => v.asInstanceOf[Double]
+                  case (_,t) => t 
+                }
+               
+              PString(String.format(fmt,castedT.asInstanceOf[AnyRef]))   
+            }
+          } 
+
+          // Remove format specifier from parts string
+          val modP = part.zipWithIndex.filter { _._2 > idx_of_fmt_str}.map {_._1}.mkString
+
+          (modP,Some(fmtArgs))
+        }
+      }
+      // Combine the 1st part with the rest of the modified (format specifier removed) parts
+      val combParts = parts(0) +: partsAndSpecifierSeq.map { _._1}
+
+      val pargsPables : Seq[Option[Printable]] = partsAndSpecifierSeq.map {_._2}
+      val seq = for { // append None because sc.parts.size == pargs.size + 1
+        (literal, arg) <- combParts.zip(pargsPables :+ None)
         optPable <- Seq(Some(PString(literal)), arg)
         pable <- optPable // Remove Option[_]
       } yield pable
