@@ -304,6 +304,9 @@ package object chisel3 {
               require(fmt == "%s","Printables not allowed with format specifiers!") 
               p 
             }
+
+            // Generic case - use String.format (for example %d,%2.2f etc on regular Scala types)
+            // To support cases of %f format specifier on Int based types - need to manually cast for it to work. 
             case t => {
                 val castedT = (fmt.takeRight(1),t) match {
                   case ("f",v : Int)  => v.asInstanceOf[Double]
