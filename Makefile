@@ -23,46 +23,46 @@ firrtlTags = \
 	v1.2.8 \
 	v1.3.3 \
 	v1.4.4 \
-	v1.5.2
+	v1.5.3
 chiselTags = \
 	v3.0.2 \
 	v3.1.8 \
 	v3.2.8 \
 	v3.3.3 \
 	v3.4.4 \
-	v3.5.2
+	v3.5.3
 testersTags = \
 	v1.1.2 \
 	v1.2.10 \
 	v1.3.8 \
 	v1.4.3 \
 	v1.5.4 \
-	v2.5.2
+	v2.5.3
 treadleTags = \
 	v1.0.5 \
 	v1.1.8 \
 	v1.2.3 \
 	v1.3.3 \
-	v1.5.2
+	v1.5.3
 diagrammerTags = \
 	v1.0.2 \
 	v1.1.8 \
 	v1.2.3 \
 	v1.3.3 \
-	v1.5.2
+	v1.5.3
 chiseltestTags = \
 	v0.1.7 \
 	v0.2.3 \
 	v0.3.3 \
-	v0.5.2
+	v0.5.3
 
 # Snapshot versions that will have their API published.
-firrtlSnapshot = v1.5.2
-chiselSnapshot = v3.5.2
-testersSnapshot = v2.5.2
-treadleSnapshot = v1.5.2
-diagrammerSnapshot = v1.5.2
-chiseltestSnapshot = v0.5.2
+firrtlSnapshot = v1.5.3
+chiselSnapshot = v3.5.3
+testersSnapshot = v2.5.3
+treadleSnapshot = v1.5.3
+diagrammerSnapshot = v1.5.3
+chiseltestSnapshot = v0.5.3
 
 # Get the latest version of some sequence of version strings
 # Usage: $(call getTags,$(foo))
