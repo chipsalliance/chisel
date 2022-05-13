@@ -263,7 +263,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
   }
 
   // Unit tests for cf
-   it should "handle Printable and String concatination with cf format specifier" in {
+  it should "handle Printable and String concatination with cf format specifier" in {
     class MyModule extends BasicTester {
       printf(cf"First " + PString("Second ") + "Third")
     }
@@ -402,15 +402,15 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     class MyModule extends BasicTester {
       val f1 = 20.45156
       val i1 = 10
-      val s1 : Short = 15
-      val l1 : Long = 253
+      val s1: Short = 15
+      val l1: Long = 253
       printf(cf"F1 = $f1 D1 = $i1%2.4f F1 formatted = $f1%2.2f s1 = $s1%2.2f l1 = $l1%3.6f")
 
     }
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
-      case Seq(Printf("F1 = 20.45156 D1 = 10.0000 F1 formatted = 20.45 s1 = 15.00 l1 = 253.000000",Seq())) => 
-      case e => {println("e = " , e) ; fail() }
+      case Seq(Printf("F1 = 20.45156 D1 = 10.0000 F1 formatted = 20.45 s1 = 15.00 l1 = 253.000000", Seq())) =>
+      case e                                                                                                => { println("e = ", e); fail() }
     }
   }
 
@@ -419,26 +419,26 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     class MyBundle extends Bundle {
       val foo = UInt(32.W)
       val bar = UInt(32.W)
-      override def toPrintable : Printable = {
+      override def toPrintable: Printable = {
         cf"Bundle : " +
-        cf"Foo : $foo%x Bar : $bar%x"
+          cf"Foo : $foo%x Bar : $bar%x"
       }
     }
     class MyModule extends BasicTester {
-      val b1 = 10.U 
+      val b1 = 10.U
       val w1 = Wire(new MyBundle)
       w1.foo := 5.U
       w1.bar := 10.U
-      println("Foo class = " , w1.foo.getClass())
+      println("Foo class = ", w1.foo.getClass())
       printf(cf"w1 = $w1")
     }
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
-      case Seq(Printf("w1 = Bundle : Foo : %x Bar : %x",Seq("w1.foo", "w1.bar"))) => 
-      case e => {println("e = " , e) ; fail() }
+      case Seq(Printf("w1 = Bundle : Foo : %x Bar : %x", Seq("w1.foo", "w1.bar"))) =>
+      case e                                                                       => { println("e = ", e); fail() }
     }
   }
-  
+
   it should "support names of circuit elements using format specifier including submodule IO with cf format specifier" in {
     // Submodule IO is a subtle issue because the Chisel element has a different
     // parent module
@@ -462,7 +462,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("foo", Seq()), Printf("myWire.foo", Seq()), Printf("myInst.io.fizz", Seq())) =>
-      case e                                                                                       => {println("e = ",e);fail()}
+      case e                                                                                       => { println("e = ", e); fail() }
     }
   }
 }
