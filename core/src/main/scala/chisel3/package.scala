@@ -236,26 +236,28 @@ package object chisel3 {
       Printables(seq)
     }
 
-    /** Custom string interpolator for generating formatted Printables : cf"..."
-      * High level algorithm is as follows
-      * Extending the algorithm mentioned in the regular scala "f" interpolator - except this has to be enhanced for handling Chisel Data types and Printables.
-      * /** The formatted string interpolator.
-      *  The `f` method works by assembling a format string from all the `parts` strings and using
-      *  `java.lang.String.format` to format all arguments with that format string. The format string is
-      *  obtained by concatenating all `parts` strings, and performing two transformations:
-      *   1. Let a _formatting position_ be a start of any `parts` string except the first one.
-      *      If a formatting position does not refer to a `%` character (which is assumed to
-      *      start a format specifier), then the string format specifier `%s` is inserted. This means any string with no format specifiers should behave same as p interpolator.
-      *   2. If format specifiers specifically target Chisel types - Like Data/Bits -  specific internal methods are called on that argument (like FirrtlFormat)
-      *   3. If format specifers target regular scala data types - java.lang.String.format method is called with specifier and argument to get the formatted string.
-      *
-      * Yet to document all the corener cases which this code tries to cover - but here are few of them
-      * 1. Allow calling %f or %2.2f (or something similar) on Int type data (Int, Short, Long) - this requires doing an explicit cast of the data before calling String.format
-      * 2. For bits - if no format specifier given (%s i.e) call .toPrintable to pick the default one. For regular data - let the String.format handle canonical case of %s too.
-      * Still testing this code - I am pretty sure this can be refactored and made more efficient / readable. WIP.
-      *
-      * /
-      */
+    /*
+       Custom string interpolator for generating formatted Printables : cf"..."
+     * High level algorithm is as follows
+     * Extending the algorithm mentioned in the regular scala "f" interpolator - except this has to be enhanced for handling Chisel Data types and Printables.
+     * /** The formatted string interpolator.
+     *  The `f` method works by assembling a format string from all the `parts` strings and using
+     *  `java.lang.String.format` to format all arguments with that format string. The format string is
+     *  obtained by concatenating all `parts` strings, and performing two transformations:
+     *   1. Let a _formatting position_ be a start of any `parts` string except the first one.
+     *      If a formatting position does not refer to a `%` character (which is assumed to
+     *      start a format specifier), then the string format specifier `%s` is inserted. This means any string with no format specifiers should behave same as p interpolator.
+     *   2. If format specifiers specifically target Chisel types - Like Data/Bits -  specific internal methods are called on that argument (like FirrtlFormat)
+     *   3. If format specifers target regular scala data types - java.lang.String.format method is called with specifier and argument to get the formatted string.
+     *
+     * Yet to document all the corener cases which this code tries to cover - but here are few of them
+     * 1. Allow calling %f or %2.2f (or something similar) on Int type data (Int, Short, Long) - this requires doing an explicit cast of the data before calling String.format
+     * 2. For bits - if no format specifier given (%s i.e) call .toPrintable to pick the default one. For regular data - let the String.format handle canonical case of %s too.
+     * Still testing this code - I am pretty sure this can be refactored and made more efficient / readable. WIP.
+     *
+     * /
+     */
+     */
     def cf(args: Any*): Printable = {
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
       val parts = sc.parts.map(StringContext.treatEscapes)
