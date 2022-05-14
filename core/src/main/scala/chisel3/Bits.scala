@@ -89,6 +89,11 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     binop(sourceInfo, UInt(Width(n)), HeadOp, n)
   }
 
+  /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
+    *
+    * @param x an index
+    * @return the specified bit
+    */
   def extract(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
@@ -109,40 +114,33 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     }
   }
 
-  /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
-    *
-    * @param x an index
-    * @return the specified bit
-    */
   final def apply(x: BigInt): Bool = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     extract(x)
 
-  /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
-    *
-    * @param x an index
-    * @return the specified bit
-    * @note convenience method allowing direct use of [[scala.Int]] without implicits
-    */
   final def apply(x: Int): Bool = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
-  final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = apply(BigInt(x))
+  final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    extract(BigInt(x))
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
     * @param x a hardware component whose value will be used for dynamic addressing
     * @return the specified bit
     */
-  final def apply(x: UInt): Bool = macro SourceInfoTransform.xArg
-
-  /** @group SourceInfoTransformMacro */
-  final def do_apply(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def extract(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     val theBits = this >> x
     theBits(0)
   }
+
+  final def apply(x: UInt): Bool = macro SourceInfoTransform.xArg
+
+  /** @group SourceInfoTransformMacro */
+  final def do_apply(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    extract(x)
 
   /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
     *
@@ -155,10 +153,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param y the low bit
     * @return a hardware component contain the requested bits
     */
-  final def apply(x: Int, y: Int): UInt = macro SourceInfoTransform.xyArg
-
-  /** @group SourceInfoTransformMacro */
-  final def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+  final def extract(x: Int, y: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     if (x < y || y < 0) {
       Builder.error(s"Invalid bit range ($x,$y)")
     }
@@ -180,6 +175,12 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     }
   }
 
+  final def apply(x: Int, y: Int): UInt = macro SourceInfoTransform.xyArg
+
+  /** @group SourceInfoTransformMacro */
+  final def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    extract(x, y)
+
   // REVIEW TODO: again, is this necessary? Or just have this and use implicits?
   /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
     *
@@ -196,7 +197,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: BigInt, y: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    apply(castToInt(x, "High index"), castToInt(y, "Low index"))
+    extract(castToInt(x, "High index"), castToInt(y, "Low index"))
 
   private[chisel3] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T = {
     requireIsHardware(this, "bits operated on")
