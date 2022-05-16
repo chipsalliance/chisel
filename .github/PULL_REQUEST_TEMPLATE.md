@@ -48,3 +48,4 @@ Text from here to the end of the body will be considered for inclusion in the re
 - [ ] Did you review?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
 - [ ] Did you mark as `Please Merge`?
+- [ ] Did you `Enable auto-merge (squash)` and clean up the commit message? (ignore if merging with merge commit)
