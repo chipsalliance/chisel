@@ -47,12 +47,12 @@ package object chisel3 {
     @deprecated(
       "Passing an Int to .U is usually a mistake: It does *not* set the width but does a bit extract. " +
         "Did you mean .U(<arg>.W)? " +
-        "If you do want bit extraction, use .U.extract(<arg>)",
+        "If you do want bit extraction, explicitly use .U.apply(<arg>)",
       "3.5.3"
     )
     def U(x: BigInt): Bool = { // scalastyle:ignore method.name
       // Note that both source locator and compile options are ignored for apply on literal
-      this.U.extract(x)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
+      this.U.do_apply(x)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
     }
 
     /** BigInt to UInt conversion followed by bit extract */
@@ -69,11 +69,11 @@ package object chisel3 {
     @deprecated(
       "Passing an Int to .S is usually a mistake: It does *not* set the width but does a bit extract. " +
         "Did you mean .S(<arg>.W)? " +
-        "If you do want bit extraction, use .S.extract(<arg>)",
+        "If you do want bit extraction, explicitly use .S.apply(<arg>)",
       "3.5.3"
     )
     def S(x: BigInt): Bool = { // scalastyle:ignore method.name
-      this.S.extract(x)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
+      this.S.do_apply(x)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
     }
 
     /** BigInt to SInt conversion followed by bit extract */

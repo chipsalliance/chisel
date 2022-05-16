@@ -172,15 +172,15 @@ class MatchedRotateLeftAndRight(w: Int = 13) extends BasicTester {
 }
 
 class UIntLitExtractTester extends BasicTester {
-  assert("b101010".U.extract(2) === false.B)
-  assert("b101010".U.extract(3) === true.B)
-  assert("b101010".U.extract(100) === false.B)
-  assert("b101010".U(3, 0) === "b1010".U)
-  assert("b101010".U(9, 0) === "b0000101010".U)
+  assert("b101010".U.apply(2) === false.B)
+  assert("b101010".U.apply(3) === true.B)
+  assert("b101010".U.apply(100) === false.B)
+  assert("b101010".U.apply(3, 0) === "b1010".U)
+  assert("b101010".U.apply(9, 0) === "b0000101010".U)
 
-  assert("b101010".U(6.W).extract(2) === false.B)
-  assert("b101010".U(6.W).extract(3) === true.B)
-  assert("b101010".U(6.W).extract(100) === false.B)
+  assert("b101010".U(6.W)(2) === false.B)
+  assert("b101010".U(6.W)(3) === true.B)
+  assert("b101010".U(6.W)(100) === false.B)
   assert("b101010".U(6.W)(3, 0) === "b1010".U)
   assert("b101010".U(6.W)(9, 0) === "b0000101010".U)
   stop()
