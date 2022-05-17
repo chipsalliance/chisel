@@ -175,8 +175,8 @@ class UIntLitExtractTester extends BasicTester {
   assert("b101010".U.apply(2) === false.B)
   assert("b101010".U.apply(3) === true.B)
   assert("b101010".U.apply(100) === false.B)
-  assert("b101010".U.apply(3, 0) === "b1010".U)
-  assert("b101010".U.apply(9, 0) === "b0000101010".U)
+  assert("b101010".U(3, 0) === "b1010".U)
+  assert("b101010".U(9, 0) === "b0000101010".U)
 
   assert("b101010".U(6.W)(2) === false.B)
   assert("b101010".U(6.W)(3) === true.B)
