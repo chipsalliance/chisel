@@ -48,5 +48,5 @@ Text from here to the end of the body will be considered for inclusion in the re
 - [ ] Did you review?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
 - [ ] Did you do one of the following when ready to merge:
-  - [ ] Squash: You/ the contributor `Enable auto-merge (squash) and clean up the commit message
+  - [ ] Squash: You/ the contributor `Enable auto-merge (squash)` and clean up the commit message
   - [ ] Merge: Label with `Please Merge`
