@@ -50,4 +50,3 @@ Text from here to the end of the body will be considered for inclusion in the re
 - [ ] Did you do one of the following when ready to merge:
   - [ ] Squash: You/ the contributor `Enable auto-merge (squash) and clean up the commit message
   - [ ] Merge: Label with `Please Merge`
-- [ ] Did you mark as `Please Merge`?
