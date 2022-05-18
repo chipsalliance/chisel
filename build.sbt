@@ -251,8 +251,6 @@ lazy val standardLibrary = (project in file("stdlib"))
   .settings(
     Seq(
       libraryDependencies += defaultVersions("chiseltest") % "test",
-      Compile / scalaSource := baseDirectory.value / "src",
-      Test / scalaSource := baseDirectory.value / "test",
     )
   )
 

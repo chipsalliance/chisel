@@ -109,6 +109,8 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   }
 
   object stdlib extends CommonModule {
+    override def moduleDeps = super.moduleDeps ++ Agg(m)
+
     override def millSourcePath = m.millSourcePath / "stdlib"
 
     override def crossScalaVersion = m.crossScalaVersion
@@ -119,7 +121,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
       override def moduleDeps = super.moduleDeps ++ chiseltestModule
       override def ivyDeps = m.ivyDeps() ++ Agg(
         v.scalatest
-      )
+      ) ++ m.chiseltestIvyDeps
     }
   }
 
