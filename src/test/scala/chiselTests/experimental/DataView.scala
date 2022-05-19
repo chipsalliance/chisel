@@ -479,6 +479,25 @@ class DataViewSpec extends ChiselFlatSpec {
     (err.getMessage should fullyMatch).regex(expected)
   }
 
+  it should "support invalidation" in {
+    class MyModule extends Module {
+      val a, b, c, d, e, f = IO(Output(UInt(8.W)))
+      val foo = (a, b).viewAs
+      val bar = (c, d).viewAs
+      val fizz = (e, f).viewAs
+      foo := DontCare
+      bar <> DontCare
+      fizz._1 := DontCare
+      fizz._2 <> DontCare
+    }
+
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val expected = ('a' to 'f').map(c => s"$c is invalid")
+    for (line <- expected) {
+      chirrtl should include(line)
+    }
+  }
+
   behavior.of("PartialDataView")
 
   it should "still error if the mapping is non-total in the view" in {
