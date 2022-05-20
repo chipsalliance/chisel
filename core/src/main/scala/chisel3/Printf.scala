@@ -76,7 +76,7 @@ object printf {
     * @param data format string varargs containing data to print
     */
   def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
-    apply(Printable.pack(fmt, data: _*))
+    apply(Printable.packCF(fmt, data: _*))
 
   /** Prints a message in simulation
     *

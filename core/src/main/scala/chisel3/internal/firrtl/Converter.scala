@@ -19,6 +19,7 @@ private[chisel3] object Converter {
       val (fmts, args) = pables.map(p => unpack(p, ctx)).unzip
       (fmts.mkString, args.flatten.toSeq)
     case PString(str) => (str.replaceAll("%", "%%"), List.empty)
+    case PStringNew(str) => (str, List.empty)
     case format: FirrtlFormat =>
       ("%" + format.specifier, List(format.bits.ref))
     case Name(data)     => (data.ref.name, List.empty)

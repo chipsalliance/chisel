@@ -115,6 +115,14 @@ object Printable {
     pables += PString(str)
     Printables(pables)
   }
+
+  // Version of pack using cf 
+  // WIP - known limitation - this will break when we have %% (basically to print %)
+  // cf API expects user to explicitly give %% rather than injecting it like it was done before. 
+  def packCF(fmt : String, data : Data*): Printable = {
+    val t = fmt.split("%").zipWithIndex.map {case (s,i) => if (i > 0) "%" + s else s}
+    StringContext(t : _*).cf(data : _*)
+  }
 }
 
 case class Printables(pables: Iterable[Printable]) extends Printable {
@@ -130,6 +138,12 @@ case class PString(str: String) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) =
     (str.replaceAll("%", "%%"), List.empty)
 }
+
+case class PStringNew(str : String) extends Printable {
+final def unpack(ctx : Component): (String, Iterable[String]) =  
+    (str, List.empty)
+}
+
 
 /** Superclass for Firrtl format specifiers for Bits */
 sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends Printable {

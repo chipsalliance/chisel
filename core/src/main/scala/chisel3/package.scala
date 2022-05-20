@@ -213,7 +213,7 @@ package object chisel3 {
     /** Custom string interpolator for generating Printables: p"..."
       * Will call .toString on any non-Printable arguments (mimicking s"...")
       */
-    def p(args: Any*): Printable = {
+    def pold(args: Any*): Printable = {
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
       val pargs: Seq[Option[Printable]] = args.map {
         case p: Printable => Some(p)
@@ -234,6 +234,11 @@ package object chisel3 {
         pable <- optPable // Remove Option[_]
       } yield pable
       Printables(seq)
+    }
+
+    def p(args: Any*): Printable = {
+      val t = sc.parts.map { _.replaceAll("%","%%")}
+      StringContext(t : _*).cf(args : _*)
     }
 
     /*
@@ -315,17 +320,8 @@ package object chisel3 {
             }
 
             // Generic case - use String.format (for example %d,%2.2f etc on regular Scala types)
-            // To support cases of %f format specifier on Int based types - need to manually cast for it to work.
             case t => {
-              val castedT = (fmt.takeRight(1), t) match {
-                case ("f", v: Int) => v.asInstanceOf[Double]
-                case ("f", v: Short) => v.asInstanceOf[Double]
-                case ("f", v: Byte) => v.asInstanceOf[Double]
-                case ("f", v: Long) => v.asInstanceOf[Double]
-                case (_, t) => t
-              }
-
-              PString(String.format(fmt, castedT.asInstanceOf[AnyRef]))
+              PStringNew(fmt.format(t))
             }
           }
 
@@ -341,7 +337,7 @@ package object chisel3 {
       val pargsPables: Seq[Option[Printable]] = partsAndSpecifierSeq.map { _._2 }
       val seq = for { // append None because sc.parts.size == pargs.size + 1
         (literal, arg) <- combParts.zip(pargsPables :+ None)
-        optPable <- Seq(Some(PString(literal)), arg)
+        optPable <- Seq(Some(PStringNew(literal)), arg)
         pable <- optPable // Remove Option[_]
       } yield pable
       Printables(seq)
