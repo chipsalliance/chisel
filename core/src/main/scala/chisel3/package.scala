@@ -2,7 +2,7 @@
 
 import chisel3.internal.firrtl.BinaryPoint
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
-
+import scala.collection.mutable
 /** This package contains the main chisel3 API.
   */
 package object chisel3 {
@@ -264,6 +264,27 @@ package object chisel3 {
      */
      */
     def cf(args: Any*): Printable = {
+
+      def PercentSplitter(s : String) : Seq[Option[Printable]] = {
+        if(s.isEmpty()) return Seq(Some(PString("")))
+        var iter = 0
+        var curr_start = 0
+        val buf = mutable.ListBuffer.empty[Option[Printable]]
+        while(iter < s.size) {
+          if(s(iter) == '%' ) {
+            require(iter < s.size - 1 && s(iter+1) == '%',"Un-escaped % found!")
+            buf += Some(PString(s.substring(curr_start,iter)))
+            buf += Some(Percent)
+            curr_start = iter + 2
+            iter += 2
+          }
+          else {
+            iter += 1
+          }
+        }
+        buf += Some(PString(s.substring(curr_start,iter)))
+        buf.toSeq
+      }
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
       val parts = sc.parts.map(StringContext.treatEscapes)
 
@@ -321,7 +342,7 @@ package object chisel3 {
 
             // Generic case - use String.format (for example %d,%2.2f etc on regular Scala types)
             case t => {
-              PStringNew(fmt.format(t))
+              PString(fmt.format(t))
             }
           }
 
@@ -337,7 +358,7 @@ package object chisel3 {
       val pargsPables: Seq[Option[Printable]] = partsAndSpecifierSeq.map { _._2 }
       val seq = for { // append None because sc.parts.size == pargs.size + 1
         (literal, arg) <- combParts.zip(pargsPables :+ None)
-        optPable <- Seq(Some(PStringNew(literal)), arg)
+        optPable <- PercentSplitter(literal) ++ Seq(arg)
         pable <- optPable // Remove Option[_]
       } yield pable
       Printables(seq)
