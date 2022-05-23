@@ -260,7 +260,6 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       val w1 = Wire(new MyBundle)
       w1.foo := 5.U
       w1.bar := 10.U
-      println("Foo class = ", w1.foo.getClass())
       printf(cf"w1 = $w1")
     }
     generateAndCheck(new MyModule,Seq(Printf("w1 = Bundle : Foo : %x Bar : %x", Seq("w1.foo", "w1.bar"))))
@@ -287,5 +286,14 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       printf(cf"${myInst.io.fizz}%N")
     }
     generateAndCheck(new MyModule,Seq(Printf("foo", Seq()), Printf("myWire.foo", Seq()), Printf("myInst.io.fizz", Seq())))
+  }
+
+  it should "correctly print strings after modifier" in {
+    class MyModule extends BasicTester {
+      val b1 = 10.U
+      printf(cf"This is here $b1%x!!!! And should print everything else")
+    }
+    generateAndCheck(new MyModule,Seq(Printf("This is here %x!!!! And should print everything else",Seq("UInt<4>(\"ha\")"))))
+
   }
 }
