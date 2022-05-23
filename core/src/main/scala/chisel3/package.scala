@@ -245,7 +245,10 @@ package object chisel3 {
     def cf(args: Any*): Printable = {
 
       // Handle literal % 
-      // Takes the part string
+      // Takes the part string - 
+      // - this is assumed to not have any format specifiers - already handled / removed before calling this function. 
+      // Only thing present is literal % if any which should ideally be with %%. 
+      // If not - then flag an error. 
       // Return seq of Optional Printables (either PString or Percent or both - nothing else)
       def PercentSplitter(s : String) : Seq[Option[Printable]] = {
         if(s.isEmpty()) return Seq(Some(PString("")))
