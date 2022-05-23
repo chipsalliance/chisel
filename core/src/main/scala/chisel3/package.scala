@@ -211,32 +211,11 @@ package object chisel3 {
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {
 
     /** Custom string interpolator for generating Printables: p"..."
-      * Will call .toString on any non-Printable arguments (mimicking s"...")
+      * mimicks s"..." for non-Printable data)
+      * Uses underlying cf ihterpolator 
       */
-    def pold(args: Any*): Printable = {
-      sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
-      val pargs: Seq[Option[Printable]] = args.map {
-        case p: Printable => Some(p)
-        case d: Data      => Some(d.toPrintable)
-        case any =>
-          for {
-            v <- Option(any) // Handle null inputs
-            str = v.toString
-            if !str.isEmpty // Handle empty Strings
-          } yield PString(str)
-      }
-      val parts = sc.parts.map(StringContext.treatEscapes)
-      // Zip sc.parts and pargs together ito flat Seq
-      // eg. Seq(sc.parts(0), pargs(0), sc.parts(1), pargs(1), ...)
-      val seq = for { // append None because sc.parts.size == pargs.size + 1
-        (literal, arg) <- parts.zip(pargs :+ None)
-        optPable <- Seq(Some(PString(literal)), arg)
-        pable <- optPable // Remove Option[_]
-      } yield pable
-      Printables(seq)
-    }
-
     def p(args: Any*): Printable = {
+      // P interpolator does not treat % differently - hence need to add % before sending to cf. 
       val t = sc.parts.map { _.replaceAll("%","%%")}
       StringContext(t : _*).cf(args : _*)
     }
@@ -265,6 +244,9 @@ package object chisel3 {
      */
     def cf(args: Any*): Printable = {
 
+      // Handle literal % 
+      // Takes the part string
+      // Return seq of Optional Printables (either PString or Percent or both - nothing else)
       def PercentSplitter(s : String) : Seq[Option[Printable]] = {
         if(s.isEmpty()) return Seq(Some(PString("")))
         var iter = 0
@@ -285,11 +267,13 @@ package object chisel3 {
           }
         }
 
+        // Handle the tail
         if(curr_start < iter) {
           buf += Some(PString(s.substring(curr_start,iter)))
         }
         buf.toSeq
       }
+
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
       val parts = sc.parts.map(StringContext.treatEscapes)
 
@@ -344,13 +328,13 @@ package object chisel3 {
           }
 
           // Remove format specifier from parts string
-          val modP = part.zipWithIndex.filter { _._2 > idx_of_fmt_str }.map(_._1).mkString
+          val modP = part.zipWithIndex.collect { case (p, idx) if idx > idx_of_fmt_str => p }.mkString
 
           (modP, Some(fmtArgs))
         }
       }
       // Combine the 1st part with the rest of the modified (format specifier removed) parts
-      val combParts = parts(0) +: partsAndSpecifierSeq.map { _._1 }
+      val combParts = parts(0) +: partsAndSpecifierSeq.map(_._1)
 
       val pargsPables: Seq[Option[Printable]] = partsAndSpecifierSeq.map { _._2 }
       val seq = for { // append None because sc.parts.size == pargs.size + 1
