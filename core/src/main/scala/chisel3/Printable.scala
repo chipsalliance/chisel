@@ -139,12 +139,6 @@ case class PString(str: String) extends Printable {
     (str.replaceAll("%", "%%"), List.empty)
 }
 
-case class PStringNew(str : String) extends Printable {
-final def unpack(ctx : Component): (String, Iterable[String]) =  
-    (str, List.empty)
-}
-
-
 /** Superclass for Firrtl format specifiers for Bits */
 sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends Printable {
   def bits: Bits
