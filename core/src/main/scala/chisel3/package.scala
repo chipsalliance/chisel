@@ -310,25 +310,12 @@ package object chisel3 {
 
           val fmt = if (idx_of_fmt_str >= 0) part.substring(0, idx_of_fmt_str + 1) else "%s"
           val fmtArgs: Printable = arg match {
-            case b: Bits => {
-              require(fmt.size == 2, "In the case of bits, only single format char allowed!")
-              fmt match {
-                case "%s" => b.toPrintable
-                case "%n" => Name(b)
-                case "%N" => FullName(b)
-                // Default - let FirrtlFormat check validity of the format string to avoid repeating checks.
-                case f => FirrtlFormat(f.substring(1, 2), b)
-              }
-            }
             case d: Data => {
-              require(
-                fmt == "%s" || fmt == "%n" || fmt == "%N",
-                "Non-bits only  allowed with (%s,%n, %N) format specifiers!"
-              )
               fmt match {
                 case "%n" => Name(d)
                 case "%N" => FullName(d)
                 case "%s" => d.toPrintable
+                case fForm if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1,2),d)
                 case x => {
                   val msg = s"Illegal format specifier '$x'!\n"
                   throw new UnknownFormatConversionException(msg)
