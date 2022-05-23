@@ -273,7 +273,9 @@ package object chisel3 {
         while(iter < s.size) {
           if(s(iter) == '%' ) {
             require(iter < s.size - 1 && s(iter+1) == '%',"Un-escaped % found!")
-            buf += Some(PString(s.substring(curr_start,iter)))
+            if(curr_start < iter) {
+              buf += Some(PString(s.substring(curr_start,iter)))
+            }
             buf += Some(Percent)
             curr_start = iter + 2
             iter += 2
@@ -282,7 +284,10 @@ package object chisel3 {
             iter += 1
           }
         }
-        buf += Some(PString(s.substring(curr_start,iter)))
+
+        if(curr_start < iter) {
+          buf += Some(PString(s.substring(curr_start,iter)))
+        }
         buf.toSeq
       }
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
@@ -306,35 +311,40 @@ package object chisel3 {
             ) part.indexWhere { _.isLetter }
             else -1
 
-          // If no format specifier - pick default - %s
-
-          val fmt = if (idx_of_fmt_str >= 0) part.substring(0, idx_of_fmt_str + 1) else "%s"
+          val fmt = if (idx_of_fmt_str >= 0) Some(part.substring(0, idx_of_fmt_str + 1)) else None
           val fmtArgs: Printable = arg match {
             case d: Data => {
               fmt match {
-                case "%n" => Name(d)
-                case "%N" => FullName(d)
-                case "%s" => d.toPrintable
-                case fForm if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1,2),d)
-                case x => {
+                case Some("%n") => Name(d)
+                case Some("%N") => FullName(d)
+                case Some("%s") => d.toString
+                case Some(fForm) if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1,2),d)
+                case Some(x) => {
                   val msg = s"Illegal format specifier '$x'!\n"
                   throw new UnknownFormatConversionException(msg)
                 }
+                case None => d.toPrintable
               }
             }
             case p: Printable => {
-              require(fmt == "%s", "Printables not allowed with format specifiers!")
-              p
+              fmt match {
+                case Some("%s") => p.toString()
+                case Some(x) => {
+                  val msg = s"Illegal format specifier '$x'!\n"
+                  throw new UnknownFormatConversionException(msg)
+                }
+                case None => p 
+              }
             }
 
             // Generic case - use String.format (for example %d,%2.2f etc on regular Scala types)
             case t => {
-              PString(fmt.format(t))
+              PString(fmt.getOrElse("%s").format(t))
             }
           }
 
           // Remove format specifier from parts string
-          val modP = part.zipWithIndex.filter { _._2 > idx_of_fmt_str }.map { _._1 }.mkString
+          val modP = part.zipWithIndex.filter { _._2 > idx_of_fmt_str }.map(_._1).mkString
 
           (modP, Some(fmtArgs))
         }
