@@ -257,7 +257,9 @@ package object chisel3 {
         val buf = mutable.ListBuffer.empty[Option[Printable]]
         while(iter < s.size) {
           if(s(iter) == '%' ) {
-            require(iter < s.size - 1 && s(iter+1) == '%',"Un-escaped % found!")
+            if(iter >= s.size - 1 || s(iter + 1 ) != '%') {
+              throw new UnknownFormatConversionException("Un-escaped % found")
+            }
             if(curr_start < iter) {
               buf += Some(PString(s.substring(curr_start,iter)))
             }
@@ -307,7 +309,7 @@ package object chisel3 {
                 case Some("%s") => d.toString
                 case Some(fForm) if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1,2),d)
                 case Some(x) => {
-                  val msg = s"Illegal format specifier '$x'!\n"
+                  val msg = s"Illegal format specifier '$x' for Chisel Data type!\n"
                   throw new UnknownFormatConversionException(msg)
                 }
                 case None => d.toPrintable
@@ -317,7 +319,7 @@ package object chisel3 {
               fmt match {
                 case Some("%s") => p.toString()
                 case Some(x) => {
-                  val msg = s"Illegal format specifier '$x'!\n"
+                  val msg = s"Illegal format specifier '$x' for Chisel Printable type!\n"
                   throw new UnknownFormatConversionException(msg)
                 }
                 case None => p 

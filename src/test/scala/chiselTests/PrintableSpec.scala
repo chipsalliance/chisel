@@ -9,6 +9,7 @@ import chisel3.testers.BasicTester
 import firrtl.annotations.{ReferenceTarget, SingleTargetAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import chisel3.util._
 
 import java.io.File
 
@@ -32,7 +33,7 @@ object PrintfAnnotation {
 }
 
 /* Printable Tests */
-class PrintableSpec extends AnyFlatSpec with Matchers {
+class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
   // This regex is brittle, it specifically finds the clock and enable signals followed by commas
   private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
   private val StringRegex = """([^"]*)"(.*?)"(.*)""".r
@@ -330,7 +331,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     }.getOrElse(fail())
   }
 
-  it should "correctly print strings with a lot of literal %%" in {
+  it should "correctly print strings with a lot of literal %% and different format specifiers for Wires" in {
     class MyModule extends BasicTester {
       val b1 = 10.U
       val b2 = 20.U
@@ -340,6 +341,31 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     generateAndCheck(new MyModule) {
       case Seq(Printf("%%  %x%%%b = %d %%%% Tail String", Seq(lita,litb,_))) =>
         assert(lita.contains("UInt<4>") && litb.contains("UInt<5>"))
+    }.getOrElse(fail())
+  }
+
+  it should "not allow unescaped % in the message" in {
+    class MyModule extends BasicTester {
+      printf(cf"This should error out for sure because of % - it should be %%")
+    }
+    a[java.util.UnknownFormatConversionException] should be thrownBy {
+      extractCause[java.util.UnknownFormatConversionException] {
+        ChiselStage.elaborate { new MyModule }
+      }
+    }
+  }
+
+  it should "allow Printables to be expanded and used" in {
+    class MyModule extends BasicTester {
+      val w1  = 20.U
+      val f1 = 30.2
+      val i1 = 14
+      val pable = cf"w1 = $w1%b f1 = $f1%2.2f"
+      printf(cf"Trying to expand printable $pable and mix with i1 = $i1%d")
+    }
+    generateAndCheck(new MyModule) {
+      case Seq(Printf("Trying to expand printable w1 = %b f1 = 30.20 and mix with i1 = 14",Seq(lit))) => 
+        assert(lit.contains("UInt<5>"))
     }.getOrElse(fail())
   }
 
