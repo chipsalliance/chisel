@@ -320,7 +320,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Vecs of empty Bundles and empty Records should work") {
-    class MyModule(gen: Record) extends Module {
+    class MyModule(gen: Record) extends MultiIOModule {
       val idx = IO(Input(UInt(2.W)))
       val in = IO(Input(gen))
       val out = IO(Output(gen))
@@ -331,7 +331,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
     class EmptyBundle extends Bundle
     class EmptyRecord extends Record {
-      val elements = collection.immutable.ListMap.empty
+      val elements = collection.immutable.ListMap.empty[String, Data]
       override def cloneType = (new EmptyRecord).asInstanceOf[this.type]
     }
     for (gen <- List(new EmptyBundle, new EmptyRecord)) {
