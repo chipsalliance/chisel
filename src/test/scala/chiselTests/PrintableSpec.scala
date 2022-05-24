@@ -294,6 +294,20 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       printf(cf"This is here $b1%x!!!! And should print everything else")
     }
     generateAndCheck(new MyModule,Seq(Printf("This is here %x!!!! And should print everything else",Seq("UInt<4>(\"ha\")"))))
-
   }
+
+  it should "correctly print strings with a lot of literal %%" in {
+    class MyModule extends BasicTester {
+      val b1 = 10.U
+      val b2 = 20.U
+      printf(cf"%%  $b1%x%%$b2%b = ${b1%b2}%d %%%% Tail String")
+    }
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
+    getPrintfs(firrtl) match {
+      case Seq(Printf("%%  %x%%%b = %d %%%% Tail String", Seq(lita,litb,_))) =>
+        assert(lita.contains("UInt<4>") && litb.contains("UInt<5>"))
+      case e => {println("firrtl = ",firrtl);println("e = ",e);fail()}
+    }
+  }
+
 }
