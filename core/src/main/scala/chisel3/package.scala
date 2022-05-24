@@ -212,7 +212,6 @@ package object chisel3 {
 
     /** Custom string interpolator for generating Printables: p"..."
       * mimicks s"..." for non-Printable data)
-      * Uses underlying cf ihterpolator 
       */
     def p(args: Any*): Printable = {
       // P interpolator does not treat % differently - hence need to add % before sending to cf. 
@@ -285,12 +284,10 @@ package object chisel3 {
       // The 1st part is assumed never to contain a format specifier.
       // If the 1st part of a string is an argument - then the 1st part will be an empty String.
       // So we need to parse parts following the 1st one to get the format specifiers if any
-      val partsAfterFirst = parts.slice(1, parts.size)
+      val partsAfterFirst = parts.tail
 
       // Align parts to their potential specifiers
-      val partsAndSpecifierSeq = partsAfterFirst.zip(args).map {
-        case (part, arg) => {
-
+      val partsAndSpecifierSeq = partsAfterFirst.zip(args).map {case (part, arg) => {
           // Check if part starts with a format specifier (with % - disambiguate with literal % checking the next character if needed to be %)
           // In the case of %f specifier there is a chance that we need more information - so capture till the 1st letter (a-zA-Z).
           // Example cf"This is $val%2.2f here" - parts - Seq("This is ","%2.2f here") - the format specifier here is %2.2f.
@@ -306,7 +303,7 @@ package object chisel3 {
               fmt match {
                 case Some("%n") => Name(d)
                 case Some("%N") => FullName(d)
-                case Some("%s") => d.toString
+                case Some("%s") => PString(d.toString)
                 case Some(fForm) if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1,2),d)
                 case Some(x) => {
                   val msg = s"Illegal format specifier '$x' for Chisel Data type!\n"
@@ -317,7 +314,7 @@ package object chisel3 {
             }
             case p: Printable => {
               fmt match {
-                case Some("%s") => p.toString()
+                case Some("%s") => PString(p.toString)
                 case Some(x) => {
                   val msg = s"Illegal format specifier '$x' for Chisel Printable type!\n"
                   throw new UnknownFormatConversionException(msg)
