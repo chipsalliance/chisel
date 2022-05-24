@@ -226,8 +226,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     }
 
     // Since all children are the same, we can just use the sample_element rather than all children
-    // .get is safe because None means mixed directions, we only pass 1 so that's not possible
-    direction = ActualDirection.fromChildren(Set(sample_element.direction), resolvedDirection).get
+    direction =
+      ActualDirection.fromChildren(Set(sample_element.direction), resolvedDirection).getOrElse(ActualDirection.Empty)
   }
 
   // Note: the constructor takes a gen() function instead of a Seq to enforce
@@ -321,6 +321,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
         SpecifiedDirection.Unspecified
       case ActualDirection.Bidirectional(ActualDirection.Flipped) => SpecifiedDirection.Flip
+      case ActualDirection.Empty                                  => SpecifiedDirection.Unspecified
     }
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.

@@ -517,4 +517,26 @@ class VecSpec extends ChiselPropSpec with Utils {
   property("reduceTree should preserve input/output type") {
     assertTesterPasses { new ReduceTreeTester() }
   }
+
+  property("Vecs of empty Bundles and empty Records should work") {
+    class MyModule(gen: Record) extends Module {
+      val idx = IO(Input(UInt(2.W)))
+      val in = IO(Input(gen))
+      val out = IO(Output(gen))
+
+      val reg = RegInit(0.U.asTypeOf(Vec(4, gen)))
+      reg(idx) := in
+      out := reg(idx)
+    }
+    class EmptyBundle extends Bundle
+    class EmptyRecord extends Record {
+      val elements = collection.immutable.ListMap.empty
+      override def cloneType = (new EmptyRecord).asInstanceOf[this.type]
+    }
+    for (gen <- List(new EmptyBundle, new EmptyRecord)) {
+      val chirrtl = ChiselStage.emitChirrtl(new MyModule(gen))
+      chirrtl should include("input in : { }")
+      chirrtl should include("reg reg : { }[4]")
+    }
+  }
 }
