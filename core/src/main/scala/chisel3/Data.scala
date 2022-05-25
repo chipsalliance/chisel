@@ -53,17 +53,24 @@ object SpecifiedDirection {
       case (SpecifiedDirection.Flip, thisDirection)        => SpecifiedDirection.flip(thisDirection)
     }
 
+  // Note use of by-name arguments and dir is a function (to avoid evaluating source in callers)
   private[chisel3] def specifiedDirection[T <: Data](
-    source: T
-  )(dir:    SpecifiedDirection
+    source: => T
+  )(dir:    T => SpecifiedDirection
   )(
     implicit compileOptions: CompileOptions
   ): T = {
+    val prevId = Builder.idGen.value
+    // Source is by-name so must evaluate it only once
+    val data = source
     if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
+      requireIsChiselType(data)
     }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = dir
+    // Because source is by-name, we can detect if it is a "fresh instance" by seeing if its Id is
+    // greater than the previously allocated Id
+    val fresh = data._id > prevId
+    val out = if (fresh) data else data.cloneType.asInstanceOf[T]
+    out.specifiedDirection = dir(out)
     out
   }
 
@@ -401,19 +408,19 @@ object chiselTypeOf {
   * Thus, an error will be thrown if these are used on bound Data
   */
 object Input {
-  def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
+  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+    SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Input)
   }
 }
 object Output {
-  def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
+  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+    SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Output)
   }
 }
 
 object Flipped {
-  def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
+  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+    SpecifiedDirection.specifiedDirection(source)(x => SpecifiedDirection.flip(x.specifiedDirection))
   }
 }
 
