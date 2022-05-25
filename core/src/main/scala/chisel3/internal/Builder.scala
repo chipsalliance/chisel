@@ -147,7 +147,13 @@ private[chisel3] trait HasId extends InstanceId {
     * @param seed The seed for the name of this component
     * @return this object
     */
-  def suggestName(seed: => String): this.type = {
+  @deprecated(
+     "suggestName is deprecated. Use Wire(..., suggestedName = ___ ), same for WireDefault, Module, Reg*, Instance.",
+     "Chisel 3.5.5"
+  )
+  def suggestName(seed: => String): this.type = suggestNameInternal(seed)
+
+  private[chisel3] def suggestNameInternal(seed: => String): this.type = {
     if (suggested_seed.isEmpty) suggested_seed = Some(seed)
     naming_prefix = Builder.getPrefix
     for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
