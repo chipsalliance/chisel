@@ -248,35 +248,16 @@ package object chisel3 {
       // - this is assumed to not have any format specifiers - already handled / removed before calling this function. 
       // Only thing present is literal % if any which should ideally be with %%. 
       // If not - then flag an error. 
-      // Return seq of Optional Printables (either PString or Percent or both - nothing else)
-      def PercentSplitter(s : String) : Seq[Option[Printable]] = {
-        if(s.isEmpty()) return Seq(Some(PString("")))
-        var iter = 0
-        var curr_start = 0
-        val buf = mutable.ListBuffer.empty[Option[Printable]]
-        while(iter < s.size) {
-          if(s(iter) == '%' ) {
-            if(iter >= s.size - 1 || s(iter + 1 ) != '%') {
-              throw new UnknownFormatConversionException("Un-escaped % found")
-            }
-            if(curr_start < iter) {
-              buf += Some(PString(s.substring(curr_start,iter)))
-            }
-            buf += Some(Percent)
-            curr_start = iter + 2
-            iter += 2
-          }
-          else {
-            iter += 1
-          }
+      // Return seq of Printables (either PString or Percent or both - nothing else
+      def percentSplitter(s : String): Seq[Printable] = {
+          if(s.isEmpty) return Seq(PString(""))
+	        val pieces = s.split("%%").toList.flatMap { p =>
+	          if (p.contains('%')) throw new UnknownFormatConversionException("Un-escaped % found")
+	          // Wrap in PString and intersperse the escaped percentages
+	          Seq(Percent, PString(p))
+	        }
+	        if(pieces.isEmpty) Seq(Percent) else pieces.tail  // Don't forget to drop the extra percent we put at the beginning
         }
-
-        // Handle the tail
-        if(curr_start < iter) {
-          buf += Some(PString(s.substring(curr_start,iter)))
-        }
-        buf.toSeq
-      }
 
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
       val parts = sc.parts.map(StringContext.treatEscapes)
@@ -341,7 +322,7 @@ package object chisel3 {
       val pargsPables: Seq[Option[Printable]] = partsAndSpecifierSeq.map { _._2 }
       val seq = for { // append None because sc.parts.size == pargs.size + 1
         (literal, arg) <- combParts.zip(pargsPables :+ None)
-        optPable <- PercentSplitter(literal) ++ Seq(arg)
+        optPable <- percentSplitter(literal).map(Some(_)) ++ Seq(arg)
         pable <- optPable // Remove Option[_]
       } yield pable
       Printables(seq)
