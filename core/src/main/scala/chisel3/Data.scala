@@ -456,13 +456,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private var _specifiedDirection:         SpecifiedDirection = SpecifiedDirection.Unspecified
   private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
   private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
-    if (_specifiedDirection != SpecifiedDirection.Unspecified) {
-      this match {
-        // Anything flies in compatibility mode
-        case t: Record if !t.compileOptions.dontAssumeDirectionality =>
-        case _ => throw RebindingException(s"Attempted reassignment of user-specified direction to $this")
-      }
-    }
+    //if (_specifiedDirection != SpecifiedDirection.Unspecified) {
+    //  this match {
+    //    // Anything flies in compatibility mode
+    //    case t: Record if !t.compileOptions.dontAssumeDirectionality =>
+    //    case _ => throw RebindingException(s"Attempted reassignment of user-specified direction to $this")
+    //  }
+    //}
     _specifiedDirection = direction
   }
 
