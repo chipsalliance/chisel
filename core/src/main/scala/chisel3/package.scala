@@ -259,16 +259,8 @@ package object chisel3 {
 	        if(pieces.isEmpty) Seq(Percent) else pieces.tail  // Don't forget to drop the extra percent we put at the beginning
         }
 
-      sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
-      val parts = sc.parts.map(StringContext.treatEscapes)
-      // The 1st part is assumed never to contain a format specifier.
-      // If the 1st part of a string is an argument - then the 1st part will be an empty String.
-      // So we need to parse parts following the 1st one to get the format specifiers if any
-      val partsAfterFirst = parts.tail
-
-      // Align parts to their potential specifiers
-      val partsAndSpecifierSeq = partsAfterFirst.zip(args).flatMap {case (part, arg) => {
-          // Check if part starts with a format specifier (with % - disambiguate with literal % checking the next character if needed to be %)
+      def extractFormatSpecifier(part: String): (Option[String], String) = {
+         // Check if part starts with a format specifier (with % - disambiguate with literal % checking the next character if needed to be %)
           // In the case of %f specifier there is a chance that we need more information - so capture till the 1st letter (a-zA-Z).
           // Example cf"This is $val%2.2f here" - parts - Seq("This is ","%2.2f here") - the format specifier here is %2.2f.
           val idx_of_fmt_str =
@@ -278,7 +270,24 @@ package object chisel3 {
             else -1
 
           val fmt = if (idx_of_fmt_str >= 0) Some(part.substring(0, idx_of_fmt_str + 1)) else None
-          val fmtArgs: Printable = arg match {
+
+          val formatRemovedString = part.zipWithIndex.collect { case (p, idx) if idx > idx_of_fmt_str => p }.mkString
+
+          (fmt,formatRemovedString)
+ 
+      }
+
+      sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
+      val parts = sc.parts.map(StringContext.treatEscapes)
+      // The 1st part is assumed never to contain a format specifier.
+      // If the 1st part of a string is an argument - then the 1st part will be an empty String.
+      // So we need to parse parts following the 1st one to get the format specifiers if any
+      val partsAfterFirst = parts.tail
+
+      // Align parts to their potential specifiers
+      val partsAndSpecifierSeq = partsAfterFirst.zip(args).flatMap {case (part, arg) => {
+          val (fmt,modP) = extractFormatSpecifier(part)
+          val fmtArg: Printable = arg match {
             case d: Data => {
               fmt match {
                 case Some("%n") => Name(d)
@@ -308,11 +317,7 @@ package object chisel3 {
               PString(fmt.getOrElse("%s").format(t))
             }
           }
-
-          // Remove format specifier from parts string
-          val modP = part.zipWithIndex.collect { case (p, idx) if idx > idx_of_fmt_str => p }.mkString
-
-          Seq(fmtArgs) ++ percentSplitter(modP)
+          Seq(fmtArg) ++ percentSplitter(modP)
         }
       }
       Printables(percentSplitter(parts.head) ++ partsAndSpecifierSeq)
