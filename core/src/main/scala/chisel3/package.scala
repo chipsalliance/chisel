@@ -285,7 +285,7 @@ package object chisel3 {
       val partsAfterFirst = parts.tail
 
       // Align parts to their potential specifiers
-      val partsAndSpecifierSeq = partsAfterFirst.zip(args).flatMap {case (part, arg) => {
+      val pables = partsAfterFirst.zip(args).flatMap {case (part, arg) => {
           val (fmt,modP) = extractFormatSpecifier(part)
           val fmtArg: Printable = arg match {
             case d: Data => {
@@ -320,7 +320,7 @@ package object chisel3 {
           Seq(fmtArg) ++ percentSplitter(modP)
         }
       }
-      Printables(percentSplitter(parts.head) ++ partsAndSpecifierSeq)
+      Printables(percentSplitter(parts.head) ++ pables)
     }
   }
 
