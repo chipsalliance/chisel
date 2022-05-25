@@ -215,7 +215,7 @@ package object chisel3 {
       */
     def p(args: Any*): Printable = {
       // P interpolator does not treat % differently - hence need to add % before sending to cf. 
-      val t = sc.parts.map { _.replaceAll("%","%%")}
+      val t = sc.parts.map(_.replaceAll("%","%%"))
       StringContext(t : _*).cf(args : _*)
     }
 
@@ -261,14 +261,13 @@ package object chisel3 {
 
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
       val parts = sc.parts.map(StringContext.treatEscapes)
-
       // The 1st part is assumed never to contain a format specifier.
       // If the 1st part of a string is an argument - then the 1st part will be an empty String.
       // So we need to parse parts following the 1st one to get the format specifiers if any
       val partsAfterFirst = parts.tail
 
       // Align parts to their potential specifiers
-      val partsAndSpecifierSeq = partsAfterFirst.zip(args).map {case (part, arg) => {
+      val partsAndSpecifierSeq = partsAfterFirst.zip(args).flatMap {case (part, arg) => {
           // Check if part starts with a format specifier (with % - disambiguate with literal % checking the next character if needed to be %)
           // In the case of %f specifier there is a chance that we need more information - so capture till the 1st letter (a-zA-Z).
           // Example cf"This is $val%2.2f here" - parts - Seq("This is ","%2.2f here") - the format specifier here is %2.2f.
@@ -313,19 +312,10 @@ package object chisel3 {
           // Remove format specifier from parts string
           val modP = part.zipWithIndex.collect { case (p, idx) if idx > idx_of_fmt_str => p }.mkString
 
-          (modP, Some(fmtArgs))
+          Seq(fmtArgs) ++ percentSplitter(modP)
         }
       }
-      // Combine the 1st part with the rest of the modified (format specifier removed) parts
-      val combParts = parts(0) +: partsAndSpecifierSeq.map(_._1)
-
-      val pargsPables: Seq[Option[Printable]] = partsAndSpecifierSeq.map { _._2 }
-      val seq = for { // append None because sc.parts.size == pargs.size + 1
-        (literal, arg) <- combParts.zip(pargsPables :+ None)
-        optPable <- percentSplitter(literal).map(Some(_)) ++ Seq(arg)
-        pable <- optPable // Remove Option[_]
-      } yield pable
-      Printables(seq)
+      Printables(percentSplitter(parts.head) ++ partsAndSpecifierSeq)
     }
   }
 
