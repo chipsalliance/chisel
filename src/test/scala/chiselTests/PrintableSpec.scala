@@ -131,7 +131,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
   }
   it should "correctly emit tab" in {
     class MyModule extends BasicTester {
-      printf(p"\t")
+      printf("\t")
     }
     generateAndCheck(new MyModule) {
       case Seq(Printf("\\t", Seq())) => 
@@ -178,7 +178,9 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
     class MyModule extends BasicTester {
       val myUInt = WireDefault(0.U)
       val mySInt = WireDefault(-1.S)
+      val exp = 10.U
       printf(p"$myUInt & $mySInt")
+      //printf(cf"Hello World $myUInt%d")
     }
     generateAndCheck(new MyModule) {
       case Seq(Printf("%d & %d", Seq("myUInt", "mySInt"))) =>
@@ -267,11 +269,12 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       val i1 = 10
       val s1: Short = 15
       val l1: Long = 253
-      printf(cf"F1 = $f1 D1 = $i1 F1 formatted = $f1%2.2f s1 = $s1 l1 = $l1")
+      val str1 = "Printable String!"
+      printf(cf"F1 = $f1 D1 = $i1 F1 formatted = $f1%2.2f s1 = $s1 l1 = $l1 str1 = $str1%s i1_string = $i1%s i1_hex=$i1%x")
 
     }
     generateAndCheck(new MyModule) {
-      case Seq(Printf("F1 = 20.45156 D1 = 10 F1 formatted = 20.45 s1 = 15 l1 = 253", Seq())) =>
+      case Seq(Printf("F1 = 20.45156 D1 = 10 F1 formatted = 20.45 s1 = 15 l1 = 253 str1 = Printable String! i1_string = 10 i1_hex=a", Seq())) =>
     }.getOrElse(fail())
   }
 
@@ -367,6 +370,17 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       case Seq(Printf("Trying to expand printable w1 = %b f1 = 30.20 and mix with i1 = 14",Seq(lit))) => 
         assert(lit.contains("UInt<5>"))
     }.getOrElse(fail())
+  }
+
+  it should "fail with a single  % in the message" in {
+    class MyModule extends BasicTester {
+      printf(cf"%")
+    }
+    a[java.util.UnknownFormatConversionException] should be thrownBy {
+      extractCause[java.util.UnknownFormatConversionException] {
+        ChiselStage.elaborate { new MyModule }
+      }
+    }
   }
 
 }
