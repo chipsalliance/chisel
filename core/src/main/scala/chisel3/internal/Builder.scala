@@ -148,7 +148,7 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   @deprecated(
-     "suggestName is deprecated. Use Wire(..., suggestedName = ___ ), same for WireDefault, Module, Reg*, Instance.",
+     "suggestName is deprecated. You must provide the suggested name at the time you create your Wire, Reg, Module, or Instance. Use e.g. Wire(..., suggestedName = ___ )",
      "Chisel 3.5.5"
   )
   def suggestName(seed: => String): this.type = suggestNameInternal(seed)

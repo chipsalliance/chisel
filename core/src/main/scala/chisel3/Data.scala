@@ -853,11 +853,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
 trait WireFactory {
 
-  /** Construct a [[Wire]] from a type template
-    * @param t The template from which to construct this wire
-    */
-  def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    if (compileOptions.declaredTypeMustBeUnbound) {
+  private def applyImpl[T <: Data](t: T, suggestedName:Option[String]) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+   if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "wire type")
     }
     val x = t.cloneTypeFull
@@ -869,9 +866,22 @@ trait WireFactory {
     if (!compileOptions.explicitInvalidate) {
       pushCommand(DefInvalid(sourceInfo, x.ref))
     }
-
+    suggestedName.foreach(x.suggestNameInternal(_))
     x
   }
+
+  /** Construct a [[Wire]] from a type template
+    * @param t The template from which to construct this wire
+    */
+  def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = applyImpl(t, None)
+
+  /** Construct a [[Wire]] from a type template
+    * @param t The template from which to construct this wire
+    * @param suggestedName The suggested name for this wire.
+    */
+  def apply[T <: Data](t: T, suggestedName: String)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    applyImpl(t, Some(suggestedName))
+
 }
 
 /** Utility for constructing hardware wires
@@ -953,12 +963,15 @@ object Wire extends WireFactory
   *
   * @note The `Default` in `WireDefault` refers to a `default` connection. This is in contrast to
   * [[RegInit]] where the `Init` refers to a value on reset.
+  * 
+  * @note For all forms, you can provide a suggestedName: String if you want to set the name of the wire.
   */
 object WireDefault {
 
   private def applyImpl[T <: Data](
     t:    T,
-    init: Data
+    init: Data,
+    suggestedName: Option[String]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
@@ -967,6 +980,7 @@ object WireDefault {
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
     x := init
+    suggestedName.foreach(x.suggestNameInternal(_))
     x
   }
 
@@ -982,7 +996,24 @@ object WireDefault {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): T = {
-    applyImpl(t, init)
+    applyImpl(t, init, None)
+  }
+
+  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    * @param suggestedName The suggested name for this wire
+    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
+    */
+  def apply[T <: Data](
+    t:    T,
+    init: DontCare.type,
+    suggestedName: String
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
+    applyImpl(t, init, Some(suggestedName))
   }
 
   /** Construct a [[Wire]] with a type template and a default connection
@@ -990,7 +1021,16 @@ object WireDefault {
     * @param init The hardware value that will serve as the default value
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    applyImpl(t, init)
+    applyImpl(t, init, None)
+  }
+
+  /** Construct a [[Wire]] with a type template and a default connection
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The hardware value that will serve as the default value
+    * @param suggestedName The suggested name for this wire
+    */
+  def apply[T <: Data](t: T, init: T, suggestedName: String)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init, Some(suggestedName))
   }
 
   /** Construct a [[Wire]] with a default connection
@@ -1004,6 +1044,20 @@ object WireDefault {
     }).asInstanceOf[T]
     apply(model, init)
   }
+
+  /** Construct a [[Wire]] with a default connection
+    * @param init The hardware value that will serve as a type template and default value
+    * @param suggestedName The suggested name for the wire.
+    */
+  def apply[T <: Data](init: T, suggestedName: String)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init match {
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
+      case _ => init.cloneTypeFull
+    }).asInstanceOf[T]
+    apply(model, init, suggestedName)
+  }
+
 }
 
 /** RHS (source) for Invalidate API.
