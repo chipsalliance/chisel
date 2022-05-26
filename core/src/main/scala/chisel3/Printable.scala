@@ -63,17 +63,10 @@ object Printable {
     */
   def pack(fmt : String, data : Data*): Printable = {
     val args = data.toIterator
-
-    // The string received as an input to pack is already
-    // treated  i.e. escape sequences are processed. 
-    // Since StringContext API assumes the parts are un-treated
-    // treatEscapes is called within the implemented custom interpolators. 
-    // The literal \ needs to be escaped before sending to the custom cf interpolator. 
-    val fmtEscapeBackSlash = fmt.replace("\\","\\\\")
     // Error handling
     def carrotAt(index: Int) = (" " * index) + "^"
     def errorMsg(index: Int) =
-      s"""|    fmt = "$fmtEscapeBackSlash"
+      s"""|    fmt = "$fmt"
           |           ${carrotAt(index)}
           |    data = ${data.mkString(", ")}""".stripMargin
     
@@ -88,28 +81,28 @@ object Printable {
     var iter = 0
     var curr_start = 0 
     var buf = mutable.ListBuffer.empty[String]
-    while(iter < fmtEscapeBackSlash.size) {
+    while(iter < fmt.size) {
       // Encountered % which is either
       // 1. Describing a format specifier. 
       // 2. Literal Percent
       // 3. Dangling percent - most likely due to a typo - intended literal percent or forgot the specifier. 
       // Try to give meaningful error reports
-      if(fmtEscapeBackSlash(iter) == '%') {
-        if(iter  != fmtEscapeBackSlash.size - 1 && (fmtEscapeBackSlash(iter + 1) != '%' && !fmtEscapeBackSlash(iter+1).isWhitespace))  {
+      if(fmt(iter) == '%') {
+        if(iter  != fmt.size - 1 && (fmt(iter + 1) != '%' && !fmt(iter+1).isWhitespace))  {
           checkArg(iter)
-          buf += fmtEscapeBackSlash.substring(curr_start,iter)
+          buf += fmt.substring(curr_start,iter)
           curr_start = iter
           iter += 1
         }
 
         // Last character is %.
-        else if(iter == fmtEscapeBackSlash.size - 1) {
-          val msg = s"Trailing %\n" + errorMsg(fmtEscapeBackSlash.size - 1)
+        else if(iter == fmt.size - 1) {
+          val msg = s"Trailing %\n" + errorMsg(fmt.size - 1)
           throw new UnknownFormatConversionException(msg)
         }
 
         // A lone % 
-        else if(fmtEscapeBackSlash(iter+1).isWhitespace) {
+        else if(fmt(iter+1).isWhitespace) {
           val msg = s"Unescaped % - add % if literal or add proper specifier if not\n" + errorMsg(iter+1)
           throw new UnknownFormatConversionException(msg)
         }
@@ -128,10 +121,19 @@ object Printable {
     require(
       !args.hasNext,
       s"Too many arguments! More format specifier(s) expected!\n" +
-        errorMsg(fmtEscapeBackSlash.size)
+        errorMsg(fmt.size)
     )
-    buf += fmtEscapeBackSlash.substring(curr_start,iter)
-    StringContext(buf.toSeq : _*).cf(data : _*)
+    buf += fmt.substring(curr_start,iter)
+
+
+    // The string received as an input to pack is already
+    // treated  i.e. escape sequences are processed. 
+    // Since StringContext API assumes the parts are un-treated
+    // treatEscapes is called within the implemented custom interpolators. 
+    // The literal \ needs to be escaped before sending to the custom cf interpolator. 
+    
+    val bufEscapeBackSlash = buf.map(_.replace("\\","\\\\"))
+    StringContext(bufEscapeBackSlash.toSeq : _*).cf(data : _*)
   }
 }
 
