@@ -105,7 +105,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   }
 
   override def scalacOptions = T {
-    super.scalacOptions() ++ Agg(s"-Xplugin:${plugin.jar().path}", "-P:chiselplugin:genBundleElements")
+    super.scalacOptions() ++ Agg(s"-Xplugin:${plugin.jar().path}")
   }
 
   object stdlib extends CommonModule {
