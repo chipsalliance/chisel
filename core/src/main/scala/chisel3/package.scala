@@ -250,30 +250,28 @@ package object chisel3 {
       // If not - then flag an error. 
       // Return seq of Printables (either PString or Percent or both - nothing else
       def percentSplitter(s : String): Seq[Printable] = {
-          if(s.isEmpty) return Seq(PString(""))
-	        val pieces = s.split("%%").toList.flatMap { p =>
-	          if (p.contains('%')) throw new UnknownFormatConversionException("Un-escaped % found")
-	          // Wrap in PString and intersperse the escaped percentages
-	          Seq(Percent, PString(p))
-	        }
-	        if(pieces.isEmpty) Seq(Percent) else pieces.tail  // Don't forget to drop the extra percent we put at the beginning
+          if (s.isEmpty) Seq(PString("")) 
+          else {
+	          val pieces = s.split("%%").toList.flatMap { p =>
+	            if (p.contains('%')) throw new UnknownFormatConversionException("Un-escaped % found")
+	            // Wrap in PString and intersperse the escaped percentages
+	            Seq(Percent, PString(p))
+	          }
+	          if(pieces.isEmpty) Seq(Percent) else pieces.tail  // Don't forget to drop the extra percent we put at the beginning
+          }
         }
 
       def extractFormatSpecifier(part: String): (Option[String], String) = {
          // Check if part starts with a format specifier (with % - disambiguate with literal % checking the next character if needed to be %)
           // In the case of %f specifier there is a chance that we need more information - so capture till the 1st letter (a-zA-Z).
           // Example cf"This is $val%2.2f here" - parts - Seq("This is ","%2.2f here") - the format specifier here is %2.2f.
-          val idx_of_fmt_str =
-            if (
-              !part.isEmpty() && part.charAt(0) == '%' && (part.size == 1 || (part.size >= 2 && part.charAt(1) != '%'))
-            ) part.indexWhere { _.isLetter }
+          val endFmtIdx =
+            if (part.length > 1 && part(0) == '%' && part(1) != '%') part.indexWhere(_.isLetter)
             else -1
-
-          val fmt = if (idx_of_fmt_str >= 0) Some(part.substring(0, idx_of_fmt_str + 1)) else None
-
-          val formatRemovedString = part.zipWithIndex.collect { case (p, idx) if idx > idx_of_fmt_str => p }.mkString
-
-          (fmt,formatRemovedString)
+          val (fmt, rest) = part.splitAt(endFmtIdx+1)
+          
+          val fmtOpt = if (fmt.nonEmpty) Some(fmt) else None
+          (fmtOpt, rest)
  
       }
 
@@ -292,7 +290,6 @@ package object chisel3 {
               fmt match {
                 case Some("%n") => Name(d)
                 case Some("%N") => FullName(d)
-                case Some("%s") => PString(d.toString)
                 case Some(fForm) if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1,2),d)
                 case Some(x) => {
                   val msg = s"Illegal format specifier '$x' for Chisel Data type!\n"
@@ -303,7 +300,6 @@ package object chisel3 {
             }
             case p: Printable => {
               fmt match {
-                case Some("%s") => PString(p.toString)
                 case Some(x) => {
                   val msg = s"Illegal format specifier '$x' for Chisel Printable type!\n"
                   throw new UnknownFormatConversionException(msg)
