@@ -309,9 +309,8 @@ package object chisel3 {
             }
 
             // Generic case - use String.format (for example %d,%2.2f etc on regular Scala types)
-            case t => {
-              PString(fmt.getOrElse("%s").format(t))
-            }
+            case t => PString(fmt.getOrElse("%s").format(t))
+            
           }
           Seq(fmtArg) ++ percentSplitter(modP)
         }
