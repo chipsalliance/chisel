@@ -33,12 +33,12 @@ object PrintfAnnotation {
 }
 
 /* Printable Tests */
-class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
+class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   // This regex is brittle, it specifically finds the clock and enable signals followed by commas
   private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
   private val StringRegex = """([^"]*)"(.*?)"(.*)""".r
   private case class Printf(str: String, args: Seq[String])
-  private case class ErrorString(firrtl : String, actual : Seq[Printf])
+  private case class ErrorString(firrtl: String, actual: Seq[Printf])
   private def getPrintfs(firrtl: String): Seq[Printf] = {
     def processArgs(str: String): Seq[String] =
       str.split(",").map(_.trim).filter(_.nonEmpty)
@@ -56,30 +56,27 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
     }
   }
 
-
   // Generates firrtl, gets Printfs
   // Returns None if failed match; else calls the partial function which could have its own check
-  // Returns Some(true) to caller 
-  // Not calling fail() here - and letting caller do so - helps in localizing errors correctly. 
-  private def generateAndCheck(gen : => RawModule,pos : Position)(check : PartialFunction[Seq[Printf],Unit]) = {
+  // Returns Some(true) to caller
+  // Not calling fail() here - and letting caller do so - helps in localizing errors correctly.
+  private def generateAndCheck(gen: => RawModule, pos: Position)(check: PartialFunction[Seq[Printf], Unit]) = {
     val firrtl = ChiselStage.emitChirrtl(gen)
     val printfs = getPrintfs(firrtl)
-    if(!check.isDefinedAt(printfs)) {
+    if (!check.isDefinedAt(printfs)) {
       fail()(pos)
-    }
-    else {
+    } else {
       check(printfs)
-    } 
+    }
   }
 
   behavior.of("Printable & Custom Interpolator")
 
-  
   it should "pass exact strings through" in {
     class MyModule extends BasicTester {
       printf(p"An exact string")
     }
-    generateAndCheck(new MyModule,Position.here) {
+    generateAndCheck(new MyModule, Position.here) {
       case Seq(Printf("An exact string", Seq())) =>
     }
   }
@@ -87,8 +84,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
     class MyModule extends BasicTester {
       printf(p"First " + PString("Second ") + "Third")
     }
-    generateAndCheck(new MyModule,Position.here) {
-      case Seq(Printf("First Second Third", Seq())) => 
+    generateAndCheck(new MyModule, Position.here) {
+      case Seq(Printf("First Second Third", Seq())) =>
     }
   }
   it should "call toString on non-Printable objects" in {
@@ -96,7 +93,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       val myInt = 1234
       printf(p"myInt = $myInt")
     }
-    generateAndCheck(new MyModule,Position.here) {
+    generateAndCheck(new MyModule, Position.here) {
       case Seq(Printf("myInt = 1234", Seq())) =>
     }
   }
@@ -105,7 +102,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       val myWire = WireDefault(1234.U)
       printf(p"myWire = ${Decimal(myWire)}")
     }
-    generateAndCheck(new MyModule,Position.here) {
+    generateAndCheck(new MyModule, Position.here) {
       case Seq(Printf("myWire = %d", Seq("myWire"))) =>
     }
   }
@@ -113,7 +110,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
     class MyModule extends BasicTester {
       printf(Decimal(10.U(32.W)))
     }
-    generateAndCheck(new MyModule,Position.here) {
+    generateAndCheck(new MyModule, Position.here) {
       case Seq(Printf("%d", Seq(lit))) =>
         assert(lit contains "UInt<32>")
     }
@@ -122,7 +119,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
     class MyModule extends BasicTester {
       printf(p"%")
     }
-    generateAndCheck(new MyModule,Position.here) {
+    generateAndCheck(new MyModule, Position.here) {
       case Seq(Printf("%%", Seq())) =>
     }
   }
@@ -130,8 +127,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
     class MyModule extends BasicTester {
       printf("\t")
     }
-    generateAndCheck(new MyModule,Position.here) {
-      case Seq(Printf("\\t", Seq())) => 
+    generateAndCheck(new MyModule, Position.here) {
+      case Seq(Printf("\\t", Seq())) =>
     }
   }
   it should "support names of circuit elements including submodule IO" in {
@@ -153,7 +150,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       printf(p"${FullName(myWire.foo)}")
       printf(p"${FullName(myInst.io.fizz)}")
     }
-    generateAndCheck(new MyModule,Position.here) { 
+    generateAndCheck(new MyModule, Position.here) {
       case Seq(Printf("foo", Seq()), Printf("myWire.foo", Seq()), Printf("myInst.io.fizz", Seq())) =>
     }
   }
@@ -167,7 +164,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       val myInst = Module(new MySubModule)
       printf(p"${myInst.io.fizz}")
     }
-    generateAndCheck(new MyModule,Position.here) {
+    generateAndCheck(new MyModule, Position.here) {
       case Seq(Printf("%d", Seq("myInst.io.fizz"))) =>
     }
   }
@@ -179,7 +176,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       printf(p"$myUInt & $mySInt")
       //printf(cf"Hello World $myUInt%d")
     }
-    generateAndCheck(new MyModule,Position.here) {
+    generateAndCheck(new MyModule, Position.here) {
       case Seq(Printf("%d & %d", Seq("myUInt", "mySInt"))) =>
     }
   }
@@ -189,8 +186,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       myVec.foreach(_ := 0.U)
       printf(p"$myVec")
     }
-    generateAndCheck(new MyModule,Position.here) {
-      case Seq(Printf("Vec(%d, %d, %d, %d)", Seq("myVec[0]", "myVec[1]", "myVec[2]", "myVec[3]"))) => 
+    generateAndCheck(new MyModule, Position.here) {
+      case Seq(Printf("Vec(%d, %d, %d, %d)", Seq("myVec[0]", "myVec[1]", "myVec[2]", "myVec[3]"))) =>
     }
   }
   it should "print Bundles like Scala Maps by default" in {
@@ -203,7 +200,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       myBun.bar := 0.U
       printf(p"$myBun")
     }
-    generateAndCheck(new MyModule,Position.here) {
+    generateAndCheck(new MyModule, Position.here) {
       case Seq(Printf("AnonymousBundle(foo -> %d, bar -> %d)", Seq("myBun.foo", "myBun.bar"))) =>
     }
   }
@@ -267,11 +264,18 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       val s1: Short = 15
       val l1: Long = 253
       val str1 = "Printable String!"
-      printf(cf"F1 = $f1 D1 = $i1 F1 formatted = $f1%2.2f s1 = $s1 l1 = $l1 str1 = $str1%s i1_string = $i1%s i1_hex=$i1%x")
+      printf(
+        cf"F1 = $f1 D1 = $i1 F1 formatted = $f1%2.2f s1 = $s1 l1 = $l1 str1 = $str1%s i1_string = $i1%s i1_hex=$i1%x"
+      )
 
     }
-    generateAndCheck(new MyModule,Position.here) {
-      case Seq(Printf("F1 = 20.45156 D1 = 10 F1 formatted = 20.45 s1 = 15 l1 = 253 str1 = Printable String! i1_string = 10 i1_hex=a", Seq())) =>
+    generateAndCheck(new MyModule, Position.here) {
+      case Seq(
+            Printf(
+              "F1 = 20.45156 D1 = 10 F1 formatted = 20.45 s1 = 15 l1 = 253 str1 = Printable String! i1_string = 10 i1_hex=a",
+              Seq()
+            )
+          ) =>
     }
   }
 
@@ -292,8 +296,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       w1.bar := 10.U
       printf(cf"w1 = $w1")
     }
-    generateAndCheck(new MyModule,Position.here) {
-    case Seq(Printf("w1 = Bundle : Foo : %x Bar : %x", Seq("w1.foo", "w1.bar"))) => 
+    generateAndCheck(new MyModule, Position.here) {
+      case Seq(Printf("w1 = Bundle : Foo : %x Bar : %x", Seq("w1.foo", "w1.bar"))) =>
     }
   }
 
@@ -316,8 +320,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       printf(cf"${myWire.foo}%N")
       printf(cf"${myInst.io.fizz}%N")
     }
-    generateAndCheck(new MyModule,Position.here) {
-      case Seq(Printf("foo", Seq()), Printf("myWire.foo", Seq()), Printf("myInst.io.fizz", Seq())) => 
+    generateAndCheck(new MyModule, Position.here) {
+      case Seq(Printf("foo", Seq()), Printf("myWire.foo", Seq()), Printf("myInst.io.fizz", Seq())) =>
     }
   }
 
@@ -326,8 +330,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
       val b1 = 10.U
       printf(cf"This is here $b1%x!!!! And should print everything else")
     }
-    generateAndCheck(new MyModule,Position.here) {
-      case Seq(Printf("This is here %x!!!! And should print everything else",Seq("UInt<4>(\"ha\")"))) => 
+    generateAndCheck(new MyModule, Position.here) {
+      case Seq(Printf("This is here %x!!!! And should print everything else", Seq("UInt<4>(\"ha\")"))) =>
     }
   }
 
@@ -335,11 +339,11 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
     class MyModule extends BasicTester {
       val b1 = 10.U
       val b2 = 20.U
-      printf(cf"%%  $b1%x%%$b2%b = ${b1%b2}%d %%%% Tail String")
+      printf(cf"%%  $b1%x%%$b2%b = ${b1 % b2}%d %%%% Tail String")
     }
 
-    generateAndCheck(new MyModule,Position.here) {
-      case Seq(Printf("%%  %x%%%b = %d %%%% Tail String", Seq(lita,litb,_))) =>
+    generateAndCheck(new MyModule, Position.here) {
+      case Seq(Printf("%%  %x%%%b = %d %%%% Tail String", Seq(lita, litb, _))) =>
         assert(lita.contains("UInt<4>") && litb.contains("UInt<5>"))
     }
   }
@@ -357,14 +361,14 @@ class PrintableSpec extends AnyFlatSpec with Matchers  with Utils{
 
   it should "allow Printables to be expanded and used" in {
     class MyModule extends BasicTester {
-      val w1  = 20.U
+      val w1 = 20.U
       val f1 = 30.2
       val i1 = 14
       val pable = cf"w1 = $w1%b f1 = $f1%2.2f"
       printf(cf"Trying to expand printable $pable and mix with i1 = $i1%d")
     }
-    generateAndCheck(new MyModule,Position.here) {
-      case Seq(Printf("Trying to expand printable w1 = %b f1 = 30.20 and mix with i1 = 14",Seq(lit))) => 
+    generateAndCheck(new MyModule, Position.here) {
+      case Seq(Printf("Trying to expand printable w1 = %b f1 = 30.20 and mix with i1 = 14", Seq(lit))) =>
         assert(lit.contains("UInt<5>"))
     }
   }
