@@ -9,7 +9,7 @@ Chisel has a number of new features that are worth checking out.  This page is a
 
 - [FixedPoint](#fixed-point)
 - [Module Variants](#module-variants)
-- [Module Variants](#bundle-literals)
+- [Bundle Literals](#bundle-literals)
 - [Interval Type](#interval-type)
 - [Loading Memories for simulation or FPGA initialization](#loading-memories)
 

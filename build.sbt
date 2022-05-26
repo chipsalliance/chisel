@@ -233,6 +233,7 @@ lazy val chisel = (project in file("."))
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
 lazy val integrationTests = (project in file("integration-tests"))
   .dependsOn(chisel)
+  .dependsOn(standardLibrary)
   .settings(commonSettings: _*)
   .settings(chiselSettings: _*)
   .settings(usePluginSettings: _*)
@@ -248,11 +249,6 @@ lazy val standardLibrary = (project in file("stdlib"))
   .settings(commonSettings: _*)
   .settings(chiselSettings: _*)
   .settings(usePluginSettings: _*)
-  .settings(
-    Seq(
-      libraryDependencies += defaultVersions("chiseltest") % "test",
-    )
-  )
 
 lazy val docs = project // new documentation project
   .in(file("docs-target")) // important: it must not be docs/
