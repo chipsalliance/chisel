@@ -60,7 +60,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   // Returns None if failed match; else calls the partial function which could have its own check
   // Returns Some(true) to caller
   // Not calling fail() here - and letting caller do so - helps in localizing errors correctly.
-  private def generateAndCheck(gen: => RawModule)(check: PartialFunction[Seq[Printf], Unit])(implicit pos:Position) = {
+  private def generateAndCheck(gen: => RawModule)(check: PartialFunction[Seq[Printf], Unit])(implicit pos: Position) = {
     val firrtl = ChiselStage.emitChirrtl(gen)
     val printfs = getPrintfs(firrtl)
     if (!check.isDefinedAt(printfs)) {
