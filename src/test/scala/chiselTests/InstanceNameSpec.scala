@@ -22,28 +22,36 @@ class InstanceNameModule extends Module {
   io.bar := io.foo + x
 }
 
-class InstanceNameSpec extends ChiselFlatSpec {
+class InstanceNameSpec extends ChiselFlatSpec with Utils {
   behavior.of("instanceName")
   val moduleName = "InstanceNameModule"
   var m: InstanceNameModule = _
   ChiselStage.elaborate { m = new InstanceNameModule; m }
+
+  val deprecationMsg = "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated"
 
   it should "work with module IO" in {
     val io = m.io.pathName
     assert(io == moduleName + ".io")
   }
 
-  it should "work with internal vals" in {
+  it should "work for literals" in {
     val x = m.x.pathName
-    val y = m.y.pathName
-    val z = m.z.pathName
     assert(x == moduleName + ".UInt<2>(\"h03\")")
+  }
+
+  it should "work with non-hardware values (but be deprecated)" in {
+    val (ylog, y) = grabLog(m.y.pathName)
+    val (zlog, z) = grabLog(m.z.pathName)
+    ylog should include(deprecationMsg)
     assert(y == moduleName + ".y")
+    zlog should include(deprecationMsg)
     assert(z == moduleName + ".z")
   }
 
-  it should "work with bundle elements" in {
-    val foo = m.z.foo.pathName
+  it should "work with non-hardware bundle elements (but be deprecated)" in {
+    val (log, foo) = grabLog(m.z.foo.pathName)
+    log should include(deprecationMsg)
     assert(foo == moduleName + ".z.foo")
   }
 
