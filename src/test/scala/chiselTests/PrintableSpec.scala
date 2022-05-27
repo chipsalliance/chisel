@@ -259,23 +259,17 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   it should "print regular scala variables with cf format specifier" in {
 
     class MyModule extends BasicTester {
-      val f1 = 20.45156
+      val f1 = 20.4517
       val i1 = 10
-      val s1: Short = 15
-      val l1: Long = 253
-      val str1 = "Printable String!"
+      val str1 = "String!"
       printf(
-        cf"F1 = $f1 D1 = $i1 F1 formatted = $f1%2.2f s1 = $s1 l1 = $l1 str1 = $str1%s i1_string = $i1%s i1_hex=$i1%x"
+        cf"F1 = $f1 D1 = $i1 F1 formatted = $f1%2.2f str1 = $str1%s i1_str = $i1%s i1_hex=$i1%x"
       )
 
     }
+
     generateAndCheck(new MyModule) {
-      case Seq(
-            Printf(
-              "F1 = 20.45156 D1 = 10 F1 formatted = 20.45 s1 = 15 l1 = 253 str1 = Printable String! i1_string = 10 i1_hex=a",
-              Seq()
-            )
-          ) =>
+      case Seq(Printf("F1 = 20.4517 D1 = 10 F1 formatted = 20.45 str1 = String! i1_str = 10 i1_hex=a", Seq())) =>
     }
   }
 
@@ -384,4 +378,21 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
 
+  it should "fail when passing directly to StirngContext.cf a string with  literal \\ correctly escaped  " in {
+    a[StringContext.InvalidEscapeException] should be thrownBy {
+      extractCause[StringContext.InvalidEscapeException] {
+        val s_seq = Seq("Test with literal \\ correctly escaped")
+        StringContext(s_seq: _*).cf(Seq(): _*)
+      }
+    }
+  }
+
+  it should "pass correctly escaped \\ when using Printable.pack" in {
+    class MyModule extends BasicTester {
+      printf(Printable.pack("\\ \\]"))
+    }
+    generateAndCheck(new MyModule) {
+      case Seq(Printf("\\\\ \\\\]", Seq())) =>
+    }
+  }
 }
