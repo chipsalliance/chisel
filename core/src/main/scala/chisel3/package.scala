@@ -226,26 +226,24 @@ package object chisel3 {
       * Each expression (argument) referenced within the string is
       * converted to a particular Printable depending
       * on the format specifier and type.
-      * 
-      * 
+      *
       * ==== For Chisel types referenced within the String ====
       * %n - Returns [[Name]] Printable.
       * %N - Returns [[FullName]] Printable.
       * %b,%d,%x,%c = Only applicable for types of [[Bits]] or dreived from it. - returns ([[Binary]],[[Decimal]],
-      * [[Hexadecimal]],[[Character]]) Printable respectively. 
+      * [[Hexadecimal]],[[Character]]) Printable respectively.
       * Default if no specifier given is to call [[Data.toPrintable]] on the Chisel Type.
       *
-      *
       * ==== For [[Printable]] type_:  ====
-        No explicit format specifier supported - just return the Printable.
+      *        No explicit format specifier supported - just return the Printable.
       *
       * ==== For regular scala types ====
       * Call String.format with the argument and specifier.
-      * Default is %s if no specifier is given. 
-      * Wrap the result in [[PString]] Printable. 
+      * Default is %s if no specifier is given.
+      * Wrap the result in [[PString]] Printable.
       *
-      * ==== For the parts of the StringContext ==== 
-      * Remove format specifiers and if literal percents (need to be escaped with %) 
+      * ==== For the parts of the StringContext ====
+      * Remove format specifiers and if literal percents (need to be escaped with %)
       * are present convert them into [[Percent]] Printable.
       * Rest of the string will be wrapped in [[PString]] Printable.
       *
