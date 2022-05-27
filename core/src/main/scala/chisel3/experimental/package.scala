@@ -218,6 +218,10 @@ package object experimental {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin:   Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple2(chiselTypeClone(_1), chiselTypeClone(_2))
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2
+    )
   }
 
   /** [[Data]] equivalent of Scala's [[Tuple3]]
@@ -236,6 +240,11 @@ package object experimental {
       chiselTypeClone(_1),
       chiselTypeClone(_2),
       chiselTypeClone(_3)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3
     )
   }
 
@@ -257,6 +266,12 @@ package object experimental {
       chiselTypeClone(_2),
       chiselTypeClone(_3),
       chiselTypeClone(_4)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4
     )
   }
 
@@ -280,6 +295,13 @@ package object experimental {
       chiselTypeClone(_3),
       chiselTypeClone(_4),
       chiselTypeClone(_5)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5
     )
   }
 
@@ -305,6 +327,14 @@ package object experimental {
       chiselTypeClone(_4),
       chiselTypeClone(_5),
       chiselTypeClone(_6)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6
     )
   }
 
@@ -340,6 +370,15 @@ package object experimental {
       chiselTypeClone(_5),
       chiselTypeClone(_6),
       chiselTypeClone(_7)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6,
+      "_7" -> _7
     )
   }
 
@@ -378,6 +417,16 @@ package object experimental {
       chiselTypeClone(_6),
       chiselTypeClone(_7),
       chiselTypeClone(_8)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6,
+      "_7" -> _7,
+      "_8" -> _8
     )
   }
 
@@ -419,6 +468,17 @@ package object experimental {
       chiselTypeClone(_7),
       chiselTypeClone(_8),
       chiselTypeClone(_9)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6,
+      "_7" -> _7,
+      "_8" -> _8,
+      "_9" -> _9
     )
   }
 
@@ -463,6 +523,18 @@ package object experimental {
       chiselTypeClone(_8),
       chiselTypeClone(_9),
       chiselTypeClone(_10)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6,
+      "_7" -> _7,
+      "_8" -> _8,
+      "_9" -> _9,
+      "_10" -> _10
     )
   }
 }
