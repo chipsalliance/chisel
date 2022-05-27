@@ -52,8 +52,8 @@ sbt assembly
 
 ##### Prerequisites
  1. If not already installed, install [verilator](http://www.veripool.org/projects/verilator/wiki/Installing) (Requires at least v3.886)
- 1. If not already installed, install [yosys](http://www.clifford.at/yosys/) (Requires at least v0.8)
- 1. If not already installed, install [sbt](http://www.scala-sbt.org/) (Requires at least v0.13.6)
+ 1. If not already installed, install [yosys](https://github.com/YosysHQ/yosys) (Requires at least v0.8)
+ 1. If not already installed, install [sbt](http://www.scala-sbt.org/) (Recommend v1.6.2)
 
 ##### Installation
  1. Clone the repository:
