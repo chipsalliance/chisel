@@ -162,9 +162,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         /* Test to see if the bundle found is amenable to having it's elements
          * converted to an immediate form that will not require reflection
          */
-        def isSupportedBundleType: Boolean = {
-          arguments.genBundleElements && !bundle.mods.hasFlag(Flag.ABSTRACT)
-        }
+        def isSupportedBundleType: Boolean = !bundle.mods.hasFlag(Flag.ABSTRACT)
 
         val elementsImplOpt = if (isSupportedBundleType) {
           /* extract the true fields from the super classes a given bundle

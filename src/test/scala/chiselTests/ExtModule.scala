@@ -59,6 +59,35 @@ class MultiExtModuleTester extends BasicTester {
   stop()
 }
 
+class ExtModuleWithSuggestName extends ExtModule {
+  val in = IO(Input(UInt(8.W)))
+  in.suggestName("foo")
+  val out = IO(Output(UInt(8.W)))
+}
+
+class ExtModuleWithSuggestNameTester extends Module {
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+  val inst = Module(new ExtModuleWithSuggestName)
+  inst.in := in
+  out := inst.out
+}
+
+class SimpleIOBundle extends Bundle {
+  val in = Input(UInt(8.W))
+  val out = Output(UInt(8.W))
+}
+
+class ExtModuleWithFlatIO extends ExtModule {
+  val badIO = FlatIO(new SimpleIOBundle)
+}
+
+class ExtModuleWithFlatIOTester extends Module {
+  val io = IO(new SimpleIOBundle)
+  val inst = Module(new ExtModuleWithFlatIO)
+  io <> inst.badIO
+}
+
 class ExtModuleSpec extends ChiselFlatSpec {
   "A ExtModule inverter" should "work" in {
     assertTesterPasses({ new ExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
@@ -72,5 +101,20 @@ class ExtModuleSpec extends ChiselFlatSpec {
       val m = Module(new extmoduletests.BlackBoxPassthrough)
       assert(DataMirror.modulePorts(m) == Seq("in" -> m.in, "out" -> m.out))
     })
+  }
+
+  behavior.of("ExtModule")
+
+  it should "work with .suggestName (aka it should not require reflection for naming)" in {
+    val chirrtl = ChiselStage.emitChirrtl(new ExtModuleWithSuggestNameTester)
+    chirrtl should include("input foo : UInt<8>")
+    chirrtl should include("inst.foo <= in")
+  }
+
+  it should "work with FlatIO" in {
+    val chirrtl = ChiselStage.emitChirrtl(new ExtModuleWithFlatIOTester)
+    chirrtl should include("io.out <= inst.out")
+    chirrtl should include("inst.in <= io.in")
+    chirrtl shouldNot include("badIO")
   }
 }

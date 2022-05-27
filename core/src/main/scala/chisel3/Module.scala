@@ -351,6 +351,27 @@ package experimental {
       */
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit
 
+    private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
+      for (port <- getModulePorts) {
+        port._computeName(None, None).orElse(names.get(port)) match {
+          case Some(name) =>
+            if (_namespace.contains(name)) {
+              Builder.error(
+                s"""Unable to name port $port to "$name" in $this,""" +
+                  " name is already taken by another port!"
+              )
+            }
+            port.setRef(ModuleIO(this, _namespace.name(name)))
+          case None =>
+            Builder.error(
+              s"Unable to name port $port in $this, " +
+                "try making it a public field of the Module"
+            )
+            port.setRef(ModuleIO(this, "<UNNAMED>"))
+        }
+      }
+    }
+
     //
     // Chisel Internals
     //

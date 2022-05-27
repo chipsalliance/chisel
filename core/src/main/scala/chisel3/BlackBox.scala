@@ -71,11 +71,8 @@ package experimental {
 
       val names = nameIds(classOf[ExtModule])
 
-      // Name ports based on reflection
-      for (port <- getModulePorts) {
-        require(names.contains(port), s"Unable to name port $port in $this")
-        port.setRef(ModuleIO(this, _namespace.name(names(port))))
-      }
+      // Ports are named in the same way as regular Modules
+      namePorts(names)
 
       // All suggestions are in, force names to every node.
       // While BlackBoxes are not supposed to have an implementation, we still need to call
