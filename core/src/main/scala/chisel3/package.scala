@@ -222,31 +222,32 @@ package object chisel3 {
 
     /** Custom string interpolator for generating formatted Printables : cf"..."
       *
-      * Enhanced version of scala's `f` interpolator
+      * Enhanced version of scala's `f` interpolator.
       * Each expression (argument) referenced within the string is
       * converted to a particular Printable depending
       * on the format specifier and type.
       *
-      * For Chisel types referenced within the String
-      * %n - Returns Name Printable
-      * %N - Returns FullName Printable
-      * %b,%d,%x = Only applicable for Bits type - returns a FirrtlFormat Printable
-      * Default if no specifier given is to call .toPrintable on the Chisel Type
+      * For Chisel types referenced within the String.
+      * %n - Returns [[Name]] Printable.
+      * %N - Returns [[FullName]] Printable.
+      * %b,%d,%x,%c = Only applicable for types of [[Bits]] or dreived from it. - returns ([[Binary]],[[Decimal]],
+      * [[Hexadecimal]],[[Character]]) Printable respectively. 
+      * Default if no specifier given is to call [[Data.toPrintable]] on the Chisel Type.
       *
-      * For Printable type
-      *  No explicit format specifier supported - just return the Printable
       *
-      * For regular scala types
-      * Default is %s if no specifier given.Call String.format with the argument and specifier.
-      * Wrap the result in PString Printable
+      * For [[Printable]] type_:  No explicit format specifier supported - just return the Printable.
+      *
+      * For regular scala types call String.format with the argument and specifier.
+      * Default is %s if no specifier is given. 
+      * Wrap the result in [[PString]] Printable. 
       *
       * Literal percents need to be escaped with a %.
       *
       * For the parts of the StringContext - remove format specifiers and
-      * if literal percents are present - convert them into Percent Printable.
-      * Rest of the string will be wrapped in PString Printable.
+      * if literal percents are present - convert them into [[Percent]] Printable.
+      * Rest of the string will be wrapped in [[PString]] Printable.
       *
-      * For example:
+      * @example
       * {{{
       *
       * val w1  = 20.U // Chisel UInt type (which extends Bits)
