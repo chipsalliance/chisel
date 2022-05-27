@@ -253,7 +253,7 @@ package object chisel3 {
       *
       * val w1  = 20.U // Chisel UInt type (which extends Bits)
       * val f1 = 30.2 // Scala float type.
-      * val pable = cf"w1 = $w1%x f1 = $f1%2.2f. This is 100% clear"
+      * val pable = cf"w1 = $w1%x f1 = $f1%2.2f. This is 100%% clear"
       *
       * // pable is as follows
       * // Printables(List(PString(w1 = ), Hexadecimal(UInt<5>(20)), PString( f1 = ), PString(30.20), PString(. This is 100), Percent, PString( clear)))
