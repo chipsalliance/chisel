@@ -47,4 +47,6 @@ Text from here to the end of the body will be considered for inclusion in the re
 - [ ] Did you mark the proper milestone (Bug fix: `3.4.x`, [small] API extension: `3.5.x`, API modification or big change: `3.6.0`)?
 - [ ] Did you review?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
-- [ ] Did you mark as `Please Merge`?
+- [ ] Did you do one of the following when ready to merge:
+  - [ ] Squash: You/ the contributor `Enable auto-merge (squash)`, clean up the commit message, and label with `Please Merge`.
+  - [ ] Merge: Ensure that contributor has cleaned up their commit history, then merge with `Create a merge commit`.
