@@ -228,13 +228,14 @@ package object chisel3 {
       * on the format specifier and type.
       *
       * ==== For Chisel types referenced within the String ====
-      * %n - Returns [[Name]] Printable.
-      * %N - Returns [[FullName]] Printable.
-      * %b,%d,%x,%c = Only applicable for types of [[Bits]] or dreived from it. - returns ([[Binary]],[[Decimal]],
-      * [[Hexadecimal]],[[Character]]) Printable respectively.
-      * Default if no specifier given is to call [[Data.toPrintable]] on the Chisel Type.
       *
-      * ==== For [[Printable]] type_:  ====
+      *  - <code>%n</code> - Returns [[Name]] Printable.
+      *  - <code>%N</code> - Returns [[FullName]] Printable.
+      *  - <code>%b,%d,%x,%c</code> - Only applicable for types of [[Bits]] or dreived from it. - returns ([[Binary]],[[Decimal]],
+      * [[Hexadecimal]],[[Character]]) Printable respectively.
+      *  - Default - If no specifier given call [[Data.toPrintable]] on the Chisel Type.
+      *
+      * ==== For [[Printable]] type:  ====
       *        No explicit format specifier supported - just return the Printable.
       *
       * ==== For regular scala types ====
