@@ -195,7 +195,6 @@ lazy val chisel = (project in file("."))
   .settings(
     mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",
-    Test / scalacOptions += "-P:chiselplugin:genBundleElements",
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
     Compile / doc / scalacOptions ++= Seq(
       "-diagrams",
