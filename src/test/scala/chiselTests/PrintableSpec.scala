@@ -38,7 +38,6 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
   private val StringRegex = """([^"]*)"(.*?)"(.*)""".r
   private case class Printf(str: String, args: Seq[String])
-  private case class ErrorString(firrtl: String, actual: Seq[Printf])
   private def getPrintfs(firrtl: String): Seq[Printf] = {
     def processArgs(str: String): Seq[String] =
       str.split(",").map(_.trim).filter(_.nonEmpty)
@@ -57,9 +56,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   }
 
   // Generates firrtl, gets Printfs
-  // Returns None if failed match; else calls the partial function which could have its own check
-  // Returns Some(true) to caller
-  // Not calling fail() here - and letting caller do so - helps in localizing errors correctly.
+  // Calls fail() if failed match; else calls the partial function which could have its own check
   private def generateAndCheck(gen: => RawModule)(check: PartialFunction[Seq[Printf], Unit])(implicit pos: Position) = {
     val firrtl = ChiselStage.emitChirrtl(gen)
     val printfs = getPrintfs(firrtl)
