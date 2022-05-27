@@ -256,7 +256,7 @@ package object chisel3 {
       * val pable = cf"w1 = $w1%x f1 = $f1%2.2f. This is 100% clear"
       *
       * // pable is as follows
-      * // Printables(List(PString(w1 = ), Binary(UInt<5>(20)), PString( f1 = ), PString(30.20), PString(. This is 100), Percent, PString( clear)))
+      * // Printables(List(PString(w1 = ), Hexadecimal(UInt<5>(20)), PString( f1 = ), PString(30.20), PString(. This is 100), Percent, PString( clear)))
       * }}}
       *
       * @throws UnknownFormatConversionException
