@@ -169,9 +169,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     class MyModule extends BasicTester {
       val myUInt = WireDefault(0.U)
       val mySInt = WireDefault(-1.S)
-      val exp = 10.U
       printf(p"$myUInt & $mySInt")
-      //printf(cf"Hello World $myUInt%d")
     }
     generateAndCheck(new MyModule) {
       case Seq(Printf("%d & %d", Seq("myUInt", "mySInt"))) =>
