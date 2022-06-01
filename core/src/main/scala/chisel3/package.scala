@@ -42,45 +42,8 @@ package object chisel3 {
     /** Int to UInt conversion, recommended style for constants. */
     def U: UInt = UInt.Lit(bigint, Width()) // scalastyle:ignore method.name
 
-    /** BigInt to UInt conversion followed by bit extract (bad style, deprecated) */
-    @chiselRuntimeDeprecated
-    @deprecated(
-      "Passing an Int to .U is usually a mistake: It does *not* set the width but does a bit extract. " +
-        "Did you mean .U(<arg>.W)? " +
-        "If you do want bit extraction, explicitly use .U.apply(<arg>)",
-      "Chisel 3.5.4"
-    )
-    def U(x: BigInt): Bool = { // scalastyle:ignore method.name
-      // Note that both source locator and compile options are ignored for apply on literal
-      this.U.do_apply(x)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
-    }
-
-    /** BigInt to UInt conversion followed by bit extract */
-    def U(x: BigInt, y: BigInt): UInt = { // scalastyle:ignore method.name
-      // Note that both source locator and compile options are ignored for apply on literal
-      this.U.do_apply(x, y)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
-    }
-
     /** Int to SInt conversion, recommended style for constants. */
     def S: SInt = SInt.Lit(bigint, Width()) // scalastyle:ignore method.name
-
-    /** BigInt to SInt conversion followed by bit extract (bad style, deprecated) */
-    @chiselRuntimeDeprecated
-    @deprecated(
-      "Passing an Int to .S is usually a mistake: It does *not* set the width but does a bit extract. " +
-        "Did you mean .S(<arg>.W)? " +
-        "If you do want bit extraction, explicitly use .S.apply(<arg>)",
-      "Chisel 3.5.4"
-    )
-    def S(x: BigInt): Bool = { // scalastyle:ignore method.name
-      this.S.do_apply(x)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
-    }
-
-    /** BigInt to SInt conversion followed by bit extract */
-    def S(x: BigInt, y: BigInt): UInt = { // scalastyle:ignore method.name
-      // Note that both source locator and compile options are ignored for apply on literal
-      this.S.do_apply(x, y)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
-    }
 
     /** Int to UInt conversion with specified width, recommended style for constants.
       */

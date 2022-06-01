@@ -8,7 +8,7 @@ import chisel3.experimental.{FixedPoint, Interval}
 import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
+import chisel3.internal.sourceinfo.{IntLiteralApplyTransform, SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
@@ -94,9 +94,9 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param x an index
     * @return the specified bit
     */
-  final def apply(x: BigInt): Bool = macro SourceInfoTransform.xArg
+  final def apply(x: BigInt): Bool = macro IntLiteralApplyTransform.safeApply
 
-  /** @group SourceInfoTransformMacro */
+  /** @group IntLiteralApplyTransformMacro */
   final def do_apply(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
@@ -122,9 +122,9 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param x an index
     * @return the specified bit
     */
-  final def apply(x: Int): Bool = macro SourceInfoTransform.xArg
+  final def apply(x: Int): Bool = macro IntLiteralApplyTransform.safeApply
 
-  /** @group SourceInfoTransformMacro */
+  /** @group IntLiteralApplyTransformMacro */
   final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     do_apply(BigInt(x))
 
