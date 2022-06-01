@@ -80,7 +80,7 @@ object Printable {
     }
     var iter = 0
     var curr_start = 0
-    var buf = mutable.ListBuffer.empty[String]
+    val buf = mutable.ListBuffer.empty[String]
     while (iter < fmt.size) {
       // Encountered % which is either
       // 1. Describing a format specifier.
