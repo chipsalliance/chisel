@@ -63,57 +63,76 @@ object Printable {
     */
   def pack(fmt: String, data: Data*): Printable = {
     val args = data.toIterator
-
     // Error handling
     def carrotAt(index: Int) = (" " * index) + "^"
     def errorMsg(index: Int) =
       s"""|    fmt = "$fmt"
           |           ${carrotAt(index)}
           |    data = ${data.mkString(", ")}""".stripMargin
-    def getArg(i: Int): Data = {
+
+    def checkArg(i: Int): Unit = {
       if (!args.hasNext) {
         val msg = "has no matching argument!\n" + errorMsg(i)
         // Exception wraps msg in s"Format Specifier '$msg'"
         throw new MissingFormatArgumentException(msg)
       }
-      args.next()
+      val _ = args.next()
     }
-
-    val pables = mutable.ListBuffer.empty[Printable]
-    var str = ""
-    var percent = false
-    for ((c, i) <- fmt.zipWithIndex) {
-      if (percent) {
-        val arg = c match {
-          case FirrtlFormat(x) => FirrtlFormat(x.toString, getArg(i))
-          case 'n'             => Name(getArg(i))
-          case 'N'             => FullName(getArg(i))
-          case '%'             => Percent
-          case x =>
-            val msg = s"Illegal format specifier '$x'!\n" + errorMsg(i)
-            throw new UnknownFormatConversionException(msg)
+    var iter = 0
+    var curr_start = 0
+    val buf = mutable.ListBuffer.empty[String]
+    while (iter < fmt.size) {
+      // Encountered % which is either
+      // 1. Describing a format specifier.
+      // 2. Literal Percent
+      // 3. Dangling percent - most likely due to a typo - intended literal percent or forgot the specifier.
+      // Try to give meaningful error reports
+      if (fmt(iter) == '%') {
+        if (iter != fmt.size - 1 && (fmt(iter + 1) != '%' && !fmt(iter + 1).isWhitespace)) {
+          checkArg(iter)
+          buf += fmt.substring(curr_start, iter)
+          curr_start = iter
+          iter += 1
         }
-        pables += PString(str.dropRight(1)) // remove format %
-        pables += arg
-        str = ""
-        percent = false
-      } else {
-        str += c
-        percent = c == '%'
+
+        // Last character is %.
+        else if (iter == fmt.size - 1) {
+          val msg = s"Trailing %\n" + errorMsg(fmt.size - 1)
+          throw new UnknownFormatConversionException(msg)
+        }
+
+        // A lone %
+        else if (fmt(iter + 1).isWhitespace) {
+          val msg = s"Unescaped % - add % if literal or add proper specifier if not\n" + errorMsg(iter + 1)
+          throw new UnknownFormatConversionException(msg)
+        }
+
+        // A literal percent - hence increment by 2.
+        else {
+          iter += 2
+        }
       }
-    }
-    if (percent) {
-      val msg = s"Trailing %\n" + errorMsg(fmt.size - 1)
-      throw new UnknownFormatConversionException(msg)
+
+      // Normal progression
+      else {
+        iter += 1
+      }
     }
     require(
       !args.hasNext,
       s"Too many arguments! More format specifier(s) expected!\n" +
         errorMsg(fmt.size)
     )
+    buf += fmt.substring(curr_start, iter)
 
-    pables += PString(str)
-    Printables(pables)
+    // The string received as an input to pack is already
+    // treated  i.e. escape sequences are processed.
+    // Since StringContext API assumes the parts are un-treated
+    // treatEscapes is called within the implemented custom interpolators.
+    // The literal \ needs to be escaped before sending to the custom cf interpolator.
+
+    val bufEscapeBackSlash = buf.map(_.replace("\\", "\\\\"))
+    StringContext(bufEscapeBackSlash.toSeq: _*).cf(data: _*)
   }
 }
 
