@@ -304,7 +304,7 @@ class IntLiteralApplyTransform(val c: Context) extends AutoSourceTransform {
 
   def safeApply(x: c.Tree): c.Tree = {
     c.macroApplication match {
-      case q"_.$clazz($lit).$func.apply($arg)" =>
+      case q"$_.$clazz($lit).$func.apply($arg)" =>
         if(
           Set("U", "S").contains(func.toString) &&
           Set("fromStringToLiteral", "fromIntToLiteral", "fromLongToIteral", "fromBigIntToLiteral").contains(clazz.toString)
