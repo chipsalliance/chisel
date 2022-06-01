@@ -8,7 +8,13 @@ import chisel3.experimental.{FixedPoint, Interval}
 import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{IntLiteralApplyTransform, SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
+import chisel3.internal.sourceinfo.{
+  IntLiteralApplyTransform,
+  SourceInfo,
+  SourceInfoTransform,
+  SourceInfoWhiteboxTransform,
+  UIntTransform
+}
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
