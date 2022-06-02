@@ -9,7 +9,8 @@ import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
 import chisel3.experimental.BaseModule
-import firrtl.annotations.{IsModule, ModuleTarget}
+import chisel3.experimental.hierarchy.Definition
+import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
 
 /** User-facing Definition type.
   * Represents a definition of an object of type [[A]] which are marked as @instantiable
@@ -111,3 +112,9 @@ object Definition extends SourceInfoDoc {
   }
 
 }
+
+/** Stores a [[Definition]] that is imported so that its Instances can be
+  * compiled separately.
+  */
+case class ImportDefinitionAnnotation[T <: BaseModule with IsInstantiable](definition: Definition[T])
+    extends NoTargetAnnotation

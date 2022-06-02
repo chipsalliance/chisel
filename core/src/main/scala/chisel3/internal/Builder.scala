@@ -6,7 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.core.{Clone, Instance}
+import chisel3.experimental.hierarchy.core.{Clone, ImportDefinitionAnnotation, Instance}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -240,7 +240,18 @@ private[chisel3] trait HasId extends InstanceId {
 
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg.fullName(c)
-    case None      => _computeName(None, None).get
+    case None      =>
+      // This is super hacky but this is just for a short term deprecation
+      // These accesses occur after Chisel elaboration so we cannot use the normal
+      // Builder.deprecated mechanism, we have to create our own one off ErrorLog and print the
+      // warning right away.
+      val errors = new ErrorLog
+      val logger = new _root_.logger.Logger(this.getClass.getName)
+      val msg = "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated. " +
+        "This will become an error in Chisel 3.6."
+      errors.deprecated(msg, None)
+      errors.checkpoint(logger)
+      _computeName(None, None).get
   }
 
   // Helper for reifying views if they map to a single Target
@@ -364,7 +375,24 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq, val throwOnFirstError: Boolean) {
+  val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+
+  // Ensure there are no repeated names for imported Definitions
+  val importDefinitionNames = importDefinitionAnnos.map { a => a.definition.proto.name }
+  if (importDefinitionNames.distinct.length < importDefinitionNames.length) {
+    val duplicates = importDefinitionNames.diff(importDefinitionNames.distinct).mkString(", ")
+    throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
+  }
+
   val globalNamespace = Namespace.empty
+
+  // Ensure imported Definitions emit as ExtModules with the correct name so
+  // that instantiations will also use the correct name and prevent any name
+  // conflicts with Modules/Definitions in this elaboration
+  importDefinitionNames.foreach { importDefName =>
+    globalNamespace.name(importDefName)
+  }
+
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None

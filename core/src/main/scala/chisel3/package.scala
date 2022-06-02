@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import chisel3.internal.firrtl.BinaryPoint
+import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
+import scala.collection.mutable
 
 /** This package contains the main chisel3 API.
   */
@@ -210,29 +212,142 @@ package object chisel3 {
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {
 
     /** Custom string interpolator for generating Printables: p"..."
-      * Will call .toString on any non-Printable arguments (mimicking s"...")
+      * mimicks s"..." for non-Printable data)
       */
     def p(args: Any*): Printable = {
-      sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
-      val pargs: Seq[Option[Printable]] = args.map {
-        case p: Printable => Some(p)
-        case d: Data      => Some(d.toPrintable)
-        case any =>
-          for {
-            v <- Option(any) // Handle null inputs
-            str = v.toString
-            if !str.isEmpty // Handle empty Strings
-          } yield PString(str)
+      // P interpolator does not treat % differently - hence need to add % before sending to cf.
+      val t = sc.parts.map(_.replaceAll("%", "%%"))
+      StringContext(t: _*).cf(args: _*)
+    }
+
+    /** Custom string interpolator for generating formatted Printables : cf"..."
+      *
+      * Enhanced version of scala's `f` interpolator.
+      * Each expression (argument) referenced within the string is
+      * converted to a particular Printable depending
+      * on the format specifier and type.
+      *
+      * ==== For Chisel types referenced within the String ====
+      *
+      *  - <code>%n</code> - Returns [[Name]] Printable.
+      *  - <code>%N</code> - Returns [[FullName]] Printable.
+      *  - <code>%b,%d,%x,%c</code> - Only applicable for types of [[Bits]] or dreived from it. - returns ([[Binary]],[[Decimal]],
+      * [[Hexadecimal]],[[Character]]) Printable respectively.
+      *  - Default - If no specifier given call [[Data.toPrintable]] on the Chisel Type.
+      *
+      * ==== For [[Printable]] type:  ====
+      *        No explicit format specifier supported - just return the Printable.
+      *
+      * ==== For regular scala types ====
+      * Call String.format with the argument and specifier.
+      * Default is %s if no specifier is given.
+      * Wrap the result in [[PString]] Printable.
+      *
+      * ==== For the parts of the StringContext ====
+      * Remove format specifiers and if literal percents (need to be escaped with %)
+      * are present convert them into [[Percent]] Printable.
+      * Rest of the string will be wrapped in [[PString]] Printable.
+      *
+      * @example
+      * {{{
+      *
+      * val w1  = 20.U // Chisel UInt type (which extends Bits)
+      * val f1 = 30.2 // Scala float type.
+      * val pable = cf"w1 = $w1%x f1 = $f1%2.2f. This is 100%% clear"
+      *
+      * // pable is as follows
+      * // Printables(List(PString(w1 = ), Hexadecimal(UInt<5>(20)), PString( f1 = ), PString(30.20), PString(. This is 100), Percent, PString( clear)))
+      * }}}
+      *
+      * @throws UnknownFormatConversionException
+      *         if literal percent not escaped with % or if the format specifier is not supported
+      *         for the specific type
+      *
+      * @throws StringContext.InvalidEscapeException
+      *         if a `parts` string contains a backslash (`\`) character
+      *         that does not start a valid escape sequence.
+      *
+      * @throws IllegalArgumentException
+      *         if the number of `parts` in the enclosing `StringContext` does not exceed
+      *         the number of arguments `arg` by exactly 1.
+      */
+    def cf(args: Any*): Printable = {
+
+      // Handle literal %
+      // Takes the part string -
+      // - this is assumed to not have any format specifiers - already handled / removed before calling this function.
+      // Only thing present is literal % if any which should ideally be with %%.
+      // If not - then flag an error.
+      // Return seq of Printables (either PString or Percent or both - nothing else
+      def percentSplitter(s: String): Seq[Printable] = {
+        if (s.isEmpty) Seq(PString(""))
+        else {
+          val pieces = s.split("%%").toList.flatMap { p =>
+            if (p.contains('%')) throw new UnknownFormatConversionException("Un-escaped % found")
+            // Wrap in PString and intersperse the escaped percentages
+            Seq(Percent, PString(p))
+          }
+          if (pieces.isEmpty) Seq(Percent)
+          else pieces.tail // Don't forget to drop the extra percent we put at the beginning
+        }
       }
+
+      def extractFormatSpecifier(part: String): (Option[String], String) = {
+        // Check if part starts with a format specifier (with % - disambiguate with literal % checking the next character if needed to be %)
+        // In the case of %f specifier there is a chance that we need more information - so capture till the 1st letter (a-zA-Z).
+        // Example cf"This is $val%2.2f here" - parts - Seq("This is ","%2.2f here") - the format specifier here is %2.2f.
+        val endFmtIdx =
+          if (part.length > 1 && part(0) == '%' && part(1) != '%') part.indexWhere(_.isLetter)
+          else -1
+        val (fmt, rest) = part.splitAt(endFmtIdx + 1)
+
+        val fmtOpt = if (fmt.nonEmpty) Some(fmt) else None
+        (fmtOpt, rest)
+
+      }
+
+      sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
       val parts = sc.parts.map(StringContext.treatEscapes)
-      // Zip sc.parts and pargs together ito flat Seq
-      // eg. Seq(sc.parts(0), pargs(0), sc.parts(1), pargs(1), ...)
-      val seq = for { // append None because sc.parts.size == pargs.size + 1
-        (literal, arg) <- parts.zip(pargs :+ None)
-        optPable <- Seq(Some(PString(literal)), arg)
-        pable <- optPable // Remove Option[_]
-      } yield pable
-      Printables(seq)
+      // The 1st part is assumed never to contain a format specifier.
+      // If the 1st part of a string is an argument - then the 1st part will be an empty String.
+      // So we need to parse parts following the 1st one to get the format specifiers if any
+      val partsAfterFirst = parts.tail
+
+      // Align parts to their potential specifiers
+      val pables = partsAfterFirst.zip(args).flatMap {
+        case (part, arg) => {
+          val (fmt, modP) = extractFormatSpecifier(part)
+          val fmtArg: Printable = arg match {
+            case d: Data => {
+              fmt match {
+                case Some("%n")                          => Name(d)
+                case Some("%N")                          => FullName(d)
+                case Some(fForm) if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1, 2), d)
+                case Some(x) => {
+                  val msg = s"Illegal format specifier '$x' for Chisel Data type!\n"
+                  throw new UnknownFormatConversionException(msg)
+                }
+                case None => d.toPrintable
+              }
+            }
+            case p: Printable => {
+              fmt match {
+                case Some(x) => {
+                  val msg = s"Illegal format specifier '$x' for Chisel Printable type!\n"
+                  throw new UnknownFormatConversionException(msg)
+                }
+                case None => p
+              }
+            }
+
+            // Generic case - use String.format (for example %d,%2.2f etc on regular Scala types)
+            case t => PString(fmt.getOrElse("%s").format(t))
+
+          }
+          Seq(fmtArg) ++ percentSplitter(modP)
+        }
+      }
+      Printables(percentSplitter(parts.head) ++ pables)
     }
   }
 
