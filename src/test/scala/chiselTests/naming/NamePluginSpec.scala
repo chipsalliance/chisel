@@ -3,6 +3,7 @@
 package chiselTests.naming
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.aop.Select
 import chisel3.experimental.{prefix, treedump}
 import chiselTests.{ChiselFlatSpec, Utils}
@@ -67,6 +68,24 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     aspectTest(() => new Test) { top: Test =>
       Select.wires(top).map(_.instanceName) should be(List("x1_first_wire1", "x1", "x2_second_wire1", "x2"))
     }
+  }
+
+  "Scala plugin" should "name verification ops" in {
+    class Test extends Module {
+      val foo, bar = IO(Input(UInt(8.W)))
+
+      {
+        val x1 = chisel3.assert(1.U === 1.U)
+        val x2 = cover(foo =/= bar)
+        val x3 = chisel3.assume(foo =/= 123.U)
+        val x4 = printf("foo = %d\n", foo)
+      }
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new Test)
+    (chirrtl should include).regex("assert.*: x1")
+    (chirrtl should include).regex("cover.*: x2")
+    (chirrtl should include).regex("assume.*: x3")
+    (chirrtl should include).regex("printf.*: x4")
   }
 
   "Naming on option" should "work" in {
