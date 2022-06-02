@@ -3,6 +3,7 @@
 package chiselTests.naming
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.aop.Select
 import chisel3.experimental.{dump, noPrefix, prefix, treedump}
 import chiselTests.{ChiselPropSpec, Utils}
@@ -391,6 +392,26 @@ class PrefixSpec extends ChiselPropSpec with Utils {
     aspectTest(() => new Test) { top: Test =>
       Select.wires(top).map(_.instanceName) should be(List("x", "x_w_w", "x_w_w_w", "x_w_w_w_w"))
     }
+  }
 
+  property("Prefixing should work for verification ops") {
+    class Test extends Module {
+      val foo, bar = IO(Input(UInt(8.W)))
+
+      {
+        val x5 = {
+          val x1 = chisel3.assert(1.U === 1.U)
+          val x2 = cover(foo =/= bar)
+          val x3 = chisel3.assume(foo =/= 123.U)
+          val x4 = printf("foo = %d\n", foo)
+          x1
+        }
+      }
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new Test)
+    (chirrtl should include).regex("assert.*: x5")
+    (chirrtl should include).regex("cover.*: x5_x2")
+    (chirrtl should include).regex("assume.*: x5_x3")
+    (chirrtl should include).regex("printf.*: x5_x4")
   }
 }
