@@ -78,10 +78,13 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       }
     }
 
-    private val shouldMatchData:      Type => Boolean = shouldMatchGen(tq"chisel3.Data")
-    private val shouldMatchDataOrMem: Type => Boolean = shouldMatchGen(tq"chisel3.Data", tq"chisel3.MemBase[_]")
-    private val shouldMatchModule:    Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
-    private val shouldMatchInstance:  Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
+    private val shouldMatchData: Type => Boolean = shouldMatchGen(tq"chisel3.Data")
+    // Checking for all chisel3.internal.NamedComponents, but since it is internal, we instead have
+    // to match the public subtypes
+    private val shouldMatchNamedComp: Type => Boolean =
+      shouldMatchGen(tq"chisel3.Data", tq"chisel3.MemBase[_]", tq"chisel3.VerificationStatement")
+    private val shouldMatchModule:   Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
+    private val shouldMatchInstance: Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
 
     // Given a type tree, infer the type and return it
     private def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
@@ -176,7 +179,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
         }
         // If a Data or a Memory, get the name and a prefix
-        else if (shouldMatchDataOrMem(tpe)) {
+        else if (shouldMatchNamedComp(tpe)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs)
           val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
