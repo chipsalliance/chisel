@@ -15,6 +15,7 @@ import _root_.firrtl.{AnnotationSeq, RenameMap}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
+import chisel3.internal.RuntimeDeprecatedTransform._
 
 import scala.collection.mutable
 
@@ -148,6 +149,16 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def suggestName(seed: => String): this.type = {
+    if (suggested_seed.isDefined) {
+      Builder.deprecated(
+        s"Calling suggestName ($seed, when already called with ${suggested_seed}) more than once will become an error in Chisel 3.6"
+      )
+    }
+    if (_computedName.isDefined) {
+      Builder.deprecated(
+        s"Calling suggestName ($seed, when the name was already computed as ${_computedName})) after the name has already been computed will become an error in Chisel 3.6"
+      )
+    }
     if (suggested_seed.isEmpty) suggested_seed = Some(seed)
     naming_prefix = Builder.getPrefix
     for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
@@ -165,6 +176,8 @@ private[chisel3] trait HasId extends InstanceId {
     }
   }
 
+  private[chisel3] var _computedName: Option[Option[String]] = None
+
   /** Computes the name of this HasId, if one exists
     * @param defaultPrefix Optionally provide a default prefix for computing the name
     * @param defaultSeed Optionally provide default seed for computing the name
@@ -172,30 +185,35 @@ private[chisel3] trait HasId extends InstanceId {
     */
   private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
 
-    /** Computes a name of this signal, given the seed and prefix
-      * @param seed
-      * @param prefix
-      * @return
-      */
-    def buildName(seed: String, prefix: Prefix): String = {
-      val builder = new StringBuilder()
-      prefix.foreach { p =>
-        builder ++= p
-        builder += '_'
-      }
-      builder ++= seed
-      builder.toString
-    }
+    _computedName.getOrElse {
 
-    if (hasSeed) {
-      Some(buildName(seedOpt.get, naming_prefix.reverse))
-    } else {
-      defaultSeed.map { default =>
-        defaultPrefix match {
-          case Some(p) => buildName(default, p :: naming_prefix.reverse)
-          case None    => buildName(default, naming_prefix.reverse)
+      /** Computes a name of this signal, given the seed and prefix
+        * @param seed
+        * @param prefix
+        * @return
+        */
+      def buildName(seed: String, prefix: Prefix): String = {
+        val builder = new StringBuilder()
+        prefix.foreach { p =>
+          builder ++= p
+          builder += '_'
+        }
+        builder ++= seed
+        builder.toString
+      }
+
+      val result = if (hasSeed) {
+        Some(buildName(seedOpt.get, naming_prefix.reverse))
+      } else {
+        defaultSeed.map { default =>
+          defaultPrefix match {
+            case Some(p) => buildName(default, p :: naming_prefix.reverse)
+            case None    => buildName(default, naming_prefix.reverse)
+          }
         }
       }
+      _computedName = Some(result)
+      result
     }
   }
 
@@ -203,7 +221,17 @@ private[chisel3] trait HasId extends InstanceId {
     *
     * @return the current calculation of a name, if it exists
     */
-  private[chisel3] def seedOpt: Option[String] = suggested_seed.orElse(auto_seed)
+  private[chisel3] def seedOpt: Option[String] = {
+    suggested_seed.zip(auto_seed).foreach {
+      case (suggested, auto) =>
+        if (suggested == auto) {
+          Builder.deprecated(
+            s"calling suggestName(${suggested}) had no effect as it is the same as the auto prefixed name, this will become an error in 3.6"
+          )
+        }
+    }
+    suggested_seed.orElse(auto_seed)
+  }
 
   /** @return Whether either autoName or suggestName has been called */
   def hasSeed: Boolean = seedOpt.isDefined
@@ -252,18 +280,26 @@ private[chisel3] trait HasId extends InstanceId {
   // Helper for reifying the parent of a view if the view maps to a single Target
   private[chisel3] def reifyParent: BaseModule = reifyTarget.flatMap(_._parent).getOrElse(ViewParent)
 
+  private var _usedInstanceName: Option[String] = None
   // Implementation of public methods.
-  def instanceName: String = _parent match {
-    case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
-    case Some(p) =>
-      (p._component, this) match {
-        case (Some(c), _) => refName(c)
-        case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
-        case (None, _: MemBase[Data]) => _ref.get.localName
-        case (None, _) =>
-          throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
-      }
-    case None => throwException("this cannot happen")
+  def instanceName: String = {
+    val result = _parent match {
+      case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
+      case Some(p) =>
+        (p._component, this) match {
+          case (Some(c), _) => refName(c)
+          case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
+          case (None, _: MemBase[Data]) => _ref.get.localName
+          case (None, _) =>
+            throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
+        }
+      case None => throwException("this cannot happen")
+    }
+    _usedInstanceName.foreach { used =>
+      require(used == result, s"We already used instance name ${used} but this time we came up with ${result}")
+    }
+    _usedInstanceName = Some(result)
+    result
   }
   def pathName: String = _parent match {
     case None             => instanceName
