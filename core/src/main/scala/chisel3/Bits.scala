@@ -8,7 +8,13 @@ import chisel3.experimental.{FixedPoint, Interval}
 import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
+import chisel3.internal.sourceinfo.{
+  IntLiteralApplyTransform,
+  SourceInfo,
+  SourceInfoTransform,
+  SourceInfoWhiteboxTransform,
+  UIntTransform
+}
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
@@ -94,7 +100,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param x an index
     * @return the specified bit
     */
-  final def apply(x: BigInt): Bool = macro SourceInfoTransform.xArg
+  final def apply(x: BigInt): Bool = macro IntLiteralApplyTransform.safeApply
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
@@ -121,12 +127,12 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     *
     * @param x an index
     * @return the specified bit
-    * @note convenience method allowing direct use of [[scala.Int]] without implicits
     */
-  final def apply(x: Int): Bool = macro SourceInfoTransform.xArg
+  final def apply(x: Int): Bool = macro IntLiteralApplyTransform.safeApply
 
   /** @group SourceInfoTransformMacro */
-  final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = apply(BigInt(x))
+  final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    do_apply(BigInt(x))
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
@@ -193,7 +199,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: BigInt, y: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    apply(castToInt(x, "High index"), castToInt(y, "Low index"))
+    do_apply(castToInt(x, "High index"), castToInt(y, "Low index"))
 
   private[chisel3] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T = {
     requireIsHardware(this, "bits operated on")

@@ -251,7 +251,6 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
   def inNResetDataEnArg(in: c.Tree, n: c.Tree, resetData: c.Tree, en: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($in, $n, $resetData, $en)($implicitSourceInfo, $implicitCompileOptions)"
   }
-
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
@@ -292,5 +291,33 @@ class SourceInfoWhiteboxTransform(val c: whitebox.Context) extends AutoSourceTra
 
   def thatArg(that: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+}
+
+// Workaround for https://github.com/sbt/sbt/issues/3966
+object IntLiteralApplyTransform
+
+class IntLiteralApplyTransform(val c: Context) extends AutoSourceTransform {
+  import c.universe._
+
+  def safeApply(x: c.Tree): c.Tree = {
+    c.macroApplication match {
+      case q"$_.$clazz($lit).$func.apply($arg)" =>
+        if (
+          Set("U", "S").contains(func.toString) &&
+          Set("fromStringToLiteral", "fromIntToLiteral", "fromLongToIteral", "fromBigIntToLiteral").contains(
+            clazz.toString
+          )
+        ) {
+          val msg =
+            s"""Passing an Int to .$func is usually a mistake: It does *not* set the width but does a bit extract.
+               |Did you mean .$func($arg.W)?
+               |If you want to hide this message, assign .$func to a val first, then invoke .apply($arg)
+               |""".stripMargin
+          c.warning(c.enclosingPosition, msg)
+        }
+      case _ => // do nothing
+    }
+    q"$thisObj.$doFuncTerm($x)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }

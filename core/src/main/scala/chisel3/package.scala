@@ -7,6 +7,8 @@ import scala.collection.mutable
 /** This package contains the main chisel3 API.
   */
 package object chisel3 {
+  import internal.chiselRuntimeDeprecated
+  import internal.sourceinfo.DeprecatedSourceInfo
   import internal.firrtl.{Port, Width}
   import internal.Builder
 
@@ -39,13 +41,11 @@ package object chisel3 {
       case bigint                => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
     }
 
-    /** Int to UInt conversion, recommended style for constants.
-      */
-    def U: UInt = UInt.Lit(bigint, Width())
+    /** Int to UInt conversion, recommended style for constants. */
+    def U: UInt = UInt.Lit(bigint, Width()) // scalastyle:ignore method.name
 
-    /** Int to SInt conversion, recommended style for constants.
-      */
-    def S: SInt = SInt.Lit(bigint, Width())
+    /** Int to SInt conversion, recommended style for constants. */
+    def S: SInt = SInt.Lit(bigint, Width()) // scalastyle:ignore method.name
 
     /** Int to UInt conversion with specified width, recommended style for constants.
       */
