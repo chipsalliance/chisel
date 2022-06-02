@@ -102,7 +102,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     */
   final def apply(x: BigInt): Bool = macro IntLiteralApplyTransform.safeApply
 
-  /** @group IntLiteralApplyTransformMacro */
+  /** @group SourceInfoTransformMacro */
   final def do_apply(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
@@ -130,7 +130,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     */
   final def apply(x: Int): Bool = macro IntLiteralApplyTransform.safeApply
 
-  /** @group IntLiteralApplyTransformMacro */
+  /** @group SourceInfoTransformMacro */
   final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     do_apply(BigInt(x))
 

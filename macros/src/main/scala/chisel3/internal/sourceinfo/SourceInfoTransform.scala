@@ -297,8 +297,6 @@ class SourceInfoWhiteboxTransform(val c: whitebox.Context) extends AutoSourceTra
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object IntLiteralApplyTransform
 
-/**
-  */
 class IntLiteralApplyTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
