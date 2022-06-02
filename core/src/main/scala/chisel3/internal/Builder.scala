@@ -15,7 +15,6 @@ import _root_.firrtl.{AnnotationSeq, RenameMap}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
-import chisel3.internal.RuntimeDeprecatedTransform._
 
 import scala.collection.mutable
 
@@ -138,12 +137,14 @@ private[chisel3] trait HasId extends InstanceId {
     this
   }
 
-  /** Takes the first seed suggested. Multiple calls to this function will be ignored.
+  /** Takes the first seed suggested. Multiple calls to this function will be ignored (and will become an error in future).
     * If the final computed name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
     *
     * Is a higher priority than [[autoSeed]], in that regardless of whether [[autoSeed]]
     * was called, [[suggestName]] will always take precedence.
+    *
+    * @note calling this after the name has already been computed will become an error in the future.
     *
     * @param seed The seed for the name of this component
     * @return this object
@@ -219,6 +220,8 @@ private[chisel3] trait HasId extends InstanceId {
 
   /** This resolves the precedence of [[autoSeed]] and [[suggestName]]
     *
+    * @note It will become an error in the future to suggestName the same thing that autoSeed would have assigned
+    *
     * @return the current calculation of a name, if it exists
     */
   private[chisel3] def seedOpt: Option[String] = {
@@ -280,26 +283,18 @@ private[chisel3] trait HasId extends InstanceId {
   // Helper for reifying the parent of a view if the view maps to a single Target
   private[chisel3] def reifyParent: BaseModule = reifyTarget.flatMap(_._parent).getOrElse(ViewParent)
 
-  private var _usedInstanceName: Option[String] = None
   // Implementation of public methods.
-  def instanceName: String = {
-    val result = _parent match {
-      case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
-      case Some(p) =>
-        (p._component, this) match {
-          case (Some(c), _) => refName(c)
-          case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
-          case (None, _: MemBase[Data]) => _ref.get.localName
-          case (None, _) =>
-            throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
-        }
-      case None => throwException("this cannot happen")
-    }
-    _usedInstanceName.foreach { used =>
-      require(used == result, s"We already used instance name ${used} but this time we came up with ${result}")
-    }
-    _usedInstanceName = Some(result)
-    result
+  def instanceName: String = _parent match {
+    case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
+    case Some(p) =>
+      (p._component, this) match {
+        case (Some(c), _) => refName(c)
+        case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
+        case (None, _: MemBase[Data]) => _ref.get.localName
+        case (None, _) =>
+          throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
+      }
+    case None => throwException("this cannot happen")
   }
   def pathName: String = _parent match {
     case None             => instanceName
