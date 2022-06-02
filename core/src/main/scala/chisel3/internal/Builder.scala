@@ -87,7 +87,6 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
-  private[chisel3] def _onModuleClose: Unit = {}
   private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
@@ -285,26 +284,6 @@ private[chisel3] trait HasId extends InstanceId {
       }
     case Some(ViewParent) => reifyParent.circuitName
     case Some(p)          => p.circuitName
-  }
-
-  private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
-    // Suggest names to nodes using runtime reflection
-    def getValNames(c: Class[_]): Set[String] = {
-      if (c == rootClass) {
-        Set()
-      } else {
-        getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
-      }
-    }
-    val valNames = getValNames(this.getClass)
-    def isPublicVal(m: java.lang.reflect.Method) = {
-      val noParameters = m.getParameterTypes.isEmpty
-      val aVal = valNames.contains(m.getName)
-      val notAssignable = !m.getDeclaringClass.isAssignableFrom(rootClass)
-      val notWeirdVal = !m.getName.contains('$')
-      noParameters && aVal && notAssignable && notWeirdVal
-    }
-    this.getClass.getMethods.filter(isPublicVal).sortWith(_.getName < _.getName)
   }
 }
 

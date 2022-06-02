@@ -43,53 +43,14 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
   val compileOptions = moduleCompileOptions
 
-  // This could be factored into a common utility
-  private def canBeNamed(id: HasId): Boolean = id match {
-    case d: Data =>
-      d.binding match {
-        case Some(_: ConstrainedBinding) => true
-        case _ => false
-      }
-    case b: BaseModule => true
-    case m: MemBase[_] => true
-    // These names don't affect hardware
-    case _: VerificationStatement => false
-    // While the above should be comprehensive, since this is used in warning we want to be careful
-    // to never accidentally have a match error
-    case _ => false
-  }
-
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    val names = nameIds(classOf[RawModule])
-
     // Ports get first naming priority, since they are part of a Module's IO spec
-    namePorts(names)
+    namePorts()
 
-    // Then everything else gets named
-    val warnReflectiveNaming = Builder.warnReflectiveNaming
-    for ((node, name) <- names) {
-      node match {
-        case d: HasId if warnReflectiveNaming && canBeNamed(d) =>
-          val result = d._suggestNameCheck(name)
-          result match {
-            case None => // All good, no warning
-            case Some((oldName, oldPrefix)) =>
-              val prevName = buildName(oldName, oldPrefix.reverse)
-              val newName = buildName(name, Nil)
-              val msg = s"[module ${this.name}] '$prevName' is renamed by reflection to '$newName'. " +
-                s"Chisel 3.6 removes reflective naming so the name will remain '$prevName'."
-              Builder.warningNoLoc(msg)
-          }
-        // Note that unnamable things end up here (eg. literals), this is supporting backwards
-        // compatibility
-        case _ => node.suggestName(name)
-      }
-    }
-
-    // All suggestions are in, force names to every node.
+    // Ports are named, now name everything else
     for (id <- getIds) {
       id match {
         case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
@@ -118,10 +79,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
             }
           } // else, don't name unbound types
       }
-      id._onModuleClose
     }
-
-    closeUnboundIds(names)
 
     val firrtlPorts = getModulePorts.map { port: Data =>
       // Special case Vec to make FIRRTL emit the direction of its
