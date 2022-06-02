@@ -140,20 +140,49 @@ private[chisel3] trait HasId extends InstanceId {
     } else None
   }
 
-  /** Takes the first seed suggested. Multiple calls to this function will be ignored.
+  /** Takes the first seed suggested. Multiple calls to this function will be ignored. */
+  private[chisel3] def suggestNameInternal(seed: => String): this.type = {
+    if (suggested_seed.isEmpty) suggested_seed = Some(seed)
+    naming_prefix = Builder.getPrefix
+    this
+  }
+
+  /** Takes the first seed suggested. Multiple calls to this function will be ignored (and will become an error in future).
     * If the final computed name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
     *
     * Is a higher priority than [[autoSeed]], in that regardless of whether [[autoSeed]]
     * was called, [[suggestName]] will always take precedence.
     *
+    * @note calling this after the name has already been computed will become an error in the future.
+    *
     * @param seed The seed for the name of this component
     * @return this object
     */
   def suggestName(seed: => String): this.type = {
+<<<<<<< HEAD
     if (suggested_seed.isEmpty) suggested_seed = Some(seed)
     naming_prefix = Builder.getPrefix
     this
+||||||| parent of 08934795... suggestName: add some runtime deprecations
+    if (suggested_seed.isEmpty) suggested_seed = Some(seed)
+    naming_prefix = Builder.getPrefix
+    for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
+    this
+=======
+    require(Builder.hasDynamicContext, s"suggestName (${seed}) should only be called from a Builder context.")
+    if (suggested_seed.isDefined) {
+      Builder.deprecated(
+        s"Calling suggestName ($seed, when already called with ${suggested_seed}) will become an error in Chisel 3.6"
+      )
+    }
+    if (_computedName.isDefined) {
+      Builder.deprecated(
+        s"Calling suggestName ($seed, when the name was already computed as ${_computedName.get})) will become an error in Chisel 3.6"
+      )
+    }
+    suggestNameInternal(seed)
+>>>>>>> 08934795... suggestName: add some runtime deprecations
   }
 
   // Internal version of .suggestName that can override a user-suggested name
@@ -163,9 +192,11 @@ private[chisel3] trait HasId extends InstanceId {
     // This could be called with user prefixes, ignore them
     noPrefix {
       suggested_seed = Some(seed)
-      this.suggestName(seed)
+      this.suggestNameInternal(seed)
     }
   }
+
+  private[chisel3] var _computedName: Option[Option[String]] = None
 
   /** Computes the name of this HasId, if one exists
     * @param defaultSeed Optionally provide default seed for computing the name
@@ -179,9 +210,21 @@ private[chisel3] trait HasId extends InstanceId {
 
   /** This resolves the precedence of [[autoSeed]] and [[suggestName]]
     *
+    * @note It will become an error in the future to suggestName the same thing that autoSeed would have assigned
+    *
     * @return the current calculation of a name, if it exists
     */
-  private[chisel3] def seedOpt: Option[String] = suggested_seed.orElse(auto_seed)
+  private[chisel3] def seedOpt: Option[String] = {
+    suggested_seed.zip(auto_seed).foreach {
+      case (suggested, auto) =>
+        if (suggested == auto) {
+          Builder.deprecated(
+            s"calling suggestName(${suggested}) had no effect as it is the same as the auto prefixed name, this will become an error in 3.6"
+          )
+        }
+    }
+    suggested_seed.orElse(auto_seed)
+  }
 
   /** @return Whether either autoName or suggestName has been called */
   def hasSeed: Boolean = seedOpt.isDefined

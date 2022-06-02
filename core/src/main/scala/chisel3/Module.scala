@@ -117,8 +117,8 @@ object Module extends SourceInfoDoc {
   */
 abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock())).suggestName("clock")
-  final val reset: Reset = IO(Input(mkReset)).suggestName("reset")
+  final val clock: Clock = IO(Input(Clock())).suggestNameInternal("clock")
+  final val reset: Reset = IO(Input(mkReset)).suggestNameInternal("reset")
 
   // TODO It's hard to remove these deprecated override methods because they're used by
   //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
