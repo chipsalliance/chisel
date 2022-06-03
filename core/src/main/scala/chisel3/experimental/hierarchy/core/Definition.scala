@@ -100,7 +100,10 @@ object Definition extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): Definition[T] = {
-    val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
+    val dynamicContext = {
+      val context = Builder.captureContext()
+      new DynamicContext(Nil, context.throwOnFirstError, context.warnReflectiveNaming)
+    }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
