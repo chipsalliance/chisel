@@ -79,6 +79,22 @@ case object ThrowOnFirstErrorAnnotation
 
 }
 
+/** Warn when reflective naming changes names of signals */
+case object WarnReflectiveNamingAnnotation
+    extends NoTargetAnnotation
+    with ChiselOption
+    with HasShellOptions
+    with Unserializable {
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "warn:reflective-naming",
+      toAnnotationSeq = _ => Seq(this),
+      helpText = "Warn when reflective naming changes the name of signals (3.6 migration)"
+    )
+  )
+}
+
 /** An [[firrtl.annotations.Annotation]] storing a function that returns a Chisel module
   * @param gen a generator function
   */

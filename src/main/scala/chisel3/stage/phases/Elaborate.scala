@@ -29,8 +29,10 @@ class Elaborate extends Phase {
     case ChiselGeneratorAnnotation(gen) =>
       val chiselOptions = view[ChiselOptions](annotations)
       try {
+        val context =
+          new DynamicContext(annotations, chiselOptions.throwOnFirstError, chiselOptions.warnReflectiveNaming)
         val (circuit, dut) =
-          Builder.build(Module(gen()), new DynamicContext(annotations, chiselOptions.throwOnFirstError))
+          Builder.build(Module(gen()), context)
         Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
       } catch {
         /* if any throwable comes back and we're in "stack trace trimming" mode, then print an error and trim the stack trace
