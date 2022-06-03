@@ -30,7 +30,7 @@ class Elaborate extends Phase {
       val chiselOptions = view[ChiselOptions](annotations)
       try {
         val context =
-          new DynamicContext(annotations, chiselOptions.throwOnFirstError, chiselOptions.warnReflectiveNaming)
+          new DynamicContext(annotations, chiselOptions.throwOnFirstError)
         val (circuit, dut) =
           Builder.build(Module(gen()), context)
         Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))

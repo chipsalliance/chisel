@@ -339,9 +339,8 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(
-  val annotationSeq:        AnnotationSeq,
-  val throwOnFirstError:    Boolean,
-  val warnReflectiveNaming: Boolean) {
+  val annotationSeq:     AnnotationSeq,
+  val throwOnFirstError: Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Ensure there are no repeated names for imported Definitions
@@ -615,8 +614,6 @@ private[chisel3] object Builder extends LazyLogging {
   def forcedReset: Reset = currentReset.getOrElse(
     throwException("Error: No implicit reset.")
   )
-
-  def warnReflectiveNaming: Boolean = dynamicContext.warnReflectiveNaming
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
