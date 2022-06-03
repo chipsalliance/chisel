@@ -171,22 +171,6 @@ private[chisel3] trait HasId extends InstanceId {
     * @return the name, if it can be computed
     */
   private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
-
-    /** Computes a name of this signal, given the seed and prefix
-      * @param seed
-      * @param prefix
-      * @return
-      */
-    def buildName(seed: String, prefix: Prefix): String = {
-      val builder = new StringBuilder()
-      prefix.foreach { p =>
-        builder ++= p
-        builder += '_'
-      }
-      builder ++= seed
-      builder.toString
-    }
-
     if (hasSeed) {
       Some(buildName(seedOpt.get, naming_prefix.reverse))
     } else {

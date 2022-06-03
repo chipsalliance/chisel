@@ -154,6 +154,20 @@ package object internal {
   /** Marker trait for modules that are not true modules */
   private[chisel3] trait PseudoModule extends BaseModule
 
+  /** Creates a name String from a prefix and a seed
+    * @param prefix The prefix associated with the seed (must be in correct order, *not* reversed)
+    * @param seed The seed for computing the name (if available)
+    */
+  def buildName(seed: String, prefix: Prefix): String = {
+    val builder = new StringBuilder()
+    prefix.foreach { p =>
+      builder ++= p
+      builder += '_'
+    }
+    builder ++= seed
+    builder.toString
+  }
+
   // Private reflective version of "val io" to maintain Chisel.Module semantics without having
   // io as a virtual method. See https://github.com/freechipsproject/chisel3/pull/1550 for more
   // information about the removal of "val io"
