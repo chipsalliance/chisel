@@ -238,7 +238,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
     class Test extends Module {
       {
         val wire = {
-          val x = Wire(UInt(3.W)).suggestName("mywire")
+          val x = withSuggestedName("mywire")(Wire(UInt(3.W)))
           x
         }
       }
@@ -253,8 +253,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
     class Test extends Module {
       {
         val wire = {
-          val x = Wire(UInt(3.W)).suggestName("mywire")
-          val y = Wire(UInt(3.W)).suggestName("mywire2")
+          val x = withSuggestedName("mywire") { Wire(UInt(3.W)) }
+          val y = withSuggestedName("mywire2") { Wire(UInt(3.W)) }
           y := x
           y
         }

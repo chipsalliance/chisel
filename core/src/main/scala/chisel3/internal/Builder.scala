@@ -164,7 +164,10 @@ private[chisel3] trait HasId extends InstanceId {
     * @param seed The seed for the name of this component
     * @return this object
     */
-  @deprecated("This function is deprecated. Use withSuggestedName(...){...} API instead if necessary.", "3.5.5")
+  @deprecated(
+    "Use withSuggestedName(...){...} API instead if necessary, or delete the suggestion if the naming plugin is giving an acceptable name.",
+    "3.5.5"
+  )
   def suggestName(seed: => String): this.type = {
     suggestNameInternal(seed)
   }
