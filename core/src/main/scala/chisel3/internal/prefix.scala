@@ -82,3 +82,102 @@ private[chisel3] object noPrefix {
     ret
   }
 }
+
+/** Use to set the name ("suggested" because identical suggestions will be uniquified)
+  *
+  * @param name The desired name for the entity. Collisions will be uniquified. Any prefixes will be cleared/ignored.
+  * @param f a function for which the return is given the suggested name.
+  * @tparam T The return type of the provided function
+  * @return The return value of the provided function
+  */
+private[chisel3] object withSuggestedName {
+
+  private def _apply[T <: HasId](prevId: Long, name: String, nameMe: T): T = {
+    require(
+      nameMe._id > prevId,
+      s"Cannot call withSuggestedName($name){...} on already created hardware $nameMe. Be sure to wrap and return an original IO, Reg, Wire, Module, or Instance call, or some logical operation that creates a new node."
+    )
+    nameMe.suggestNameInternal(name)
+  }
+
+  /** Use to set the name ("suggested" because identical suggestions will be uniquified)
+    *
+    * @param name The name to use
+    * @param nameMe The thing to be named
+    * @tparam T The type of the thing to be named
+    * @return The thing, but now named
+    *
+    * @example
+    * ```
+    * val foo = withSuggestedName("useThisName"){
+    *    val bar = IO(Input(Bool()))        // will be called foo_bar
+    *    val unusedName = IO(Input(Bool())) // will be called useThisName
+    *    val baz = bar | unusedName         // will be called foo_baz
+    *    unusedName
+    * }
+    * ```
+    * @note The thing to be named must be created within the body of the function.
+    *
+    * @example
+    * ```
+    * // This will be a runtime error
+    * val foo = IO(Input(Bool())
+    * val bar = IO(Input(Bool())
+    * val result = foo | bar
+    * val baz = withSuggestedName("useThisName"){result} // Error: result was not created inside the body.
+    * ```
+    */
+  def apply[T <: HasId](name: String)(nameMe: => T): T = {
+    // The _id of the most recently constructed HasId
+    val prevId = Builder.idGen.value
+    val result = nameMe
+    _apply(prevId, name, result)
+  }
+
+  /** Use to set the name ("suggested" because identical suggestions will be uniquified)
+    *
+    * @param names A sequence of names to use. Must be same length as nameMe has items.
+    * @param nameUs A block that returns a Tuple of the things to be named. Must be same length as name.
+    * @tparam T The type of the thing to be named
+    * @return The thing, but now named
+    *
+    * @example
+    * ```
+    * val (fooA, fooB) = withSuggestedName(Seq("useThisNameA", "useThisNameB")){
+    *    val bar = IO(Input(Bool()))        // will be called foo_bar
+    *    val unusedNameA = IO(Input(Bool())) // will be called useThisNameA
+    *    val unusedNameB = IO(Input(Bool())) // will be called useThisNameB
+    *    val baz = bar | unusedName         // will be called foo_baz
+    *    (unusedNameA, unusedNameB)
+    * }
+    * ```
+    * @note All the things to be named must be created within the body of the function.
+    *
+    * @example
+    * ```
+    * // This will be a runtime error
+    * val foo = IO(Input(Bool())
+    * val bar = IO(Input(Bool())
+    * val resultA = foo | bar
+    * val resultB = foo & bar
+    * val (bazA, bazB) = withSuggestedName(Seq("useThisNameA", "useThisNameB")){
+    *   (resultA, resultB)
+    * } // Error: resultA was not created inside the body.
+    * ```
+    */
+  def apply[T <: Product](names: Seq[String])(nameUs: => T): T = {
+    // The _id of the most recently constructed HasId
+    val prevId = Builder.idGen.value
+    val result = nameUs
+    require(
+      result.productIterator.length == names.length,
+      s"Mismatch in lengths ${result.productIterator.length} vs ${names.length}, suggestedNames were: \n ${names.mkString(",\n ")}"
+    )
+    for ((name, t) <- names.iterator.zip(result.productIterator)) {
+      _apply(prevId, name, t.asInstanceOf[HasId]) // TODO: type-safe checking
+    }
+    result
+  }
+
+  //TODO: Seq[HasId] ?
+}

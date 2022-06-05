@@ -147,11 +147,26 @@ private[chisel3] trait HasId extends InstanceId {
     * @param seed The seed for the name of this component
     * @return this object
     */
-  def suggestName(seed: => String): this.type = {
+  private[chisel3] def suggestNameInternal(seed: => String): this.type = {
     if (suggested_seed.isEmpty) suggested_seed = Some(seed)
     naming_prefix = Builder.getPrefix
     for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
     this
+  }
+
+  /** Takes the first seed suggested. Multiple calls to this function will be ignored.
+    * If the final computed name conflicts with another name, it may get uniquified by appending
+    * a digit at the end.
+    *
+    * Is a higher priority than [[autoSeed]], in that regardless of whether [[autoSeed]]
+    * was called, [[suggestName]] will always take precedence.
+    *
+    * @param seed The seed for the name of this component
+    * @return this object
+    */
+  @deprecated("This function is deprecated. Use withSuggestedName(...){...} API instead if necessary.", "3.5.5")
+  def suggestName(seed: => String): this.type = {
+    suggestNameInternal(seed)
   }
 
   // Internal version of .suggestName that can override a user-suggested name

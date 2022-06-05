@@ -206,6 +206,8 @@ package object experimental {
   // Use to remove prefixes not in provided scope
   val noPrefix = chisel3.internal.noPrefix
 
+  val withSuggestedName = chisel3.internal.withSuggestedName
+
   // ****************************** Hardware equivalents of Scala Tuples ******************************
   // These are intended to be used via DataView
 

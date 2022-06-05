@@ -5,8 +5,9 @@ package chiselTests.naming
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.aop.Select
-import chisel3.experimental.{dump, noPrefix, prefix, treedump}
+import chisel3.experimental.{dump, noPrefix, prefix, treedump, withSuggestedName}
 import chiselTests.{ChiselPropSpec, Utils}
+import firrtl.annotations.ModuleName
 
 class PrefixSpec extends ChiselPropSpec with Utils {
   implicit val minimumMajorVersion: Int = 12
@@ -414,4 +415,128 @@ class PrefixSpec extends ChiselPropSpec with Utils {
     (chirrtl should include).regex("assume.*: x5_x3")
     (chirrtl should include).regex("printf.*: x5_x4")
   }
+
+  property("withSuggestedName should work for a Wire") {
+    class Test extends Module {
+      def builder(): UInt = {
+        val wire1 = Wire(UInt(3.W))
+        val wire2 = Wire(UInt(3.W))
+        wire2
+      }
+
+      {
+        val x = withSuggestedName("second") {
+          builder()
+        }
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_wire1", "second"))
+    }
+  }
+
+  property("withSuggestedName should work for an IO") {
+    class Test extends RawModule {
+      def builder(): UInt = {
+        val wire1 = IO(Input(UInt(3.W)))
+        val wire2 = IO(Output(UInt(3.W)))
+        wire2 := wire1
+        wire2
+      }
+
+      {
+        val x = withSuggestedName("second") {
+          builder()
+        }
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.ios(top).map(_.instanceName) should be(List("x_wire1", "second"))
+    }
+  }
+
+  property("withSuggestedName should work for a Module") {
+    class Test extends Module {
+      def builder(): UInt = {
+        val wire1 = IO(Input(UInt(3.W)))
+        val wire2 = IO(Output(UInt(3.W)))
+        wire2 := wire1
+        wire2
+      }
+
+      {
+        val x = withSuggestedName("submodule") {
+          Module(new Module {
+            builder()
+          })
+        }
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.instances(top).map(_.instanceName) should be(List("submodule"))
+    }
+  }
+
+  property("withSuggestedName should work for tuples") {
+    class Test extends RawModule {
+      def builder(): (UInt, UInt) = {
+        val wire1 = IO(Input(UInt(3.W)))
+        val wire2 = IO(Output(UInt(3.W)))
+        wire2 := wire1
+        (wire1, wire2)
+      }
+
+      {
+        val x = withSuggestedName(Seq("first", "second")) {
+          builder()
+        }
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.ios(top).map(_.instanceName) should be(List("first", "second"))
+    }
+  }
+
+  property("withSuggestedName should error for tuples of things that aren't HasId") {
+    class Test extends RawModule {
+      def builder(): (UInt, UInt, Int) = {
+        val wire1 = IO(Input(UInt(3.W)))
+        val wire2 = IO(Output(UInt(3.W)))
+        wire2 := wire1
+        (wire1, wire2, 42)
+      }
+
+      {
+        val x = withSuggestedName(Seq("first", "second", "forty-two")) {
+          builder()
+        }
+      }
+    }
+    val caught = intercept[ClassCastException] {
+      ChiselStage.elaborate(new Test)
+    }
+    caught.getMessage should include("cannot be cast to chisel3.internal.HasId")
+
+  }
+
+  property("withSuggestedName should error for something build outside of it") {
+    class Test extends Module {
+      def builder(): UInt = {
+        val wire1 = Wire(UInt(3.W))
+        val wire2 = Wire(UInt(3.W))
+        wire2
+      }
+
+      {
+        val x = builder()
+        val y = withSuggestedName("bad") { x }
+      }
+    }
+    val caught = intercept[IllegalArgumentException] { // Result type: IndexOutOfBoundsException
+      ChiselStage.elaborate(new Test)
+    }
+    caught.getMessage should include("Cannot call withSuggestedName(bad){...} on already created hardware")
+
+  }
+
 }
