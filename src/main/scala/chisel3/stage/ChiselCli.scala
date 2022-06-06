@@ -10,6 +10,7 @@ trait ChiselCli { this: Shell =>
     NoRunFirrtlCompilerAnnotation,
     PrintFullStackTraceAnnotation,
     ThrowOnFirstErrorAnnotation,
+    WarnReflectiveNamingAnnotation,
     ChiselOutputFileAnnotation,
     ChiselGeneratorAnnotation
   )
