@@ -137,6 +137,17 @@ private[chisel3] trait HasId extends InstanceId {
     this
   }
 
+  // Private internal version of suggestName that tells you if the name changed
+  // Returns Some(old name, old prefix) if name changed, None otherwise
+  private[chisel3] def _suggestNameCheck(seed: => String): Option[(String, Prefix)] = {
+    val oldSeed = this.seedOpt
+    val oldPrefix = this.naming_prefix
+    suggestName(seed)
+    if (oldSeed.nonEmpty && (oldSeed != this.seedOpt || oldPrefix != this.naming_prefix)) {
+      Some(oldSeed.get -> oldPrefix)
+    } else None
+  }
+
   /** Takes the first seed suggested. Multiple calls to this function will be ignored.
     * If the final computed name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
@@ -171,22 +182,6 @@ private[chisel3] trait HasId extends InstanceId {
     * @return the name, if it can be computed
     */
   private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
-
-    /** Computes a name of this signal, given the seed and prefix
-      * @param seed
-      * @param prefix
-      * @return
-      */
-    def buildName(seed: String, prefix: Prefix): String = {
-      val builder = new StringBuilder()
-      prefix.foreach { p =>
-        builder ++= p
-        builder += '_'
-      }
-      builder ++= seed
-      builder.toString
-    }
-
     if (hasSeed) {
       Some(buildName(seedOpt.get, naming_prefix.reverse))
     } else {
@@ -374,7 +369,10 @@ private[chisel3] class ChiselContext() {
   val viewNamespace = Namespace.empty
 }
 
-private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq, val throwOnFirstError: Boolean) {
+private[chisel3] class DynamicContext(
+  val annotationSeq:        AnnotationSeq,
+  val throwOnFirstError:    Boolean,
+  val warnReflectiveNaming: Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Ensure there are no repeated names for imported Definitions
@@ -649,6 +647,8 @@ private[chisel3] object Builder extends LazyLogging {
     throwException("Error: No implicit reset.")
   )
 
+  def warnReflectiveNaming: Boolean = dynamicContext.warnReflectiveNaming
+
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
   def pushCommand[T <: Command](c: T): T = {
@@ -690,8 +690,9 @@ private[chisel3] object Builder extends LazyLogging {
       throwException(m)
     }
   }
-  def warning(m:    => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
-  def deprecated(m: => String, location: Option[String] = None): Unit =
+  def warning(m:      => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
+  def warningNoLoc(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warningNoLoc(m)
+  def deprecated(m:   => String, location: Option[String] = None): Unit =
     if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
 
   /** Record an exception as an error, and throw it.

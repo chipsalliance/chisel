@@ -43,6 +43,22 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
   val compileOptions = moduleCompileOptions
 
+  // This could be factored into a common utility
+  private def canBeNamed(id: HasId): Boolean = id match {
+    case d: Data =>
+      d.binding match {
+        case Some(_: ConstrainedBinding) => true
+        case _ => false
+      }
+    case b: BaseModule => true
+    case m: MemBase[_] => true
+    // These names don't affect hardware
+    case _: VerificationStatement => false
+    // While the above should be comprehensive, since this is used in warning we want to be careful
+    // to never accidentally have a match error
+    case _ => false
+  }
+
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
@@ -53,8 +69,24 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     namePorts(names)
 
     // Then everything else gets named
+    val warnReflectiveNaming = Builder.warnReflectiveNaming
     for ((node, name) <- names) {
-      node.suggestName(name)
+      node match {
+        case d: HasId if warnReflectiveNaming && canBeNamed(d) =>
+          val result = d._suggestNameCheck(name)
+          result match {
+            case None => // All good, no warning
+            case Some((oldName, oldPrefix)) =>
+              val prevName = buildName(oldName, oldPrefix.reverse)
+              val newName = buildName(name, Nil)
+              val msg = s"[module ${this.name}] '$prevName' is renamed by reflection to '$newName'. " +
+                s"Chisel 3.6 removes reflective naming so the name will remain '$prevName'."
+              Builder.warningNoLoc(msg)
+          }
+        // Note that unnamable things end up here (eg. literals), this is supporting backwards
+        // compatibility
+        case _ => node.suggestName(name)
+      }
     }
 
     // All suggestions are in, force names to every node.
@@ -153,6 +185,20 @@ package object internal {
 
   /** Marker trait for modules that are not true modules */
   private[chisel3] trait PseudoModule extends BaseModule
+
+  /** Creates a name String from a prefix and a seed
+    * @param prefix The prefix associated with the seed (must be in correct order, *not* reversed)
+    * @param seed The seed for computing the name (if available)
+    */
+  def buildName(seed: String, prefix: Prefix): String = {
+    val builder = new StringBuilder()
+    prefix.foreach { p =>
+      builder ++= p
+      builder += '_'
+    }
+    builder ++= seed
+    builder.toString
+  }
 
   // Private reflective version of "val io" to maintain Chisel.Module semantics without having
   // io as a virtual method. See https://github.com/freechipsproject/chisel3/pull/1550 for more
