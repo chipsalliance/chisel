@@ -6,6 +6,8 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util.Queue
 
+import chisel3.internal.ChiselException
+
 class InstanceNameModule extends Module {
   val io = IO(new Bundle {
     val foo = Input(UInt(32.W))
@@ -22,13 +24,11 @@ class InstanceNameModule extends Module {
   io.bar := io.foo + x
 }
 
-class InstanceNameSpec extends ChiselFlatSpec with Utils {
+class InstanceNameSpec extends ChiselFlatSpec {
   behavior.of("instanceName")
   val moduleName = "InstanceNameModule"
   var m: InstanceNameModule = _
   ChiselStage.elaborate { m = new InstanceNameModule; m }
-
-  val deprecationMsg = "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated"
 
   it should "work with module IO" in {
     val io = m.io.pathName
@@ -40,19 +40,13 @@ class InstanceNameSpec extends ChiselFlatSpec with Utils {
     assert(x == moduleName + ".UInt<2>(\"h03\")")
   }
 
-  it should "work with non-hardware values (but be deprecated)" in {
-    val (ylog, y) = grabLog(m.y.pathName)
-    val (zlog, z) = grabLog(m.z.pathName)
-    ylog should include(deprecationMsg)
-    assert(y == moduleName + ".y")
-    zlog should include(deprecationMsg)
-    assert(z == moduleName + ".z")
+  it should "NOT work for non-hardware values" in {
+    a[ChiselException] shouldBe thrownBy { m.y.pathName }
+    a[ChiselException] shouldBe thrownBy { m.z.pathName }
   }
 
-  it should "work with non-hardware bundle elements (but be deprecated)" in {
-    val (log, foo) = grabLog(m.z.foo.pathName)
-    log should include(deprecationMsg)
-    assert(foo == moduleName + ".z.foo")
+  it should "NOT work for non-hardware bundle elements" in {
+    a[ChiselException] shouldBe thrownBy { m.z.foo.pathName }
   }
 
   it should "work with modules" in {

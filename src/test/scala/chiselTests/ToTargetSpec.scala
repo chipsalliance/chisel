@@ -30,19 +30,13 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
     }
   }
 
-  it should "work with non-hardware values (but be deprecated)" in {
-    val (ylog, y) = grabLog(m.y.toTarget.toString)
-    val (zlog, z) = grabLog(m.z.toTarget.toString)
-    assert(y == s"$top>y")
-    ylog should include(deprecationMsg)
-    assert(z == s"$top>z")
-    zlog should include(deprecationMsg)
+  it should "NOT work for non-hardware values" in {
+    a[ChiselException] shouldBe thrownBy { m.y.toTarget }
+    a[ChiselException] shouldBe thrownBy { m.z.toTarget }
   }
 
-  it should "work with non-hardware bundle elements (but be deprecated)" in {
-    val (log, foo) = grabLog(m.z.foo.toTarget.toString)
-    log should include(deprecationMsg)
-    assert(foo == s"$top>z.foo")
+  it should "NOT work for non-hardware bundle elements" in {
+    a[ChiselException] shouldBe thrownBy { m.z.foo.toTarget }
   }
 
   it should "work with modules" in {
