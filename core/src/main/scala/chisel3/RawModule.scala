@@ -52,9 +52,9 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
             s"Unable to name port $port in $this, " +
               "try making it a public field of the Module"
           )
+      }
     }
   }
-}
 
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
@@ -83,7 +83,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
               case MemoryPortBinding(_, _) =>
                 id.forceName(default = "MPORT", _namespace)
               case PortBinding(_) =>
-                id.forceName(None, default = "PORT", _namespace, true, {x: String => ModuleIO(this, x)})
+                id.forceName(None, default = "PORT", _namespace, true, { x: String => ModuleIO(this, x) })
               case RegBinding(_, _) =>
                 id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
