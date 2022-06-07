@@ -87,7 +87,6 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
-  private[chisel3] def _onModuleClose: Unit = {}
   private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
@@ -235,18 +234,8 @@ private[chisel3] trait HasId extends InstanceId {
 
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg.fullName(c)
-    case None      =>
-      // This is super hacky but this is just for a short term deprecation
-      // These accesses occur after Chisel elaboration so we cannot use the normal
-      // Builder.deprecated mechanism, we have to create our own one off ErrorLog and print the
-      // warning right away.
-      val errors = new ErrorLog
-      val logger = new _root_.logger.Logger(this.getClass.getName)
-      val msg = "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated. " +
-        "This will become an error in Chisel 3.6."
-      errors.deprecated(msg, None)
-      errors.checkpoint(logger)
-      _computeName(None, None).get
+    case None =>
+      throwException("You cannot access the .instanceName or .toTarget of non-hardware Data")
   }
 
   // Helper for reifying views if they map to a single Target
@@ -295,26 +284,6 @@ private[chisel3] trait HasId extends InstanceId {
       }
     case Some(ViewParent) => reifyParent.circuitName
     case Some(p)          => p.circuitName
-  }
-
-  private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
-    // Suggest names to nodes using runtime reflection
-    def getValNames(c: Class[_]): Set[String] = {
-      if (c == rootClass) {
-        Set()
-      } else {
-        getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
-      }
-    }
-    val valNames = getValNames(this.getClass)
-    def isPublicVal(m: java.lang.reflect.Method) = {
-      val noParameters = m.getParameterTypes.isEmpty
-      val aVal = valNames.contains(m.getName)
-      val notAssignable = !m.getDeclaringClass.isAssignableFrom(rootClass)
-      val notWeirdVal = !m.getName.contains('$')
-      noParameters && aVal && notAssignable && notWeirdVal
-    }
-    this.getClass.getMethods.filter(isPublicVal).sortWith(_.getName < _.getName)
   }
 }
 
@@ -370,9 +339,8 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(
-  val annotationSeq:        AnnotationSeq,
-  val throwOnFirstError:    Boolean,
-  val warnReflectiveNaming: Boolean) {
+  val annotationSeq:     AnnotationSeq,
+  val throwOnFirstError: Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Ensure there are no repeated names for imported Definitions
@@ -646,8 +614,6 @@ private[chisel3] object Builder extends LazyLogging {
   def forcedReset: Reset = currentReset.getOrElse(
     throwException("Error: No implicit reset.")
   )
-
-  def warnReflectiveNaming: Boolean = dynamicContext.warnReflectiveNaming
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.

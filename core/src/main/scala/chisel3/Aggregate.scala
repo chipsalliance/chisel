@@ -1110,13 +1110,6 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
-  private[chisel3] override def _onModuleClose: Unit = {
-    // This is usually done during binding, but these must still be set for unbound Records
-    if (this.binding.isEmpty) {
-      setElementRefs()
-    }
-  }
-
   private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
 
   override def getElements: Seq[Data] = elements.toIndexedSeq.map(_._2)
