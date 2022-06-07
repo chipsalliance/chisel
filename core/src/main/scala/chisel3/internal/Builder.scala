@@ -193,7 +193,7 @@ private[chisel3] trait HasId extends InstanceId {
   // (e.g. tried to suggest a name to part of a Record)
   private[chisel3] def forceName(prefix: Option[String], default: => String, namespace: Namespace, errorIfDup: Boolean = false, refBuilder: String => Arg = (x: String) => (Ref(x))): Unit =
     if (_ref.isEmpty) {
-      val candidate_name = _computeName(Some(default)).get
+      val candidate_name = _computeName(prefix, Some(default).filterNot(_ => errorIfDup)).get
       val available_name = namespace.name(candidate_name)
       println(s"candidate: $candidate_name, available: $available_name")
       if (errorIfDup && (available_name != candidate_name)) {
