@@ -197,7 +197,9 @@ package experimental {
       module.bindIoInPlace(iodefClone)
       iodefClone
     }
-    def apply[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.modify(Apply())
+    def apply[T <: Data](iodef: Definitive[T]): Definitive[T] = {
+      iodef.modify(Apply())
+    }
     case class Apply[T <: Data]()
         extends chisel3.experimental.hierarchy.core.CustomParameterFunction[T, Definitive[T]] {
       val args = Nil
@@ -278,6 +280,7 @@ package experimental {
     _parent.foreach(_.addId(this))
     private[chisel3] val definitives: ArrayBuffer[Definitive[_]] = ArrayBuffer[Definitive[_]]()
     private[chisel3] val contextuals: ArrayBuffer[Contextual[_]] = ArrayBuffer[Contextual[_]]()
+    private[chisel3] val definitiveIOs: ArrayBuffer[Definitive[_]] = ArrayBuffer[Definitive[_]]()
 
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.

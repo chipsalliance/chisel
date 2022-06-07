@@ -84,11 +84,10 @@ object Lookupable {
   implicit def lookupIsWrappable[U <: IsWrappable] = new Lookupable[U] {
     override type H = Instance[U]
     override def apply[P](getter: Wrapper[P], value: U): Instance[U] = {
-      //val d = InstantiableDefinition(value)
-      //val t = InstantiableTransparent(d)
-      //val m = InstantiableMock(t, getter.proxy)
-      //m.toInstance
-      ???
+      val d = IsWrappableDefinition(Raw(value))
+      val t = IsWrappableTransparent(d)
+      val m = IsWrappableMock(t, getter.proxy)
+      m.toInstance
     }
   }
 

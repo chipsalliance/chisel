@@ -25,7 +25,7 @@ package object hierarchy {
   class func extends chisel3.internal.definitive
 
   implicit val mg = new chisel3.internal.MacroGenerated {}
-  implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
+  //implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
   implicit val opt = chisel3.ExplicitCompileOptions.Strict
 
   //import scala.language.implicitConversions
@@ -52,6 +52,7 @@ package object hierarchy {
         ret
       }
       def buildDefinition(proto: => V): ModuleDefinition[V] = {
+        implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
         val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
         Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
         dynamicContext.inDefinition = true
@@ -63,6 +64,7 @@ package object hierarchy {
         ModuleDefinition(module, module._circuit)
       }
       def buildInstance(root: Root[V]): ModuleClone[V] = {
+        implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
         val ports = experimental.CloneModuleAsRecord(root)
         val clone = ports._parent.get.asInstanceOf[ModuleClone[V]]
         clone._madeFromDefinition = true
@@ -71,6 +73,7 @@ package object hierarchy {
       //def define(proto: V): ModuleDefinition[V] = ???
       //def transparent(proto: V): ModuleTransparent[V] = ???
       def clone[P](value: Hierarchy[V], hierarchy: Hierarchy[P]): InstanceProxy[V] = {
+        implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
         (value, hierarchy.proxy) match {
           case (d: Root[V], t: ModuleTransparent[V]) =>
             val ports = experimental.CloneModuleAsRecord(d)
@@ -82,9 +85,11 @@ package object hierarchy {
         }
       }
       def mockInstance[P](value: Instance[V], parent: Hierarchy[P]): Instance[V] = {
+        implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
         ModuleMock(value.proxyAs[BaseModule], parent.proxyAs[BaseModule]).toInstance
       }
       def mockValue[P](value: V, parent: Hierarchy[P]): Instance[V] = {
+        implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
         val d = (new ModuleDefinition(core.Raw(value), None)).toDefinition
         val t = ModuleTransparent(d.proxyAs[ModuleRoot[V]])
         ModuleMock(t, parent.proxyAs[BaseModule]).toInstance
@@ -122,6 +127,23 @@ package object hierarchy {
       def impl[C <: Data](d: C): C = d match {
         case x: Data if ioMap.contains(x) => ioMap(x).asInstanceOf[C]
         case x if x._parent == Some(newParent) => x
+        //case x => x.binding match {
+        //  case Some(p: PortBinding) =>
+        //    val newPort = x.cloneTypeFull
+        //    newPort.bind(PortBinding(newParent))
+        //    newPort.setAllParents(Some(newParent))
+        //    newParent match {
+        //      case 
+        //    }
+
+        //    cloneParent._portsRecord = clonePorts
+        //  case _ =>
+        //    val newData = x.cloneTypeFull
+        //    newData.setRef(x.getRef, true)
+        //    newData.bind(internal.CrossModuleBinding)
+        //    newData.setAllParents(Some(newParent))
+        //    newData
+        //}
         case x =>
           val newData = x.cloneTypeFull
           newData.setRef(x.getRef, true)
@@ -173,6 +195,7 @@ package object hierarchy {
       case h: Hierarchy[BaseModule] if h.isA[BaseModule] => h
     }
     def getProxyParent(value: Proxy[V]): Option[BaseModule] = value match {
+      case p: ChiselMockContextual[_] => p.parentOpt.asInstanceOf[Option[BaseModule]]
       case p: ChiselContextual[_] => p.parent
       case p: ContextualValue[_]  => None
     }
@@ -193,20 +216,22 @@ package object hierarchy {
           new ChiselDefinitive[X](Some(DefinitiveToDefinitiveDerivation(DefinitiveValue(value), Identity())))
       }
     }
-    def buildContextualFrom[X, Y](c: Contextual[X], f: ParameterFunction): ContextualProxy[Y] = {
+    def buildContextualFrom[X, Y](c: Contextual[X], f: ParameterFunction, sourceInfo: SourceInfo): ContextualProxy[Y] = {
       val x: ContextualProxy[Y] = new ChiselContextual(
         Some(ContextualToContextualDerivation(c.proxyAs[ContextualProxy[X]], f.asInstanceOf[ParameterFunction])),
-        Builder.currentModule
+        Builder.currentModule,
+        sourceInfo
       )
       x
     }
-    def buildContextual[X](v: Option[X]): ContextualProxy[X] = {
+    def buildContextual[X](v: Option[X], sourceInfo: SourceInfo): ContextualProxy[X] = {
       v match {
-        case None => new ChiselContextual[X](None, Builder.currentModule)
+        case None => new ChiselContextual[X](None, Builder.currentModule, sourceInfo)
         case Some(value) =>
           new ChiselContextual[X](
-            Some(ContextualToContextualDerivation(ContextualValue(value), Identity())),
-            Builder.currentModule
+            Some(ContextualToContextualDerivation(ContextualValue(value, sourceInfo), Identity())),
+            Builder.currentModule,
+            sourceInfo
           )
       }
     }
@@ -257,11 +282,15 @@ package object hierarchy {
         case i: Proxy[_] => ??? //should be unreachable
         case b: P =>
           val definition = toDefinition
+          implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
           ModuleTransparent(definition.proxy.asInstanceOf[ModuleDefinition[P]])
       }
     }
     def toInstance:   core.Instance[P] = asInstanceProxy.toInstance
-    def toDefinition: core.Definition[P] = ModuleDefinition(proto, proto.getCircuit).toDefinition
+    def toDefinition: core.Definition[P] = {
+      implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
+      ModuleDefinition(proto, proto.getCircuit).toDefinition
+    }
   }
   implicit class HierarchyBaseModuleExtensions[T <: BaseModule](i: core.Hierarchy[T]) {
 
@@ -310,13 +339,25 @@ package object hierarchy {
     def toAbsoluteTarget: IsModule = d.proto.toTarget
   }
 
-  implicit class IsWrappableExtensions[T <: IsWrappable](i: T) {
+  implicit class IsWrappableExtensions[T <: IsWrappable](proto: T) {
+    def toDefinition: Definition[T] = IsWrappableDefinition(Raw(proto)).toDefinition
+    def asInstanceProxy: core.InstanceProxy[T] = {
+      //require(proto._parent.nonEmpty, s"Cannot call .asInstance on $proto because it has no parent! Try .toDefinition?")
+      proto match {
+        case i: Proxy[_] => ??? //should be unreachable
+        case b: T =>
+          val definition = toDefinition
+          implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
+          IsWrappableTransparent(definition.proxy.asInstanceOf[IsWrappableDefinition[T]])
+      }
+    }
+    def toInstance:   core.Instance[T] = asInstanceProxy.toInstance
 
     /** If this is an instance of a Module, returns the toTarget of this instance
       * @return target of this instance
       */
-    def toInstance: Instance[T] = ???
-    def toRoot:     Root[T] = toInstance.toRoot
+    //def toInstance: Instance[T] = new Instance()
+    //def toRoot:     Root[T] = toInstance.toRoot
   }
 
 }

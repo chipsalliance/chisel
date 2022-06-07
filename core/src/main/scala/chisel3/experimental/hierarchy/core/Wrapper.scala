@@ -83,7 +83,10 @@ trait Wrapper[+P] {
     val tptag = implicitly[TypeTag[B]]
     // drop any type information for the comparison, because the proto will not have that information.
     val name = tptag.tpe.toString.takeWhile(_ != '[')
-    superClasses.contains(name)
+    println("Start")
+    val x = superClasses.contains(name)
+    println("End")
+    x
   }
 
   /** @return Return the proxy Definition[P] of this Hierarchy[P] */
@@ -127,6 +130,7 @@ object Wrapper {
   }
 
   private def calculateSuperClasses(clz: Class[_]): Set[String] = {
+    println(clz)
     if (clz != null) {
       Set(modifyNestedObjects(modifyReplString(clz.getCanonicalName()))) ++
         clz.getInterfaces().flatMap(i => calculateSuperClasses(i)) ++

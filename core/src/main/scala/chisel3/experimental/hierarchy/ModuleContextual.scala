@@ -12,7 +12,8 @@ import firrtl.annotations.IsMember
 
 private[chisel3] final class ChiselContextual[P] private[chisel3] (
   val constructionDerivation: Option[ContextualDerivation],
-  val parent:                 Option[BaseModule])
+  val parent:                 Option[BaseModule],
+  val sourceInfo: SourceInfo)
     extends ContextualProtoProxy[P] {
 
   derivation = constructionDerivation
@@ -27,4 +28,5 @@ private[chisel3] final class ChiselMockContextual[P] private[chisel3] (
     extends ContextualMockProxy[P] {
 
   derivation = constructionDerivation
+  val sourceInfo = suffixProxyOpt.get.sourceInfo
 }

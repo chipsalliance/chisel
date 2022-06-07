@@ -275,6 +275,47 @@ object Examples {
 }
 
 
+object DefinitiveExamples {
+  @func def plusN(n: Int)(in: Int): Int = n + in
+
+  @instantiable
+  class AddOne extends Module {
+    println(s"Elaborating AddOne: $this")
+    @public val width: Definitive[Int] = Definitive.empty[Int]
+    @public val in  = IO(Input(UInt(width.W)))
+    @public val out = IO(Output(UInt(width.W)))
+
+    override val implementation: Option[Implementation] = Some(AddOneImp)
+  }
+  object AddOneImp extends CustomImplementation {
+    type P = AddOne
+    
+    def implement(d: ResolvedDefinition[P]): Unit = {
+      d.out.value := d.in.value + 1.U
+    }
+  }
+  @instantiable
+  class AddTwo(d: Definition[AddOne]) extends Module {
+    @public val in  = IO(Input(UInt(d.width.W)))
+    @public val out = IO(Output(UInt(d.width.W)))
+    @public val i0 = Instance(d)
+    @public val i1 = Instance(d)
+
+    override val implementation: Option[Implementation] = Some(AddTwoImp)
+  }
+
+  object AddTwoImp extends CustomImplementation {
+    type P = AddTwo
+    
+    def implement(d: ResolvedDefinition[P]): Unit = {
+      d.i0.in.value := d.in.value
+      d.i1.in.value := d.i0.out.value
+      d.out.value := d.i1.out.value
+    }
+  }
+
+
+}
 object ContextualExamples {
   @func def max()(ls: List[Int]): Int = ls.max
   case class Max() extends core.CustomCombinerFunction[Int, Int] {
@@ -314,4 +355,100 @@ object ContextualExamples {
     val c1 = Instance(definition)
     c1.index.setAs(pindex)
   }
+
+  object DiplomacyExample {
+
+    @func def capitalize()(language: String): String = language.capitalize
+    case class Aggregate() extends core.CustomCombinerFunction[String, List[String]] {
+      type I = String
+      type O = List[String]
+      def apply(i: List[I]): O = i
+    }
+
+    
+    @instantiable
+    class SourceNode(val dnValue: Contextual[String]) extends IsWrappable {
+      @public val dnOutgoing = dnValue
+      @public val upIncoming = Contextual.empty[String]
+      @public val edge = (upIncoming, dnValue)
+    }
+    @instantiable
+    class SinkNode(val upValue: Contextual[String]) extends IsWrappable {
+      @public val upOutgoing = upValue
+      @public val dnIncoming = Contextual.empty[String]
+      @public val edge = (upValue, dnIncoming)
+    }
+    object SinkNode {
+      implicit class SinkNodeExtension(e: Instance[SinkNode]) {
+        def :=(a: AdapterNode): AdapterNode = {
+          e.dnIncoming.setAs(a.dnOutgoing)
+          a.upIncoming.setAs(e.upOutgoing)
+          a
+        }
+      }
+    }
+    @instantiable
+    class AdapterNode(upFunc: ParameterFunction, dnFunc: ParameterFunction) extends IsWrappable {
+      val upIncoming = Contextual.empty[String]
+      val upOutgoing = Contextual.empty[String]
+      val dnIncoming = Contextual.empty[String]
+      val dnOutgoing = Contextual.empty[String]
+      dnOutgoing.setAs(dnIncoming.modify(dnFunc))
+      upOutgoing.setAs(upIncoming.modify(upFunc))
+
+      def :=(src: Instance[SourceNode]): AdapterNode = {
+        src.upIncoming.setAs(upOutgoing)
+        dnIncoming.setAs(src.dnOutgoing)
+        this
+      }
+    }
+    @instantiable
+    class Mouth() extends Module {
+      @public val language = Contextual.empty[String]
+      @public val node = new SourceNode(language)
+      @public val upResult = node.edge._1.combine(Aggregate())
+      @public val dnResult = node.edge._2.combine(Aggregate())
+    }
+
+    @instantiable
+    class Ear() extends Module {
+      @public val language = Contextual.empty[String]
+      @public val node = new SinkNode(language)
+      @public val upResult = node.edge._1.combine(Aggregate())
+      @public val dnResult = node.edge._2.combine(Aggregate())
+    }
+
+    @instantiable
+    class Top() extends Module {
+      val mouthDef = Definition(new Mouth())
+      @public val m0 = Instance(mouthDef)
+      m0.language.value = "English"
+      @public val m1 = Instance(mouthDef)
+      m1.language.value = "Spanish"
+
+      val earDef = Definition(new Ear())
+      @public val e0 = Instance(earDef)
+      e0.language.value = "Hebrew"
+      @public val e1 = Instance(earDef)
+      e1.language.value = "Portuguese"
+
+      @public val a0 = new AdapterNode(capitalize(), capitalize())
+      e0.node := a0 := m0.node
+
+      @public val a1 = new AdapterNode(capitalize(), capitalize())
+      e1.node := a1 := m1.node
+    }
+
+    object TopImp extends CustomImplementation {
+      type P = Top
+      def implement(d: ResolvedDefinition[Top]): Unit = {
+        println(s"M0: ${d.m0.upResult.value}, ${d.m0.dnResult.value}")
+        println(s"M1: ${d.m1.upResult.value}, ${d.m1.dnResult.value}")
+        println(s"E0: ${d.e0.upResult.value}, ${d.e0.dnResult.value}")
+        println(s"E1: ${d.e1.upResult.value}, ${d.e1.dnResult.value}")
+      }
+    }
+
+  }
+
 }

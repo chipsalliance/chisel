@@ -27,7 +27,7 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
   //override def toString = s"experimental.hierarchy.ModuleClone(${proto})"
   // Do not call default addId function, which may modify a module that is already "closed"
   override def addId(d: HasId): Unit = ()
-  def getPorts = _portsRecord
+  private[chisel3] def getPorts = _portsRecord
   // ClonePorts that hold the bound ports for this module
   // Used for setting the refs of both this module and the Record
   private[chisel3] var _portsRecord: Record = _
@@ -53,6 +53,38 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
         proto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
     }
   }
+  /*
+  private[chisel3] lazy val ioDefinitiveMap: Map[Definitive[Data], Definitive[Data]] = {
+    proto match {
+      case _ =>
+        proto.definitiveIOs.map { d =>
+          d.modify()
+          val clonePorts = proto match {
+            // BlackBox needs special handling for its pseduo-io Bundle
+            case b: BlackBox =>
+              new ClonePorts(proto.getChiselPorts :+ ("io" -> b._io.get): _*)
+            case _ => new ClonePorts(proto.getChiselPorts: _*)
+          }
+          clonePorts.bind(PortBinding(cloneParent))
+          clonePorts.setAllParents(Some(cloneParent))
+          cloneParent._portsRecord = clonePorts
+          // Normally handled during Module construction but ClonePorts really lives in its parent's parent
+          if (!compileOptions.explicitInvalidate) {
+            // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
+            pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
+          }
+          if (proto.isInstanceOf[Module]) {
+            clonePorts("clock") := Module.clock
+            clonePorts("reset") := Module.reset
+          }
+          clonePorts
+
+        }
+        val name2Port = getPorts.elements
+        proto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+    }
+  }
+  */
   // This module doesn't actually exist in the FIRRTL so no initialization to do
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
 

@@ -350,19 +350,25 @@ private[chisel3] object Converter {
           //  dynamicContext.globalNamespace.name(n)
           //}
 
+
           val d = module.toDefinition.toResolvedDefinition
           d.proxy.isResolved = true
           import internal.Builder
+
           //val (chiselIR, _) = chisel3.internal.Builder.build(
           Builder.dynamicContextVar.withValue(Some(dynamicContext)) {
             module._closed = false
             internal.Builder.currentModule = Some(module)
+            println(s"On ${module.name}")
             val mod = module match {
               case x: Module =>
                 withClockAndReset(x.clock, x.reset) {
+                  println(module.definitives.mkString("\n"))
+                  module.definitives.foreach(_.valueOpt)
                   i.implement(d.asInstanceOf[hierarchy.ResolvedDefinition[i.P]])
                 }
               case x: RawModule =>
+                module.definitives.foreach(_.valueOpt)
                 i.implement(d.asInstanceOf[hierarchy.ResolvedDefinition[i.P]])
             }
             Builder.currentModule = None
@@ -466,4 +472,6 @@ private[chisel3] object Converter {
     val allLocalInstances = instancesIn(root)
     soFar ++ (allLocalInstances.flatMap(allInstancesOf[T]))
   }
+
+
 }

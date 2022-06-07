@@ -3,6 +3,7 @@
 package chisel3.experimental.hierarchy.core
 import java.util.IdentityHashMap
 import scala.collection.mutable
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Representation of a hierarchical version of an object
   * Has two subclasses, a DefinitionProxy and InstanceProxy, which are wrapped with Definition(..) and Instance(..)
@@ -222,9 +223,10 @@ sealed trait ContextualProxy[P] extends Proxy[P] {
     isResolved = true
     suffixProxyOpt.map(p => p.markResolved())
   }
+  val sourceInfo: SourceInfo
 }
 
-case class ContextualValue[P](value: P) extends ContextualProxy[P] {
+case class ContextualValue[P](value: P, sourceInfo: SourceInfo) extends ContextualProxy[P] {
   def parentOpt: Option[Proxy[Any]] = None
   def proto = value
   isResolved = true
@@ -276,7 +278,9 @@ trait ContextualUserProxy[P] extends ContextualProxy[P] {
     }
   }
   // Returns value of this contextual, with all predecessor values computed.
-  def proto: P = ???
+  def proto: P = {
+    if(values.size == 1) values.head else ???
+  }
 }
 
 trait ContextualMockProxy[P] extends ContextualUserProxy[P] {
@@ -331,10 +335,9 @@ trait ContextualProtoProxy[P] extends ContextualUserProxy[P] {
   * TODO Move to IsWrappable.scala
   * @param proto underlying object we are creating a proxy of
   */
-//final case class InstantiableDefinition[P](proto: P) extends DefinitionProxy[P] {
-//  def implementChildren: DefinitionProxy[P] = this
-//  def buildImplementation: DefinitionProxy[P] = this
-//}
+final case class IsWrappableDefinition[P](underlying: Underlying[P]) extends DefinitionProxy[P] {
+  def builder = None
+}
 
 /** Transparent implementation for all proto's which extend IsWrappable
   *
@@ -343,7 +346,7 @@ trait ContextualProtoProxy[P] extends ContextualUserProxy[P] {
   * TODO Move to IsWrappable.scala
   * @param proto underlying object we are creating a proxy of
   */
-//final case class InstantiableTransparent[P](suffixProxy: InstantiableDefinition[P]) extends Transparent[P]
+final case class IsWrappableTransparent[P](suffixProxy: IsWrappableDefinition[P]) extends Transparent[P]
 
 /** Mock implementation for all proto's which extend IsWrappable
   *
@@ -352,4 +355,4 @@ trait ContextualProtoProxy[P] extends ContextualUserProxy[P] {
   * TODO Move to IsWrappable.scala
   * @param proto underlying object we are creating a proxy of
   */
-//final case class InstantiableMock[P](suffixProxy: InstanceProxy[P], parent: Proxy[Any]) extends Mock[P]
+final case class IsWrappableMock[P](suffixProxy: InstanceProxy[P], parent: Proxy[Any]) extends Mock[P]

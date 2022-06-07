@@ -2,6 +2,7 @@
 
 package chisel3.experimental.hierarchy.core
 import scala.collection.mutable
+import chisel3.internal.sourceinfo.SourceInfo
 
 // ==========================================
 // User-facing Traits
@@ -45,6 +46,6 @@ trait ParameterExtensions[V, P] extends Extensions[V, P] {
   def buildDefinitiveFrom[X, Y](d: Definitive[X], f: ParameterFunction): DefinitiveProxy[Y]
   def buildDefinitiveFrom[X, Y](c: Contextual[X], f: CombinerFunction): DefinitiveProxy[Y]
   def buildDefinitive[X](x:        Option[X]): DefinitiveProxy[X]
-  def buildContextualFrom[X, Y](d: Contextual[X], f: ParameterFunction): ContextualProxy[Y]
-  def buildContextual[X](x:        Option[X]): ContextualProxy[X]
+  def buildContextualFrom[X, Y](d: Contextual[X], f: ParameterFunction, sourceInfo: SourceInfo): ContextualProxy[Y]
+  def buildContextual[X](x:        Option[X], sourceInfo: SourceInfo): ContextualProxy[X]
 }

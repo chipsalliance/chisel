@@ -481,7 +481,7 @@ object Select {
 
   // Checks that a module has finished its construction
   private def check(module: BaseModule): Unit = {
-    require(module.isClosed, "Can't use Selector on modules that have not finished construction!")
+    //require(module.isClosed, "Can't use Selector on modules that have not finished construction!")
     require(module._component.isDefined, "Can't use Selector on modules that don't have components!")
   }
   private def check(hierarchy: Hierarchy[BaseModule]): Unit = check(hierarchy.proto)

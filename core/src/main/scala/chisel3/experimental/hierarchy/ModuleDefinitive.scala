@@ -18,11 +18,9 @@ private[chisel3] final class ChiselDefinitive[P] private[chisel3] (
   val parent = internal.Builder.currentModule
   parent.map(_.definitives += this.toWrapper)
 
-  //override def toString = (isEmpty, isSet, valueOpt.isEmpty, func.isEmpty, cfunc.isEmpty) match {
-  //  case (true, false, _, _, _)                                     => "{}"
-  //  case (true, true, true, false, true) if func == Some(new core.Identity()) => s"${predecessorOpt.get}"
-  //  case (true, true, true, false, true)                           => s"${func.get}(${predecessorOpt.get})"
-  //  case (true, true, true, true, false)                           => s"${cfunc.get}(${cpredecessorOpt.get})"
-  //  case (false, _, _, _, _)                                       => s"$proto"
-  //}
+  override def toString = (isResolved, hasDerivation) match {
+    case (true, _)      => s"$proto"
+    case (false, false) => "{}"
+    case (false, true)  => derivation.get.toString
+  }
 }
