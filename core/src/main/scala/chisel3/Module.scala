@@ -141,6 +141,15 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
     val inferReset = (_parent.isDefined || Builder.inDefinition) && moduleCompileOptions.inferModuleReset
+    if (moduleCompileOptions.migrateInferModuleReset && !moduleCompileOptions.inferModuleReset) {
+      this match {
+        case _: RequireSyncReset => // Good! It's been migrated.
+        case _ => // Bad! It hasn't been migrated.
+          Builder.error(
+            s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
+          )
+      }
+    }
     if (inferReset) Reset() else Bool()
   }
 
