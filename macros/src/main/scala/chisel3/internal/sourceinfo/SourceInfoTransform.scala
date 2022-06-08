@@ -312,7 +312,7 @@ class IntLiteralApplyTransform(val c: Context) extends AutoSourceTransform {
           val msg =
             s"""Passing an Int to .$func is usually a mistake: It does *not* set the width but does a bit extract.
                |Did you mean .$func($arg.W)?
-               |If you do want bit extraction, use .extract($arg) instead
+               |If you do want bit extraction, use .$func.extract($arg) instead.
                |""".stripMargin
           c.warning(c.enclosingPosition, msg)
         }
