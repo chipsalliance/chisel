@@ -251,7 +251,7 @@ package internal {
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
-      if (!compileOptions.explicitInvalidate) {
+      if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
         // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
