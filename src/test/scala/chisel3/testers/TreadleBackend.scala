@@ -14,6 +14,8 @@ import treadle.{CallResetAtStartupAnnotation, TreadleTesterAnnotation, WriteVcdA
 
 import java.io.File
 
+import scala.sys.process.ProcessLogger
+
 case object TreadleBackend extends TesterDriver.Backend {
   val MaxTreadleCycles = 10000L
 
@@ -21,7 +23,8 @@ case object TreadleBackend extends TesterDriver.Backend {
     t:                    () => BasicTester,
     additionalVResources: Seq[String] = Seq(),
     annotations:          AnnotationSeq = Seq(),
-    nameHint:             Option[String] = None
+    nameHint:             Option[String] = None,
+    processLogger:        ProcessLogger = TesterDriver.loggingProcessLogger
   ): Boolean = {
     val generatorAnnotation = chisel3.stage.ChiselGeneratorAnnotation(t)
 
