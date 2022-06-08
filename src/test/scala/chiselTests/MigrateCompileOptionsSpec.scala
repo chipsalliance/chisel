@@ -22,7 +22,6 @@ class MigrateCompileOptionsSpec extends ChiselFunSpec with Utils {
     }
   }
 
-
   describe("(1): Migrating explicit invalidate") {
     import MigrationExamples.ExplicitInvalidate._
 

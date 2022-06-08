@@ -135,6 +135,7 @@ trait RequireSyncReset extends Module {
   override private[chisel3] def mkReset: Bool = Bool()
 }
 
+/** Mix with a [[RawModule]] to automatically connect DontCare to the module's ports, wires, and children instance IOs. */
 trait ImplicitInvalidate
 
 package object internal {
