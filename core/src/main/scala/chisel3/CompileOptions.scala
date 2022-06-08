@@ -24,7 +24,7 @@ trait CompileOptions {
   val inferModuleReset: Boolean
 
   // If marked true, then any Module which consumes inferModuleReset=false must also mix in chisel3.RequireSyncReset
-  val migrateInferModuleReset: Boolean = false
+  def migrateInferModuleReset: Boolean = false
 }
 
 object CompileOptions {
