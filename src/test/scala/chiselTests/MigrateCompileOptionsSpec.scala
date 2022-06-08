@@ -38,6 +38,6 @@ class MigrateCompileOptionsSpec extends ChiselFlatSpec with ScalaCheckDrivenProp
     class Foo extends Module with RequireSyncReset {
       val io = new Bundle {}
     }
-    ChiselStage.elaborate(new Foo {})
+    ChiselStage.elaborate(new Foo)
   }
 }
