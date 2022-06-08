@@ -100,10 +100,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param x an index
     * @return the specified bit
     */
-  final def apply(x: BigInt): Bool = macro IntLiteralApplyTransform.safeApply
+  final def extract(x: BigInt): Bool = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
-  final def do_apply(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  final def do_extract(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
     }
@@ -128,11 +128,35 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @param x an index
     * @return the specified bit
     */
+  final def apply(x: BigInt): Bool = macro IntLiteralApplyTransform.safeApply
+
+  /** @group SourceInfoTransformMacro */
+  final def do_apply(x: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    do_extract(x)
+
+  /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
+    *
+    * @param x an index
+    * @return the specified bit
+    */
   final def apply(x: Int): Bool = macro IntLiteralApplyTransform.safeApply
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
-    do_apply(BigInt(x))
+    do_extract(BigInt(x))
+
+  /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
+    *
+    * @param x a hardware component whose value will be used for dynamic addressing
+    * @return the specified bit
+    */
+  final def extract(x: UInt): Bool = macro SourceInfoTransform.xArg
+
+  /** @group SourceInfoTransformMacro */
+  final def do_extract(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    val theBits = this >> x
+    theBits(0)
+  }
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
@@ -142,10 +166,8 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def apply(x: UInt): Bool = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
-  final def do_apply(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
-    val theBits = this >> x
-    theBits(0)
-  }
+  final def do_apply(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    do_extract(x)
 
   /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
     *
