@@ -30,7 +30,7 @@ class MigrateCompileOptionsSpec extends ChiselFlatSpec with ScalaCheckDrivenProp
       val io = new Bundle {}
     }
     intercept[Exception] {
-      ChiselStage.elaborate(new Foo {})
+      ChiselStage.elaborate(new Foo)
     }
   }
   it should "not error if migrating, and you mix with RequireSyncReset" in {
