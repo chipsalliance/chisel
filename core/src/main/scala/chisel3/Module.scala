@@ -90,6 +90,81 @@ object Module extends SourceInfoDoc {
   def reset: Reset = Builder.forcedReset
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
+<<<<<<< HEAD
+=======
+
+  private[chisel3] def do_pseudo_apply[T <: BaseModule](
+    bc: => T
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
+    val parent = Builder.currentModule
+    val module: T = bc // bc is actually evaluated here
+    if (!parent.isEmpty) { Builder.currentModule = parent }
+
+    module
+  }
+}
+
+/** Abstract base class for Modules, which behave much like Verilog modules.
+  * These may contain both logic and state which are written in the Module
+  * body (constructor).
+  * This abstract base class includes an implicit clock and reset.
+  *
+  * @note Module instantiations must be wrapped in a Module() call.
+  */
+abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
+  // Implicit clock and reset pins
+  final val clock: Clock = IO(Input(Clock())).suggestName("clock")
+  final val reset: Reset = IO(Input(mkReset)).suggestName("reset")
+
+  // TODO It's hard to remove these deprecated override methods because they're used by
+  //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
+  private var _override_clock: Option[Clock] = None
+  private var _override_reset: Option[Bool] = None
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_clock: Option[Clock] = _override_clock
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_reset: Option[Bool] = _override_reset
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_clock_=(rhs: Option[Clock]): Unit = {
+    _override_clock = rhs
+  }
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_reset_=(rhs: Option[Bool]): Unit = {
+    _override_reset = rhs
+  }
+
+  private[chisel3] def mkReset: Reset = {
+    // Top module and compatibility mode use Bool for reset
+    // Note that a Definition elaboration will lack a parent, but still not be a Top module
+    val inferReset = (_parent.isDefined || Builder.inDefinition) && moduleCompileOptions.inferModuleReset
+    if (moduleCompileOptions.migrateInferModuleReset && !moduleCompileOptions.inferModuleReset) {
+      this match {
+        case _: RequireSyncReset => // Good! It's been migrated.
+        case _ => // Bad! It hasn't been migrated.
+          Builder.error(
+            s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
+          )
+      }
+    }
+    if (inferReset) Reset() else Bool()
+  }
+
+  // Setup ClockAndReset
+  Builder.currentClock = Some(clock)
+  Builder.currentReset = Some(reset)
+  Builder.clearPrefix()
+
+  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+
+    super.initializeInParent(parentCompileOptions)
+    clock := _override_clock.getOrElse(Builder.forcedClock)
+    reset := _override_reset.getOrElse(Builder.forcedReset)
+  }
+>>>>>>> 3c6c044b (Added migration for inferModuleReset (#2571))
 }
 
 package experimental {
