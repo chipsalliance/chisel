@@ -8,52 +8,6 @@ import chisel3.ExplicitCompileOptions
 
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class MigrateCompileOptionsSpec extends ChiselFunSpec with Utils {
-  import Chisel.{defaultCompileOptions => _, _}
-  import chisel3.RequireSyncReset
-
-  describe("(0): Migrating infer resets") {
-    import MigrationExamples.InferResets._
-    it("(0.a): Error if migrating, but not extended RequireSyncReset") {
-      intercept[Exception] { ChiselStage.elaborate(new Foo) }
-    }
-    it("(0.b): Not error if migrating, and you mix with RequireSyncReset") {
-      ChiselStage.elaborate(new FooWithRequireSyncReset)
-    }
-  }
-
-  describe("(1): Migrating explicit invalidate") {
-    import MigrationExamples.ExplicitInvalidate._
-
-    it("(1.a): error if migrating module input, but not extending ImplicitInvalidate") {
-      intercept[_root_.firrtl.passes.CheckInitialization.RefNotInitializedException] {
-        ChiselStage.emitVerilog(new ChiselChildren.Foo)
-      }
-    }
-    it("(1.b): succeed if migrating module input with extending ImplicitInvalidate") {
-      ChiselStage.emitVerilog(new ChiselChildren.FooWithImplicitInvalidate)
-    }
-
-    it("(1.c): error if migrating instance output, but not extending ImplicitInvalidate") {
-      intercept[_root_.firrtl.passes.CheckInitialization.RefNotInitializedException] {
-        ChiselStage.emitVerilog(new ChiselParents.FooParent)
-      }
-    }
-    it("(1.d): succeed if migrating instance output with extending ImplicitInvalidate") {
-      ChiselStage.emitVerilog(new ChiselParents.FooParentWithImplicitInvalidate)
-    }
-
-    it("(1.e): error if migrating wire declaration, but not extending ImplicitInvalidate") {
-      intercept[_root_.firrtl.passes.CheckInitialization.RefNotInitializedException] {
-        ChiselStage.emitVerilog(new ChiselChildren.FooWire)
-      }
-    }
-    it("(1.f): succeed if migrating wire declaration with extending ImplicitInvalidate") {
-      ChiselStage.emitVerilog(new ChiselChildren.FooWireWithImplicitInvalidate)
-    }
-  }
-}
-
 object MigrationExamples {
   object InferResets {
     import Chisel.{defaultCompileOptions => _, _}
@@ -128,6 +82,52 @@ object MigrationExamples {
         val io = new Bundle {}
         val i = Module(new chisel3Children.Foo)
       }
+    }
+  }
+}
+
+class MigrateCompileOptionsSpec extends ChiselFunSpec with Utils {
+  import Chisel.{defaultCompileOptions => _, _}
+  import chisel3.RequireSyncReset
+
+  describe("(0): Migrating infer resets") {
+    import MigrationExamples.InferResets._
+    it("(0.a): Error if migrating, but not extended RequireSyncReset") {
+      intercept[Exception] { ChiselStage.elaborate(new Foo) }
+    }
+    it("(0.b): Not error if migrating, and you mix with RequireSyncReset") {
+      ChiselStage.elaborate(new FooWithRequireSyncReset)
+    }
+  }
+
+  describe("(1): Migrating explicit invalidate") {
+    import MigrationExamples.ExplicitInvalidate._
+
+    it("(1.a): error if migrating module input, but not extending ImplicitInvalidate") {
+      intercept[_root_.firrtl.passes.CheckInitialization.RefNotInitializedException] {
+        ChiselStage.emitVerilog(new ChiselChildren.Foo)
+      }
+    }
+    it("(1.b): succeed if migrating module input with extending ImplicitInvalidate") {
+      ChiselStage.emitVerilog(new ChiselChildren.FooWithImplicitInvalidate)
+    }
+
+    it("(1.c): error if migrating instance output, but not extending ImplicitInvalidate") {
+      intercept[_root_.firrtl.passes.CheckInitialization.RefNotInitializedException] {
+        ChiselStage.emitVerilog(new ChiselParents.FooParent)
+      }
+    }
+    it("(1.d): succeed if migrating instance output with extending ImplicitInvalidate") {
+      ChiselStage.emitVerilog(new ChiselParents.FooParentWithImplicitInvalidate)
+    }
+
+    it("(1.e): error if migrating wire declaration, but not extending ImplicitInvalidate") {
+      intercept[_root_.firrtl.passes.CheckInitialization.RefNotInitializedException] {
+        ChiselStage.emitVerilog(new ChiselChildren.FooWire)
+      }
+    }
+    it("(1.f): succeed if migrating wire declaration with extending ImplicitInvalidate") {
+      ChiselStage.emitVerilog(new ChiselChildren.FooWireWithImplicitInvalidate)
     }
   }
 }
