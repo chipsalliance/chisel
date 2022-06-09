@@ -136,7 +136,7 @@ trait RequireSyncReset extends Module {
 }
 
 /** Mix with a [[RawModule]] to automatically connect DontCare to the module's ports, wires, and children instance IOs. */
-trait ImplicitInvalidate
+trait ImplicitInvalidate { self: RawModule => }
 
 package object internal {
 
