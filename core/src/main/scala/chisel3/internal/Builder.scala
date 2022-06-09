@@ -196,7 +196,7 @@ private[chisel3] trait HasId extends InstanceId {
     default:    => String,
     namespace:  Namespace,
     errorIfDup: Boolean = false,
-    refBuilder: String => Arg = (x: String) => (Ref(x))
+    refBuilder: String => Arg = Ref(_)
   ): Unit =
     if (_ref.isEmpty) {
       val candidate_name = _computeName(prefix, Some(default).filterNot(_ => errorIfDup)).get

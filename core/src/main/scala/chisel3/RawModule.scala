@@ -63,7 +63,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     // Ports get first naming priority, since they are part of a Module's IO spec
     checkPorts(names)
 
-    // All suggestions are in, force names to every node.
+    // Now that elaboration is complete for this Module, we can finalize names
     for (id <- getIds) {
       id match {
         case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
@@ -83,7 +83,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
               case MemoryPortBinding(_, _) =>
                 id.forceName(default = "MPORT", _namespace)
               case PortBinding(_) =>
-                id.forceName(None, default = "PORT", _namespace, true, { x: String => ModuleIO(this, x) })
+                id.forceName(None, default = "PORT", _namespace, true, x => ModuleIO(this, x))
               case RegBinding(_, _) =>
                 id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
