@@ -59,7 +59,7 @@ object SpecifiedDirection {
   )(
     implicit compileOptions: CompileOptions
   ): T = {
-    if (compileOptions.checkSynthesizable) {
+    if (compileOptions.chisel3Options) {
       requireIsChiselType(source)
     }
     val out = source.cloneType.asInstanceOf[T]
@@ -452,7 +452,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     if (_specifiedDirection != SpecifiedDirection.Unspecified) {
       this match {
         // Anything flies in compatibility mode
-        case t: Record if !t.compileOptions.dontAssumeDirectionality =>
+        case t: Record if !t.compileOptions.chisel3Options =>
         case _ => throw RebindingException(s"Attempted reassignment of user-specified direction to $this")
       }
     }
@@ -576,7 +576,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions
   ): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
+    if (connectCompileOptions.chisel3Options) {
       requireIsHardware(this, "data to be connected")
       requireIsHardware(that, "data to be connected")
       this.topBinding match {
@@ -601,7 +601,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions
   ): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
+    if (connectCompileOptions.chisel3Options) {
       requireIsHardware(this, s"data to be bulk-connected")
       requireIsHardware(that, s"data to be bulk-connected")
       (this.topBinding, that.topBinding) match {

@@ -533,7 +533,7 @@ package experimental {
               case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
                 data match {
                   case record: Record =>
-                    val compatRecord = !record.compileOptions.dontAssumeDirectionality
+                    val compatRecord = !record.compileOptions.chisel3Options
                     record.getElements.foreach(assignCompatDir(_, compatRecord))
                   case vec: Vec[_] =>
                     vec.getElements.foreach(assignCompatDir(_, insideCompat))
