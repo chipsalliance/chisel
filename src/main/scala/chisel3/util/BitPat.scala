@@ -421,15 +421,29 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
   override def isEmpty: Boolean = false
 
   /** Generate raw string of a [[BitPat]]. */
-  def rawString: String = Seq
-    .tabulate(width) { i =>
-      (value.testBit(width - i - 1), mask.testBit(width - i - 1)) match {
-        case (true, true)  => "1"
-        case (false, true) => "0"
-        case (_, false)    => "?"
-      }
+  def rawString: String = _rawString
+
+  // This is micro-optimized and memoized because it is used for lots of BitPat operations
+  private lazy val _rawString: String = {
+    val sb = new StringBuilder(width)
+    var i = 0
+    while (i < width) {
+      val bitIdx = width - i - 1
+      val char =
+        if (mask.testBit(bitIdx)) {
+          if (value.testBit(bitIdx)) {
+            '1'
+          } else {
+            '0'
+          }
+        } else {
+          '?'
+        }
+      sb += char
+      i += 1
     }
-    .mkString
+    sb.result()
+  }
 
   override def toString = s"BitPat($rawString)"
 }
