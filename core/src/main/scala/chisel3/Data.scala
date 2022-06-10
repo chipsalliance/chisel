@@ -55,13 +55,16 @@ object SpecifiedDirection {
 
   private[chisel3] def specifiedDirection[T <: Data](
     source: T
-  )(dir:    SpecifiedDirection
-  )(
-    implicit compileOptions: CompileOptions
-  ): T = {
-    if (compileOptions.chisel3Options) {
-      requireIsChiselType(source)
-    }
+  )(dir:    SpecifiedDirection) : T = {
+    requireIsChiselType(source)
+    val out = source.cloneType.asInstanceOf[T]
+    out.specifiedDirection = dir
+    out
+  }
+
+  private[chisel3] def specifiedDirectionLegacyChisel[T <: Data](
+    source: T
+  )(dir:    SpecifiedDirection): T = {
     val out = source.cloneType.asInstanceOf[T]
     out.specifiedDirection = dir
     out
@@ -402,18 +405,30 @@ object chiselTypeOf {
   */
 object Input {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
+    if(compileOptions.chisel3Options) {
+      SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
+    } else {
+      SpecifiedDirection.specifiedDirectionLegacyChisel(source)(SpecifiedDirection.Input)
+    }
   }
 }
 object Output {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
+    if(compileOptions.chisel3Options) {
+      SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
+    } else {
+      SpecifiedDirection.specifiedDirectionLegacyChisel(source)(SpecifiedDirection.Output)
+    }
   }
 }
 
 object Flipped {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
+    if(compileOptions.chisel3Options) {
+      SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
+    } else {
+      SpecifiedDirection.specifiedDirectionLegacyChisel(source)(SpecifiedDirection.flip(source.specifiedDirection))
+    }
   }
 }
 
