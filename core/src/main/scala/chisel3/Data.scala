@@ -61,15 +61,6 @@ object SpecifiedDirection {
     out.specifiedDirection = dir
     out
   }
-
-  private[chisel3] def specifiedDirectionLegacyChisel[T <: Data](
-    source: T
-  )(dir:    SpecifiedDirection): T = {
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = dir
-    out
-  }
-
 }
 
 /** Resolved directions for both leaf and container nodes, only visible after
@@ -405,30 +396,27 @@ object chiselTypeOf {
   */
 object Input {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if(compileOptions.chisel3Options) {
-      SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
-    } else {
-      SpecifiedDirection.specifiedDirectionLegacyChisel(source)(SpecifiedDirection.Input)
+    if(compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(source)
     }
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
   }
 }
 object Output {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if(compileOptions.chisel3Options) {
-      SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
-    } else {
-      SpecifiedDirection.specifiedDirectionLegacyChisel(source)(SpecifiedDirection.Output)
+    if(compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(source)
     }
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
   }
 }
 
 object Flipped {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if(compileOptions.chisel3Options) {
-      SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
-    } else {
-      SpecifiedDirection.specifiedDirectionLegacyChisel(source)(SpecifiedDirection.flip(source.specifiedDirection))
+    if(compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(source)
     }
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
   }
 }
 
