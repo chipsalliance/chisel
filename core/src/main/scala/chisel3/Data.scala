@@ -866,7 +866,7 @@ trait WireFactory {
     x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
 
     pushCommand(DefWire(sourceInfo, x))
-    if (!compileOptions.explicitInvalidate) {
+    if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
       pushCommand(DefInvalid(sourceInfo, x.ref))
     }
 
