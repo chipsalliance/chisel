@@ -13,6 +13,8 @@ import firrtl.options.{Dependency, Phase, PhaseManager, TargetDirAnnotation, Uns
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
+import scala.sys.process.ProcessLogger
+
 object TesterDriver extends BackendCompilationUtilities {
 
   private[chisel3] trait Backend extends NoTargetAnnotation with Unserializable {
@@ -20,7 +22,8 @@ object TesterDriver extends BackendCompilationUtilities {
       t:                    () => BasicTester,
       additionalVResources: Seq[String] = Seq(),
       annotations:          AnnotationSeq = Seq(),
-      nameHint:             Option[String] = None
+      nameHint:             Option[String] = None,
+      processLogger:        ProcessLogger = loggingProcessLogger
     ): Boolean
   }
   case object VerilatorBackend extends Backend {
@@ -32,7 +35,8 @@ object TesterDriver extends BackendCompilationUtilities {
       t:                    () => BasicTester,
       additionalVResources: Seq[String] = Seq(),
       annotations:          AnnotationSeq = Seq(),
-      nameHint:             Option[String] = None
+      nameHint:             Option[String] = None,
+      processLogger:        ProcessLogger = loggingProcessLogger
     ): Boolean = {
       val pm = new PhaseManager(
         targets = Seq(Dependency[AddImplicitTesterDirectory], Dependency[Emitter], Dependency[Convert])
@@ -59,7 +63,7 @@ object TesterDriver extends BackendCompilationUtilities {
       // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
       if (
         (verilogToCpp(target, path, additionalVFiles, cppHarness) #&&
-          cppToExe(target, path)).! == 0
+          cppToExe(target, path)).!(processLogger) == 0
       ) {
         executeExpectingSuccess(target, path)
       } else {
@@ -100,7 +104,9 @@ object TesterDriver extends BackendCompilationUtilities {
     t:                    () => BasicTester,
     additionalVResources: Seq[String] = Seq(),
     annotations:          AnnotationSeq = Seq(),
-    nameHint:             Option[String] = None
+    nameHint:             Option[String] = None,
+    /** Logger used for forked processes, useful for capturing Verilator process stdout and stderr */
+    processLogger: ProcessLogger = loggingProcessLogger
   ): Boolean = {
 
     val backendAnnotations = annotations.collect { case anno: Backend => anno }
@@ -111,7 +117,7 @@ object TesterDriver extends BackendCompilationUtilities {
     } else {
       throw new ChiselException(s"Only one backend annotation allowed, found: ${backendAnnotations.mkString(", ")}")
     }
-    backendAnnotation.execute(t, additionalVResources, annotations, nameHint)
+    backendAnnotation.execute(t, additionalVResources, annotations, nameHint, processLogger)
   }
 
   /**
