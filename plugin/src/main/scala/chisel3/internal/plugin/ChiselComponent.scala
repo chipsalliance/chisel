@@ -181,8 +181,11 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         // If a Data or a Memory, get the name and a prefix
         else if (shouldMatchNamedComp(tpe)) {
           val str = stringFromTermName(name)
+          // Starting with '_' signifies a temporary, we ignore it for prefixing because we don't
+          // want double "__" in names when the user is just specifying a temporary
+          val prefix = if (str.head == '_') str.tail else str
           val newRHS = transform(rhs)
-          val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
+          val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$prefix)(f=$newRHS)"
           val named = q"chisel3.internal.plugin.autoNameRecursively($str)($prefixed)"
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
           // If an instance, just get a name but no prefix

@@ -340,4 +340,23 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       Select.wires(top).map(_.instanceName) should be(List("a_b_c", "a_b", "a"))
     }
   }
+
+  behavior.of("Unnamed values (aka \"Temporaries\")")
+
+  they should "be declared by starting the name with '_'" in {
+    class Test extends Module {
+      {
+        val a = {
+          val b = {
+            val _c = Wire(UInt(3.W))
+            4.U // literal so there is no name
+          }
+          b
+        }
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("_a_b_c"))
+    }
+  }
 }

@@ -186,7 +186,7 @@ private[chisel3] trait HasId extends InstanceId {
     } else {
       defaultSeed.map { default =>
         defaultPrefix match {
-          case Some(p) => buildName(default, p :: naming_prefix.reverse)
+          case Some(p) => buildName(default, naming_prefix.reverse)
           case None    => buildName(default, naming_prefix.reverse)
         }
       }
@@ -474,7 +474,11 @@ private[chisel3] object Builder extends LazyLogging {
       }
     }
     buildAggName(d).map { name =>
-      pushPrefix(name)
+      if (isTemp(name)) {
+        pushPrefix(name.tail)
+      } else {
+        pushPrefix(name)
+      }
     }.isDefined
   }
 
