@@ -24,11 +24,11 @@ import chisel3.experimental.{prefix, noPrefix}
 import chisel3.stage.ChiselStage
 ```
 
-With the release of Chisel 3.4, users should add the following line to their build.sbt settings to get the improved
-naming:
+With the release of Chisel 3.5, users are required to add the following line to
+their build.sbt settings:
 
 ```scala
-// chiselVersion is the String version (eg. "3.4.0")
+// chiselVersion is the String version (eg. "3.5.3")
 addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full)
 ```
 
@@ -78,6 +78,29 @@ class Example2 extends Module {
 ChiselStage.emitVerilog(new Example2)
 ```
 
+Prefixing can also be derived from the name of signals on the left-hand side of a connection.
+While this is not implemented via the compiler plugin, the behavior should feel similar:
+
+```scala mdoc
+class ConnectPrefixing extends Module {
+  val in = IO(Input(UInt(2.W)))
+  // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
+
+  val out = IO(Output(UInt(2.W)))
+  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))
+
+  out := { // technically this is not wrapped in autoNameRecursively nor prefix
+    // But the Chisel runtime will still use the name of `out` as a prefix
+    val double = in * in
+    // val double = autoNameRecursively("double")(prefix("double")(in * in))
+    double + 1.U
+  }
+}
+```
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new ConnectPrefixing)
+```
+
 Note that the naming also works if the hardware type is nested in an `Option` or a subtype of `Iterable`:
 
 ```scala mdoc
@@ -121,7 +144,7 @@ Users who desire a prefix are encouraged to provide one as [described below](#pr
 ### Prefixing
 
 As shown above, the compiler plugin automatically attempts to prefix some of your signals for you. However, you as a
-user can also add your own prefixes. This is especially for ECO-type fixes where you need to add some logic to a module
+user can also add your own prefixes. This is especially useful for ECO-type fixes where you need to add some logic to a module
 but don't want to influence other names in the module.
 
 In the following example, we prefix additional logic with "ECO", where `Example4` is pre-ECO and `Example5` is post-ECO:
@@ -201,6 +224,96 @@ class Example8 extends Module {
 ```scala mdoc:verilog
 ChiselStage.emitVerilog(new Example8)
 ```
+
+Note that using `.suggestName` does **not** affect prefixes derived from val names;
+however, it _can_ affect prefixes derived from connections (eg. `:=`):
+
+```scala mdoc
+class ConnectionPrefixExample extends Module {
+  val in0 = IO(Input(UInt(2.W)))
+  val in1 = IO(Input(UInt(2.W)))
+
+  val out0 = {
+    val port = IO(Output(UInt()))
+    // Even though this suggestName is before mul, the prefix used in this scope
+    // is derived from `val out0`, so this does not affect the name of mul
+    port.suggestName("foo")
+    // out0_mul
+    val mul = in0 * in1
+    port := mul + 1.U
+    port
+  }
+
+  val out1 = IO(Output(UInt()))
+  val out2 = IO(Output(UInt()))
+
+  out1 := {
+    // out1_sum
+    val sum = in0 + in1
+    sum + 1.U
+  }
+  // Comes after so does *not* affect prefix above
+  out1.suggestName("bar")
+
+  // Comes before so *does* affect prefix below
+  out2.suggestName("fizz")
+  out2 := {
+    // fizz_diff
+    val diff = in0 - in1
+    diff + 1.U
+  }
+}
+```
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new ConnectionPrefixExample)
+```
+
+As this example illustrates, this behavior is slightly inconsistent so is subject to change in a future version of Chisel.
+
+
+### Behavior for "Unnamed signals" (aka "Temporaries")
+
+If you want to signify that the name of a signal does not matter, you can prefix the name of your val with `_`.
+Chisel will preserve the convention of leading `_` signifying an unnamed signal across prefixes.
+For example:
+
+```scala mdoc
+class TemporaryExample extends Module {
+  val in0 = IO(Input(UInt(2.W)))
+  val in1 = IO(Input(UInt(2.W)))
+
+  val out = {
+    val port = IO(Output(UInt()))
+    val _sum = in0 + in1
+    port := _sum + 1.U
+    port
+  }
+}
+```
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new TemporaryExample)
+```
+
+If an unnamed signal is itself used to generate a prefix, the leading `_` will be ignored to avoid double `__` in the names of further nested signals.
+
+
+```scala mdoc
+class TemporaryPrefixExample extends Module {
+  val in0 = IO(Input(UInt(2.W)))
+  val in1 = IO(Input(UInt(2.W)))
+  val out = IO(Output(UInt()))
+
+  val _sum = {
+    val x = in0 + in1
+    x + 1.U
+  }
+  out := _sum & 0x2.U
+}
+```
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new TemporaryPrefixExample)
+```
+
 
 ### Set a Module Name
 
