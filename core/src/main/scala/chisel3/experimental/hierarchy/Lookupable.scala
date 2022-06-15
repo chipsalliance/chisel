@@ -218,7 +218,7 @@ object Lookupable {
 
     result.bind(newBinding)
     result.setAllParents(Some(ViewParent))
-    result.forceName(None, "view", Builder.viewNamespace)
+    result.forceName("view", Builder.viewNamespace)
     result
   }
 

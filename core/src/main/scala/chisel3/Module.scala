@@ -497,7 +497,11 @@ package experimental {
 
     private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
       for (port <- getModulePorts) {
+<<<<<<< HEAD
         port._computeName(None, None).orElse(names.get(port)) match {
+=======
+        port._computeName(None) match {
+>>>>>>> ec178aa2 (Remove unused defaultPrefix argument from _computeName)
           case Some(name) =>
             if (_namespace.contains(name)) {
               Builder.error(
