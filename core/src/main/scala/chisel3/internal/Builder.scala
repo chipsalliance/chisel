@@ -176,21 +176,13 @@ private[chisel3] trait HasId extends InstanceId {
   }
 
   /** Computes the name of this HasId, if one exists
-    * @param defaultPrefix Optionally provide a default prefix for computing the name
     * @param defaultSeed Optionally provide default seed for computing the name
     * @return the name, if it can be computed
     */
-  private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
-    if (hasSeed) {
-      Some(buildName(seedOpt.get, naming_prefix.reverse))
-    } else {
-      defaultSeed.map { default =>
-        defaultPrefix match {
-          case Some(p) => buildName(default, naming_prefix.reverse)
-          case None    => buildName(default, naming_prefix.reverse)
-        }
-      }
-    }
+  private[chisel3] def _computeName(defaultSeed: Option[String]): Option[String] = {
+    seedOpt
+      .orElse(defaultSeed)
+      .map(name => buildName(name, naming_prefix.reverse))
   }
 
   /** This resolves the precedence of [[autoSeed]] and [[suggestName]]
@@ -210,9 +202,9 @@ private[chisel3] trait HasId extends InstanceId {
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
   // (e.g. tried to suggest a name to part of a Record)
-  private[chisel3] def forceName(prefix: Option[String], default: => String, namespace: Namespace): Unit =
+  private[chisel3] def forceName(default: => String, namespace: Namespace): Unit =
     if (_ref.isEmpty) {
-      val candidate_name = _computeName(prefix, Some(default)).get
+      val candidate_name = _computeName(Some(default)).get
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
       // Clear naming prefix to free memory
@@ -719,7 +711,7 @@ private[chisel3] object Builder extends LazyLogging {
       logger.info("Elaborating design...")
       val mod = f
       if (forceModName) { // This avoids definition name index skipping with D/I
-        mod.forceName(None, mod.name, globalNamespace)
+        mod.forceName(mod.name, globalNamespace)
       }
       errors.checkpoint(logger)
       logger.info("Done elaborating.")

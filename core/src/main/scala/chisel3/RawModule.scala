@@ -55,26 +55,26 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       id match {
         case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
         case id: InstanceClone[_] => id.setAsInstanceRef()
-        case id: BaseModule       => id.forceName(None, default = id.desiredName, _namespace)
-        case id: MemBase[_]       => id.forceName(None, default = "MEM", _namespace)
-        case id: stop.Stop        => id.forceName(None, default = "stop", _namespace)
-        case id: assert.Assert    => id.forceName(None, default = "assert", _namespace)
-        case id: assume.Assume    => id.forceName(None, default = "assume", _namespace)
-        case id: cover.Cover      => id.forceName(None, default = "cover", _namespace)
-        case id: printf.Printf => id.forceName(None, default = "printf", _namespace)
+        case id: BaseModule       => id.forceName(default = id.desiredName, _namespace)
+        case id: MemBase[_]       => id.forceName(default = "MEM", _namespace)
+        case id: stop.Stop        => id.forceName(default = "stop", _namespace)
+        case id: assert.Assert    => id.forceName(default = "assert", _namespace)
+        case id: assume.Assume    => id.forceName(default = "assume", _namespace)
+        case id: cover.Cover      => id.forceName(default = "cover", _namespace)
+        case id: printf.Printf => id.forceName(default = "printf", _namespace)
         case id: Data =>
           if (id.isSynthesizable) {
             id.topBinding match {
               case OpBinding(_, _) =>
-                id.forceName(None, default = "_T", _namespace)
+                id.forceName(default = "_T", _namespace)
               case MemoryPortBinding(_, _) =>
-                id.forceName(None, default = "MPORT", _namespace)
+                id.forceName(default = "MPORT", _namespace)
               case PortBinding(_) =>
-                id.forceName(None, default = "PORT", _namespace)
+                id.forceName(default = "PORT", _namespace)
               case RegBinding(_, _) =>
-                id.forceName(None, default = "REG", _namespace)
+                id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
-                id.forceName(None, default = "_WIRE", _namespace)
+                id.forceName(default = "_WIRE", _namespace)
               case _ => // don't name literals
             }
           } // else, don't name unbound types

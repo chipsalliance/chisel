@@ -33,7 +33,7 @@ package object dataview {
       // The names of views do not matter except for when a view is annotated. For Views that correspond
       // To a single Data, we just forward the name of the Target. For Views that correspond to more
       // than one Data, we return this assigned name but rename it in the Convert stage
-      result.forceName(None, "view", Builder.viewNamespace)
+      result.forceName("view", Builder.viewNamespace)
       result
     }
   }

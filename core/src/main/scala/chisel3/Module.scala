@@ -362,7 +362,7 @@ package experimental {
 
     private[chisel3] def namePorts(): Unit = {
       for (port <- getModulePorts) {
-        port._computeName(None, None) match {
+        port._computeName(None) match {
           case Some(name) =>
             if (_namespace.contains(name)) {
               Builder.error(
