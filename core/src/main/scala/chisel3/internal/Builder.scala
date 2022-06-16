@@ -238,7 +238,7 @@ private[chisel3] trait HasId extends InstanceId {
         "This will become an error in Chisel 3.6."
       errors.deprecated(msg, None)
       errors.checkpoint(logger)
-      _computeName(None, None).get
+      _computeName(None).get
   }
 
   // Helper for reifying views if they map to a single Target
