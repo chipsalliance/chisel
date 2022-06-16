@@ -275,7 +275,7 @@ package internal {
       private[chisel3] def setRefAndPortsRef(namespace: Namespace): Unit = {
         val record = _portsRecord
         // Use .forceName to re-use default name resolving behavior
-        record.forceName(None, default = this.desiredName, namespace)
+        record.forceName(default = this.desiredName, namespace)
         // Now take the Ref that forceName set and convert it to the correct Arg
         val instName = record.getRef match {
           case Ref(name) => name
@@ -497,7 +497,7 @@ package experimental {
 
     private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
       for (port <- getModulePorts) {
-        port._computeName(None, None).orElse(names.get(port)) match {
+        port._computeName(None).orElse(names.get(port)) match {
           case Some(name) =>
             if (_namespace.contains(name)) {
               Builder.error(

@@ -170,7 +170,20 @@ lazy val core = (project in file("core")).
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.3")).
+  settings(
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.3"),
+    mimaBinaryIssueFilters ++= Seq(
+      // Modified package private methods (https://github.com/lightbend/mima/issues/53)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data._computeName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data.forceName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.MemBase._computeName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.MemBase.forceName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement._computeName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.forceName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule._computeName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.forceName"),
+    )
+  ).
   settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
