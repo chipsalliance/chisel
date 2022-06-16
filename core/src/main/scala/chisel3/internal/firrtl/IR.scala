@@ -94,7 +94,7 @@ object Arg {
     case Some(arg)                           => arg.name
     case None =>
       id match {
-        case data: Data => data._computeName(None, Some("?")).get
+        case data: Data => data._computeName(Some("?")).get
         case _ => "?"
       }
   }

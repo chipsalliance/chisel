@@ -55,26 +55,26 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       id match {
         case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
         case id: InstanceClone[_] => id.setAsInstanceRef()
-        case id: BaseModule       => id.forceName(None, default = id.desiredName, _namespace)
-        case id: MemBase[_]       => id.forceName(None, default = "MEM", _namespace)
-        case id: stop.Stop        => id.forceName(None, default = "stop", _namespace)
-        case id: assert.Assert    => id.forceName(None, default = "assert", _namespace)
-        case id: assume.Assume    => id.forceName(None, default = "assume", _namespace)
-        case id: cover.Cover      => id.forceName(None, default = "cover", _namespace)
-        case id: printf.Printf => id.forceName(None, default = "printf", _namespace)
+        case id: BaseModule       => id.forceName(default = id.desiredName, _namespace)
+        case id: MemBase[_]       => id.forceName(default = "MEM", _namespace)
+        case id: stop.Stop        => id.forceName(default = "stop", _namespace)
+        case id: assert.Assert    => id.forceName(default = "assert", _namespace)
+        case id: assume.Assume    => id.forceName(default = "assume", _namespace)
+        case id: cover.Cover      => id.forceName(default = "cover", _namespace)
+        case id: printf.Printf => id.forceName(default = "printf", _namespace)
         case id: Data =>
           if (id.isSynthesizable) {
             id.topBinding match {
               case OpBinding(_, _) =>
-                id.forceName(Some(""), default = "T", _namespace)
+                id.forceName(default = "_T", _namespace)
               case MemoryPortBinding(_, _) =>
-                id.forceName(None, default = "MPORT", _namespace)
+                id.forceName(default = "MPORT", _namespace)
               case PortBinding(_) =>
-                id.forceName(None, default = "PORT", _namespace)
+                id.forceName(default = "PORT", _namespace)
               case RegBinding(_, _) =>
-                id.forceName(None, default = "REG", _namespace)
+                id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
-                id.forceName(Some(""), default = "WIRE", _namespace)
+                id.forceName(default = "_WIRE", _namespace)
               case _ => // don't name literals
             }
           } // else, don't name unbound types
@@ -147,18 +147,39 @@ package object internal {
   /** Marker trait for modules that are not true modules */
   private[chisel3] trait PseudoModule extends BaseModule
 
+  /* Check if a String name is a temporary name */
+  def isTemp(name: String): Boolean = name.nonEmpty && name.head == '_'
+
   /** Creates a name String from a prefix and a seed
     * @param prefix The prefix associated with the seed (must be in correct order, *not* reversed)
     * @param seed The seed for computing the name (if available)
     */
   def buildName(seed: String, prefix: Prefix): String = {
-    val builder = new StringBuilder()
-    prefix.foreach { p =>
-      builder ++= p
-      builder += '_'
+    // Don't bother copying the String if there's no prefix
+    if (prefix.isEmpty) {
+      seed
+    } else {
+      // Using Java's String builder to micro-optimize appending a String excluding 1st character
+      // for temporaries
+      val builder = new java.lang.StringBuilder()
+      // Starting with _ is the indicator of a temporary
+      val temp = isTemp(seed)
+      // Make sure the final result is also a temporary if this is a temporary
+      if (temp) {
+        builder.append('_')
+      }
+      prefix.foreach { p =>
+        builder.append(p)
+        builder.append('_')
+      }
+      if (temp) {
+        // We've moved the leading _ to the front, drop it here
+        builder.append(seed, 1, seed.length)
+      } else {
+        builder.append(seed)
+      }
+      builder.toString
     }
-    builder ++= seed
-    builder.toString
   }
 
   // Private reflective version of "val io" to maintain Chisel.Module semantics without having
