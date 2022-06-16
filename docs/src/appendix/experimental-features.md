@@ -10,6 +10,7 @@ Chisel has a number of new features that are worth checking out.  This page is a
 - [FixedPoint](#fixed-point)
 - [Module Variants](#module-variants)
 - [Bundle Literals](#bundle-literals)
+- [Vec Literals](#vec-literals)
 - [Interval Type](#interval-type)
 - [Loading Memories for simulation or FPGA initialization](#loading-memories)
 
@@ -52,7 +53,10 @@ class Example extends RawModule {
 chisel3.stage.ChiselStage.emitVerilog(new Example)
 ```
 
-Partial specification is allowed, defaulting any unconnected fields to 0 (regardless of type).
+Partial specification is allowed, which results in "invalidated fields" as
+described in [Unconnected Wires](../explanations/unconnected-wires).
+Note that this can be used with `RegInit` to construct partially reset registers as
+described in the [Cookbook](../cookbooks/cookbook#how-do-i-partially-reset-an-aggregate-reg).
 
 ```scala mdoc
 class Example2 extends RawModule {
@@ -122,9 +126,10 @@ chisel3.stage.ChiselStage.emitVerilog(new VecExample1a)
 ```
 
 The following examples all use the explicit form.
-With the explicit form partial specification is allowed.
-When used with as a `Reg` `reset` value, only specified indices of the `Reg`'s `Vec`
-will be reset
+With the explicit form partial specification is allowed, which results in
+"invalidated fields" as described in [Unconnected Wires](../explanations/unconnected-wires).
+Note that this can be used with `RegInit` to construct partially reset registers as
+described in the [Cookbook](../cookbooks/cookbook#how-do-i-partially-reset-an-aggregate-reg).
 
 ```scala mdoc
 class VecExample2 extends RawModule {
