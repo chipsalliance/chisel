@@ -20,6 +20,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
   * [Can I make a 2D or 3D Vector?](#can-i-make-a-2D-or-3D-Vector)
   * [How do I create a Vector of Registers?](#how-do-i-create-a-vector-of-registers)
   * [How do I create a Reg of type Vec?](#how-do-i-create-a-reg-of-type-vec)
+  * [How do I partially reset an Aggregate Reg?](#how-do-i-partially-reset-an-aggregate-reg)
 * Bundles
   * [How do I deal with aliased Bundle fields?](#aliased-bundle-fields)
 * [How do I create a finite state machine?](#how-do-i-create-a-finite-state-machine-fsm)
@@ -233,6 +234,45 @@ class Foo extends RawModule {
   val initRegOfVec = RegInit(VecInit(Seq.fill(4)(0.U(32.W))))
 }
 ```
+
+
+### How do I partially reset an Aggregate Reg?
+
+The easiest way is to use a partially-specified [Bundle Literal](#../appendix/experimental-features#bundle-literals)
+or [Vec Literal](#../appendix/experimental-features#vec-literals) to match the type of the Reg.
+
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.experimental.BundleLiterals._
+
+class MyBundle extends Bundle {
+  val foo = UInt(8.W)
+  val bar = UInt(8.W)
+}
+
+class MyModule extends Module {
+  // Only .foo will be reset, .bar will have no reset value
+  val reg = RegInit((new MyBundle).Lit(_.foo -> 123.U))
+}
+```
+
+If your initial value is not a literal, or if you just prefer, you can use a
+Wire as the initial value for the Reg. Simply connect fields to `DontCare` that
+you do not wish to be reset.
+
+```scala mdoc:silent
+class MyModule2 extends Module {
+  val reg = RegInit({
+    // The wire could be constructed before the reg rather than in the RegInit scope,
+    // but this style has nice lexical scoping behavior, keeping the Wire private
+    val init = Wire(new MyBundle)
+    init := DontCare // No fields will be reset
+    init.foo := 123.U // Last connect override, .foo is reset
+    init
+  })
+}
+```
+
 
 ## Bundles
 
