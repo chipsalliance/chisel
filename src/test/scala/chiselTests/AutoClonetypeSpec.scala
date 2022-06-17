@@ -381,4 +381,23 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     }
     elaborate(new MyModule)
   }
+
+  it should "support Bundles with vararg arguments" in {
+    // Without the fix, this doesn't even compile
+    // Extra parameter lists to make this a complex test case
+    class VarArgsBundle(x: Int)(y: Int, widths: Int*) extends Bundle {
+      def mkField(idx: Int): Option[UInt] =
+        (x +: y +: widths).lift(idx).map(w => UInt(w.W))
+      val foo = mkField(0)
+      val bar = mkField(1)
+      val fizz = mkField(2)
+      val buzz = mkField(3)
+    }
+    class MyModule extends Module {
+      val in = IO(Input(new VarArgsBundle(1)(2, 3, 4)))
+      val out = IO(Output(new VarArgsBundle(1)(2, 3, 4)))
+      out := in
+    }
+    elaborate(new MyModule)
+  }
 }
