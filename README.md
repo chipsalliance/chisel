@@ -62,15 +62,17 @@ class Blinky(freq: Int, startOn: Boolean = false) extends Module {
   }
   io.led0 := led
 }
-// These lines generate the Verilog output
-println(
-  new (chisel3.stage.ChiselStage).emitVerilog(
-    new Blinky(1000),
-    Array(
-      "--emission-options=disableMemRandomization,disableRegisterRandomization"
+object Main extends App {
+  // These lines generate the Verilog output
+  println(
+    new (chisel3.stage.ChiselStage).emitVerilog(
+      new Blinky(1000),
+      Array(
+        "--emission-options=disableMemRandomization,disableRegisterRandomization"
+      )
     )
   )
-)
+}
 ```
 
 Should output the following Verilog:
@@ -208,7 +210,7 @@ scalaVersion := "2.13.8"
 addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.5.3" cross CrossVersion.full)
 libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5.3"
 // We also recommend using chiseltest for writing unit tests
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.0" % "test"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.3" % "test"
 ```
 
 ### Guide For New Contributors
@@ -219,8 +221,7 @@ If you are trying to make a contribution to this project, please read [CONTRIBUT
 
 These simulation-based verification tools are available for Chisel:
 
-* [**testers2**](https://github.com/ucb-bar/chisel-testers2) is the batteries-included testing and formal verification library for Chisel-based RTL designs and a replacement for the former PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with `fork` and `join` with internal and Verilator integration for simulations.
-* [**iotesters**](https://github.com/freechipsproject/chisel-testers), specifically [PeekPokeTester](https://github.com/freechipsproject/chisel-testers/wiki/Using%20the%20PeekPokeTester), is the previous-generation test framework for Chisel providing constructs (`peek`, `poke`, `expect`) similar to a non-synthesizable Verilog testbench.
+* [**chiseltest**](https://github.com/ucb-bar/chiseltest) is the batteries-included testing and formal verification library for Chisel-based RTL designs and a replacement for the former PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with `fork` and `join` with internal and Verilator integration for simulations.
 
 ## Documentation
 
@@ -230,7 +231,7 @@ These simulation-based verification tools are available for Chisel:
 * [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 * [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 * [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
-* [**Scastie (3.5.0)**](https://scastie.scala-lang.org/9ga9i2DvQymKlA5JjS1ieA)
+* [**Scastie (3.5.3)**](https://scastie.scala-lang.org/O3LqeVH7SWyIxD7bZRH8hA)
 * [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).
