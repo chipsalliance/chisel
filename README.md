@@ -2,26 +2,8 @@
 
 ---
 
-## Upcoming Events
+The **Constructing Hardware in a Scala Embedded Language** ([**Chisel**](https://www.chisel-lang.org)) is an open-source hardware description language (HDL) used to describe digital electronics and circuits at the register-transfer level that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 
-### Chisel Dev Meeting
-Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--1200 PT.
-
-Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
-
-### Chisel Community Conference 2021, Shanghai, China.
-CCC is an annual gathering of Chisel community enthusiasts and technical exchange workshop. 
-This year with the support of the Chisel development community and RISC-V World Conference China 2021 Committee, we have brought together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.  
-English translated recordings version will be updated soon.  
-Looking forward to CCC 2022! See you then!
-
----
-
-[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-![CI](https://github.com/chipsalliance/chisel3/actions/workflows/test.yml/badge.svg)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel3.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel3/releases/latest)
-
-[**Chisel**](https://www.chisel-lang.org) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 Chisel adds hardware construction primitives to the [Scala](https://www.scala-lang.org) programming language, providing designers with the power of a modern programming language to write complex, parameterizable circuit generators that produce synthesizable Verilog.
 This generator methodology enables the creation of re-usable components and libraries, such as the FIFO queue and arbiters in the [Chisel Standard Library](https://www.chisel-lang.org/api/latest/#chisel3.util.package), raising the level of abstraction in design while retaining fine-grained control.
 
@@ -29,7 +11,105 @@ For more information on the benefits of Chisel see: ["What benefits does Chisel 
 
 Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/chipsalliance/firrtl), a hardware compiler framework that performs optimizations of Chisel-generated circuits and supports custom user-defined circuit transformations.
 
+* [What does Chisel code look like?](#what-does-chisel-code-look-like)
+  * [LED blink](#led-blink)
+  * [FIR Filter](#fir-filter)
+* [Getting Started](#getting-started)
+  * [Bootcamp Interactive Tutorial](#bootcamp-interactive-tutorial)
+  * [A Textbook on Chisel](#a-textbook-on-chisel)
+  * [Build Your Own Chisel Projects](#build-your-own-chisel-projects)
+  * [Guide For New Contributors](#guide-for-new-contributors)
+  * [Design Verification](#design-verification)
+* [Documentation](#documentation)
+  * [Useful Resources](#useful-resources)
+  * [Chisel Dev Meeting](#chisel-dev-meeting)
+  * [Data Types Overview](#data-types-overview)
+* [Contributor Documentation](#contributor-documentation)
+  * [Useful Resources for Contributors](#useful-resources-for-contributors)
+  * [Compiling and Testing Chisel](#compiling-and-testing-chisel)
+  * [Running Projects Against Local Chisel](#running-projects-against-local-chisel)
+  * [Building Chisel with FIRRTL in the same SBT Project](#building-chisel-with-firrtl-in-the-same-sbt-project)
+  * [Chisel3 Architecture Overview](#chisel3-architecture-overview)
+  * [Chisel Sub-Projects](#chisel-sub-projects)
+  * [Which version should I use?](#which-version-should-i-use)
+
+---
+
+[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+![CI](https://github.com/chipsalliance/chisel3/actions/workflows/test.yml/badge.svg)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel3.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel3/releases/latest)
+[![Scala version support](https://index.scala-lang.org/chipsalliance/chisel3/chisel3/latest-by-scala-version.svg?color=blue)](https://index.scala-lang.org/chipsalliance/chisel3/chisel3)
+[![Sonatype Snapshots](https://img.shields.io/nexus/s/edu.berkeley.cs/chisel3_2.13?server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/content/repositories/snapshots/edu/berkeley/cs/)
+[![Scaladoc](https://www.javadoc.io/badge/edu.berkeley.cs/chisel3_2.13.svg?color=blue&label=Scaladoc)](https://javadoc.io/doc/edu.berkeley.cs/chisel3_2.13/latest)
+
 ## What does Chisel code look like?
+
+### LED blink
+
+```scala
+import chisel3._
+import chisel3.util._
+
+class Blinky(freq: Int, startOn: Boolean = false) extends Module {
+  val io = IO(new Bundle {
+    val led0 = Output(Bool())
+  })
+  // Blink LED every second using Chisel built-in util.Counter
+  val led = RegInit(startOn.B)
+  val (_, counterWrap) = Counter(true.B, freq / 2)
+  when(counterWrap) {
+    led := ~led
+  }
+  io.led0 := led
+}
+object Main extends App {
+  // These lines generate the Verilog output
+  println(
+    new (chisel3.stage.ChiselStage).emitVerilog(
+      new Blinky(1000),
+      Array(
+        "--emission-options=disableMemRandomization,disableRegisterRandomization"
+      )
+    )
+  )
+}
+```
+
+Should output the following Verilog:
+<details>
+<summary>Click to expand!</summary>
+
+```verilog
+module Blinky(
+  input   clock,
+  input   reset,
+  output  io_led0
+);
+  reg  led; // @[main.scala 11:20]
+  reg [8:0] counterWrap_value; // @[Counter.scala 62:40]
+  wire  counterWrap_wrap_wrap = counterWrap_value == 9'h1f3; // @[Counter.scala 74:24]
+  wire [8:0] _counterWrap_wrap_value_T_1 = counterWrap_value + 9'h1; // @[Counter.scala 78:24]
+  assign io_led0 = led; // @[main.scala 16:11]
+  always @(posedge clock) begin
+    if (reset) begin // @[main.scala 11:20]
+      led <= 1'h0; // @[main.scala 11:20]
+    end else if (counterWrap_wrap_wrap) begin // @[main.scala 13:21]
+      led <= ~led; // @[main.scala 14:9]
+    end
+    if (reset) begin // @[Counter.scala 62:40]
+      counterWrap_value <= 9'h0; // @[Counter.scala 62:40]
+    end else if (counterWrap_wrap_wrap) begin // @[Counter.scala 88:20]
+      counterWrap_value <= 9'h0; // @[Counter.scala 88:28]
+    end else begin
+      counterWrap_value <= _counterWrap_wrap_value_T_1; // @[Counter.scala 78:15]
+    end
+  end
+endmodule
+```
+
+</details>
+
+### FIR Filter
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
@@ -53,6 +133,7 @@ class MovingSum3(bitWidth: Int) extends Module {
 ```
 
 the power of Chisel comes from the ability to create generators, such as an FIR filter that is defined by the list of coefficients:
+
 ```scala
 // Generalized FIR filter parameterized by the convolution coefficients
 class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
@@ -76,6 +157,7 @@ class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
 ```
 
 and use and re-use them across designs:
+
 ```scala
 val movingSum3Filter = Module(new FirFilter(8, Seq(1.U, 1.U, 1.U)))  // same 3-point moving sum filter as before
 val delayFilter = Module(new FirFilter(8, Seq(0.U, 1.U)))  // 1-cycle delay as a FIR filter
@@ -83,6 +165,7 @@ val triangleFilter = Module(new FirFilter(8, Seq(1.U, 2.U, 3.U, 2.U, 1.U)))  // 
 ```
 
 The above can be converted to Verilog using `ChiselStage`:
+
 ```scala
 import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
 
@@ -92,6 +175,7 @@ import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
 ```
 
 Alternatively, you may generate some Verilog directly for inspection:
+
 ```scala
 val verilogString = chisel3.emitVerilog(new FirFilter(8, Seq(0.U, 1.U)))
 println(verilogString)
@@ -100,6 +184,7 @@ println(verilogString)
 ## Getting Started
 
 ### Bootcamp Interactive Tutorial
+
 The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master) is the recommended way to get started with and learn Chisel.
 **No setup is required** (it runs in the browser), nor does it assume any prior knowledge of Scala.
 
@@ -118,50 +203,60 @@ Follow the [chisel-template README](https://github.com/freechipsproject/chisel-t
 
 If you insist on setting up your own project from scratch, your project needs to depend on both the chisel3-plugin (Scalac plugin) and the chisel3 library.
 For example, in SBT this could be expressed as:
+
 ```scala
 // build.sbt
-scalaVersion := "2.13.7"
-addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.5.0" cross CrossVersion.full)
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5.0"
-// We also recommend using chiseltest for writing unit tests 
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.0" % "test"
+scalaVersion := "2.13.8"
+addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.5.3" cross CrossVersion.full)
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5.3"
+// We also recommend using chiseltest for writing unit tests
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.3" % "test"
 ```
+
 ### Guide For New Contributors
+
 If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
 
 ### Design Verification
 
 These simulation-based verification tools are available for Chisel:
-- [**iotesters**](https://github.com/freechipsproject/chisel-testers), specifically [PeekPokeTester](https://github.com/freechipsproject/chisel-testers/wiki/Using%20the%20PeekPokeTester), provides constructs (`peek`, `poke`, `expect`) similar to a non-synthesizable Verilog testbench.
-- [**testers2**](https://github.com/ucb-bar/chisel-testers2) is an in-development replacement for PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with `fork` and `join`.
 
+* [**chiseltest**](https://github.com/ucb-bar/chiseltest) is the batteries-included testing and formal verification library for Chisel-based RTL designs and a replacement for the former PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with `fork` and `join` with internal and Verilator integration for simulations.
 
 ## Documentation
 
 ### Useful Resources
 
-- [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
-- [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
-- [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
-- [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
-- [**Scastie (3.5.0)**](https://scastie.scala-lang.org/9ga9i2DvQymKlA5JjS1ieA)
-- [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
+* [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
+* [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
+* [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
+* [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
+* [**Scastie (3.5.3)**](https://scastie.scala-lang.org/O3LqeVH7SWyIxD7bZRH8hA)
+* [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).
 
+### Chisel Dev Meeting
+
+Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--1200 PT.
+
+Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
+
 ### Data Types Overview
+
 These are the base data types for defining circuit components:
 
 ![Image](https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/type_hierarchy.svg?sanitize=true)
 
 ## Contributor Documentation
+
 This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
 ### Useful Resources for Contributors
 
 The [Useful Resources](#useful-resources) for users are also helpful for contributors.
 
-- [**Chisel Breakdown Slides**](https://docs.google.com/presentation/d/114YihixFBPCfUnv1inqAL8UjsiWfcNWdPHX7SeqlRQc), an introductory talk about Chisel's internals
+* [**Chisel Breakdown Slides**](https://docs.google.com/presentation/d/114YihixFBPCfUnv1inqAL8UjsiWfcNWdPHX7SeqlRQc), an introductory talk about Chisel's internals
 
 ### Compiling and Testing Chisel
 
@@ -184,7 +279,7 @@ Check that each is installed on your `PATH` by running `which verilator` and so 
 
 If the compilation succeeded and the dependencies noted above are installed, you can then run the included unit tests by invoking:
 
-```
+```bash
 sbt test
 ```
 
@@ -194,13 +289,13 @@ To use the development version of Chisel (`master` branch), you will need to bui
 The repository version can be found in the [build.sbt](build.sbt) file.
 As of the time of writing it was:
 
-```
+```scala
 version := "3.6-SNAPSHOT"
 ```
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
 
-```
+```bash
 sbt publishLocal
 ```
 
@@ -209,7 +304,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to:
 
-```
+```scala
 libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.6-SNAPSHOT"
 ```
 
@@ -217,16 +312,19 @@ libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.6-SNAPSHOT"
 
 While we recommend using the library dependency approach as described above, it is possible to build Chisel and FIRRTL in a single SBT project.
 
-**Caveats**
+**Caveats**:
+
 * This only works for the "main" configuration; you cannot build the Chisel tests this way because `treadle` is only supported as a library dependency.
 * Do not `publishLocal` when building this way. The published artifact will be missing the FIRRTL dependency.
 
 This works by using [sbt-sriracha](http://eed3si9n.com/hot-source-dependencies-using-sbt-sriracha), an SBT plugin for toggling between source and library dependencies.
 It provides two JVM system properties that, when set, will tell SBT to include FIRRTL as a source project:
+
 * `sbt.sourcemode` - when set to true, SBT will look for FIRRTL in the workspace
 * `sbt.workspace` - sets the root directory of the workspace
 
 Example use:
+
 ```bash
 # From root of this repo
 git clone git@github.com:chipsalliance/firrtl.git
@@ -240,34 +338,24 @@ As an example, see [Rocket Chip](https://github.com/chipsalliance/rocket-chip)
 
 The Chisel3 compiler consists of these main parts:
 
-- **The frontend**, `chisel3.*`, which is the publicly visible "API" of Chisel
-  and what is used in Chisel RTL. These just add data to the...
-- **The Builder**, `chisel3.internal.Builder`, which maintains global state
-  (like the currently open Module) and contains commands, generating...
-- **The intermediate data structures**, `chisel3.firrtl.*`, which are
-  syntactically very similar to Firrtl. Once the entire circuit has been
-  elaborated, the top-level object (a `Circuit`) is then passed to...
-- **The Firrtl emitter**, `chisel3.firrtl.Emitter`, which turns the
-  intermediate data structures into a string that can be written out into a
-  Firrtl file for further processing.
+* **The frontend**, `chisel3.*`, which is the publicly visible "API" of Chisel and what is used in Chisel RTL. These just add data to the...
+* **The Builder**, `chisel3.internal.Builder`, which maintains global state (like the currently open Module) and contains commands, generating...
+* **The intermediate data structures**, `chisel3.firrtl.*`, which are syntactically very similar to Firrtl. Once the entire circuit has been elaborated, the top-level object (a `Circuit`) is then passed to...
+* **The Firrtl emitter**, `chisel3.firrtl.Emitter`, which turns the intermediate data structures into a string that can be written out into a Firrtl file for further processing.
 
 Also included is:
-- **The standard library** of circuit generators, `chisel3.util.*`. These
-  contain commonly used interfaces and constructors (like `Decoupled`, which
-  wraps a signal with a ready-valid pair) as well as fully parameterizable
-  circuit generators (like arbiters and multiplexors).
-- **Chisel Stage**, `chisel3.stage.*`, which contains compilation and test
-  functions that are invoked in the standard Verilog generation and simulation
-  testing infrastructure. These can also be used as part of custom flows.
-  
+
+* **The standard library** of circuit generators, `chisel3.util.*`. These contain commonly used interfaces and constructors (like `Decoupled`, which wraps a signal with a ready-valid pair) as well as fully parameterizable circuit generators (like arbiters and multiplexors).
+* **Chisel Stage**, `chisel3.stage.*`, which contains compilation and test functions that are invoked in the standard Verilog generation and simulation testing infrastructure. These can also be used as part of custom flows.
+
 ### Chisel Sub-Projects
 
 Chisel consists of 4 Scala projects; each is its own separate compilation unit:
 
-- [`core`](core) is the bulk of the source code of Chisel, depends on `macros`
-- [`src/main`](src/main) is the "main" that brings it all together and includes a [`util`](src/main/scala/chisel3/util) library, which depends on `core`
-- [`plugin`](plugin) is the compiler plugin, no internal dependencies
-- [`macros`](macros) is most of the macros used in Chisel, no internal dependencies
+* [`core`](core) is the bulk of the source code of Chisel, depends on `macros`
+* [`src/main`](src/main) is the "main" that brings it all together and includes a [`util`](src/main/scala/chisel3/util) library, which depends on `core`
+* [`plugin`](plugin) is the compiler plugin, no internal dependencies
+* [`macros`](macros) is most of the macros used in Chisel, no internal dependencies
 
 Code that touches lots of APIs that are private to the `chisel3` package should belong in `core`, while code that is pure Chisel should belong in `src/main`.
 
