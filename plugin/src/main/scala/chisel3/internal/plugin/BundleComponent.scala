@@ -84,6 +84,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     def isNullaryMethodNamed(name: String, defdef: DefDef): Boolean =
       defdef.name.decodedName.toString == name && defdef.tparams.isEmpty && defdef.vparamss.isEmpty
 
+    def isVarArgs(sym: Symbol): Boolean = definitions.isRepeatedParamType(sym.tpe)
+
     def getConstructorAndParams(body: List[Tree]): (Option[DefDef], Seq[Symbol]) = {
       val paramAccessors = mutable.ListBuffer[Symbol]()
       var primaryConstructor: Option[DefDef] = None
@@ -134,7 +136,9 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
               // Make this.<ref>
               val select = gen.mkAttributedSelect(thiz.asInstanceOf[Tree], p)
               // Clone any Data parameters to avoid field aliasing, need full clone to include direction
-              if (isData(vp.symbol)) cloneTypeFull(select.asInstanceOf[Tree]) else select
+              val cloned = if (isData(vp.symbol)) cloneTypeFull(select.asInstanceOf[Tree]) else select
+              // Need to splat varargs
+              if (isVarArgs(vp.symbol)) q"$cloned: _*" else cloned
             })
 
           val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
