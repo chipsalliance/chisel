@@ -141,6 +141,15 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
     val inferReset = (_parent.isDefined || Builder.inDefinition) && moduleCompileOptions.inferModuleReset
+    if (moduleCompileOptions.migrateInferModuleReset && !moduleCompileOptions.inferModuleReset) {
+      this match {
+        case _: RequireSyncReset => // Good! It's been migrated.
+        case _ => // Bad! It hasn't been migrated.
+          Builder.error(
+            s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
+          )
+      }
+    }
     if (inferReset) Reset() else Bool()
   }
 
@@ -242,7 +251,7 @@ package internal {
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
-      if (!compileOptions.explicitInvalidate) {
+      if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
         // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
@@ -350,6 +359,27 @@ package experimental {
     /** Sets up this module in the parent context
       */
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit
+
+    private[chisel3] def namePorts(): Unit = {
+      for (port <- getModulePorts) {
+        port._computeName(None) match {
+          case Some(name) =>
+            if (_namespace.contains(name)) {
+              Builder.error(
+                s"""Unable to name port $port to "$name" in $this,""" +
+                  " name is already taken by another port!"
+              )
+            }
+            port.setRef(ModuleIO(this, _namespace.name(name)))
+          case None =>
+            Builder.error(
+              s"Unable to name port $port in $this, " +
+                "try making it a public field of the Module"
+            )
+            port.setRef(ModuleIO(this, "<UNNAMED>"))
+        }
+      }
+    }
 
     //
     // Chisel Internals
@@ -470,46 +500,6 @@ package experimental {
       require(_closed, "Can't get ports before module close")
       _component.get.ports.map { port =>
         (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
-      }
-    }
-
-    /** Called at the Module.apply(...) level after this Module has finished elaborating.
-      * Returns a map of nodes -> names, for named nodes.
-      *
-      * Helper method.
-      */
-    protected def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
-      val names = new HashMap[HasId, String]()
-
-      def name(node: HasId, name: String) {
-        // First name takes priority, like suggestName
-        // TODO: DRYify with suggestName
-        if (!names.contains(node)) {
-          names.put(node, name)
-        }
-      }
-
-      /** Scala generates names like chisel3$util$Queue$$ram for private vals
-        * This extracts the part after $$ for names like this and leaves names
-        * without $$ unchanged
-        */
-      def cleanName(name: String): String = name.split("""\$\$""").lastOption.getOrElse(name)
-
-      for (m <- getPublicFields(rootClass)) {
-        Builder.nameRecursively(cleanName(m.getName), m.invoke(this), name)
-      }
-
-      names
-    }
-
-    /** Invokes _onModuleClose on HasIds found via reflection but not bound to hardware
-      * (thus not part of _ids)
-      * This maintains old naming behavior for non-hardware Data
-      */
-    private[chisel3] def closeUnboundIds(names: HashMap[HasId, String]): Unit = {
-      val idLookup = _ids.toSet
-      for ((id, _) <- names if !idLookup(id)) {
-        id._onModuleClose
       }
     }
 

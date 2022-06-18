@@ -14,6 +14,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 
+import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
 
 class AliasedAggregateFieldException(message: String) extends ChiselException(message)
@@ -225,8 +226,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     }
 
     // Since all children are the same, we can just use the sample_element rather than all children
-    // .get is safe because None means mixed directions, we only pass 1 so that's not possible
-    direction = ActualDirection.fromChildren(Set(sample_element.direction), resolvedDirection).get
+    direction =
+      ActualDirection.fromChildren(Set(sample_element.direction), resolvedDirection).getOrElse(ActualDirection.Empty)
   }
 
   // Note: the constructor takes a gen() function instead of a Seq to enforce
@@ -320,6 +321,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
         SpecifiedDirection.Unspecified
       case ActualDirection.Bidirectional(ActualDirection.Flipped) => SpecifiedDirection.Flip
+      case ActualDirection.Empty                                  => SpecifiedDirection.Unspecified
     }
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.
@@ -381,11 +383,30 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     compileOptions:      CompileOptions
   ): T = {
     require(!isEmpty, "Cannot apply reduction on a vec of size 0")
-    var curLayer: Seq[T] = this
-    while (curLayer.length > 1) {
-      curLayer = curLayer.grouped(2).map(x => if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))).toSeq
+
+    def recReduce[T](s: Seq[T], op: (T, T) => T, lop: (T) => T): T = {
+
+      val n = s.length
+      n match {
+        case 1 => lop(s(0))
+        case 2 => op(s(0), s(1))
+        case _ =>
+          val m = pow(2, floor(log10(n - 1) / log10(2))).toInt // number of nodes in next level, will be a power of 2
+          val p = 2 * m - n // number of nodes promoted
+
+          val l = s.take(p).map(lop)
+          val r = s
+            .drop(p)
+            .grouped(2)
+            .map {
+              case Seq(a, b) => op(a, b)
+            }
+            .toVector
+          recReduce(l ++ r, op, lop)
+      }
     }
-    curLayer(0)
+
+    recReduce(this, redOp, layerOp)
   }
 
   /** Creates a Vec literal of this type with specified values. this must be a chisel type.
@@ -1089,13 +1110,6 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
-  private[chisel3] override def _onModuleClose: Unit = {
-    // This is usually done during binding, but these must still be set for unbound Records
-    if (this.binding.isEmpty) {
-      setElementRefs()
-    }
-  }
-
   private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
 
   override def getElements: Seq[Data] = elements.toIndexedSeq.map(_._2)
@@ -1177,11 +1191,11 @@ package experimental {
   * }}}
   */
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
-  assert(
-    _usingPlugin,
+
+  private def mustUsePluginMsg: String =
     "The Chisel compiler plugin is now required for compiling Chisel code. " +
       "Please see https://github.com/chipsalliance/chisel3#build-your-own-chisel-projects."
-  )
+  assert(_usingPlugin, mustUsePluginMsg)
 
   override def className: String = this.getClass.getSimpleName match {
     case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
@@ -1207,14 +1221,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     *   assert(uint === "h12345678".U) // This will pass
     * }}}
     */
-  final lazy val elements: SeqMap[String, Data] =
-    // _elementsImpl is a method, only call it once
-    _elementsImpl match {
-      // Those not using plugin-generated _elementsImpl use the old reflective implementation
-      case oldElements: VectorMap[_, _] => oldElements.asInstanceOf[VectorMap[String, Data]]
-      // Plugin-generated _elementsImpl are incomplete and need some processing
-      case rawElements => _processRawElements(rawElements)
-    }
+  final lazy val elements: SeqMap[String, Data] = _processRawElements(_elementsImpl)
 
   // The compiler plugin is imperfect at picking out elements statically so we process at runtime
   // checking for errors and filtering out mistakes
@@ -1263,58 +1270,18 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }: _*)
   }
 
-  /* The old, reflective implementation of Bundle.elements
-   * This method is optionally overwritten by the compiler plugin for much better performance
-   */
-  protected def _elementsImpl: Iterable[(String, Any)] = {
-    val nameMap = LinkedHashMap[String, Data]()
-    for (m <- getPublicFields(classOf[Bundle])) {
-      getBundleField(m) match {
-        case Some(d: Data) =>
-          requireIsChiselType(d)
-
-          if (nameMap contains m.getName) {
-            require(nameMap(m.getName) eq d)
-          } else {
-            nameMap(m.getName) = d
-          }
-        case None =>
-          if (!ignoreSeq) {
-            m.invoke(this) match {
-              case s: scala.collection.Seq[Any] if s.nonEmpty =>
-                s.head match {
-                  // Ignore empty Seq()
-                  case d: Data =>
-                    throwException(
-                      "Public Seq members cannot be used to define Bundle elements " +
-                        s"(found public Seq member '${m.getName}'). " +
-                        "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
-                        "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
-                        "IgnoreSeqInBundle."
-                    )
-                  case _ => // don't care about non-Data Seq
-                }
-              case _ => // not a Seq
-            }
-          }
-      }
-    }
-    VectorMap(nameMap.toSeq.sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
-  }
+  /** This method is implemented by the compiler plugin
+    *
+    * @note For some reason, the Scala compiler errors on child classes if this method is made
+    * virtual. It appears that the way the plugin implements this method is insufficient for
+    * implementing virtual methods. It is probably better kept concrete for future refactoring.
+    */
+  protected def _elementsImpl: Iterable[(String, Any)] = throwException(mustUsePluginMsg)
 
   /**
     * Overridden by [[IgnoreSeqInBundle]] to allow arbitrary Seqs of Chisel elements.
     */
   def ignoreSeq: Boolean = false
-
-  /** Returns a field's contained user-defined Bundle element if it appears to
-    * be one, otherwise returns None.
-    */
-  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
-    case d: Data => Some(d)
-    case Some(d: Data) => Some(d)
-    case _ => None
-  }
 
   /** Indicates if a concrete Bundle class was compiled using the compiler plugin
     *

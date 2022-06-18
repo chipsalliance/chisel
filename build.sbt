@@ -68,7 +68,7 @@ lazy val publishSettings = Seq(
 lazy val chiselSettings = Seq(
   name := "chisel3",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.11" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.12" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "os-lib" % "0.8.1"
   )
@@ -195,7 +195,6 @@ lazy val chisel = (project in file("."))
   .settings(
     mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",
-    Test / scalacOptions += "-P:chiselplugin:genBundleElements",
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
     Compile / doc / scalacOptions ++= Seq(
       "-diagrams",
@@ -233,6 +232,7 @@ lazy val chisel = (project in file("."))
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
 lazy val integrationTests = (project in file("integration-tests"))
   .dependsOn(chisel)
+  .dependsOn(standardLibrary)
   .settings(commonSettings: _*)
   .settings(chiselSettings: _*)
   .settings(usePluginSettings: _*)
@@ -241,6 +241,13 @@ lazy val integrationTests = (project in file("integration-tests"))
       libraryDependencies += defaultVersions("chiseltest") % "test"
     )
   )
+
+// the chisel standard library
+lazy val standardLibrary = (project in file("stdlib"))
+  .dependsOn(chisel)
+  .settings(commonSettings: _*)
+  .settings(chiselSettings: _*)
+  .settings(usePluginSettings: _*)
 
 lazy val docs = project // new documentation project
   .in(file("docs-target")) // important: it must not be docs/

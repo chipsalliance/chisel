@@ -48,10 +48,14 @@ class IterableNaming extends NamedModuleTester {
     }
     s
   }
-  def streamFrom(x: Int): Stream[Module] =
-    expectName(Module(new Other(x)), s"list_$x") #:: streamFrom(x + 1)
-  val stream = streamFrom(0) // Check that we don't get into infinite loop
-  val list = stream.take(8).toList
+  // Check that we don't get into infinite loop
+  // When we still had reflective naming, we could have the list take from the Stream and have
+  // everything named list_<n>. Without reflective naming, the first element in the Stream gets a
+  // default name because it is built eagerly but the compiler plugin doesn't know how to handle
+  // infinite-size structures. Scala 2.13 LazyList would give the same old naming behavior but does
+  // not exist in Scala 2.12 so this test has been simplified a bit.
+  val stream = Stream.continually(Module(new Other(8)))
+  val list = List.tabulate(4)(i => expectName(Module(new Other(i)), s"list_$i"))
 }
 
 class DigitFieldNamesInRecord extends NamedModuleTester {

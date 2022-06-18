@@ -186,6 +186,11 @@ private[chisel3] class ErrorLog {
   def warning(m: => String): Unit =
     errors += new Warning(m, getUserLineNumber)
 
+  /** Log a warning message without a source locator */
+  def warningNoLoc(m: => String): Unit = {
+    errors += new Warning(m, None)
+  }
+
   /** Emit an informational message */
   @deprecated("This method will be removed in 3.5", "3.4")
   def info(m: String): Unit =

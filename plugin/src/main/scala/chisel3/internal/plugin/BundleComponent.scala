@@ -84,6 +84,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     def isNullaryMethodNamed(name: String, defdef: DefDef): Boolean =
       defdef.name.decodedName.toString == name && defdef.tparams.isEmpty && defdef.vparamss.isEmpty
 
+    def isVarArgs(sym: Symbol): Boolean = definitions.isRepeatedParamType(sym.tpe)
+
     def getConstructorAndParams(body: List[Tree]): (Option[DefDef], Seq[Symbol]) = {
       val paramAccessors = mutable.ListBuffer[Symbol]()
       var primaryConstructor: Option[DefDef] = None
@@ -111,7 +113,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     override def transform(tree: Tree): Tree = tree match {
 
-      case bundle: ClassDef if isBundle(bundle.symbol) =>
+      case bundle: ClassDef if isBundle(bundle.symbol) && !bundle.mods.hasFlag(Flag.ABSTRACT) =>
         // ==================== Generate _cloneTypeImpl ====================
         val (con, params) = getConstructorAndParams(bundle.impl.body)
         if (con.isEmpty) {
@@ -134,7 +136,9 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
               // Make this.<ref>
               val select = gen.mkAttributedSelect(thiz.asInstanceOf[Tree], p)
               // Clone any Data parameters to avoid field aliasing, need full clone to include direction
-              if (isData(vp.symbol)) cloneTypeFull(select.asInstanceOf[Tree]) else select
+              val cloned = if (isData(vp.symbol)) cloneTypeFull(select.asInstanceOf[Tree]) else select
+              // Need to splat varargs
+              if (isVarArgs(vp.symbol)) q"$cloned: _*" else cloned
             })
 
           val tparamList = bundle.tparams.map { t => Ident(t.symbol) }
@@ -162,9 +166,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         /* Test to see if the bundle found is amenable to having it's elements
          * converted to an immediate form that will not require reflection
          */
-        def isSupportedBundleType: Boolean = {
-          arguments.genBundleElements && !bundle.mods.hasFlag(Flag.ABSTRACT)
-        }
+        def isSupportedBundleType: Boolean = !bundle.mods.hasFlag(Flag.ABSTRACT)
 
         val elementsImplOpt = if (isSupportedBundleType) {
           /* extract the true fields from the super classes a given bundle

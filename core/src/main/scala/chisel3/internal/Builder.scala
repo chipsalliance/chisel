@@ -6,7 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.core.{Clone, Instance}
+import chisel3.experimental.hierarchy.core.{Clone, ImportDefinitionAnnotation, Instance}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -87,7 +87,6 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
-  private[chisel3] def _onModuleClose: Unit = {}
   private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
@@ -137,6 +136,17 @@ private[chisel3] trait HasId extends InstanceId {
     this
   }
 
+  // Private internal version of suggestName that tells you if the name changed
+  // Returns Some(old name, old prefix) if name changed, None otherwise
+  private[chisel3] def _suggestNameCheck(seed: => String): Option[(String, Prefix)] = {
+    val oldSeed = this.seedOpt
+    val oldPrefix = this.naming_prefix
+    suggestName(seed)
+    if (oldSeed.nonEmpty && (oldSeed != this.seedOpt || oldPrefix != this.naming_prefix)) {
+      Some(oldSeed.get -> oldPrefix)
+    } else None
+  }
+
   /** Takes the first seed suggested. Multiple calls to this function will be ignored.
     * If the final computed name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
@@ -166,37 +176,13 @@ private[chisel3] trait HasId extends InstanceId {
   }
 
   /** Computes the name of this HasId, if one exists
-    * @param defaultPrefix Optionally provide a default prefix for computing the name
     * @param defaultSeed Optionally provide default seed for computing the name
     * @return the name, if it can be computed
     */
-  private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
-
-    /** Computes a name of this signal, given the seed and prefix
-      * @param seed
-      * @param prefix
-      * @return
-      */
-    def buildName(seed: String, prefix: Prefix): String = {
-      val builder = new StringBuilder()
-      prefix.foreach { p =>
-        builder ++= p
-        builder += '_'
-      }
-      builder ++= seed
-      builder.toString
-    }
-
-    if (hasSeed) {
-      Some(buildName(seedOpt.get, naming_prefix.reverse))
-    } else {
-      defaultSeed.map { default =>
-        defaultPrefix match {
-          case Some(p) => buildName(default, p :: naming_prefix.reverse)
-          case None    => buildName(default, naming_prefix.reverse)
-        }
-      }
-    }
+  private[chisel3] def _computeName(defaultSeed: Option[String]): Option[String] = {
+    seedOpt
+      .orElse(defaultSeed)
+      .map(name => buildName(name, naming_prefix.reverse))
   }
 
   /** This resolves the precedence of [[autoSeed]] and [[suggestName]]
@@ -216,9 +202,9 @@ private[chisel3] trait HasId extends InstanceId {
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
   // (e.g. tried to suggest a name to part of a Record)
-  private[chisel3] def forceName(prefix: Option[String], default: => String, namespace: Namespace): Unit =
+  private[chisel3] def forceName(default: => String, namespace: Namespace): Unit =
     if (_ref.isEmpty) {
-      val candidate_name = _computeName(prefix, Some(default)).get
+      val candidate_name = _computeName(Some(default)).get
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
       // Clear naming prefix to free memory
@@ -240,7 +226,8 @@ private[chisel3] trait HasId extends InstanceId {
 
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg.fullName(c)
-    case None      => _computeName(None, None).get
+    case None =>
+      throwException("You cannot access the .instanceName or .toTarget of non-hardware Data")
   }
 
   // Helper for reifying views if they map to a single Target
@@ -289,26 +276,6 @@ private[chisel3] trait HasId extends InstanceId {
       }
     case Some(ViewParent) => reifyParent.circuitName
     case Some(p)          => p.circuitName
-  }
-
-  private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
-    // Suggest names to nodes using runtime reflection
-    def getValNames(c: Class[_]): Set[String] = {
-      if (c == rootClass) {
-        Set()
-      } else {
-        getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
-      }
-    }
-    val valNames = getValNames(this.getClass)
-    def isPublicVal(m: java.lang.reflect.Method) = {
-      val noParameters = m.getParameterTypes.isEmpty
-      val aVal = valNames.contains(m.getName)
-      val notAssignable = !m.getDeclaringClass.isAssignableFrom(rootClass)
-      val notWeirdVal = !m.getName.contains('$')
-      noParameters && aVal && notAssignable && notWeirdVal
-    }
-    this.getClass.getMethods.filter(isPublicVal).sortWith(_.getName < _.getName)
   }
 }
 
@@ -363,8 +330,27 @@ private[chisel3] class ChiselContext() {
   val viewNamespace = Namespace.empty
 }
 
-private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq, val throwOnFirstError: Boolean) {
+private[chisel3] class DynamicContext(
+  val annotationSeq:     AnnotationSeq,
+  val throwOnFirstError: Boolean) {
+  val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+
+  // Ensure there are no repeated names for imported Definitions
+  val importDefinitionNames = importDefinitionAnnos.map { a => a.definition.proto.name }
+  if (importDefinitionNames.distinct.length < importDefinitionNames.length) {
+    val duplicates = importDefinitionNames.diff(importDefinitionNames.distinct).mkString(", ")
+    throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
+  }
+
   val globalNamespace = Namespace.empty
+
+  // Ensure imported Definitions emit as ExtModules with the correct name so
+  // that instantiations will also use the correct name and prevent any name
+  // conflicts with Modules/Definitions in this elaboration
+  importDefinitionNames.foreach { importDefName =>
+    globalNamespace.name(importDefName)
+  }
+
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
@@ -480,7 +466,11 @@ private[chisel3] object Builder extends LazyLogging {
       }
     }
     buildAggName(d).map { name =>
-      pushPrefix(name)
+      if (isTemp(name)) {
+        pushPrefix(name.tail)
+      } else {
+        pushPrefix(name)
+      }
     }.isDefined
   }
 
@@ -662,8 +652,9 @@ private[chisel3] object Builder extends LazyLogging {
       throwException(m)
     }
   }
-  def warning(m:    => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
-  def deprecated(m: => String, location: Option[String] = None): Unit =
+  def warning(m:      => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
+  def warningNoLoc(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warningNoLoc(m)
+  def deprecated(m:   => String, location: Option[String] = None): Unit =
     if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
 
   /** Record an exception as an error, and throw it.
@@ -720,7 +711,7 @@ private[chisel3] object Builder extends LazyLogging {
       logger.info("Elaborating design...")
       val mod = f
       if (forceModName) { // This avoids definition name index skipping with D/I
-        mod.forceName(None, mod.name, globalNamespace)
+        mod.forceName(mod.name, globalNamespace)
       }
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
