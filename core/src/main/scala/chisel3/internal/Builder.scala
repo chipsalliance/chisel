@@ -154,6 +154,18 @@ private[chisel3] trait HasId extends InstanceId {
         s"Calling suggestName ($seed, when already called with ${suggested_seed}) will become an error in Chisel 3.6"
       )
     }
+    if (!HasId.canBeNamed(this)) {
+      Builder.deprecated(
+        s"Calling suggestName ($seed, on something that cannot actually be named: ${this}) will become an error in Chisel 3.6"
+      )
+    }
+    /*
+    if (_computedName.isDefined) {
+      Builder.deprecated(
+        s"Calling suggestName ($seed, when the name was already computed as ${_computedName.get})) will become an error in Chisel 3.6"
+      )
+    }
+     */
     _suggestNameInternal(seed)
   }
 
@@ -282,7 +294,26 @@ private[chisel3] trait HasId extends InstanceId {
   }
 }
 
-/** Holds the implementation of toNamed for Data and MemBase */
+object HasId {
+
+  /** Utility for things that (currently) appear to be nameable but actually cannot be */
+  private def canBeNamed(id: HasId): Boolean = id match {
+    case d: Data =>
+      d.binding match {
+        case Some(_: ConstrainedBinding) => true
+        case _ => false
+      }
+    case b: BaseModule => true
+    case m: MemBase[_] => true
+    // These names don't affect hardware
+    case _: VerificationStatement => false
+    // While the above should be comprehensive, since this is used in warning we want to be careful
+    // to never accidentally have a match error
+    case _ => false
+  }
+}
+
+/** Holds the implementation of to for Data and MemBase */
 private[chisel3] trait NamedComponent extends HasId {
 
   /** Returns a FIRRTL ComponentName that references this object
