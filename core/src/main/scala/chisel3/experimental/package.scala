@@ -73,7 +73,7 @@ package object experimental {
       gen.elements.toSeq.reverse.map {
         case (name, data) =>
           val p = IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
-          p.suggestNameInternal(name)
+          p._suggestNameInternal(name)
           p
 
       }

@@ -129,19 +129,7 @@ private[chisel3] trait HasId extends InstanceId {
     this
   }
 
-  // Private internal version of suggestName that tells you if the name changed
-  // Returns Some(old name, old prefix) if name changed, None otherwise
-  private[chisel3] def _suggestNameCheck(seed: => String): Option[(String, Prefix)] = {
-    val oldSeed = this.seedOpt
-    val oldPrefix = this.naming_prefix
-    suggestName(seed)
-    if (oldSeed.nonEmpty && (oldSeed != this.seedOpt || oldPrefix != this.naming_prefix)) {
-      Some(oldSeed.get -> oldPrefix)
-    } else None
-  }
-
-  /** Takes the first seed suggested. Multiple calls to this function will be ignored. */
-  private[chisel3] def suggestNameInternal(seed: => String): this.type = {
+  def _suggestNameInternal(seed: => String): this.type = {
     if (suggested_seed.isEmpty) suggested_seed = Some(seed)
     naming_prefix = Builder.getPrefix
     this
@@ -160,29 +148,13 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def suggestName(seed: => String): this.type = {
-<<<<<<< HEAD
-    if (suggested_seed.isEmpty) suggested_seed = Some(seed)
-    naming_prefix = Builder.getPrefix
-    this
-||||||| parent of 08934795... suggestName: add some runtime deprecations
-    if (suggested_seed.isEmpty) suggested_seed = Some(seed)
-    naming_prefix = Builder.getPrefix
-    for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
-    this
-=======
     require(Builder.hasDynamicContext, s"suggestName (${seed}) should only be called from a Builder context.")
     if (suggested_seed.isDefined) {
       Builder.deprecated(
         s"Calling suggestName ($seed, when already called with ${suggested_seed}) will become an error in Chisel 3.6"
       )
     }
-    if (_computedName.isDefined) {
-      Builder.deprecated(
-        s"Calling suggestName ($seed, when the name was already computed as ${_computedName.get})) will become an error in Chisel 3.6"
-      )
-    }
-    suggestNameInternal(seed)
->>>>>>> 08934795... suggestName: add some runtime deprecations
+    _suggestNameInternal(seed)
   }
 
   // Internal version of .suggestName that can override a user-suggested name
@@ -192,7 +164,7 @@ private[chisel3] trait HasId extends InstanceId {
     // This could be called with user prefixes, ignore them
     noPrefix {
       suggested_seed = Some(seed)
-      this.suggestNameInternal(seed)
+      this._suggestNameInternal(seed)
     }
   }
 
