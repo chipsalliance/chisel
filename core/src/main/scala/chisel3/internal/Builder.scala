@@ -362,11 +362,14 @@ private[chisel3] class DynamicContext(
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-  importAllDefinitionProtoNames.foreach { importDefName =>
-    globalNamespace.name(importDefName)
-  }
-  importAllDefinitionExtModNames.foreach { importDefName =>
-    globalNamespace.name(importDefName)
+  
+  importAllDefinitionProtoNames.zip(importAllDefinitionExtModNames).foreach { case ((protoName,extModName)) =>
+    globalNamespace.name(protoName)
+
+    // Only add the extModName to Namespace if it is different from definition proto name
+    if(protoName != extModName) {
+      globalNamespace.name(extModName)
+    }
   }
 
   val components = ArrayBuffer[Component]()
