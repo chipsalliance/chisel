@@ -17,7 +17,6 @@ import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
 
 import scala.collection.mutable
-import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -337,12 +336,10 @@ private[chisel3] class DynamicContext(
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map holding the actual names of extModules
-  val importDefinitionMap: mutable.Map[String, String] = mutable.Map.empty
-
   // Pick the definition name by default in case not passed through annotation.
-  importDefinitionAnnos.foreach { a =>
-    importDefinitionMap += ((a.definition.proto.name, a.name.getOrElse(a.definition.proto.name)))
-  }
+  val importDefinitionMap = importDefinitionAnnos
+    .map(a => ((a.definition.proto.name, a.overrideDefName.getOrElse(a.definition.proto.name))))
+    .toMap
 
   // Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
   val importAllDefinitionProtoNames = importDefinitionAnnos.map { a => a.definition.proto.name }
@@ -364,15 +361,8 @@ private[chisel3] class DynamicContext(
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-
-  importAllDefinitionProtoNames.zip(importAllDefinitionExtModNames).foreach {
-    case ((protoName, extModName)) =>
-      globalNamespace.name(protoName)
-
-      // Only add the extModName to Namespace if it is different from definition proto name
-      if (protoName != extModName) {
-        globalNamespace.name(extModName)
-      }
+  (importAllDefinitionProtoNames ++ importAllDefinitionExtModNames).distinct.foreach {
+    globalNamespace.name(_)
   }
 
   val components = ArrayBuffer[Component]()
@@ -444,7 +434,7 @@ private[chisel3] object Builder extends LazyLogging {
   def annotations:         ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
   def namingStack:         NamingStack = dynamicContext.namingStack
-  def importDefinitionMap: mutable.Map[String, String] = dynamicContext.importDefinitionMap
+  def importDefinitionMap: Map[String, String] = dynamicContext.importDefinitionMap
 
   def unnamedViews:  ArrayBuffer[Data] = dynamicContext.unnamedViews
   def viewNamespace: Namespace = chiselContext.get.viewNamespace
