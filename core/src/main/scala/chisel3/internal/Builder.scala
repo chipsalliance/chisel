@@ -362,6 +362,9 @@ private[chisel3] class DynamicContext(
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
+  importAllDefinitionProtoNames.foreach { importDefName =>
+    globalNamespace.name(importDefName)
+  }
   importAllDefinitionExtModNames.foreach { importDefName =>
     globalNamespace.name(importDefName)
   }
