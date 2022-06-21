@@ -344,7 +344,7 @@ private[chisel3] class DynamicContext(
   // Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
   val importAllDefinitionProtoNames = importDefinitionAnnos.map { a => a.definition.proto.name }
   val importDistinctDefinitionProtoNames = importDefinitionMap.keys.toSeq
-  val importAllDefinitionExtModNames = importDefinitionMap.values.toSeq
+  val importAllDefinitionExtModNames = importDefinitionMap.toSeq.map(_._2)
   val importDistinctDefinitionExtModNames = importAllDefinitionExtModNames.distinct
 
   if (importDistinctDefinitionProtoNames.length < importAllDefinitionProtoNames.length) {
@@ -353,7 +353,7 @@ private[chisel3] class DynamicContext(
   }
   if (importDistinctDefinitionExtModNames.length < importAllDefinitionExtModNames.length) {
     val duplicates = importAllDefinitionExtModNames.diff(importDistinctDefinitionExtModNames).mkString(", ")
-    throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
+    throwException(s"Expected distinct overrideDef names but found duplicates for: $duplicates")
   }
 
   val globalNamespace = Namespace.empty
