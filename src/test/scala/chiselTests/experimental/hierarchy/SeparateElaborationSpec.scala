@@ -354,5 +354,37 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       "Expected distinct imported Definition names but found duplicates for: AddOne"
     )
   }
+  
+  describe("(4): With ExtMod Names") {
+    it("should pick correct ExtMod names when passed") {
+      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
+      val dutDef = getAddOneDefinition(testDir)
+
+      class Testbench(defn: Definition[AddOne]) extends Module {
+        val mod = Module(new AddOne)
+        val inst = Instance(defn)
+
+        // Tie inputs to a value so ChiselStage does not complain
+        mod.in := 0.U
+        inst.in := 0.U
+        dontTouch(mod.out)
+      }
+
+      (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
+          TargetDirAnnotation(testDir),
+          ImportDefinitionAnnotation(dutDef,Some("CustomPrefix_AddOne_CustomSuffix"))
+        )
+      )
+
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      
+      tb_rtl should include("module AddOne_1(")
+      tb_rtl should include("AddOne_1 mod (")
+      (tb_rtl should not).include("module AddOne(")
+      tb_rtl should include("CustomPrefix_AddOne_CustomSuffix inst (")
+    }
+  }
 }
