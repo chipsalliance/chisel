@@ -17,6 +17,7 @@ import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
 
 import scala.collection.mutable
+import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -335,10 +336,17 @@ private[chisel3] class DynamicContext(
   val throwOnFirstError: Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
+  // Map holding the actual names of extModules 
+  val importDefinitionMap : mutable.Map[String,String] = mutable.Map.empty
+
+  // Pick the definition name by default in case not passed through annotation. 
+  importDefinitionAnnos.foreach {a => importDefinitionMap += ((a.definition.proto.name,a.name.getOrElse(a.definition.proto.name)))}
+  
   // Ensure there are no repeated names for imported Definitions
-  val importDefinitionNames = importDefinitionAnnos.map { a => a.definition.proto.name }
-  if (importDefinitionNames.distinct.length < importDefinitionNames.length) {
-    val duplicates = importDefinitionNames.diff(importDefinitionNames.distinct).mkString(", ")
+  val importDistinctDefinitionNames = importDefinitionMap.keys.toSeq
+  val importAllDefinitionNames = importDefinitionAnnos.map { a => a.definition.proto.name }
+  if (importDistinctDefinitionNames.length < importAllDefinitionNames.length) {
+    val duplicates = importAllDefinitionNames.diff(importDistinctDefinitionNames).mkString(", ")
     throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
   }
 
@@ -347,7 +355,7 @@ private[chisel3] class DynamicContext(
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-  importDefinitionNames.foreach { importDefName =>
+  importAllDefinitionNames.foreach { importDefName =>
     globalNamespace.name(importDefName)
   }
 
@@ -420,6 +428,7 @@ private[chisel3] object Builder extends LazyLogging {
   def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def annotationSeq:   AnnotationSeq = dynamicContext.annotationSeq
   def namingStack:     NamingStack = dynamicContext.namingStack
+  def importDefinitionMap: mutable.Map[String,String] = dynamicContext.importDefinitionMap
 
   def unnamedViews:  ArrayBuffer[Data] = dynamicContext.unnamedViews
   def viewNamespace: Namespace = chiselContext.get.viewNamespace
