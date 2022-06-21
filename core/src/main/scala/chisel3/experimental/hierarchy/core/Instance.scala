@@ -119,7 +119,12 @@ object Instance extends SourceInfoDoc {
     if (existingMod.isEmpty) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
       // does not complain about a missing element
-      val extModName = Builder.importDefinitionMap.getOrElse(definition.proto.name,throwException("Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"))
+      val extModName = Builder.importDefinitionMap.getOrElse(
+        definition.proto.name,
+        throwException(
+          "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"
+        )
+      )
       class EmptyExtModule extends ExtModule {
         override def desiredName: String = extModName
         override def generateComponent(): Option[Component] = {

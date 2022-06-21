@@ -336,18 +336,20 @@ private[chisel3] class DynamicContext(
   val throwOnFirstError: Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
-  // Map holding the actual names of extModules 
-  val importDefinitionMap : mutable.Map[String,String] = mutable.Map.empty
+  // Map holding the actual names of extModules
+  val importDefinitionMap: mutable.Map[String, String] = mutable.Map.empty
 
-  // Pick the definition name by default in case not passed through annotation. 
-  importDefinitionAnnos.foreach {a => importDefinitionMap += ((a.definition.proto.name,a.name.getOrElse(a.definition.proto.name)))}
-  
+  // Pick the definition name by default in case not passed through annotation.
+  importDefinitionAnnos.foreach { a =>
+    importDefinitionMap += ((a.definition.proto.name, a.name.getOrElse(a.definition.proto.name)))
+  }
+
   // Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
-  val importAllDefinitionProtoNames = importDefinitionAnnos.map {a => a.definition.proto.name}
+  val importAllDefinitionProtoNames = importDefinitionAnnos.map { a => a.definition.proto.name }
   val importDistinctDefinitionProtoNames = importDefinitionMap.keys.toSeq
   val importAllDefinitionExtModNames = importDefinitionMap.values.toSeq
   val importDistinctDefinitionExtModNames = importAllDefinitionExtModNames.distinct
-  
+
   if (importDistinctDefinitionProtoNames.length < importAllDefinitionProtoNames.length) {
     val duplicates = importAllDefinitionProtoNames.diff(importDistinctDefinitionProtoNames).mkString(", ")
     throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
@@ -362,14 +364,15 @@ private[chisel3] class DynamicContext(
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-  
-  importAllDefinitionProtoNames.zip(importAllDefinitionExtModNames).foreach { case ((protoName,extModName)) =>
-    globalNamespace.name(protoName)
 
-    // Only add the extModName to Namespace if it is different from definition proto name
-    if(protoName != extModName) {
-      globalNamespace.name(extModName)
-    }
+  importAllDefinitionProtoNames.zip(importAllDefinitionExtModNames).foreach {
+    case ((protoName, extModName)) =>
+      globalNamespace.name(protoName)
+
+      // Only add the extModName to Namespace if it is different from definition proto name
+      if (protoName != extModName) {
+        globalNamespace.name(extModName)
+      }
   }
 
   val components = ArrayBuffer[Component]()
@@ -436,12 +439,12 @@ private[chisel3] object Builder extends LazyLogging {
 
   def idGen: IdGen = chiselContext.get.idGen
 
-  def globalNamespace: Namespace = dynamicContext.globalNamespace
-  def components:      ArrayBuffer[Component] = dynamicContext.components
-  def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
-  def annotationSeq:   AnnotationSeq = dynamicContext.annotationSeq
-  def namingStack:     NamingStack = dynamicContext.namingStack
-  def importDefinitionMap: mutable.Map[String,String] = dynamicContext.importDefinitionMap
+  def globalNamespace:     Namespace = dynamicContext.globalNamespace
+  def components:          ArrayBuffer[Component] = dynamicContext.components
+  def annotations:         ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
+  def namingStack:         NamingStack = dynamicContext.namingStack
+  def importDefinitionMap: mutable.Map[String, String] = dynamicContext.importDefinitionMap
 
   def unnamedViews:  ArrayBuffer[Data] = dynamicContext.unnamedViews
   def viewNamespace: Namespace = chiselContext.get.viewNamespace
