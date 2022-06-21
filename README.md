@@ -289,13 +289,8 @@ To use the development version of Chisel (`master` branch), you will need to bui
 The repository version can be found in the [build.sbt](build.sbt) file.
 As of the time of writing it was:
 
-<<<<<<< HEAD
-```
-version := "3.5-SNAPSHOT"
-=======
 ```scala
-version := "3.6-SNAPSHOT"
->>>>>>> 773d2d67 (Make readme friendlier to beginners (#2586))
+version := "3.5-SNAPSHOT"
 ```
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
@@ -309,13 +304,8 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to:
 
-<<<<<<< HEAD
-```
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5-SNAPSHOT"
-=======
 ```scala
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.6-SNAPSHOT"
->>>>>>> 773d2d67 (Make readme friendlier to beginners (#2586))
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5-SNAPSHOT"
 ```
 
 ### Building Chisel with FIRRTL in the same SBT Project
