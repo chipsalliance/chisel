@@ -27,6 +27,10 @@ import chisel3._
   * //     +-------+           +-------+           +-------+           +-------+
   * }}}
   *
+  * Note: this is a Galois polynomial defined LSb-to-MSb (due to a right shift from MSb-to-LSb).
+  * If implementing a specific polynomial defined MSb-to-LSb, the taps will be reversed.
+  * e.g. the MSb-to-LSb polynomial (X16, X5, X4, X3) uses Set(13, 12, 11) instead of Set(16, 5, 4, 3).
+  *
   * If you require a maximal period Galois LFSR of a specific width, you can use [[MaxPeriodGaloisLFSR]]. If you only
   * require a pseudorandom [[UInt]] you can use the [[GaloisLFSR$ GaloisLFSR companion object]].
   * @see [[https://en.wikipedia.org/wiki/Linear-feedback_shift_register#Galois_LFSRs]]
