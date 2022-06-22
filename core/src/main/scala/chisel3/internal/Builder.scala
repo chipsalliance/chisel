@@ -335,11 +335,30 @@ private[chisel3] class DynamicContext(
   val throwOnFirstError: Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
-  // Ensure there are no repeated names for imported Definitions
-  val importDefinitionNames = importDefinitionAnnos.map { a => a.definition.proto.name }
-  if (importDefinitionNames.distinct.length < importDefinitionNames.length) {
-    val duplicates = importDefinitionNames.diff(importDefinitionNames.distinct).mkString(", ")
-    throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
+  // Map holding the actual names of extModules
+  // Pick the definition name by default in case not passed through annotation.
+  val importDefinitionMap = importDefinitionAnnos
+    .map(a => a.definition.proto.name -> a.overrideDefName.getOrElse(a.definition.proto.name))
+    .toMap
+
+  // Helper function which does 2 things
+  // 1. Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
+  // 2. Return the distinct definition / extMod names
+  private def checkAndGeDistinctProtoExtModNames() = {
+    val importAllDefinitionProtoNames = importDefinitionAnnos.map { a => a.definition.proto.name }
+    val importDistinctDefinitionProtoNames = importDefinitionMap.keys.toSeq
+    val importAllDefinitionExtModNames = importDefinitionMap.toSeq.map(_._2)
+    val importDistinctDefinitionExtModNames = importAllDefinitionExtModNames.distinct
+
+    if (importDistinctDefinitionProtoNames.length < importAllDefinitionProtoNames.length) {
+      val duplicates = importAllDefinitionProtoNames.diff(importDistinctDefinitionProtoNames).mkString(", ")
+      throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
+    }
+    if (importDistinctDefinitionExtModNames.length < importAllDefinitionExtModNames.length) {
+      val duplicates = importAllDefinitionExtModNames.diff(importDistinctDefinitionExtModNames).mkString(", ")
+      throwException(s"Expected distinct overrideDef names but found duplicates for: $duplicates")
+    }
+    (importAllDefinitionProtoNames ++ importAllDefinitionExtModNames).distinct
   }
 
   val globalNamespace = Namespace.empty
@@ -347,8 +366,8 @@ private[chisel3] class DynamicContext(
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-  importDefinitionNames.foreach { importDefName =>
-    globalNamespace.name(importDefName)
+  checkAndGeDistinctProtoExtModNames().foreach {
+    globalNamespace.name(_)
   }
 
   val components = ArrayBuffer[Component]()
@@ -415,11 +434,12 @@ private[chisel3] object Builder extends LazyLogging {
 
   def idGen: IdGen = chiselContext.get.idGen
 
-  def globalNamespace: Namespace = dynamicContext.globalNamespace
-  def components:      ArrayBuffer[Component] = dynamicContext.components
-  def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
-  def annotationSeq:   AnnotationSeq = dynamicContext.annotationSeq
-  def namingStack:     NamingStack = dynamicContext.namingStack
+  def globalNamespace:     Namespace = dynamicContext.globalNamespace
+  def components:          ArrayBuffer[Component] = dynamicContext.components
+  def annotations:         ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
+  def namingStack:         NamingStack = dynamicContext.namingStack
+  def importDefinitionMap: Map[String, String] = dynamicContext.importDefinitionMap
 
   def unnamedViews:  ArrayBuffer[Data] = dynamicContext.unnamedViews
   def viewNamespace: Namespace = chiselContext.get.viewNamespace
