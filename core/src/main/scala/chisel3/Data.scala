@@ -159,10 +159,7 @@ package experimental {
 
     private def isBinding[B <: ConstrainedBinding : Manifest](target: Data) = {
       target.topBindingOpt match {
-        case Some(b) => b match {
-          case _: B => true
-          case _ => false
-        }
+        case Some(b: B) => true
         case _ => false
       }
     }
