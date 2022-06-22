@@ -79,33 +79,32 @@ Should output the following Verilog:
 <details>
 <summary>Click to expand!</summary>
 
-```verilog
-module Blinky(
-  input   clock,
-  input   reset,
-  output  io_led0
+<pre class="hljs"><code><div><span class="hljs-keyword">module</span> Blinky(
+  <span class="hljs-keyword">input</span>   clock,
+  <span class="hljs-keyword">input</span>   reset,
+  <span class="hljs-keyword">output</span>  io_led0
 );
-  reg  led; // @[main.scala 11:20]
-  reg [8:0] counterWrap_value; // @[Counter.scala 62:40]
-  wire  counterWrap_wrap_wrap = counterWrap_value == 9'h1f3; // @[Counter.scala 74:24]
-  wire [8:0] _counterWrap_wrap_value_T_1 = counterWrap_value + 9'h1; // @[Counter.scala 78:24]
-  assign io_led0 = led; // @[main.scala 16:11]
-  always @(posedge clock) begin
-    if (reset) begin // @[main.scala 11:20]
-      led <= 1'h0; // @[main.scala 11:20]
-    end else if (counterWrap_wrap_wrap) begin // @[main.scala 13:21]
-      led <= ~led; // @[main.scala 14:9]
-    end
-    if (reset) begin // @[Counter.scala 62:40]
-      counterWrap_value <= 9'h0; // @[Counter.scala 62:40]
-    end else if (counterWrap_wrap_wrap) begin // @[Counter.scala 88:20]
-      counterWrap_value <= 9'h0; // @[Counter.scala 88:28]
-    end else begin
-      counterWrap_value <= _counterWrap_wrap_value_T_1; // @[Counter.scala 78:15]
-    end
-  end
-endmodule
-```
+  <span class="hljs-keyword">reg</span>  led; <span class="hljs-comment">// @[main.scala 11:20]</span>
+  <span class="hljs-keyword">reg</span> [<span class="hljs-number">8</span>:<span class="hljs-number">0</span>] counterWrap_value; <span class="hljs-comment">// @[Counter.scala 62:40]</span>
+  <span class="hljs-keyword">wire</span>  counterWrap_wrap_wrap = counterWrap_value == <span class="hljs-number">9'h1f3</span>; <span class="hljs-comment">// @[Counter.scala 74:24]</span>
+  <span class="hljs-keyword">wire</span> [<span class="hljs-number">8</span>:<span class="hljs-number">0</span>] <span class="hljs-number">_</span>counterWrap_wrap_value_T_1 = counterWrap_value + <span class="hljs-number">9'h1</span>; <span class="hljs-comment">// @[Counter.scala 78:24]</span>
+  <span class="hljs-keyword">assign</span> io_led0 = led; <span class="hljs-comment">// @[main.scala 16:11]</span>
+  <span class="hljs-keyword">always</span> @(<span class="hljs-keyword">posedge</span> clock) <span class="hljs-keyword">begin</span>
+    <span class="hljs-keyword">if</span> (reset) <span class="hljs-keyword">begin</span> <span class="hljs-comment">// @[main.scala 11:20]</span>
+      led &lt;= <span class="hljs-number">1'h0</span>; <span class="hljs-comment">// @[main.scala 11:20]</span>
+    <span class="hljs-keyword">end</span> <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (counterWrap_wrap_wrap) <span class="hljs-keyword">begin</span> <span class="hljs-comment">// @[main.scala 13:21]</span>
+      led &lt;= ~led; <span class="hljs-comment">// @[main.scala 14:9]</span>
+    <span class="hljs-keyword">end</span>
+    <span class="hljs-keyword">if</span> (reset) <span class="hljs-keyword">begin</span> <span class="hljs-comment">// @[Counter.scala 62:40]</span>
+      counterWrap_value &lt;= <span class="hljs-number">9'h0</span>; <span class="hljs-comment">// @[Counter.scala 62:40]</span>
+    <span class="hljs-keyword">end</span> <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (counterWrap_wrap_wrap) <span class="hljs-keyword">begin</span> <span class="hljs-comment">// @[Counter.scala 88:20]</span>
+      counterWrap_value &lt;= <span class="hljs-number">9'h0</span>; <span class="hljs-comment">// @[Counter.scala 88:28]</span>
+    <span class="hljs-keyword">end</span> <span class="hljs-keyword">else</span> <span class="hljs-keyword">begin</span>
+      counterWrap_value &lt;= <span class="hljs-number">_</span>counterWrap_wrap_value_T_1; <span class="hljs-comment">// @[Counter.scala 78:15]</span>
+    <span class="hljs-keyword">end</span>
+  <span class="hljs-keyword">end</span>
+<span class="hljs-keyword">endmodule</span>
+</div></code></pre>
 
 </details>
 
