@@ -260,6 +260,7 @@ lazy val chisel = (project in file(".")).
       ProblemFilters.exclude[FinalMethodProblem]("chisel3.stage.CircuitSerializationAnnotation.getBytes"),
     ),
     libraryDependencies += defaultVersions("treadle") % "test",
+<<<<<<< HEAD
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     // Only used in Test for 3.4.x, used in Compile in 3.5
     scalacOptions in Test ++= {
@@ -267,6 +268,14 @@ lazy val chisel = (project in file(".")).
       else Nil
     },
     scalacOptions in Compile in doc ++= Seq(
+=======
+    Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
+    // Forward doc command to unidoc
+    Compile / doc := (ScalaUnidoc / doc).value,
+    // Include unidoc as the ScalaDoc for publishing
+    Compile / packageDoc / mappings := (ScalaUnidoc / packageDoc / mappings).value,
+    Compile / doc / scalacOptions ++= Seq(
+>>>>>>> 8b9f3d78 (Publish unidoc as ScalaDoc in chisel project (#2595))
       "-diagrams",
       "-groups",
       "-skip-packages", "chisel3.internal",
