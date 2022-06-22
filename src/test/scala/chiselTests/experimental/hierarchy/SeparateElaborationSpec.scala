@@ -355,4 +355,143 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
     )
   }
 
+  describe("(4): With ExtMod Names") {
+    it("(4.a): should pick correct ExtMod names when passed") {
+      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+
+      val dutDef = getAddOneDefinition(testDir)
+
+      class Testbench(defn: Definition[AddOne]) extends Module {
+        val mod = Module(new AddOne)
+        val inst = Instance(defn)
+
+        // Tie inputs to a value so ChiselStage does not complain
+        mod.in := 0.U
+        inst.in := 0.U
+        dontTouch(mod.out)
+      }
+
+      (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
+          TargetDirAnnotation(testDir),
+          ImportDefinitionAnnotation(dutDef, Some("CustomPrefix_AddOne_CustomSuffix"))
+        )
+      )
+
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+
+      tb_rtl should include("module AddOne_1(")
+      tb_rtl should include("AddOne_1 mod (")
+      (tb_rtl should not).include("module AddOne(")
+      tb_rtl should include("CustomPrefix_AddOne_CustomSuffix inst (")
+    }
+  }
+
+  it(
+    "(4.b): should work if a list of imported Definitions is passed between Stages with ExtModName."
+  ) {
+    val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+
+    val dutAnnos0 = (new ChiselStage).run(
+      Seq(
+        ChiselGeneratorAnnotation(() => new AddOneParameterized(4)),
+        TargetDirAnnotation(s"$testDir/dutDef0")
+      )
+    )
+    val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
+
+    val dutAnnos1 = (new ChiselStage).run(
+      Seq(
+        ChiselGeneratorAnnotation(() => new AddOneParameterized(8)),
+        TargetDirAnnotation(s"$testDir/dutDef1"),
+        // pass in previously elaborated Definitions
+        ImportDefinitionAnnotation(dutDef0)
+      )
+    )
+    val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
+
+    class Testbench(defn0: Definition[AddOneParameterized], defn1: Definition[AddOneParameterized]) extends Module {
+      val inst0 = Instance(defn0)
+      val inst1 = Instance(defn1)
+
+      // Tie inputs to a value so ChiselStage does not complain
+      inst0.in := 0.U
+      inst1.in := 0.U
+    }
+
+    (new ChiselStage).run(
+      Seq(
+        ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
+        TargetDirAnnotation(testDir),
+        ImportDefinitionAnnotation(dutDef0, Some("Inst1_Prefix_AddOnePramaterized_Inst1_Suffix")),
+        ImportDefinitionAnnotation(dutDef1, Some("Inst2_Prefix_AddOnePrameterized_1_Inst2_Suffix"))
+      )
+    )
+
+    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+    dutDef0_rtl should include("module AddOneParameterized(")
+    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines.mkString
+    dutDef1_rtl should include("module AddOneParameterized_1(")
+
+    val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+    tb_rtl should include("Inst1_Prefix_AddOnePramaterized_Inst1_Suffix inst0 (")
+    tb_rtl should include("Inst2_Prefix_AddOnePrameterized_1_Inst2_Suffix inst1 (")
+    (tb_rtl should not).include("module AddOneParameterized(")
+    (tb_rtl should not).include("module AddOneParameterized_1(")
+  }
+
+  it(
+    "(4.c): should throw an exception  if a list of imported Definitions is passed between Stages with same ExtModName."
+  ) {
+    val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+
+    val dutAnnos0 = (new ChiselStage).run(
+      Seq(
+        ChiselGeneratorAnnotation(() => new AddOneParameterized(4)),
+        TargetDirAnnotation(s"$testDir/dutDef0")
+      )
+    )
+    val importDefinitionAnnos0 = allModulesToImportedDefs(dutAnnos0)
+    val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
+
+    val dutAnnos1 = (new ChiselStage).run(
+      Seq(
+        ChiselGeneratorAnnotation(() => new AddOneParameterized(8)),
+        TargetDirAnnotation(s"$testDir/dutDef1"),
+        // pass in previously elaborated Definitions
+        ImportDefinitionAnnotation(dutDef0)
+      )
+    )
+    val importDefinitionAnnos1 = allModulesToImportedDefs(dutAnnos1)
+    val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
+
+    class Testbench(defn0: Definition[AddOneParameterized], defn1: Definition[AddOneParameterized]) extends Module {
+      val inst0 = Instance(defn0)
+      val inst1 = Instance(defn1)
+
+      // Tie inputs to a value so ChiselStage does not complain
+      inst0.in := 0.U
+      inst1.in := 0.U
+    }
+
+    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+    dutDef0_rtl should include("module AddOneParameterized(")
+    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines.mkString
+    dutDef1_rtl should include("module AddOneParameterized_1(")
+
+    val errMsg = intercept[ChiselException] {
+      (new ChiselStage).run(
+        Seq(
+          ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
+          TargetDirAnnotation(testDir),
+          ImportDefinitionAnnotation(dutDef0, Some("Inst1_Prefix_AddOnePrameterized_Inst1_Suffix")),
+          ImportDefinitionAnnotation(dutDef1, Some("Inst1_Prefix_AddOnePrameterized_Inst1_Suffix"))
+        )
+      )
+    }
+    errMsg.getMessage should include(
+      "Expected distinct overrideDef names but found duplicates for: Inst1_Prefix_AddOnePrameterized_Inst1_Suffix"
+    )
+  }
 }
