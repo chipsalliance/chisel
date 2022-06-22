@@ -215,7 +215,7 @@ libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.3" % "test"
 
 ### Guide For New Contributors
 
-If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
+If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/chipsalliance/chisel3/blob/master/CONTRIBUTING.md)
 
 ### Design Verification
 
