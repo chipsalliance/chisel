@@ -10,6 +10,7 @@ import chisel3.internal.sourceinfo.{InstanceTransform, SourceInfo}
 import chisel3.experimental.{BaseModule, ExtModule}
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefModule, Port}
 import firrtl.annotations.IsModule
+import chisel3.internal.throwException
 
 /** User-facing Instance type.
   * Represents a unique instance of type [[A]] which are marked as @instantiable
@@ -118,8 +119,14 @@ object Instance extends SourceInfoDoc {
     if (existingMod.isEmpty) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
       // does not complain about a missing element
+      val extModName = Builder.importDefinitionMap.getOrElse(
+        definition.proto.name,
+        throwException(
+          "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"
+        )
+      )
       class EmptyExtModule extends ExtModule {
-        override def desiredName: String = definition.proto.name
+        override def desiredName: String = extModName
         override def generateComponent(): Option[Component] = {
           require(!_closed, s"Can't generate $desiredName module more than once")
           _closed = true

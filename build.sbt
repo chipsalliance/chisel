@@ -196,6 +196,10 @@ lazy val chisel = (project in file("."))
     mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
+    // Forward doc command to unidoc
+    Compile / doc := (ScalaUnidoc / doc).value,
+    // Include unidoc as the ScalaDoc for publishing
+    Compile / packageDoc / mappings := (ScalaUnidoc / packageDoc / mappings).value,
     Compile / doc / scalacOptions ++= Seq(
       "-diagrams",
       "-groups",
