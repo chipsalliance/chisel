@@ -338,7 +338,7 @@ private[chisel3] class DynamicContext(
   // Map holding the actual names of extModules
   // Pick the definition name by default in case not passed through annotation.
   val importDefinitionMap = importDefinitionAnnos
-    .map(a => ((a.definition.proto.name, a.overrideDefName.getOrElse(a.definition.proto.name))))
+    .map(a => a.definition.proto.name -> a.overrideDefName.getOrElse(a.definition.proto.name))
     .toMap
 
   // Helper function which does 2 things
