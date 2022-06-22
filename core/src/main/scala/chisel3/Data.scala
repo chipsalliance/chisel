@@ -157,6 +157,29 @@ package experimental {
       target.direction
     }
 
+    private def isBinding[B <: ConstrainedBinding : Manifest](target: Data) = {
+      target.topBindingOpt match {
+        case Some(b) => b match {
+          case _: B => true
+          case _ => false
+        }
+        case _ => false
+      }
+    }
+
+    /** Check if a Chisel type is an IO port
+      * @param x Chisel type.
+      */
+    def isIO(x: Data): Boolean = isBinding[PortBinding](x)
+    /** Check if a Chisel type is a Wire
+      * @param x Chisel type.
+      */
+    def isWire(x: Data): Boolean = isBinding[WireBinding](x)
+    /** Check if a Chisel type is a Reg
+      * @param x Chisel type.
+      */
+    def isReg(x: Data): Boolean = isBinding[RegBinding](x)
+
     /** Check if two Chisel types are the same type.
       * Internally, this is dispatched to each Chisel type's
       * `typeEquivalent` function for each type to determine
