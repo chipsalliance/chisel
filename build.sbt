@@ -266,6 +266,10 @@ lazy val chisel = (project in file(".")).
       if (scalaVersion.value.startsWith("2.12")) Seq("-P:chiselplugin:useBundlePlugin")
       else Nil
     },
+    // Forward doc command to unidoc
+    Compile / doc := (ScalaUnidoc / doc).value,
+    // Include unidoc as the ScalaDoc for publishing
+    Compile / packageDoc / mappings := (ScalaUnidoc / packageDoc / mappings).value,
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
       "-groups",
