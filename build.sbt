@@ -219,6 +219,10 @@ lazy val chisel = (project in file(".")).
     ),
     libraryDependencies += defaultVersions("treadle") % "test",
     Test / scalacOptions += "-P:chiselplugin:genBundleElements",
+    // Forward doc command to unidoc
+    Compile / doc := (ScalaUnidoc / doc).value,
+    // Include unidoc as the ScalaDoc for publishing
+    Compile / packageDoc / mappings := (ScalaUnidoc / packageDoc / mappings).value,
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
