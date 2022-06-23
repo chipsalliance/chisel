@@ -11,27 +11,48 @@ import chiselTests.ChiselFlatSpec
 class DataMirrorSpec extends ChiselFlatSpec {
   behavior.of("DataMirror")
 
+  def assertBinding(x: Data, io: Boolean, wire: Boolean, reg: Boolean) = {
+    DataMirror.isIO(x) should be(io)
+    DataMirror.isWire(x) should be(wire)
+    DataMirror.isReg(x) should be(reg)
+  }
+
+  def assertIO(x: Data) = assertBinding(x, true, false, false)
+
+  def assertWire(x: Data) = assertBinding(x, false, true, false)
+
+  def assertReg(x: Data) = assertBinding(x, false, false, true)
+
+  def assertNone(x: Data) = assertBinding(x, false, false, false)
+
   it should "validate bindings" in {
-    class MyModule extends RawModule {
+    class MyModule extends Module {
+      val typ = UInt(4.W)
+      val vectyp = Vec(8, UInt(4.W))
       val io = IO(new Bundle {
-        val in = Input(UInt(8.W))
-        val out = Output(UInt(8.W))
+        val in = Input(UInt(4.W))
+        val vec = Input(vectyp)
+        val out = Output(UInt(4.W))
       })
+      val vec = Wire(vectyp)
       val wire = Wire(UInt(4.W))
       val reg = RegNext(wire)
+      vec := io.vec
+      wire := io.in
+      io.out := wire
 
-      DataMirror.isIO(io) should be(true)
-      DataMirror.isIO(io.in) should be(true)
-      DataMirror.isIO(io.out) should be(true)
-      DataMirror.isWire(wire) should be(true)
-      DataMirror.isReg(reg) should be(true)
-
-      val tpe = UInt(4.W)
-
-      DataMirror.isIO(reg) should be(false)
-      DataMirror.isWire(reg) should be(false)
-      DataMirror.isReg(wire) should be(false)
-      DataMirror.isReg(tpe) should be(false)
+      assertIO(io)
+      assertIO(io.in)
+      assertIO(io.out)
+      assertIO(io.vec(1))
+      assertIO(io.vec)
+      assertWire(vec)
+      assertWire(vec(0))
+      assertWire(wire)
+      assertReg(reg)
+      assertNone(typ)
+      assertNone(vectyp)
     }
+    emitChirrtl(new MyModule)
   }
 }
