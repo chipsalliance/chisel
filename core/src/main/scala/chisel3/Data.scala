@@ -12,6 +12,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
+import scala.reflect.ClassTag
 import scala.util.Try
 
 /** User-specified directions.
@@ -156,6 +157,31 @@ package experimental {
       requireIsHardware(target, "node requested directionality on")
       target.direction
     }
+
+    private def hasBinding[B <: ConstrainedBinding: ClassTag](target: Data) = {
+      target.topBindingOpt match {
+        case Some(b: B) => true
+        case _ => false
+      }
+    }
+
+    /** Check if a given `Data` is an IO port
+      * @param x the `Data` to check
+      * @return `true` if x is an IO port, `false` otherwise
+      */
+    def isIO(x: Data): Boolean = hasBinding[PortBinding](x)
+
+    /** Check if a given `Data` is a Wire
+      * @param x the `Data` to check
+      * @return `true` if x is a Wire, `false` otherwise
+      */
+    def isWire(x: Data): Boolean = hasBinding[WireBinding](x)
+
+    /** Check if a given `Data` is a Reg
+      * @param x the `Data` to check
+      * @return `true` if x is a Reg, `false` otherwise
+      */
+    def isReg(x: Data): Boolean = hasBinding[RegBinding](x)
 
     /** Check if two Chisel types are the same type.
       * Internally, this is dispatched to each Chisel type's
