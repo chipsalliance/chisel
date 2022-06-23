@@ -157,7 +157,7 @@ package experimental {
       target.direction
     }
 
-    private def isBinding[B <: ConstrainedBinding : Manifest](target: Data) = {
+    private def isBinding[B <: ConstrainedBinding: Manifest](target: Data) = {
       target.topBindingOpt match {
         case Some(b: B) => true
         case _ => false
@@ -168,10 +168,12 @@ package experimental {
       * @param x Chisel type.
       */
     def isIO(x: Data): Boolean = isBinding[PortBinding](x)
+
     /** Check if a Chisel type is a Wire
       * @param x Chisel type.
       */
     def isWire(x: Data): Boolean = isBinding[WireBinding](x)
+
     /** Check if a Chisel type is a Reg
       * @param x Chisel type.
       */
