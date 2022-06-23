@@ -4,7 +4,7 @@ package chiselTests.experimental
 
 import chisel3._
 import chisel3.util.Valid
-import chisel3.stage.ChiselStage.emitChirrtl
+import chisel3.stage.ChiselStage
 import chisel3.experimental.DataMirror
 import chiselTests.ChiselFlatSpec
 
@@ -53,6 +53,6 @@ class DataMirrorSpec extends ChiselFlatSpec {
       assertNone(typ)
       assertNone(vectyp)
     }
-    emitChirrtl(new MyModule)
+    ChiselStage.elaborate(new MyModule)
   }
 }
