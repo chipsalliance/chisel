@@ -708,7 +708,7 @@ package experimental {
               case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
                 data match {
                   case record: Record =>
-                    val compatRecord = !record.compileOptions.dontAssumeDirectionality
+                    val compatRecord = true//!record.compileOptions.dontAssumeDirectionality
                     record.getElements.foreach(assignCompatDir(_, compatRecord))
                   case vec: Vec[_] =>
                     vec.getElements.foreach(assignCompatDir(_, insideCompat))
@@ -718,7 +718,8 @@ package experimental {
         }
       }
 
-      assignCompatDir(iodef, false)
+      //assignCompatDir(iodef, false)
+      assignCompatDir(iodef, true)
 
       iodef.bind(PortBinding(this))
       _ports += iodef
