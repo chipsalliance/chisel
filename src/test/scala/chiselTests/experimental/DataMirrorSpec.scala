@@ -35,11 +35,9 @@ class DataMirrorSpec extends ChiselFlatSpec {
         val out = Output(UInt(4.W))
       })
       val vec = Wire(vectyp)
+      val regvec = Reg(vectyp)
       val wire = Wire(UInt(4.W))
       val reg = RegNext(wire)
-      vec := io.vec
-      wire := io.in
-      io.out := wire
 
       assertIO(io)
       assertIO(io.in)
@@ -50,6 +48,8 @@ class DataMirrorSpec extends ChiselFlatSpec {
       assertWire(vec(0))
       assertWire(wire)
       assertReg(reg)
+      assertReg(regvec)
+      assertReg(regvec(2))
       assertNone(typ)
       assertNone(vectyp)
     }
