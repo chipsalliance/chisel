@@ -96,7 +96,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("node fuzz = add(foo, bar)")
   }
 
-    property("5a. Calling suggestName on an IO should be allowed") {
+  property("5a. Calling suggestName on an IO should be allowed") {
     class Example extends Module {
       val foo, bar = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
@@ -110,7 +110,6 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     log should equal("")
     chirrtl should include("node sum = add(FOO, BAR)")
   }
-
 
   property("5b. Calling suggestName on a prefixed node should be allowed") {
     class Example extends Module {
