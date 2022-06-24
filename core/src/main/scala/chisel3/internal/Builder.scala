@@ -159,13 +159,11 @@ private[chisel3] trait HasId extends InstanceId {
         s"Calling suggestName ($seed, on something that cannot actually be named: ${this}) will become an error in Chisel 3.6"
       )
     }
-    /*
-    if (_computedName.isDefined) {
+    if (_parent.map(_.isClosed).getOrElse(false)) { // not sure what it means to have no parent
       Builder.deprecated(
-        s"Calling suggestName ($seed, when the name was already computed as ${_computedName.get})) will become an error in Chisel 3.6"
+        s"Calling suggestName ($seed, on ${this}, when the containing module (${_parent.get.name}) completed elaboration already will become an error in Chisel 3.6"
       )
     }
-     */
     _suggestNameInternal(seed)
   }
 

@@ -52,8 +52,6 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     caught.getMessage should include("suggestName (somethingElse) should only be called from a Builder context")
   }
 
-  /*
-   // TODO: I removed the _computedName code that would check for this... how to determine if we are after module close?
   property("2. Calling suggestName after module close should be a runtime deprecation") {
     class Child extends Module {
       val wire = {
@@ -67,26 +65,11 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     }
     val (log, _) = grabLog(ChiselStage.emitVerilog(new Test()))
     log should include(
-      "Calling suggestName (somethingElse, when the name was already computed "
+      "Calling suggestName (somethingElse, on Child.wire: Wire[UInt<3>], when the containing module (Child) completed elaboration already"
     )
   }
 
-  property("3. Calling suggestName after toString should be a runtime deprecation") {
-    class Test extends Module {
-      val wire = {
-        val x = WireInit(0.U(3.W))
-        val y = x.toString
-        x.suggestName("somethingElse")
-      }
-    }
-    val (log, _) = grabLog(ChiselStage.emitVerilog(new Test()))
-    log should include(
-      "Calling suggestName (somethingElse, when the name was already computed "
-    )
-  }
-   */
-
-  property("4. Calling suggestName with the same thing prefix would have given should be a runtime deprecation") {
+  property("3. Calling suggestName with the same thing prefix would have given should be a runtime deprecation") {
     class Test extends Module {
       val wire = {
         val x = WireInit(0.U(3.W)).suggestName("wire")
