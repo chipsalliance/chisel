@@ -6,8 +6,10 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.experimental.prefix
 
 import scala.annotation.nowarn
+
 
 /** A [[Bundle]] that adds a `valid` bit to some data. This indicates that the user expects a "valid" interface between
   * a producer and a consumer. Here, the producer asserts the `valid` bit when data on the `bits` line contains valid
@@ -127,12 +129,10 @@ object Pipe {
       out.bits := enqBits
       out
     } else {
-      val v = RegNext(enqValid, false.B)
-      val b = RegEnable(enqBits, enqValid)
+      val v = prefix("Pipe_valid"){RegNext(enqValid, false.B)}
+      val b = prefix("Pipe_bits"){RegEnable(enqBits, enqValid)}
       val out = apply(v, b, latency - 1)(compileOptions)
-
-      TransitName.withSuffix("Pipe_valid")(out, v)
-      TransitName.withSuffix("Pipe_bits")(out, b)
+      out
     }
   }
 

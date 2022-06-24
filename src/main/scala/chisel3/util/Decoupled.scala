@@ -366,7 +366,7 @@ object Queue {
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
       enq.ready := q.io.enq.ready
-      TransitName(q.io.deq, q)
+      q.io.deq
     }
   }
 
