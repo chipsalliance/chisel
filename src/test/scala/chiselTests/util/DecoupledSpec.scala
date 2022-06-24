@@ -41,42 +41,56 @@ module MyModule :
 
 With prefix(...):
 
- module MyModule :
-   input clock : Clock
-   input reset : UInt<1>
-   input in : { valid : UInt<1>, bits : UInt<8>}
-   output out : { valid : UInt<1>, bits : UInt<8>}
-
-   reg out_v : UInt<1>, clock with :
-     reset => (reset, UInt<1>("h0")) @[Valid.scala 129:43]
-   out_v <= in.valid @[Valid.scala 129:43]
-   reg out_b : UInt<8>, clock with :
-     reset => (UInt<1>("h0"), out_b) @[Valid.scala 130:44]
-   when in.valid : @[Valid.scala 130:44]
-     out_b <= in.bits @[Valid.scala 130:44]
-   reg out_out_v : UInt<1>, clock with :
-     reset => (reset, UInt<1>("h0")) @[Valid.scala 129:43]
-   out_out_v <= out_v @[Valid.scala 129:43]
-   reg out_out_b : UInt<8>, clock with :
-     reset => (UInt<1>("h0"), out_out_b) @[Valid.scala 130:44]
-   when out_v : @[Valid.scala 130:44]
-     out_out_b <= out_b @[Valid.scala 130:44]
-   wire out_out : { valid : UInt<1>, bits : UInt<8>} @[Valid.scala 124:21]
-   out_out.valid <= out_out_v @[Valid.scala 125:17]
-   out_out.bits <= out_out_b @[Valid.scala 126:16]
-   out <= out_out @[DecoupledSpec.scala 48:11]
-
-
+module MyModule :
+     input clock : Clock
+     input reset : UInt<1>
+     input foo : { valid : UInt<1>, bits : UInt<8>}
+     output bar : { valid : UInt<1>, bits : UInt<8>}
+ 
+     reg bar_pipe_v : UInt<1>, clock with :
+       reset => (reset, UInt<1>("h0")) @[Valid.scala 129:24]
+     bar_pipe_v <= foo.valid @[Valid.scala 129:24]
+     reg bar_pipe_b : UInt<8>, clock with :
+       reset => (UInt<1>("h0"), bar_pipe_b) @[Valid.scala 130:26]
+     when foo.valid : @[Valid.scala 130:26]
+       bar_pipe_b <= bar.bits @[Valid.scala 130:26]
+     reg bar_pipe_pipe_v : UInt<1>, clock with :
+       reset => (reset, UInt<1>("h0")) @[Valid.scala 129:24]
+     bar_pipe_pipe_v <= bar_pipe_v @[Valid.scala 129:24]
+     reg bar_pipe_pipe_b : UInt<8>, clock with :
+       reset => (UInt<1>("h0"), bar_pipe_pipe_b) @[Valid.scala 130:26]
+     when bar_pipe_v : @[Valid.scala 130:26]
+       bar_pipe_pipe_b <= bar_pipe_b @[Valid.scala 130:26]
+     wire bar_pipe_pipe_out : { valid : UInt<1>, bits : UInt<8>} @[Valid.scala 124:21]
+     bar_pipe_pipe_out.valid <= bar_pipe_pipe_v @[Valid.scala 125:17]
+     bar_pipe_pipe_out.bits <= bar_pipe_pipe_b @[Valid.scala 126:16]
+     bar <= bar_pipe_pipe_out @[DecoupledSpec.scala 77:11]
 */
 
-  it should "Have decent names for Pipe" in {
+  it should "Have decent names for Pipe(2)" in {
     class MyModule extends Module {
-      val in = IO(Input(Valid(UInt(8.W))))
-      val out = IO(Output(Valid(UInt(8.W))))
-      out := Pipe(in.valid, in.bits, 3)
+      val foo = IO(Input(Valid(UInt(8.W))))
+      val bar = IO(Output(Valid(UInt(8.W))))
+      bar := Pipe(foo.valid, bar.bits, 2)
     }
     val chirrtl = emitChirrtl(new MyModule)
-    chirrtl should include("out.bits <= bits")
-    chirrtl should include("out.valid <= valid")
+    chirrtl should include("reg bar_pipe_v")
+    chirrtl should include("reg bar_pipe_pipe_v")
+    chirrtl should include("wire bar_pipe_pipe_out")
+    chirrtl should include("bar_pipe_pipe_out.valid <= bar_pipe_pipe_v")
+    chirrtl should include("bar <= bar_pipe_pipe_out")
+  }
+
+  it should "Have decent names for Pipe(0)" in {
+    class MyModule extends Module {
+      val foo = IO(Input(Valid(UInt(8.W))))
+      val bar = IO(Output(Valid(UInt(8.W))))
+      bar := Pipe(foo.valid, foo.bits, 0)
+    }
+    val chirrtl = emitChirrtl(new MyModule)
+    chirrtl should not include("pipe")
+    chirrtl should include ("wire bar_out")
+    chirrtl should include ("bar_out.valid <= foo.valid")
+    chirrtl should include ("bar <= bar_out")
   }
 }
