@@ -96,6 +96,22 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("node fuzz = add(foo, bar)")
   }
 
+    property("5a. Calling suggestName on an IO should be allowed") {
+    class Example extends Module {
+      val foo, bar = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+
+      val sum = foo +& bar
+      foo.suggestName("FOO")
+      bar.suggestName("BAR")
+      out := sum
+    }
+    val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
+    log should equal("")
+    chirrtl should include("node sum = add(FOO, BAR)")
+  }
+
+
   property("5b. Calling suggestName on a prefixed node should be allowed") {
     class Example extends Module {
       val foo, bar = IO(Input(UInt(8.W)))
@@ -194,7 +210,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     }
     val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
     log should include("Calling suggestName (fuzz, on something that cannot actually be named: Example.io.in")
-    log should include("Calling suggestName (fuzz, on something that cannot actually be named: Example.io.in")
+    log should include("Calling suggestName (bar, on something that cannot actually be named: Example.io.out")
 
     chirrtl should include("io.out <= io.in")
   }
