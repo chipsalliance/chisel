@@ -128,11 +128,10 @@ object Pipe {
       out.valid := enqValid
       out.bits := enqBits
       out
-    } else {
-      val v = prefix("Pipe_valid"){RegNext(enqValid, false.B)}
-      val b = prefix("Pipe_bits"){RegEnable(enqBits, enqValid)}
-      val out = apply(v, b, latency - 1)(compileOptions)
-      out
+    } else prefix("pipe"){
+        val v = RegNext(enqValid, false.B)
+        val b = RegEnable(enqBits, enqValid)
+        apply(v, b, latency - 1)(compileOptions)
     }
   }
 
