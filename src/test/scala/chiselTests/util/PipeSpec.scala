@@ -8,8 +8,8 @@ import chisel3.stage.ChiselStage.emitChirrtl
 import chisel3.experimental.FlatIO
 import chiselTests.ChiselFlatSpec
 
-class DecoupledSpec extends ChiselFlatSpec {
-  behavior.of("Decoupled")
+class PipeSpec extends ChiselFlatSpec {
+  behavior.of("Pipe")
 
   it should "Have decent names for Pipe(2)" in {
     class MyModule extends Module {
