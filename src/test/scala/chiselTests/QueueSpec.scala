@@ -305,7 +305,6 @@ class QueueSpec extends ChiselPropSpec {
     }
 
     val chirrtl = ChiselStage.emitChirrtl(new HasTwoQueues)
-    (chirrtl should not).include("pipe")
     chirrtl should include("inst foo_q of Queue")
     chirrtl should include("inst bar_q of Queue")
   }
