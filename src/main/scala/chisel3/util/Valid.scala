@@ -128,11 +128,12 @@ object Pipe {
       out.valid := enqValid
       out.bits := enqBits
       out
-    } else prefix("pipe"){
+    } else
+      prefix("pipe") {
         val v = RegNext(enqValid, false.B)
         val b = RegEnable(enqBits, enqValid)
         apply(v, b, latency - 1)(compileOptions)
-    }
+      }
   }
 
   /** Generate a one-stage pipe from an explicit valid bit and some data
