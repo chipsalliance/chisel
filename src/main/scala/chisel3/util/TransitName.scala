@@ -42,6 +42,12 @@ object TransitName {
     * @param to the thing that will receive the "good" name
     * @return the `from` parameter
     */
+  @deprecated(
+    "Use suggestName or rely on the naming plugin instead of this function: \n" +
+      "  val from = {to}\n" +
+      "  val from = prefix(prefixYouWant){to}",
+    "Chisel 3.5.4"
+  )
   def apply[T <: HasId](from: T, to: HasId): T = {
     // To transit a name, we need to hook on both the suggestName and autoSeed mechanisms
     from.addSuggestPostnameHook((given_name: String) => { to.suggestName(given_name) })
@@ -55,6 +61,11 @@ object TransitName {
     * @param to the thing that will receive the "good" name
     * @return the `from` parameter
     */
+  @deprecated(
+    "Use suggestName or rely on the naming plugin instead of this function. Use prefix instead of suffix: \n" +
+      "  val from = prefix(prefixYouWant){to}",
+    "Chisel 3.5.4"
+  )
   def withSuffix[T <: HasId](suffix: String)(from: T, to: HasId): T = {
     // To transit a name, we need to hook on both the suggestName and autoSeed mechanisms
     from.addSuggestPostnameHook((given_name: String) => { to.suggestName(given_name + suffix) })
