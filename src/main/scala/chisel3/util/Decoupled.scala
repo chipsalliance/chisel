@@ -9,6 +9,8 @@ import chisel3._
 import chisel3.experimental.{requireIsChiselType, DataMirror, Direction}
 import chisel3.internal.naming._ // can't use chisel3_ version because of compile order
 
+import scala.annotation.nowarn
+
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
   * The base protocol implied by the directionality is that
@@ -342,6 +344,7 @@ object Queue {
     *   consumer.io.in <> Queue(producer.io.out, 16)
     * }}}
     */
+  @nowarn("cat=deprecation&msg=TransitName")
   @chiselName
   def apply[T <: Data](
     enq:            ReadyValidIO[T],
