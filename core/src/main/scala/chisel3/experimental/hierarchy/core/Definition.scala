@@ -119,5 +119,7 @@ object Definition extends SourceInfoDoc {
 /** Stores a [[Definition]] that is imported so that its Instances can be
   * compiled separately.
   */
-case class ImportDefinitionAnnotation[T <: BaseModule with IsInstantiable](definition: Definition[T])
+case class ImportDefinitionAnnotation[T <: BaseModule with IsInstantiable](
+  definition:      Definition[T],
+  overrideDefName: Option[String] = None)
     extends NoTargetAnnotation

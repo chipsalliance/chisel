@@ -109,12 +109,6 @@ private[chisel3] trait HasId extends InstanceId {
   // - Overridden when [[suggestSeed]] or [[autoSeed]] is called
   private var naming_prefix: Prefix = Builder.getPrefix
 
-  // Post-seed hooks called to carry the suggested seeds to other candidates as needed
-  private var suggest_postseed_hooks: List[String => Unit] = Nil
-
-  // Post-seed hooks called to carry the auto seeds to other candidates as needed
-  private var auto_postseed_hooks: List[String => Unit] = Nil
-
   /** Takes the last seed suggested. Multiple calls to this function will take the last given seed, unless
     * this HasId is a module port (see overridden method in Data.scala).
     *
@@ -131,7 +125,6 @@ private[chisel3] trait HasId extends InstanceId {
   // Bypass the overridden behavior of autoSeed in [[Data]], apply autoSeed even to ports
   private[chisel3] def forceAutoSeed(seed: String): this.type = {
     auto_seed = Some(seed)
-    for (hook <- auto_postseed_hooks.reverse) { hook(seed) }
     naming_prefix = Builder.getPrefix
     this
   }
@@ -160,7 +153,6 @@ private[chisel3] trait HasId extends InstanceId {
   def suggestName(seed: => String): this.type = {
     if (suggested_seed.isEmpty) suggested_seed = Some(seed)
     naming_prefix = Builder.getPrefix
-    for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
     this
   }
 
@@ -195,9 +187,6 @@ private[chisel3] trait HasId extends InstanceId {
   def hasSeed: Boolean = seedOpt.isDefined
 
   private[chisel3] def hasAutoSeed: Boolean = auto_seed.isDefined
-
-  private[chisel3] def addSuggestPostnameHook(hook: String => Unit): Unit = suggest_postseed_hooks ::= hook
-  private[chisel3] def addAutoPostnameHook(hook:    String => Unit): Unit = auto_postseed_hooks ::= hook
 
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
@@ -335,11 +324,30 @@ private[chisel3] class DynamicContext(
   val throwOnFirstError: Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
-  // Ensure there are no repeated names for imported Definitions
-  val importDefinitionNames = importDefinitionAnnos.map { a => a.definition.proto.name }
-  if (importDefinitionNames.distinct.length < importDefinitionNames.length) {
-    val duplicates = importDefinitionNames.diff(importDefinitionNames.distinct).mkString(", ")
-    throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
+  // Map holding the actual names of extModules
+  // Pick the definition name by default in case not passed through annotation.
+  val importDefinitionMap = importDefinitionAnnos
+    .map(a => a.definition.proto.name -> a.overrideDefName.getOrElse(a.definition.proto.name))
+    .toMap
+
+  // Helper function which does 2 things
+  // 1. Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
+  // 2. Return the distinct definition / extMod names
+  private def checkAndGeDistinctProtoExtModNames() = {
+    val importAllDefinitionProtoNames = importDefinitionAnnos.map { a => a.definition.proto.name }
+    val importDistinctDefinitionProtoNames = importDefinitionMap.keys.toSeq
+    val importAllDefinitionExtModNames = importDefinitionMap.toSeq.map(_._2)
+    val importDistinctDefinitionExtModNames = importAllDefinitionExtModNames.distinct
+
+    if (importDistinctDefinitionProtoNames.length < importAllDefinitionProtoNames.length) {
+      val duplicates = importAllDefinitionProtoNames.diff(importDistinctDefinitionProtoNames).mkString(", ")
+      throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
+    }
+    if (importDistinctDefinitionExtModNames.length < importAllDefinitionExtModNames.length) {
+      val duplicates = importAllDefinitionExtModNames.diff(importDistinctDefinitionExtModNames).mkString(", ")
+      throwException(s"Expected distinct overrideDef names but found duplicates for: $duplicates")
+    }
+    (importAllDefinitionProtoNames ++ importAllDefinitionExtModNames).distinct
   }
 
   val globalNamespace = Namespace.empty
@@ -347,8 +355,8 @@ private[chisel3] class DynamicContext(
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-  importDefinitionNames.foreach { importDefName =>
-    globalNamespace.name(importDefName)
+  checkAndGeDistinctProtoExtModNames().foreach {
+    globalNamespace.name(_)
   }
 
   val components = ArrayBuffer[Component]()
@@ -415,11 +423,12 @@ private[chisel3] object Builder extends LazyLogging {
 
   def idGen: IdGen = chiselContext.get.idGen
 
-  def globalNamespace: Namespace = dynamicContext.globalNamespace
-  def components:      ArrayBuffer[Component] = dynamicContext.components
-  def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
-  def annotationSeq:   AnnotationSeq = dynamicContext.annotationSeq
-  def namingStack:     NamingStack = dynamicContext.namingStack
+  def globalNamespace:     Namespace = dynamicContext.globalNamespace
+  def components:          ArrayBuffer[Component] = dynamicContext.components
+  def annotations:         ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
+  def namingStack:         NamingStack = dynamicContext.namingStack
+  def importDefinitionMap: Map[String, String] = dynamicContext.importDefinitionMap
 
   def unnamedViews:  ArrayBuffer[Data] = dynamicContext.unnamedViews
   def viewNamespace: Namespace = chiselContext.get.viewNamespace
