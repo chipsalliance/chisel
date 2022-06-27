@@ -7,13 +7,15 @@ package chisel3.util
 
 import chisel3._
 
+import scala.annotation.nowarn
+
 /** A [[Bundle]] that adds a `valid` bit to some data. This indicates that the user expects a "valid" interface between
   * a producer and a consumer. Here, the producer asserts the `valid` bit when data on the `bits` line contains valid
   * data. This differs from [[DecoupledIO]] or [[IrrevocableIO]] as there is no `ready` line that the consumer can use
   * to put back pressure on the producer.
   *
   * In most scenarios, the `Valid` class will ''not'' be used directly. Instead, users will create `Valid` interfaces
-  * using the [[Valid$ Valid factory]].
+  * using the [[Valid$ Valid factory]]sbt.
   * @tparam T the type of the data
   * @param gen some data
   * @see [[Valid$ Valid factory]] for concrete examples
@@ -116,6 +118,7 @@ object Pipe {
     * @param latency the number of pipeline stages
     * @return $returnType
     */
+  @nowarn("cat=deprecation&msg=TransitName")
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] = {
     require(latency >= 0, "Pipe latency must be greater than or equal to zero!")
     if (latency == 0) {
