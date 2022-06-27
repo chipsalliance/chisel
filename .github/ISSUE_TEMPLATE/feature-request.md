@@ -1,3 +1,8 @@
+---
+name: Feature Request
+about: Request a new feature or change in functionality in chisel3
+---
+
 <!-- Note: for support questions, you are strongly advised to use [Stack Overflow](https://stackoverflow.com/questions/tagged/chisel). -->
 
 **Type of issue**: Feature Request
