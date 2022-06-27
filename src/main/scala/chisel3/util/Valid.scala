@@ -17,7 +17,7 @@ import scala.annotation.nowarn
   * to put back pressure on the producer.
   *
   * In most scenarios, the `Valid` class will ''not'' be used directly. Instead, users will create `Valid` interfaces
-  * using the [[Valid$ Valid factory]]sbt.
+  * using the [[Valid$ Valid factory]].
   * @tparam T the type of the data
   * @param gen some data
   * @see [[Valid$ Valid factory]] for concrete examples
