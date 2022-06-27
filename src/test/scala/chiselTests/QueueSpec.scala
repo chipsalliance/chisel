@@ -9,6 +9,8 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 import chisel3.util.random.LFSR
 
+import chisel3.stage.ChiselStage
+
 class ThingsPassThroughTester(
   elements:       Seq[Int],
   queueDepth:     Int,
@@ -290,5 +292,20 @@ class QueueSpec extends ChiselPropSpec {
     }
     (new chisel3.stage.phases.Elaborate)
       .transform(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new IrrevocableQueue)))
+  }
+
+  property("Queue.apply should have decent names") {
+    class HasTwoQueues extends Module {
+      val in = IO(Flipped(Decoupled(UInt(8.W))))
+      val out = IO(Decoupled(UInt(8.W)))
+
+      val foo = Queue(in, 2)
+      val bar = Queue(foo, 2)
+      out <> bar
+    }
+
+    val chirrtl = ChiselStage.emitChirrtl(new HasTwoQueues)
+    chirrtl should include("inst foo_q of Queue")
+    chirrtl should include("inst bar_q of Queue")
   }
 }

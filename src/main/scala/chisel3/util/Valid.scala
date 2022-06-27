@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.experimental.prefix
 
 import scala.annotation.nowarn
 
@@ -15,7 +16,7 @@ import scala.annotation.nowarn
   * to put back pressure on the producer.
   *
   * In most scenarios, the `Valid` class will ''not'' be used directly. Instead, users will create `Valid` interfaces
-  * using the [[Valid$ Valid factory]]sbt.
+  * using the [[Valid$ Valid factory]].
   * @tparam T the type of the data
   * @param gen some data
   * @see [[Valid$ Valid factory]] for concrete examples
@@ -126,14 +127,12 @@ object Pipe {
       out.valid := enqValid
       out.bits := enqBits
       out
-    } else {
-      val v = RegNext(enqValid, false.B)
-      val b = RegEnable(enqBits, enqValid)
-      val out = apply(v, b, latency - 1)(compileOptions)
-
-      TransitName.withSuffix("Pipe_valid")(out, v)
-      TransitName.withSuffix("Pipe_bits")(out, b)
-    }
+    } else
+      prefix("pipe") {
+        val v = RegNext(enqValid, false.B)
+        val b = RegEnable(enqBits, enqValid)
+        apply(v, b, latency - 1)(compileOptions)
+      }
   }
 
   /** Generate a one-stage pipe from an explicit valid bit and some data
