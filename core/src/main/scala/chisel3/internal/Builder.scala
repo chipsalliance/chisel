@@ -179,7 +179,7 @@ private[chisel3] trait HasId extends InstanceId {
   }
 
   /** Computes the name of this HasId, if one exists
-    * 
+    *
     * @param defaultSeed Optionally provide default seed for computing the name
     * @return the name, if it can be computed
     */
