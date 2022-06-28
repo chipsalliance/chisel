@@ -27,6 +27,7 @@ import chisel3.internal.naming.chiselName // can't use chisel3_ version because 
   *   }
   * }}}
   */
+@chiselName
 class Counter private (r: Range, oldN: Option[Int] = None) {
   require(r.length > 0, s"Counter range cannot be empty, got: $r")
   require(r.start >= 0 && r.end >= 0, s"Counter range must be positive, got: $r")
@@ -112,6 +113,7 @@ object Counter {
     * @return tuple of the counter value and whether the counter will wrap (the value is at
     * maximum and the condition is true).
     */
+  @chiselName
   def apply(cond: Bool, n: Int): (UInt, Bool) = {
     val c = new Counter(n)
     val wrap = WireInit(false.B)
@@ -127,6 +129,7 @@ object Counter {
     * @return tuple of the counter value and whether the counter will wrap (the value is at
     * maximum and the condition is true).
     */
+  @chiselName
   def apply(r: Range, enable: Bool = true.B, reset: Bool = false.B): (UInt, Bool) = {
     val c = new Counter(r)
     val wrap = WireInit(false.B)

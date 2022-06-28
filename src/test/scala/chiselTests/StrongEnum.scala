@@ -575,6 +575,7 @@ class StrongEnumAnnotator extends Module {
   val indexed2 = vec_of_bundles(cycle)
 }
 
+@chiselName
 class StrongEnumAnnotatorWithChiselName extends Module {
   import EnumExample._
 
