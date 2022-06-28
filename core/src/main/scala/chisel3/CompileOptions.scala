@@ -25,6 +25,13 @@ trait CompileOptions {
 
   /** If marked true, then any Module which consumes `inferModuleReset=false` must also mix in [[RequireSyncReset]] */
   def migrateInferModuleReset: Boolean = false
+
+  final val connectivityOptions = Seq(connectFieldsMustMatch, dontTryConnectionsSwapped, dontAssumeDirectionality, checkSynthesizable)
+  private val allTrue = connectivityOptions.forall(x => x == true)
+  private val allFalse = connectivityOptions.forall(x => x == false)
+  require(allTrue || allFalse, s"All connectivity options must be the same value, either true or false.")
+
+  final def chisel3Options = allTrue  // Because of requirement above, is either allTrue or allFalse
 }
 
 object CompileOptions {

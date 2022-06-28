@@ -56,18 +56,12 @@ object SpecifiedDirection {
 
   private[chisel3] def specifiedDirection[T <: Data](
     source: T
-  )(dir:    SpecifiedDirection
-  )(
-    implicit compileOptions: CompileOptions
-  ): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
+  )(dir:    SpecifiedDirection) : T = {
+    requireIsChiselType(source)
     val out = source.cloneType.asInstanceOf[T]
     out.specifiedDirection = dir
     out
   }
-
 }
 
 /** Resolved directions for both leaf and container nodes, only visible after
@@ -428,17 +422,26 @@ object chiselTypeOf {
   */
 object Input {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
+    if(compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(source)
+    }
     SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
   }
 }
 object Output {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
+    if(compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(source)
+    }
     SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
   }
 }
 
 object Flipped {
   def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
+    if(compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(source)
+    }
     SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
   }
 }
@@ -478,7 +481,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     if (_specifiedDirection != SpecifiedDirection.Unspecified) {
       this match {
         // Anything flies in compatibility mode
-        case t: Record if !t.compileOptions.dontAssumeDirectionality =>
+        case t: Record if !t.compileOptions.chisel3Options =>
         case _ => throw RebindingException(s"Attempted reassignment of user-specified direction to $this")
       }
     }
@@ -602,7 +605,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions
   ): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
+    if (connectCompileOptions.chisel3Options) {
       requireIsHardware(this, "data to be connected")
       requireIsHardware(that, "data to be connected")
       this.topBinding match {
@@ -627,7 +630,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions
   ): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
+    if (connectCompileOptions.chisel3Options) {
       requireIsHardware(this, s"data to be bulk-connected")
       requireIsHardware(that, s"data to be bulk-connected")
       (this.topBinding, that.topBinding) match {

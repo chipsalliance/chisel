@@ -213,7 +213,7 @@ private[chisel3] object BiConnect {
     // Verify right has no extra fields that left doesn't have
     for ((field, right_sub) <- right_r.elements) {
       if (!left_r.elements.isDefinedAt(field)) {
-        if (connectCompileOptions.connectFieldsMustMatch) {
+        if (connectCompileOptions.chisel3Options) {
           throw MissingLeftFieldException(field)
         }
       }
@@ -224,7 +224,7 @@ private[chisel3] object BiConnect {
         right_r.elements.get(field) match {
           case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
           case None => {
-            if (connectCompileOptions.connectFieldsMustMatch) {
+            if (connectCompileOptions.chisel3Options) {
               throw MissingRightFieldException(field)
             }
           }
@@ -390,7 +390,7 @@ private[chisel3] object BiConnect {
         case (Input, Input)   => throw BothDriversException
         case (Output, Output) => throw BothDriversException
         case (Internal, Internal) => {
-          if (connectCompileOptions.dontAssumeDirectionality) {
+          if (connectCompileOptions.chisel3Options) {
             throw UnknownDriverException
           } else {
             issueConnectR2L(left, right)
@@ -412,13 +412,13 @@ private[chisel3] object BiConnect {
         case (Input, Input)   => throw NeitherDriverException
         case (Output, Output) => throw BothDriversException
         case (_, Internal) =>
-          if (connectCompileOptions.dontAssumeDirectionality) {
+          if (connectCompileOptions.chisel3Options) {
             throw UnknownRelationException
           } else {
             issueConnectR2L(left, right)
           }
         case (Internal, _) =>
-          if (connectCompileOptions.dontAssumeDirectionality) {
+          if (connectCompileOptions.chisel3Options) {
             throw UnknownRelationException
           } else {
             issueConnectR2L(left, right)
