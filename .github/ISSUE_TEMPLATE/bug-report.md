@@ -1,3 +1,8 @@
+---
+name: Bug Report
+about: Report a problem you experienced with chisel3
+---
+
 <!-- Note: for support questions, you are strongly advised to use [Stack Overflow](https://stackoverflow.com/questions/tagged/chisel). -->
 <!--
 Please select the item best describing the issue in each category and delete the other items.
