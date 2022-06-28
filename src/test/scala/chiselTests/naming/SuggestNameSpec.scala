@@ -132,18 +132,26 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
 
   property("5c. Calling suggestName on a Module instance should be allowed") {
     import chisel3.util._
+
+    class PassThrough extends Module {
+      val enq = IO(Flipped(Decoupled(UInt(8.W))))
+      val deq = IO(Decoupled(UInt(8.W)))
+      deq <> enq
+    }
+
     class Example extends Module {
       val enq = IO(Flipped(Decoupled(UInt(8.W))))
       val deq = IO(Decoupled(UInt(8.W)))
 
-      val q = Module(new Queue(UInt(8.W), 4))
-      q.io.enq <> enq
-      deq <> q.io.deq
+      val q = Module(new PassThrough())
+      q.enq <> enq
+      deq <> q.deq
       q.suggestName("fuzz")
     }
+
     val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
     log should equal("")
-    chirrtl should include("inst fuzz of Queue")
+    chirrtl should include("inst fuzz of PassThrough")
   }
 
   /*
