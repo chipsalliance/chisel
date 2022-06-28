@@ -371,7 +371,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val fizz = mkField(2)
       val buzz = mkField(3)
     }
-    class MyModule extends Module {
+    class MyModule extends MultiIOModule {
       val in = IO(Input(new VarArgsBundle(1)(2, 3, 4)))
       val out = IO(Output(new VarArgsBundle(1)(2, 3, 4)))
       out := in
