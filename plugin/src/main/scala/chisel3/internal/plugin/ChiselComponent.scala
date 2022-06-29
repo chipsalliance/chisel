@@ -82,7 +82,12 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     // Checking for all chisel3.internal.NamedComponents, but since it is internal, we instead have
     // to match the public subtypes
     private val shouldMatchNamedComp: Type => Boolean =
-      shouldMatchGen(tq"chisel3.Data", tq"chisel3.MemBase[_]", tq"chisel3.VerificationStatement", tq"chisel3.experimental.HasChiselName")
+      shouldMatchGen(
+        tq"chisel3.Data",
+        tq"chisel3.MemBase[_]",
+        tq"chisel3.VerificationStatement",
+        tq"chisel3.experimental.HasChiselName"
+      )
     private val shouldMatchModule:   Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
     private val shouldMatchInstance: Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
 
