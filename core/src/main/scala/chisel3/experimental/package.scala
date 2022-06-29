@@ -162,6 +162,34 @@ package object experimental {
     */
   trait NoChiselNamePrefix
 
+  /** Treat instances of this type as a named component, and rename using the Chisel compiler
+    * plugin
+    *
+    * The compiler plugin by default automatically names instances of `Data` and `Mem`
+    * recursively. This trait allows the plugin to treat arbitrary types as named components
+    * and prefix them when they otherwise would not be
+    *
+    * @example {{{
+    * import chisel3._
+    * import chisel3.experimental.HasChiselName
+    *
+    * class MyModule extends Module {
+    *   // Note: This contains a Data but is not a named component itself
+    *   class NotAData extends HasChiselName {
+    *     val value = Wire(Bool())
+    *   }
+    *
+    *   // Name of nonData.value will be "nonData_value"
+    *   // Without HasChiselName, the name will be "value"
+    *   val nonData = new NotAData
+    *
+    *   // Name of nonData.value will be "nonData2_value"
+    *   // Without HasChiselName, the name will be "value_1"
+    *   val nonData2 = new NotAData
+    * }
+    */
+  trait HasChiselName
+
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
       def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
