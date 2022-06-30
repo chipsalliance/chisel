@@ -163,7 +163,7 @@ package object experimental {
   trait NoChiselNamePrefix
 
   /** Treat instances of this type as a named component, and rename using the Chisel compiler
-    * plugin
+    * plugin.
     *
     * The compiler plugin by default automatically names instances of `Data` and `Mem`
     * recursively. This trait allows the plugin to treat arbitrary types as named components
