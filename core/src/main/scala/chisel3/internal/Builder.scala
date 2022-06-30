@@ -151,7 +151,7 @@ private[chisel3] trait HasId extends InstanceId {
     require(Builder.hasDynamicContext, s"suggestName (${seed}) should only be called from a Builder context.")
     if (suggested_seed.isDefined) {
       Builder.deprecated(
-        s"Calling suggestName ($seed, when already called with ${suggested_seed}) will become an error in Chisel 3.6"
+        s"Calling .suggestName(\"$seed\"), when already called with \"${suggested_seed.get}\", will become an error in Chisel 3.6"
       )
     }
     if (!HasId.canBeNamed(this)) {
