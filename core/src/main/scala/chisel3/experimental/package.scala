@@ -167,7 +167,7 @@ package object experimental {
     *
     * The compiler plugin by default automatically names instances of `Data` and `Mem`
     * recursively. This trait allows the plugin to treat arbitrary types as named components
-    * and prefix them when they otherwise would not be
+    * and prefix them (and objects constructed within them) when they otherwise would not be.
     *
     * @example {{{
     * import chisel3._
