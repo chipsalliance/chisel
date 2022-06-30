@@ -472,7 +472,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     if (this.hasBinding || this._id <= prevId) true
     else
       this match {
-        case b: Bundle => b.hasExternalRef()
+        case b: Bundle => b.hasExternalRef
         case _ => false
       }
   }
