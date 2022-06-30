@@ -1304,7 +1304,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
   }
 
-  lazy val hasExternalRef: Boolean = this.elements.exists(_._2._id < _id)
+  private[chisel3] lazy val hasExternalRef: Boolean = this.elements.exists(_._2._id < _id)
 
   override def cloneType: this.type = {
     val clone = _cloneTypeImpl.asInstanceOf[this.type]
