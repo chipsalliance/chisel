@@ -1304,16 +1304,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
   }
 
-  private case class memoVal[T](var value: Option[T], val fn: () => T) {
-    def get(): T = {
-      if (value.isEmpty) {
-        value = Some(fn())
-      }
-      value.get
-    }
-  }
-  private var externalRef = memoVal[Boolean](None, () => elements.exists(_._2._id < _id))
-  private[chisel3] def hasExternalRef(): Boolean = externalRef.get()
+  lazy val hasExternalRef: Boolean = this.elements.exists(_._2._id < _id)
 
   override def cloneType: this.type = {
     val clone = _cloneTypeImpl.asInstanceOf[this.type]
