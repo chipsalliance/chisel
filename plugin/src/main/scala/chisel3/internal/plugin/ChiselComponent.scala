@@ -205,7 +205,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
               // - the type is not a HasChiselName
               q"chisel3.internal.plugin.autoNameRecursively($str)($prefixed)"
             else
-              // Do not prefix if the type is not a data and a HasChiselName
+              // Do not generate if the type is both not a data and a HasChiselName
               prefixed
 
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
