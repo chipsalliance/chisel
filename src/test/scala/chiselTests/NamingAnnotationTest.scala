@@ -4,13 +4,13 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.chiselName
-import chisel3.experimental.HasChiselName
+import chisel3.experimental.AffectsChiselPrefix
 import chisel3.internal.InstanceId
 import chisel3.stage.ChiselStage
 
 import scala.collection.mutable.ListBuffer
 
-trait NamedModuleTester extends Module with HasChiselName {
+trait NamedModuleTester extends Module with AffectsChiselPrefix {
   val expectedNameMap = ListBuffer[(InstanceId, String)]()
   val expectedModuleNameMap = ListBuffer[(Module, String)]()
 
@@ -49,13 +49,13 @@ trait NamedModuleTester extends Module with HasChiselName {
     failures.toList
   }
 }
-class OuterNamedNonModule extends HasChiselName {
+class OuterNamedNonModule extends AffectsChiselPrefix {
   val value = Wire(Bool())
 }
 
-class NonModule extends HasChiselName {
+class NonModule extends AffectsChiselPrefix {
   val value = Wire(Bool())
-  class InnerNamedNonModule extends HasChiselName {
+  class InnerNamedNonModule extends AffectsChiselPrefix {
     val value = Wire(Bool())
   }
   val inner = new InnerNamedNonModule
@@ -208,14 +208,14 @@ class NoChiselNamePrefixTester extends NamedModuleTester {
   class NormalClass {
     val b = 1.U +& 2.U
   }
-  val foo = new NormalClass with HasChiselName
+  val foo = new NormalClass with AffectsChiselPrefix
   expectName(foo.b, "foo_b")
   val bar = new NormalClass with chisel3.experimental.NoChiselNamePrefix
   expectName(bar.b, "b")
 
   // Check that we're not matching by name but actual type
   trait NoChiselNamePrefix
-  class FakeNoChiselNamePrefix extends NoChiselNamePrefix with HasChiselName {
+  class FakeNoChiselNamePrefix extends NoChiselNamePrefix with AffectsChiselPrefix {
     val c = 1.U +& 2.U
   }
   val fizz = new FakeNoChiselNamePrefix

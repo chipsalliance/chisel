@@ -3,7 +3,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.HasChiselName
+import chisel3.experimental.AffectsChiselPrefix
 import chisel3.internal.naming.chiselName // can't use chisel3_ version because of compile order
 
 /** Used to generate an inline (logic directly in the containing Module, no internal Module is created)
@@ -28,7 +28,7 @@ import chisel3.internal.naming.chiselName // can't use chisel3_ version because 
   *   }
   * }}}
   */
-class Counter private (r: Range, oldN: Option[Int] = None) extends HasChiselName {
+class Counter private (r: Range, oldN: Option[Int] = None) extends AffectsChiselPrefix {
   require(r.length > 0, s"Counter range cannot be empty, got: $r")
   require(r.start >= 0 && r.end >= 0, s"Counter range must be positive, got: $r")
 

@@ -86,13 +86,13 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         tq"chisel3.Data",
         tq"chisel3.MemBase[_]",
         tq"chisel3.VerificationStatement",
-        tq"chisel3.experimental.HasChiselName"
+        tq"chisel3.experimental.AffectsChiselPrefix"
       )
     private val shouldMatchModule:   Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
     private val shouldMatchInstance: Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
     private val shouldMatchChiselPrefixed: Type => Boolean =
       shouldMatchGen(
-        tq"chisel3.experimental.HasChiselName"
+        tq"chisel3.experimental.AffectsChiselPrefix"
       )
 
     // Given a type tree, infer the type and return it
@@ -202,10 +202,10 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
             if (isData || !shouldMatchChiselPrefixed(tpe))
               // Generate autoNameRecursively call if:
               // - the type is a data, or
-              // - the type is not a HasChiselName
+              // - the type is not a AffectsChiselPrefix
               q"chisel3.internal.plugin.autoNameRecursively($str)($prefixed)"
             else
-              // Do not generate if the type is both not a data and a HasChiselName
+              // Do not generate if the type is both not a data and a AffectsChiselPrefix
               prefixed
 
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
