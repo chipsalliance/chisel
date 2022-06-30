@@ -90,6 +90,10 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       )
     private val shouldMatchModule:   Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
     private val shouldMatchInstance: Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
+    private val shouldMatchChiselPrefixed: Type => Boolean =
+      shouldMatchGen(
+        tq"chisel3.experimental.HasChiselName"
+      )
 
     // Given a type tree, infer the type and return it
     private def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
@@ -175,23 +179,35 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     override def transform(tree: Tree): Tree = tree match {
       // Check if a subtree is a candidate
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) =>
+        val isData = shouldMatchData(tpe)
+
         val tpe = inferType(tpt)
         // If a Data and in a Bundle, just get the name but not a prefix
-        if (shouldMatchData(tpe) && inBundle(dd)) {
+        if (isData && inBundle(dd)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs) // chisel3.internal.plugin.autoNameRecursively
           val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
         }
         // If a Data or a Memory, get the name and a prefix
-        else if (shouldMatchNamedComp(tpe)) {
+        else if (isData || shouldMatchNamedComp(tpe)) {
           val str = stringFromTermName(name)
           // Starting with '_' signifies a temporary, we ignore it for prefixing because we don't
           // want double "__" in names when the user is just specifying a temporary
           val prefix = if (str.head == '_') str.tail else str
           val newRHS = transform(rhs)
           val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$prefix)(f=$newRHS)"
-          val named = q"chisel3.internal.plugin.autoNameRecursively($str)($prefixed)"
+
+          val named =
+            if (isData || !shouldMatchChiselPrefixed(tpe))
+              // Generate autoNameRecursively call if:
+              // - the type is a data, or
+              // - the type is not a HasChiselName
+              q"chisel3.internal.plugin.autoNameRecursively($str)($prefixed)"
+            else
+              // Do not prefix if the type is not a data and a HasChiselName
+              prefixed
+
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
           // If an instance, just get a name but no prefix
         } else if (shouldMatchModule(tpe)) {
