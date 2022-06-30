@@ -179,9 +179,9 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     override def transform(tree: Tree): Tree = tree match {
       // Check if a subtree is a candidate
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) =>
+        val tpe = inferType(tpt)
         val isData = shouldMatchData(tpe)
 
-        val tpe = inferType(tpt)
         // If a Data and in a Bundle, just get the name but not a prefix
         if (isData && inBundle(dd)) {
           val str = stringFromTermName(name)
