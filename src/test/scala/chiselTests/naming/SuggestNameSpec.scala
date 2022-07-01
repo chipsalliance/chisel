@@ -155,6 +155,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
   }
 
   /*
+  // This test is commented out until https://github.com/chipsalliance/chisel3/issues/2613 is resolved
   property("5d. Calling suggestName on an Instance instance should be allowed") {
     import chisel3.experimental.hierarchy.{Definition, Instance}
     import chiselTests.experimental.hierarchy.Examples.AddOne
