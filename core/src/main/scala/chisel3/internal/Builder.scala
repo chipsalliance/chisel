@@ -156,7 +156,7 @@ private[chisel3] trait HasId extends InstanceId {
     }
     if (!HasId.canBeNamed(this)) {
       Builder.deprecated(
-        s"Calling suggestName ($seed, on something that cannot actually be named: ${this}) will become an error in Chisel 3.6"
+        s"Calling .suggestName(\"$seed\") on \"$this\" (which cannot actually be named) will become an error in Chisel 3.6"
       )
     }
     if (_parent.map(_.isClosed).getOrElse(false)) { // not sure what it means to have no parent
