@@ -3,6 +3,7 @@
 package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
+import firrtl.Utils.groupByIntoSeq
 
 sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat, val sort: Boolean) {
   def inputWidth = table.head._1.getWidth
@@ -29,40 +30,106 @@ sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: 
 
 object TruthTable {
 
-  /** Convert a table and default output into a [[TruthTable]]. */
-  def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = true): TruthTable = {
+  /** Pad the input signals to equalize all input widths. Pads input signals
+    *  to the maximum width found in the table.
+    *
+    * @param table the truth table whose rows will be padded
+    * @return the same truth table but with inputs padded
+    */
+  private def padInputs(table: Iterable[(BitPat, BitPat)]): Iterable[(BitPat, BitPat)] = {
     val inputWidth = table.map(_._1.getWidth).max
-    require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
-    val outputWidth = table.map(_._2.getWidth).head
-    val mergedTable = table.map {
-      // pad input signals if necessary
+    table.map {
       case (in, out) if inputWidth > in.width =>
         (BitPat.N(inputWidth - in.width) ## in, out)
       case (in, out) => (in, out)
     }
-      .groupBy(_._1.toString)
-      .map {
-        case (key, values) =>
-          // merge same input inputs.
-          values.head._1 -> BitPat(s"b${Seq
-            .tabulate(outputWidth) { i =>
-              val outputSet = values
-                .map(_._2)
-                .map(_.rawString)
-                .map(_(i))
-                .toSet
-                .filterNot(_ == '?')
-              require(
-                outputSet.size != 2,
-                s"TruthTable conflict in :\n${values.map { case (i, o) => s"${i.rawString}->${o.rawString}" }.mkString("\n")}"
-              )
-              outputSet.headOption.getOrElse('?')
-            }
-            .mkString}")
-      }
-      .toSeq
-    import BitPat.bitPatOrder
-    new TruthTable(if (sort) mergedTable.sorted else mergedTable, default, sort)
+  }
+
+  /** For each duplicated input, combine the outputs into a single Seq.
+    *
+    * @param table the truth table
+    * @return a Seq of tuple of length 2, where the first element is the
+    *         input and the second element is a Seq of combined outputs
+    *         for the input
+    */
+  private def mergeTableOnInputs(table: Iterable[(BitPat, BitPat)]): Seq[(BitPat, Seq[BitPat])] = {
+    groupByIntoSeq(table)(_._1).map {
+      case (input, mappings) =>
+        input -> mappings.map {
+          case (_, output) => output
+        }
+    }
+  }
+
+  /** Check for BitPats that have non-zero overlap
+    *
+    * Non-zero overlap means that for two BitPats a and b, there is at least
+    * one bitpos where the indices at the bitpos for the two bits are
+    * present in [(0, 1), (1, 0)].
+    *
+    * @param x List of BitPats to check for overlap
+    * @return true if the overlap is non-zero, false otherwise
+    */
+  private def checkDups(x: BitPat*): Boolean = {
+    if (x.size > 1) {
+      val f = (a: BitPat, b: BitPat) => a.overlap(b)
+      val combs: Seq[Boolean] = x.combinations(2).map { a => f(a.head, a.last) }.toSeq
+      combs.reduce(_ | _)
+    } else {
+      false
+    }
+  }
+
+  /** Merge two BitPats by OR-ing the values and masks, and setting the
+    *  width to the max width among the two
+    */
+  private def merge(a: BitPat, b: BitPat): BitPat = {
+    new BitPat(a.value | b.value, a.mask | b.mask, a.width.max(b.width))
+  }
+
+  /** Public method for calling with the Espresso decoder format fd
+    *
+    * For Espresso, for each output, a 1 means this product term belongs to the * ON-set, a 0 means this product term has no meaning for the value of this * function". The is the same as the fd (or f) type in espresso.
+    *
+    * @param table the truth table
+    * @param default the default BitPat. This also determines the format sent
+    *                to Espresso
+    * @param sort whether to sort the final truth table or not
+    */
+  def fromEspressoOutput(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = false): TruthTable = {
+    apply_impl(table, default, sort, false)
+  }
+
+  def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = true): TruthTable = {
+    apply_impl(table, default, sort, true)
+  }
+
+  /** Convert a table and default output into a [[TruthTable]]. */
+  private def apply_impl(
+    table:            Iterable[(BitPat, BitPat)],
+    default:          BitPat,
+    sort:             Boolean = true,
+    espressoFDFormat: Boolean = false
+  ): TruthTable = {
+    val paddedTable = padInputs(table)
+
+    require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
+
+    val mergedTable = mergeTableOnInputs(paddedTable)
+
+    val finalTable: Seq[(BitPat, BitPat)] = mergedTable.map(
+      x =>
+        ({
+          if (espressoFDFormat)
+            (x._1, x._2.reduce(merge(_, _)))
+          else {
+            require(checkDups(x._2: _*) == false, "TruthTable conflict")
+            (x._1, x._2.head)
+          }
+        })
+    )
+
+    new TruthTable(finalTable, default, sort)
   }
 
   /** Parse TruthTable from its string representation. */
