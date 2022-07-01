@@ -292,7 +292,7 @@ private[chisel3] trait HasId extends InstanceId {
   }
 }
 
-object HasId {
+private[chisel3] object HasId {
 
   /** Utility for things that (currently) appear to be nameable but actually cannot be */
   private def canBeNamed(id: HasId): Boolean = id match {
