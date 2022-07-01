@@ -207,14 +207,13 @@ private[chisel3] trait HasId extends InstanceId {
     * @return the current calculation of a name, if it exists
     */
   private[chisel3] def seedOpt: Option[String] = {
-    suggested_seed.zip(auto_seed).foreach {
-      case (suggested, auto) =>
-        if (suggested == auto) {
-          Builder.deprecated(
-            "calling suggestName(\"" + suggested + "\") on \"" + this._parent.get.name + '.' + suggested + "\" had no effect as it is the same as the automatically given name, this will become an error in 3.6",
-            Some("(unknown)")
-          )
-        }
+    if (suggested_seed.isDefined && auto_seed.isDefined) {
+      if (suggested_seed.get == auto_seed.get) {
+        Builder.deprecated(
+          "calling suggestName(\"" + suggested_seed.get + "\") on \"" + this._parent.get.name + '.' + suggested_seed.get + "\" had no effect as it is the same as the automatically given name, this will become an error in 3.6",
+          Some("(unknown)")
+        )
+      }
     }
     suggested_seed.orElse(auto_seed)
   }
