@@ -132,6 +132,7 @@ class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](g
   * consumer.io.in <> arb.io.out
   * }}}
   */
+@chiselName
 class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
   val io = IO(new ArbiterIO(gen, n))
 
