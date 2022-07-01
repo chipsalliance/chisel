@@ -80,7 +80,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     )
   }
 
-  property("5a. Calling suggestName on a node should be allowed") {
+  property("4a. Calling suggestName on a node should be allowed") {
     class Example extends Module {
       val foo, bar = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
@@ -94,7 +94,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("node fuzz = add(foo, bar)")
   }
 
-  property("5a. Calling suggestName on an IO should be allowed") {
+  property("4b. Calling suggestName on an IO should be allowed") {
     class Example extends Module {
       val foo, bar = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
@@ -109,7 +109,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("node sum = add(FOO, BAR)")
   }
 
-  property("5b. Calling suggestName on a prefixed node should be allowed") {
+  property("4c. Calling suggestName on a prefixed node should be allowed") {
     class Example extends Module {
       val foo, bar = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
@@ -128,7 +128,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("node out_sum_fuzz = add(foo, bar)")
   }
 
-  property("5c. Calling suggestName on a Module instance should be allowed") {
+  property("4d. Calling suggestName on a Module instance should be allowed") {
     import chisel3.util._
 
     class PassThrough extends Module {
@@ -152,24 +152,9 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("inst fuzz of PassThrough")
   }
 
-  /*
-  // This test is commented out until https://github.com/chipsalliance/chisel3/issues/2613 is resolved
-  property("5d. Calling suggestName on an Instance instance should be allowed") {
-    import chisel3.experimental.hierarchy.{Definition, Instance}
-    import chiselTests.experimental.hierarchy.Examples.AddOne
-    class Example extends Module {
-      val defn = Definition(new AddOne)
-      val inst = Instance(defn)
-      inst.suggestName("fuzz")
-      val fuzz = inst
-    }
-    val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
-    log should equal("")
-    chirrtl should include("inst fuzz of AddOne")
-  }
-   */
+  
 
-  property("5e. Calling suggestName on a Mem should be allowed") {
+  property("4e. Calling suggestName on a Mem should be allowed") {
     class Example extends Module {
       val mem = SyncReadMem(8, UInt(8.W))
 
@@ -180,7 +165,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("smem fuzz")
   }
 
-  property("5f. Calling suggestName on a verif statement should be a runtime deprecation") {
+  property("4f. Calling suggestName on a verif statement should be a runtime deprecation") {
     class Example extends Module {
       val in = IO(Input(UInt(8.W)))
       val z = chisel3.assert(in =/= 123.U)
@@ -191,7 +176,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     (chirrtl should include).regex("assert.*: z")
   }
 
-  property("5g. Calling suggestName on a literal should be a runtime deprecation") {
+  property("4g. Calling suggestName on a literal should be a runtime deprecation") {
     class Example extends Module {
       val out = IO(Output(UInt(8.W)))
 
@@ -204,7 +189,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("out <= UInt")
   }
 
-  property("5h. Calling suggestName on a field of an Aggregate should be a runtime deprecation") {
+  property("4h. Calling suggestName on a field of an Aggregate should be a runtime deprecation") {
     class Example extends Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
@@ -225,7 +210,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("io.out <= io.in")
   }
 
-  property("5i. Calling suggestName on unbound Data should be a runtime deprecation") {
+  property("4i. Calling suggestName on unbound Data should be a runtime deprecation") {
     class Example extends Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
@@ -237,4 +222,21 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     log should include("Calling suggestName(\"fuzz\") on \"UInt<8>\" (which cannot actually be named)")
     chirrtl should include("out <= in")
   }
+
+  /*
+  // This test is commented out until https://github.com/chipsalliance/chisel3/issues/2366 is resolved
+  property("4j. Calling suggestName on an Instance instance should be allowed") {
+    import chisel3.experimental.hierarchy.{Definition, Instance}
+    import chiselTests.experimental.hierarchy.Examples.AddOne
+    class Example extends Module {
+      val defn = Definition(new AddOne)
+      val inst = Instance(defn)
+      inst.suggestName("fuzz")
+      val fuzz = inst
+    }
+    val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
+    log should equal("")
+    chirrtl should include("inst fuzz of AddOne")
+  }
+   */
 }
