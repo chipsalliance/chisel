@@ -76,7 +76,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     }
     val (log, _) = grabLog(ChiselStage.emitVerilog(new Test()))
     log should include(
-      "calling suggestName(\"wire\") had no effect as it is the same as the automatically given name"
+      "calling suggestName(\"wire\") on \"Test.wire\" had no effect as it is the same as the automatically given name"
     )
   }
 

@@ -149,7 +149,16 @@ private[chisel3] trait HasId extends InstanceId {
     */
   def suggestName(seed: => String): this.type = {
     if (!Builder.hasDynamicContext) {
-      Builder.deprecated("suggestName(\"" + seed + "\") should only be called from a Builder context.")
+      // This is super hacky but this is just for a short term deprecation.
+      // This access is detected outside of Chisel elaboration so we cannot use the normal
+      // Builder.deprecated mechanism, we have to create our own one off ErrorLog and print the
+      // warning right away.
+      val errors = new ErrorLog
+      val logger = new _root_.logger.Logger(this.getClass.getName)
+      val msg = "suggestName(\"" + seed + "\") should only be called from a Builder context." +
+        "This will become an error in Chisel 3.6."
+      errors.deprecated(msg, None)
+      errors.checkpoint(logger)
     }
     if (suggested_seed.isDefined) {
       Builder.deprecated(
@@ -202,8 +211,8 @@ private[chisel3] trait HasId extends InstanceId {
       case (suggested, auto) =>
         if (suggested == auto) {
           Builder.deprecated(
-            "calling suggestName(\"" + suggested + "\") had no effect as it is the same as the automatically given name, this will become an error in 3.6"
-          )
+            "calling suggestName(\"" + suggested + "\") on \"" + this._parent.get.name + '.' + suggested + "\" had no effect as it is the same as the automatically given name, this will become an error in 3.6",
+          Some("(unknown)"))
         }
     }
     suggested_seed.orElse(auto_seed)
