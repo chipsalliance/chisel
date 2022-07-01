@@ -212,7 +212,8 @@ private[chisel3] trait HasId extends InstanceId {
         if (suggested == auto) {
           Builder.deprecated(
             "calling suggestName(\"" + suggested + "\") on \"" + this._parent.get.name + '.' + suggested + "\" had no effect as it is the same as the automatically given name, this will become an error in 3.6",
-          Some("(unknown)"))
+            Some("(unknown)")
+          )
         }
     }
     suggested_seed.orElse(auto_seed)
