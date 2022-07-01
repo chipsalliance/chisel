@@ -187,21 +187,26 @@ package experimental {
       * requested (so that all calls to ports will return the same information).
       * Internal API.
       */
-    def apply[T <: Data](iodef: T): T = {
+    def apply[T <: Data](iodef: => T): T = {
       val module = Module.currentModule.get // Impossible to fail
       require(!module.isClosed, "Can't add more ports after module close")
-      requireIsChiselType(iodef, "io type")
+      val prevId = Builder.idGen.value
+      val data = iodef // evaluate once (passed by name)
+      requireIsChiselType(data, "io type")
 
       // Clone the IO so we preserve immutability of data types
+      // Note: we don't clone if the data is fresh (to avoid unnecessary clones)
       val iodefClone =
-        try {
-          iodef.cloneTypeFull
-        } catch {
-          // For now this is going to be just a deprecation so we don't suddenly break everyone's code
-          case e: AutoClonetypeException =>
-            Builder.deprecated(e.getMessage, Some(s"${iodef.getClass}"))
-            iodef
-        }
+        if (!data.mustClone(prevId)) data
+        else
+          try {
+            data.cloneTypeFull
+          } catch {
+            // For now this is going to be just a deprecation so we don't suddenly break everyone's code
+            case e: AutoClonetypeException =>
+              Builder.deprecated(e.getMessage, Some(s"${data.getClass}"))
+              data
+          }
       module.bindIoInPlace(iodefClone)
       iodefClone
     }
@@ -568,7 +573,7 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef)
+    protected def IO[T <: Data](iodef: => T): T = chisel3.experimental.IO.apply(iodef)
 
     //
     // Internal Functions

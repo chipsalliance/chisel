@@ -34,18 +34,19 @@ object Reg {
     * Value will not change unless the [[Reg]] is given a connection.
     * @param t The template from which to construct this wire
     */
-  def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val prevId = Builder.idGen.value
+    val t = source // evaluate once (passed by name)
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "reg type")
     }
-    val reg = t.cloneTypeFull
+    val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     val clock = Node(Builder.forcedClock)
 
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
     pushCommand(DefReg(sourceInfo, reg, clock))
     reg
   }
-
 }
 
 /** Utility for constructing one-cycle delayed versions of signals

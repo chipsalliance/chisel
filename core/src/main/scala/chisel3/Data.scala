@@ -55,16 +55,18 @@ object SpecifiedDirection {
     }
 
   private[chisel3] def specifiedDirection[T <: Data](
-    source: T
-  )(dir:    SpecifiedDirection
+    source: => T
+  )(dir:    T => SpecifiedDirection
   )(
     implicit compileOptions: CompileOptions
   ): T = {
+    val prevId = Builder.idGen.value
+    val data = source // evaluate source once (passed by name)
     if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
+      requireIsChiselType(data)
     }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = dir
+    val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
+    out.specifiedDirection = dir(out)
     out
   }
 
@@ -427,19 +429,19 @@ object chiselTypeOf {
   * Thus, an error will be thrown if these are used on bound Data
   */
 object Input {
-  def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
+  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+    SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Input)
   }
 }
 object Output {
-  def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
+  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+    SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Output)
   }
 }
 
 object Flipped {
-  def apply[T <: Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
+  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+    SpecifiedDirection.specifiedDirection(source)(x => SpecifiedDirection.flip(x.specifiedDirection))
   }
 }
 
@@ -462,6 +464,19 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
+  // must clone a data if
+  // * it has a binding
+  // * its id is older than prevId (not "freshly created")
+  // * it is a bundle with a non-fresh member (external reference)
+  private[chisel3] def mustClone(prevId: Long): Boolean = {
+    if (this.hasBinding || this._id <= prevId) true
+    else
+      this match {
+        case b: Bundle => b.hasExternalRef
+        case _ => false
+      }
+  }
+
   override def autoSeed(name: String): this.type = {
     topBindingOpt match {
       // Ports are special in that the autoSeed will keep the first name, not the last name
@@ -475,13 +490,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private var _specifiedDirection:         SpecifiedDirection = SpecifiedDirection.Unspecified
   private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
   private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
-    if (_specifiedDirection != SpecifiedDirection.Unspecified) {
-      this match {
-        // Anything flies in compatibility mode
-        case t: Record if !t.compileOptions.dontAssumeDirectionality =>
-        case _ => throw RebindingException(s"Attempted reassignment of user-specified direction to $this")
-      }
-    }
     _specifiedDirection = direction
   }
 
@@ -510,6 +518,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
     _binding = Some(target)
   }
+
+  private[chisel3] def hasBinding: Boolean = _binding.isDefined
 
   // Similar to topBindingOpt except it explicitly excludes SampleElements which are bound but not
   // hardware
@@ -882,11 +892,13 @@ trait WireFactory {
   /** Construct a [[Wire]] from a type template
     * @param t The template from which to construct this wire
     */
-  def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val prevId = Builder.idGen.value
+    val t = source // evaluate once (passed by name)
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "wire type")
     }
-    val x = t.cloneTypeFull
+    val x = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
     // Bind each element of x to being a Wire
     x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
