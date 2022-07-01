@@ -38,15 +38,14 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
       }
     }
 
-  
-      // Nasty use of var, only for this test purpose. Don't do stuff like this!
-      var test: Test = null 
-      ChiselStage.elaborate {
-        test = new Test
-        test
-      }
-       val (log, _) = grabLog{
-test.wire.suggestName("somethingElse")
+    // Nasty use of var, only for this test purpose. Don't do stuff like this!
+    var test: Test = null
+    ChiselStage.elaborate {
+      test = new Test
+      test
+    }
+    val (log, _) = grabLog {
+      test.wire.suggestName("somethingElse")
     }
     log should include("suggestName(\"somethingElse\") should only be called from a Builder context")
   }
@@ -64,7 +63,8 @@ test.wire.suggestName("somethingElse")
     }
     val (log, _) = grabLog(ChiselStage.emitVerilog(new Test()))
     log should include(
-      "Calling suggestName(\"somethingElse\") on \"Child.wire: Wire[UInt<3>]\" when the containing module \"Child\" has already completed elaboration")
+      "Calling suggestName(\"somethingElse\") on \"Child.wire: Wire[UInt<3>]\" when the containing module \"Child\" has already completed elaboration"
+    )
   }
 
   property("3. Calling suggestName with the same thing prefix would have given should be a runtime deprecation") {
@@ -215,8 +215,12 @@ test.wire.suggestName("somethingElse")
       io.out := io.in
     }
     val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
-    log should include("Calling suggestName(\"fuzz\") on \"Example.io.in: IO[UInt<8>]\" (which cannot actually be named)")
-    log should include("Calling suggestName(\"bar\") on \"Example.io.out: IO[UInt<8>]\" (which cannot actually be named)")
+    log should include(
+      "Calling suggestName(\"fuzz\") on \"Example.io.in: IO[UInt<8>]\" (which cannot actually be named)"
+    )
+    log should include(
+      "Calling suggestName(\"bar\") on \"Example.io.out: IO[UInt<8>]\" (which cannot actually be named)"
+    )
 
     chirrtl should include("io.out <= io.in")
   }

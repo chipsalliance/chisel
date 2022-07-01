@@ -148,8 +148,8 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def suggestName(seed: => String): this.type = {
-    if (!Builder.hasDynamicContext){
-     Builder.deprecated("suggestName(\"" + seed + "\") should only be called from a Builder context.")
+    if (!Builder.hasDynamicContext) {
+      Builder.deprecated("suggestName(\"" + seed + "\") should only be called from a Builder context.")
     }
     if (suggested_seed.isDefined) {
       Builder.deprecated(
@@ -158,7 +158,7 @@ private[chisel3] trait HasId extends InstanceId {
     }
     if (!HasId.canBeNamed(this)) {
       Builder.deprecated(
-        "Calling suggestName(\""+ seed +"\") on \"" + this + "\" (which cannot actually be named) will become an error in Chisel 3.6"
+        "Calling suggestName(\"" + seed + "\") on \"" + this + "\" (which cannot actually be named) will become an error in Chisel 3.6"
       )
     }
     if (_parent.map(_.isClosed).getOrElse(false)) { // not sure what it means to have no parent
