@@ -5,23 +5,22 @@ package chiselTests
 import chisel3._
 import chisel3.stage.ChiselStage
 import chiselTests.ChiselFlatSpec
-import chisel3.stage.ChiselStage.elaborate
-
-object Counter {
-  var count = 0L
-}
-
-class Foo extends Bundle {
-  val a = UInt(8.W)
-  Counter.count += 1
-}
-
-class Bar(x: UInt) extends Bundle {
-  val a = x
-  Counter.count += 1
-}
 
 class LazyCloneSpec extends ChiselFlatSpec {
+  object Counter {
+    var count = 0L
+  }
+
+  class Foo extends Bundle {
+    val a = UInt(8.W)
+    Counter.count += 1
+  }
+
+  class Bar(x: UInt) extends Bundle {
+    val a = x
+    Counter.count += 1
+  }
+
   behavior.of("LazyClone")
 
   it should "not clone" in {
