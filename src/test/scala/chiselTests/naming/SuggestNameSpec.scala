@@ -26,11 +26,11 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     }
     val (log, _) = grabLog(ChiselStage.emitVerilog(new Test()))
     log should include(
-      "Calling suggestName (somethingElse, when already called with Some(mywire)) will become an error in Chisel 3.6"
+      "Calling suggestName(\"somethingElse\"), when already called with \"mywire\", will become an error in Chisel 3.6"
     )
   }
 
-  property("1. Calling suggestName outside of a Builder context should be an error") {
+  property("1. Calling suggestName outside of a Builder context should be a runtime deprecation") {
     class Test extends Module {
       val wire = {
         val x = WireInit(0.U(3.W))
@@ -38,18 +38,17 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
       }
     }
 
-    val pm = new PhaseManager(Seq(Dependency[chisel3.stage.phases.Checks], Dependency[chisel3.stage.phases.Elaborate]))
-    val test = pm
-      .transform(Seq(ChiselGeneratorAnnotation(() => new Test()), NoRunFirrtlCompilerAnnotation))
-      .collectFirst {
-        case d: DesignAnnotation[_] => d
+  
+      // Nasty use of var, only for this test purpose. Don't do stuff like this!
+      var test: Test = null 
+      ChiselStage.elaborate {
+        test = new Test
+        test
       }
-      .get
-      .design
-    val caught = intercept[IllegalArgumentException] {
-      test.asInstanceOf[Test].wire.suggestName("somethingElse")
+       val (log, _) = grabLog{
+test.wire.suggestName("somethingElse")
     }
-    caught.getMessage should include("suggestName (somethingElse) should only be called from a Builder context")
+    log should include("suggestName(\"somethingElse\") should only be called from a Builder context")
   }
 
   property("2. Calling suggestName after module close should be a runtime deprecation") {
@@ -65,8 +64,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     }
     val (log, _) = grabLog(ChiselStage.emitVerilog(new Test()))
     log should include(
-      "Calling suggestName (somethingElse, on Child.wire: Wire[UInt<3>], when the containing module (Child) completed elaboration already"
-    )
+      "Calling suggestName(\"somethingElse\") on \"Child.wire: Wire[UInt<3>]\" when the containing module \"Child\" has already completed elaboration")
   }
 
   property("3. Calling suggestName with the same thing prefix would have given should be a runtime deprecation") {
@@ -78,7 +76,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     }
     val (log, _) = grabLog(ChiselStage.emitVerilog(new Test()))
     log should include(
-      "calling suggestName(wire) had no effect as it is the same as the auto prefixed name"
+      "calling suggestName(\"wire\") had no effect as it is the same as the automatically given name"
     )
   }
 
@@ -189,7 +187,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
       z.suggestName("fuzz")
     }
     val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
-    log should include("Calling suggestName (fuzz, on something that cannot actually be named: chisel3.assert$Assert")
+    log should include("Calling suggestName(\"fuzz\") on \"chisel3.assert$Assert")
     (chirrtl should include).regex("assert.*: z")
   }
 
@@ -202,7 +200,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
       out := sum
     }
     val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
-    log should include("Calling suggestName (fuzz, on something that cannot actually be named: UInt<1>(0)")
+    log should include("Calling suggestName(\"fuzz\") on \"UInt<1>(0)\" (which cannot actually be named)")
     chirrtl should include("out <= UInt")
   }
 
@@ -217,8 +215,8 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
       io.out := io.in
     }
     val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
-    log should include("Calling suggestName (fuzz, on something that cannot actually be named: Example.io.in")
-    log should include("Calling suggestName (bar, on something that cannot actually be named: Example.io.out")
+    log should include("Calling suggestName(\"fuzz\") on \"Example.io.in: IO[UInt<8>]\" (which cannot actually be named)")
+    log should include("Calling suggestName(\"bar\") on \"Example.io.out: IO[UInt<8>]\" (which cannot actually be named)")
 
     chirrtl should include("io.out <= io.in")
   }
@@ -232,7 +230,7 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
       out := in
     }
     val (log, chirrtl) = grabLog(ChiselStage.emitChirrtl(new Example))
-    log should include("Calling suggestName (fuzz, on something that cannot actually be named: UInt<8>)")
+    log should include("Calling suggestName(\"fuzz\") on \"UInt<8>\" (which cannot actually be named)")
     chirrtl should include("out <= in")
   }
 }

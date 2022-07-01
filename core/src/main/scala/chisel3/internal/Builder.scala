@@ -148,20 +148,22 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def suggestName(seed: => String): this.type = {
-    require(Builder.hasDynamicContext, s"suggestName (${seed}) should only be called from a Builder context.")
+    if (!Builder.hasDynamicContext){
+     Builder.deprecated("suggestName(\"" + seed + "\") should only be called from a Builder context.")
+    }
     if (suggested_seed.isDefined) {
       Builder.deprecated(
-        s"Calling .suggestName(\"$seed\"), when already called with \"${suggested_seed.get}\", will become an error in Chisel 3.6"
+        "Calling suggestName(\"" + seed + "\"), when already called with \"" + suggested_seed.get + "\", will become an error in Chisel 3.6"
       )
     }
     if (!HasId.canBeNamed(this)) {
       Builder.deprecated(
-        s"Calling .suggestName(\"$seed\") on \"$this\" (which cannot actually be named) will become an error in Chisel 3.6"
+        "Calling suggestName(\""+ seed +"\") on \"" + this + "\" (which cannot actually be named) will become an error in Chisel 3.6"
       )
     }
     if (_parent.map(_.isClosed).getOrElse(false)) { // not sure what it means to have no parent
       Builder.deprecated(
-        s"Calling .suggestName(\"$seed\") on ${this} when the containing module \"${_parent.get.name}\" has already completed elaboration will become an error in Chisel 3.6"
+        "Calling suggestName(\"" + seed + "\") on \"" + this + "\" when the containing module \"" + _parent.get.name + "\" has already completed elaboration will become an error in Chisel 3.6"
       )
     }
     _suggestNameInternal(seed)
@@ -200,7 +202,7 @@ private[chisel3] trait HasId extends InstanceId {
       case (suggested, auto) =>
         if (suggested == auto) {
           Builder.deprecated(
-            s"calling .suggestName(\"${suggested}\") had no effect as it is the same as the automatically given name, this will become an error in 3.6"
+            "calling suggestName(\"" + suggested + "\") had no effect as it is the same as the automatically given name, this will become an error in 3.6"
           )
         }
     }
