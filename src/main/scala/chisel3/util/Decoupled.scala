@@ -344,6 +344,7 @@ object Queue {
     *   consumer.io.in <> Queue(producer.io.out, 16)
     * }}}
     */
+  @nowarn("cat=deprecation&msg=TransitName")
   @chiselName
   def apply[T <: Data](
     enq:            ReadyValidIO[T],
