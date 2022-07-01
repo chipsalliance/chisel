@@ -55,9 +55,7 @@ object TruthTable {
   private def mergeTableOnInputs(table: Iterable[(BitPat, BitPat)]): Seq[(BitPat, Seq[BitPat])] = {
     groupByIntoSeq(table)(_._1).map {
       case (input, mappings) =>
-        input -> mappings.map {
-          case (_, output) => output
-        }
+        input -> mappings.map(_._2)
     }
   }
 
@@ -73,8 +71,13 @@ object TruthTable {
   private def checkDups(x: BitPat*): Boolean = {
     if (x.size > 1) {
       val f = (a: BitPat, b: BitPat) => a.overlap(b)
-      val combs: Seq[Boolean] = x.combinations(2).map { a => f(a.head, a.last) }.toSeq
-      combs.reduce(_ | _)
+      val combs: Seq[Boolean] = x
+        .combinations(2)
+        .map { a =>
+          f(a.head, a.last)
+        }
+        .toSeq
+      !combs.reduce(_ | _)
     } else {
       false
     }
@@ -97,11 +100,11 @@ object TruthTable {
     * @param sort whether to sort the final truth table or not
     */
   def fromEspressoOutput(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = false): TruthTable = {
-    apply_impl(table, default, sort, false)
+    apply_impl(table, default, sort, true)
   }
 
   def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = true): TruthTable = {
-    apply_impl(table, default, sort, true)
+    apply_impl(table, default, sort, false)
   }
 
   /** Convert a table and default output into a [[TruthTable]]. */
@@ -117,19 +120,17 @@ object TruthTable {
 
     val mergedTable = mergeTableOnInputs(paddedTable)
 
-    val finalTable: Seq[(BitPat, BitPat)] = mergedTable.map(
-      x =>
-        ({
-          if (espressoFDFormat)
-            (x._1, x._2.reduce(merge(_, _)))
-          else {
-            require(checkDups(x._2: _*) == false, "TruthTable conflict")
-            (x._1, x._2.head)
-          }
-        })
-    )
+    val finalTable: Seq[(BitPat, BitPat)] = mergedTable.map(x => {
+      if (espressoFDFormat)
+        (x._1, x._2.reduce(merge(_, _)))
+      else {
+        require(checkDups(x._2: _*) == false, "TruthTable conflict")
+        (x._1, x._2.reduce(merge(_, _)))
+      }
+    })
 
-    new TruthTable(finalTable, default, sort)
+    import BitPat.bitPatOrder
+    new TruthTable(if (sort) finalTable.sorted else finalTable, default, sort)
   }
 
   /** Parse TruthTable from its string representation. */
