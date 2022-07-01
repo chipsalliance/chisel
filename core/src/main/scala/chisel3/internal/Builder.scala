@@ -200,7 +200,7 @@ private[chisel3] trait HasId extends InstanceId {
       case (suggested, auto) =>
         if (suggested == auto) {
           Builder.deprecated(
-            s"calling suggestName(${suggested}) had no effect as it is the same as the auto prefixed name, this will become an error in 3.6"
+            s"calling .suggestName(\"${suggested}\") had no effect as it is the same as the automatically given name, this will become an error in 3.6"
           )
         }
     }
