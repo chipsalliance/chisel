@@ -152,8 +152,6 @@ class SuggestNameSpec extends ChiselPropSpec with Utils {
     chirrtl should include("inst fuzz of PassThrough")
   }
 
-  
-
   property("4e. Calling suggestName on a Mem should be allowed") {
     class Example extends Module {
       val mem = SyncReadMem(8, UInt(8.W))
