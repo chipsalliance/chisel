@@ -161,7 +161,7 @@ private[chisel3] trait HasId extends InstanceId {
     }
     if (_parent.map(_.isClosed).getOrElse(false)) { // not sure what it means to have no parent
       Builder.deprecated(
-        s"Calling suggestName ($seed, on ${this}, when the containing module (${_parent.get.name}) completed elaboration already will become an error in Chisel 3.6"
+        s"Calling .suggestName(\"$seed\") on ${this} when the containing module \"${_parent.get.name}\" has already completed elaboration will become an error in Chisel 3.6"
       )
     }
     _suggestNameInternal(seed)
