@@ -615,8 +615,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this
 
   /** @group SourceInfoTransformMacro */
-  def do_&(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width.max(that.width)), BitAndOp, that)
+  def do_&(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+    def f = binop(sourceInfo, UInt(this.width.max(that.width)), BitAndOp, that)
+    constPropAnd(that).getOrElse(f)
+  }
 
   /** @group SourceInfoTransformMacro */
   def do_|(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -913,6 +915,20 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
       Some((this.litValue | that.litValue).U(this.width.max(that.width)))
     else
       constPropOrXor(that)
+  }
+
+  private def constPropAnd(that: UInt): Option[UInt] = {
+    def widthsOK(discarded: UInt, kept: UInt): Boolean =
+      !discarded.isWidthKnown || kept.isWidthKnown && kept.getWidth >= discarded.getWidth
+
+    if (this.isLit && that.isLit)
+      Some((this.litValue & that.litValue).U(this.width.max(that.width)))
+    else if (this.litOption == Some(BigInt(0)) && widthsOK(that, this))
+      Some(this)
+    else if (that.litOption == Some(BigInt(0)) && widthsOK(this, that))
+      Some(that)
+    else
+      None
   }
 }
 

@@ -75,7 +75,7 @@ class FillSpec extends AnyFlatSpec with Matchers {
       out := Fill(2, "b1000".U)
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val cat = """*BitwiseSpec\.scala""".r // cat removed by constprop
+    val cat = """.*BitwiseSpec\.scala""".r // cat removed by constprop
     (chirrtl should include).regex(cat)
     (chirrtl should not).include("Bitwise.scala")
   }
@@ -90,7 +90,7 @@ class ReverseSpec extends AnyFlatSpec with Matchers {
       out := Reverse("b1101".U)
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val cat = """*BitwiseSpec\.scala""".r // cat removed by constprop
+    val cat = """.*BitwiseSpec\.scala""".r // cat removed by constprop
     (chirrtl should include).regex(cat)
     (chirrtl should not).include("Bitwise.scala")
   }
