@@ -629,7 +629,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   /** @group SourceInfoTransformMacro */
   def do_^(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     def f = binop(sourceInfo, UInt(this.width.max(that.width)), BitXorOp, that)
-    constPropOrXor(that).getOrElse(f)
+    constPropXor(that).getOrElse(f)
   }
 
   /** @group SourceInfoTransformMacro */
@@ -908,6 +908,13 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
       Some(this)
     else
       None
+  }
+
+  private def constPropXor(that: UInt): Option[UInt] = {
+    if (this.isLit && that.isLit)
+      Some((this.litValue ^ that.litValue).U(this.width.max(that.width)))
+    else
+      constPropOrXor(that)
   }
 
   private def constPropOr(that: UInt): Option[UInt] = {
