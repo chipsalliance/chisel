@@ -322,7 +322,7 @@ private[chisel3] object HasId {
   }
 }
 
-/** Holds the implementation of to for Data and MemBase */
+/** Holds the implementation of toNamed for Data and MemBase */
 private[chisel3] trait NamedComponent extends HasId {
 
   /** Returns a FIRRTL ComponentName that references this object
