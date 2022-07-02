@@ -910,6 +910,22 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
       None
   }
 
+  private def constProp(
+    x: UInt,
+    y: UInt,
+    litop: (BigInt, BigInt) => BigInt,
+    partop: (BigInt, UInt) => BigInt
+  ): Option[UInt] = {
+    if (x.isLit && y.isLit)
+      Some(litop(x.litValue, y.litValue).U(x.width.max(y.width)))
+    else if (x.isLit && partop != null)
+      Some(partop(x.litValue, y).U(x.width))
+    else if (y.isLit && partop != null)
+      Some(partop(y.litValue, x).U(y.width))
+    else
+      None
+  }
+
   private def constPropXor(that: UInt): Option[UInt] = {
     if (this.isLit && that.isLit)
       Some((this.litValue ^ that.litValue).U(this.width.max(that.width)))
