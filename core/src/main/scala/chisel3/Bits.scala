@@ -437,7 +437,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   private def constPropCat(that: Bits): Option[UInt] = {
     if (this.isLit && that.isLit) {
-      Some(((this.litValue << this.getWidth) | this.litValue).U(this.width + that.width))
+      Some(((this.litValue << that.getWidth) | that.litValue).U(this.width + that.width))
     } else {
       None
     }
