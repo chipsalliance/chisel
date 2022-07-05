@@ -150,7 +150,7 @@ Below we can see the resulting error for this example:
 ```scala mdoc:crash
 ChiselStage.emitVerilog(new BlockWithTemporaryWires)
 ```
-For more details and information, see [Deep Dive into Connection Operators](connection-operators.md)
+For more details and information, see [Deep Dive into Connection Operators](connection-operators)
 
 NOTE: When using `Chisel._` (compatibility mode) instead of `chisel3._`, the `:=` operator works in a bidirectional fashion similar to `<>`, but not exactly the same.
 
