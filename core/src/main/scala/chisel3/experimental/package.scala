@@ -172,7 +172,7 @@ package object experimental {
     *
     * @example {{{
     * import chisel3._
-    * import chisel3.experimental.HasChiselName
+    * import chisel3.experimental.AffectsChiselPrefix
     *
     * class MyModule extends Module {
     *   // Note: This contains a Data but is not a named component itself
