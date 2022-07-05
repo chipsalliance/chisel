@@ -86,7 +86,6 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         tq"chisel3.Data",
         tq"chisel3.MemBase[_]",
         tq"chisel3.VerificationStatement",
-        tq"chisel3.experimental.AffectsChiselPrefix"
       )
     private val shouldMatchModule:   Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
     private val shouldMatchInstance: Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
@@ -181,6 +180,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) =>
         val tpe = inferType(tpt)
         val isData = shouldMatchData(tpe)
+        val isNamedComp = isData || shouldMatchNamedComp(tpe)
+        val isPrefixed = isNamedComp || shouldMatchChiselPrefixed(tpe)
 
         // If a Data and in a Bundle, just get the name but not a prefix
         if (isData && inBundle(dd)) {
@@ -190,7 +191,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
         }
         // If a Data or a Memory, get the name and a prefix
-        else if (isData || shouldMatchNamedComp(tpe)) {
+        else if (isData || isPrefixed) {
           val str = stringFromTermName(name)
           // Starting with '_' signifies a temporary, we ignore it for prefixing because we don't
           // want double "__" in names when the user is just specifying a temporary
@@ -199,18 +200,17 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
           val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$prefix)(f=$newRHS)"
 
           val named =
-            if (isData || !shouldMatchChiselPrefixed(tpe))
-              // Generate autoNameRecursively call if:
-              // - the type is a data, or
-              // - the type is not a AffectsChiselPrefix
+            if (isNamedComp) {
+              // Only name named components (not things that are merely prefixed)
               q"chisel3.internal.plugin.autoNameRecursively($str)($prefixed)"
-            else
-              // Do not generate if the type is both not a data and a AffectsChiselPrefix
+            } else {
               prefixed
+            }
 
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
-          // If an instance, just get a name but no prefix
-        } else if (shouldMatchModule(tpe)) {
+        }
+        // If an instance, just get a name but no prefix
+        else if (shouldMatchModule(tpe)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs)
           val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
