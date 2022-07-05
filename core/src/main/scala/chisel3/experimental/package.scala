@@ -169,6 +169,8 @@ package object experimental {
     * This is generally useful whenever creating a `class` that contains `Data`, `Mem`,
     * or `Module` instances but does not itself extend `Data` or `Module`.
     *
+    * @see See [[https://www.chisel-lang.org/chisel3/docs/explanations/naming.html the compiler plugin documentation]] for more information on this process.
+    *
     * @example {{{
     * import chisel3._
     * import chisel3.experimental.AffectsChiselPrefix
