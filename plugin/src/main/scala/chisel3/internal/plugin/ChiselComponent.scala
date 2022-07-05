@@ -85,7 +85,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       shouldMatchGen(
         tq"chisel3.Data",
         tq"chisel3.MemBase[_]",
-        tq"chisel3.VerificationStatement",
+        tq"chisel3.VerificationStatement"
       )
     private val shouldMatchModule:   Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
     private val shouldMatchInstance: Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
