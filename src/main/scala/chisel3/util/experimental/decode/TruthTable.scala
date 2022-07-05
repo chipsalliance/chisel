@@ -103,11 +103,11 @@ object TruthTable {
 
     val finalTable: Seq[(BitPat, BitPat)] = mergedTable.map {
       case (input, outputs) =>
-        val (result, diffFound) = outputs.tail.foldLeft((outputs.head, checkCollisions)) {
-          case ((acc, err), o) => (merge(acc, o), err && acc.overlap(o))
+        val (result, noCollisions) = outputs.tail.foldLeft((outputs.head, checkCollisions)) {
+          case ((acc, ok), o) => (merge(acc, o), ok && acc.overlap(o))
         }
         // Throw an error if checkCollisions is true but there are bits with a non-zero overlap.
-        require(!(checkCollisions && !diffFound), "TruthTable conflict")
+        require(!checkCollisions || noCollisions, "TruthTable conflict")
         (input, result)
     }
 
