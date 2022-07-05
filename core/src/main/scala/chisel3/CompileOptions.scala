@@ -18,7 +18,7 @@ trait CompileOptions {
   val declaredTypeMustBeUnbound: Boolean
 
   // Require explicit assignment of DontCare to generate "x is invalid"
-  // 1) Discuss with Jack/Megan
+  // 1) Set explicitInvalidate=true, and fix all uninitialization errors
   val explicitInvalidate: Boolean
 
   // ==== MEDIUM TO MIGRATE (currently) ====
