@@ -742,8 +742,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
   override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     this << castToInt(that, "Shift amount")
-  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
+  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+    def f = binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
+    constPropShl(that).getOrElse(f)
+  }
   override def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width.shiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -920,7 +922,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   private def constPropShl(that: UInt): Option[UInt] = {
     (this.litOption, that.litOption) match {
-      case (Some(xv), Some(yv)) if yv.isValidInt => Some((xv << yv.toInt).U(this.width))
+      case (Some(xv), Some(yv)) if yv.isValidInt => Some((xv << yv.toInt).U(this.width + yv.toInt))
       case (_, _)                                => None
     }
   }
