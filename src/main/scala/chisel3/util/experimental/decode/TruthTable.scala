@@ -45,41 +45,17 @@ object TruthTable {
     }
   }
 
-  /** For each duplicated input, combine the outputs into a single Seq.
+  /** For each duplicated input, collect the outputs into a single Seq.
     *
     * @param table the truth table
     * @return a Seq of tuple of length 2, where the first element is the
-    *         input and the second element is a Seq of combined outputs
+    *         input and the second element is a Seq of OR-ed outputs
     *         for the input
     */
   private def mergeTableOnInputs(table: Iterable[(BitPat, BitPat)]): Seq[(BitPat, Seq[BitPat])] = {
     groupByIntoSeq(table)(_._1).map {
       case (input, mappings) =>
         input -> mappings.map(_._2)
-    }
-  }
-
-  /** Check for BitPats that have non-zero overlap
-    *
-    * Non-zero overlap means that for two BitPats a and b, there is at least
-    * one bitpos where the indices at the bitpos for the two bits are
-    * present in [(0, 1), (1, 0)].
-    *
-    * @param x List of BitPats to check for overlap
-    * @return true if the overlap is non-zero, false otherwise
-    */
-  private def checkDups(x: BitPat*): Boolean = {
-    if (x.size > 1) {
-      val f = (a: BitPat, b: BitPat) => a.overlap(b)
-      val combs: Seq[Boolean] = x
-        .combinations(2)
-        .map { a =>
-          f(a.head, a.last)
-        }
-        .toSeq
-      !combs.reduce(_ | _)
-    } else {
-      false
     }
   }
 
@@ -92,27 +68,32 @@ object TruthTable {
 
   /** Public method for calling with the Espresso decoder format fd
     *
-    * For Espresso, for each output, a 1 means this product term belongs to the * ON-set, a 0 means this product term has no meaning for the value of this * function". The is the same as the fd (or f) type in espresso.
+    * For Espresso, for each output, a 1 means this product term belongs to the ON-set,
+    *  a 0 means this product term has no meaning for the value of this function".
+    * This is the same as the fd (or f) type in espresso.
     *
     * @param table the truth table
-    * @param default the default BitPat. This also determines the format sent
-    *                to Espresso
-    * @param sort whether to sort the final truth table or not
+    * @param default the default BitPat is made up of a single bit type, either "?", "0" or "1".
+    *                A default of "?" sets Espresso to fr-format, while a "0" or "1" sets it to the
+    *                fd-format.
+    * @param sort whether to sort the final truth table using BitPat.bitPatOrder
+    * @return a fully built TruthTable
     */
   def fromEspressoOutput(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = false): TruthTable = {
-    apply_impl(table, default, sort, true)
+    apply_impl(table, default, sort, false)
   }
 
+  /** Public apply method to TruthTable. Calls apply_impl with the default value true of checkCollisions */
   def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = true): TruthTable = {
-    apply_impl(table, default, sort, false)
+    apply_impl(table, default, sort)
   }
 
   /** Convert a table and default output into a [[TruthTable]]. */
   private def apply_impl(
-    table:            Iterable[(BitPat, BitPat)],
-    default:          BitPat,
-    sort:             Boolean = true,
-    espressoFDFormat: Boolean = false
+    table:           Iterable[(BitPat, BitPat)],
+    default:         BitPat,
+    sort:            Boolean = true,
+    checkCollisions: Boolean = true
   ): TruthTable = {
     val paddedTable = padInputs(table)
 
@@ -120,14 +101,15 @@ object TruthTable {
 
     val mergedTable = mergeTableOnInputs(paddedTable)
 
-    val finalTable: Seq[(BitPat, BitPat)] = mergedTable.map(x => {
-      if (espressoFDFormat)
-        (x._1, x._2.reduce(merge(_, _)))
-      else {
-        require(checkDups(x._2: _*) == false, "TruthTable conflict")
-        (x._1, x._2.reduce(merge(_, _)))
-      }
-    })
+    val finalTable: Seq[(BitPat, BitPat)] = mergedTable.map {
+      case (input, outputs) =>
+        val (result, diffFound) = outputs.tail.foldLeft((outputs.head, checkCollisions)) {
+          case ((acc, err), o) => (merge(acc, o), err && acc.overlap(o))
+        }
+        // Throw an error if checkCollisions is true but there are bits with a non-zero overlap.
+        require(!(checkCollisions && !diffFound), "TruthTable conflict")
+        (input, result)
+    }
 
     import BitPat.bitPatOrder
     new TruthTable(if (sort) finalTable.sorted else finalTable, default, sort)
