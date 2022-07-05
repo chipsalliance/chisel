@@ -107,7 +107,7 @@ object TruthTable {
           case ((acc, ok), o) => (merge(acc, o), ok && acc.overlap(o))
         }
         // Throw an error if checkCollisions is true but there are bits with a non-zero overlap.
-        require(!checkCollisions || noCollisions, "TruthTable conflict")
+        require(!checkCollisions || noCollisions, s"TruthTable conflict on merged row: \n\t$input -> $outputs")
         (input, result)
     }
 
