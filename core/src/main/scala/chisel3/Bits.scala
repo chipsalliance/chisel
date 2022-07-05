@@ -898,60 +898,52 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
       None
   }
 
-  private def constPropOrXor(that: UInt): Option[UInt] = {
-    def widthsOK(discarded: UInt, kept: UInt): Boolean =
-      !discarded.isWidthKnown || kept.isWidthKnown && kept.getWidth >= discarded.getWidth
-
-    if (this.litOption == Some(BigInt(0)) && widthsOK(this, that))
-      Some(that)
-    else if (that.litOption == Some(BigInt(0)) && widthsOK(that, this))
-      Some(this)
-    else
-      None
-  }
-
   private def constProp(
     x: UInt,
     y: UInt,
-    litop: (BigInt, BigInt) => BigInt,
-    partop: (BigInt, UInt) => BigInt
+    lit: (BigInt, BigInt) => BigInt,
+    equal: (UInt) => Option[UInt],
+    identity: (BigInt) => Boolean,
+    destructive: (BigInt) => Boolean,
   ): Option[UInt] = {
-    if (x.isLit && y.isLit)
-      Some(litop(x.litValue, y.litValue).U(x.width.max(y.width)))
-    else if (x.isLit && partop != null)
-      Some(partop(x.litValue, y).U(x.width))
-    else if (y.isLit && partop != null)
-      Some(partop(y.litValue, x).U(y.width))
-    else
+    if (x.isLit && y.isLit) {
+      Some(lit(x.litValue, y.litValue).U(x.width.max(y.width)))
+    } else if (x == y) {
+      equal(x)
+    } else if (x.isLit && x.isWidthKnown && y.isWidthKnown && x.getWidth >= y.getWidth) {
+      if (destructive(x.litValue)) Some(x) else if (identity(x.litValue)) Some(y) else None
+    } else if (y.isLit && y.isWidthKnown && x.isWidthKnown && y.getWidth >= x.getWidth) {
+      if (destructive(y.litValue)) Some(y) else if (identity(y.litValue)) Some(x) else None
+    } else {
       None
+    }
   }
 
   private def constPropXor(that: UInt): Option[UInt] = {
-    if (this.isLit && that.isLit)
-      Some((this.litValue ^ that.litValue).U(this.width.max(that.width)))
-    else
-      constPropOrXor(that)
+    constProp(this, that,
+      _ ^ _,
+      x => Some(0.U(x.width)), // equal
+      _ == 0, // identity
+      _ => false // destructive
+      )
   }
 
   private def constPropOr(that: UInt): Option[UInt] = {
-    if (this.isLit && that.isLit)
-      Some((this.litValue | that.litValue).U(this.width.max(that.width)))
-    else
-      constPropOrXor(that)
+    constProp(this, that,
+      _ | _,
+      x => Some(x), // equal
+      _ == 0, // identity
+      ~_ == 0 // destructive
+      )
   }
 
   private def constPropAnd(that: UInt): Option[UInt] = {
-    def widthsOK(discarded: UInt, kept: UInt): Boolean =
-      !discarded.isWidthKnown || kept.isWidthKnown && kept.getWidth >= discarded.getWidth
-
-    if (this.isLit && that.isLit)
-      Some((this.litValue & that.litValue).U(this.width.max(that.width)))
-    else if (this.litOption == Some(BigInt(0)) && widthsOK(that, this))
-      Some(this)
-    else if (that.litOption == Some(BigInt(0)) && widthsOK(this, that))
-      Some(that)
-    else
-      None
+    constProp(this, that,
+      _ & _,
+      x => Some(x), // equal
+      _ => false, // identity
+      _ == 0 // destructive
+      )
   }
 }
 
