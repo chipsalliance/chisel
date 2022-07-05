@@ -906,16 +906,15 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     identity: (BigInt) => Boolean,
     destructive: (BigInt) => Boolean,
   ): Option[UInt] = {
-    if (x.isLit && y.isLit) {
-      Some(lit(x.litValue, y.litValue).U(x.width.max(y.width)))
-    } else if (x == y) {
-      equal(x)
-    } else if (x.isLit && x.isWidthKnown && y.isWidthKnown && x.getWidth >= y.getWidth) {
-      if (destructive(x.litValue)) Some(x) else if (identity(x.litValue)) Some(y) else None
-    } else if (y.isLit && y.isWidthKnown && x.isWidthKnown && y.getWidth >= x.getWidth) {
-      if (destructive(y.litValue)) Some(y) else if (identity(y.litValue)) Some(x) else None
-    } else {
-      None
+    def widthsOk(discarded: UInt, kept: UInt): Boolean =
+      !discarded.isWidthKnown || kept.isWidthKnown && kept.getWidth >= discarded.getWidth
+    (x.litOption, y.litOption) match {
+      case (Some(xv), Some(yv)) => Some(lit(xv, yv).U(x.width.max(y.width)))
+      case (Some(xv), _) if destructive(xv) && widthsOk(y, x) => Some(x)
+      case (Some(xv), _) if identity(xv) && widthsOk(x, y) => Some(y)
+      case (_, Some(yv)) if destructive(yv) && widthsOk(x, y) => Some(y)
+      case (_, Some(yv)) if identity(yv) && widthsOk(y, x) => Some(x)
+      case (_, _) => if (x == y) equal(x) else None
     }
   }
 
