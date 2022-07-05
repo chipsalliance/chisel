@@ -56,7 +56,7 @@ object Mux extends SourceInfoDoc {
     cond.litOption match {
       case Some(v) if v == 0 => alt
       case Some(v) if v == 1 => con
-      case _ => pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, conRef, altRef))
+      case _                 => pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, conRef, altRef))
     }
   }
 }
