@@ -162,13 +162,12 @@ package object experimental {
     */
   trait NoChiselNamePrefix
 
-  /** Treat instances of this type as a named component, and rename using the Chisel compiler
-    * plugin.
+  /** Generate prefixes from values of this type in the Chisel compiler plugin
     *
-    * The compiler plugin by default automatically prefixes and names instances of `Data` and
-    * `Mem` recursively. This trait allows the plugin to treat arbitrary types as named
-    * components and prefix them (and objects constructed within them) when they otherwise
-    * would not be.
+    * Users can mixin this trait to tell the Chisel compiler plugin to include the names of
+    * vals of this type when generating prefixes for naming `Data` and `Mem` instances.
+    * This is generally useful whenever creating a `class` that contains `Data`, `Mem`,
+    * or `Module` instances but does not itself extend `Data` or `Module`.
     *
     * @example {{{
     * import chisel3._
@@ -180,12 +179,12 @@ package object experimental {
     *     val value = Wire(Bool())
     *   }
     *
-    *   // Name of nonData.value will be "nonData_value"
-    *   // Without AffectsChiselPrefix, the name will be "value"
+    *   // Name with AffectsChiselPrefix:    "nonData_value"
+    *   // Name without AffectsChiselPrefix: "value"
     *   val nonData = new NotAData
     *
-    *   // Name of nonData.value will be "nonData2_value"
-    *   // Without AffectsChiselPrefix, the name will be "value_1"
+    *   // Name with AffectsChiselPrefix:    "nonData2_value"
+    *   // Name without AffectsChiselPrefix: "value_1"
     *   val nonData2 = new NotAData
     * }
     */
