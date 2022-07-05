@@ -742,8 +742,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
   override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     this << castToInt(that, "Shift amount")
-  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
+  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+    def f = binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
+    constPropShl(that).getOrElse(f)
+  }
   override def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width.shiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -888,8 +890,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     this := that.asUInt
   }
 
-  private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
+  private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
+    def f = binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
+    constPropSub(that).getOrElse(f)
+  }
 
   private def constPropBothLiteral[T <: Data, U](that: T, f: (BigInt, BigInt) => U): Option[U] = {
     if (this.isLit && that.isLit)
@@ -915,6 +919,24 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
       case (_, Some(yv)) if destructive(yv) && widthsOk(x, y) => Some(y)
       case (_, Some(yv)) if identity(yv) && widthsOk(y, x) => Some(x)
       case (_, _) => if (x == y) equal(x) else None
+    }
+  }
+
+  private def constPropShl(that: UInt): Option[UInt] = {
+    (this.litOption, that.litOption) match {
+      case (Some(xv), Some(yv)) if yv.isValidInt => Some((xv << yv.toInt).U(this.width))
+      case (_, _) => None
+    }
+  }
+
+  private def constPropSub(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Option[SInt] = {
+    def widthsOk(discarded: UInt, kept: UInt): Boolean =
+      !discarded.isWidthKnown || kept.isWidthKnown && kept.getWidth >= discarded.getWidth
+    (this.litOption, that.litOption) match {
+      case (Some(xv), Some(yv)) => Some((xv - yv).U(this.width.max(that.width) + 1).asSInt)
+      case (Some(xv), _) if xv == 0 && widthsOk(this, that) => Some(that.asSInt)
+      case (_, Some(yv)) if yv == 0 && widthsOk(that, this) => Some(this.asSInt)
+      case (_, _) => if (this == that) Some(0.U(this.width).asSInt) else None
     }
   }
 
@@ -1820,8 +1842,9 @@ package experimental {
       binop(sourceInfo, FixedPoint(this.width + that, this.binaryPoint), ShiftLeftOp, validateShiftAmount(that))
     override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       (this << castToInt(that, "Shift amount")).asFixedPoint(this.binaryPoint)
-    override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
       binop(sourceInfo, FixedPoint(this.width.dynamicShiftLeft(that.width), this.binaryPoint), DynamicShiftLeftOp, that)
+    }
     override def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       binop(
         sourceInfo,
@@ -2232,9 +2255,8 @@ package experimental {
     override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       do_<<(that.toInt)
 
-    override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       binop(sourceInfo, Interval(this.range << that), DynamicShiftLeftOp, that)
-    }
 
     override def do_>>(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       binop(sourceInfo, Interval(this.range >> that), ShiftRightOp, that)

@@ -16,9 +16,9 @@ class FillInterleavedSpec extends AnyFlatSpec with Matchers {
       out := FillInterleaved(2, "b1000".U)
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val cat = """cat.*BitwiseSpec\.scala""".r
+    val cat = """.*BitwiseSpec\.scala""".r // cat removed by constprop
     (chirrtl should include).regex(cat)
-    val mux = """mux.*BitwiseSpec\.scala""".r
+    val mux = """.*BitwiseSpec\.scala""".r // mux removed by constprop
     (chirrtl should include).regex(mux)
     (chirrtl should not).include("Bitwise.scala")
   }
@@ -29,9 +29,9 @@ class FillInterleavedSpec extends AnyFlatSpec with Matchers {
       out := FillInterleaved(2, Seq(true.B, false.B, false.B, false.B))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val cat = """cat.*BitwiseSpec\.scala""".r
+    val cat = """.*BitwiseSpec\.scala""".r // cat removed by constprop
     (chirrtl should include).regex(cat)
-    val mux = """mux.*BitwiseSpec\.scala""".r
+    val mux = """.*BitwiseSpec\.scala""".r // mux remove by constprop
     (chirrtl should include).regex(mux)
     (chirrtl should not).include("Bitwise.scala")
   }
