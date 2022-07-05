@@ -34,7 +34,7 @@ object dontTouch {
     * @return Unmodified signal `data`
     */
   def apply[T <: Data](data: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
+    if (compileOptions.checkSynthesizable || compileOptions.migrateCheckSynthesizable) {
       requireIsHardware(data, "Data marked dontTouch")
     }
     annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
