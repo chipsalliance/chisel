@@ -20,7 +20,7 @@ object CompatibilityCustomCompileOptions {
   }
 }
 
-class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
+class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
   import Chisel._
 
   behavior.of("Chisel compatibility layer")
