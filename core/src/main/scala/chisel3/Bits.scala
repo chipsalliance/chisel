@@ -922,7 +922,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   private def constPropShl(that: UInt): Option[UInt] = {
     (this.litOption, that.litOption) match {
-      case (Some(xv), Some(yv)) if yv.isValidInt => Some((xv << yv.toInt).U(this.width + yv.toInt))
+      case (Some(xv), Some(yv)) if yv.isValidInt => Some((xv << yv.toInt).U(this.width.dynamicShiftLeft(that.width)))
       case (_, _)                                => None
     }
   }
