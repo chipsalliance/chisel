@@ -69,7 +69,7 @@ object TruthTable {
   /** Public method for calling with the Espresso decoder format fd
     *
     * For Espresso, for each output, a 1 means this product term belongs to the ON-set,
-    *  a 0 means this product term has no meaning for the value of this function".
+    *  a 0 means this product term has no meaning for the value of this function.
     * This is the same as the fd (or f) type in espresso.
     *
     * @param table the truth table
