@@ -87,6 +87,6 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
     logger.trace(s"""espresso output table:
                     |$output
                     |""".stripMargin)
-    TruthTable(readTable(output), table.default)
+    TruthTable.fromEspressoOutput(readTable(output), table.default)
   }
 }
