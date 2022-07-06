@@ -79,21 +79,21 @@ object TruthTable {
     * @param sort whether to sort the final truth table using BitPat.bitPatOrder
     * @return a fully built TruthTable
     */
-  def fromEspressoOutput(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = false): TruthTable = {
+  def fromEspressoOutput(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = true): TruthTable = {
     apply_impl(table, default, sort, false)
   }
 
   /** Public apply method to TruthTable. Calls apply_impl with the default value true of checkCollisions */
   def apply(table: Iterable[(BitPat, BitPat)], default: BitPat, sort: Boolean = true): TruthTable = {
-    apply_impl(table, default, sort)
+    apply_impl(table, default, sort, true)
   }
 
   /** Convert a table and default output into a [[TruthTable]]. */
   private def apply_impl(
     table:           Iterable[(BitPat, BitPat)],
     default:         BitPat,
-    sort:            Boolean = true,
-    checkCollisions: Boolean = true
+    sort:            Boolean,
+    checkCollisions: Boolean
   ): TruthTable = {
     val paddedTable = padInputs(table)
 
