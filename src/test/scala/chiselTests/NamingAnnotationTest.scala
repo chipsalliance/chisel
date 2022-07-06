@@ -4,12 +4,13 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.chiselName
+import chisel3.experimental.AffectsChiselPrefix
 import chisel3.internal.InstanceId
 import chisel3.stage.ChiselStage
 
 import scala.collection.mutable.ListBuffer
 
-trait NamedModuleTester extends Module {
+trait NamedModuleTester extends Module with AffectsChiselPrefix {
   val expectedNameMap = ListBuffer[(InstanceId, String)]()
   val expectedModuleNameMap = ListBuffer[(Module, String)]()
 
@@ -48,25 +49,20 @@ trait NamedModuleTester extends Module {
     failures.toList
   }
 }
-@chiselName
-class OuterNamedNonModule {
+class OuterNamedNonModule extends AffectsChiselPrefix {
   val value = Wire(Bool())
 }
 
-@chiselName
-class NonModule {
+class NonModule extends AffectsChiselPrefix {
   val value = Wire(Bool())
-  @chiselName
-  class InnerNamedNonModule {
+  class InnerNamedNonModule extends AffectsChiselPrefix {
     val value = Wire(Bool())
   }
   val inner = new InnerNamedNonModule
   val outer = new OuterNamedNonModule
 }
 
-@chiselName
 class NamedModule extends NamedModuleTester {
-  @chiselName
   def FunctionMockupInner(): UInt = {
     val my2A = 1.U
     val my2B = expectName(my2A +& 2.U, "test_myNested_my2B")
@@ -74,7 +70,6 @@ class NamedModule extends NamedModuleTester {
     my2C
   }
 
-  @chiselName
   def FunctionMockup(): UInt = {
     val myNested = expectName(FunctionMockupInner(), "test_myNested")
     val myA = expectName(1.U + myNested, "test_myA")
@@ -123,11 +118,9 @@ class NamedModule extends NamedModuleTester {
   NoReturnFunction()
 }
 
-@chiselName
 class NameCollisionModule extends NamedModuleTester {
-  @chiselName
-  def repeatedCalls(id: Int): UInt = {
-    val test = expectName(1.U + 3.U, s"test_$id") // should disambiguate by invocation order
+  def repeatedCalls(name: String): UInt = {
+    val test = expectName(1.U + 3.U, s"${name}_test") // should disambiguate by invocation order
     test + 2.U
   }
 
@@ -135,8 +128,8 @@ class NameCollisionModule extends NamedModuleTester {
   def innerNamedFunction() {
     // ... but not this inner function
     def innerUnnamedFunction() {
-      val a = repeatedCalls(1)
-      val b = repeatedCalls(2)
+      val a = repeatedCalls("a")
+      val b = repeatedCalls("b")
     }
 
     innerUnnamedFunction()
@@ -212,19 +205,17 @@ class NoChiselNamePrefixTester extends NamedModuleTester {
     val a = expectName(1.U +& 2.U, "a")
   }
   val inst = new NoChiselNamePrefixClass
-  @chiselName
   class NormalClass {
     val b = 1.U +& 2.U
   }
-  val foo = new NormalClass
+  val foo = new NormalClass with AffectsChiselPrefix
   expectName(foo.b, "foo_b")
   val bar = new NormalClass with chisel3.experimental.NoChiselNamePrefix
   expectName(bar.b, "b")
 
   // Check that we're not matching by name but actual type
   trait NoChiselNamePrefix
-  @chiselName
-  class FakeNoChiselNamePrefix extends NoChiselNamePrefix {
+  class FakeNoChiselNamePrefix extends NoChiselNamePrefix with AffectsChiselPrefix {
     val c = 1.U +& 2.U
   }
   val fizz = new FakeNoChiselNamePrefix
