@@ -6,25 +6,47 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
 trait CompileOptions {
+  // ==== EASY TO MIGRATE ====
+
+  // Should the reset type of Module be a Bool or a Reset
+  // 1) Set migrateInferModuleReset=true, fix errors by mixing in [[RequireSyncReset]])
+  // 2) Set inferModuleReset=true
+  val inferModuleReset: Boolean
+
+  // When creating an object that takes a type argument, the argument must be unbound (a pure type).
+  // 1) Set declaredTypeMustBeUnbound=true, fix all errors with calling chiselTypeOf on argument
+  val declaredTypeMustBeUnbound: Boolean
+
+  // Require explicit assignment of DontCare to generate "x is invalid"
+  // 1) Set explicitInvalidate=true, and fix all uninitialization errors
+  val explicitInvalidate: Boolean
+
+  // ==== MEDIUM TO MIGRATE (currently) ====
+
+  // Check that referenced Data have actually been declared.
+  // 1) Set migrateCheckSynthesizable=true, and fix all errors
+  // 2) Wait to actually change checkSynthesizable=true because it still currently affects connection semantics.. TODO!
+  val checkSynthesizable: Boolean
+
+  // ==== HARD TO MIGRATE (currently) ====
+
   // Should Record connections require a strict match of fields.
   // If true and the same fields aren't present in both source and sink, a MissingFieldException,
   // MissingLeftFieldException, or MissingRightFieldException will be thrown.
   val connectFieldsMustMatch: Boolean
-  // When creating an object that takes a type argument, the argument must be unbound (a pure type).
-  val declaredTypeMustBeUnbound: Boolean
   // If a connection operator fails, don't try the connection with the operands (source and sink) reversed.
   val dontTryConnectionsSwapped: Boolean
   // If connection directionality is not explicit, do not use heuristics to attempt to determine it.
   val dontAssumeDirectionality: Boolean
-  // Check that referenced Data have actually been declared.
-  val checkSynthesizable: Boolean
-  // Require explicit assignment of DontCare to generate "x is invalid"
-  val explicitInvalidate: Boolean
-  // Should the reset type of Module be a Bool or a Reset
-  val inferModuleReset: Boolean
+
+  // ==== Useful fields to help with migration ====
 
   /** If marked true, then any Module which consumes `inferModuleReset=false` must also mix in [[RequireSyncReset]] */
   def migrateInferModuleReset: Boolean = false
+
+  /** If marked true, some APIs (e.g. <>, :=, dontCare) will require its argument to have been bound to a synthesizable hardware component. */
+  // Note that this is necessary to only change this checking behavior, but not affect connection semantics due to its implementation
+  def migrateCheckSynthesizable: Boolean = false
 }
 
 object CompileOptions {

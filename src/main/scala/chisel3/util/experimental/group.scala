@@ -54,7 +54,7 @@ object group {
   )(
     implicit compileOptions: CompileOptions
   ): Unit = {
-    if (compileOptions.checkSynthesizable) {
+    if (compileOptions.checkSynthesizable || compileOptions.migrateCheckSynthesizable) {
       components.foreach { data =>
         requireIsHardware(data, s"Component ${data.toString} is marked to group, but is not bound.")
       }

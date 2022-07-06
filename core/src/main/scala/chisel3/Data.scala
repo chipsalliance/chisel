@@ -62,7 +62,7 @@ object SpecifiedDirection {
   ): T = {
     val prevId = Builder.idGen.value
     val data = source // evaluate source once (passed by name)
-    if (compileOptions.checkSynthesizable) {
+    if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(data)
     }
     val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
@@ -628,6 +628,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
+      // Checks synthesizable-ness without affecting connection semantics
+      if(connectCompileOptions.migrateCheckSynthesizable) {
+        requireIsHardware(this, "data to be connected")
+        requireIsHardware(that, "data to be connected")
+      }
       this.legacyConnect(that)
     }
   }
@@ -655,6 +660,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
+      // Checks synthesizable-ness without affecting connection semantics
+      if(connectCompileOptions.migrateCheckSynthesizable) {
+        requireIsHardware(this, "data to be connected")
+        requireIsHardware(that, "data to be connected")
+      }
       this.legacyConnect(that)
     }
   }

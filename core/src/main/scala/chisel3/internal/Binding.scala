@@ -18,7 +18,7 @@ object requireIsHardware {
     }
     if (!node.isSynthesizable) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw ExpectedHardwareException(
+      Builder.error(
         s"$prefix'$node' must be hardware, " +
           "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?"
       )
@@ -31,7 +31,7 @@ object requireIsHardware {
 object requireIsChiselType {
   def apply(node: Data, msg: String = ""): Unit = if (node.isSynthesizable) {
     val prefix = if (msg.nonEmpty) s"$msg " else ""
-    throw ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
+    Builder.error(s"$prefix'$node' must be a Chisel type, not hardware")
   }
 }
 
