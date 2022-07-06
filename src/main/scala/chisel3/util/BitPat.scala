@@ -5,11 +5,8 @@ package chisel3.util
 import scala.language.experimental.macros
 import chisel3._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
-<<<<<<< HEAD
-=======
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
->>>>>>> 231f14e7 (Refactor TruthTable.apply and add factory method for Espresso (#2612))
 
 object BitPat {
 
