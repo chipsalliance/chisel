@@ -35,8 +35,8 @@ trait CompileOptions {
   /** If marked true, then any Module which consumes `inferModuleReset=false` must also mix in [[RequireSyncReset]] */
   def migrateInferModuleReset: Boolean = false
 
-  /** Should biconnects use firrtl biconnection semantics (both LHS and RHS must be true to do so) */
-  def firrtlBiConnectSemantics: Boolean = true
+  /** Should biconnects emit firrtl <= if possible */
+  def emitStrictConnectsIfPossible: Boolean = true
 }
 
 object CompileOptions {
@@ -82,7 +82,7 @@ object ExplicitCompileOptions {
     explicitInvalidate = false,
     inferModuleReset = false
   ) {
-    override def firrtlBiConnectSemantics = false
+    override def emitStrictConnectsIfPossible = false
   }
 
   // Collection of "strict" connection compile options, preferred for new code.
