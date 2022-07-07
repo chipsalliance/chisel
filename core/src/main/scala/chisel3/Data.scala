@@ -621,7 +621,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case _ => // fine
       }
     }
-    if (connectCompileOptions.emitStrictConnectsIfPossible) {
+    if (connectCompileOptions.emitStrictConnects) {
 
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
@@ -651,7 +651,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case _ => // fine
       }
     }
-    if (connectCompileOptions.emitStrictConnectsIfPossible) {
+    if (connectCompileOptions.emitStrictConnects) {
       try {
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {

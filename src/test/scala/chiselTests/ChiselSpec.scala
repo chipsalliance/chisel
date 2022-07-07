@@ -93,7 +93,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   def compile(t: => RawModule): String = {
     (new ChiselStage)
       .execute(
-        Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
+        Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString, "--full-stacktrace"),
         Seq(ChiselGeneratorAnnotation(() => t))
       )
       .collectFirst {

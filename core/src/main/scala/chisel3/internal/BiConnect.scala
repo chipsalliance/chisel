@@ -71,8 +71,8 @@ private[chisel3] object BiConnect {
     *   `a.foo <= b.foo` (case 2),  `b.bar <- a.bar` (case 3)
     *
     * - The decision on 1 vs 2 is based on structural type -- if same type once emitted to firrtl, emit 1, otherwise emit 2
-    * - 1/2 vs 3 is based on CompileOptions at connection point e.g. at `<>` , emit 3 if `emitStrictConnectsIfPossible = false` for either side
-    * - 4 is a special case of 2 turning into 3 for some subfields, when either side's subfield at `extends Bundle/Record` has `emitStrictConnectsIfPossible = false`
+    * - 1/2 vs 3 is based on CompileOptions at connection point e.g. at `<>` , emit 3 if `emitStrictConnects = false` for either side
+    * - 4 is a special case of 2 turning into 3 for some subfields, when either side's subfield at `extends Bundle/Record` has `emitStrictConnects = false`
     */
   def connect(
     sourceInfo:            SourceInfo,
@@ -158,8 +158,8 @@ private[chisel3] object BiConnect {
       // Handle Records defined in Chisel._ code by emitting a FIRRTL bulk
       // connect when possible and a partial connect otherwise
       case pair @ (left_r: Record, right_r: Record) =>
-        val emitStrictConnectsIfPossible: Boolean =
-          left_r.compileOptions.emitStrictConnectsIfPossible && right_r.compileOptions.emitStrictConnectsIfPossible
+        val emitStrictConnects: Boolean =
+          left_r.compileOptions.emitStrictConnects && right_r.compileOptions.emitStrictConnects
 
         // chisel3 <> is commutative but FIRRTL <- is not
         val flipConnection =
@@ -179,7 +179,7 @@ private[chisel3] object BiConnect {
           )
         ) {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
-        } else if (!emitStrictConnectsIfPossible) {
+        } else if (!emitStrictConnects) {
           newLeft.legacyConnect(newRight)(sourceInfo)
         } else {
           recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
@@ -187,7 +187,7 @@ private[chisel3] object BiConnect {
 
       // Handle Records connected to DontCare
       case (left_r: Record, DontCare) =>
-        if (!left_r.compileOptions.emitStrictConnectsIfPossible) {
+        if (!left_r.compileOptions.emitStrictConnects) {
           left.legacyConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
@@ -200,7 +200,7 @@ private[chisel3] object BiConnect {
           }
         }
       case (DontCare, right_r: Record) =>
-        if (!right_r.compileOptions.emitStrictConnectsIfPossible) {
+        if (!right_r.compileOptions.emitStrictConnects) {
           left.legacyConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
