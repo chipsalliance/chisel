@@ -569,8 +569,11 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   final def -%(that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_+&(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt((this.width.max(that.width)) + 1), AddOp, that)
+  def do_+&(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+    def f = binop(sourceInfo, UInt((this.width.max(that.width)) + 1), AddOp, that)
+    constPropAdd(that).getOrElse(f)
+  }
+
 
   /** @group SourceInfoTransformMacro */
   def do_+%(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -890,8 +893,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     this := that.asUInt
   }
 
-  private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
+  private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
+    def f = binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
+    constPropSub(that).getOrElse(f)
+  }
 
   private def constPropBothLiteral[T <: Data, U](that: T, f: (BigInt, BigInt) => U): Option[U] = {
     if (this.isLit && that.isLit)
@@ -917,6 +922,20 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
       case (_, Some(yv)) if destructive(yv) && widthsOk(x, y) => Some(y)
       case (_, Some(yv)) if identity(yv) && widthsOk(y, x)    => Some(x)
       case (_, _)                                             => if (x == y) equal(x) else None
+    }
+  }
+
+  private def constPropAdd(that: UInt): Option[UInt] = {
+    (this.litOption, that.litOption) match {
+      case (Some(xv), Some(yv)) => Some((xv + yv).U(this.width.max(that.width) + 1))
+      case (_, _)                                => None
+    }
+  }
+
+  private def constPropSub(that: UInt): Option[SInt] = {
+    (this.litOption, that.litOption) match {
+      case (Some(xv), Some(yv)) => Some((xv - yv).S(this.width.max(that.width) + 1))
+      case (_, _)                                => None
     }
   }
 
