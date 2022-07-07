@@ -3,17 +3,9 @@
 package circt.stage.phases
 
 import circt.Implicits.BooleanImplicits
-import circt.stage.{
-  CIRCTOptions,
-  CIRCTTarget,
-  EmittedMLIR
-}
+import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR}
 
-import firrtl.{
-  AnnotationSeq,
-  EmittedVerilogCircuit,
-  EmittedVerilogCircuitAnnotation
-}
+import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{
   CustomFileEmission,
   Dependency,
@@ -26,10 +18,7 @@ import firrtl.options.{
 }
 import firrtl.options.phases.WriteOutputAnnotations
 import firrtl.options.Viewer.view
-import firrtl.stage.{
-  FirrtlOptions,
-  RunFirrtlTransformAnnotation
-}
+import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
 import _root_.logger.LogLevel
 
 import scala.sys.process._
@@ -38,11 +27,11 @@ private object Helpers {
   implicit class LogLevelHelpers(logLevel: LogLevel.Value) {
     def toCIRCTOptions: Seq[String] = logLevel match {
       case LogLevel.Error => Seq.empty
-      case LogLevel.Warn => Seq.empty
-      case LogLevel.Info => Seq("-verbose-pass-executions")
+      case LogLevel.Warn  => Seq.empty
+      case LogLevel.Info  => Seq("-verbose-pass-executions")
       case LogLevel.Debug => Seq("-verbose-pass-executions")
       case LogLevel.Trace => Seq("-verbose-pass-executions", "-print-ir-after-all")
-      case LogLevel.None => Seq.empty
+      case LogLevel.None  => Seq.empty
     }
   }
 }
@@ -74,20 +63,21 @@ class CIRCT extends Phase {
     var logLevel = _root_.logger.LogLevel.None
 
     val annotationsx = annotations.filter {
-      case _: CustomFileEmission => false
+      case _: CustomFileEmission           => false
       case _: firrtl.EmitCircuitAnnotation => false
-      case RunFirrtlTransformAnnotation(transform) => transform match {
-        /* Inlining/Flattening happen by default, so these can be dropped. */
-        case _: firrtl.passes.InlineInstances | _: firrtl.transforms.Flatten => false
-        /* ReplSeqMem is converted to a firtool option */
-        case _: firrtl.passes.memlib.ReplSeqMem =>
-          blackbox = true
-          false
-        /* Any emitters should not be passed to firtool. */
-        case _: firrtl.Emitter => false
-        /* Default case: leave the annotation around and let firtool warn about it. */
-        case _ => true
-      }
+      case RunFirrtlTransformAnnotation(transform) =>
+        transform match {
+          /* Inlining/Flattening happen by default, so these can be dropped. */
+          case _: firrtl.passes.InlineInstances | _: firrtl.transforms.Flatten => false
+          /* ReplSeqMem is converted to a firtool option */
+          case _: firrtl.passes.memlib.ReplSeqMem =>
+            blackbox = true
+            false
+          /* Any emitters should not be passed to firtool. */
+          case _: firrtl.Emitter => false
+          /* Default case: leave the annotation around and let firtool warn about it. */
+          case _ => true
+        }
       case firrtl.passes.memlib.InferReadWriteAnnotation =>
         inferReadWrite = true
         false
@@ -101,7 +91,7 @@ class CIRCT extends Phase {
         logLevel = anno.globalLogLevel
         false
       /* The following can be dropped. */
-      case _: firrtl.transforms.CombinationalPath => false
+      case _: firrtl.transforms.CombinationalPath   => false
       case _: _root_.logger.ClassLogLevelAnnotation => false
       /* Default case: leave the annotation around and let firtool warn about it. */
       case _ => true
@@ -111,7 +101,7 @@ class CIRCT extends Phase {
     (new WriteOutputAnnotations).transform(annotationsx)
 
     val input: String = firrtlOptions.firrtlCircuit match {
-      case None => throw new OptionsException("No input file specified!")
+      case None          => throw new OptionsException("No input file specified!")
       case Some(circuit) => circuit.serialize
     }
 
@@ -137,14 +127,15 @@ class CIRCT extends Phase {
         (outputAnnotationFileName.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
         /* Convert the target to a firtool-compatible option. */
         (circtOptions.target match {
-           case Some(CIRCTTarget.FIRRTL) => Seq("-ir-fir")
-           case Some(CIRCTTarget.HW) => Seq("-ir-hw")
-           case Some(CIRCTTarget.Verilog) => None
-           case Some(CIRCTTarget.SystemVerilog) => None
-           case None => throw new Exception(
-             "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
-           )
-         })
+          case Some(CIRCTTarget.FIRRTL)        => Seq("-ir-fir")
+          case Some(CIRCTTarget.HW)            => Seq("-ir-hw")
+          case Some(CIRCTTarget.Verilog)       => None
+          case Some(CIRCTTarget.SystemVerilog) => None
+          case None =>
+            throw new Exception(
+              "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
+            )
+        })
 
     try {
       logger.info(s"""Running CIRCT: '${cmd.mkString(" ")} < $$input'""")
@@ -159,9 +150,10 @@ class CIRCT extends Phase {
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".v")))
         case Some(CIRCTTarget.SystemVerilog) =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".sv")))
-        case None => throw new Exception(
-          "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
-        )
+        case None =>
+          throw new Exception(
+            "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
+          )
       }
     } catch {
       case a: java.io.IOException =>

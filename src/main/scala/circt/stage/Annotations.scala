@@ -3,21 +3,12 @@
 package circt.stage
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.{
-  Annotation,
-  NoTargetAnnotation
-}
-import firrtl.options.{
-  CustomFileEmission,
-  HasShellOptions,
-  OptionsException,
-  ShellOption,
-  Unserializable
-}
+import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl.options.{CustomFileEmission, HasShellOptions, OptionsException, ShellOption, Unserializable}
 import firrtl.options.Viewer.view
 import firrtl.stage.FirrtlOptions
 
-/** An option consumed by [[circt.stage.CIRCTStage CIRCTStage]]*/
+/** An option consumed by [[circt.stage.CIRCTStage CIRCTStage]] */
 sealed trait CIRCTOption extends Unserializable { this: Annotation => }
 
 /** Preserve passive aggregate types in CIRCT.
@@ -67,7 +58,7 @@ object CIRCTTargetAnnotation extends HasShellOptions {
         case "hw"            => Seq(CIRCTTargetAnnotation(CIRCTTarget.HW))
         case "verilog"       => Seq(CIRCTTargetAnnotation(CIRCTTarget.Verilog))
         case "systemverilog" => Seq(CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
-        case a => throw new OptionsException(s"Unknown target name '$a'! (Did you misspell it?)")
+        case a               => throw new OptionsException(s"Unknown target name '$a'! (Did you misspell it?)")
       },
       helpText = "The CIRCT",
       helpValueName = Some("{firrtl|rtl|systemverilog}")
@@ -84,16 +75,16 @@ object CIRCTTargetAnnotation extends HasShellOptions {
   */
 case class EmittedMLIR(
   filename: String,
-  value: String,
-  suffix: Option[String]
-) extends NoTargetAnnotation with CustomFileEmission {
+  value:    String,
+  suffix:   Option[String])
+    extends NoTargetAnnotation
+    with CustomFileEmission {
 
   override protected def baseFileName(annotations: AnnotationSeq): String = filename
 
   override def getBytes = value.getBytes
 
 }
-
 
 object CIRCTHandover extends HasShellOptions {
 
@@ -110,11 +101,11 @@ object CIRCTHandover extends HasShellOptions {
       longOption = "handover",
       toAnnotationSeq = _ match {
         case "chirrtl" => Seq(CIRCTHandover(CHIRRTL))
-        case "high" => Seq(CIRCTHandover(HighFIRRTL))
-        case "middle" => Seq(CIRCTHandover(MiddleFIRRTL))
-        case "low" => Seq(CIRCTHandover(LowFIRRTL))
-        case "lowopt" => Seq(CIRCTHandover(LowOptimizedFIRRTL))
-        case a => throw new OptionsException(s"Unknown handover point '$a'! (Did you misspell it?)")
+        case "high"    => Seq(CIRCTHandover(HighFIRRTL))
+        case "middle"  => Seq(CIRCTHandover(MiddleFIRRTL))
+        case "low"     => Seq(CIRCTHandover(LowFIRRTL))
+        case "lowopt"  => Seq(CIRCTHandover(LowOptimizedFIRRTL))
+        case a         => throw new OptionsException(s"Unknown handover point '$a'! (Did you misspell it?)")
       },
       helpText = "Switch to the CIRCT compiler at this point, using the Scala FIRRTL Compiler if needed",
       helpValueName = Some("{chirrtl|high|middle|low|lowopt}")

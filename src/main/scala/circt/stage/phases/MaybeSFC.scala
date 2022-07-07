@@ -2,21 +2,12 @@
 
 package circt.stage.phases
 
-import circt.stage.{
-  CIRCTHandover,
-  CIRCTOptions
-}
+import circt.stage.{CIRCTHandover, CIRCTOptions}
 
 import firrtl.AnnotationSeq
-import firrtl.options.{
-  Dependency,
-  Phase
-}
+import firrtl.options.{Dependency, Phase}
 import firrtl.options.Viewer.view
-import firrtl.stage.{
-  Forms,
-  RunFirrtlTransformAnnotation
-}
+import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 
 class MaybeSFC extends Phase {
 
@@ -35,7 +26,8 @@ class MaybeSFC extends Phase {
         Some(
           (Forms.LowFormOptimized.toSet -- Forms.LowFormMinimumOptimized)
             .map(_.getObject())
-            .map(RunFirrtlTransformAnnotation.apply).toSeq :+
+            .map(RunFirrtlTransformAnnotation.apply)
+            .toSeq :+
             RunFirrtlTransformAnnotation(new firrtl.LowFirrtlEmitter)
         )
     }

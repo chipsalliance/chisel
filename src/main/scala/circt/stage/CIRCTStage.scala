@@ -5,14 +5,7 @@ package circt.stage
 import chisel3.stage.ChiselGeneratorAnnotation
 
 import firrtl.AnnotationSeq
-import firrtl.options.{
-  Dependency,
-  Phase,
-  PhaseManager,
-  Shell,
-  Stage,
-  StageMain
-}
+import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.stage.FirrtlCli
 
 trait CLI { this: Shell =>

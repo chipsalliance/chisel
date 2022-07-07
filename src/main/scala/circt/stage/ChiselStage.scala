@@ -3,28 +3,12 @@
 package circt.stage
 
 import chisel3.RawModule
-import chisel3.stage.{
-  ChiselGeneratorAnnotation,
-  NoRunFirrtlCompilerAnnotation
-}
+import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation}
 
-import firrtl.{
-  AnnotationSeq,
-  EmittedVerilogCircuitAnnotation
-}
-import firrtl.options.{
-  Dependency,
-  Phase,
-  PhaseManager,
-  Shell,
-  Stage,
-  StageMain
-}
+import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.options.Viewer.view
-import firrtl.stage.{
-  Forms,
-  RunFirrtlTransformAnnotation
-}
+import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
@@ -89,9 +73,11 @@ object ChiselStage {
         CIRCTTargetAnnotation(CIRCTTarget.FIRRTL),
         CIRCTHandover(CIRCTHandover.CHIRRTL)
       )
-    ).collectFirst {
+    )
+    .collectFirst {
       case EmittedMLIR(_, a, _) => a
-    }.get
+    }
+    .get
 
   /** Compile a Chisel circuit to HWS dialect */
   def emitHWDialect(gen: => RawModule): String = phase
@@ -101,9 +87,11 @@ object ChiselStage {
         CIRCTTargetAnnotation(CIRCTTarget.HW),
         CIRCTHandover(CIRCTHandover.CHIRRTL)
       )
-    ).collectFirst {
+    )
+    .collectFirst {
       case EmittedMLIR(_, a, _) => a
-    }.get
+    }
+    .get
 
   /** Compile a Chisel circuit to SystemVerilog */
   def emitSystemVerilog(gen: => RawModule): String = phase
@@ -113,9 +101,11 @@ object ChiselStage {
         CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog),
         CIRCTHandover(CIRCTHandover.CHIRRTL)
       )
-    ).collectFirst {
+    )
+    .collectFirst {
       case EmittedVerilogCircuitAnnotation(a) => a
-    }.get
+    }
+    .get
     .value
 
 }

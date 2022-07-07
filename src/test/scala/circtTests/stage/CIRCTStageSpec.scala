@@ -4,16 +4,10 @@ package circtTests.stage
 
 import circt.stage.CIRCTStage
 
-import firrtl.stage.{
-  FirrtlFileAnnotation,
-  OutputFileAnnotation
-}
+import firrtl.stage.{FirrtlFileAnnotation, OutputFileAnnotation}
 
 import java.io.File
-import java.io.{
-  Writer,
-  PrintWriter
-}
+import java.io.{PrintWriter, Writer}
 
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -55,9 +49,12 @@ class CIRCTStageSpec extends AnyFunSpec with Matchers {
 
       stage.execute(
         Array(
-          "--target", "systemverilog",
-          "--target-dir", targetDir.toString,
-          "--input-file", inputFile.toString
+          "--target",
+          "systemverilog",
+          "--target-dir",
+          targetDir.toString,
+          "--input-file",
+          inputFile.toString
         ),
         Seq.empty
       )
@@ -66,7 +63,7 @@ class CIRCTStageSpec extends AnyFunSpec with Matchers {
       outputFile should exist
 
       info(s"file looks like Verilog")
-      Source.fromFile(outputFile).getLines.mkString should include ("endmodule")
+      Source.fromFile(outputFile).getLines.mkString should include("endmodule")
 
     }
 
