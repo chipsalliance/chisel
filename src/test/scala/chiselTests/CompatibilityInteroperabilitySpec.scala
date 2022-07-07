@@ -351,4 +351,48 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Top(true))
     compile(new Top(false))
   }
+
+  /* This test currently fails:
+    [info] A unidirectional but flipped Bundle with something close to NotStrict compileOptions, but not exactly
+[info] chiselTests.CompatibilityInteroperabilitySpec *** ABORTED ***
+[info]   java.lang.InternalError: Malformed class name
+[info]   at java.lang.Class.getSimpleName(Class.java:1330)
+[info]   at chisel3.Bundle.className(Aggregate.scala:1200)
+[info]   at chisel3.Record.toString(Aggregate.scala:1092)
+[info]   at java.lang.String.valueOf(String.java:2994)
+[info]   at java.lang.StringBuilder.append(StringBuilder.java:136)
+[info]   at chisel3.Data.bulkConnect(Data.scala:654)
+[info]   at chisel3.Data.$anonfun$$less$greater$1(Data.scala:797)
+[info]   at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)
+[info]   at chisel3.internal.prefix$.apply(prefix.scala:31)
+[info]   at chisel3.Data.$less$greater(Data.scala:797)
+   */
+  "A unidirectional but flipped Bundle with something close to NotStrict compileOptions, but not exactly" should "bulk connect in import chisel3._ code correctly" in {
+    object Compat {
+      import Chisel.{defaultCompileOptions => _, _}
+      // arbitrary thing to make this *not* exactly NotStrict
+      val myCompileOptions = chisel3.ExplicitCompileOptions.NotStrict.copy(inferModuleReset = true)
+
+      class MyBundle(extraFlip: Boolean) extends Bundle()(myCompileOptions) {
+        private def maybeFlip[T <: Data](t: T): T = if (extraFlip) t.flip else t
+        val foo = maybeFlip(new Bundle()(myCompileOptions) {
+          val bar = UInt(INPUT, width = 8)
+        })
+      }
+    }
+    import chisel3._
+    import Compat._
+    class Top(extraFlip: Boolean) extends RawModule {
+      val port = IO(new MyBundle(extraFlip))
+      val wire = Wire(new MyBundle(extraFlip))
+      port <> DontCare
+      wire <> DontCare
+      port <> wire
+      wire <> port
+      port.foo <> wire.foo
+      wire.foo <> port.foo
+    }
+    compile(new Top(true))
+    compile(new Top(false))
+  }
 }
