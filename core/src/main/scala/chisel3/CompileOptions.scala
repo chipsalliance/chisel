@@ -35,7 +35,7 @@ trait CompileOptions {
   /** If marked true, then any Module which consumes `inferModuleReset=false` must also mix in [[RequireSyncReset]] */
   def migrateInferModuleReset: Boolean = false
 
-  /** Should biconnects emit firrtl <= if possible */
+  /** Should connections emit firrtl <= if possible */
   def emitStrictConnectsIfPossible: Boolean = true
 }
 
