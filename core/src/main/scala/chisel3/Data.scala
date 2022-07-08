@@ -606,6 +606,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[chisel3] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
+
   private[chisel3] def connect(
     that: Data
   )(
@@ -619,6 +620,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
         case _ => // fine
       }
+    }
+    if (connectCompileOptions.emitStrictConnects) {
+
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
@@ -646,6 +650,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
         case _ => // fine
       }
+    }
+    if (connectCompileOptions.emitStrictConnects) {
       try {
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {

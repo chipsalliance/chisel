@@ -6,6 +6,7 @@ import scala.language.experimental.macros
 import chisel3._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 import scala.collection.mutable
+import scala.util.hashing.MurmurHash3
 
 object BitPat {
 
@@ -325,6 +326,9 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
   def ===(that: UInt):   Bool = macro SourceInfoTransform.thatArg
   def =/=(that: UInt):   Bool = macro SourceInfoTransform.thatArg
   def ##(that:  BitPat): BitPat = macro SourceInfoTransform.thatArg
+
+  override def hashCode: Int =
+    MurmurHash3.seqHash(Seq(this.value, this.mask, this.width))
 
   /** @group SourceInfoTransformMacro */
   def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
