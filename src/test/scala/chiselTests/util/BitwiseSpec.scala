@@ -13,12 +13,12 @@ class FillInterleavedSpec extends AnyFlatSpec with Matchers {
   it should "have source locators when passed a UInt" in {
     class MyModule extends RawModule {
       val out = IO(Output(UInt()))
-      out := FillInterleaved(2, "b1000".U)
+      out := FillInterleaved(2, WireInit("b1000".U))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val cat = """.*BitwiseSpec\.scala""".r // cat removed by constprop
+    val cat = """cat.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(cat)
-    val mux = """.*BitwiseSpec\.scala""".r // mux removed by constprop
+    val mux = """mux.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(mux)
     (chirrtl should not).include("Bitwise.scala")
   }
@@ -26,12 +26,12 @@ class FillInterleavedSpec extends AnyFlatSpec with Matchers {
   it should "have source locators when passed a Seq[Bool]" in {
     class MyModule extends RawModule {
       val out = IO(Output(UInt()))
-      out := FillInterleaved(2, Seq(true.B, false.B, false.B, false.B))
+      out := FillInterleaved(2, Seq(WireInit(true.B), false.B, false.B, false.B))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val cat = """.*BitwiseSpec\.scala""".r // cat removed by constprop
+    val cat = """cat.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(cat)
-    val mux = """.*BitwiseSpec\.scala""".r // mux remove by constprop
+    val mux = """mux.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(mux)
     (chirrtl should not).include("Bitwise.scala")
   }
@@ -43,12 +43,12 @@ class PopCountSpec extends AnyFlatSpec with Matchers {
   it should "have source locators when passed a Iterable[Bool]" in {
     class MyModule extends RawModule {
       val out = IO(Output(UInt()))
-      out := PopCount(Seq(true.B, false.B, false.B, false.B))
+      out := PopCount(Seq(WireInit(true.B), false.B, false.B, false.B))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val add = """.*BitwiseSpec\.scala""".r // add removed by constprop
+    val add = """add.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(add)
-    val bits = """.*BitwiseSpec\.scala""".r // bits removed by constprop
+    val bits = """bits.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(bits)
     (chirrtl should not).include("Bitwise.scala")
   }
@@ -56,12 +56,12 @@ class PopCountSpec extends AnyFlatSpec with Matchers {
   it should "have source locators when passed a Bits" in {
     class MyModule extends RawModule {
       val out = IO(Output(UInt()))
-      out := PopCount("b1000".U)
+      out := PopCount(WireInit("b1000".U))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val add = """.*BitwiseSpec\.scala""".r // add removed by constprop
+    val add = """add.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(add)
-    val bits = """.*BitwiseSpec\.scala""".r // bits removed by constprop
+    val bits = """bits.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(bits)
     (chirrtl should not).include("Bitwise.scala")
   }
@@ -72,10 +72,10 @@ class FillSpec extends AnyFlatSpec with Matchers {
   it should "have source locators when passed a Bits" in {
     class MyModule extends RawModule {
       val out = IO(Output(UInt()))
-      out := Fill(2, "b1000".U)
+      out := Fill(2, WireInit("b1000".U))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val cat = """.*BitwiseSpec\.scala""".r // cat removed by constprop
+    val cat = """cat.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(cat)
     (chirrtl should not).include("Bitwise.scala")
   }
@@ -87,10 +87,10 @@ class ReverseSpec extends AnyFlatSpec with Matchers {
   it should "have source locators when passed a UInt" in {
     class MyModule extends RawModule {
       val out = IO(Output(UInt()))
-      out := Reverse("b1101".U)
+      out := Reverse(WireInit("b1101".U))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    val cat = """.*BitwiseSpec\.scala""".r // cat removed by constprop
+    val cat = """cat.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(cat)
     (chirrtl should not).include("Bitwise.scala")
   }

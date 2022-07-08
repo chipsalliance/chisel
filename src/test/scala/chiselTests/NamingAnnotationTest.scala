@@ -68,7 +68,7 @@ class NonModule {
 class NamedModule extends NamedModuleTester {
   @chiselName
   def FunctionMockupInner(): UInt = {
-    val my2A = 1.U
+    val my2A = WireInit(1.U)
     val my2B = expectName(my2A +& 2.U, "test_myNested_my2B")
     val my2C = my2B +& 3.U // should get named at enclosing scope
     my2C
@@ -209,12 +209,12 @@ class PartialNamedModule extends NamedModuleTester {
 class NoChiselNamePrefixTester extends NamedModuleTester {
   @chiselName
   class NoChiselNamePrefixClass extends chisel3.experimental.NoChiselNamePrefix {
-    val a = expectName(1.U +& 2.U, "a")
+    val a = expectName(WireInit(1.U) +& 2.U, "a")
   }
   val inst = new NoChiselNamePrefixClass
   @chiselName
   class NormalClass {
-    val b = 1.U +& 2.U
+    val b = WireInit(1.U) +& 2.U
   }
   val foo = new NormalClass
   expectName(foo.b, "foo_b")
@@ -225,7 +225,7 @@ class NoChiselNamePrefixTester extends NamedModuleTester {
   trait NoChiselNamePrefix
   @chiselName
   class FakeNoChiselNamePrefix extends NoChiselNamePrefix {
-    val c = 1.U +& 2.U
+    val c = WireInit(1.U) +& 2.U
   }
   val fizz = new FakeNoChiselNamePrefix
   expectName(fizz.c, "fizz_c")
