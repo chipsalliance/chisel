@@ -55,6 +55,24 @@ private[chisel3] object BiConnect {
     * There is some cleverness in the use of internal try-catch to catch exceptions
     * during the recursive decent and then rethrow them with extra information added.
     * This gives the user a 'path' to where in the connections things went wrong.
+    *
+    * == Chisel Semantics and how they emit to firrtl ==
+    *
+    * 1. Strict Bi-Connect (all fields as seen by firrtl must match exactly)
+    *   `a <= b`
+    *
+    * 2. Strict Bi-Connect (implemented as being field-blasted because we know all firrtl fields would not match exactly)
+    *   `a.foo <= b.foo, b.bar <= a.bar`
+    *
+    * 3. Not-Strict Bi-Connect (firrtl will allow fields to not match exactly)
+    *   `a <- b`
+    *
+    * 4. Mixed Semantic Bi-Connect (some fields need to be handled differently)
+    *   `a.foo <= b.foo` (case 2),  `b.bar <- a.bar` (case 3)
+    *
+    * - The decision on 1 vs 2 is based on structural type -- if same type once emitted to firrtl, emit 1, otherwise emit 2
+    * - 1/2 vs 3 is based on CompileOptions at connection point e.g. at `<>` , emit 3 if `emitStrictConnects = false` for either side
+    * - 4 is a special case of 2 turning into 3 for some subfields, when either side's subfield at `extends Bundle/Record` has `emitStrictConnects = false`
     */
   def connect(
     sourceInfo:            SourceInfo,
@@ -140,8 +158,8 @@ private[chisel3] object BiConnect {
       // Handle Records defined in Chisel._ code by emitting a FIRRTL bulk
       // connect when possible and a partial connect otherwise
       case pair @ (left_r: Record, right_r: Record) =>
-        val notStrict =
-          Seq(left_r.compileOptions, right_r.compileOptions).contains(ExplicitCompileOptions.NotStrict)
+        val emitStrictConnects: Boolean =
+          left_r.compileOptions.emitStrictConnects && right_r.compileOptions.emitStrictConnects
 
         // chisel3 <> is commutative but FIRRTL <- is not
         val flipConnection =
@@ -161,40 +179,38 @@ private[chisel3] object BiConnect {
           )
         ) {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
-        } else if (notStrict) {
-          newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
+        } else if (!emitStrictConnects) {
+          newLeft.legacyConnect(newRight)(sourceInfo)
         } else {
           recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
         }
 
-      // Handle Records connected to DontCare (change to NotStrict)
+      // Handle Records connected to DontCare
       case (left_r: Record, DontCare) =>
-        left_r.compileOptions match {
-          case ExplicitCompileOptions.NotStrict =>
-            left.bulkConnect(right)(sourceInfo, ExplicitCompileOptions.NotStrict)
-          case _ =>
-            // For each field in left, descend with right
-            for ((field, left_sub) <- left_r.elements) {
-              try {
-                connect(sourceInfo, connectCompileOptions, left_sub, right, context_mod)
-              } catch {
-                case BiConnectException(message) => throw BiConnectException(s".$field$message")
-              }
+        if (!left_r.compileOptions.emitStrictConnects) {
+          left.legacyConnect(right)(sourceInfo)
+        } else {
+          // For each field in left, descend with right
+          for ((field, left_sub) <- left_r.elements) {
+            try {
+              connect(sourceInfo, connectCompileOptions, left_sub, right, context_mod)
+            } catch {
+              case BiConnectException(message) => throw BiConnectException(s".$field$message")
             }
+          }
         }
       case (DontCare, right_r: Record) =>
-        right_r.compileOptions match {
-          case ExplicitCompileOptions.NotStrict =>
-            left.bulkConnect(right)(sourceInfo, ExplicitCompileOptions.NotStrict)
-          case _ =>
-            // For each field in left, descend with right
-            for ((field, right_sub) <- right_r.elements) {
-              try {
-                connect(sourceInfo, connectCompileOptions, left, right_sub, context_mod)
-              } catch {
-                case BiConnectException(message) => throw BiConnectException(s".$field$message")
-              }
+        if (!right_r.compileOptions.emitStrictConnects) {
+          left.legacyConnect(right)(sourceInfo)
+        } else {
+          // For each field in left, descend with right
+          for ((field, right_sub) <- right_r.elements) {
+            try {
+              connect(sourceInfo, connectCompileOptions, left, right_sub, context_mod)
+            } catch {
+              case BiConnectException(message) => throw BiConnectException(s".$field$message")
             }
+          }
         }
 
       // Left and right are different subtypes of Data so fail
