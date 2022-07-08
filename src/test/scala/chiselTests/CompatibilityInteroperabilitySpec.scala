@@ -356,7 +356,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     object Compat {
       import Chisel.{defaultCompileOptions => _, _}
       // arbitrary thing to make this *not* exactly NotStrict
-      implicit val myCompileOptions = new chisel3.ExplicitCompileOptions.CompileOptionsClass(
+      implicit val defaultCompileOptions = new chisel3.ExplicitCompileOptions.CompileOptionsClass(
         connectFieldsMustMatch = false,
         declaredTypeMustBeUnbound = false,
         dontTryConnectionsSwapped = false,
@@ -376,7 +376,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       }
     }
     import chisel3._
-    import Compat.{myCompileOptions => _, _}
+    import Compat.{defaultCompileOptions => _, _}
     class Top(extraFlip: Boolean) extends RawModule {
       val port = IO(new MyBundle(extraFlip))
       val wire = Wire(new MyBundle(extraFlip))
