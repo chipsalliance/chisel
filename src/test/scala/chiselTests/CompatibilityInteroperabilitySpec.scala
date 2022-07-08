@@ -352,33 +352,31 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Top(false))
   }
 
-  /* This test currently fails, with a little bit of commenting out of stuff we get:
-    A unidirectional but flipped Bundle with something close to NotStrict compileOptions, but not exactly
-[info] - should bulk connect in import chisel3._ code correctly *** FAILED ***
-[info]   chisel3.internal.ChiselException: Connection between left  and source  failed @.foo.bar: Locally unclear whether Left or Right (both internal)
-[info]   at chisel3.internal.throwException$.apply(Error.scala:169)
-[info]   at chisel3.Data.bulkConnect(Data.scala:659)
-[info]   at chisel3.Data.$anonfun$$less$greater$1(Data.scala:803)
-[info]   at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)
-[info]   at chisel3.internal.prefix$.apply(prefix.scala:31)
-[info]   at chisel3.Data.$less$greater(Data.scala:803)
-[info]   at chiselTests.CompatibilityInteroperabilitySpec$Top$2.<init>(CompatibilityInteroperabilitySpec.scala:389)
-   */
   "A unidirectional but flipped Bundle with something close to NotStrict compileOptions, but not exactly" should "bulk connect in import chisel3._ code correctly" in {
     object Compat {
       import Chisel.{defaultCompileOptions => _, _}
       // arbitrary thing to make this *not* exactly NotStrict
-      val myCompileOptions = chisel3.ExplicitCompileOptions.NotStrict.copy(inferModuleReset = true)
+      implicit val myCompileOptions = new chisel3.ExplicitCompileOptions.CompileOptionsClass(
+        connectFieldsMustMatch = false,
+        declaredTypeMustBeUnbound = false,
+        dontTryConnectionsSwapped = false,
+        dontAssumeDirectionality = false,
+        checkSynthesizable = false,
+        explicitInvalidate = false,
+        inferModuleReset = true // different from NotStrict, to ensure case class equivalence to NotStrict is false
+      ) {
+        override def emitStrictConnects = false
+      }
 
-      class MyBundle(extraFlip: Boolean) extends Bundle()(myCompileOptions) {
+      class MyBundle(extraFlip: Boolean) extends Bundle {
         private def maybeFlip[T <: Data](t: T): T = if (extraFlip) t.flip else t
-        val foo = maybeFlip(new Bundle()(myCompileOptions) {
+        val foo = maybeFlip(new Bundle {
           val bar = UInt(INPUT, width = 8)
         })
       }
     }
     import chisel3._
-    import Compat._
+    import Compat.{myCompileOptions => _, _}
     class Top(extraFlip: Boolean) extends RawModule {
       val port = IO(new MyBundle(extraFlip))
       val wire = Wire(new MyBundle(extraFlip))
