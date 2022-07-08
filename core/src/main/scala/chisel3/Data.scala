@@ -657,7 +657,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       } catch {
         case BiConnectException(message) =>
           throwException(
-            s"Connection between left ($this) and source ($that) failed @$message"
+            s"Connection between left  and source  failed @$message"
           )
       }
     } else {

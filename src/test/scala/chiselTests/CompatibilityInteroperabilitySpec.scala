@@ -352,20 +352,17 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Top(false))
   }
 
-  /* This test currently fails:
-    [info] A unidirectional but flipped Bundle with something close to NotStrict compileOptions, but not exactly
-[info] chiselTests.CompatibilityInteroperabilitySpec *** ABORTED ***
-[info]   java.lang.InternalError: Malformed class name
-[info]   at java.lang.Class.getSimpleName(Class.java:1330)
-[info]   at chisel3.Bundle.className(Aggregate.scala:1200)
-[info]   at chisel3.Record.toString(Aggregate.scala:1092)
-[info]   at java.lang.String.valueOf(String.java:2994)
-[info]   at java.lang.StringBuilder.append(StringBuilder.java:136)
-[info]   at chisel3.Data.bulkConnect(Data.scala:654)
-[info]   at chisel3.Data.$anonfun$$less$greater$1(Data.scala:797)
+  /* This test currently fails, with a little bit of commenting out of stuff we get:
+    A unidirectional but flipped Bundle with something close to NotStrict compileOptions, but not exactly
+[info] - should bulk connect in import chisel3._ code correctly *** FAILED ***
+[info]   chisel3.internal.ChiselException: Connection between left  and source  failed @.foo.bar: Locally unclear whether Left or Right (both internal)
+[info]   at chisel3.internal.throwException$.apply(Error.scala:169)
+[info]   at chisel3.Data.bulkConnect(Data.scala:659)
+[info]   at chisel3.Data.$anonfun$$less$greater$1(Data.scala:803)
 [info]   at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)
 [info]   at chisel3.internal.prefix$.apply(prefix.scala:31)
-[info]   at chisel3.Data.$less$greater(Data.scala:797)
+[info]   at chisel3.Data.$less$greater(Data.scala:803)
+[info]   at chiselTests.CompatibilityInteroperabilitySpec$Top$2.<init>(CompatibilityInteroperabilitySpec.scala:389)
    */
   "A unidirectional but flipped Bundle with something close to NotStrict compileOptions, but not exactly" should "bulk connect in import chisel3._ code correctly" in {
     object Compat {
