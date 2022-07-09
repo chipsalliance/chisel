@@ -17,7 +17,7 @@ jobs:
       matrix:
         system: ["ubuntu-20.04"]
         jvm: ["adopt@1.8"]
-        scala: ["2.13.6", "2.12.15"]
+        scala: ["2.13.6", "2.12.16"]
         espresso: ["2.4"]
     runs-on: ${{ matrix.system }}
 
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        scala: [ "2.13.6", "2.12.15" ]
+        scala: [ "2.13.6", "2.12.16" ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
