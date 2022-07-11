@@ -138,7 +138,9 @@ a <> c
 ## Scala Type vs Chisel Type vs Hardware
 
 The *Scala* type of the Data is recognized by the Scala compiler, such as `Decoupled[UInt]` or `MyBundle`, where 
-```MyBundle(w: Int) extends Bundle {val foo: UInt(w.W), val bar: UInt(w.W)}```
+```
+MyBundle(w: Int) extends Bundle {val foo: UInt(w.W), val bar: UInt(w.W)}
+```
 
 The *Chisel* Type of a Data is all the fields actually present, by names, and their types including widths. For example, `MyBundle(3)` creates a Chisel Type of `Record` with `foo : UInt(3.W),  bar: UInt(3.W))`.
 
@@ -148,3 +150,5 @@ A literal is a `Data` that is respresented as a literal value without being wrap
 
 The Scala compiler cannot distinguish between Chisel's representation of hardware `false.B`, `Reg(Bool())`
 and pure Chisel types (e.g. `Bool()`). You can get runtime errors passing a Chisel type when hardware is expected, and vice versa.
+
+TODO: cloneType, chiselTypeOf
