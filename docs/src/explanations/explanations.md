@@ -39,3 +39,4 @@ read these documents in the following order:
 * [Unconnected Wires](unconnected-wires)
 * [Annotations](annotations)
 * [Deep Dive into Connection Operators](connection-operators)
+* [Advanced Data Types](advanced-data-types)
