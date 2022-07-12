@@ -20,6 +20,10 @@ trait ChiselAnnotation {
   def toFirrtl: Annotation
 }
 
+/** Enhanced interface for Annotations in Chisel
+  *
+  *  Defines a conversion to corresponding FIRRTL Annotation(s)
+  */
 trait ChiselToFirrtlAnnotations {
   def toFirrtlAnnotations: Seq[Annotation]
 }
