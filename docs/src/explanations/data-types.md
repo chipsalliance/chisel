@@ -137,6 +137,8 @@ a <> c
 
 ## Scala Type vs Chisel Type vs Hardware
 
+
+
 The *Scala* type of the Data is recognized by the Scala compiler, such as `Decoupled[UInt]` or `MyBundle`, where 
 ```
 MyBundle(w: Int) extends Bundle {val foo: UInt(w.W), val bar: UInt(w.W)}
@@ -151,4 +153,113 @@ A literal is a `Data` that is respresented as a literal value without being wrap
 The Scala compiler cannot distinguish between Chisel's representation of hardware `false.B`, `Reg(Bool())`
 and pure Chisel types (e.g. `Bool()`). You can get runtime errors passing a Chisel type when hardware is expected, and vice versa.
 
-TODO: cloneType, chiselTypeOf
+```scala mdoc
+import chisel3._
+import chisel3.experimental.BundleLiterals._
+import chisel3.stage.ChiselStage
+
+class MyBundle(w: Int) extends Bundle {
+    val foo = UInt(w.W)
+    val bar = UInt(w.W) 
+}
+
+class MyModule(gen: () => MyBundle, demo: Int ) extends Module {
+                                                     // Synthesizable   Literal
+    val xType: MyBundle = new MyBundle(3)            //      -             -
+    val x:     MyBundle = IO(Input(new MyBundle(3))) //      x             -       
+    val xLit:  MyBundle = xType.Lit(                 //      -             - 
+      _.foo -> 0.U(3.W), 
+      _.bar -> 0.U(3.W)
+    )
+    //val y:   MyBundle = gen()                      //      ?             ?                      
+ 
+
+    val foo: MyBundle = demo match { // foo is always synthesizable
+      // These will work for either case:
+      case 0 => 0.U.asTypeOf(gen())
+
+      // If gen() is Synthesizable, these are allowed:
+      case 1 => gen()
+      case 2 => 0.U.asTypeOf(chiselTypeOf(gen()))    
+      case 3 =>  Wire(chiselTypeOf(gen()))
+      case 4 =>  WireInit(gen())
+
+      // If unknown is a pure chisel type, these are allowed:
+      case 5 => Wire(gen())
+      case 6 => gen().Lit(_.foo -> 0.U, 
+      _.bar -> 0.U )
+      case 7 => {
+        class Foo extends Bundle {
+          val nested = gen()
+        } 
+      Wire(new Foo()).nested}
+
+      // default
+      case _ => Wire(new MyBundle(3))
+    }
+
+    if (!foo.isLit) {
+      foo := DontCare
+    }
+}
+
+class Wrapper(demo: Int, passSynthesizable: Boolean) extends Module {
+  val gen = if (passSynthesizable) {
+      () => { val gen = Wire(new MyBundle(3)) ; gen := DontCare; gen}
+  } else (() => new MyBundle(3))
+  val inst = Module(new MyModule(gen, demo))
+  inst.x := DontCare
+}
+```
+
+```scala mdoc:silent
+// Work for both
+ChiselStage.elaborate(new Wrapper(0, true))
+ChiselStage.elaborate(new Wrapper(0, false))
+
+// Only work if synthesizable
+ChiselStage.elaborate(new Wrapper(1, true))
+ChiselStage.elaborate(new Wrapper(2, true))
+ChiselStage.elaborate(new Wrapper(3, true))
+ChiselStage.elaborate(new Wrapper(4, true))
+
+// Only work for Chisel Types
+ChiselStage.elaborate(new Wrapper(5, false))
+ChiselStage.elaborate(new Wrapper(6, false))
+ChiselStage.elaborate(new Wrapper(7, false))
+```
+
+Can only `:=` to hardware:
+```scala mdoc:crash
+ChiselStage.elaborate(new Wrapper(1, false))
+```
+
+
+Have to pass hardware to chiselTypeOf:
+```scala mdoc:crash
+ChiselStage.elaborate(new Wrapper(2, false))
+```
+```scala mdoc:crash
+ChiselStage.elaborate(new Wrapper(3, false))
+```
+
+Have to pass hardware to *Init:
+```scala mdoc:crash
+ChiselStage.elaborate(new Wrapper(4, false))
+```
+
+
+Can't pass hardware to a Wire, Reg, IO:
+```scala mdoc:crash
+ChiselStage.elaborate(new Wrapper(5, true))
+```
+
+.Lit can only be called on Chisel type:
+```scala mdoc:crash
+ChiselStage.elaborate(new Wrapper(6, true))
+```
+
+Can only use a Chisel type within a Bundle definition:
+```scala mdoc:crash
+ChiselStage.elaborate(new Wrapper(7, true))
+```
