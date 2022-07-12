@@ -179,20 +179,18 @@ class MyModule(gen: () => MyBundle, demo: Int ) extends Module {
       case 0 => 0.U.asTypeOf(gen())
 
       // If gen() is Synthesizable, these are allowed:
-      case 1 => gen()
-      case 2 => 0.U.asTypeOf(chiselTypeOf(gen()))    
+      case 1 =>  gen()
+      case 2 =>  0.U.asTypeOf(chiselTypeOf(gen()))    
       case 3 =>  Wire(chiselTypeOf(gen()))
       case 4 =>  WireInit(gen())
 
-      // If unknown is a pure chisel type, these are allowed:
+      // If gen is a pure chisel type, these are allowed:
       case 5 => Wire(gen())
       case 6 => gen().Lit(_.foo -> 0.U, 
       _.bar -> 0.U )
-      case 7 => {
-        class Foo extends Bundle {
-          val nested = gen()
-        } 
-      Wire(new Foo()).nested}
+      case 7 => Wire(new Bundle {
+        val nested = gen()
+      }).nested
 
       // default
       case _ => Wire(new MyBundle(3))
@@ -263,3 +261,4 @@ Can only use a Chisel type within a Bundle definition:
 ```scala mdoc:crash
 ChiselStage.elaborate(new Wrapper(7, true))
 ```
+
