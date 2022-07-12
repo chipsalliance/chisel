@@ -83,9 +83,7 @@ object ExplicitCompileOptions {
     inferModuleReset = false
   ) {
     override def migrateInferModuleReset = false
-
     override def emitStrictConnects = false
-
     override def copy(
       connectFieldsMustMatch:    Boolean = false,
       declaredTypeMustBeUnbound: Boolean = false,
