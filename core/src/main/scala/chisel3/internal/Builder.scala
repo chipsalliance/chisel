@@ -424,10 +424,13 @@ private[chisel3] object Builder extends LazyLogging {
 
   def idGen: IdGen = chiselContext.get.idGen
 
-  def globalNamespace:     Namespace = dynamicContext.globalNamespace
-  def components:          ArrayBuffer[Component] = dynamicContext.components
-  def annotations:         ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
-  def newAnnotations:      ArrayBuffer[ChiselToFirrtlAnnotations] = dynamicContext.newAnnotations
+  def globalNamespace: Namespace = dynamicContext.globalNamespace
+  def components:      ArrayBuffer[Component] = dynamicContext.components
+  def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  // TODO : Unify this with annotations in the future - done this way for backward compatability
+  def newAnnotations: ArrayBuffer[ChiselToFirrtlAnnotations] = dynamicContext.newAnnotations
+
   def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
   def namingStack:         NamingStack = dynamicContext.namingStack
   def importDefinitionMap: Map[String, String] = dynamicContext.importDefinitionMap

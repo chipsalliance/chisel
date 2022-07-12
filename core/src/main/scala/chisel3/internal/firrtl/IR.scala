@@ -14,6 +14,7 @@ import _root_.firrtl.annotations.Annotation
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
+import dataclass.{data, since}
 
 case class PrimOp(name: String) {
   override def toString: String = name
@@ -861,14 +862,28 @@ case class DefBlackBox(
   params: Map[String, Param])
     extends Component
 
-case class Circuit(
-  name:           String,
-  components:     Seq[Component],
-  annotations:    Seq[ChiselAnnotation],
-  renames:        RenameMap,
-  newAnnotations: Seq[ChiselToFirrtlAnnotations] = Seq.empty) {
+@data class Circuit(
+  name:       String,
+  components: Seq[Component],
+  @deprecated("Do not use annotations val of Circuit directly - use firrtlAnnotations instead. Will be removed in a future release",
+    "Chisel 3.5")
+  annotations: Seq[ChiselAnnotation],
+  renames:     RenameMap,
+  @deprecated("Do not use newAnnotations val of Circuit directly - use firrtlAnnotations instead. Will be removed in a future release",
+    "Chisel 3.5")
+  @since newAnnotations: Seq[ChiselToFirrtlAnnotations] = Seq.empty) {
+
   def firrtlAnnotations: Iterable[Annotation] =
     annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
       _.toFirrtlAnnotations.flatMap(_.update(renames))
     )
+
+  def copy(
+    name:           String = name,
+    components:     Seq[Component] = components,
+    annotations:    Seq[ChiselAnnotation] = annotations,
+    renames:        RenameMap = renames,
+    newAnnotations: Seq[ChiselToFirrtlAnnotations] = newAnnotations
+  ) = Circuit(name, components, annotations, renames, newAnnotations)
+
 }
