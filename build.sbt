@@ -138,7 +138,12 @@ lazy val plugin = (project in file("plugin")).
   ).
   settings(
     mimaPreviousArtifacts := {
-      Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.3" cross CrossVersion.full)
+      // There is not yet a 2.12.16 artifact, so suppress until 3.5.4 is released
+      if (scalaVersion.value == "2.12.16") {
+        Set()
+      } else {
+        Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.3" cross CrossVersion.full)
+      }
     }
   )
 
