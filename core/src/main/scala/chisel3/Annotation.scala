@@ -39,7 +39,6 @@ object annotate {
     Builder.annotations += anno
   }
   def apply(annos: ChiselToFirrtlAnnotations): Unit = {
-    println("Adding to new annotations in the builder")
     Builder.newAnnotations += annos
   }
 }

@@ -865,9 +865,8 @@ case class Circuit(
   name:           String,
   components:     Seq[Component],
   annotations:    Seq[ChiselAnnotation],
-  newAnnotations: Seq[ChiselToFirrtlAnnotations],
-  renames:        RenameMap) {
-  println(s"NewAnnoSize = ${newAnnotations.size}")
+  renames:        RenameMap,
+  newAnnotations: Seq[ChiselToFirrtlAnnotations] = Seq.empty) {
   def firrtlAnnotations: Iterable[Annotation] =
     annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
       _.toFirrtlAnnotations.flatMap(_.update(renames))
