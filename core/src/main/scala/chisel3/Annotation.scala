@@ -20,6 +20,10 @@ trait ChiselAnnotation {
   def toFirrtl: Annotation
 }
 
+trait ChiselToFirrtlAnnotations {
+  def toFirrtlAnnotations: Seq[Annotation]
+}
+
 /** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
   * during a run of
   * [[Driver$.execute(args:Array[String],dut:()=>chisel3\.RawModule)* Driver.execute]].
@@ -33,6 +37,10 @@ trait RunFirrtlTransform extends ChiselAnnotation {
 object annotate {
   def apply(anno: ChiselAnnotation): Unit = {
     Builder.annotations += anno
+  }
+  def apply(annos: ChiselToFirrtlAnnotations): Unit = {
+    println("Adding to new annotations in the builder")
+    Builder.newAnnotations += annos
   }
 }
 
