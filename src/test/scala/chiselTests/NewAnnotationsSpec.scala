@@ -36,7 +36,7 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
     io.out := mod3.io.out
 
     // Give two annotations as single element of the seq - ensures previous API works by wrapping into a seq.
-    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod1.toNamed)) })
+    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod2.toNamed)) })
     annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod3.toNamed)) })
 
     // Pass multiple annotations in the same seq - should get emitted out correctly.
@@ -56,20 +56,17 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
         )
 
       val dontTouchAnnos = dutAnnos.collect { case DontTouchAnnotation(target) => target.serialize }
-      val dontTouchAnnosCombined = dontTouchAnnos.mkString(",")
+      val noDedupAnnos = dutAnnos.collect { case NoDedupAnnotation(target) => target.serialize }
       require(dontTouchAnnos.size == 2, s"Exactly two DontTouch Annotations expected but got $dontTouchAnnos ")
-      dontTouchAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_1>io_in")
-      dontTouchAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_1>io_out")
+      require(noDedupAnnos.size == 2, s"Exactly two NoDedup Annotations expected but got $noDedupAnnos ")
+      val dontTouchAnnosCombined = dontTouchAnnos.mkString(",")
+      val noDedupAnnosCombined = noDedupAnnos.mkString(",")
 
-      val lowFirrtl = dutAnnos.collectFirst {
-        case FirrtlCircuitAnnotation(circuit) => circuit.serialize
-      }
-        .getOrElse(fail())
-      lowFirrtl should include("module MuchUsedModule :")
-      lowFirrtl should include("module MuchUsedModule_1 :")
-      lowFirrtl should include("module MuchUsedModule_3 :")
-      (lowFirrtl should not).include("module MuchUsedModule_2 :")
-      (lowFirrtl should not).include("module MuchUsedModule_4 :")
+      noDedupAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_2")
+      noDedupAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_3")
+      dontTouchAnnosCombined should include("~UsesMuchUsedModule|UsesMuchUsedModule/mod1:MuchUsedModule>io_out")
+      dontTouchAnnosCombined should include("~UsesMuchUsedModule|UsesMuchUsedModule/mod1:MuchUsedModule>io_in")
+
     }
   }
 }
