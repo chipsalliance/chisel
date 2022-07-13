@@ -871,7 +871,8 @@ case class DefBlackBox(
   renames:     RenameMap,
   @deprecated("Do not use newAnnotations val of Circuit directly - use firrtlAnnotations instead. Will be removed in a future release",
     "Chisel 3.5")
-  @since newAnnotations: Seq[ChiselToFirrtlAnnotations] = Seq.empty) {
+  @since("Chisel 3.5.4")
+  newAnnotations: Seq[ChiselToFirrtlAnnotations] = Seq.empty) {
 
   def firrtlAnnotations: Iterable[Annotation] =
     annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
@@ -879,11 +880,15 @@ case class DefBlackBox(
     )
 
   def copy(
-    name:           String = name,
-    components:     Seq[Component] = components,
-    annotations:    Seq[ChiselAnnotation] = annotations,
-    renames:        RenameMap = renames,
-    newAnnotations: Seq[ChiselToFirrtlAnnotations] = newAnnotations
+    name:        String = name,
+    components:  Seq[Component] = components,
+    annotations: Seq[ChiselAnnotation] = annotations,
+    renames:     RenameMap = renames
   ) = Circuit(name, components, annotations, renames, newAnnotations)
 
+}
+object Circuit {
+  def unapply(c: Circuit): Option[(String, Seq[Component], Seq[ChiselAnnotation], RenameMap)] = {
+    Some((c.name, c.components, c.annotations, c.renames))
+  }
 }
