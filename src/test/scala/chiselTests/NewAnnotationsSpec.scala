@@ -1,6 +1,6 @@
 package chiselTests
 import chisel3._
-import chisel3.experimental.{annotate, ChiselToFirrtlAnnotations}
+import chisel3.experimental.{annotate, ChiselMultiAnnotation}
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest.freespec.AnyFreeSpec
@@ -36,12 +36,12 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
     io.out := mod3.io.out
 
     // Give two annotations as single element of the seq - ensures previous API works by wrapping into a seq.
-    annotate(new ChiselToFirrtlAnnotations { def toFirrtlAnnotations = Seq(new NoDedupAnnotation(mod1.toNamed)) })
-    annotate(new ChiselToFirrtlAnnotations { def toFirrtlAnnotations = Seq(new NoDedupAnnotation(mod3.toNamed)) })
+    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod1.toNamed)) })
+    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod3.toNamed)) })
 
     // Pass multiple annotations in the same seq - should get emitted out correctly.
-    annotate(new ChiselToFirrtlAnnotations {
-      def toFirrtlAnnotations =
+    annotate(new ChiselMultiAnnotation {
+      def toFirrtl =
         Seq(new DontTouchAnnotation(mod1.io.in.toNamed), new DontTouchAnnotation(mod1.io.out.toNamed))
     })
   }

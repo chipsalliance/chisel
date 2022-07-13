@@ -872,11 +872,11 @@ case class DefBlackBox(
   @deprecated("Do not use newAnnotations val of Circuit directly - use firrtlAnnotations instead. Will be removed in a future release",
     "Chisel 3.5")
   @since("Chisel 3.5.4")
-  newAnnotations: Seq[ChiselToFirrtlAnnotations] = Seq.empty) {
+  newAnnotations: Seq[ChiselMultiAnnotation] = Seq.empty) {
 
   def firrtlAnnotations: Iterable[Annotation] =
     annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
-      _.toFirrtlAnnotations.flatMap(_.update(renames))
+      _.toFirrtl.flatMap(_.update(renames))
     )
 
   def copy(

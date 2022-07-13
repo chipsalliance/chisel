@@ -361,7 +361,7 @@ private[chisel3] class DynamicContext(
 
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
-  val newAnnotations = ArrayBuffer[ChiselToFirrtlAnnotations]()
+  val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   var currentModule: Option[BaseModule] = None
 
   /** Contains a mapping from a elaborated module to their aspect
@@ -429,7 +429,7 @@ private[chisel3] object Builder extends LazyLogging {
   def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
   // TODO : Unify this with annotations in the future - done this way for backward compatability
-  def newAnnotations: ArrayBuffer[ChiselToFirrtlAnnotations] = dynamicContext.newAnnotations
+  def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
 
   def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
   def namingStack:         NamingStack = dynamicContext.namingStack

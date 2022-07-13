@@ -24,8 +24,8 @@ trait ChiselAnnotation {
   *
   *  Defines a conversion to corresponding FIRRTL Annotation(s)
   */
-trait ChiselToFirrtlAnnotations {
-  def toFirrtlAnnotations: Seq[Annotation]
+trait ChiselMultiAnnotation {
+  def toFirrtl: Seq[Annotation]
 }
 
 /** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
@@ -42,7 +42,7 @@ object annotate {
   def apply(anno: ChiselAnnotation): Unit = {
     Builder.annotations += anno
   }
-  def apply(annos: ChiselToFirrtlAnnotations): Unit = {
+  def apply(annos: ChiselMultiAnnotation): Unit = {
     Builder.newAnnotations += annos
   }
 }
