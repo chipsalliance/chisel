@@ -404,6 +404,7 @@ private[chisel3] class DynamicContext(
 
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
+  val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   var currentModule: Option[BaseModule] = None
 
   /** Contains a mapping from a elaborated module to their aspect
@@ -466,9 +467,13 @@ private[chisel3] object Builder extends LazyLogging {
 
   def idGen: IdGen = chiselContext.get.idGen
 
-  def globalNamespace:     Namespace = dynamicContext.globalNamespace
-  def components:          ArrayBuffer[Component] = dynamicContext.components
-  def annotations:         ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def globalNamespace: Namespace = dynamicContext.globalNamespace
+  def components:      ArrayBuffer[Component] = dynamicContext.components
+  def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  // TODO : Unify this with annotations in the future - done this way for backward compatability
+  def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
+
   def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
   def namingStack:         NamingStack = dynamicContext.namingStack
   def importDefinitionMap: Map[String, String] = dynamicContext.importDefinitionMap
@@ -770,7 +775,7 @@ private[chisel3] object Builder extends LazyLogging {
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 
-      (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap), mod)
+      (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq), mod)
     }
   }
   initializeSingletons()
