@@ -16,16 +16,19 @@ import chisel3._
 import chisel3.stage.ChiselStage
 ```
 
-The *Scala* type of the Data is recognized by the Scala compiler, such as `Decoupled[UInt]` or `MyBundle` in 
+The *Scala* type of the Data is recognized by the Scala compiler, such as `Bool`, `Decoupled[UInt]` or `MyBundle` in 
 ```scala mdoc:silent
-class MyBundle(w: Int) extends Bundle {val foo = UInt(w.W); val bar = UInt(w.W)}
+class MyBundle(w: Int) extends Bundle {
+  val foo = UInt(w.W)
+  val bar = UInt(w.W)
+}
 ```
 
 The *Chisel* type of a `Data` is a Scala object. It captures all the fields actually present,
 by names, and their types including widths.
-For example, `MyBundle(3)` creates a Chisel Type with fields `foo : UInt(3.W),  bar: UInt(3.W))`.
+For example, `MyBundle(3)` creates a Chisel Type with fields `foo: UInt(3.W),  bar: UInt(3.W))`.
 
-Hardware is something that is "bound" to synthesizable hardware. For example `false.B` or `Reg(Bool())`.
+Hardware is `Data` that is "bound" to synthesizable hardware. For example `false.B` or `Reg(Bool())`.
 The binding is what determines the actual directionality of each field, it is not a property of the Chisel type.
 
 A literal is a `Data` that is respresentable as a literal value without being wrapped in Wire, Reg, or IO. 
@@ -37,17 +40,27 @@ The below code demonstrates how objects with the same Scala type can have differ
 ```scala mdoc
 import chisel3.experimental.BundleLiterals._
 
-class MyModule(gen: () => MyBundle, demo: Int) extends Module {
+class MyModule(gen: () => MyBundle) extends Module {
                                                             // Synthesizable   Literal
     val xType:    MyBundle     = new MyBundle(3)            //      -             -
     val dirXType: MyBundle     = Input(new MyBundle(3))     //      -             -
-    val x:        MyBundle     = IO(Input(new MyBundle(3))) //      x             -       
+    val xReg:     MyBundle     = Reg(new MyBundle(3))       //      x             -
+    val xIO:      MyBundle     = IO(Input(new MyBundle(3))) //      x             -
+    val xRegInit: MyBundle     = RegInit(xIO)               //      x             -
     val xLit:     MyBundle     = xType.Lit(                 //      x             x 
       _.foo -> 0.U(3.W), 
       _.bar -> 0.U(3.W)
     )
-    //val y:   MyBundle = gen()                             //      ?             ?                      
+    //val y:   MyBundle = gen()                             //      ?             ?
+    
+    // Need to initialize all hardware values
+    xReg := DontCare
 }
+```
+
+```scala mdoc:invisible
+// Just here to compile check the above
+ChiselStage.elaborate(new MyModule(() => new MyBundle(3)))
 ```
 
 ## Chisel Type vs Hardware -- Specific Functions and Errors
