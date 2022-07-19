@@ -78,7 +78,6 @@ ChiselStage.elaborate(new Module {
 ```
 
 Can only `:=` to hardware:
-
 ```scala mdoc:silent
 // Do this...
 ChiselStage.elaborate(new Module {
@@ -101,7 +100,7 @@ ChiselStage.elaborate(new Module {
   val hardware = IO(new MyBundle(3))
   val moarHardware = Wire(new MyBundle(3))
   moarHardware := DontCare
-  hardware <> moarHardware
+  hardware := moarHardware
 })
 ```
 ```scala mdoc:crash
@@ -109,7 +108,7 @@ ChiselStage.elaborate(new Module {
 ChiselStage.elaborate(new Module {
   val hardware = IO(new MyBundle(3))
   val chiselType = new MyBundle(3)
-  hardware <> chiselType
+  hardware := chiselType
 })
 ```
 
@@ -131,7 +130,6 @@ ChiselStage.elaborate(new Module {
 ```
 
 Have to pass hardware to `*Init`:
-
 ```scala mdoc:silent
 // Do this...
 ChiselStage.elaborate(new Module {
@@ -185,7 +183,6 @@ ChiselStage.elaborate(new Module {
 ```
 
 Can only use a Chisel type within a `Bundle` definition:
-
 ```scala mdoc:silent
 // Do this...
 ChiselStage.elaborate(new Module {
@@ -232,7 +229,6 @@ val child = Module(new Child())
 ```
 
 Can call `specifiedDirectionOf` on hardware or Chisel type:
-
 ```scala mdoc:silent
 ChiselStage.elaborate(new Module {
   val child = Module(new Child())
@@ -244,8 +240,8 @@ ChiselStage.elaborate(new Module {
 
 ## `.asInstanceOf` vs `.asTypeOf` vs `chiselTypeOf`
 
-`.asInstanceOf` is a Scala Runtime cast, usually used for telling the compiler that you have more information than
-it can infer to convert Scala types:
+`.asInstanceOf` is a Scala runtime cast, usually used for telling the compiler 
+that you have more information than it can infer to convert Scala types:
 
 ```scala mdoc:silent
 class ScalaCastingModule(gen: () => Bundle) extends Module {
@@ -266,7 +262,8 @@ ChiselStage.elaborate(new ScalaCastingModule( () => new Bundle{val baz = Bool()}
 
 `.asTypeOf` is a conversion from one `Data` subclass to another.
 It is commonly used to assign data to all-zeros, as described in [this cookbook recipe](https://www.chisel-lang.org/chisel3/docs/cookbooks/cookbook.html#how-can-i-tieoff-a-bundlevec-to-0), but it can 
-also be used to convert one type to the other:
+also be used (though not really strongly recommended, as there is no checking on
+width matches) to convert one Chisel type to another:
 
 ```scala mdoc
 class SimilarToMyBundle(w: Int) extends Bundle{
@@ -283,5 +280,5 @@ ChiselStage.emitVerilog(new Module {
 
 In contrast to `asInstanceOf` and `asTypeOf`,
 `chiselTypeOf` is not a casting operation. It returns a Scala object which
-can be used as shown in the examples above to create other chisel types and
-hardware with the same chisel type as existing hardware.
+can be used as shown in the examples above to create more Chisel types and
+hardware with the same Chisel type as existing hardware.
