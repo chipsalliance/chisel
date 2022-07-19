@@ -52,7 +52,7 @@ class MyModule(gen: () => MyBundle, demo: Int) extends Module {
 }
 ```
 
-## Specific Functions and Errors
+## Chisel Type vs Hardware Type -- Specific Functions and Errors
 
 `.asTypeOf` works for both hardware and Chisel type:
 
@@ -192,6 +192,46 @@ ChiselStage.elaborate(new Module {
   })
 })
 ```
+
+Can only call `directionOf` on Hardware:
+```scala mdoc:silent
+import chisel3.experimental.DataMirror
+
+class Child extends Module{
+  val hardware = IO(new MyBundle(3))
+  hardware := DontCare
+  val chiselType = new MyBundle(3)
+}
+```
+```scala mdoc:silent
+// Do this...
+ChiselStage.elaborate(new Module {
+  val child = Module(new Child())
+  child.hardware := DontCare
+  val direction = DataMirror.directionOf(child.hardware)
+})
+```
+```scala mdoc:crash
+// Not this...
+ChiselStage.elaborate(new Module {
+val child = Module(new Child())
+  child.hardware := DontCare
+  val direction = DataMirror.directionOf(child.chiselType)
+})
+```
+
+Can call `specifiedDirectionOf` on hardware or Chisel type:
+
+```scala mdoc:silent
+ChiselStage.elaborate(new Module {
+  val child = Module(new Child())
+  child.hardware := DontCare
+  val direction0 = DataMirror.specifiedDirectionOf(child.hardware)
+  val direction1 = DataMirror.specifiedDirectionOf(child.chiselType)
+})
+```
+
+
 ```scala mdoc
 //TODO:
 // .asTypeOf vs .asInstanceOf (chisel type vs scala type)
