@@ -257,12 +257,13 @@ ChiselStage.elaborate(new ScalaCastingModule( () => new MyBundle(3)))
 
 But if we are wrong, we can get a Scala runtime exception:
 ```scala mdoc:crash
-ChiselStage.elaborate(new ScalaCastingModule( () => new Bundle{val baz = Bool()}))
+class NotMyBundle extends Bundle {val baz = Bool()}
+ChiselStage.elaborate(new ScalaCastingModule(() => new NotMyBundle()))
 ```
 
 `.asTypeOf` is a conversion from one `Data` subclass to another.
 It is commonly used to assign data to all-zeros, as described in [this cookbook recipe](https://www.chisel-lang.org/chisel3/docs/cookbooks/cookbook.html#how-can-i-tieoff-a-bundlevec-to-0), but it can 
-also be used (though not really strongly recommended, as there is no checking on
+also be used (though not really recommended, as there is no checking on
 width matches) to convert one Chisel type to another:
 
 ```scala mdoc
