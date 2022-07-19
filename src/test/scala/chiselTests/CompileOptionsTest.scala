@@ -163,4 +163,32 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
     }
   }
 
+  "Strict.copy()" should "be equivalent in all CompileOptions traits" in {
+    import chisel3.ExplicitCompileOptions.Strict
+    val copiedCompileOptions = Strict.copy()
+    assert(copiedCompileOptions.connectFieldsMustMatch == Strict.connectFieldsMustMatch)
+    assert(copiedCompileOptions.declaredTypeMustBeUnbound == Strict.declaredTypeMustBeUnbound)
+    assert(copiedCompileOptions.dontTryConnectionsSwapped == Strict.dontTryConnectionsSwapped)
+    assert(copiedCompileOptions.dontAssumeDirectionality == Strict.dontAssumeDirectionality)
+    assert(copiedCompileOptions.checkSynthesizable == Strict.checkSynthesizable)
+    assert(copiedCompileOptions.explicitInvalidate == Strict.explicitInvalidate)
+    assert(copiedCompileOptions.inferModuleReset == Strict.inferModuleReset)
+    assert(copiedCompileOptions.migrateInferModuleReset == Strict.migrateInferModuleReset)
+    assert(copiedCompileOptions.emitStrictConnects == Strict.emitStrictConnects)
+  }
+
+  "NotStrict.copy()" should "be equivalent in all CompileOptions traits" in {
+    import chisel3.ExplicitCompileOptions.NotStrict
+    val copiedCompileOptions = NotStrict.copy()
+    assert(copiedCompileOptions.connectFieldsMustMatch == NotStrict.connectFieldsMustMatch)
+    assert(copiedCompileOptions.declaredTypeMustBeUnbound == NotStrict.declaredTypeMustBeUnbound)
+    assert(copiedCompileOptions.dontTryConnectionsSwapped == NotStrict.dontTryConnectionsSwapped)
+    assert(copiedCompileOptions.dontAssumeDirectionality == NotStrict.dontAssumeDirectionality)
+    assert(copiedCompileOptions.checkSynthesizable == NotStrict.checkSynthesizable)
+    assert(copiedCompileOptions.explicitInvalidate == NotStrict.explicitInvalidate)
+    assert(copiedCompileOptions.inferModuleReset == NotStrict.inferModuleReset)
+    assert(copiedCompileOptions.migrateInferModuleReset == NotStrict.migrateInferModuleReset)
+    assert(copiedCompileOptions.emitStrictConnects == NotStrict.emitStrictConnects)
+  }
+
 }

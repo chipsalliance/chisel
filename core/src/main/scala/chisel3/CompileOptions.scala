@@ -82,7 +82,28 @@ object ExplicitCompileOptions {
     explicitInvalidate = false,
     inferModuleReset = false
   ) {
+    override def migrateInferModuleReset = false
     override def emitStrictConnects = false
+    override def copy(
+      connectFieldsMustMatch:    Boolean = false,
+      declaredTypeMustBeUnbound: Boolean = false,
+      dontTryConnectionsSwapped: Boolean = false,
+      dontAssumeDirectionality:  Boolean = false,
+      checkSynthesizable:        Boolean = false,
+      explicitInvalidate:        Boolean = false,
+      inferModuleReset:          Boolean = false
+    ) = new CompileOptionsClass(
+      connectFieldsMustMatch,
+      declaredTypeMustBeUnbound,
+      dontTryConnectionsSwapped,
+      dontAssumeDirectionality,
+      checkSynthesizable,
+      explicitInvalidate,
+      inferModuleReset
+    ) {
+      override def migrateInferModuleReset = false
+      override def emitStrictConnects = false
+    }
   }
 
   // Collection of "strict" connection compile options, preferred for new code.
@@ -94,5 +115,30 @@ object ExplicitCompileOptions {
     checkSynthesizable = true,
     explicitInvalidate = true,
     inferModuleReset = true
-  )
+  ) {
+
+    override def migrateInferModuleReset = false
+    override def emitStrictConnects = true
+
+    override def copy(
+      connectFieldsMustMatch:    Boolean = true,
+      declaredTypeMustBeUnbound: Boolean = true,
+      dontTryConnectionsSwapped: Boolean = true,
+      dontAssumeDirectionality:  Boolean = true,
+      checkSynthesizable:        Boolean = true,
+      explicitInvalidate:        Boolean = true,
+      inferModuleReset:          Boolean = true
+    ) = new CompileOptionsClass(
+      connectFieldsMustMatch,
+      declaredTypeMustBeUnbound,
+      dontTryConnectionsSwapped,
+      dontAssumeDirectionality,
+      checkSynthesizable,
+      explicitInvalidate,
+      inferModuleReset
+    ) {
+      override def migrateInferModuleReset = false
+      override def emitStrictConnects = true
+    }
+  }
 }
