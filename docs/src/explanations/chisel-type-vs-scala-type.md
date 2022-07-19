@@ -11,33 +11,31 @@ and pure Chisel types (e.g. `Bool()`). You can get runtime errors passing a Chis
 
 ## Scala Type vs Chisel Type vs Hardware
 
-The *Scala* type of the Data is recognized by the Scala compiler, such as `Decoupled[UInt]` or `MyBundle` in 
+```scala mdoc:invisible
+import chisel3._
+import chisel3.stage.ChiselStage
 ```
-MyBundle(w: Int) extends Bundle {val foo: UInt(w.W), val bar: UInt(w.W)}
+
+The *Scala* type of the Data is recognized by the Scala compiler, such as `Decoupled[UInt]` or `MyBundle` in 
+```scala mdoc:silent
+class MyBundle(w: Int) extends Bundle {val foo = UInt(w.W); val bar = UInt(w.W)}
 ```
 
 The *Chisel* type of a `Data` is a Scala object. It captures all the fields actually present,
 by names, and their types including widths.
-For example, `MyBundle(3)` creates a Chisel Type of `Record` with `foo : UInt(3.W),  bar: UInt(3.W))`.
+For example, `MyBundle(3)` creates a Chisel Type with fields `foo : UInt(3.W),  bar: UInt(3.W))`.
 
 Hardware is something that is "bound" to synthesizable hardware. For example `false.B` or `Reg(Bool())`.
 The binding is what determines the actual directionality of each field, it is not a property of the Chisel type.
 
 A literal is a `Data` that is respresentable as a literal value without being wrapped in Wire, Reg, or IO. 
 
-## Demo Code
+## Chisel Type vs Hardware vs Literals
 
 The below code demonstrates how objects with the same Scala type can have different properties.
 
 ```scala mdoc
-import chisel3._
 import chisel3.experimental.BundleLiterals._
-import chisel3.stage.ChiselStage
-
-class MyBundle(w: Int) extends Bundle {
-    val foo = UInt(w.W)
-    val bar = UInt(w.W) 
-}
 
 class MyModule(gen: () => MyBundle, demo: Int) extends Module {
                                                             // Synthesizable   Literal
@@ -52,7 +50,7 @@ class MyModule(gen: () => MyBundle, demo: Int) extends Module {
 }
 ```
 
-## Chisel Type vs Hardware Type -- Specific Functions and Errors
+## Chisel Type vs Hardware -- Specific Functions and Errors
 
 `.asTypeOf` works for both hardware and Chisel type:
 
@@ -231,21 +229,46 @@ ChiselStage.elaborate(new Module {
 })
 ```
 
+## `.asInstanceOf` vs `.asTypeOf` vs `chiselTypeOf`
+
+`.asInstanceOf` is a Scala Runtime cast, usually used for telling the compiler that you have more information than
+it can infer to convert Scala types:
+
+```scala mdoc:silent
+class ScalaCastingModule(gen: () => Bundle) extends Module {
+  val io = gen().asInstanceOf[MyBundle]
+  io.foo := 0.U
+}
+```
+
+This works if we do indeed have more information than the compiler:
+``` scala mdoc:silent
+ChiselStage.elaborate(new ScalaCastingModule( () => new MyBundle(3)))
+```
+
+But if we are wrong, we can get a Scala runtime exception:
+```scala mdoc:crash
+ChiselStage.elaborate(new ScalaCastingModule( () => new Bundle{val baz = Bool()}))
+```
+
+`.asTypeOf` is a conversion from one `Data` subclass to another.
+It is commonly used to assign data to all-zeros, as described in [this cookbook recipe](https://www.chisel-lang.org/chisel3/docs/cookbooks/cookbook.html#how-can-i-tieoff-a-bundlevec-to-0), but it can 
+also be used to convert one type to the other:
 
 ```scala mdoc
-//TODO:
-// .asTypeOf vs .asInstanceOf (chisel type vs scala type)
-// (new MyBundle(3)).asInstanceOf[Bundle]
-// (gen(): Bundle).asInstanceOf[MyBundle]
-// foo: Bundle = new MyBundle(3)
-// someData.asTypeOf(someOtherData), chiselTypeOf(foo: Data), .asInstanceOf
+class SimilarToMyBundle(w: Int) extends Bundle{
+  val foobar = UInt((2*w).W)
+}
 
-// DataView stuff
+ChiselStage.emitVerilog(new Module {
+  val in = IO(Input(new MyBundle(3)))
+  val out = IO(Output(new SimilarToMyBundle(3)))
 
-// directionOf, specifiedDirectionOf
-
-// type Erasure, isA, asInstanceOf
-
-//.asInstanceOf[new MyBundle(3)]
-//.asInstanceOf[MyBundle]
+  out := in.asTypeOf(out)
+})
 ```
+
+In contrast to `asInstanceOf` and `asTypeOf`,
+`chiselTypeOf` is not a casting operation. It returns a Scala object which
+can be used as shown in the examples above to create other chisel types and
+hardware with the same chisel type as existing hardware.
