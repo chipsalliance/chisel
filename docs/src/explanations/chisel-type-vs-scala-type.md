@@ -35,23 +35,23 @@ A literal is a `Data` that is respresentable as a literal value without being wr
 
 ## Chisel Type vs Hardware vs Literals
 
-The below code demonstrates how objects with the same Scala type can have different properties.
+The below code demonstrates how objects with the same Scala type (`MyBundle`) can have different properties.
 
-```scala mdoc
+```scala mdoc:silent
 import chisel3.experimental.BundleLiterals._
 
 class MyModule(gen: () => MyBundle) extends Module {
-                                                            // Synthesizable   Literal
-    val xType:    MyBundle     = new MyBundle(3)            //      -             -
-    val dirXType: MyBundle     = Input(new MyBundle(3))     //      -             -
-    val xReg:     MyBundle     = Reg(new MyBundle(3))       //      x             -
-    val xIO:      MyBundle     = IO(Input(new MyBundle(3))) //      x             -
-    val xRegInit: MyBundle     = RegInit(xIO)               //      x             -
-    val xLit:     MyBundle     = xType.Lit(                 //      x             x 
+                                                            //   Hardware   Literal
+    val xType:    MyBundle     = new MyBundle(3)            //      -          -
+    val dirXType: MyBundle     = Input(new MyBundle(3))     //      -          -
+    val xReg:     MyBundle     = Reg(new MyBundle(3))       //      x          -
+    val xIO:      MyBundle     = IO(Input(new MyBundle(3))) //      x          -
+    val xRegInit: MyBundle     = RegInit(xIO)               //      x          -
+    val xLit:     MyBundle     = xType.Lit(                 //      x          x 
       _.foo -> 0.U(3.W), 
       _.bar -> 0.U(3.W)
     )
-    //val y:   MyBundle = gen()                             //      ?             ?
+    val y:        MyBundle = gen()                          //      ?          ?
     
     // Need to initialize all hardware values
     xReg := DontCare
