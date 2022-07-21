@@ -83,7 +83,9 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     })
   }
 
-  property("Empty Vecs with no direction on the sample_element should not cause direction errors, as Chisel and chisel3 directions are merged") {
+  property(
+    "Empty Vecs with no direction on the sample_element should not cause direction errors, as Chisel and chisel3 directions are merged"
+  ) {
     ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
@@ -115,7 +117,9 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     })
   }
 
-  property("Explicitly directioned but empty Bundles should not cause direction errors because Chisel and chisel3 directionality are merged") {
+  property(
+    "Explicitly directioned but empty Bundles should not cause direction errors because Chisel and chisel3 directionality are merged"
+  ) {
     ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val foo = UInt(8.W)
