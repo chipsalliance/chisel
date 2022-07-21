@@ -617,7 +617,6 @@ package object Chisel {
     /** Generates a 16-bit linear feedback shift register, returning the register contents.
       * @param increment optional control to gate when the LFSR updates.
       */
-    @chiselName
     def apply(increment: Bool = true.B): UInt =
       VecInit(
         FibonacciLFSR

@@ -121,7 +121,6 @@ object Decoupled {
     *
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
-  @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
     require(
       DataMirror.directionOf(irr.bits) == Direction.Output,
@@ -388,7 +387,6 @@ object Queue {
     *   consumer.io.in <> Queue(producer.io.out, 16)
     * }}}
     */
-  @chiselName
   def irrevocable[T <: Data](
     enq:            ReadyValidIO[T],
     entries:        Int = 2,
