@@ -160,6 +160,10 @@ package object experimental {
     * }
     * }}}
     */
+  @deprecated(
+    "@chiselName and NoChiselNamePrefix have been replaced by the compiler plugin and AffectsChiselPrefix. Use these instead",
+    "Chisel 3.5"
+  )
   trait NoChiselNamePrefix
 
   /** Generate prefixes from values of this type in the Chisel compiler plugin
