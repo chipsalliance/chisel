@@ -43,15 +43,13 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
   val compileOptions = moduleCompileOptions
 
-  private[chisel3] def checkPorts(names: HashMap[HasId, String]): Unit = {
+  private[chisel3] def checkPorts(): Unit = {
     for (port <- getModulePorts) {
-      port._computeName(None, None).orElse(names.get(port)) match {
-        case Some(name) =>
-        case None =>
-          Builder.error(
-            s"Unable to name port $port in $this, " +
-              "try making it a public field of the Module"
-          )
+      if (port._computeName(None).isEmpty) {
+        Builder.error(
+          s"Unable to name port $port in $this, " +
+            "try making it a public field of the Module"
+        )
       }
     }
   }
@@ -61,7 +59,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     _closed = true
 
     // Ports get first naming priority, since they are part of a Module's IO spec
-    checkPorts(names)
+    checkPorts()
 
     // Now that elaboration is complete for this Module, we can finalize names
     for (id <- getIds) {
@@ -83,7 +81,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
               case MemoryPortBinding(_, _) =>
                 id.forceName(default = "MPORT", _namespace)
               case PortBinding(_) =>
-                id.forceName(None, default = "PORT", _namespace, true, x => ModuleIO(this, x))
+                id.forceName(default = "PORT", _namespace, true, x => ModuleIO(this, x))
               case RegBinding(_, _) =>
                 id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
