@@ -543,9 +543,9 @@ package experimental {
                     vec.getElements.foreach(assignCompatDir(_))
                 }
               case SpecifiedDirection.Input | SpecifiedDirection.Output =>
-                // forced assign, nothing to do
-                // Note this is because Input and Output recurse down their types to align all fields to that SpecifiedDirection
-                // Thus, no implicit assigment is necessary.
+              // forced assign, nothing to do
+              // Note this is because Input and Output recurse down their types to align all fields to that SpecifiedDirection
+              // Thus, no implicit assigment is necessary.
             }
         }
       }
