@@ -159,7 +159,10 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
       info(s"output contains a verilog struct using preserve-aggregate option")
       (new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Baz), PreserveAggregate))
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Baz), PreserveAggregate(PreserveAggregate.All))
+        )
         .collectFirst {
           case EmittedVerilogCircuitAnnotation(a) => a
         }

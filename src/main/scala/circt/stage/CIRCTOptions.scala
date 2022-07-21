@@ -14,7 +14,7 @@ import java.io.File
 class CIRCTOptions private[stage] (
   val inputFile:         Option[File] = None,
   val outputFile:        Option[File] = None,
-  val preserveAggregate: Boolean = false,
+  val preserveAggregate: Option[PreserveAggregate.Type] = None,
   val target:            Option[CIRCTTarget.Type] = None,
   val handover:          Option[CIRCTHandover.Type] = None,
   val firtoolOptions:    Seq[String] = Seq.empty) {
@@ -22,7 +22,7 @@ class CIRCTOptions private[stage] (
   private[stage] def copy(
     inputFile:         Option[File] = inputFile,
     outputFile:        Option[File] = outputFile,
-    preserveAggregate: Boolean = preserveAggregate,
+    preserveAggregate: Option[PreserveAggregate.Type] = preserveAggregate,
     target:            Option[CIRCTTarget.Type] = target,
     handover:          Option[CIRCTHandover.Type] = handover,
     firtoolOptions:    Seq[String] = firtoolOptions

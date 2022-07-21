@@ -11,19 +11,30 @@ import firrtl.stage.FirrtlOptions
 /** An option consumed by [[circt.stage.CIRCTStage CIRCTStage]] */
 sealed trait CIRCTOption extends Unserializable { this: Annotation => }
 
-/** Preserve passive aggregate types in CIRCT.
-  */
-case object PreserveAggregate extends NoTargetAnnotation with CIRCTOption with HasShellOptions {
+object PreserveAggregate extends HasShellOptions {
+  sealed trait Type
+  object OneDimVec extends Type
+  object Vec extends Type
+  object All extends Type
 
   override def options = Seq(
-    new ShellOption[Unit](
+    new ShellOption[String](
       longOption = "preserve-aggregate",
-      toAnnotationSeq = _ => Seq(PreserveAggregate),
+      toAnnotationSeq = _ match {
+        case "none"   => Seq.empty
+        case "1d-vec" => Seq(PreserveAggregate(PreserveAggregate.OneDimVec))
+        case "vec"    => Seq(PreserveAggregate(PreserveAggregate.Vec))
+        case "all"    => Seq(PreserveAggregate(PreserveAggregate.All))
+      },
       helpText = "Do not lower aggregate types to ground types"
     )
   )
 
 }
+
+/** Preserve passive aggregate types in CIRCT.
+  */
+case class PreserveAggregate(mode: PreserveAggregate.Type) extends NoTargetAnnotation with CIRCTOption
 
 /** Object storing types associated with different CIRCT target languages, e.g., RTL or SystemVerilog */
 object CIRCTTarget {
