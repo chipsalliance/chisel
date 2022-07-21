@@ -233,7 +233,6 @@ class QueueIO[T <: Data](
   * consumer.io.in <> q.io.deq
   * }}}
   */
-@chiselName
 class Queue[T <: Data](
   val gen:            T,
   val entries:        Int,
@@ -345,7 +344,6 @@ object Queue {
     * }}}
     */
   @nowarn("cat=deprecation&msg=TransitName")
-  @chiselName
   def apply[T <: Data](
     enq:            ReadyValidIO[T],
     entries:        Int = 2,
