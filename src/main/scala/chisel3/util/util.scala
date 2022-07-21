@@ -11,4 +11,15 @@ package object util {
   type ValidIO[+T <: Data] = chisel3.util.Valid[T]
   val ValidIO = chisel3.util.Valid
   val DecoupledIO = chisel3.util.Decoupled
+
+  implicit class DecoupledExtensions[A <: Data](x: DecoupledIO[A]) {
+    def map[B <: Data](f: A => B): DecoupledIO[B] = {
+      val res = f(x.bits)
+      val wire = Wire(Decoupled(chiselTypeOf(res)))
+      wire.bits := res
+      wire.valid := x.valid
+      x.ready := wire.ready
+      wire
+    }
+  }
 }
