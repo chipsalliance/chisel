@@ -828,7 +828,17 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  /** TODO Write this */
+  /** Bi-directional strict connection from a producer to consumer: consumer :<>= producer
+    *
+    * @note Leaf fields aligned in relative direction to consumer will be assigned to from the corresponding producer field
+    * @note Leaf fields flipped in relative direction to producer will be assigned to from the corresponding consumer field
+    * @note the Chisel type of this and that must be equivalent.
+    *  - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
+    *  - All vector types are the same length
+    *  - All bundle types have the same field names and field flips
+    * @note the leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
+    * @note the length of this Vec must match the length of the input Seq
+    */
   final def :<>=(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
     prefix(this) {
       this.legacyChiselConnect(that)(sourceInfo, connectionCompileOptions)
