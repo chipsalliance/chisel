@@ -527,8 +527,7 @@ package experimental {
       //   even for chisel3 code.
       // This assigns the explicit directions required by both semantics on all Bundles.
       // This recursively walks the tree, and assigns directions if no explicit
-      //   direction given by upper-levels (override Input / Output) AND element is
-      //   directly inside a compatibility Bundle determined by compile options.
+      //   direction given by upper-levels (override Input / Output)
       def assignCompatDir(data: Data): Unit = {
         data match {
           case data: Element => data._assignCompatibilityExplicitDirection
