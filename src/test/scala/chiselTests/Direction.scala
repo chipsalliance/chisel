@@ -341,19 +341,11 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     }
 
     val emitted: String = ChiselStage.emitChirrtl(new MyModule)
-    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
-    Seq(emitted, firrtl).foreach { o =>
-      {
-        // Chisel Emitter formats spacing a little differently than the
-        // FIRRTL Emitter :-(
-        val s = o.replace("{b", "{ b")
-        assert(s.contains("input incoming : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
-        assert(s.contains("output outgoing : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
-        assert(s.contains("outgoing <= incoming"))
-      }
-    }
+    assert(emitted.contains("input incoming : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
+    assert(emitted.contains("output outgoing : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
+    assert(emitted.contains("outgoing <= incoming"))
   }
   property("Can now mix Input/Output and Flipped within the same bundle") {
     class Decoupled extends Bundle {
@@ -376,24 +368,15 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     }
 
     val emitted: String = ChiselStage.emitChirrtl(new MyModule)
-    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
 
-    // Check that emitted directions are correct.
-    Seq(emitted, firrtl).foreach { o =>
-      {
-        // Chisel Emitter formats spacing a little differently than the
-        // FIRRTL Emitter :-(
-        val s = o.replace("{b", "{ b").replace("{p", "{ p")
-        assert(
-          s.contains(
-            "input io : { producer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip consumer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip monitor : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}, driver : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}}"
-          )
-        )
-        assert(s.contains("io.consumer <= io.producer"))
-        assert(s.contains("io.monitor.bits <= io.driver.bits"))
-        assert(s.contains("io.monitor.valid <= io.driver.valid"))
-        assert(s.contains("io.monitor.ready <= io.driver.ready"))
-      }
-    }
+    assert(
+      emitted.contains(
+        "input io : { producer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip consumer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip monitor : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}, driver : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}}"
+      )
+    )
+    assert(emitted.contains("io.consumer <= io.producer"))
+    assert(emitted.contains("io.monitor.bits <= io.driver.bits"))
+    assert(emitted.contains("io.monitor.valid <= io.driver.valid"))
+    assert(emitted.contains("io.monitor.ready <= io.driver.ready"))
   }
 }
