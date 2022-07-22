@@ -327,4 +327,68 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       }
     }
   }
+  property("Can now describe a Decoupled bundle using Flipped, not Input/Output in chisel3") {
+    class Decoupled extends Bundle {
+      val bits = UInt(3.W)
+      val valid = Bool()
+      val ready = Flipped(Bool())
+    }
+    class MyModule extends RawModule {
+      val incoming = IO(Flipped(new Decoupled))
+      val outgoing = IO(new Decoupled)
+
+      outgoing <> incoming
+    }
+
+    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
+
+    // Check that emitted directions are correct.
+    Seq(emitted, firrtl).foreach { o =>
+      {
+        // Chisel Emitter formats spacing a little differently than the
+        // FIRRTL Emitter :-(
+        val s = o.replace("{b", "{ b")
+        assert(s.contains("input incoming : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
+        assert(s.contains("output outgoing : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
+        assert(s.contains("outgoing <= incoming"))
+      }
+    }
+  }
+  property("Can now mix Input/Output and Flipped within the same bundle") {
+    class Decoupled extends Bundle {
+      val bits = UInt(3.W)
+      val valid = Bool()
+      val ready = Flipped(Bool())
+    }
+    class DecoupledAndMonitor extends Bundle {
+      val producer = new Decoupled()
+      val consumer = Flipped(new Decoupled())
+      val monitor = Input(new Decoupled()) // Same as Flipped(stripFlipsIn(..))
+    }
+    class MyModule extends RawModule {
+      val io = IO(Flipped(new DecoupledAndMonitor()))
+      io.consumer <> io.producer
+      io.monitor.bits := io.producer.bits
+      io.monitor.valid := io.producer.valid
+      io.monitor.ready := io.producer.ready
+    }
+
+    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
+
+    // Check that emitted directions are correct.
+    Seq(emitted, firrtl).foreach { o =>
+      {
+        // Chisel Emitter formats spacing a little differently than the
+        // FIRRTL Emitter :-(
+        val s = o.replace("{b", "{ b").replace("{p", "{ p")
+        assert(s.contains("input io : { producer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip consumer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip monitor : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}}"))
+        assert(s.contains("io.consumer <= io.producer"))
+        assert(s.contains("io.monitor.bits <= io.producer.bits"))
+        assert(s.contains("io.monitor.valid <= io.producer.valid"))
+        assert(s.contains("io.monitor.ready <= io.producer.ready"))
+      }
+    }
+  }
 }
