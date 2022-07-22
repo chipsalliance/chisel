@@ -39,6 +39,14 @@ class CrossConnectTester(inType: Data, outType: Data) extends BasicTester {
   stop()
 }
 
+class CrossStrictConnects(inType: Data, outType: Data) extends Module {
+  val io = IO(new Bundle {
+    val in = Flipped(inType)
+    val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
+  })
+  io.out :<>= io.in
+}
+
 class ConnectSpec extends ChiselPropSpec with Utils {
   property("SInt := SInt should succeed") {
     assertTesterPasses { new CrossConnectTester(SInt(16.W), SInt(16.W)) }
@@ -192,5 +200,32 @@ class ConnectSpec extends ChiselPropSpec with Utils {
     }
     val expectedTypeMismatchError = """.*@: Sink \(UInt<4>\) and Source \(SInt<4>\) have different types."""
     (typeMismatchError.getMessage should fullyMatch).regex(expectedTypeMismatchError)
+  }
+
+  // (S)trict Connect tests
+  property("(S.a) SInt :<>= SInt should succeed") {
+    ChiselStage.elaborate { new CrossStrictConnects(SInt(16.W), SInt(16.W)) }
+  }
+  property("(S.b) UInt :<>= UInt should succeed") { ChiselStage.elaborate { new CrossStrictConnects(UInt(16.W), UInt(16.W)) } }
+  property("(S.c) SInt :<>= UInt should fail") { intercept[ChiselException] { ChiselStage.elaborate { new CrossStrictConnects(UInt(16.W), SInt(16.W)) } } }
+  property("(S.d) Decoupled :<>= Decoupled should succeed") {
+    class Decoupled extends Bundle {
+      val bits = UInt(3.W)
+      val valid = Bool()
+      val ready = Flipped(Bool())
+    }
+    val out = ChiselStage.emitChirrtl { new CrossStrictConnects(new Decoupled, new Decoupled) }
+    assert(out.contains("io.out <= io.in"))
+  }
+  property("(S.e) different relative flips, but same absolute flippage is an error") {
+    class X(yflip: Boolean, zflip: Boolean) extends Bundle {
+      val y = if(yflip) Flipped(new Y(zflip)) else new Y(zflip)
+    }
+    class Y(flip: Boolean) extends Bundle {
+      val z = if(flip) Flipped(Bool()) else Bool()
+    }
+    intercept[ChiselException] {
+      ChiselStage.emitVerilog { new CrossStrictConnects(new X(true, false), new X(false, true)) }
+    }
   }
 }

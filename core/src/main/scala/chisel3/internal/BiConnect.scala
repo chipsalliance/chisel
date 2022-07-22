@@ -113,7 +113,7 @@ private[chisel3] object BiConnect {
         val rightReified: Option[Aggregate] = if (isView(right_v)) reifyToAggregate(right_v) else Some(right_v)
 
         if (
-          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectAggregates(
+          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectData(
             leftReified.get,
             rightReified.get,
             sourceInfo,
@@ -170,7 +170,7 @@ private[chisel3] object BiConnect {
         val rightReified: Option[Aggregate] = if (isView(newRight)) reifyToAggregate(newRight) else Some(newRight)
 
         if (
-          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectAggregates(
+          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectData(
             leftReified.get,
             rightReified.get,
             sourceInfo,
@@ -262,9 +262,9 @@ private[chisel3] object BiConnect {
     *   4. Either the flow of the right-hand side expression is source or duplex,
     *      or the right-hand side expression has a passive type.
     */
-  private[chisel3] def canBulkConnectAggregates(
-    sink:                  Aggregate,
-    source:                Aggregate,
+  private[chisel3] def canBulkConnectData(
+    sink:                  Data,
+    source:                Data,
     sourceInfo:            SourceInfo,
     connectCompileOptions: CompileOptions,
     context_mod:           RawModule
@@ -278,7 +278,7 @@ private[chisel3] object BiConnect {
 
     // check records live in appropriate contexts
     def contextCheck =
-      MonoConnect.aggregateConnectContextCheck(
+      MonoConnect.dataConnectContextCheck(
         sourceInfo,
         connectCompileOptions,
         sink,

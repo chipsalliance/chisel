@@ -665,6 +665,29 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
+  private[chisel3] def legacyChiselConnect(
+    that: Data
+  )(
+    implicit sourceInfo:   SourceInfo,
+    connectCompileOptions: CompileOptions
+  ): Unit = {
+    if (connectCompileOptions.checkSynthesizable) {
+      requireIsHardware(this, s"data to be bulk-connected")
+      requireIsHardware(that, s"data to be bulk-connected")
+      (this.topBinding, that.topBinding) match {
+        case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
+        // DontCare cannot be a sink (LHS)
+        case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
+        case _ => // fine
+      }
+    }
+    if(!BiConnect.canBulkConnectData(this, that, sourceInfo, connectCompileOptions, Builder.referenceUserModule)) {
+      Builder.error(s"Cannot strict connect $this :<>= $that")
+    }
+    // TODO write error-checking logic, so it doesn't require the FIRRTL error if `this` is not writable
+    this.legacyAlwaysStrictConnect(that)
+  }
+
   /** Whether this Data has the same model ("data type") as that Data.
     * Data subtypes should overload this with checks against their own type.
     */
@@ -755,6 +778,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[chisel3] def width: Width
+  private[chisel3] def legacyAlwaysStrictConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
   private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
@@ -801,6 +825,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   final def <>(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
     prefix(this) {
       this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
+    }
+  }
+
+  /** TODO Write this */
+  final def :<>=(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+    prefix(this) {
+      this.legacyChiselConnect(that)(sourceInfo, connectionCompileOptions)
     }
   }
 
