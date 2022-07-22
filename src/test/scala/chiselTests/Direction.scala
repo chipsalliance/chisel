@@ -365,13 +365,14 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       val producer = new Decoupled()
       val consumer = Flipped(new Decoupled())
       val monitor = Input(new Decoupled()) // Same as Flipped(stripFlipsIn(..))
+      val driver = Output(new Decoupled()) // Same as stripFlipsIn(..)
     }
     class MyModule extends RawModule {
       val io = IO(Flipped(new DecoupledAndMonitor()))
       io.consumer <> io.producer
-      io.monitor.bits := io.producer.bits
-      io.monitor.valid := io.producer.valid
-      io.monitor.ready := io.producer.ready
+      io.monitor.bits := io.driver.bits
+      io.monitor.valid := io.driver.valid
+      io.monitor.ready := io.driver.ready
     }
 
     val emitted: String = ChiselStage.emitChirrtl(new MyModule)
@@ -383,11 +384,15 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
         // Chisel Emitter formats spacing a little differently than the
         // FIRRTL Emitter :-(
         val s = o.replace("{b", "{ b").replace("{p", "{ p")
-        assert(s.contains("input io : { producer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip consumer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip monitor : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}}"))
+        assert(
+          s.contains(
+            "input io : { producer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip consumer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip monitor : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}, driver : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}}"
+          )
+        )
         assert(s.contains("io.consumer <= io.producer"))
-        assert(s.contains("io.monitor.bits <= io.producer.bits"))
-        assert(s.contains("io.monitor.valid <= io.producer.valid"))
-        assert(s.contains("io.monitor.ready <= io.producer.ready"))
+        assert(s.contains("io.monitor.bits <= io.driver.bits"))
+        assert(s.contains("io.monitor.valid <= io.driver.valid"))
+        assert(s.contains("io.monitor.ready <= io.driver.ready"))
       }
     }
   }
