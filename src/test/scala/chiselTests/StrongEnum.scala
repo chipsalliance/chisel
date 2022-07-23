@@ -4,8 +4,8 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselEnum
+import chisel3.experimental.AffectsChiselPrefix
 import chisel3.internal.firrtl.UnknownWidth
-import chisel3.internal.naming.chiselName
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
 import chisel3.testers.BasicTester
@@ -575,11 +575,10 @@ class StrongEnumAnnotator extends Module {
   val indexed2 = vec_of_bundles(cycle)
 }
 
-@chiselName
 class StrongEnumAnnotatorWithChiselName extends Module {
   import EnumExample._
 
-  object LocalEnum extends ChiselEnum {
+  object LocalEnum extends ChiselEnum with AffectsChiselPrefix {
     val le0, le1 = Value
     val le2 = Value
     val le100 = Value(100.U)
