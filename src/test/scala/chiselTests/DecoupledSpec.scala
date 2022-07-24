@@ -17,4 +17,34 @@ class DecoupledSpec extends ChiselFlatSpec {
       assert(io.asUInt.widthOption.get === 4)
     })
   }
+
+  "Decoupled.map" should "apply a function to a wrapped Data" in {
+    val chirrtl = ChiselStage.convert(
+      ChiselStage.elaborate(new Module {
+        val enq = IO(Flipped(Decoupled(UInt(8.W))))
+        val deq = IO(Decoupled(UInt(8.W)))
+        deq <> enq.map(_ + 1.U)
+      })
+    )
+
+    chirrtl.serialize should include("""node _deq_res_T = add(enq.bits, UInt<1>("h1")""")
+    chirrtl.serialize should include("""node deq_res = tail(_deq_res_T, 1)""")
+    chirrtl.serialize should include("""deq_wire.bits <= deq_res""")
+    chirrtl.serialize should include("""deq <= deq_wire""")
+  }
+
+  "Decoupled.map" should "apply a function to a wrapped Bundle" in {
+    val chirrtl = ChiselStage.convert(
+      ChiselStage.elaborate(new Module {
+        val enq = IO(Flipped(Decoupled(UInt(8.W))))
+        val deq = IO(Decoupled(UInt(8.W)))
+        deq <> enq.map(_ + 1.U)
+      })
+    )
+
+    chirrtl.serialize should include("""node _deq_res_T = add(enq.bits, UInt<1>("h1")""")
+    chirrtl.serialize should include("""node deq_res = tail(_deq_res_T, 1)""")
+    chirrtl.serialize should include("""deq_wire.bits <= deq_res""")
+    chirrtl.serialize should include("""deq <= deq_wire""")
+  }
 }
