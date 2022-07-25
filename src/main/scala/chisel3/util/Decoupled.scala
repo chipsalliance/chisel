@@ -7,7 +7,6 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{requireIsChiselType, DataMirror, Direction}
-import chisel3.internal.naming._ // can't use chisel3_ version because of compile order
 
 import scala.annotation.nowarn
 
