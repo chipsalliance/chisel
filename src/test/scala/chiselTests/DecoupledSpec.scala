@@ -19,13 +19,15 @@ class DecoupledSpec extends ChiselFlatSpec {
   }
 
   "Decoupled.map" should "apply a function to a wrapped Data" in {
-    val chirrtl = ChiselStage.convert(
-      ChiselStage.elaborate(new Module {
-        val enq = IO(Flipped(Decoupled(UInt(8.W))))
-        val deq = IO(Decoupled(UInt(8.W)))
-        deq <> enq.map(_ + 1.U)
-      })
-    ).serialize
+    val chirrtl = ChiselStage
+      .convert(
+        ChiselStage.elaborate(new Module {
+          val enq = IO(Flipped(Decoupled(UInt(8.W))))
+          val deq = IO(Decoupled(UInt(8.W)))
+          deq <> enq.map(_ + 1.U)
+        })
+      )
+      .serialize
 
     // Check for data assignment
     chirrtl should include("""node _deq_res_T = add(enq.bits, UInt<1>("h1")""")
@@ -39,8 +41,8 @@ class DecoupledSpec extends ChiselFlatSpec {
 
   "Decoupled.map" should "apply a function to a wrapped Bundle" in {
     class TestBundle extends Bundle {
-      val foo  = UInt(8.W)
-      val bar  = UInt(8.W)
+      val foo = UInt(8.W)
+      val bar = UInt(8.W)
       val fizz = Bool()
       val buzz = Bool()
     }
@@ -49,21 +51,23 @@ class DecoupledSpec extends ChiselFlatSpec {
     def func(t: TestBundle): TestBundle = {
       val res = Wire(new TestBundle)
 
-      res.foo  := t.foo + 1.U
-      res.bar  := t.bar - 1.U
+      res.foo := t.foo + 1.U
+      res.bar := t.bar - 1.U
       res.fizz := false.B
       res.buzz := true.B
 
       res
     }
 
-    val chirrtl = ChiselStage.convert(
-      ChiselStage.elaborate(new Module {
-        val enq = IO(Flipped(Decoupled(new TestBundle)))
-        val deq = IO(Decoupled(new TestBundle))
-        deq <> enq.map(func)
-      })
-    ).serialize
+    val chirrtl = ChiselStage
+      .convert(
+        ChiselStage.elaborate(new Module {
+          val enq = IO(Flipped(Decoupled(new TestBundle)))
+          val deq = IO(Decoupled(new TestBundle))
+          deq <> enq.map(func)
+        })
+      )
+      .serialize
 
     // Check for data assignment
     chirrtl should include("""wire deq_res : { foo : UInt<8>, bar : UInt<8>, fizz : UInt<1>, buzz : UInt<1>}""")
