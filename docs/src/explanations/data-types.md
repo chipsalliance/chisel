@@ -1,6 +1,6 @@
 ---
 layout: docs
-title:  "Data Types"
+title:  "Chisel Data Types"
 section: "chisel3"
 ---
 
@@ -134,3 +134,4 @@ a <> b
 a <> b
 a <> c
 ```
+
