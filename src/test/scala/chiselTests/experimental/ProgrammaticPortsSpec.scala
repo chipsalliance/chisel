@@ -49,7 +49,9 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
   }
 
   "Ports" should "always win over internal components in naming" in {
-    doTest(new PortsWinTester)
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      doTest(new PortsWinTester)
+    }
   }
 
   "Module" should "ignore suggestName on clock and reset" in {
