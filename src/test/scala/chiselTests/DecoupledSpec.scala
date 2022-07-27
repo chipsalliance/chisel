@@ -72,16 +72,16 @@ class DecoupledSpec extends ChiselFlatSpec {
     // Check for data assignment
     chirrtl should include("""wire deq_res : { foo : UInt<8>, bar : UInt<8>, fizz : UInt<1>, buzz : UInt<1>}""")
 
-    chirrtl should include("""node _deq_res_res_foo_T = add(enq.bits, UInt<1>("h1")""")
+    chirrtl should include("""node _deq_res_res_foo_T = add(enq.bits.foo, UInt<1>("h1")""")
     chirrtl should include("""node _deq_res_res_foo_T_1 = tail(_deq_res_res_foo_T, 1)""")
-    chirrtl should include("""deq_res.foo = _deq_res_res_foo_T_1""")
+    chirrtl should include("""deq_res.foo <= _deq_res_res_foo_T_1""")
 
-    chirrtl should include("""node _deq_res_res_bar_T = sub(enq.bits, UInt<1>("h1")""")
+    chirrtl should include("""node _deq_res_res_bar_T = sub(enq.bits.bar, UInt<1>("h1")""")
     chirrtl should include("""node _deq_res_res_bar_T_1 = tail(_deq_res_res_bar_T, 1)""")
-    chirrtl should include("""deq_res.bar = _deq_res_res_bar_T_1""")
+    chirrtl should include("""deq_res.bar <= _deq_res_res_bar_T_1""")
 
-    chirrtl should include("""deq_res.fizz = UInt<1>("h0")""")
-    chirrtl should include("""deq_res.buzz = UInt<1>("h1")""")
+    chirrtl should include("""deq_res.fizz <= UInt<1>("h0")""")
+    chirrtl should include("""deq_res.buzz <= UInt<1>("h1")""")
 
     chirrtl should include("""deq_wire.bits <= deq_res""")
     chirrtl should include("""deq <= deq_wire""")
