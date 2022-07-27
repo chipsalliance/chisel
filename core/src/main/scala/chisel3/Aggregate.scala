@@ -63,10 +63,12 @@ sealed abstract class Aggregate extends Data {
     direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
       case Some(dir) => dir
       case None =>
-        val childWithDirections = getElements.zip(getElements.map(_.direction))
-        throw MixedDirectionAggregateException(
-          s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections"
-        )
+        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+        resolvedDirection match {
+          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
+        }
     }
   }
 
@@ -934,17 +936,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    try {
-      super.bind(target, parentDirection)
-    } catch { // nasty compatibility mode shim, where anything flies
-      case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
-        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-        direction = resolvedDirection match {
-          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
-        }
-    }
+    super.bind(target, parentDirection)
     setElementRefs()
   }
 
