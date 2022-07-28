@@ -30,13 +30,13 @@ class DecoupledSpec extends ChiselFlatSpec {
       .serialize
 
     // Check for data assignment
-    chirrtl should include("""node _deq_res_T = add(enq.bits, UInt<1>("h1")""")
-    chirrtl should include("""node deq_res = tail(_deq_res_T, 1)""")
-    chirrtl should include("""deq_wire.bits <= deq_res""")
-    chirrtl should include("""deq <= deq_wire""")
+    chirrtl should include("""node _deq_map_bits_T = add(enq.bits, UInt<1>("h1")""")
+    chirrtl should include("""node _deq_map_bits = tail(_deq_map_bits_T, 1)""")
+    chirrtl should include("""_deq_map.bits <= _deq_map_bits""")
+    chirrtl should include("""deq <= _deq_map""")
 
     // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
-    chirrtl should include("""enq.ready <= deq_wire.ready""")
+    chirrtl should include("""enq.ready <= _deq_map.ready""")
   }
 
   "Decoupled.map" should "apply a function to a wrapped Bundle" in {
@@ -70,23 +70,23 @@ class DecoupledSpec extends ChiselFlatSpec {
       .serialize
 
     // Check for data assignment
-    chirrtl should include("""wire deq_res : { foo : UInt<8>, bar : UInt<8>, fizz : UInt<1>, buzz : UInt<1>}""")
+    chirrtl should include("""wire _deq_map_bits : { foo : UInt<8>, bar : UInt<8>, fizz : UInt<1>, buzz : UInt<1>}""")
 
-    chirrtl should include("""node _deq_res_res_foo_T = add(enq.bits.foo, UInt<1>("h1")""")
-    chirrtl should include("""node _deq_res_res_foo_T_1 = tail(_deq_res_res_foo_T, 1)""")
-    chirrtl should include("""deq_res.foo <= _deq_res_res_foo_T_1""")
+    chirrtl should include("""node _deq_map_bits_res_foo_T = add(enq.bits.foo, UInt<1>("h1")""")
+    chirrtl should include("""node _deq_map_bits_res_foo_T_1 = tail(_deq_map_bits_res_foo_T, 1)""")
+    chirrtl should include("""_deq_map_bits.foo <= _deq_map_bits_res_foo_T_1""")
 
-    chirrtl should include("""node _deq_res_res_bar_T = sub(enq.bits.bar, UInt<1>("h1")""")
-    chirrtl should include("""node _deq_res_res_bar_T_1 = tail(_deq_res_res_bar_T, 1)""")
-    chirrtl should include("""deq_res.bar <= _deq_res_res_bar_T_1""")
+    chirrtl should include("""node _deq_map_bits_res_bar_T = sub(enq.bits.bar, UInt<1>("h1")""")
+    chirrtl should include("""node _deq_map_bits_res_bar_T_1 = tail(_deq_map_bits_res_bar_T, 1)""")
+    chirrtl should include("""_deq_map_bits.bar <= _deq_map_bits_res_bar_T_1""")
 
-    chirrtl should include("""deq_res.fizz <= UInt<1>("h0")""")
-    chirrtl should include("""deq_res.buzz <= UInt<1>("h1")""")
+    chirrtl should include("""_deq_map_bits.fizz <= UInt<1>("h0")""")
+    chirrtl should include("""_deq_map_bits.buzz <= UInt<1>("h1")""")
 
-    chirrtl should include("""deq_wire.bits <= deq_res""")
-    chirrtl should include("""deq <= deq_wire""")
+    chirrtl should include("""_deq_map.bits <= _deq_map_bits""")
+    chirrtl should include("""deq <= _deq_map""")
 
     // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
-    chirrtl should include("""enq.ready <= deq_wire.ready""")
+    chirrtl should include("""enq.ready <= _deq_map.ready""")
   }
 }
