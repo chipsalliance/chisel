@@ -89,4 +89,32 @@ class DecoupledSpec extends ChiselFlatSpec {
     // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
     chirrtl should include("""enq.ready <= _deq_map.ready""")
   }
+
+  "Decoupled.map" should "apply a function to a wrapped Bundle and return a different typed DecoupledIO" in {
+    class TestBundle extends Bundle {
+      val foo = UInt(8.W)
+      val bar = UInt(8.W)
+    }
+
+    val chirrtl = ChiselStage
+      .convert(
+        ChiselStage.elaborate(new Module {
+          val enq = IO(Flipped(Decoupled(new TestBundle)))
+          val deq = IO(Decoupled(UInt(8.W)))
+          deq <> enq.map(bundle => bundle.foo & bundle.bar)
+        })
+      )
+      .serialize
+
+    // Check that the _map wire wraps a UInt and not a TestBundle
+    chirrtl should include("""wire _deq_map : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}""")
+
+    // Check for data assignment
+    chirrtl should include("""node _deq_map_bits = and(enq.bits.foo, enq.bits.bar)""")
+    chirrtl should include("""_deq_map.bits <= _deq_map_bits""")
+    chirrtl should include("""deq <= _deq_map""")
+
+    // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
+    chirrtl should include("""enq.ready <= _deq_map.ready""")
+  }
 }
