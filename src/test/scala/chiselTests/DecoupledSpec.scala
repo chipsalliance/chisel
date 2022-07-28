@@ -20,14 +20,11 @@ class DecoupledSpec extends ChiselFlatSpec {
 
   "Decoupled.map" should "apply a function to a wrapped Data" in {
     val chirrtl = ChiselStage
-      .convert(
-        ChiselStage.elaborate(new Module {
-          val enq = IO(Flipped(Decoupled(UInt(8.W))))
-          val deq = IO(Decoupled(UInt(8.W)))
-          deq <> enq.map(_ + 1.U)
-        })
-      )
-      .serialize
+      .emitChirrtl(new Module {
+        val enq = IO(Flipped(Decoupled(UInt(8.W))))
+        val deq = IO(Decoupled(UInt(8.W)))
+        deq <> enq.map(_ + 1.U)
+      })
 
     // Check for data assignment
     chirrtl should include("""node _deq_map_bits_T = add(enq.bits, UInt<1>("h1")""")
@@ -60,14 +57,11 @@ class DecoupledSpec extends ChiselFlatSpec {
     }
 
     val chirrtl = ChiselStage
-      .convert(
-        ChiselStage.elaborate(new Module {
-          val enq = IO(Flipped(Decoupled(new TestBundle)))
-          val deq = IO(Decoupled(new TestBundle))
-          deq <> enq.map(func)
-        })
-      )
-      .serialize
+      .emitChirrtl(new Module {
+        val enq = IO(Flipped(Decoupled(new TestBundle)))
+        val deq = IO(Decoupled(new TestBundle))
+        deq <> enq.map(func)
+      })
 
     // Check for data assignment
     chirrtl should include("""wire _deq_map_bits : { foo : UInt<8>, bar : UInt<8>, fizz : UInt<1>, buzz : UInt<1>}""")
@@ -97,14 +91,11 @@ class DecoupledSpec extends ChiselFlatSpec {
     }
 
     val chirrtl = ChiselStage
-      .convert(
-        ChiselStage.elaborate(new Module {
-          val enq = IO(Flipped(Decoupled(new TestBundle)))
-          val deq = IO(Decoupled(UInt(8.W)))
-          deq <> enq.map(bundle => bundle.foo & bundle.bar)
-        })
-      )
-      .serialize
+      .emitChirrtl(new Module {
+        val enq = IO(Flipped(Decoupled(new TestBundle)))
+        val deq = IO(Decoupled(UInt(8.W)))
+        deq <> enq.map(bundle => bundle.foo & bundle.bar)
+      })
 
     // Check that the _map wire wraps a UInt and not a TestBundle
     chirrtl should include("""wire _deq_map : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}""")
