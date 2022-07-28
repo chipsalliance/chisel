@@ -58,7 +58,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    // Ports get first naming priority, since they are part of a Module's IO spec
+    // Check to make sure that all ports can be named
     checkPorts()
 
     // Now that elaboration is complete for this Module, we can finalize names
