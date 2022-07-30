@@ -141,6 +141,15 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
     val inferReset = (_parent.isDefined || Builder.inDefinition) && moduleCompileOptions.inferModuleReset
+    if (moduleCompileOptions.migrateInferModuleReset && !moduleCompileOptions.inferModuleReset) {
+      this match {
+        case _: RequireSyncReset => // Good! It's been migrated.
+        case _ => // Bad! It hasn't been migrated.
+          Builder.error(
+            s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
+          )
+      }
+    }
     if (inferReset) Reset() else Bool()
   }
 
@@ -266,7 +275,7 @@ package internal {
       private[chisel3] def setRefAndPortsRef(namespace: Namespace): Unit = {
         val record = _portsRecord
         // Use .forceName to re-use default name resolving behavior
-        record.forceName(None, default = this.desiredName, namespace)
+        record.forceName(default = this.desiredName, namespace)
         // Now take the Ref that forceName set and convert it to the correct Arg
         val instName = record.getRef match {
           case Ref(name) => name
@@ -377,7 +386,7 @@ package internal {
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
-      if (!compileOptions.explicitInvalidate) {
+      if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
         // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
@@ -485,6 +494,27 @@ package experimental {
     /** Sets up this module in the parent context
       */
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit
+
+    private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
+      for (port <- getModulePorts) {
+        port._computeName(None).orElse(names.get(port)) match {
+          case Some(name) =>
+            if (_namespace.contains(name)) {
+              Builder.error(
+                s"""Unable to name port $port to "$name" in $this,""" +
+                  " name is already taken by another port!"
+              )
+            }
+            port.setRef(ModuleIO(this, _namespace.name(name)))
+          case None =>
+            Builder.error(
+              s"Unable to name port $port in $this, " +
+                "try making it a public field of the Module"
+            )
+            port.setRef(ModuleIO(this, "<UNNAMED>"))
+        }
+      }
+    }
 
     //
     // Chisel Internals

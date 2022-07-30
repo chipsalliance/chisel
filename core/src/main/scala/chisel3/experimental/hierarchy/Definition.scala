@@ -11,6 +11,7 @@ import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform
 import chisel3.experimental.BaseModule
 import chisel3.internal.BaseModule.IsClone
 import firrtl.annotations.{IsModule, ModuleTarget}
+import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
 
 /** User-facing Definition type.
   * Represents a definition of an object of type [[A]] which are marked as @instantiable
@@ -100,7 +101,10 @@ object Definition extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): Definition[T] = {
-    val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
+    val dynamicContext = {
+      val context = Builder.captureContext()
+      new DynamicContext(Nil, context.throwOnFirstError, context.warnReflectiveNaming)
+    }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
@@ -112,3 +116,11 @@ object Definition extends SourceInfoDoc {
   }
 
 }
+
+/** Stores a [[Definition]] that is imported so that its Instances can be
+  * compiled separately.
+  */
+case class ImportDefinitionAnnotation[T <: BaseModule with IsInstantiable](
+  definition:      Definition[T],
+  overrideDefName: Option[String] = None)
+    extends NoTargetAnnotation

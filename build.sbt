@@ -18,8 +18,8 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.5.4",
   autoAPIMappings := true,
-  scalaVersion := "2.12.15",
-  crossScalaVersions := Seq("2.13.6", "2.12.15"),
+  scalaVersion := "2.12.16",
+  crossScalaVersions := Seq("2.13.6", "2.12.16"),
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
@@ -109,6 +109,7 @@ lazy val pluginScalaVersions = Seq(
   "2.12.13",
   "2.12.14",
   "2.12.15",
+  "2.12.16",
   "2.13.0",
   "2.13.1",
   "2.13.2",
@@ -137,7 +138,12 @@ lazy val plugin = (project in file("plugin")).
   ).
   settings(
     mimaPreviousArtifacts := {
-      Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.0" cross CrossVersion.full)
+      // There is not yet a 2.12.16 artifact, so suppress until 3.5.4 is released
+      if (scalaVersion.value == "2.12.16") {
+        Set()
+      } else {
+        Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.3" cross CrossVersion.full)
+      }
     }
   )
 
@@ -156,7 +162,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.5.0"))
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.5.3"))
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -170,7 +176,20 @@ lazy val core = (project in file("core")).
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.0")).
+  settings(
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.3"),
+    mimaBinaryIssueFilters ++= Seq(
+      // Modified package private methods (https://github.com/lightbend/mima/issues/53)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data._computeName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data.forceName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.MemBase._computeName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.MemBase.forceName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement._computeName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.forceName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule._computeName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.forceName"),
+    )
+  ).
   settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
@@ -199,13 +218,17 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.5.0"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.5.3"),
     mimaBinaryIssueFilters ++= Seq(
       // Modified package private methods (https://github.com/lightbend/mima/issues/53)
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this"),
     ),
     libraryDependencies += defaultVersions("treadle") % "test",
     Test / scalacOptions += "-P:chiselplugin:genBundleElements",
+    // Forward doc command to unidoc
+    Compile / doc := (ScalaUnidoc / doc).value,
+    // Include unidoc as the ScalaDoc for publishing
+    Compile / packageDoc / mappings := (ScalaUnidoc / packageDoc / mappings).value,
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
@@ -242,7 +265,7 @@ lazy val integrationTests = (project in file ("integration-tests")).
   settings(chiselSettings: _*).
   settings(usePluginSettings: _*).
   settings(Seq(
-    libraryDependencies += defaultVersions("chiseltest") % "test",
+    libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5-SNAPSHOT" % "test"
   ))
 
 lazy val docs = project       // new documentation project

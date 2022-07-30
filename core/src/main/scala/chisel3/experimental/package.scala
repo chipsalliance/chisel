@@ -160,7 +160,41 @@ package object experimental {
     * }
     * }}}
     */
+  @deprecated(
+    "@chiselName and NoChiselNamePrefix have been replaced by the compiler plugin and AffectsChiselPrefix. Use these instead",
+    "Chisel 3.5"
+  )
   trait NoChiselNamePrefix
+
+  /** Generate prefixes from values of this type in the Chisel compiler plugin
+    *
+    * Users can mixin this trait to tell the Chisel compiler plugin to include the names of
+    * vals of this type when generating prefixes for naming `Data` and `Mem` instances.
+    * This is generally useful whenever creating a `class` that contains `Data`, `Mem`,
+    * or `Module` instances but does not itself extend `Data` or `Module`.
+    *
+    * @see See [[https://www.chisel-lang.org/chisel3/docs/explanations/naming.html the compiler plugin documentation]] for more information on this process.
+    *
+    * @example {{{
+    * import chisel3._
+    * import chisel3.experimental.AffectsChiselPrefix
+    *
+    * class MyModule extends Module {
+    *   // Note: This contains a Data but is not a named component itself
+    *   class NotAData extends AffectsChiselPrefix {
+    *     val value = Wire(Bool())
+    *   }
+    *
+    *   // Name with AffectsChiselPrefix:    "nonData_value"
+    *   // Name without AffectsChiselPrefix: "value"
+    *   val nonData = new NotAData
+    *
+    *   // Name with AffectsChiselPrefix:    "nonData2_value"
+    *   // Name without AffectsChiselPrefix: "value_1"
+    *   val nonData2 = new NotAData
+    * }
+    */
+  trait AffectsChiselPrefix
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {

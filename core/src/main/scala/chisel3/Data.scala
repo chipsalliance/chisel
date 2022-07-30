@@ -12,6 +12,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
+import scala.reflect.ClassTag
 import scala.util.Try
 
 /** User-specified directions.
@@ -156,6 +157,31 @@ package experimental {
       requireIsHardware(target, "node requested directionality on")
       target.direction
     }
+
+    private def hasBinding[B <: ConstrainedBinding: ClassTag](target: Data) = {
+      target.topBindingOpt match {
+        case Some(b: B) => true
+        case _ => false
+      }
+    }
+
+    /** Check if a given `Data` is an IO port
+      * @param x the `Data` to check
+      * @return `true` if x is an IO port, `false` otherwise
+      */
+    def isIO(x: Data): Boolean = hasBinding[PortBinding](x)
+
+    /** Check if a given `Data` is a Wire
+      * @param x the `Data` to check
+      * @return `true` if x is a Wire, `false` otherwise
+      */
+    def isWire(x: Data): Boolean = hasBinding[WireBinding](x)
+
+    /** Check if a given `Data` is a Reg
+      * @param x the `Data` to check
+      * @return `true` if x is a Reg, `false` otherwise
+      */
+    def isReg(x: Data): Boolean = hasBinding[RegBinding](x)
 
     /** Check if two Chisel types are the same type.
       * Internally, this is dispatched to each Chisel type's
@@ -570,6 +596,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[chisel3] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
+
   private[chisel3] def connect(
     that: Data
   )(
@@ -583,6 +610,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
         case _ => // fine
       }
+    }
+    if (connectCompileOptions.emitStrictConnects) {
+
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
@@ -610,6 +640,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
         case _ => // fine
       }
+    }
+    if (connectCompileOptions.emitStrictConnects) {
       try {
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
@@ -866,7 +898,7 @@ trait WireFactory {
     x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
 
     pushCommand(DefWire(sourceInfo, x))
-    if (!compileOptions.explicitInvalidate) {
+    if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
       pushCommand(DefInvalid(sourceInfo, x.ref))
     }
 
