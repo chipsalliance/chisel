@@ -7,7 +7,6 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{requireIsChiselType, DataMirror, Direction}
-import chisel3.internal.naming._ // can't use chisel3_ version because of compile order
 
 import scala.annotation.nowarn
 
@@ -136,7 +135,6 @@ object Decoupled {
     *
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
-  @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
     require(
       DataMirror.directionOf(irr.bits) == Direction.Output,
@@ -403,7 +401,6 @@ object Queue {
     *   consumer.io.in <> Queue(producer.io.out, 16)
     * }}}
     */
-  @chiselName
   def irrevocable[T <: Data](
     enq:            ReadyValidIO[T],
     entries:        Int = 2,
