@@ -237,7 +237,7 @@ If you are migrating from Chisel2, see [the migration guide](https://www.chisel-
 
 ### Chisel Dev Meeting
 
-Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--1200 PT.
+Chisel/FIRRTL development meetings happen every Monday from 1100--1200 PT.
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
