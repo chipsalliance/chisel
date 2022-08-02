@@ -57,7 +57,7 @@ abstract class Element extends Data {
   override def litOption:                Option[BigInt] = litArgOption.map(_.num)
   private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
 
-  private[chisel3] def legacyAlwaysStrictConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {

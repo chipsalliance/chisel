@@ -682,10 +682,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       }
     }
     if (!BiConnect.canBulkConnectData(this, that, sourceInfo, connectCompileOptions, Builder.referenceUserModule)) {
-      Builder.error(s"Cannot strict connect $this :<>= $that")
+      Builder.error(s"Cannot connect $this :<>= $that")
     }
     // TODO write error-checking logic, so it doesn't require the FIRRTL error if `this` is not writable
-    this.legacyAlwaysStrictConnect(that)
+    this.firrtlConnect(that)
   }
 
   /** Whether this Data has the same model ("data type") as that Data.
@@ -778,8 +778,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[chisel3] def width: Width
-  private[chisel3] def legacyAlwaysStrictConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
-  private[chisel3] def legacyConnect(that:             Data)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
