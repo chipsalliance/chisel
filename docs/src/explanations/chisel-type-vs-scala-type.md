@@ -245,13 +245,13 @@ that you have more information than it can infer to convert Scala types:
 
 ```scala mdoc:silent
 class ScalaCastingModule(gen: () => Bundle) extends Module {
-  val io = gen().asInstanceOf[MyBundle]
+  val io = IO(Output(gen().asInstanceOf[MyBundle]))
   io.foo := 0.U
 }
 ```
 
 This works if we do indeed have more information than the compiler:
-``` scala mdoc:silent
+```scala mdoc:silent
 ChiselStage.elaborate(new ScalaCastingModule( () => new MyBundle(3)))
 ```
 
