@@ -53,7 +53,7 @@ private[chisel3] object BiConnect {
   /** This function is what recursively tries to connect a left and right together
     *
     * There is some cleverness in the use of internal try-catch to catch exceptions
-    * during the recursive decent and then rethrow them with extra information added.
+    * during the recursive descent and then rethrow them with extra information added.
     * This gives the user a 'path' to where in the connections things went wrong.
     *
     * == Chisel Semantics and how they emit to firrtl ==
@@ -64,7 +64,7 @@ private[chisel3] object BiConnect {
     * 2. Strict Bi-Connect (implemented as being field-blasted because we know all firrtl fields would not match exactly)
     *   `a.foo <= b.foo, b.bar <= a.bar`
     *
-    * 3. Not-Strict Bi-Connect (firrtl will allow fields to not match exactly)
+    * 3. Not-Strict Bi-Connect aka Partial Connect (firrtl will allow fields to not match exactly)
     *   `a <- b`
     *
     * 4. Mixed Semantic Bi-Connect (some fields need to be handled differently)
