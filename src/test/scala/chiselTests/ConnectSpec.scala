@@ -48,9 +48,9 @@ class CrossStrictConnects(inType: Data, outType: Data) extends Module {
 }
 
 class BadCrossStrictConnects(inType: Data, outType: Data) extends Module {
-    val io = IO(new Bundle {
-      val in = Flipped(inType)
-      val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
+  val io = IO(new Bundle {
+    val in = Flipped(inType)
+    val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
   })
   io.in :<>= io.out
 }
@@ -63,8 +63,9 @@ class CrossStrictConnectsWithWires(inType: Data, outType: Data, nTmps: Int = 0) 
   require(nTmps > 0)
   val wiresIn = Seq.fill(nTmps)(Wire(inType))
   val wiresOut = Seq.fill(nTmps)(Wire(outType))
-  (Seq(io.out) ++ wiresOut ++ wiresIn).zip(wiresOut ++ wiresIn :+ io.in).foreach { case (l, r) =>
-    l :<>= r
+  (Seq(io.out) ++ wiresOut ++ wiresIn).zip(wiresOut ++ wiresIn :+ io.in).foreach {
+    case (l, r) =>
+      l :<>= r
   }
 }
 
@@ -242,7 +243,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
     val out = ChiselStage.emitChirrtl { new CrossStrictConnects(new Decoupled, new Decoupled) }
     assert(out.contains("io.out <= io.in"))
   }
-    property("(D.d) Aggregates with same-named fields should succeed") {
+  property("(D.d) Aggregates with same-named fields should succeed") {
     class Foo extends Bundle {
       val foo = Bool()
       val bar = Flipped(Bool())
@@ -254,7 +255,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
     val out = ChiselStage.emitChirrtl { new CrossStrictConnects(new Foo, new FooLike) }
     assert(out.contains("io.out <= io.in"))
   }
-    property("(D.d) Decoupled[Foo] :<>= Decoupled[Foo-Like] should succeed") {
+  property("(D.d) Decoupled[Foo] :<>= Decoupled[Foo-Like] should succeed") {
     class Foo extends Bundle {
       val foo = Bool()
       val bar = Flipped(Bool())
@@ -268,8 +269,10 @@ class ConnectSpec extends ChiselPropSpec with Utils {
       val valid = Bool()
       val ready = Flipped(Bool())
     }
-    val out = ChiselStage.emitChirrtl { new CrossStrictConnects(new Decoupled(new Foo()), new Decoupled(new FooLike())) }
-   assert(out.contains("io.out <= io.in")) 
+    val out = ChiselStage.emitChirrtl {
+      new CrossStrictConnects(new Decoupled(new Foo()), new Decoupled(new FooLike()))
+    }
+    assert(out.contains("io.out <= io.in"))
   }
   property("(D.e) different relative flips, but same absolute flippage is an error") {
     class X(yflip: Boolean, zflip: Boolean) extends Bundle {
@@ -282,7 +285,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
       ChiselStage.emitVerilog { new CrossStrictConnects(new X(true, false), new X(false, true)) }
     }
   }
-  property("(D.f) :<>= is not commutative." ){
+  property("(D.f) :<>= is not commutative.") {
     intercept[ChiselException] {
       ChiselStage.elaborate { new BadCrossStrictConnects(UInt(16.W), UInt(16.W)) }
     }
