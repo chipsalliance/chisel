@@ -114,13 +114,13 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
-    //  otherwise, issue a Connect.
+    //  otherwise, issue a Partial Connect.
     if (that == DontCare) {
       pushCommand(DefInvalid(sourceInfo, Node(this)))
     } else {
-      pushCommand(BulkConnect(sourceInfo, Node(this), Node(that)))
+      pushCommand(PartialConnect(sourceInfo, Node(this), Node(that)))
     }
   }
 

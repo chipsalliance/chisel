@@ -66,14 +66,8 @@ abstract class Element extends Data {
       pushCommand(Connect(sourceInfo, Node(this), that.ref))
     }
   }
-  // Since we are an element, we have to emit just a Connect
-  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    // If the source is a DontCare, generate a DefInvalid for the sink,
-    //  otherwise, issue a Connect.
-    if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, Node(this)))
-    } else {
-      pushCommand(Connect(sourceInfo, Node(this), that.ref))
-    }
-  }
+
+  // Since we are an element, we can just emit a Connect
+  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    firrtlConnect(that)
 }

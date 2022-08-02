@@ -113,7 +113,7 @@ private[chisel3] object BiConnect {
         val rightReified: Option[Aggregate] = if (isView(right_v)) reifyToAggregate(right_v) else Some(right_v)
 
         if (
-          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectData(
+          leftReified.nonEmpty && rightReified.nonEmpty && canFirrtlConnectData(
             leftReified.get,
             rightReified.get,
             sourceInfo,
@@ -170,7 +170,7 @@ private[chisel3] object BiConnect {
         val rightReified: Option[Aggregate] = if (isView(newRight)) reifyToAggregate(newRight) else Some(newRight)
 
         if (
-          leftReified.nonEmpty && rightReified.nonEmpty && canBulkConnectData(
+          leftReified.nonEmpty && rightReified.nonEmpty && canFirrtlConnectData(
             leftReified.get,
             rightReified.get,
             sourceInfo,
@@ -180,7 +180,7 @@ private[chisel3] object BiConnect {
         ) {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
         } else if (!emitStrictConnects) {
-          newLeft.legacyConnect(newRight)(sourceInfo)
+          newLeft.firrtlPartialConnect(newRight)(sourceInfo)
         } else {
           recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
         }
@@ -188,7 +188,7 @@ private[chisel3] object BiConnect {
       // Handle Records connected to DontCare
       case (left_r: Record, DontCare) =>
         if (!left_r.compileOptions.emitStrictConnects) {
-          left.legacyConnect(right)(sourceInfo)
+          left.firrtlPartialConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
           for ((field, left_sub) <- left_r.elements) {
@@ -201,7 +201,7 @@ private[chisel3] object BiConnect {
         }
       case (DontCare, right_r: Record) =>
         if (!right_r.compileOptions.emitStrictConnects) {
-          left.legacyConnect(right)(sourceInfo)
+          left.firrtlPartialConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
           for ((field, right_sub) <- right_r.elements) {
@@ -251,10 +251,10 @@ private[chisel3] object BiConnect {
     }
   }
 
-  /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. From the
-    * FIRRTL specification, the following must hold for bulk connection:
+  /** Check whether two Data can be bulk connected (<=) in FIRRTL. From the
+    * FIRRTL specification, the following must hold for FIRRTL connection:
     *
-    *   1. The types of the left-hand and right-hand side expressions must be
+    *   1. The Chisel types of the left-hand and right-hand side expressions must be
     *       equivalent.
     *   2. The bit widths of the two expressions must allow for data to always
     *        flow from a smaller bit width to an equal size or larger bit width.
@@ -262,7 +262,7 @@ private[chisel3] object BiConnect {
     *   4. Either the flow of the right-hand side expression is source or duplex,
     *      or the right-hand side expression has a passive type.
     */
-  private[chisel3] def canBulkConnectData(
+  private[chisel3] def canFirrtlConnectData(
     sink:                  Data,
     source:                Data,
     sourceInfo:            SourceInfo,

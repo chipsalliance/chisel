@@ -202,17 +202,17 @@ class ConnectSpec extends ChiselPropSpec with Utils {
     (typeMismatchError.getMessage should fullyMatch).regex(expectedTypeMismatchError)
   }
 
-  // (S)trict Connect tests
-  property("(S.a) SInt :<>= SInt should succeed") {
+  // (D)irectional Bulk Connect tests
+  property("(D.a) SInt :<>= SInt should succeed") {
     ChiselStage.elaborate { new CrossStrictConnects(SInt(16.W), SInt(16.W)) }
   }
-  property("(S.b) UInt :<>= UInt should succeed") {
+  property("(D.b) UInt :<>= UInt should succeed") {
     ChiselStage.elaborate { new CrossStrictConnects(UInt(16.W), UInt(16.W)) }
   }
-  property("(S.c) SInt :<>= UInt should fail") {
+  property("(D.c) SInt :<>= UInt should fail") {
     intercept[ChiselException] { ChiselStage.elaborate { new CrossStrictConnects(UInt(16.W), SInt(16.W)) } }
   }
-  property("(S.d) Decoupled :<>= Decoupled should succeed") {
+  property("(D.d) Decoupled :<>= Decoupled should succeed") {
     class Decoupled extends Bundle {
       val bits = UInt(3.W)
       val valid = Bool()
@@ -221,7 +221,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
     val out = ChiselStage.emitChirrtl { new CrossStrictConnects(new Decoupled, new Decoupled) }
     assert(out.contains("io.out <= io.in"))
   }
-  property("(S.e) different relative flips, but same absolute flippage is an error") {
+  property("(D.e) different relative flips, but same absolute flippage is an error") {
     class X(yflip: Boolean, zflip: Boolean) extends Bundle {
       val y = if (yflip) Flipped(new Y(zflip)) else new Y(zflip)
     }

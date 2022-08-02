@@ -820,7 +820,7 @@ case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = f
 case class AltBegin(sourceInfo: SourceInfo) extends Command
 case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
 case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
-case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
+case class PartialConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
 case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
