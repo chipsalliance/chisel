@@ -510,7 +510,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
   private var _bindingVar: Binding = null
-  private def _binding: Option[Binding] = Option(_bindingVar)
+  private def _binding:    Option[Binding] = Option(_bindingVar)
   // Only valid after node is bound (synthesizable), crashes otherwise
   protected[chisel3] def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
@@ -552,7 +552,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   // Direction of this node, accounting for parents (force Input / Output) and children.
   private var _directionVar: ActualDirection = null
-  private def _direction: Option[ActualDirection] = Option(_directionVar)
+  private def _direction:    Option[ActualDirection] = Option(_directionVar)
 
   private[chisel3] def direction: ActualDirection = _direction.get
   private[chisel3] def direction_=(actualDirection: ActualDirection) {

@@ -89,24 +89,23 @@ trait InstanceId {
 private[chisel3] trait HasId extends InstanceId {
   private var _parentVar: BaseModule = Builder.currentModule match {
     case Some(m) => m
-    case None => null
+    case None    => null
   }
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
   private[chisel3] def _parent_=(target: Option[BaseModule]) {
     _parentVar = target match {
       case Some(m) => m
-      case None => null
+      case None    => null
     }
   }
 
-
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
-  private var _circuitVar: BaseModule = null
+  private var _circuitVar:       BaseModule = null
   private[chisel3] def _circuit: Option[BaseModule] = Option(_circuitVar)
   private[chisel3] def _circuit_=(target: Option[BaseModule]) {
     _circuitVar = target match {
       case Some(m) => m
-      case None => null
+      case None    => null
     }
   }
 
@@ -118,11 +117,11 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Contains suggested seed (user-decided seed)
   private var suggested_seedVar: String = null
-  private def suggested_seed: Option[String] = Option(suggested_seedVar)
+  private def suggested_seed:    Option[String] = Option(suggested_seedVar)
 
   // Contains the seed computed automatically by the compiler plugin
   private var auto_seedVar: String = null
-  private def auto_seed: Option[String] = Option(auto_seedVar)
+  private def auto_seed:    Option[String] = Option(auto_seedVar)
 
   // Prefix for use in naming
   // - Defaults to prefix at time when object is created
@@ -221,7 +220,7 @@ private[chisel3] trait HasId extends InstanceId {
     }
 
   private var _refVar: Arg = null
-  private def _ref: Option[Arg] = Option(_refVar)
+  private def _ref:    Option[Arg] = Option(_refVar)
   private[chisel3] def setRef(imm: Arg): Unit = setRef(imm, false)
   private[chisel3] def setRef(imm: Arg, force: Boolean): Unit = {
     if (_ref.isEmpty || force) {
