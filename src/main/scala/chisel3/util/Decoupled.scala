@@ -7,7 +7,6 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{requireIsChiselType, DataMirror, Direction}
-import chisel3.internal.naming._ // can't use chisel3_ version because of compile order
 
 import scala.annotation.nowarn
 
@@ -99,7 +98,22 @@ object ReadyValidIO {
   * of ready or valid.
   * @param gen the type of data to be wrapped in DecoupledIO
   */
-class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
+class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen) {
+
+  /** Applies the supplied functor to the bits of this interface, returning a new
+    * typed DecoupledIO interface.
+    * @param f The function to apply to this DecoupledIO's 'bits' with return type B
+    * @return a new DecoupledIO of type B
+    */
+  def map[B <: Data](f: T => B): DecoupledIO[B] = {
+    val _map_bits = f(bits)
+    val _map = Wire(Decoupled(chiselTypeOf(_map_bits)))
+    _map.bits := _map_bits
+    _map.valid := valid
+    ready := _map.ready
+    _map
+  }
+}
 
 /** This factory adds a decoupled handshaking protocol to a data bundle. */
 object Decoupled {
@@ -121,7 +135,6 @@ object Decoupled {
     *
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
-  @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
     require(
       DataMirror.directionOf(irr.bits) == Direction.Output,
@@ -388,7 +401,6 @@ object Queue {
     *   consumer.io.in <> Queue(producer.io.out, 16)
     * }}}
     */
-  @chiselName
   def irrevocable[T <: Data](
     enq:            ReadyValidIO[T],
     entries:        Int = 2,

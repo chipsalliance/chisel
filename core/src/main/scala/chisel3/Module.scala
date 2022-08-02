@@ -522,33 +522,34 @@ package experimental {
       */
     protected def _bindIoInPlace(iodef: Data): Unit = {
       // Compatibility code: Chisel2 did not require explicit direction on nodes
-      // (unspecified treated as output, and flip on nothing was input).
-      // This sets assigns the explicit directions required by newer semantics on
-      // Bundles defined in compatibility mode.
+      //   (unspecified treated as output, and flip on nothing was input).
+      // However, we are going to go back to Chisel2 semantics, so we need to make it work
+      //   even for chisel3 code.
+      // This assigns the explicit directions required by both semantics on all Bundles.
       // This recursively walks the tree, and assigns directions if no explicit
-      // direction given by upper-levels (override Input / Output) AND element is
-      // directly inside a compatibility Bundle determined by compile options.
-      def assignCompatDir(data: Data, insideCompat: Boolean): Unit = {
+      //   direction given by upper-levels (override Input / Output)
+      def assignCompatDir(data: Data): Unit = {
         data match {
-          case data: Element if insideCompat => data._assignCompatibilityExplicitDirection
-          case data: Element => // Not inside a compatibility Bundle, nothing to be done
+          case data: Element => data._assignCompatibilityExplicitDirection
           case data: Aggregate =>
             data.specifiedDirection match {
               // Recurse into children to ensure explicit direction set somewhere
               case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
                 data match {
                   case record: Record =>
-                    val compatRecord = !record.compileOptions.dontAssumeDirectionality
-                    record.getElements.foreach(assignCompatDir(_, compatRecord))
+                    record.getElements.foreach(assignCompatDir(_))
                   case vec: Vec[_] =>
-                    vec.getElements.foreach(assignCompatDir(_, insideCompat))
+                    vec.getElements.foreach(assignCompatDir(_))
                 }
-              case SpecifiedDirection.Input | SpecifiedDirection.Output => // forced assign, nothing to do
+              case SpecifiedDirection.Input | SpecifiedDirection.Output =>
+              // forced assign, nothing to do
+              // Note this is because Input and Output recurse down their types to align all fields to that SpecifiedDirection
+              // Thus, no implicit assigment is necessary.
             }
         }
       }
 
-      assignCompatDir(iodef, false)
+      assignCompatDir(iodef)
 
       iodef.bind(PortBinding(this))
       _ports += iodef
