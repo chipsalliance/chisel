@@ -61,9 +61,9 @@ abstract class Element extends Data {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, Node(this)))
+      pushCommand(DefInvalid(sourceInfo, lref))
     } else {
-      pushCommand(Connect(sourceInfo, Node(this), that.ref))
+      pushCommand(Connect(sourceInfo, lref, that.ref))
     }
   }
 
