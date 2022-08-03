@@ -108,9 +108,9 @@ sealed abstract class Aggregate extends Data {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, Node(this)))
+      pushCommand(DefInvalid(sourceInfo, lref))
     } else {
-      pushCommand(Connect(sourceInfo, Node(this), Node(that)))
+      pushCommand(Connect(sourceInfo, lref, Node(that)))
     }
   }
 
@@ -118,9 +118,9 @@ sealed abstract class Aggregate extends Data {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Partial Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, Node(this)))
+      pushCommand(DefInvalid(sourceInfo, lref))
     } else {
-      pushCommand(PartialConnect(sourceInfo, Node(this), Node(that)))
+      pushCommand(PartialConnect(sourceInfo, lref, Node(that)))
     }
   }
 

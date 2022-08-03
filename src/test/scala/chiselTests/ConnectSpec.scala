@@ -334,7 +334,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
     }
   }
   property("(D.k) Can :<>= to Vecs of the same length") {
-    val out = (new ChiselStage).emitChirrtl {new CrossStrictConnects(Vec(3, UInt(16.W)), Vec(3, UInt(16.W)))}
+    val out = (new ChiselStage).emitChirrtl { new CrossStrictConnects(Vec(3, UInt(16.W)), Vec(3, UInt(16.W))) }
     assert(out.contains("io.out <= io.in"))
   }
   property("(D.l)  :<>= between Vecs of different same length should not succeed, no matter the direction") {
