@@ -300,7 +300,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       a :<>= b
   }
 
-  /** Bi-directional strict connection from a producer to consumer: consumer :<>= producer
+  /** Bi-directional connection from a producer to consumer: consumer :<>= producer
     *
     * @note Leaf fields aligned in relative direction to consumer will be assigned to from the corresponding producer field
     * @note Leaf fields flipped in relative direction to producer will be assigned to from the corresponding consumer field
