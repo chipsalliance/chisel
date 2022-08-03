@@ -672,8 +672,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     connectCompileOptions: CompileOptions
   ): Unit = {
     if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, s"data to be bulk-connected")
-      requireIsHardware(that, s"data to be bulk-connected")
+      requireIsHardware(this, s"LHS (sink) data to be bulk-connected")
+      requireIsHardware(that, s"RHS (source) data to be bulk-connected")
       (this.topBinding, that.topBinding) match {
         case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
         // DontCare cannot be a sink (LHS)
@@ -684,7 +684,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     if (!BiConnect.canFirrtlConnectData(this, that, sourceInfo, connectCompileOptions, Builder.referenceUserModule)) {
       Builder.error(s"Cannot issue a directional bulk connect $this :<>= $that")
     }
-    // TODO write error-checking logic, so it doesn't require the FIRRTL error if `this` is not writable
     this.firrtlConnect(that)
   }
 
