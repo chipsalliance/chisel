@@ -47,7 +47,7 @@ class CrossStrictConnects(inType: Data, outType: Data) extends Module {
   io.out :<>= io.in
 }
 
-class BadCrossStrictConnects(inType: Data, outType: Data) extends Module {
+class NotCommutativeCrossStrictConnects(inType: Data, outType: Data) extends Module {
   val io = IO(new Bundle {
     val in = Flipped(inType)
     val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
@@ -55,7 +55,15 @@ class BadCrossStrictConnects(inType: Data, outType: Data) extends Module {
   io.in :<>= io.out
 }
 
-class CrossStrictConnectsWithWires(inType: Data, outType: Data, nTmps: Int = 0) extends Module {
+class NotWritableCrossStrictConnects(inType: Data) extends Module {
+  val io = IO(new Bundle {
+    val in = Flipped(inType)
+  })
+  val tmp = Wire(Flipped(inType))
+  io.in :<>= tmp
+}
+
+class CrossStrictConnectsWithWires(inType: Data, outType: Data, nTmps: Int) extends Module {
   val io = IO(new Bundle {
     val in = Flipped(inType)
     val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
@@ -287,7 +295,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
   }
   property("(D.f) :<>= is not commutative.") {
     intercept[ChiselException] {
-      ChiselStage.elaborate { new BadCrossStrictConnects(UInt(16.W), UInt(16.W)) }
+      ChiselStage.elaborate { new NotCommutativeCrossStrictConnects(UInt(16.W), UInt(16.W)) }
     }
   }
   property("(D.g) UInt :<>= UInt should succeed with intermediate Wires") {
@@ -318,6 +326,25 @@ class ConnectSpec extends ChiselPropSpec with Utils {
     intercept[ChiselException] {
       ChiselStage.emitChirrtl { new CrossStrictConnects(new FooBar(), new Foo()) }
     }
+  }
+  property("(D.j) Cannot :<>= to something that is not writable.") {
+
+    intercept[ChiselException] {
+      ChiselStage.emitChirrtl { new NotWritableCrossStrictConnects(UInt(16.W)) }
+    }
+  }
+  property("(D.k) Can :<>= to Vecs of the same length") {
+    val out = (new ChiselStage).emitChirrtl {new CrossStrictConnects(Vec(3, UInt(16.W)), Vec(3, UInt(16.W)))}
+    assert(out.contains("io.out <= io.in"))
+  }
+  property("(D.l)  :<>= between Vecs of different same length should not succeed, no matter the direction") {
+    intercept[ChiselException] {
+      ChiselStage.emitChirrtl { new CrossStrictConnects(Vec(2, UInt(16.W)), Vec(3, UInt(16.W))) }
+    }
+    intercept[ChiselException] {
+      ChiselStage.emitChirrtl { new CrossStrictConnects(Vec(3, UInt(16.W)), Vec(2, UInt(16.W))) }
+    }
+
   }
 
 }
