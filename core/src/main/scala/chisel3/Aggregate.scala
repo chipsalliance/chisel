@@ -292,9 +292,10 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * @note the length of this Vec must match the length of the input Seq
     */
   def :<>=(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    if (this.length != that.length) {
-      Builder.error("Vec and Seq being bulk connected have different lengths!")
-    }
+    require(
+      this.length == that.length,
+      s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}"
+    )
     for ((a, b) <- this.zip(that))
       a :<>= b
   }
@@ -311,7 +312,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * @note the length of this Vec must match the length of the input Seq
     */
   def :<>=(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    this.legacyChiselConnect(that.asInstanceOf[Data])
+    this.directionalBulkConnect(that.asInstanceOf[Data])
   }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data

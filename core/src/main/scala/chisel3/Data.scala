@@ -665,7 +665,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  private[chisel3] def legacyChiselConnect(
+  private[chisel3] def directionalBulkConnect(
     that: Data
   )(
     implicit sourceInfo:   SourceInfo,
@@ -682,7 +682,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       }
     }
     if (!BiConnect.canFirrtlConnectData(this, that, sourceInfo, connectCompileOptions, Builder.referenceUserModule)) {
-      Builder.error(s"Cannot connect $this :<>= $that")
+      Builder.error(s"Cannot issue a directional bulk connect $this :<>= $that")
     }
     // TODO write error-checking logic, so it doesn't require the FIRRTL error if `this` is not writable
     this.firrtlConnect(that)
@@ -841,7 +841,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   final def :<>=(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
     prefix(this) {
-      this.legacyChiselConnect(that)(sourceInfo, connectionCompileOptions)
+      this.directionalBulkConnect(that)(sourceInfo, connectionCompileOptions)
     }
   }
 
