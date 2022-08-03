@@ -58,16 +58,16 @@ private[chisel3] object BiConnect {
     *
     * == Chisel Semantics and how they emit to firrtl ==
     *
-    * 1. Strict Bi-Connect (all fields as seen by firrtl must match exactly)
+    * 1. FIRRTL Connect (all fields as seen by firrtl must match exactly)
     *   `a <= b`
     *
-    * 2. Strict Bi-Connect (implemented as being field-blasted because we know all firrtl fields would not match exactly)
+    * 2. FIRRTL Connect (implemented as being field-blasted because we know all firrtl fields would not match exactly)
     *   `a.foo <= b.foo, b.bar <= a.bar`
     *
-    * 3. Not-Strict Bi-Connect aka Partial Connect (firrtl will allow fields to not match exactly)
+    * 3. FIRRTL Partial Connect (firrtl will allow fields to not match exactly)
     *   `a <- b`
     *
-    * 4. Mixed Semantic Bi-Connect (some fields need to be handled differently)
+    * 4. Mixed Semantic Connect (some fields need to be handled differently)
     *   `a.foo <= b.foo` (case 2),  `b.bar <- a.bar` (case 3)
     *
     * - The decision on 1 vs 2 is based on structural type -- if same type once emitted to firrtl, emit 1, otherwise emit 2
