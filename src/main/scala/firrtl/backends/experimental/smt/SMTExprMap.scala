@@ -2,7 +2,9 @@
 // Author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 package firrtl.backends.experimental.smt
 
-private object SMTExprMap {
+object SMTExprMap {
+
+  /** maps f over subexpressions of expr and returns expr with the results replaced */
   def mapExpr(expr: SMTExpr, f: SMTExpr => SMTExpr): SMTExpr = {
     val bv = (b: BVExpr) => f(b).asInstanceOf[BVExpr]
     val ar = (a: ArrayExpr) => f(a).asInstanceOf[ArrayExpr]
