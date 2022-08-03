@@ -684,7 +684,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     if (!BiConnect.canFirrtlConnectData(this, that, sourceInfo, connectCompileOptions, Builder.referenceUserModule)) {
       Builder.error(s"Cannot issue a directional bulk connect $this :<>= $that")
     }
-    // TODO write error-checking logic, so it doesn't require the FIRRTL error if `this` is not writable
     this.firrtlConnect(that)
   }
 
