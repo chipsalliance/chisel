@@ -348,7 +348,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
   }
 
   property(
-    "(D.m) :<>= is equivalent to Chisel.:= in that  `A Module with missing bundle fields when compiled with the Chisel compatibility package` should `not throw an exception` "
+    "(D.m) :<>= is NOT equivalent to Chisel.:= in that  `A Module with missing bundle fields when compiled with the Chisel compatibility package` *should* `throw an exception` "
   ) {
     // This is copied from CompatibilitySpec but the := is replaced with :<>=
     class SmallBundle extends Bundle {
@@ -366,8 +366,9 @@ class ConnectSpec extends ChiselPropSpec with Utils {
       })
       io.out :<>= io.in
     }
-
-    ChiselStage.elaborate { new ConnectFieldMismatchModule() }
+    intercept[ChiselException] {
+      ChiselStage.elaborate { new ConnectFieldMismatchModule() }
+    }
   }
 
 }
