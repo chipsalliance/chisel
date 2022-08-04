@@ -108,7 +108,7 @@ class NamingContext extends NamingContextInterface {
     closed = true
     for ((ref, suffix) <- items) {
       // First name the top-level object
-      chisel3.internal.Builder.nameRecursively(prefix + suffix, ref, (id, name) => id.suggestName(name))
+      chisel3.internal.Builder.nameRecursively(prefix + suffix, ref, (id, name) => id._suggestNameInternal(name))
 
       // Then recurse into descendant contexts
       if (descendants.containsKey(ref)) {

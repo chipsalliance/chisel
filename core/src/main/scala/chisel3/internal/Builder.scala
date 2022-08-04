@@ -129,31 +129,53 @@ private[chisel3] trait HasId extends InstanceId {
     this
   }
 
-  // Private internal version of suggestName that tells you if the name changed
-  // Returns Some(old name, old prefix) if name changed, None otherwise
-  private[chisel3] def _suggestNameCheck(seed: => String): Option[(String, Prefix)] = {
-    val oldSeed = this.seedOpt
-    val oldPrefix = this.naming_prefix
-    suggestName(seed)
-    if (oldSeed.nonEmpty && (oldSeed != this.seedOpt || oldPrefix != this.naming_prefix)) {
-      Some(oldSeed.get -> oldPrefix)
-    } else None
+  def _suggestNameInternal(seed: => String): this.type = {
+    if (suggested_seed.isEmpty) suggested_seed = Some(seed)
+    naming_prefix = Builder.getPrefix
+    this
   }
 
-  /** Takes the first seed suggested. Multiple calls to this function will be ignored.
+  /** Takes the first seed suggested. Multiple calls to this function will be ignored (and will become an error in future).
     * If the final computed name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
     *
     * Is a higher priority than [[autoSeed]], in that regardless of whether [[autoSeed]]
     * was called, [[suggestName]] will always take precedence.
     *
+    * @note calling this after the name has already been computed will become an error in the future.
+    *
     * @param seed The seed for the name of this component
     * @return this object
     */
   def suggestName(seed: => String): this.type = {
-    if (suggested_seed.isEmpty) suggested_seed = Some(seed)
-    naming_prefix = Builder.getPrefix
-    this
+    if (!Builder.hasDynamicContext) {
+      // This is super hacky but this is just for a short term deprecation.
+      // This access is detected outside of Chisel elaboration so we cannot use the normal
+      // Builder.deprecated mechanism, we have to create our own one off ErrorLog and print the
+      // warning right away.
+      val errors = new ErrorLog
+      val logger = new _root_.logger.Logger(this.getClass.getName)
+      val msg = "suggestName(\"" + seed + "\") should only be called from a Builder context." +
+        "This will become an error in Chisel 3.6."
+      errors.deprecated(msg, None)
+      errors.checkpoint(logger)
+    }
+    if (suggested_seed.isDefined) {
+      Builder.deprecated(
+        "Calling suggestName(\"" + seed + "\"), when already called with \"" + suggested_seed.get + "\", will become an error in Chisel 3.6"
+      )
+    }
+    if (!HasId.canBeNamed(this)) {
+      Builder.deprecated(
+        "Calling suggestName(\"" + seed + "\") on \"" + this + "\" (which cannot actually be named) will become an error in Chisel 3.6"
+      )
+    }
+    if (_parent.map(_.isClosed).getOrElse(false)) { // not sure what it means to have no parent
+      Builder.deprecated(
+        "Calling suggestName(\"" + seed + "\") on \"" + this + "\" when the containing module \"" + _parent.get.name + "\" has already completed elaboration will become an error in Chisel 3.6"
+      )
+    }
+    _suggestNameInternal(seed)
   }
 
   // Internal version of .suggestName that can override a user-suggested name
@@ -163,11 +185,12 @@ private[chisel3] trait HasId extends InstanceId {
     // This could be called with user prefixes, ignore them
     noPrefix {
       suggested_seed = Some(seed)
-      this.suggestName(seed)
+      this._suggestNameInternal(seed)
     }
   }
 
   /** Computes the name of this HasId, if one exists
+    *
     * @param defaultSeed Optionally provide default seed for computing the name
     * @return the name, if it can be computed
     */
@@ -179,9 +202,21 @@ private[chisel3] trait HasId extends InstanceId {
 
   /** This resolves the precedence of [[autoSeed]] and [[suggestName]]
     *
+    * @note It will become an error in the future to suggestName the same thing that autoSeed would have assigned
+    *
     * @return the current calculation of a name, if it exists
     */
-  private[chisel3] def seedOpt: Option[String] = suggested_seed.orElse(auto_seed)
+  private[chisel3] def seedOpt: Option[String] = {
+    if (suggested_seed.isDefined && auto_seed.isDefined) {
+      if (suggested_seed.get == auto_seed.get) {
+        Builder.deprecated(
+          "calling suggestName(\"" + suggested_seed.get + "\") on \"" + this._parent.get.name + '.' + suggested_seed.get + "\" had no effect as it is the same as the automatically given name, this will become an error in 3.6",
+          Some("(unknown)")
+        )
+      }
+    }
+    suggested_seed.orElse(auto_seed)
+  }
 
   /** @return Whether either autoName or suggestName has been called */
   def hasSeed: Boolean = seedOpt.isDefined
@@ -265,6 +300,25 @@ private[chisel3] trait HasId extends InstanceId {
       }
     case Some(ViewParent) => reifyParent.circuitName
     case Some(p)          => p.circuitName
+  }
+}
+
+private[chisel3] object HasId {
+
+  /** Utility for things that (currently) appear to be nameable but actually cannot be */
+  private def canBeNamed(id: HasId): Boolean = id match {
+    case d: Data =>
+      d.binding match {
+        case Some(_: ConstrainedBinding) => true
+        case _ => false
+      }
+    case b: BaseModule => true
+    case m: MemBase[_] => true
+    // These names don't affect hardware
+    case _: VerificationStatement => false
+    // While the above should be comprehensive, since this is used in warning we want to be careful
+    // to never accidentally have a match error
+    case _ => false
   }
 }
 
