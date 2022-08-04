@@ -205,6 +205,8 @@ trait VecFactory extends SourceInfoDoc {
   * @note
   *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
+  *
+  *  @define coll Vec
   */
 sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extends Aggregate with VecLike[T] {
 
@@ -271,6 +273,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
     * @note the length of this Vec must match the length of the input Seq
+    *
+    * @group Connect
     */
   def <>(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     if (this.length != that.length) {
@@ -280,16 +284,26 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       a <> b
   }
 
-  /** Bi-directional connection from a producer to consumer: consumer :<>= producer
+  /** Connect this Vec to that Vec bi-directionally and element-wise.
     *
-    * @note Leaf fields aligned in relative direction to consumer will be assigned to from the corresponding producer field
-    * @note Leaf fields flipped in relative direction to producer will be assigned to from the corresponding consumer field
-    * @note the Chisel type of this and that must be equivalent.
-    *  - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
-    *  - All vector types are the same length
-    *  - All bundle types have the same field names and field flips
-    * @note the leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
-    * @note the length of this Vec must match the length of the input Seq
+    * This uses the [[BiConnect]] algorithm.
+    *
+    * @note the length of this Vec and that Vec must match
+    *
+    * @param that the Vec to connect to
+    *
+    * @group Connect
+    */
+  def <>(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit =
+    this.bulkConnect(that.asInstanceOf[Data])
+
+  /** Bi-directional connection from a producer to consumer.
+    *
+    * This version works for connecting to results of e.g. Vec.map.
+    *
+    * @note The length of this Vec must match the length of the input Seq
+    *
+    * @group Connect
     */
   def :<>=(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     require(
@@ -300,24 +314,18 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       a :<>= b
   }
 
-  /** Bi-directional connection from a producer to consumer: consumer :<>= producer
+  /** Bi-directional connection from a producer to consumer.
     *
-    * @note Leaf fields aligned in relative direction to consumer will be assigned to from the corresponding producer field
-    * @note Leaf fields flipped in relative direction to producer will be assigned to from the corresponding consumer field
-    * @note the Chisel type of this and that must be equivalent.
-    *  - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
-    *  - All vector types are the same length
-    *  - All bundle types have the same field names and field flips
-    * @note the leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
-    * @note the length of this Vec must match the length of the input Seq
+    * This version only exists to disambiguate from the `:<>= Seq` and `:<>= Data`,
+    * since Vec inherits both Seq and Data.
+    *
+    * The length of `this` Vec and `that` Vec must match
+    *
+    * @group Connect
     */
   def :<>=(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     this.directionalBulkConnect(that.asInstanceOf[Data])
   }
-
-  // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def <>(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit =
-    this.bulkConnect(that.asInstanceOf[Data])
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
