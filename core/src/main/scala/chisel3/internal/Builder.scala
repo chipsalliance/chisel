@@ -211,7 +211,7 @@ private[chisel3] trait HasId extends InstanceId {
       naming_prefix = Nil
     }
 
-  private var _refVar: Arg = null
+  private var _refVar: Arg = null // using nullable var for better memory usage
   private def _ref:    Option[Arg] = Option(_refVar)
   private[chisel3] def setRef(imm: Arg): Unit = setRef(imm, false)
   private[chisel3] def setRef(imm: Arg, force: Boolean): Unit = {
