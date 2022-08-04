@@ -205,8 +205,6 @@ trait VecFactory extends SourceInfoDoc {
   * @note
   *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
-  *
-  *  @define coll Vec
   */
 sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extends Aggregate with VecLike[T] {
 
