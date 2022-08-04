@@ -88,7 +88,7 @@ trait InstanceId {
 
 private[chisel3] trait HasId extends InstanceId {
   // using nullable var for better memory usage
-  private var _parentVar: BaseModule = Builder.currentModule.getOrElse(null)
+  private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
   private[chisel3] def _parent_=(target: Option[BaseModule]): Unit = {
     _parentVar = target.getOrElse(null)
