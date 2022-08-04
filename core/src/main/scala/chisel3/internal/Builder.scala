@@ -87,6 +87,7 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
+  // using nullable var for better memory usage
   private var _parentVar: BaseModule = Builder.currentModule match {
     case Some(m) => m
     case None    => null
@@ -100,7 +101,7 @@ private[chisel3] trait HasId extends InstanceId {
   }
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
-  private var _circuitVar:       BaseModule = null
+  private var _circuitVar:       BaseModule = null // using nullable var for better memory usage
   private[chisel3] def _circuit: Option[BaseModule] = Option(_circuitVar)
   private[chisel3] def _circuit_=(target: Option[BaseModule]) {
     _circuitVar = target match {
@@ -116,11 +117,11 @@ private[chisel3] trait HasId extends InstanceId {
   override def equals(that: Any): Boolean = super.equals(that)
 
   // Contains suggested seed (user-decided seed)
-  private var suggested_seedVar: String = null
+  private var suggested_seedVar: String = null // using nullable var for better memory usage
   private def suggested_seed:    Option[String] = Option(suggested_seedVar)
 
   // Contains the seed computed automatically by the compiler plugin
-  private var auto_seedVar: String = null
+  private var auto_seedVar: String = null // using nullable var for better memory usage
   private def auto_seed:    Option[String] = Option(auto_seedVar)
 
   // Prefix for use in naming
