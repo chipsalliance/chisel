@@ -75,7 +75,7 @@ class CIRCT extends Phase {
         split = true
         Nil
       }
-      case a@ RunFirrtlTransformAnnotation(transform) =>
+      case a @ RunFirrtlTransformAnnotation(transform) =>
         transform match {
           /* Inlining/Flattening happen by default, so these can be dropped. */
           case _: firrtl.passes.InlineInstances | _: firrtl.transforms.Flatten => Nil
