@@ -342,7 +342,7 @@ private[chisel3] object MonoConnect {
     *
     * Mono-directional bulk connects only work if all signals of the sink are unidirectional
     * In the case of a sink aggregate with bidirectional signals, e.g. `Decoupled`,
-    * a `BiConnect` (<-) is necessary.
+    * a `BiConnect` (`chisel3.<>` or `chisel.:<>=`) is necessary.
     */
   private[chisel3] def canFirrtlConnectData(
     sink:                  Data,
