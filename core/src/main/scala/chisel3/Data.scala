@@ -681,8 +681,19 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case _ => // fine
       }
     }
-    if (!BiConnect.canFirrtlConnectData(this, that, sourceInfo, connectCompileOptions, Builder.referenceUserModule)) {
-      Builder.error(s"Cannot issue a directional bulk connect $this :<>= $that")
+
+    try {
+      BiConnect.canFirrtlConnectData(
+        this,
+        that,
+        sourceInfo,
+        connectCompileOptions,
+        Builder.referenceUserModule,
+        throwIfFalse = true
+      )
+    } catch {
+      case BiConnectException(message) =>
+        Builder.error(s"Cannot issue a directional bulk connect:\n${this} :<>= ${that}\nbecause:\n${message}")
     }
     this.firrtlConnect(that)
   }

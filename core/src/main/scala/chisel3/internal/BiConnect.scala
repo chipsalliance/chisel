@@ -261,13 +261,16 @@ private[chisel3] object BiConnect {
     *   3. The flow of the left-hand side expression must be sink or duplex
     *   4. Either the flow of the right-hand side expression is source or duplex,
     *      or the right-hand side expression has a passive type.
+    *
+    * @param raiseIfFalse raise a BiConnectException if the result would be false with information about why it's false.
     */
   private[chisel3] def canFirrtlConnectData(
     sink:                  Data,
     source:                Data,
     sourceInfo:            SourceInfo,
     connectCompileOptions: CompileOptions,
-    context_mod:           RawModule
+    context_mod:           RawModule,
+    throwIfFalse:          Boolean = false
   ): Boolean = {
 
     // check that the aggregates have the same types
@@ -293,7 +296,8 @@ private[chisel3] object BiConnect {
     }
 
     // check data can flow between provided aggregates
-    def flow_check = MonoConnect.canBeSink(sink, context_mod) && MonoConnect.canBeSource(source, context_mod)
+    def flowSinkCheck = MonoConnect.canBeSink(sink, context_mod)
+    def flowSourceCheck = MonoConnect.canBeSource(source, context_mod)
 
     // do not bulk connect source literals (results in infinite recursion from calling .ref)
     def sourceNotLiteralCheck = source.topBinding match {
@@ -307,7 +311,32 @@ private[chisel3] object BiConnect {
       case _ => true
     }
 
-    typeCheck && contextCheck && bindingCheck && flow_check && sourceNotLiteralCheck && blackBoxCheck
+    val result =
+      typeCheck && contextCheck && bindingCheck && flowSinkCheck && flowSourceCheck && sourceNotLiteralCheck && blackBoxCheck
+    if (throwIfFalse && !result) {
+      val typeCheckMessage =
+        if (!typeCheck) Some(s"Types are not equivalent:\n  sinkType   = ${Converter
+          .extractType(sink, sourceInfo)}\n  sourceType = ${Converter.extractType(source, sourceInfo)}")
+        else None
+      val contextCheckMessage = if (!contextCheck) Some(s"Signals are not in the right Context") else None
+      val bindingCheckMessage = if (!bindingCheck) Some(s"Sink is read-only") else None
+      val flowSinkCheckMessage = if (!flowSinkCheck) Some("Sink cannot be written") else None
+      val flowSourceCheckMessage = if (!flowSourceCheck) Some("Source cannot be read") else None
+      val sourceNotLiteralCheckMessage = if (!sourceNotLiteralCheck) Some("Source cannot be a literal") else None
+      val blackBoxCheckMessage = if (!blackBoxCheck) Some("Neither source nor sink can be a Black Box's IO") else None
+      throw new BiConnectException(
+        Seq(
+          typeCheckMessage,
+          contextCheckMessage,
+          bindingCheckMessage,
+          flowSinkCheckMessage,
+          flowSourceCheckMessage,
+          sourceNotLiteralCheckMessage,
+          blackBoxCheckMessage
+        ).flatten.mkString(",\n")
+      )
+    }
+    result
   }
 
   // These functions (finally) issue the connection operation
