@@ -48,7 +48,7 @@ class CrossDirectionalBulkConnectsWithWires(inType: Data, outType: Data, nTmps: 
 }
 
 class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
-  
+
   // (D)irectional Bulk Connect tests
   property("(D.a) SInt :<>= SInt should succeed") {
     ChiselStage.elaborate { new CrossDirectionalBulkConnects(SInt(16.W), SInt(16.W)) }
