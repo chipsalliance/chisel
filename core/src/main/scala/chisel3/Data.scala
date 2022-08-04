@@ -509,14 +509,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Binding stores information about this node's position in the hardware graph.
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
-  private var _binding: Option[Binding] = None
+  private var _bindingVar: Binding = null // using nullable var for better memory usage
+  private def _binding:    Option[Binding] = Option(_bindingVar)
   // Only valid after node is bound (synthesizable), crashes otherwise
   protected[chisel3] def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
       throw RebindingException(s"Attempted reassignment of binding to $this, from: ${target}")
     }
-    _binding = Some(target)
+    _bindingVar = target
   }
 
   private[chisel3] def hasBinding: Boolean = _binding.isDefined
@@ -550,14 +551,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Both are only valid after binding is set.
 
   // Direction of this node, accounting for parents (force Input / Output) and children.
-  private var _direction: Option[ActualDirection] = None
+  private var _directionVar: ActualDirection = null // using nullable var for better memory usage
+  private def _direction:    Option[ActualDirection] = Option(_directionVar)
 
   private[chisel3] def direction: ActualDirection = _direction.get
   private[chisel3] def direction_=(actualDirection: ActualDirection) {
     if (_direction.isDefined) {
       throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
-    _direction = Some(actualDirection)
+    _directionVar = actualDirection
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
