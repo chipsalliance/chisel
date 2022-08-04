@@ -146,6 +146,31 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     e.getMessage should include("contains aliased fields named (bar,foo)")
   }
 
+  they should "unbox Record for single element maps" in {
+   class SingleElementRecord extends Record {
+      private val underlying = UInt(8.W)
+      val elements = SeqMap("" -> underlying)
+      override def opaqueType = elements.size == 1
+      override def cloneType: this.type = this
+
+      def +(that: SingleElementRecord): SingleElementRecord = {
+        val _w = Wire(new SingleElementRecord)
+        _w.underlying := this.underlying + that.underlying
+        _w
+      }
+    }
+    val chirrtl = ChiselStage.emitChirrtl{
+      new Module {
+        val in1 = IO(Input(new SingleElementRecord))
+        val in2 = IO(Input(new SingleElementRecord))
+        val out = IO(Output(new SingleElementRecord))
+
+        out := in1 + in2
+      }
+    }
+    println(chirrtl)
+  }
+
   they should "follow UInt serialization/deserialization API" in {
     assertTesterPasses { new RecordSerializationTest }
   }

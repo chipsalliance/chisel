@@ -218,6 +218,12 @@ case class Slot(imm: Node, name: String) extends Arg {
   }
 }
 
+case class UnboxedSlot(imm: Node, name: String) extends Arg {
+  override def contextualName(ctx: Component): String = name
+  override def localName: String = name
+}
+
+
 case class Index(imm: Arg, value: Arg) extends Arg {
   def name: String = s"[$value]"
   override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
