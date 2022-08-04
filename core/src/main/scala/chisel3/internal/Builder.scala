@@ -88,26 +88,17 @@ trait InstanceId {
 
 private[chisel3] trait HasId extends InstanceId {
   // using nullable var for better memory usage
-  private var _parentVar: BaseModule = Builder.currentModule match {
-    case Some(m) => m
-    case None    => null
-  }
+  private var _parentVar: BaseModule = Builder.currentModule.getOrElse(null)
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
-  private[chisel3] def _parent_=(target: Option[BaseModule]) {
-    _parentVar = target match {
-      case Some(m) => m
-      case None    => null
-    }
+  private[chisel3] def _parent_=(target: Option[BaseModule]): Unit = {
+    _parentVar = target.getOrElse(null)
   }
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
   private var _circuitVar:       BaseModule = null // using nullable var for better memory usage
   private[chisel3] def _circuit: Option[BaseModule] = Option(_circuitVar)
-  private[chisel3] def _circuit_=(target: Option[BaseModule]) {
-    _circuitVar = target match {
-      case Some(m) => m
-      case None    => null
-    }
+  private[chisel3] def _circuit_=(target: Option[BaseModule]): Unit = {
+    _circuitVar = target.getOrElse(null)
   }
 
   private[chisel3] val _id: Long = Builder.idGen.next
