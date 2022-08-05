@@ -934,7 +934,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
     val _namespace = Namespace.empty
-    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk = true)) }
+    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk = true), unbox = opaqueType) }
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {

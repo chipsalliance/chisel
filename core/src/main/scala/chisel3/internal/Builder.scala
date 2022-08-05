@@ -219,7 +219,11 @@ private[chisel3] trait HasId extends InstanceId {
       _refVar = imm
     }
   }
-  private[chisel3] def setRef(parent: HasId, name:  String): Unit = setRef(Slot(Node(parent), name))
+  private[chisel3] def setRef(parent: HasId, name:  String, unbox: Boolean = false): Unit = {
+    if (!unbox) setRef(Slot(Node(parent), name))
+    else setRef(UnboxedSlot(Node(parent), name))
+  }
+
   private[chisel3] def setRef(parent: HasId, index: Int):    Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt):   Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef:       Arg = _ref.get
@@ -470,6 +474,7 @@ private[chisel3] object Builder extends LazyLogging {
     def buildAggName(id: HasId): Option[String] = {
       def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
         case Slot(_, field)       => Some(field) // Record
+        case UnboxedSlot(_, field) => None // Record with single element
         case Index(_, ILit(n))    => Some(n.toString) // Vec static indexing
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing

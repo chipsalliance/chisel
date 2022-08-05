@@ -88,15 +88,21 @@ case class Node(id: HasId) extends Arg {
 
 object Arg {
   def earlyLocalName(id: HasId): String = id.getOptionRef match {
-    case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
+    case Some(Index(Node(imm), Node(value))) => 
+      s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
     case Some(Index(Node(imm), arg))         => s"${earlyLocalName(imm)}[${arg.localName}]"
     case Some(Slot(Node(imm), name))         => s"${earlyLocalName(imm)}.$name"
+    case Some(UnboxedSlot(Node(imm), name)) => {
+    println(s"in earlylocalname; imm: $imm, name: $name, ${earlyLocalName(imm)}"); s"${earlyLocalName(imm)}"}
     case Some(arg)                           => arg.name
-    case None =>
+    case None => {
       id match {
-        case data: Data => data._computeName(Some("?")).get
+        case data: Data => {val k = data._computeName(Some("?")).get;
+      println(k);
+    k}
         case _ => "?"
       }
+    }
   }
 }
 
@@ -193,8 +199,9 @@ case class Ref(name: String) extends Arg
   * @param name the name of the port
   */
 case class ModuleIO(mod: BaseModule, name: String) extends Arg {
-  override def contextualName(ctx: Component): String =
-    if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
+  override def contextualName(ctx: Component): String = {
+    if (mod eq ctx.id) {println(s"port: name $name"); name} else {println(s"port: ${mod.getRef.name}.$name"); s"${mod.getRef.name}.$name"}
+  }
 }
 
 /** Ports of cloned modules (CloneModuleAsRecord)
@@ -219,8 +226,8 @@ case class Slot(imm: Node, name: String) extends Arg {
 }
 
 case class UnboxedSlot(imm: Node, name: String) extends Arg {
-  override def contextualName(ctx: Component): String = name
-  override def localName: String = name
+  override def contextualName(ctx: Component): String = imm.name
+  override def localName: String = imm.name
 }
 
 
