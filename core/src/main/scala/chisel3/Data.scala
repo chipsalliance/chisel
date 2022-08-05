@@ -667,12 +667,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
   // Used by :<>= for child elements to switch directionality
-  private[chisel3] def descend(
+  private def descend(
     that: Data
   )(
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions
   ): Unit = {
+    println(s"SpecifiedDirectionOf ${this} is ${DataMirror.specifiedDirectionOf(this)}")
     DataMirror.specifiedDirectionOf(this) match {
       case SpecifiedDirection.Unspecified => this.directionalBulkConnect(that)
       case SpecifiedDirection.Output      => this.directionalBulkConnect(that);
@@ -705,13 +706,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
       if (leftReified.isEmpty || rightReified.isEmpty) {
         // We have an aggregate and can recurse into the elements.
-        // Have to recurse into the elements
         val left = this.asInstanceOf[Record]
         val right = that.asInstanceOf[Record]
         val hright = HashMap(right.elements.toList: _*)
         left.elements.foreach {
           case (key, vleft) =>
             require(hright.contains(key), s"Attempt to assign ${this} :<>= ${that}, with missing source element ${key}")
+            println(s"Calling ${vleft}.descend(${hright(key)}")
             vleft.descend(hright(key))
         }
         hright --= left.elements.keys
