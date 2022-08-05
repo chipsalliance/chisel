@@ -925,11 +925,12 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
-  // Classes can override opaqueType if they want to "unbox" Records
-  //  that have maps with a single element. If opaqueType is
-  //  overridden to true, the subfield name of the record is
-  //  skipped and the Record name is used instead. See RecordSpec
-  //  for example usage and expected output
+  /** Classes can override opaqueType if they want to "unbox"
+    * Records that have maps with a single element. If opaqueType
+    * is overridden to true, the subfield name of the record is
+    * skipped and the Record name is used instead. See RecordSpec
+    * for example usage and expected output
+    */
   def opaqueType: Boolean = false
 
   // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
@@ -939,6 +940,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
     val _namespace = Namespace.empty
+    assert(!opaqueType || elements.size == 1, "opaqueType cannot be true when the size of elements is not 1")
     for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk = true), unbox = opaqueType) }
   }
 

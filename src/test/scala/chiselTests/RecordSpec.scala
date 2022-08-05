@@ -160,6 +160,15 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
       }
     }
 
+    class ErroneousOverride extends Record {
+      private val underlyingA = UInt(8.W)
+      private val underlyingB = UInt(8.W)
+      val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
+
+      override def opaqueType = true
+      override def cloneType: this.type = this
+    }
+
     val chirrtl = ChiselStage.emitChirrtl {
       new Module {
         val in1 = IO(Input(new SingleElementRecord))
@@ -172,6 +181,16 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     chirrtl should include("input in1 : UInt<8>")
     chirrtl should include("input in2 : UInt<8>")
     chirrtl should include("add(in1, in2)")
+
+    (the[AssertionError] thrownBy extractCause[AssertionError] {
+      ChiselStage.elaborate {
+        new Module {
+          val in = IO(Input(new ErroneousOverride))
+          val out = IO(Output(new ErroneousOverride))
+          out := in
+        }
+      }
+    }).getMessage should include("opaqueType is true")
   }
 
   they should "follow UInt serialization/deserialization API" in {
