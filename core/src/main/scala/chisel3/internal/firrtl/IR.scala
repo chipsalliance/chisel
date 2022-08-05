@@ -88,19 +88,14 @@ case class Node(id: HasId) extends Arg {
 
 object Arg {
   def earlyLocalName(id: HasId): String = id.getOptionRef match {
-    case Some(Index(Node(imm), Node(value))) =>
-      s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
-    case Some(Index(Node(imm), arg))       => s"${earlyLocalName(imm)}[${arg.localName}]"
-    case Some(Slot(Node(imm), name))       => s"${earlyLocalName(imm)}.$name"
-    case Some(OpaqueSlot(Node(imm), name)) => s"${earlyLocalName(imm)}"
-    case Some(arg)                         => arg.name
+    case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
+    case Some(Index(Node(imm), arg))         => s"${earlyLocalName(imm)}[${arg.localName}]"
+    case Some(Slot(Node(imm), name))         => s"${earlyLocalName(imm)}.$name"
+    case Some(OpaqueSlot(Node(imm), name))   => s"${earlyLocalName(imm)}"
+    case Some(arg)                           => arg.name
     case None => {
       id match {
-        case data: Data => {
-          val k = data._computeName(Some("?")).get;
-          println(k);
-          k
-        }
+        case data: Data => data._computeName(Some("?")).get;
         case _ => "?"
       }
     }
