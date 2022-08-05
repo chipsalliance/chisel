@@ -93,12 +93,11 @@ object Arg {
     case Some(Slot(Node(imm), name))         => s"${earlyLocalName(imm)}.$name"
     case Some(OpaqueSlot(Node(imm), name))   => s"${earlyLocalName(imm)}"
     case Some(arg)                           => arg.name
-    case None => {
+    case None =>
       id match {
-        case data: Data => data._computeName(Some("?")).get;
+        case data: Data => data._computeName(Some("?")).get
         case _ => "?"
       }
-    }
   }
 }
 
@@ -195,10 +194,8 @@ case class Ref(name: String) extends Arg
   * @param name the name of the port
   */
 case class ModuleIO(mod: BaseModule, name: String) extends Arg {
-  override def contextualName(ctx: Component): String = {
-    if (mod eq ctx.id) { println(s"port: name $name"); name }
-    else { println(s"port: ${mod.getRef.name}.$name"); s"${mod.getRef.name}.$name" }
-  }
+  override def contextualName(ctx: Component): String =
+    if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
 
 /** Ports of cloned modules (CloneModuleAsRecord)
