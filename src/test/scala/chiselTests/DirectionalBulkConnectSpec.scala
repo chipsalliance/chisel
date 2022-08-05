@@ -202,9 +202,15 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
       val io = IO(new Bundle {
         val in = Input((new SmallBundle))
         val out = Output((new BigBundle))
+
+        val foo = Input((new BigBundle))
+        val bar = Output(new SmallBundle)
       })
       io.out := DontCare
       io.out.viewAsSupertype(Output(new SmallBundle)) :<>= io.in
+
+      io.bar := DontCare
+      io.bar :<>= io.foo.viewAsSupertype(Input((new SmallBundle)))
     }
     val out = (new ChiselStage).emitChirrtl(gen = new ConnectSupertype(), args = Array("--full-stacktrace"))
     assert(out.contains("io.out.f1 <= io.in.f1"))
@@ -212,33 +218,42 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
     assert(!out.contains("io.out.f3 <= io.in.f3"))
     assert(!out.contains("io.out <= io.in"))
     assert(!out.contains("io.out <- io.in"))
+
+    assert(out.contains("io.bar.f1 <= io.foo.f1"))
+    assert(out.contains("io.bar.f2 <= io.foo.f2"))
+    assert(!out.contains("io.bar.f3 <= io.foo.f3"))
+    assert(!out.contains("io.bar <= io.foo"))
+    assert(!out.contains("io.bar <- io.foo"))
+
   }
   property("(D.o) :<>= works with DataView to connect a two Bundles with a common trait") {
     import chisel3.experimental.dataview._
 
     class SmallBundle extends Bundle {
-      val common = Input(UInt(4.W))
+      val common = Output(UInt(4.W))
+      val commonFlipped = Input(UInt(4.W))
     }
     class BigA extends SmallBundle {
-      val a = Output(UInt(6.W))
+      val a = Input(UInt(6.W))
     }
     class BigB extends SmallBundle {
-      val b = Input(UInt(6.W))
+      val b = Output(UInt(6.W))
     }
 
     class ConnectCommonTrait extends Module {
       val io = IO(new Bundle {
-        val in = (new BigA)
-        val out = Flipped((new BigB))
+        val in = Flipped(new BigA)
+        val out = (new BigB)
       })
       io.in := DontCare
       io.out := DontCare
-      io.out.viewAsSupertype(Flipped(new SmallBundle)) :<>= io.in.viewAsSupertype(new SmallBundle)
+      io.out.viewAsSupertype(new SmallBundle) :<>= io.in.viewAsSupertype(Flipped(new SmallBundle))
     }
     val out = ChiselStage.emitChirrtl { new ConnectCommonTrait() }
     assert(!out.contains("io.out <= io.in"))
     assert(!out.contains("io.out <- io.in"))
     assert(out.contains("io.out.common <= io.in.common"))
+    assert(out.contains("io.in.commonFlipped <= io.out.commonFlipped"))
     assert(!out.contains("io.out.b <= io.in.b"))
     assert(!out.contains("io.in.a  <= io.out.a"))
   }

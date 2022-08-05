@@ -667,7 +667,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
   // Used by :<>= for child elements to switch directionality
-  private def descend(
+  private def directionalBulkConnectDescend(
     that: Data
   )(
     implicit sourceInfo:   SourceInfo,
@@ -712,8 +712,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         left.elements.foreach {
           case (key, vleft) =>
             require(hright.contains(key), s"Attempt to assign ${this} :<>= ${that}, with missing source element ${key}")
-            println(s"Calling ${vleft}.descend(${hright(key)}")
-            vleft.descend(hright(key))
+            println(s"Calling ${vleft}.directionalBulkConenctDescent(${hright(key)}")
+            vleft.directionalBulkConnectDescend(hright(key))
         }
         hright --= left.elements.keys
         require(
