@@ -925,6 +925,11 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
+  // Classes can override opaqueType if they want to "unbox" Records
+  //  that have maps with a single element. If opaqueType is 
+  //  overriden to true, the subfield names of the record are
+  //  skipped, and the Record name is used instead. See RecordSpec
+  //  for example usage and expected output
   def opaqueType: Boolean = false
 
   // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
