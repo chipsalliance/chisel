@@ -190,7 +190,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
           out := in
         }
       }
-    }).getMessage should include("opaqueType is true")
+    }).getMessage should include("opaqueType cannot be true")
   }
 
   they should "follow UInt serialization/deserialization API" in {
