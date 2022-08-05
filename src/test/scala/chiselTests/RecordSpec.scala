@@ -159,16 +159,19 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
         _w
       }
     }
-    val chirrtl = ChiselStage.emitChirrtl{
-      new Module {
+    val x = () => new Module {
         val in1 = IO(Input(new SingleElementRecord))
         val in2 = IO(Input(new SingleElementRecord))
         val out = IO(Output(new SingleElementRecord))
 
         out := in1 + in2
-      }
     }
+    val chirrtl = ChiselStage.emitChirrtl(x())
+    /* val elaboration = ChiselStage.elaborate(x()) */
+    /* val verilog = ChiselStage.emitVerilog(x()) */
     println(chirrtl)
+    /* println(elaboration) */
+    /* println(verilog) */
   }
 
   they should "follow UInt serialization/deserialization API" in {
