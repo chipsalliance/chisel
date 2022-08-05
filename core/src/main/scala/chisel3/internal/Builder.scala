@@ -87,17 +87,13 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
-<<<<<<< HEAD
   private[chisel3] def _onModuleClose: Unit = {}
-  private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
-=======
   // using nullable var for better memory usage
   private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
   private[chisel3] def _parent_=(target: Option[BaseModule]): Unit = {
     _parentVar = target.getOrElse(null)
   }
->>>>>>> ac460bfe (Replace some options with nullable vars (#2658))
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
   private var _circuitVar:       BaseModule = null // using nullable var for better memory usage
@@ -146,12 +142,8 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def autoSeed(seed: String): this.type = forceAutoSeed(seed)
   // Bypass the overridden behavior of autoSeed in [[Data]], apply autoSeed even to ports
   private[chisel3] def forceAutoSeed(seed: String): this.type = {
-<<<<<<< HEAD
-    auto_seed = Some(seed)
-    for (hook <- auto_postseed_hooks.reverse) { hook(seed) }
-=======
     auto_seedVar = seed
->>>>>>> ac460bfe (Replace some options with nullable vars (#2658))
+    for (hook <- auto_postseed_hooks.reverse) { hook(seed) }
     naming_prefix = Builder.getPrefix
     this
   }
