@@ -146,8 +146,8 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     e.getMessage should include("contains aliased fields named (bar,foo)")
   }
 
-  they should "unbox Record for single element maps" in {
-   class SingleElementRecord extends Record {
+  they should "be OpaqueType for single element maps" in {
+    class SingleElementRecord extends Record {
       private val underlying = UInt(8.W)
       val elements = SeqMap("" -> underlying)
       override def opaqueType = elements.size == 1
@@ -159,19 +159,19 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
         _w
       }
     }
-    val x = () => new Module {
+
+    val chirrtl = ChiselStage.emitChirrtl {
+      new Module {
         val in1 = IO(Input(new SingleElementRecord))
         val in2 = IO(Input(new SingleElementRecord))
         val out = IO(Output(new SingleElementRecord))
 
         out := in1 + in2
+      }
     }
-    val chirrtl = ChiselStage.emitChirrtl(x())
-    /* val elaboration = ChiselStage.elaborate(x()) */
-    /* val verilog = ChiselStage.emitVerilog(x()) */
-    println(chirrtl)
-    /* println(elaboration) */
-    /* println(verilog) */
+    chirrtl should include("input in1 : UInt<8>")
+    chirrtl should include("input in2 : UInt<8>")
+    chirrtl should include("add(in1, in2)")
   }
 
   they should "follow UInt serialization/deserialization API" in {

@@ -303,7 +303,7 @@ private[chisel3] object Converter {
     case d: Interval   => fir.IntervalType(d.range.lowerBound, d.range.upperBound, d.range.firrtlBinaryPoint)
     case d: Analog     => fir.AnalogType(convert(d.width))
     case d: Vec[_] => fir.VectorType(extractType(d.sample_element, clearDir, info), d.length)
-    case d: Record =>  {
+    case d: Record => {
       val childClearDir = clearDir ||
         d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
       def eltField(elt: Data): fir.Field = (childClearDir, firrtlUserDirOf(elt)) match {
@@ -319,7 +319,7 @@ private[chisel3] object Converter {
         extractType(d.elements.head._2, true, info)
     }
   }
-  
+
   def convert(name: String, param: Param): fir.Param = param match {
     case IntParam(value)    => fir.IntParam(name, value)
     case DoubleParam(value) => fir.DoubleParam(name, value)
