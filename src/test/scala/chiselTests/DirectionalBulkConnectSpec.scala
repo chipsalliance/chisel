@@ -187,4 +187,62 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
     }
   }
 
+  property("(D.n) :<>= works with DataView to connect a bundle that is a subtype") {
+    import chisel3.experimental.dataview._
+
+    class SmallBundle extends Bundle {
+      val f1 = UInt(4.W)
+      val f2 = UInt(5.W)
+    }
+    class BigBundle extends SmallBundle {
+      val f3 = UInt(6.W)
+    }
+
+    class ConnectSupertype extends Module {
+      val io = IO(new Bundle {
+        val in = Input((new SmallBundle))
+        val out = Output((new BigBundle))
+      })
+      io.out := DontCare
+      io.out.viewAsSupertype(new SmallBundle) :<>= io.in
+    }
+    val out = (new ChiselStage).emitChirrtl(gen = new ConnectSupertype(), args = Array("--full-stacktrace"))
+    assert(out.contains("io.out.f1 <= io.in.f1"))
+    assert(out.contains("io.out.f2 <= io.in.f2"))
+    assert(!out.contains("io.out.f3 <= io.in.f3"))
+    assert(!out.contains("io.out <= io.in"))
+    assert(!out.contains("io.out <- io.in"))
+  }
+  property("(D.o) :<>= works with DataView to connect a two Bundles with a common trait") {
+    import chisel3.experimental.dataview._
+
+    class SmallBundle extends Bundle {
+      val f1 = Input(UInt(4.W))
+      val f2 = Input(UInt(5.W))
+    }
+    class BigA extends SmallBundle {
+      val a = Output(UInt(6.W))
+    }
+    class BigB extends SmallBundle {
+      val b = Input(UInt(6.W))
+    }
+
+    class ConnectCommonTrait extends Module {
+      val io = IO(new Bundle {
+        val in = (new BigA)
+        val out = Flipped((new BigB))
+      })
+      io.in := DontCare
+      io.out := DontCare
+      io.out.viewAsSupertype(new SmallBundle) :<>= io.in.viewAsSupertype(new SmallBundle)
+    }
+    val out = ChiselStage.emitChirrtl { new ConnectCommonTrait() }
+    assert(!out.contains("io.out <= io.in"))
+    assert(!out.contains("io.out <- io.in"))
+    assert(out.contains("io.out.f1 <= io.in.f1"))
+    assert(out.contains("io.out.f2 <= io.in.f2"))
+    assert(!out.contains("io.out.b <= io.in.b"))
+    assert(!out.contains("io.in.a  <= io.out.a"))
+  }
+
 }
