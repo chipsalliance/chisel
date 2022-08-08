@@ -940,7 +940,10 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
     val _namespace = Namespace.empty
-    assert(!opaqueType || elements.size == 1, "opaqueType cannot be true when the size of elements is not 1")
+    assert(
+      !opaqueType || elements.size == 1,
+      s"Size of elements must be 1 if opaqueType == true, not ${elements.size}: ${elements.keys.mkString(", ")}"
+    )
     for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk = true), unbox = opaqueType) }
   }
 

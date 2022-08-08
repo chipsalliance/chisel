@@ -160,6 +160,14 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
       }
     }
 
+    class NamedSingleElementRecord extends Record {
+      private val underlying = UInt(8.W)
+      val elements = SeqMap("unused" -> underlying)
+
+      override def opaqueType = elements.size == 1
+      override def cloneType: this.type = this
+    }
+
     class ErroneousOverride extends Record {
       private val underlyingA = UInt(8.W)
       private val underlyingB = UInt(8.W)
@@ -169,7 +177,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
       override def cloneType: this.type = this
     }
 
-    val chirrtl = ChiselStage.emitChirrtl {
+    val singleElementChirrtl = ChiselStage.emitChirrtl {
       new Module {
         val in1 = IO(Input(new SingleElementRecord))
         val in2 = IO(Input(new SingleElementRecord))
@@ -178,9 +186,9 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
         out := in1 + in2
       }
     }
-    chirrtl should include("input in1 : UInt<8>")
-    chirrtl should include("input in2 : UInt<8>")
-    chirrtl should include("add(in1, in2)")
+    singleElementChirrtl should include("input in1 : UInt<8>")
+    singleElementChirrtl should include("input in2 : UInt<8>")
+    singleElementChirrtl should include("add(in1, in2)")
 
     (the[AssertionError] thrownBy extractCause[AssertionError] {
       ChiselStage.elaborate {
@@ -190,7 +198,16 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
           out := in
         }
       }
-    }).getMessage should include("opaqueType cannot be true")
+    }).getMessage should include("Size of elements must be 1 if opaqueType == true")
+
+    val namedElementChirrtl = ChiselStage.emitChirrtl {
+      new Module {
+        val in = IO(Input(new NamedSingleElementRecord))
+        val out = IO(Output(new SingleElementRecord))
+        out := in
+      }
+    }
+    namedElementChirrtl should include("input in : UInt<8>")
   }
 
   they should "follow UInt serialization/deserialization API" in {
