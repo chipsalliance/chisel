@@ -101,7 +101,16 @@ object assert {
     q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo, $compileOptions)"
   }
 
-  /** Used by our macros. Do not call directly! */
+  /** Internal verification statement macros.
+    *
+    * @groupdesc VerifPrintMacros
+    *
+    * <p>
+    * '''These internal methods are not part of the public-facing API!'''
+    * </p>
+    * <br>
+    */
+  /** @group VerifPrintMacros */
   def _applyMacroWithStringMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -115,7 +124,7 @@ object assert {
     q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo, $compileOptions)"
   }
 
-  /** Used by our macros. Do not call directly! */
+  /** @group VerifPrintMacros */
   def _applyMacroWithPrintableMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -157,7 +166,7 @@ object assert {
     id
   }
 
-  /** Used by our macros. Do not call directly! */
+  /** @group VerifPrintMacros */
   def _applyWithSourceLinePrintable(
     cond:    Bool,
     line:    SourceLineInfo,
@@ -261,7 +270,7 @@ object assume {
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
   }
 
-  /** Used by our macros. Do not call directly! */
+  /** @group VerifPrintMacros */
   def _applyMacroWithStringMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -275,7 +284,7 @@ object assume {
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
   }
 
-  /** Used by our macros. Do not call directly! */
+  /** @group VerifPrintMacros */
   def _applyMacroWithPrintableMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -317,7 +326,7 @@ object assume {
     id
   }
 
-  /** Used by our macros. Do not call directly! */
+  /** @group VerifPrintMacros */
   def _applyWithSourceLinePrintable(
     cond:    Bool,
     line:    SourceLineInfo,
@@ -386,7 +395,7 @@ object cover {
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo, $compileOptions)"
   }
 
-  /** Used by our macros. Do not call directly! */
+  /** @group VerifPrintMacros */
   def _applyWithSourceLine(
     cond:    Bool,
     line:    SourceLineInfo,
