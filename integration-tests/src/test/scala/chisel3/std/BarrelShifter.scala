@@ -7,7 +7,6 @@ import chisel3.util._
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
-import chisel3.std.BarrelShifter
 
 class VecLeftRotater[T <: Data](len: Int, gen: T, layerSize: Int = 1) extends Module {
   require(len > 1)
