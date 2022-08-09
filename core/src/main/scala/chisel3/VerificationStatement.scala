@@ -20,10 +20,6 @@ object assert {
     * reset). If your definition of reset is not the encapsulating Module's
     * reset, you will need to gate this externally.
     *
-    * May be called outside of a Module (like defined in a function), so
-    * functions using assert make the standard Module assumptions (single clock
-    * and single reset).
-    *
     * @param cond condition, assertion fires (simulation fails) when false
     * @param message optional format string to print when the assertion fires
     * @param data optional bits to print in the message formatting
