@@ -46,15 +46,14 @@ object assert {
   /** Checks for a condition to be valid in the circuit at all times. If the
     * condition evaluates to false, the circuit simulation stops with an error.
     *
-    * Does not fire when in reset (defined as the encapsulating Module's
-    * reset). If your definition of reset is not the encapsulating Module's
-    * reset, you will need to gate this externally.
+    * Does not fire when in reset (defined as the current implicit reset, e.g. as set by
+    * the enclosing `withReset` or Module.reset.
     *
     * May be called outside of a Module (like defined in a function), so
     * functions using assert make the standard Module assumptions (single clock
     * and single reset).
     *
-    * @param cond condition, assertion fires (simulation fails) when false
+    * @param cond condition, assertion fires (simulation fails) on a rising clock edge when false and reset is not asserted
     * @param message optional chisel Printable type message
     *
     * @note See [[printf.apply(fmt:Printable)]] for documentation on printf using Printables
