@@ -7,6 +7,8 @@ import chisel3._ // required for implicit conversions.
 import chisel3.util.random.FibonacciLFSR
 import chisel3.stage.{phases, ChiselCircuitAnnotation, ChiselOutputFileAnnotation, ChiselStage}
 
+import scala.annotation.nowarn
+
 package object Chisel {
   import chisel3.internal.firrtl.Width
 
@@ -37,6 +39,7 @@ package object Chisel {
     def apply[T <: Data](target: T): T = chisel3.Flipped[T](target)
   }
 
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class AddDirectionToData[T <: Data](target: T) {
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def asInput: T = Input(target)
@@ -46,6 +49,7 @@ package object Chisel {
     def flip: T = Flipped(target)
   }
 
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class AddDirMethodToData[T <: Data](target: T) {
     import chisel3.ActualDirection
     import chisel3.experimental.DataMirror
@@ -65,6 +69,8 @@ package object Chisel {
       }
     }
   }
+
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class cloneTypeable[T <: Data](target: T) {
     import chisel3.experimental.DataMirror
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
@@ -105,6 +111,7 @@ package object Chisel {
   type Clock = chisel3.Clock
 
   // Implicit conversion to allow fromBits because it's being deprecated in chisel3
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class fromBitsable[T <: Data](data: T) {
     import chisel3.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
@@ -413,6 +420,8 @@ package object Chisel {
   val RegNext = chisel3.RegNext
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   val RegInit = chisel3.RegInit
+
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   object Reg {
     import chisel3.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
@@ -539,19 +548,12 @@ package object Chisel {
   val isPow2 = chisel3.util.isPow2
 
   /** Compute the log2 rounded up with min value of 1 */
-  object log2Up {
-    def apply(in: BigInt): Int = {
-      require(in >= 0)
-      1.max((in - 1).bitLength)
-    }
-    def apply(in: Int): Int = apply(BigInt(in))
-  }
+  @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
+  val log2Up = chisel3.util.log2Up
 
   /** Compute the log2 rounded down with min value of 1 */
-  object log2Down {
-    def apply(in: BigInt): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
-    def apply(in: Int):    Int = apply(BigInt(in))
-  }
+  @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
+  val log2Down = chisel3.util.log2Down
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   val BitPat = chisel3.util.BitPat
@@ -617,6 +619,7 @@ package object Chisel {
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   type Queue[T <: Data] = QueueCompatibility[T]
 
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   sealed class QueueCompatibility[T <: Data](
     gen:     T,
     entries: Int,
@@ -684,6 +687,7 @@ package object Chisel {
     *
     * }}}
     */
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   object LFSR16 {
 
     /** Generates a 16-bit linear feedback shift register, returning the register contents.
@@ -753,6 +757,7 @@ package object Chisel {
     class chiselName extends chisel3.internal.naming.chiselName
   }
 
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class DataCompatibility(a: Data) {
     import chisel3.internal.sourceinfo.DeprecatedSourceInfo
 
@@ -761,6 +766,7 @@ package object Chisel {
 
   }
 
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class VecLikeCompatibility[T <: Data](a: VecLike[T]) {
     import chisel3.internal.sourceinfo.DeprecatedSourceInfo
 
@@ -773,6 +779,7 @@ package object Chisel {
 
   }
 
+  @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class BitsCompatibility(a: Bits) {
     import chisel3.internal.sourceinfo.DeprecatedSourceInfo
 
