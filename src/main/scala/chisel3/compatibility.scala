@@ -39,11 +39,11 @@ package object Chisel {
 
   implicit class AddDirectionToData[T <: Data](target: T) {
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
-    def asInput:  T = Input(target)
+    def asInput: T = Input(target)
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def asOutput: T = Output(target)
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
-    def flip:     T = Flipped(target)
+    def flip: T = Flipped(target)
   }
 
   implicit class AddDirMethodToData[T <: Data](target: T) {
@@ -91,7 +91,7 @@ package object Chisel {
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   object Clock {
     def apply(): Clock = new Clock
-     
+
     def apply(dir: Direction): Clock = {
       val result = apply()
       dir match {
@@ -364,7 +364,7 @@ package object Chisel {
     def apply[T <: Data](t: T, size: BigInt)(implicit compileOptions: CompileOptions): Mem[T] =
       a.do_apply(size, t)(UnlocatableSourceInfo, compileOptions)
 
-    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")  
+    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def apply[T <: Data](t: T, size: Int)(implicit compileOptions: CompileOptions): Mem[T] =
       a.do_apply(size, t)(UnlocatableSourceInfo, compileOptions)
 
@@ -515,19 +515,19 @@ package object Chisel {
   }
 
   // Deprecated as of Chisel3
+
+  @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   object throwException {
     @throws(classOf[Exception])
-    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def apply(s: String, t: Throwable = null): Nothing = {
       val xcpt = new Exception(s, t)
       throw xcpt
     }
   }
 
+  @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   object testers {
-    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     type BasicTester = chisel3.testers.BasicTester
-    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     val TesterDriver = chisel3.testers.TesterDriver
   }
 
@@ -617,7 +617,6 @@ package object Chisel {
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   type Queue[T <: Data] = QueueCompatibility[T]
 
-  @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   sealed class QueueCompatibility[T <: Data](
     gen:     T,
     entries: Int,
@@ -627,7 +626,6 @@ package object Chisel {
     implicit compileOptions: chisel3.CompileOptions)
       extends chisel3.util.Queue[T](gen, entries, pipe, flow)(compileOptions) {
 
-    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
       this(gen, entries, pipe, flow)
       this.override_reset = override_reset
@@ -666,6 +664,7 @@ package object Chisel {
       require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
       apply(n).asInstanceOf[List[T]]
     }
+  }
 
   /** LFSR16 generates a 16-bit linear feedback shift register, returning the register contents.
     * This is useful for generating a pseudo-random sequence.
@@ -705,6 +704,7 @@ package object Chisel {
   val ListLookup = chisel3.util.ListLookup
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   val Lookup = chisel3.util.Lookup
+
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   val Mux1H = chisel3.util.Mux1H
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
