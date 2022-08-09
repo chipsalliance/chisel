@@ -208,6 +208,12 @@ class UartMain(frequency: Int, baudRate: Int) extends Module {
 
 }
 
+/*
+
+// This works on my setup, but fails on CI. Don't know why.
+
 object UartMain extends App {
   emitVerilog(new UartMain(50000000, 115200), Array("--target-dir", "generated"))
 }
+
+ */
