@@ -5,7 +5,7 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
+import chisel3.experimental.{Analog, BaseModule, DataMirror, EnumType, FixedPoint, IO, Interval}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
@@ -891,6 +891,50 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Default pretty printing */
   def toPrintable: Printable
+}
+
+object Data {
+  implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+    def ===(rhs: T): Bool = {
+      (lhs, rhs) match {
+        case (thiz: UInt, that: UInt) => thiz === that
+        case (thiz: SInt, that: SInt) => thiz === that
+        case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
+        case (thiz: Reset, that: Reset) => thiz === that
+        case (thiz: Interval, that: Interval) => thiz === that
+        case (thiz: FixedPoint, that: FixedPoint) => thiz === that
+        case (thiz: EnumType, that: EnumType) => thiz === that
+        case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
+        case (thiz: Vec[_], that: Vec[_]) =>
+          if (thiz.length != that.length) {
+            false.B
+          } else {
+            thiz.getElements
+              .zip(that.getElements)
+              .map { case (thisData, thatData) => thisData === thatData }
+              .reduce(_ && _)
+          }
+        case (thiz: Record, that: Record) =>
+          if (thiz.elements.size != that.elements.size) {
+            false.B
+          } else {
+            thiz.elements
+              .zip(that.elements)
+              .map {
+                case ((thisName, thisData), (thatName, thatData)) =>
+                  thisName.equals(thatName).asBool && thisData === thatData
+              }
+              .reduce(_ && _)
+          }
+        // This should be matching to (DontCare, DontCare) but the compiler wasn't happy with that
+        case (_: DontCare.type, _: DontCare.type) => true.B
+
+        case (_: Analog, _: Analog) => throwException("Equality isn't defined for Analog values")
+        // Runtime types are different
+        case (_, _) => false.B
+      }
+    }
+  }
 }
 
 trait WireFactory {
