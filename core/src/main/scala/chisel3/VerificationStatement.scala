@@ -13,12 +13,9 @@ import scala.reflect.macros.blackbox
 
 object assert {
 
-  /** Checks for a condition to be valid in the circuit at all times. If the
-    * condition evaluates to false, the circuit simulation stops with an error.
-    *
-    * Does not fire when in reset (defined as the encapsulating Module's
-    * reset). If your definition of reset is not the encapsulating Module's
-    * reset, you will need to gate this externally.
+  /** Checks for a condition to be valid in the circuit at rising clock edge
+    * when not in reset. If the condition evaluates to false, the circuit
+    * simulation stops with an error.
     *
     * @param cond condition, assertion fires (simulation fails) when false
     * @param message optional format string to print when the assertion fires
