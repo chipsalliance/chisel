@@ -950,7 +950,9 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
       !opaqueType || (elements.size == 1 && elements.head._1 == ""),
       s"Opaque types must have exactly one element with an empty name, not ${elements.size}: ${elements.keys.mkString(", ")}"
     )
-    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk = true), unbox = opaqueType) }
+    for ((name, elt) <- elements) {
+      elt.setRef(this, _namespace.name(name, leadingDigitOk = true), opaque = opaqueType)
+    }
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {

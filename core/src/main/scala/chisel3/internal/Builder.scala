@@ -219,8 +219,8 @@ private[chisel3] trait HasId extends InstanceId {
       _refVar = imm
     }
   }
-  private[chisel3] def setRef(parent: HasId, name: String, unbox: Boolean = false): Unit = {
-    if (!unbox) setRef(Slot(Node(parent), name))
+  private[chisel3] def setRef(parent: HasId, name: String, opaque: Boolean = false): Unit = {
+    if (!opaque) setRef(Slot(Node(parent), name))
     else setRef(OpaqueSlot(Node(parent), name))
   }
 
