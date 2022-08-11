@@ -339,7 +339,7 @@ abstract class EnumFactory {
     } else if (n.getWidth > this.getWidth) {
       throwException(s"The UInt being cast to $enumTypeName is wider than $enumTypeName's width ($getWidth)")
     } else {
-      if (warn && !this.isTotal) {
+      if (!Builder.suppressEnumCastWarning && warn && !this.isTotal) {
         Builder.warning(
           s"Casting non-literal UInt to $enumTypeName. You can use $enumTypeName.safe to cast without this warning."
         )
@@ -409,3 +409,16 @@ private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(Un
   override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
 }
 private object UnsafeEnum extends EnumFactory
+
+object suppressEnumCastWarning {
+  def apply[T](block: => T): T = {
+    val parentWarn = Builder.suppressEnumCastWarning
+
+    Builder.suppressEnumCastWarning = true
+
+    val res = block // execute block
+
+    Builder.suppressEnumCastWarning = parentWarn
+    res
+  }
+}
