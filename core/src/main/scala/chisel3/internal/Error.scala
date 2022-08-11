@@ -178,18 +178,24 @@ private[chisel3] object ErrorLog {
 
 private[chisel3] class ErrorLog {
 
+  def getLoc: String = {
+    getUserLineNumber match {
+      case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
+      case None => "(unknown)"
+    }
+  }
+
   /** Log an error message */
   def error(m: => String): Unit =
-    errors += new Error(m, getUserLineNumber)
+    errors += (((m, getLoc), new Error(m, getUserLineNumber)))
 
   /** Log a warning message */
   def warning(m: => String): Unit =
-    errors += new Warning(m, getUserLineNumber)
+    errors += (((m, getLoc), new Warning(m, getUserLineNumber)))
 
   /** Log a warning message without a source locator */
-  def warningNoLoc(m: => String): Unit = {
-    errors += new Warning(m, None)
-  }
+  def warningNoLoc(m: => String): Unit =
+    errors += (((m, getLoc), new Warning(m, None)))
 
   /** Emit an informational message */
   @deprecated("This method will be removed in 3.5", "3.4")
@@ -200,11 +206,7 @@ private[chisel3] class ErrorLog {
   def deprecated(m: => String, location: Option[String]): Unit = {
     val sourceLoc = location match {
       case Some(loc) => loc
-      case None =>
-        getUserLineNumber match {
-          case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
-          case None => "(unknown)"
-        }
+      case None => getLoc
     }
 
     val thisEntry = (m, sourceLoc)
@@ -217,7 +219,7 @@ private[chisel3] class ErrorLog {
       case ((message, sourceLoc), count) =>
         logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
-    errors.foreach(e => logger.error(e.toString))
+    errors.foreach(e => logger.error(e._2.toString))
 
     if (!deprecations.isEmpty) {
       logger.warn(
@@ -233,8 +235,8 @@ private[chisel3] class ErrorLog {
       logger.warn(s"""${ErrorLog.warnTag}     scalacOptions := Seq("-unchecked", "-deprecation")""")
     }
 
-    val allErrors = errors.filter(_.isFatal)
-    val allWarnings = errors.filter(!_.isFatal)
+    val allErrors = errors.filter(_._2.isFatal)
+    val allWarnings = errors.filter(!_._2.isFatal)
 
     if (!allWarnings.isEmpty && !allErrors.isEmpty) {
       logger.warn(
@@ -289,7 +291,7 @@ private[chisel3] class ErrorLog {
       .headOption
   }
 
-  private val errors = ArrayBuffer[LogEntry]()
+  private val errors = LinkedHashMap[(String, String), LogEntry]()
   private val deprecations = LinkedHashMap[(String, String), Int]()
 
   private val startTime = System.currentTimeMillis
