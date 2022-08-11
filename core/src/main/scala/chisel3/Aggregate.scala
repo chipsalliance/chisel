@@ -927,11 +927,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   /** Indicates if this Record represents an "Opaque Type"
     *
-    * Opaque types provide a mechanism for user-defined types 
+    * Opaque types provide a mechanism for user-defined types
     * that do not impose any "boxing" overhead in the emitted FIRRTL and Verilog.
     * You can think about an opaque type Record as a box around
     * a single element that only exists at Chisel elaboration time.
-    * Put another way, if opaqueType is overridden to true, 
+    * Put another way, if opaqueType is overridden to true,
     * The Record may only contain a single element with an empty name
     * and there will be no `_` in the name for that element in the emitted Verilog.
     *
