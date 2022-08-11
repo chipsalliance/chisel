@@ -925,11 +925,17 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
-  /** Classes can override opaqueType if they want to "unbox"
-    * Records that have maps with a single element. If opaqueType
-    * is overridden to true, the subfield name of the record is
-    * skipped and the Record name is used instead. See RecordSpec
-    * for example usage and expected output
+  /** Indicates if this Record represents an "Opaque Type"
+    *
+    * Opaque types provide a mechanism for user-defined types 
+    * that do not impose any "boxing" overhead in the emitted FIRRTL and Verilog.
+    * You can think about an opaque type Record as a box around
+    * a single element that only exists at Chisel elaboration time.
+    * Put another way, if opaqueType is overridden to true, 
+    * The Record may only contain a single element with an empty name
+    * and there will be no `_` in the name for that element in the emitted Verilog.
+    *
+    * @see RecordSpec in Chisel's tests for example usage and expected output
     */
   def opaqueType: Boolean = false
 
