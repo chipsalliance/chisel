@@ -18,12 +18,8 @@ package object stage {
           case NoRunFirrtlCompilerAnnotation  => c.copy(runFirrtlCompiler = false)
           case PrintFullStackTraceAnnotation  => c.copy(printFullStackTrace = true)
           case ThrowOnFirstErrorAnnotation    => c.copy(throwOnFirstError = true)
-<<<<<<< HEAD
           case WarnReflectiveNamingAnnotation => c.copy(warnReflectiveNaming = true)
-=======
           case WarningsAsErrorsAnnotation     => c.copy(warningsAsErrors = true)
-          case WarnReflectiveNamingAnnotation => c // Do nothing, ignored
->>>>>>> 49894666 (Add option to treat warnings as errors (#2676))
           case ChiselOutputFileAnnotation(f)  => c.copy(outputFile = Some(f))
           case ChiselCircuitAnnotation(a)     => c.copy(chiselCircuit = Some(a))
         }

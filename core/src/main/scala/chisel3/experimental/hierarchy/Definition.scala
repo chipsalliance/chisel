@@ -103,11 +103,7 @@ object Definition extends SourceInfoDoc {
   ): Definition[T] = {
     val dynamicContext = {
       val context = Builder.captureContext()
-<<<<<<< HEAD:core/src/main/scala/chisel3/experimental/hierarchy/Definition.scala
-      new DynamicContext(Nil, context.throwOnFirstError, context.warnReflectiveNaming)
-=======
-      new DynamicContext(Nil, context.throwOnFirstError, context.warningsAsErrors)
->>>>>>> 49894666 (Add option to treat warnings as errors (#2676)):core/src/main/scala/chisel3/experimental/hierarchy/core/Definition.scala
+      new DynamicContext(Nil, context.throwOnFirstError, context.warnReflectiveNaming, context.warningsAsErrors)
     }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true

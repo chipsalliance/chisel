@@ -30,11 +30,12 @@ class Elaborate extends Phase {
       val chiselOptions = view[ChiselOptions](annotations)
       try {
         val context =
-<<<<<<< HEAD
-          new DynamicContext(annotations, chiselOptions.throwOnFirstError, chiselOptions.warnReflectiveNaming)
-=======
-          new DynamicContext(annotations, chiselOptions.throwOnFirstError, chiselOptions.warningsAsErrors)
->>>>>>> 49894666 (Add option to treat warnings as errors (#2676))
+          new DynamicContext(
+            annotations,
+            chiselOptions.throwOnFirstError,
+            chiselOptions.warnReflectiveNaming,
+            chiselOptions.warningsAsErrors
+          )
         val (circuit, dut) =
           Builder.build(Module(gen()), context)
         Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
