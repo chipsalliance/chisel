@@ -187,6 +187,11 @@ class SuppressedFromUInt extends Module {
 }
 ```
 
+```scala mdoc:invisible
+val (log3, _) = grabLog(ChiselStage.emitChirrtl(new SuppressedFromUInt))
+assert(log3.isEmpty)
+```
+
 ## Testing
 
 The _Type_ of the enums values is `<ChiselEnum Object>.Type` which can be useful for passing the values
