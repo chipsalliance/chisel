@@ -410,11 +410,24 @@ private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(Un
 }
 private object UnsafeEnum extends EnumFactory
 
+/** Suppress enum cast warnings
+ *
+ * Users should use [[EnumFactory.safe <EnumType>.safe]] when possible.
+ *
+ * This is primarily used for casting from [[UInt]] to a Bundle type that contains an Enum.
+ * {{{
+ * class MyBundle extends Bundle {
+ *   val addr = UInt(8.W)
+ *   val op = OpEnum()
+ * }
+ *
+ * // Since this is a cast to a Bundle, cannot use OpCode.safe                                                                                    
+ * val bundle = suppressEnumCastWarning {
+ *   someUInt.asTypeOf(new MyBundle)
+ * }
+ * }}}
+ */
 object suppressEnumCastWarning {
-
-  /**
-    * Execute block while suppressing enum cast warnings.
-    */
   def apply[T](block: => T): T = {
     val parentWarn = Builder.suppressEnumCastWarning
 

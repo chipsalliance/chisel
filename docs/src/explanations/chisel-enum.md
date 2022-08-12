@@ -168,15 +168,21 @@ val (log2, _) = grabLog(ChiselStage.emitChirrtl(new SafeFromUInt))
 println(s"```\n$log2```")
 ```
 
-You can also suppress the warning by using `suppressEnumCastWarning`:
+You can also suppress the warning by using `suppressEnumCastWarning`. This is
+primarily used for casting from [[UInt]] to a Bundle type that contains an
+Enum, where the [[UInt]] is known to be valid for the Bundle type.
 
 ```scala mdoc
+class MyBundle extends Bundle {
+  val addr = UInt(8.W)
+  val op = Opcode()
+}
+
 class SuppressedFromUInt extends Module {
-  val in = IO(Input(UInt(7.W)))
-  val out = IO(Output(Opcode()))
+  val in = IO(Input(UInt(15.W)))
+  val out = IO(Output(new MyBundle()))
   suppressEnumCastWarning {
-    val value = Opcode(in)
-    out := value
+    out := in.asTypeOf(new MyBundle)
   }
 }
 ```
