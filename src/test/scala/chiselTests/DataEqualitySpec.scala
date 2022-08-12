@@ -51,11 +51,14 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     val b = Bool()
     val c = MyEnum()
   }
-
   class LongBundle extends Bundle {
     val a = UInt(48.W)
     val b = SInt(32.W)
     val c = FixedPoint(16.W, 4.BP)
+  }
+  class RuntimeSensitiveBundle(gen: => Bundle) extends Bundle {
+    val a = UInt(8.W)
+    val b: Bundle = gen
   }
 
   behavior.of("UInt === UInt")
@@ -159,13 +162,15 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
       )
     }
   }
-  it should "fail with differing sizes" in {
-    assertTesterFails {
-      new EqualityTester(
-        Vec(3, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U),
-        Vec(4, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U, 3 -> 4.U)
-      )
-    }
+  it should "throw a ChiselException with differing sizes" in {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      assertTesterFails {
+        new EqualityTester(
+          Vec(3, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U),
+          Vec(4, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U, 3 -> 4.U)
+        )
+      }
+    }).getMessage should include("sizes differ")
   }
 
   behavior.of("Bundle === Bundle")
@@ -184,6 +189,26 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
         (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sA)
       )
     }
+  }
+  it should "throw a ChiselException with differing types" in {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      assertTesterFails {
+        new EqualityTester(
+          (new RuntimeSensitiveBundle(new MyBundle)).Lit(
+            _.a -> 1.U,
+            _.b -> (new MyBundle).Lit(
+              _.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB
+            )
+          ),
+          (new RuntimeSensitiveBundle(new LongBundle)).Lit(
+            _.a -> 1.U,
+            _.b -> (new LongBundle).Lit(
+              _.a -> 42.U, _.b -> 0.S, _.c -> 4.5.F(16.W, 4.BP)
+            )
+          )
+        )
+      }
+    }).getMessage should include("types differ")
   }
 
   behavior.of("DontCare")

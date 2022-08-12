@@ -5,7 +5,7 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule, DataMirror, EnumType, FixedPoint, IO, Interval}
+import chisel3.experimental.{Analog, BaseModule, DataMirror, EnumType, FixedPoint, Interval}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
@@ -907,7 +907,7 @@ object Data {
         case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
         case (thiz: Vec[_], that: Vec[_]) =>
           if (thiz.length != that.length) {
-            false.B
+            throwException(s"Cannot compare Vecs $thiz and $that: sizes differ")
           } else {
             thiz.getElements
               .zip(that.getElements)
@@ -916,13 +916,15 @@ object Data {
           }
         case (thiz: Record, that: Record) =>
           if (thiz.elements.size != that.elements.size) {
-            false.B
+            throwException(s"Cannot compare Bundles $thiz and $that: types differ")
           } else {
             thiz.elements
               .zip(that.elements)
               .map {
                 case ((thisName, thisData), (thatName, thatData)) =>
-                  thisName.equals(thatName).asBool && thisData === thatData
+                  if (!thisName.equals(thatName))
+                    throwException(s"Cannot compare Bundles $thiz and $that: found differing field names '$thisName' and '$thatName'")
+                  thisData === thatData
               }
               .reduce(_ && _)
           }
@@ -931,7 +933,7 @@ object Data {
 
         case (_: Analog, _: Analog) => throwException("Equality isn't defined for Analog values")
         // Runtime types are different
-        case (_, _) => false.B
+        case (thiz, that) => throwException(s"Cannot compare $thiz and $that: runtime types differ")
       }
     }
   }
