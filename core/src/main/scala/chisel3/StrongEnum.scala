@@ -421,7 +421,7 @@ private object UnsafeEnum extends EnumFactory
   *   val op = OpEnum()
   * }
   *
-  * // Since this is a cast to a Bundle, cannot use OpCode.safe                                                                                    
+  * // Since this is a cast to a Bundle, cannot use OpCode.safe
   * val bundle = suppressEnumCastWarning {
   *   someUInt.asTypeOf(new MyBundle)
   * }
