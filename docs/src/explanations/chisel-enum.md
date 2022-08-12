@@ -17,6 +17,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
+import chisel3.experimental.suppressEnumCastWarning
 ```
 
 ```scala mdoc:invisible
@@ -165,6 +166,19 @@ Now there will be no warning:
 ```scala mdoc:passthrough
 val (log2, _) = grabLog(ChiselStage.emitChirrtl(new SafeFromUInt))
 println(s"```\n$log2```")
+```
+
+You can also suppress the warning by using `suppressEnumCastWarning`:
+
+```scala mdoc
+class SuppressedFromUInt extends Module {
+  val in = IO(Input(UInt(7.W)))
+  val out = IO(Output(Opcode()))
+  suppressEnumCastWarning {
+    val value = Opcode.safe(in)
+    out := value
+  }
+}
 ```
 
 ## Testing
