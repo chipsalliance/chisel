@@ -411,6 +411,10 @@ private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(Un
 private object UnsafeEnum extends EnumFactory
 
 object suppressEnumCastWarning {
+
+  /**
+    * Execute @block while suppressing enum cast warnings.
+    */
   def apply[T](block: => T): T = {
     val parentWarn = Builder.suppressEnumCastWarning
 
