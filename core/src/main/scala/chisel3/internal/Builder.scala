@@ -392,6 +392,7 @@ private[chisel3] class DynamicContext(
   var currentReset:         Option[Reset] = None
   val errors = new ErrorLog
   val namingStack = new NamingStack
+
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
 }
@@ -407,6 +408,9 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+
+  // Used to suppress warnings when casting from a UInt to an Enum
+  var suppressEnumCastWarning: Boolean = false
 
   // Returns the current dynamic context
   def captureContext(): DynamicContext = dynamicContext
