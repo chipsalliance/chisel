@@ -916,15 +916,22 @@ object Data {
           }
         case (thiz: Record, that: Record) =>
           if (thiz.elements.size != that.elements.size) {
-            throwException(s"Cannot compare Bundles $thiz and $that: types differ")
+            throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
           } else {
             thiz.elements
-              .zip(that.elements)
               .map {
-                case ((thisName, thisData), (thatName, thatData)) =>
-                  if (!thisName.equals(thatName))
-                    throwException(s"Cannot compare Bundles $thiz and $that: found differing field names '$thisName' and '$thatName'")
+                case (thisName, thisData) =>
+                  if(!that.elements.contains(thisName))
+                    throwException(s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that")
+
+                val thatData = that.elements(thisName)
+
+                try {
                   thisData === thatData
+                } catch {
+                  case e: ChiselException =>
+                    throwException(s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}")
+                }
               }
               .reduce(_ && _)
           }
