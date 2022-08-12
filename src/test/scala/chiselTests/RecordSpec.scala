@@ -127,6 +127,8 @@ trait RecordSpecUtils {
     val in2 = IO(Input(new SingleElementRecord))
     val out = IO(Output(new SingleElementRecord))
 
+    val r = new SingleElementRecord
+
     out := in1 + in2
   }
 
@@ -158,6 +160,9 @@ trait RecordSpecUtils {
     val out = IO(Output(new ErroneousOverride))
     out := in
   }
+
+  var m: SingleElementRecordModule = _
+  ChiselStage.elaborate { m = new SingleElementRecordModule; m }
 }
 
 class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
@@ -213,6 +218,15 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     (the[Exception] thrownBy extractCause[Exception] {
       ChiselStage.elaborate { new ErroneousOverrideModule }
     }).getMessage should include("Opaque types must have exactly one element with an empty name")
+  }
+
+  they should "work with .toTarget" in {
+    val q = m.in1.toTarget.toString
+    assert(q == "~SingleElementRecordModule|SingleElementRecordModule>in1")
+  }
+
+  they should "NOT work with .toTarget on non-data OpaqueType Record" in {
+    a[ChiselException] shouldBe thrownBy { m.r.toTarget }
   }
 
   they should "follow UInt serialization/deserialization API" in {
