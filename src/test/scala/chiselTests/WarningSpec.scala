@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.experimental.ChiselEnum
+import chisel3.experimental.EnumType
 import chiselTests.ChiselFlatSpec
 
 class WarningSpec extends ChiselFlatSpec with Utils {
@@ -20,7 +21,11 @@ class WarningSpec extends ChiselFlatSpec with Utils {
       val in = IO(Input(UInt(2.W)))
       val out1 = IO(Output(MyEnum()))
       val out2 = IO(Output(MyEnum()))
-      out1 := MyEnum(in); out2 := MyEnum(in)
+      def func(out: EnumType): Unit = {
+        out := MyEnum(in)
+      }
+      func(out1)
+      func(out2)
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
     def countSubstring(s: String, sub: String) =
