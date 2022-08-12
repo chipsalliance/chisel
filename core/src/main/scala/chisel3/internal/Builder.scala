@@ -374,9 +374,15 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(
+<<<<<<< HEAD
   val annotationSeq:        AnnotationSeq,
   val throwOnFirstError:    Boolean,
   val warnReflectiveNaming: Boolean) {
+=======
+  val annotationSeq:     AnnotationSeq,
+  val throwOnFirstError: Boolean,
+  val warningsAsErrors:  Boolean) {
+>>>>>>> 49894666 (Add option to treat warnings as errors (#2676))
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map holding the actual names of extModules
@@ -433,7 +439,7 @@ private[chisel3] class DynamicContext(
   var whenStack:            List[WhenContext] = Nil
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
-  val errors = new ErrorLog
+  val errors = new ErrorLog(warningsAsErrors)
   val namingStack = new NamingStack
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
