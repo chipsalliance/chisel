@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.experimental.AffectsChiselPrefix
+import chisel3.experimental.suppressEnumCastWarning
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
@@ -513,6 +514,23 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "correctly check if the enumeration is one of the values in a given sequence" in {
     assertTesterPasses(new IsOneOfTester)
+  }
+
+  it should "suppress warning using suppressEnumCastWarning" in {
+    object TestEnum extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+
+    class MyModule extends Module {
+      val in = IO(Input(UInt(2.W)))
+      val out = IO(Output(TestEnum()))
+      suppressEnumCastWarning {
+        val res = TestEnum(in)
+        out := res
+      }
+    }
+    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    (log should not).include("warn")
   }
 }
 
