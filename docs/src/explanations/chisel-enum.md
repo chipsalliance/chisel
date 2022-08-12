@@ -175,7 +175,7 @@ class SuppressedFromUInt extends Module {
   val in = IO(Input(UInt(7.W)))
   val out = IO(Output(Opcode()))
   suppressEnumCastWarning {
-    val value = Opcode.safe(in)
+    val value = Opcode(in)
     out := value
   }
 }
