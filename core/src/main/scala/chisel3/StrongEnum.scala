@@ -413,7 +413,7 @@ private object UnsafeEnum extends EnumFactory
 object suppressEnumCastWarning {
 
   /**
-    * Execute @block while suppressing enum cast warnings.
+    * Execute block while suppressing enum cast warnings.
     */
   def apply[T](block: => T): T = {
     val parentWarn = Builder.suppressEnumCastWarning
