@@ -894,7 +894,26 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 }
 
 object Data {
+  /**
+    * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
+    * need to use workarounds such as `bundle1.asUInt === bundle2.asUInt` by allowing users
+    * to instead write `bundle1 === bundle2`.
+    *
+    * Static type safety of this comparison is guaranteed at compile time as the extension
+    * method requires the same parameterized type for both the left-hand and right-hand
+    * sides. It is, however, possible to get around this type safety using `Bundle` subtypes
+    * that can differ during runtime (e.g. through a generator). These cases are
+    * subsequently raised as elaboration errors.
+    *
+    * @param lhs The [[Data]] hardware on the left-hand side of the equality
+    */
   implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+    /** Dynamic recursive equality operator for generic [[Data]]
+      *
+      * @param rhs a hardware [[Data]] to compare `lhs` to
+      * @return a hardware [[Bool]] asserted if `lhs` is equal to `rhs`
+      * @throws ChiselException when `lhs` and `rhs` are different types during elaboration time
+      */
     def ===(rhs: T): Bool = {
       (lhs, rhs) match {
         case (thiz: UInt, that: UInt) => thiz === that
