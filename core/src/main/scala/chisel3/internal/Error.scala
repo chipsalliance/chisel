@@ -193,9 +193,11 @@ private[chisel3] class ErrorLog {
   def warning(m: => String): Unit =
     errors += (((m, getLoc), new Warning(m, getUserLineNumber)))
 
-  /** Log a warning message without a source locator */
+  /** Log a warning message without a source locator. This is used when the
+    * locator wouldn't be helpful (e.g., due to lazy values).
+    */
   def warningNoLoc(m: => String): Unit =
-    errors += (((m, getLoc), new Warning(m, None)))
+    errors += (((m, ""), new Warning(m, None)))
 
   /** Emit an informational message */
   @deprecated("This method will be removed in 3.5", "3.4")
@@ -206,7 +208,7 @@ private[chisel3] class ErrorLog {
   def deprecated(m: => String, location: Option[String]): Unit = {
     val sourceLoc = location match {
       case Some(loc) => loc
-      case None => getLoc
+      case None      => getLoc
     }
 
     val thisEntry = (m, sourceLoc)
