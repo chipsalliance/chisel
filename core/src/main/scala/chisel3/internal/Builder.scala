@@ -409,6 +409,7 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContextVar.value.get
   }
 
+  // Used to suppress warnings when casting from a UInt to an Enum
   var suppressEnumCastWarning: Boolean = false
 
   // Returns the current dynamic context
