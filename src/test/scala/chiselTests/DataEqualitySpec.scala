@@ -170,7 +170,7 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
           Vec(4, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U, 3 -> 4.U)
         )
       }
-    }).getMessage should include("sizes differ")
+    }).getMessage should include("Vec sizes differ")
   }
 
   behavior.of("Bundle === Bundle")
@@ -190,7 +190,7 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
       )
     }
   }
-  it should "throw a ChiselException with differing types" in {
+  it should "throw a ChiselException with differing runtime types" in {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       assertTesterFails {
         new EqualityTester(
@@ -208,7 +208,7 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
           )
         )
       }
-    }).getMessage should include("types differ")
+    }).getMessage should include("Runtime types differ")
   }
 
   behavior.of("DontCare")

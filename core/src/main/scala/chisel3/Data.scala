@@ -907,7 +907,7 @@ object Data {
         case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
         case (thiz: Vec[_], that: Vec[_]) =>
           if (thiz.length != that.length) {
-            throwException(s"Cannot compare Vecs $thiz and $that: sizes differ")
+            throwException(s"Cannot compare Vecs $thiz and $that: Vec sizes differ")
           } else {
             thiz.getElements
               .zip(that.getElements)
@@ -938,9 +938,9 @@ object Data {
         // This should be matching to (DontCare, DontCare) but the compiler wasn't happy with that
         case (_: DontCare.type, _: DontCare.type) => true.B
 
-        case (_: Analog, _: Analog) => throwException("Equality isn't defined for Analog values")
+        case (thiz: Analog, that: Analog) => throwException(s"Cannot compare Analog values $thiz and $that: Equality isn't defined for Analog values")
         // Runtime types are different
-        case (thiz, that) => throwException(s"Cannot compare $thiz and $that: runtime types differ")
+        case (thiz, that) => throwException(s"Cannot compare $thiz and $that: Runtime types differ")
       }
     }
   }
