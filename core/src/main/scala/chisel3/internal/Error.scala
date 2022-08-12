@@ -176,7 +176,7 @@ private[chisel3] object ErrorLog {
   val errTag = s"[${Console.RED}error${Console.RESET}]"
 }
 
-private[chisel3] class ErrorLog {
+private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
   def getLoc(loc: Option[StackTraceElement]): String = {
     loc match {
       case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
@@ -190,17 +190,20 @@ private[chisel3] class ErrorLog {
     errors += (((m, getLoc(loc)), new Error(m, loc)))
   }
 
+  private def warn(m: => String, loc: Option[StackTraceElement]): LogEntry =
+    if (warningsAsErrors) new Error(m, loc) else new Warning(m, loc)
+
   /** Log a warning message */
   def warning(m: => String): Unit = {
     val loc = getUserLineNumber
-    errors += (((m, getLoc(loc)), new Warning(m, loc)))
+    errors += (((m, getLoc(loc)), warn(m, loc)))
   }
 
   /** Log a warning message without a source locator. This is used when the
     * locator wouldn't be helpful (e.g., due to lazy values).
     */
   def warningNoLoc(m: => String): Unit =
-    errors += (((m, ""), new Warning(m, None)))
+    errors += (((m, ""), warn(m, None)))
 
   /** Emit an informational message */
   @deprecated("This method will be removed in 3.5", "3.4")
