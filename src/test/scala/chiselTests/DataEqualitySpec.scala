@@ -6,11 +6,21 @@ import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.{Analog, ChiselEnum, ChiselRange, FixedPoint, Interval}
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import chisel3.util.Valid
 
-class EqualityTester(lhsGen: => Data, rhsGen: => Data) extends BasicTester {
+class EqualityModule(lhsGen: => Data, rhsGen: => Data) extends Module {
+  val out = IO(Output(Bool()))
+
   val lhs = lhsGen
   val rhs = rhsGen
-  assert(lhs === rhs)
+
+  out := lhs === rhs
+}
+
+class EqualityTester(lhsGen: => Data, rhsGen: => Data) extends BasicTester {
+  val module = Module(new EqualityModule(lhsGen, rhsGen))
+
+  assert(module.out)
 
   stop()
 }
@@ -32,7 +42,7 @@ class AnalogExceptionTester extends BasicTester {
   val module = Module(new AnalogExceptionModule)
 
   module.io.bundle1 <> DontCare
-  module.io.bundle2
+  module.io.bundle2 <> DontCare
 
   assert(module.io.bundle1 === module.io.bundle2)
 
@@ -211,25 +221,24 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     }).getMessage should include("Runtime types differ")
   }
 
-  behavior.of("DontCare")
-  it should "only be equal to itself" in {
+  behavior.of("DontCare === DontCare")
+  it should "pass with two invalids" in {
     assertTesterPasses {
-      new EqualityTester(DontCare, DontCare)
+      new EqualityTester(Valid(UInt(8.W)).Lit(_.bits -> 123.U), Valid(UInt(8.W)).Lit(_.bits -> 123.U))
     }
   }
-  it should "not be equal to anything else" in {
-    assertTesterFails {
-      new EqualityTester(DontCare, 0.U)
+  it should "exhibit the same behavior as comparing two invalidated wires" in {
+    // Also check that two invalidated wires are equal
+    assertTesterPasses {
+      new EqualityTester(WireInit(UInt(8.W), DontCare), WireInit(UInt(8.W), DontCare))
     }
-    assertTesterFails {
-      new EqualityTester(1.S, DontCare)
-    }
-    assertTesterFails {
-      new EqualityTester(DontCare, true.B)
-    }
-    assertTesterFails {
-      new EqualityTester(false.B.asAsyncReset, DontCare)
-    }
+
+    // Compare the verilog generated from both test cases and verify that they both are equal to true
+    val verilog1 = ChiselStage.emitVerilog(new EqualityModule(Valid(UInt(8.W)).Lit(_.bits -> 123.U), Valid(UInt(8.W)).Lit(_.bits -> 123.U)))
+    val verilog2 = ChiselStage.emitVerilog(new EqualityModule(WireInit(UInt(8.W), DontCare), WireInit(UInt(8.W), DontCare)))
+
+    verilog1 should include("assign out = 1'h1;")
+    verilog2 should include("assign out = 1'h1;")
   }
 
   behavior.of("Analog === Analog")
