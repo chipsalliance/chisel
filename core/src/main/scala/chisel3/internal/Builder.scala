@@ -244,7 +244,8 @@ private[chisel3] trait HasId extends InstanceId {
       // These accesses occur after Chisel elaboration so we cannot use the normal
       // Builder.deprecated mechanism, we have to create our own one off ErrorLog and print the
       // warning right away.
-      val errors = new ErrorLog
+      // It's especially bad because --warnings-as-errors does not work with these warnings
+      val errors = new ErrorLog(false)
       val logger = new _root_.logger.Logger(this.getClass.getName)
       val msg = "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated. " +
         "This will become an error in Chisel 3.6."
@@ -376,7 +377,8 @@ private[chisel3] class ChiselContext() {
 private[chisel3] class DynamicContext(
   val annotationSeq:        AnnotationSeq,
   val throwOnFirstError:    Boolean,
-  val warnReflectiveNaming: Boolean) {
+  val warnReflectiveNaming: Boolean,
+  val warningsAsErrors:     Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map holding the actual names of extModules
@@ -433,7 +435,7 @@ private[chisel3] class DynamicContext(
   var whenStack:            List[WhenContext] = Nil
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
-  val errors = new ErrorLog
+  val errors = new ErrorLog(warningsAsErrors)
   val namingStack = new NamingStack
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
