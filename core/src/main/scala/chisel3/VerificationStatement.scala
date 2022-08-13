@@ -11,7 +11,21 @@ import chisel3.internal.sourceinfo.SourceInfo
 
 import scala.reflect.macros.blackbox
 
-object assert {
+/** Scaladoc information for internal verification statement macros
+  * that are used in objects assert, assume and cover.
+  *
+  * @groupdesc VerifPrintMacros
+  *
+  * <p>
+  * '''These internal methods are not part of the public-facing API!'''
+  * </p>
+  * <br>
+  *
+  * @groupprio VerifPrintMacros 1001
+  */
+trait VerifPrintMacrosDoc
+
+object assert extends VerifPrintMacrosDoc {
 
   /** Checks for a condition to be valid in the circuit at rising clock edge
     * when not in reset. If the condition evaluates to false, the circuit
@@ -76,6 +90,7 @@ object assert {
 
   import VerificationStatement._
 
+  /** @group VerifPrintMacros */
   @deprecated(
     "This method has been deprecated in favor of _applyMacroWithStringMessage. Please use the same.",
     "Chisel 3.5"
@@ -93,15 +108,6 @@ object assert {
     q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo, $compileOptions)"
   }
 
-  /** Internal verification statement macros.
-    *
-    * @groupdesc VerifPrintMacros
-    *
-    * <p>
-    * '''These internal methods are not part of the public-facing API!'''
-    * </p>
-    * <br>
-    */
   /** @group VerifPrintMacros */
   def _applyMacroWithStringMessage(
     c:              blackbox.Context
@@ -129,6 +135,7 @@ object assert {
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo, $compileOptions)"
   }
 
+  /** @group VerifPrintMacros */
   def _applyMacroWithNoMessage(
     c:              blackbox.Context
   )(cond:           c.Tree
@@ -140,7 +147,10 @@ object assert {
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo, $compileOptions)"
   }
 
-  /** This will be removed in Chisel 3.6 in favor of the Printable version */
+  /** This will be removed in Chisel 3.6 in favor of the Printable version
+    *
+    * @group VerifPrintMacros
+    */
   def _applyWithSourceLine(
     cond:    Bool,
     line:    SourceLineInfo,
@@ -176,7 +186,7 @@ object assert {
   }
 }
 
-object assume {
+object assume extends VerifPrintMacrosDoc {
 
   /** Assumes a condition to be valid in the circuit at all times.
     * Acts like an assertion in simulation and imposes a declarative
@@ -245,6 +255,7 @@ object assume {
 
   import VerificationStatement._
 
+  /** @group VerifPrintMacros */
   @deprecated(
     "This method has been deprecated in favor of _applyMacroWithStringMessage. Please use the same.",
     "Chisel 3.5"
@@ -289,6 +300,7 @@ object assume {
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo, $compileOptions)"
   }
 
+  /** @group VerifPrintMacros */
   def _applyMacroWithNoMessage(
     c:              blackbox.Context
   )(cond:           c.Tree
@@ -300,7 +312,10 @@ object assume {
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo, $compileOptions)"
   }
 
-  /** This will be removed in Chisel 3.6 in favor of the Printable version */
+  /** This will be removed in Chisel 3.6 in favor of the Printable version
+    *
+    * @group VerifPrintMacros
+    */
   def _applyWithSourceLine(
     cond:    Bool,
     line:    SourceLineInfo,
@@ -336,7 +351,7 @@ object assume {
   }
 }
 
-object cover {
+object cover extends VerifPrintMacrosDoc {
 
   /** Declares a condition to be covered.
     * At ever clock event, a counter is incremented iff the condition is active
@@ -364,6 +379,7 @@ object cover {
 
   import VerificationStatement._
 
+  /** @group VerifPrintMacros */
   def _applyMacroWithNoMessage(
     c:              blackbox.Context
   )(cond:           c.Tree
@@ -375,6 +391,7 @@ object cover {
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo, $compileOptions)"
   }
 
+  /** @group VerifPrintMacros */
   def _applyMacroWithMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
