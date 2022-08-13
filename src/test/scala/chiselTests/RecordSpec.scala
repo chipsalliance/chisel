@@ -218,14 +218,14 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   they should "work with .toTarget" in {
-    var m: SingleElementRecordModule = _
+    var m: SingleElementRecordModule = null
     ChiselStage.elaborate { m = new SingleElementRecordModule; m }
     val q = m.in1.toTarget.toString
     assert(q == "~SingleElementRecordModule|SingleElementRecordModule>in1")
   }
 
   they should "NOT work with .toTarget on non-data OpaqueType Record" in {
-    var m: SingleElementRecordModule = _
+    var m: SingleElementRecordModule = null
     ChiselStage.elaborate { m = new SingleElementRecordModule; m }
     a[ChiselException] shouldBe thrownBy { m.r.toTarget }
   }
