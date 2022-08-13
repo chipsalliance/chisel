@@ -207,13 +207,17 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
           (new RuntimeSensitiveBundle(new MyBundle)).Lit(
             _.a -> 1.U,
             _.b -> (new MyBundle).Lit(
-              _.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB
+              _.a -> 42.U,
+              _.b -> false.B,
+              _.c -> MyEnum.sB
             )
           ),
           (new RuntimeSensitiveBundle(new LongBundle)).Lit(
             _.a -> 1.U,
             _.b -> (new LongBundle).Lit(
-              _.a -> 42.U, _.b -> 0.S, _.c -> 4.5.F(16.W, 4.BP)
+              _.a -> 42.U,
+              _.b -> 0.S,
+              _.c -> 4.5.F(16.W, 4.BP)
             )
           )
         )
@@ -234,8 +238,11 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     }
 
     // Compare the verilog generated from both test cases and verify that they both are equal to true
-    val verilog1 = ChiselStage.emitVerilog(new EqualityModule(Valid(UInt(8.W)).Lit(_.bits -> 123.U), Valid(UInt(8.W)).Lit(_.bits -> 123.U)))
-    val verilog2 = ChiselStage.emitVerilog(new EqualityModule(WireInit(UInt(8.W), DontCare), WireInit(UInt(8.W), DontCare)))
+    val verilog1 = ChiselStage.emitVerilog(
+      new EqualityModule(Valid(UInt(8.W)).Lit(_.bits -> 123.U), Valid(UInt(8.W)).Lit(_.bits -> 123.U))
+    )
+    val verilog2 =
+      ChiselStage.emitVerilog(new EqualityModule(WireInit(UInt(8.W), DontCare), WireInit(UInt(8.W), DontCare)))
 
     verilog1 should include("assign out = 1'h1;")
     verilog2 should include("assign out = 1'h1;")

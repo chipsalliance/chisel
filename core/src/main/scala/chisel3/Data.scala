@@ -894,6 +894,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 }
 
 object Data {
+
   /**
     * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
     * need to use workarounds such as `bundle1.asUInt === bundle2.asUInt` by allowing users
@@ -908,6 +909,7 @@ object Data {
     * @param lhs The [[Data]] hardware on the left-hand side of the equality
     */
   implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+
     /** Dynamic recursive equality operator for generic [[Data]]
       *
       * @param rhs a hardware [[Data]] to compare `lhs` to
@@ -937,11 +939,12 @@ object Data {
           if (thiz.elements.size != that.elements.size) {
             throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
           } else {
-            thiz.elements
-              .map {
-                case (thisName, thisData) =>
-                  if(!that.elements.contains(thisName))
-                    throwException(s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that")
+            thiz.elements.map {
+              case (thisName, thisData) =>
+                if (!that.elements.contains(thisName))
+                  throwException(
+                    s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
+                  )
 
                 val thatData = that.elements(thisName)
 
@@ -949,15 +952,18 @@ object Data {
                   thisData === thatData
                 } catch {
                   case e: ChiselException =>
-                    throwException(s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}")
+                    throwException(
+                      s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
+                    )
                 }
-              }
+            }
               .reduce(_ && _)
           }
         // This should be matching to (DontCare, DontCare) but the compiler wasn't happy with that
         case (_: DontCare.type, _: DontCare.type) => true.B
 
-        case (thiz: Analog, that: Analog) => throwException(s"Cannot compare Analog values $thiz and $that: Equality isn't defined for Analog values")
+        case (thiz: Analog, that: Analog) =>
+          throwException(s"Cannot compare Analog values $thiz and $that: Equality isn't defined for Analog values")
         // Runtime types are different
         case (thiz, that) => throwException(s"Cannot compare $thiz and $that: Runtime types differ")
       }
