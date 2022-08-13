@@ -103,7 +103,7 @@ class AssertSpec extends ChiselFlatSpec with Utils {
   they should "allow printf-style format strings in Assumes" in {
     val chirrtl = ChiselStage.emitChirrtl(new PrintableAssumeTester)
     chirrtl should include(
-      """assume(w === 255.U, p\"Assumption failed, Wire w =/= ${Hexadecimal(255.U)}\")\n", UInt<8>("hff"))"""
+      """assume(w === 255.U, cf\"Assumption failed, Wire w =/= $w%%%%x\")\n", w)"""
     )
   }
   they should "not allow unescaped % in the message" in {
