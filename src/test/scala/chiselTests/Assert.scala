@@ -64,7 +64,7 @@ class BadUnescapedPercentAssertTester extends BasicTester {
 class PrintableFormattedAssertTester extends BasicTester {
   val foobar = Wire(UInt(32.W))
   foobar := 123.U
-  assert(foobar === 123.U, p"Error! Wire foobar =/= ${Hexadecimal(foobar)} This is 100%% wrong.\n")
+  assert(foobar === 123.U, cf"Error! Wire foobar =/= $foobar%x This is 100%% wrong.\n")
   stop()
 }
 
@@ -79,7 +79,7 @@ class PrintableAssumeTester extends Module {
 
   val w = Wire(UInt(8.W))
   w := 255.U
-  assume(w === 255.U, p"Assumption failed, Wire w =/= ${Hexadecimal(255.U)}")
+  assume(w === 255.U, cf"Assumption failed, Wire w =/= $w%x")
 
   out := in
 }
