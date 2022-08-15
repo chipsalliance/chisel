@@ -219,9 +219,13 @@ private[chisel3] trait HasId extends InstanceId {
       _refVar = imm
     }
   }
-  private[chisel3] def setRef(parent: HasId, name:  String): Unit = setRef(Slot(Node(parent), name))
-  private[chisel3] def setRef(parent: HasId, index: Int):    Unit = setRef(Index(Node(parent), ILit(index)))
-  private[chisel3] def setRef(parent: HasId, index: UInt):   Unit = setRef(Index(Node(parent), index.ref))
+  private[chisel3] def setRef(parent: HasId, name: String, opaque: Boolean = false): Unit = {
+    if (!opaque) setRef(Slot(Node(parent), name))
+    else setRef(OpaqueSlot(Node(parent), name))
+  }
+
+  private[chisel3] def setRef(parent: HasId, index: Int):  Unit = setRef(Index(Node(parent), ILit(index)))
+  private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef:       Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
@@ -333,7 +337,8 @@ private[chisel3] class ChiselContext() {
 
 private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
-  val throwOnFirstError: Boolean) {
+  val throwOnFirstError: Boolean,
+  val warningsAsErrors:  Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map holding the actual names of extModules
@@ -390,8 +395,9 @@ private[chisel3] class DynamicContext(
   var whenStack:            List[WhenContext] = Nil
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
-  val errors = new ErrorLog
+  val errors = new ErrorLog(warningsAsErrors)
   val namingStack = new NamingStack
+
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
 }
@@ -407,6 +413,9 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+
+  // Used to suppress warnings when casting from a UInt to an Enum
+  var suppressEnumCastWarning: Boolean = false
 
   // Returns the current dynamic context
   def captureContext(): DynamicContext = dynamicContext
@@ -465,6 +474,7 @@ private[chisel3] object Builder extends LazyLogging {
     def buildAggName(id: HasId): Option[String] = {
       def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
         case Slot(_, field)       => Some(field) // Record
+        case OpaqueSlot(_, field) => None // Record with single element
         case Index(_, ILit(n))    => Some(n.toString) // Vec static indexing
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing

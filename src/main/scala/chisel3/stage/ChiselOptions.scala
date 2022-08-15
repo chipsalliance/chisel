@@ -8,6 +8,7 @@ class ChiselOptions private[stage] (
   val runFirrtlCompiler:   Boolean = true,
   val printFullStackTrace: Boolean = false,
   val throwOnFirstError:   Boolean = false,
+  val warningsAsErrors:    Boolean = false,
   val outputFile:          Option[String] = None,
   val chiselCircuit:       Option[Circuit] = None) {
 
@@ -15,6 +16,7 @@ class ChiselOptions private[stage] (
     runFirrtlCompiler:   Boolean = runFirrtlCompiler,
     printFullStackTrace: Boolean = printFullStackTrace,
     throwOnFirstError:   Boolean = throwOnFirstError,
+    warningsAsErrors:    Boolean = warningsAsErrors,
     outputFile:          Option[String] = outputFile,
     chiselCircuit:       Option[Circuit] = chiselCircuit
   ): ChiselOptions = {
@@ -23,6 +25,7 @@ class ChiselOptions private[stage] (
       runFirrtlCompiler = runFirrtlCompiler,
       printFullStackTrace = printFullStackTrace,
       throwOnFirstError = throwOnFirstError,
+      warningsAsErrors = warningsAsErrors,
       outputFile = outputFile,
       chiselCircuit = chiselCircuit
     )
