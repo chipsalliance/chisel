@@ -191,6 +191,7 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.forceName"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule._computeName"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.forceName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.failureMessage"),
     )
   ).
   settings(
