@@ -113,7 +113,7 @@ trait RecordSpecUtils {
     private val underlying = UInt(8.W)
     val elements = SeqMap("" -> underlying)
     override def opaqueType = elements.size == 1
-    override def cloneType: this.type = this
+    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
 
     def +(that: SingleElementRecord): SingleElementRecord = {
       val _w = Wire(new SingleElementRecord)
@@ -137,7 +137,7 @@ trait RecordSpecUtils {
     val elements = SeqMap("unused" -> underlying)
 
     override def opaqueType = elements.size == 1
-    override def cloneType: this.type = this
+    override def cloneType: this.type = (new NamedSingleElementRecord).asInstanceOf[this.type]
   }
 
   class NamedSingleElementModule extends Module {
@@ -152,7 +152,7 @@ trait RecordSpecUtils {
     val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
 
     override def opaqueType = true
-    override def cloneType: this.type = this
+    override def cloneType: this.type = (new ErroneousOverride).asInstanceOf[this.type]
   }
 
   class ErroneousOverrideModule extends Module {
@@ -185,7 +185,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     class AliasedFieldRecord extends Record {
       val foo = UInt(8.W)
       val elements = SeqMap("foo" -> foo, "bar" -> foo)
-      override def cloneType: AliasedFieldRecord.this.type = this
+      override def cloneType: AliasedFieldRecord.this.type = (new AliasedFieldRecord).asInstanceOf[this.type]
     }
 
     val e = intercept[AliasedAggregateFieldException] {
@@ -224,10 +224,12 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     assert(q == "~SingleElementRecordModule|SingleElementRecordModule>in1")
   }
 
-  they should "NOT work with .toTarget on non-data OpaqueType Record" in {
+  they should "work (but warn) with .toTarget on non-data OpaqueType Record" in {
     var m: SingleElementRecordModule = null
     ChiselStage.elaborate { m = new SingleElementRecordModule; m }
-    a[ChiselException] shouldBe thrownBy { m.r.toTarget }
+    val (log, q) = grabLog(m.r.toTarget)
+    log should include(".toTarget of non-hardware Data is deprecated.")
+    assert(q.toString == "~SingleElementRecordModule|SingleElementRecordModule>r")
   }
 
   they should "follow UInt serialization/deserialization API" in {
