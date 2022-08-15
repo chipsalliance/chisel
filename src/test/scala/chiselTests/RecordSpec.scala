@@ -113,7 +113,7 @@ trait RecordSpecUtils {
     private val underlying = UInt(8.W)
     val elements = SeqMap("" -> underlying)
     override def opaqueType = elements.size == 1
-    override def cloneType: this.type = this
+    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
 
     def +(that: SingleElementRecord): SingleElementRecord = {
       val _w = Wire(new SingleElementRecord)
