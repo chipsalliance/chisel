@@ -137,7 +137,7 @@ trait RecordSpecUtils {
     val elements = SeqMap("unused" -> underlying)
 
     override def opaqueType = elements.size == 1
-    override def cloneType: this.type = this
+    override def cloneType: this.type = (new NamedSingleElementRecord).asInstanceOf[this.type]
   }
 
   class NamedSingleElementModule extends Module {
@@ -152,7 +152,7 @@ trait RecordSpecUtils {
     val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
 
     override def opaqueType = true
-    override def cloneType: this.type = this
+    override def cloneType: this.type = (new ErroneousOverride).asInstanceOf[this.type]
   }
 
   class ErroneousOverrideModule extends Module {
