@@ -192,6 +192,10 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule._computeName"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.forceName"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.failureMessage"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data.setRef"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.MemBase.setRef"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.setRef"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.setRef"),
     )
   ).
   settings(
