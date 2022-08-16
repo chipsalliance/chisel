@@ -108,6 +108,61 @@ trait RecordSpecUtils {
     require(DataMirror.checkTypeEquivalence(wire0, wire1))
     require(!DataMirror.checkTypeEquivalence(wire1, wire2))
   }
+<<<<<<< HEAD
+=======
+
+  class SingleElementRecord extends Record {
+    private val underlying = UInt(8.W)
+    val elements = SeqMap("" -> underlying)
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
+
+    def +(that: SingleElementRecord): SingleElementRecord = {
+      val _w = Wire(new SingleElementRecord)
+      _w.underlying := this.underlying + that.underlying
+      _w
+    }
+  }
+
+  class SingleElementRecordModule extends Module {
+    val in1 = IO(Input(new SingleElementRecord))
+    val in2 = IO(Input(new SingleElementRecord))
+    val out = IO(Output(new SingleElementRecord))
+
+    val r = new SingleElementRecord
+
+    out := in1 + in2
+  }
+
+  class NamedSingleElementRecord extends Record {
+    private val underlying = UInt(8.W)
+    val elements = SeqMap("unused" -> underlying)
+
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new NamedSingleElementRecord).asInstanceOf[this.type]
+  }
+
+  class NamedSingleElementModule extends Module {
+    val in = IO(Input(new NamedSingleElementRecord))
+    val out = IO(Output(new NamedSingleElementRecord))
+    out := in
+  }
+
+  class ErroneousOverride extends Record {
+    private val underlyingA = UInt(8.W)
+    private val underlyingB = UInt(8.W)
+    val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
+
+    override def opaqueType = true
+    override def cloneType: this.type = (new ErroneousOverride).asInstanceOf[this.type]
+  }
+
+  class ErroneousOverrideModule extends Module {
+    val in = IO(Input(new ErroneousOverride))
+    val out = IO(Output(new ErroneousOverride))
+    out := in
+  }
+>>>>>>> 47162cf2 (Update RecordSpec test (#2684))
 }
 
 class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
@@ -133,7 +188,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     class AliasedFieldRecord extends Record {
       val foo = UInt(8.W)
       val elements = SeqMap("foo" -> foo, "bar" -> foo)
-      override def cloneType: AliasedFieldRecord.this.type = this
+      override def cloneType: AliasedFieldRecord.this.type = (new AliasedFieldRecord).asInstanceOf[this.type]
     }
 
     val e = intercept[AliasedAggregateFieldException] {
