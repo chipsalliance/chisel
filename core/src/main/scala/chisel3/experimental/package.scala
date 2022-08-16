@@ -235,9 +235,33 @@ package object experimental {
     }
   }
 
-  // Use to add a prefix to any component generated in input scope
+  /** Use to add a prefix to any components generated in the provided scope.
+    *
+    * @example {{{
+    *
+    * val x1 = prefix("first") {
+    *   // Anything generated here will be prefixed with "first"
+    * }
+    *
+    * val x2 = prefix(mysignal) {
+    *   // Anything generated here will be prefixed with the name of mysignal
+    * }
+    *
+    * }}}
+    */
   val prefix = chisel3.internal.prefix
-  // Use to remove prefixes not in provided scope
+
+  /** Use to clear existing prefixes so no signals within the scope are prefixed
+    * by signals/names outside the scope
+    *
+    * @example {{{
+    *
+    * val x1 = prefix("first") {
+    *   // Anything generated here will have no prefix.
+    *   // The result returned from this would *still* be called `x1` however.
+    * }
+    * }}}
+    */
   val noPrefix = chisel3.internal.noPrefix
 
   // ****************************** Hardware equivalents of Scala Tuples ******************************
