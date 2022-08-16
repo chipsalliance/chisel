@@ -6,20 +6,69 @@ section: "chisel3"
 
 ```scala mdoc:invisible
 import chisel3._
-import chisel3.experimental.prefix
-import chisel3.experimental.noPrefix
 import chisel3.stage.ChiselStage
 ```
 # Naming Cookbook
+
 ### I still have _T signals, can this be fixed?
 
-First check - is the compiler plugin properly enabled? Scalac plugins are enabled via the scalac option
-`-Xplugin:<path/to/jar>`. You can check which compiler plugins are enabled by running `show Compile / scalacOptions` in
-the sbt prompt.
+See the next answer!
 
-If the plugin is enabled, these signals could be intermediate values which are consumed by either assertions or when
-predicates. In these cases, the compiler plugin often can't find a good prefix for the generated intermediate signals.
-We recommend you manually insert calls to `prefix` to fix these cases. We did this to Rocket Chip and saw huge benefits!
+### I have so many wires with the same name, like `tmp_1` and `tmp_2`. How can I make them easier to understand?
+
+Signals with `_T` names or names that Chisel has to uniquify
+could be intermediate values which are consumed by 
+verification statements like `assert` or `prints`,  or `when` predicates. 
+In these cases, the compiler plugin often can't find a good prefix for the generated intermediate signals and can't name them at all or has to make up a unique name for them.
+
+We recommend you manually insert calls to `prefix` to clarify these cases:
+
+```scala mdoc:silent
+import chisel3.experimental.prefix
+class ExamplePrefix extends Module {
+
+  Seq.tabulate{2} {i =>
+    Seq.tabulate{2}{ j =>
+      prefix(s"loop_${i}_${j}"){
+        val x = WireInit((i*0x10+j).U(8.W))
+        dontTouch(x)
+      }
+    }
+  }
+}
+```
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new ExamplePrefix)
+```
+
+This also can help with code inside `when` clauses:
+
+```scala mdoc:silent
+class ExampleWhenPrefix extends Module {
+
+  val in = IO(Input(UInt(4.W)))
+  val out = IO(Output(UInt(4.W)))
+
+  out := DontCare
+
+  Seq.tabulate{2}{ i =>
+    val j = i + 1
+    when (in === j.U) { prefix(s"clause_${j}"){
+      val foo = Wire(UInt(4.W))
+      foo := in +& j.U(4.W)
+      out := foo
+    }}
+  }
+}
+```
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new ExampleWhenPrefix)
+```
+### There are so many signals with the same name but just different suffixes!
+
+See the above response. Sometimes the name is not a completely anonymous temporary,
+but having no prefixing information can lead to lots of name conflicts that are only
+disambiguated at elaboration time with incrementing suffices. The `prefix` API can help.
 
 ### I still see _GEN signals, can this be fixed?
 
@@ -43,11 +92,13 @@ name collisions, which are what triggers all those annoying signal name bumps!
 
 Use the `.suggestName` method, which is on all classes which subtype `Data`.
 
-### All this prefixing is annoying, how do I fix it?
+### How can I omit the prefix in certain parts of the code?
 
 You can use the `noPrefix { ... }` to strip the prefix from all signals generated in that scope.
 
 ```scala mdoc
+import chisel3.experimental.noPrefix
+
 class ExampleNoPrefix extends Module {
   val in = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt()))
