@@ -925,6 +925,20 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
+  /** Indicates if this Record represents an "Opaque Type"
+    *
+    * Opaque types provide a mechanism for user-defined types
+    * that do not impose any "boxing" overhead in the emitted FIRRTL and Verilog.
+    * You can think about an opaque type Record as a box around
+    * a single element that only exists at Chisel elaboration time.
+    * Put another way, if opaqueType is overridden to true,
+    * The Record may only contain a single element with an empty name
+    * and there will be no `_` in the name for that element in the emitted Verilog.
+    *
+    * @see RecordSpec in Chisel's tests for example usage and expected output
+    */
+  def opaqueType: Boolean = false
+
   // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
   // of hardware created when connecting to one of these elements
   private def setElementRefs(): Unit = {
@@ -932,7 +946,13 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
     val _namespace = Namespace.empty
-    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk = true)) }
+    require(
+      !opaqueType || (elements.size == 1 && elements.head._1 == ""),
+      s"Opaque types must have exactly one element with an empty name, not ${elements.size}: ${elements.keys.mkString(", ")}"
+    )
+    for ((name, elt) <- elements) {
+      elt.setRef(this, _namespace.name(name, leadingDigitOk = true), opaque = opaqueType)
+    }
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {

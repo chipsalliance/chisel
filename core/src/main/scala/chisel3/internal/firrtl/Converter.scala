@@ -68,6 +68,8 @@ private[chisel3] object Converter {
       fir.Reference(name, fir.UnknownType)
     case Slot(imm, name) =>
       fir.SubField(convert(imm, ctx, info), name, fir.UnknownType)
+    case OpaqueSlot(imm, name) =>
+      convert(imm, ctx, info)
     case Index(imm, ILit(idx)) =>
       fir.SubIndex(convert(imm, ctx, info), castToInt(idx, "Index"), fir.UnknownType)
     case Index(imm, value) =>
@@ -301,7 +303,7 @@ private[chisel3] object Converter {
     case d: Interval   => fir.IntervalType(d.range.lowerBound, d.range.upperBound, d.range.firrtlBinaryPoint)
     case d: Analog     => fir.AnalogType(convert(d.width))
     case d: Vec[_] => fir.VectorType(extractType(d.sample_element, clearDir, info), d.length)
-    case d: Record =>
+    case d: Record => {
       val childClearDir = clearDir ||
         d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
       def eltField(elt: Data): fir.Field = (childClearDir, firrtlUserDirOf(elt)) match {
@@ -311,7 +313,11 @@ private[chisel3] object Converter {
         case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
           fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info))
       }
-      fir.BundleType(d.elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
+      if (!d.opaqueType)
+        fir.BundleType(d.elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
+      else
+        extractType(d.elements.head._2, true, info)
+    }
   }
 
   def convert(name: String, param: Param): fir.Param = param match {
