@@ -5,7 +5,7 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
+import chisel3.experimental.{Analog, BaseModule, DataMirror, EnumType, FixedPoint, Interval}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
@@ -893,6 +893,84 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Default pretty printing */
   def toPrintable: Printable
+}
+
+object Data {
+
+  /**
+    * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
+    * need to use workarounds such as `bundle1.asUInt === bundle2.asUInt` by allowing users
+    * to instead write `bundle1 === bundle2`.
+    *
+    * Static type safety of this comparison is guaranteed at compile time as the extension
+    * method requires the same parameterized type for both the left-hand and right-hand
+    * sides. It is, however, possible to get around this type safety using `Bundle` subtypes
+    * that can differ during runtime (e.g. through a generator). These cases are
+    * subsequently raised as elaboration errors.
+    *
+    * @param lhs The [[Data]] hardware on the left-hand side of the equality
+    */
+  implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+
+    /** Dynamic recursive equality operator for generic [[Data]]
+      *
+      * @param rhs a hardware [[Data]] to compare `lhs` to
+      * @return a hardware [[Bool]] asserted if `lhs` is equal to `rhs`
+      * @throws ChiselException when `lhs` and `rhs` are different types during elaboration time
+      */
+    def ===(rhs: T): Bool = {
+      (lhs, rhs) match {
+        case (thiz: UInt, that: UInt) => thiz === that
+        case (thiz: SInt, that: SInt) => thiz === that
+        case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
+        case (thiz: Reset, that: Reset) => thiz === that
+        case (thiz: Interval, that: Interval) => thiz === that
+        case (thiz: FixedPoint, that: FixedPoint) => thiz === that
+        case (thiz: EnumType, that: EnumType) => thiz === that
+        case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
+        case (thiz: Vec[_], that: Vec[_]) =>
+          if (thiz.length != that.length) {
+            throwException(s"Cannot compare Vecs $thiz and $that: Vec sizes differ")
+          } else {
+            thiz.getElements
+              .zip(that.getElements)
+              .map { case (thisData, thatData) => thisData === thatData }
+              .reduce(_ && _)
+          }
+        case (thiz: Record, that: Record) =>
+          if (thiz.elements.size != that.elements.size) {
+            throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
+          } else {
+            thiz.elements.map {
+              case (thisName, thisData) =>
+                if (!that.elements.contains(thisName))
+                  throwException(
+                    s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
+                  )
+
+                val thatData = that.elements(thisName)
+
+                try {
+                  thisData === thatData
+                } catch {
+                  case e: ChiselException =>
+                    throwException(
+                      s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
+                    )
+                }
+            }
+              .reduce(_ && _)
+          }
+        // This should be matching to (DontCare, DontCare) but the compiler wasn't happy with that
+        case (_: DontCare.type, _: DontCare.type) => true.B
+
+        case (thiz: Analog, that: Analog) =>
+          throwException(s"Cannot compare Analog values $thiz and $that: Equality isn't defined for Analog values")
+        // Runtime types are different
+        case (thiz, that) => throwException(s"Cannot compare $thiz and $that: Runtime types differ")
+      }
+    }
+  }
 }
 
 trait WireFactory {
