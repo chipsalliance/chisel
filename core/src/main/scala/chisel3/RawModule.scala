@@ -43,14 +43,25 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
   val compileOptions = moduleCompileOptions
 
+  private[chisel3] def checkPorts(): Unit = {
+    for (port <- getModulePorts) {
+      if (port._computeName(None).isEmpty) {
+        Builder.error(
+          s"Unable to name port $port in $this, " +
+            "try making it a public field of the Module"
+        )
+      }
+    }
+  }
+
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    // Ports get first naming priority, since they are part of a Module's IO spec
-    namePorts()
+    // Check to make sure that all ports can be named
+    checkPorts()
 
-    // Ports are named, now name everything else
+    // Now that elaboration is complete for this Module, we can finalize names
     for (id <- getIds) {
       id match {
         case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
@@ -70,7 +81,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
               case MemoryPortBinding(_, _) =>
                 id.forceName(default = "MPORT", _namespace)
               case PortBinding(_) =>
-                id.forceName(default = "PORT", _namespace)
+                id.forceName(default = "PORT", _namespace, true, x => ModuleIO(this, x))
               case RegBinding(_, _) =>
                 id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>

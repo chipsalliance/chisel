@@ -202,11 +202,19 @@ private[chisel3] trait HasId extends InstanceId {
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
   // (e.g. tried to suggest a name to part of a Record)
-  private[chisel3] def forceName(default: => String, namespace: Namespace): Unit =
+  private[chisel3] def forceName(
+    default:    => String,
+    namespace:  Namespace,
+    errorIfDup: Boolean = false,
+    refBuilder: String => Arg = Ref(_)
+  ): Unit =
     if (_ref.isEmpty) {
-      val candidate_name = _computeName(Some(default)).get
+      val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).get
       val available_name = namespace.name(candidate_name)
-      setRef(Ref(available_name))
+      if (errorIfDup && (available_name != candidate_name)) {
+        Builder.error(s"Cannot have duplicate names $available_name and $candidate_name")
+      }
+      setRef(refBuilder(available_name))
       // Clear naming prefix to free memory
       naming_prefix = Nil
     }
