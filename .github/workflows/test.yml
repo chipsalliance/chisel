@@ -42,6 +42,11 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: ${{ matrix.jvm }}
+      - name: Install CIRCT
+        run: |
+          mkdir usr
+          wget https://github.com/llvm/circt/releases/download/sifive%2F1%2F11%2F0/circt-bin-ubuntu-20.04.tar.gz -O - | tar -zx -C usr/
+          echo "$(pwd)/usr/bin" >> $GITHUB_PATH
       - name: Cache Scala
         uses: coursier/cache-action@v5
       - name: Check Formatting (Scala 2.12 only)

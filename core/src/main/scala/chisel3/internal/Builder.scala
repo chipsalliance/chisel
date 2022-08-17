@@ -87,10 +87,19 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
-  private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
+  // using nullable var for better memory usage
+  private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
+  private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
+  private[chisel3] def _parent_=(target: Option[BaseModule]): Unit = {
+    _parentVar = target.getOrElse(null)
+  }
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
-  private[chisel3] var _circuit: Option[BaseModule] = None
+  private var _circuitVar:       BaseModule = null // using nullable var for better memory usage
+  private[chisel3] def _circuit: Option[BaseModule] = Option(_circuitVar)
+  private[chisel3] def _circuit_=(target: Option[BaseModule]): Unit = {
+    _circuitVar = target.getOrElse(null)
+  }
 
   private[chisel3] val _id: Long = Builder.idGen.next
 
@@ -99,10 +108,12 @@ private[chisel3] trait HasId extends InstanceId {
   override def equals(that: Any): Boolean = super.equals(that)
 
   // Contains suggested seed (user-decided seed)
-  private var suggested_seed: Option[String] = None
+  private var suggested_seedVar: String = null // using nullable var for better memory usage
+  private def suggested_seed:    Option[String] = Option(suggested_seedVar)
 
   // Contains the seed computed automatically by the compiler plugin
-  private var auto_seed: Option[String] = None
+  private var auto_seedVar: String = null // using nullable var for better memory usage
+  private def auto_seed:    Option[String] = Option(auto_seedVar)
 
   // Prefix for use in naming
   // - Defaults to prefix at time when object is created
@@ -124,7 +135,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def autoSeed(seed: String): this.type = forceAutoSeed(seed)
   // Bypass the overridden behavior of autoSeed in [[Data]], apply autoSeed even to ports
   private[chisel3] def forceAutoSeed(seed: String): this.type = {
-    auto_seed = Some(seed)
+    auto_seedVar = seed
     naming_prefix = Builder.getPrefix
     this
   }
@@ -151,7 +162,7 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def suggestName(seed: => String): this.type = {
-    if (suggested_seed.isEmpty) suggested_seed = Some(seed)
+    if (suggested_seed.isEmpty) suggested_seedVar = seed
     naming_prefix = Builder.getPrefix
     this
   }
@@ -162,7 +173,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def forceFinalName(seed: String): this.type = {
     // This could be called with user prefixes, ignore them
     noPrefix {
-      suggested_seed = Some(seed)
+      suggested_seedVar = seed
       this.suggestName(seed)
     }
   }
@@ -208,16 +219,21 @@ private[chisel3] trait HasId extends InstanceId {
       naming_prefix = Nil
     }
 
-  private var _ref: Option[Arg] = None
+  private var _refVar: Arg = null // using nullable var for better memory usage
+  private def _ref:    Option[Arg] = Option(_refVar)
   private[chisel3] def setRef(imm: Arg): Unit = setRef(imm, false)
   private[chisel3] def setRef(imm: Arg, force: Boolean): Unit = {
     if (_ref.isEmpty || force) {
-      _ref = Some(imm)
+      _refVar = imm
     }
   }
-  private[chisel3] def setRef(parent: HasId, name:  String): Unit = setRef(Slot(Node(parent), name))
-  private[chisel3] def setRef(parent: HasId, index: Int):    Unit = setRef(Index(Node(parent), ILit(index)))
-  private[chisel3] def setRef(parent: HasId, index: UInt):   Unit = setRef(Index(Node(parent), index.ref))
+  private[chisel3] def setRef(parent: HasId, name: String, opaque: Boolean = false): Unit = {
+    if (!opaque) setRef(Slot(Node(parent), name))
+    else setRef(OpaqueSlot(Node(parent), name))
+  }
+
+  private[chisel3] def setRef(parent: HasId, index: Int):  Unit = setRef(Index(Node(parent), ILit(index)))
+  private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef:       Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
@@ -329,7 +345,8 @@ private[chisel3] class ChiselContext() {
 
 private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
-  val throwOnFirstError: Boolean) {
+  val throwOnFirstError: Boolean,
+  val warningsAsErrors:  Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map holding the actual names of extModules
@@ -386,8 +403,9 @@ private[chisel3] class DynamicContext(
   var whenStack:            List[WhenContext] = Nil
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
-  val errors = new ErrorLog
+  val errors = new ErrorLog(warningsAsErrors)
   val namingStack = new NamingStack
+
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
 }
@@ -403,6 +421,9 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+
+  // Used to suppress warnings when casting from a UInt to an Enum
+  var suppressEnumCastWarning: Boolean = false
 
   // Returns the current dynamic context
   def captureContext(): DynamicContext = dynamicContext
@@ -461,6 +482,7 @@ private[chisel3] object Builder extends LazyLogging {
     def buildAggName(id: HasId): Option[String] = {
       def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
         case Slot(_, field)       => Some(field) // Record
+        case OpaqueSlot(_, field) => None // Record with single element
         case Index(_, ILit(n))    => Some(n.toString) // Vec static indexing
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing

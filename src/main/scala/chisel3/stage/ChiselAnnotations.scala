@@ -79,6 +79,24 @@ case object ThrowOnFirstErrorAnnotation
 
 }
 
+/** When enabled, warnings will be treated as errors.
+  */
+case object WarningsAsErrorsAnnotation
+    extends NoTargetAnnotation
+    with ChiselOption
+    with HasShellOptions
+    with Unserializable {
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "warnings-as-errors",
+      toAnnotationSeq = _ => Seq(WarningsAsErrorsAnnotation),
+      helpText = "Treat warnings as errors"
+    )
+  )
+
+}
+
 /** Warn when reflective naming changes names of signals */
 @deprecated("Support for reflective naming has been removed, this object no longer does anything", "Chisel 3.6")
 case object WarnReflectiveNamingAnnotation

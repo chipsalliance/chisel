@@ -4,7 +4,6 @@
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
 import chisel3._ // required for implicit conversions.
-import chisel3.experimental.chiselName
 import chisel3.util.random.FibonacciLFSR
 import chisel3.stage.{phases, ChiselCircuitAnnotation, ChiselOutputFileAnnotation, ChiselStage}
 
@@ -617,7 +616,6 @@ package object Chisel {
     /** Generates a 16-bit linear feedback shift register, returning the register contents.
       * @param increment optional control to gate when the LFSR updates.
       */
-    @chiselName
     def apply(increment: Bool = true.B): UInt =
       VecInit(
         FibonacciLFSR
