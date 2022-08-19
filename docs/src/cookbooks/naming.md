@@ -94,13 +94,9 @@ Use the `.suggestName` method, which is on all classes which subtype `Data`.
 You can use the `noPrefix { ... }` to strip the prefix from all signals generated in that scope.
 
 ```scala mdoc
-<<<<<<< HEAD
-class ExampleNoPrefix extends MultiIOModule {
-=======
 import chisel3.experimental.noPrefix
 
-class ExampleNoPrefix extends Module {
->>>>>>> ae7dc30b (Add a cookbook and publicly visible scaladoc for prefix, noPrefix (#2687))
+class ExampleNoPrefix extends MultiIOModule {
   val in = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt()))
 
