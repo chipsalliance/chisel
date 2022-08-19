@@ -36,6 +36,18 @@ object NonIncreasingEnum extends ChiselEnum {
   val y = Value(2.U)
 }
 
+object Opcode extends ChiselEnum {
+  val load = Value(0x03.U) // i "load"  -> 000_0011
+  val imm = Value(0x13.U) // i "imm"   -> 001_0011
+  val auipc = Value(0x17.U) // u "auipc" -> 001_0111
+  val store = Value(0x23.U) // s "store" -> 010_0011
+  val reg = Value(0x33.U) // r "reg"   -> 011_0011
+  val lui = Value(0x37.U) // u "lui"   -> 011_0111
+  val br = Value(0x63.U) // b "br"    -> 110_0011
+  val jalr = Value(0x67.U) // i "jalr"  -> 110_0111
+  val jal = Value(0x6f.U) // j "jal"   -> 110_1111
+}
+
 class SimpleConnector(inType: Data, outType: Data) extends Module {
   val io = IO(new Bundle {
     val in = Input(inType)
@@ -162,6 +174,17 @@ class StrongEnumFSM extends Module {
       }
     }
   }
+}
+
+class LoadStoreExample extends Module {
+  val io = IO(new Bundle {
+    val opcode = Input(Opcode())
+    val load_or_store = Output(Bool())
+  })
+  io.load_or_store := io.opcode.isOneOf(Opcode.load, Opcode.store)
+
+  printf(p"io.opcode = ${io.opcode}")
+  /* printf(p"io.opcode = ${prettyEnum(io.opcode)}\n") */
 }
 
 class CastToUIntTester extends BasicTester {
@@ -554,6 +577,10 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "correctly check if the enumeration is one of the values in a given sequence" in {
     assertTesterPasses(new IsOneOfTester)
+  }
+
+  it should "work with Printables" in {
+    println(ChiselStage.emitChirrtl(new LoadStoreExample))
   }
 }
 

@@ -250,8 +250,30 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
   }
 
   protected def enumTypeName: String = factory.enumTypeName
+  implicit val sourceInfo = UnlocatableSourceInfo
+  implicit val compileOptions = ExplicitCompileOptions.Strict
 
-  def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
+  private def getName[T <: EnumType](x: T): String = {
+    val ParsedEnum = """\w+\((\d+)=(\w+)\)""".r
+    val ParsedEnum(_, name) = x.toString
+    name
+  }
+  def toPrintable: Printable = {
+    val allNamed = this.factory.all.map(x => getName(x) -> x)
+    val nameSize = allNamed.map(_._1.length).max
+    val allNamedPadded = allNamed.map { case (name, value) => name.padTo(nameSize, ' ') -> value }
+
+    val result = Wire(Vec(nameSize, UInt(8.W)))
+    result.foreach(_ := '?'.toChar.U)
+    for ((name, value) <- allNamedPadded) {
+      when(this === value) {
+        for ((r, c) <- result.zip(name)) {
+          r := c.toChar.U
+        }
+      }
+    }
+    result.map(Character(_)).foldLeft(p"")(_ + _)
+  }
 }
 
 abstract class EnumFactory {
