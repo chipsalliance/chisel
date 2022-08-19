@@ -590,7 +590,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "work with Printables" in {
-    val (log, _, _) = grabStdOutErr(assertTesterPasses { new PrintableExecutionTest })
+    val (log, _) = grabLog(assertTesterPasses(new PrintableExecutionTest, logger = bufferedProcessLogger))
     log should include("load")
     log should include("imm")
     log should include("auipc")

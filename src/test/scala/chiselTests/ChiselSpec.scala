@@ -29,13 +29,16 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import java.io.{ByteArrayOutputStream, PrintStream}
 import java.security.Permission
 import scala.reflect.ClassTag
+import scala.sys.process.ProcessLogger
+import scala.collection.mutable.ArrayBuffer
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   def runTester(
     t:                    => BasicTester,
     additionalVResources: Seq[String] = Seq(),
-    annotations:          AnnotationSeq = Seq()
+    annotations:          AnnotationSeq = Seq(),
+    logger:               ProcessLogger = loggingProcessLogger
   ): Boolean = {
     // Change this to enable Treadle as a backend
     val defaultBackend = {
@@ -44,14 +47,15 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     }
     val hasBackend = TestUtils.containsBackend(annotations)
     val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
-    TesterDriver.execute(() => t, additionalVResources, annos)
+    TesterDriver.execute(() => t, additionalVResources, annos, processLogger = logger)
   }
   def assertTesterPasses(
     t:                    => BasicTester,
     additionalVResources: Seq[String] = Seq(),
-    annotations:          AnnotationSeq = Seq()
+    annotations:          AnnotationSeq = Seq(),
+    logger:               ProcessLogger = loggingProcessLogger
   ): Unit = {
-    assert(runTester(t, additionalVResources, annotations))
+    assert(runTester(t, additionalVResources, annotations, logger))
   }
   def assertTesterFails(
     t:                    => BasicTester,
@@ -207,6 +211,13 @@ abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaC
     i <- Gen.choose(0, (1 << w) - 1)
     j <- Gen.choose(0, (1 << w) - 1)
   } yield (w, i, j)
+}
+
+class BufferedProcessLogger extends ProcessLogger {
+  private val buffer = ArrayBuffer[String]()
+  def out(s:       => String): Unit = buffer += s
+  def err(s:       => String): Unit = buffer += s
+  def buffer[T](f: => T):      T = f
 }
 
 trait Utils {
@@ -365,4 +376,6 @@ trait Utils {
     }
 
   }
+
+  def bufferedProcessLogger: ProcessLogger = new BufferedProcessLogger
 }
