@@ -290,14 +290,13 @@ class Queue[T <: Data](
   when(do_deq) {
     deq_ptr.inc()
   }
-  when(do_enq =/= do_deq) {
-    maybe_full := do_enq
-  }
   when(flush) {
     enq_ptr.reset()
     deq_ptr.reset()
     maybe_full := false.B
   }
+
+  maybe_full := do_enq || (maybe_full && !do_deq)
 
   io.deq.valid := !empty
   io.enq.ready := !full
