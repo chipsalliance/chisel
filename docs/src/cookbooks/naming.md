@@ -46,7 +46,7 @@ ChiselStage.emitVerilog(new ExamplePrefix)
 The `prefix` API can help with code inside `when` clauses:
 
 ```scala mdoc:silent
-class ExampleWhenPrefix extends Module {
+class ExampleWhenPrefix extends MultiIOModule {
 
   val in = IO(Input(UInt(4.W)))
   val out = IO(Output(UInt(4.W)))
