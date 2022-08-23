@@ -44,7 +44,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
     assert(q == s"~$mn|Queue")
   }
 
-  it should "error on non-hardware types with information" in {
+  it should "error on non-hardware types and provide information" in {
     class Example extends Module {
       val tpe = UInt(8.W)
 
