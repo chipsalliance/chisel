@@ -96,7 +96,7 @@ class NamingContext extends NamingContextInterface {
   def name[T](obj: T, name: String): T = {
     assert(!closed, "Can't name elements after namePrefix called")
     obj match {
-      case ref: AnyRef             => items += ((ref, name))
+      case ref: AnyRef => items += ((ref, name))
       case _ =>
     }
     obj
