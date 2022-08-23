@@ -1198,3 +1198,112 @@ final case object DontCare extends Element {
   // DontCare's only match themselves.
   private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
 }
+
+private[chisel3] object DirectionalConnectionFunctions {
+  // Consumed by the := operator, set to what chisel3 will eventually become.
+  implicit val compileOptions = new CompileOptions {
+
+    val connectFieldsMustMatch: Boolean = true
+    val declaredTypeMustBeUnbound: Boolean = true
+    val dontTryConnectionsSwapped: Boolean = false
+    val dontAssumeDirectionality: Boolean = true
+    val checkSynthesizable: Boolean = true
+    val explicitInvalidate: Boolean = true
+    val inferModuleReset: Boolean = true
+    override def emitStrictConnects: Boolean = true
+  }
+
+  // Used by :<= for child elements to switch directionality
+  def descendL(consumer: Data, producer: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    DataMirror.specifiedDirectionOf(consumer) match {
+      case SpecifiedDirection.Unspecified => assignL(consumer, producer)
+      case SpecifiedDirection.Output      => assignL(consumer, producer); assignR(producer, consumer)
+      case SpecifiedDirection.Input       => ()
+      case SpecifiedDirection.Flip        => assignR(producer, consumer)
+    }
+  }
+
+  // Used by :>= for child elements to switch directionality
+  def descendR(consumer: Data, producer: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    DataMirror.specifiedDirectionOf(producer) match {
+      case SpecifiedDirection.Unspecified => assignR(consumer, producer)
+      case SpecifiedDirection.Output      => ()
+      case SpecifiedDirection.Input       => assignL(producer, consumer); assignR(consumer, producer)
+      case SpecifiedDirection.Flip        => assignL(producer, consumer)
+    }
+  }
+
+  // The default implementation of 'consumer :<= producer'
+  // Assign all output fields of consumer from producer
+  def assignL(consumer: Data, producer: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    (consumer, producer) match {
+      case (vx: Vec[_], vy: Vec[_])                             => {
+        require(vx.size == vy.size, s"Assignment between vectors of unequal length (${vx.size} != ${vy.size})")
+        (vx.zip(vy)).foreach { case (ex, ey) => descendL(ex, ey) }
+      }
+      case (rx: Record, ry: Record)                             => {
+        val hy = HashMap(ry.elements.toList: _*)
+        rx.elements.foreach { case (key, vx) =>
+          require(hy.contains(key), s"Attempt to assign ${consumer} :<= ${producer}, where RHS is missing field ${key}")
+          descendL(vx, hy(key))
+        }
+        hy --= rx.elements.keys
+        require(hy.isEmpty, s"Attempt to assign ${consumer} :<= ${producer}, where RHS has excess field ${hy.last._1}")
+      }
+      case (vx: Vec[_], DontCare)                               => vx.foreach { case ex => descendL(ex, DontCare) }
+      case (rx: Record, DontCare)                               => rx.elements.foreach { case (_, dx) => descendL(dx, DontCare) }
+      // We have to handle Analog specially here. If Analog has already been connected, we need to error, rather than override the analog connection
+      case (ax: Analog, ay: Analog)                             => assignAnalog(ax, ay)
+      case (ax: Analog, DontCare)                               => assignAnalog(ax, DontCare)
+      case (DontCare, ay: Analog)                               => assignAnalog(ay, DontCare)
+      case _                                                    => consumer := producer // assign leaf fields (UInt/etc)
+    }
+  }
+
+  // The default implementation of 'consumer :>= producer'
+  // Assign all fields of producer who are flipped relative to producer, from consumer
+  def assignR(consumer: Data, producer: Data)(implicit sourceInfo: SourceInfo) = {
+    (consumer, producer) match {
+      case (vx: Vec[_], vy: Vec[_])                             => {
+        require(vx.size == vy.size, s"Assignment between vectors of unequal length (${vx.size} != ${vy.size})")
+        (vx.zip(vy)).foreach { case (ex, ey) => descendR(ex, ey) }
+      }
+      case (rx: Record, ry: Record)                             => {
+        val hx = HashMap(rx.elements.toList: _*)
+        ry.elements.foreach { case (key, vy) =>
+          require(hx.contains(key), s"Attempt to assign ${consumer} :>= ${producer}, where RHS has excess field ${key}")
+          descendR(hx(key), vy)
+        }
+        hx --= ry.elements.keys
+        require(hx.isEmpty, s"Attempt to assign ${consumer} :>= ${producer}, where RHS is missing field ${hx.last._1}")
+      }
+      case (DontCare, vy: Vec[_])                               => vy.foreach { case ey => descendR(DontCare, ey) }
+      case (DontCare, ry: Record)                               => ry.elements.foreach { case (_, dy) => descendR(DontCare, dy) }
+      case (ax: Analog, ay: Analog)                             => assignAnalog(ax, ay)
+      case (ax: Analog, DontCare)                               => assignAnalog(ax, DontCare)
+      case (DontCare, ay: Analog)                               => assignAnalog(ay, DontCare)
+      case _                                                    => // no-op for leaf fields
+    }
+  }
+
+  def checkAnalog(as: Analog*)(implicit sourceInfo: SourceInfo): Unit = {
+    val currentModule = Builder.currentModule.get.asInstanceOf[RawModule]
+    try {
+      as.foreach { a => BiConnect.markAnalogConnected(sourceInfo, a, currentModule) }
+    } catch { // convert attach exceptions to BiConnectExceptions
+      case experimental.attach.AttachException(message) => throw BiConnectException(message)
+    }
+  }
+
+  def assignAnalog(a: Analog, b: Data)(implicit sourceInfo: SourceInfo): Unit = b match {
+    case (ba: Analog)                             => {
+      checkAnalog(a, ba)
+      val currentModule = Builder.currentModule.get.asInstanceOf[RawModule]
+      experimental.attach.impl(Seq(a, ba), currentModule)(sourceInfo)
+    }
+    case (DontCare) => {
+      checkAnalog(a)
+      pushCommand(DefInvalid(sourceInfo, a.lref))
+    }
+  }
+}
