@@ -43,4 +43,23 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
     val q = m.q.toTarget.toString
     assert(q == s"~$mn|Queue")
   }
+
+  it should "error on non-hardware types and provide information" in {
+    class Example extends Module {
+      val tpe = UInt(8.W)
+
+      val in = IO(Input(tpe))
+      val out = IO(Output(tpe))
+      out := in
+    }
+
+    val e = the[ChiselException] thrownBy extractCause[ChiselException] {
+      var e: Example = null
+      chisel3.stage.ChiselStage.elaborate { e = new Example; e }
+      e.tpe.toTarget
+    }
+    e.getMessage should include(
+      "You cannot access the .instanceName or .toTarget of non-hardware Data: 'tpe', in module 'Example'"
+    )
+  }
 }
