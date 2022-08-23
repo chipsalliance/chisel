@@ -7,6 +7,7 @@ import chisel3.stage.ChiselStage
 import chisel3.aop.Select
 import chisel3.experimental.{dump, noPrefix, prefix, treedump}
 import chiselTests.{ChiselPropSpec, Utils}
+import chisel3.experimental.AffectsChiselPrefix
 
 class PrefixSpec extends ChiselPropSpec with Utils {
   implicit val minimumMajorVersion: Int = 12
@@ -495,6 +496,29 @@ class PrefixSpec extends ChiselPropSpec with Utils {
     }
     aspectTest(() => new Test) { top: Test =>
       Select.wires(top).map(_.instanceName) should be(List("a_b_c_d"))
+    }
+  }
+
+  property("Prefixing of AffectsChiselPrefix objects should work") {
+    class NotAData extends AffectsChiselPrefix {
+      val value = Wire(UInt(3.W))
+    }
+    class NotADataUnprefixed {
+      val value = Wire(UInt(3.W))
+    }
+    class Test extends Module {
+      {
+        val nonData = new NotAData
+        // Instance name of nonData.value should be nonData_value
+        nonData.value := RegNext(3.U)
+
+        val nonData2 = new NotADataUnprefixed
+        // Instance name of nonData2.value should be value
+        nonData2.value := RegNext(3.U)
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("nonData_value", "value"))
     }
   }
 }
