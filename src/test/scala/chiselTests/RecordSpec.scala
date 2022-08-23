@@ -228,7 +228,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     var m: SingleElementRecordModule = null
     ChiselStage.elaborate { m = new SingleElementRecordModule; m }
     val (log, q) = grabLog(m.r.toTarget)
-    log should include(".toTarget of non-hardware Data is deprecated.")
+    log should include(".toTarget of non-hardware Data is deprecated")
     assert(q.toString == "~SingleElementRecordModule|SingleElementRecordModule>r")
   }
 
