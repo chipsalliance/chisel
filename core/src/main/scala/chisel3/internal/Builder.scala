@@ -260,8 +260,9 @@ private[chisel3] trait HasId extends InstanceId {
       }
       val errors = new ErrorLog(false)
       val logger = new _root_.logger.Logger(this.getClass.getName)
-      val msg = "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated" + nameGuess + parentGuess + ". " +
-        "This will become an error in Chisel 3.6."
+      val msg =
+        "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated" + nameGuess + parentGuess + ". " +
+          "This will become an error in Chisel 3.6."
       errors.deprecated(msg, None)
       errors.checkpoint(logger)
       _computeName(None).get
