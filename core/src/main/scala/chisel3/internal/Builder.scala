@@ -242,12 +242,12 @@ private[chisel3] trait HasId extends InstanceId {
     case None => {
       val nameGuess = _computeName(None) match {
         case Some(name) => s": '$name'"
-        case None => ""
+        case None       => ""
       }
       val parentGuess = _parent match {
         case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
-        case Some(p) => s", in module '${p.pathName}'"
-        case None => ""
+        case Some(p)          => s", in module '${p.pathName}'"
+        case None             => ""
       }
       throwException("You cannot access the .instanceName or .toTarget of non-hardware Data" + nameGuess + parentGuess)
     }
