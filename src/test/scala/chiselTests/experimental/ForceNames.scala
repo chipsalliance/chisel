@@ -110,4 +110,18 @@ class ForceNamesSpec extends ChiselFlatSpec {
       )
     }
   }
+  "Force Name of non-hardware value" should "error" in {
+    class Example extends Module {
+      val tpe = UInt(8.W)
+      forceName(tpe, "foobar")
+
+      val in = IO(Input(tpe))
+      val out = IO(Output(tpe))
+      out := in
+    }
+
+    a[ChiselException] shouldBe thrownBy {
+      chisel3.stage.ChiselStage.elaborate(new Example)
+    }
+  }
 }
