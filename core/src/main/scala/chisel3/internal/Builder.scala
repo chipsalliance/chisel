@@ -249,10 +249,20 @@ private[chisel3] trait HasId extends InstanceId {
       // Builder.deprecated mechanism, we have to create our own one off ErrorLog and print the
       // warning right away.
       // It's especially bad because --warnings-as-errors does not work with these warnings
+      val nameGuess = _computeName(None) match {
+        case Some(name) => s": '$name'"
+        case None       => ""
+      }
+      val parentGuess = _parent match {
+        case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
+        case Some(p)          => s", in module '${p.pathName}'"
+        case None             => ""
+      }
       val errors = new ErrorLog(false)
       val logger = new _root_.logger.Logger(this.getClass.getName)
-      val msg = "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated. " +
-        "This will become an error in Chisel 3.6."
+      val msg =
+        "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated" + nameGuess + parentGuess + ". " +
+          "This will become an error in Chisel 3.6."
       errors.deprecated(msg, None)
       errors.checkpoint(logger)
       _computeName(None).get

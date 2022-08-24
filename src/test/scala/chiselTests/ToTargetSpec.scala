@@ -49,4 +49,21 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
     val q = m.q.toTarget.toString
     assert(q == s"~$mn|Queue")
   }
+
+  it should "warn on non-hardware types and provide information" in {
+    class Example extends Module {
+      val tpe = UInt(8.W)
+
+      val in = IO(Input(tpe))
+      val out = IO(Output(tpe))
+      out := in
+    }
+
+    var e: Example = null
+    chisel3.stage.ChiselStage.elaborate { e = new Example; e }
+    val (log, foo) = grabLog(e.tpe.toTarget)
+    log should include(
+      "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated: 'tpe', in module 'Example'"
+    )
+  }
 }
