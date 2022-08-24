@@ -132,6 +132,39 @@ trait RecordSpecUtils {
     out := in1 + in2
   }
 
+  class InnerRecord extends Record {
+    val k = new InnerInnerRecord
+    val elements = SeqMap("" -> k)
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
+  }
+
+  class InnerInnerRecord extends Record {
+    val k = new SingleElementRecord
+    val elements = SeqMap("" -> k)
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
+  }
+
+  class NestedRecordModule extends Module {
+    val in1 = IO(Input(new InnerRecord))
+    val out = IO(Output(new InnerRecord))
+
+    out := in1
+
+    // DO NOT do this, just for testing element connection
+    out.elements.head._2 := in1.elements.head._2
+
+    val k = Module(new InnerModule)
+  }
+
+  class InnerModule extends Module {
+    val in1 = IO(Input(new InnerRecord))
+    val out = IO(Output(new InnerRecord))
+
+    out := in1
+  }
+
   class NamedSingleElementRecord extends Record {
     private val underlying = UInt(8.W)
     val elements = SeqMap("unused" -> underlying)
@@ -203,6 +236,20 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     singleElementChirrtl should include("input in1 : UInt<8>")
     singleElementChirrtl should include("input in2 : UInt<8>")
     singleElementChirrtl should include("add(in1, in2)")
+  }
+
+  they should "work correctly for toTarget in nested opaque type Records" in {
+    var mod: NestedRecordModule = null
+    ChiselStage.elaborate { mod = new NestedRecordModule; mod }
+    val testStrings = Seq(
+      mod.in1.toTarget.toString(),
+      mod.in1.k.toTarget.toString(),
+      mod.in1.k.k.toTarget.toString(),
+      mod.in1.elements.head._2.toTarget.toString(),
+      mod.in1.k.elements.head._2.toTarget.toString(),
+      mod.in1.k.k.elements.head._2.toTarget.toString()
+    )
+    testStrings.foreach(x => assert(x == "~NestedRecordModule|NestedRecordModule>in1"))
   }
 
   they should "throw an error when map contains a named element and opaqueType is overriden to true" in {

@@ -229,7 +229,7 @@ private[chisel3] trait HasId extends InstanceId {
   }
   private[chisel3] def setRef(parent: HasId, name: String, opaque: Boolean = false): Unit = {
     if (!opaque) setRef(Slot(Node(parent), name))
-    else setRef(OpaqueSlot(Node(parent), name))
+    else setRef(OpaqueSlot(Node(parent)))
   }
 
   private[chisel3] def setRef(parent: HasId, index: Int):  Unit = setRef(Index(Node(parent), ILit(index)))
@@ -267,9 +267,10 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
     case Some(p) =>
       (p._component, this) match {
-        case (Some(c), _) => refName(c)
-        case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
-        case (None, _: MemBase[Data]) => _ref.get.localName
+        case (Some(c), _) =>
+          refName(c) // normal bound hw (port/wire) OR modules OR memories (this is the standard case)
+        case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName // XMR
+        case (None, _: MemBase[Data]) => _ref.get.localName // ??
         case (None, _) =>
           throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }
@@ -492,7 +493,7 @@ private[chisel3] object Builder extends LazyLogging {
     def buildAggName(id: HasId): Option[String] = {
       def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
         case Slot(_, field)       => Some(field) // Record
-        case OpaqueSlot(_, field) => None // Record with single element
+        case OpaqueSlot(_)        => None // OpaqueSlots don't contribute to the name
         case Index(_, ILit(n))    => Some(n.toString) // Vec static indexing
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing

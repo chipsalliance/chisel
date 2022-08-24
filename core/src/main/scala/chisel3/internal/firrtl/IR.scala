@@ -91,7 +91,7 @@ object Arg {
     case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
     case Some(Index(Node(imm), arg))         => s"${earlyLocalName(imm)}[${arg.localName}]"
     case Some(Slot(Node(imm), name))         => s"${earlyLocalName(imm)}.$name"
-    case Some(OpaqueSlot(Node(imm), name))   => s"${earlyLocalName(imm)}"
+    case Some(OpaqueSlot(Node(imm)))         => s"${earlyLocalName(imm)}"
     case Some(arg)                           => arg.name
     case None =>
       id match {
@@ -219,9 +219,9 @@ case class Slot(imm: Node, name: String) extends Arg {
   }
 }
 
-case class OpaqueSlot(imm: Node, name: String) extends Arg {
+case class OpaqueSlot(imm: Node) extends Arg {
   override def contextualName(ctx: Component): String = imm.name
-  override def localName: String = imm.name
+  override def name: String = imm.name
 }
 
 case class Index(imm: Arg, value: Arg) extends Arg {
