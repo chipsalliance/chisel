@@ -2,7 +2,9 @@
 
 ---
 ### CCC 2022
-The annual CCC (Chisel Community Conference) will be held online, You can add [ics file](https://calendar.google.com/calendar/embed?src=c_pluc02j9c4ambkiljlud3620fk%40group.calendar.google.com&ctz=Atlantic%2FAzores) to the calendar for conference agenda.
+CCC(Chisel Community Conference) is an annual gathering of Chisel community enthusiasts and technical exchange workshop. With the support of the Chisel development community and RISC-V International, this conference will bring together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.
+
+CCC2022 will be held online, You can add [ics file](https://calendar.google.com/calendar/embed?src=c_pluc02j9c4ambkiljlud3620fk%40group.calendar.google.com&ctz=Atlantic%2FAzores) to the calendar for conference agenda.
 
 Saturday, August 27 ⋅ 09:00 - 16:00 UTC+8 (Shanghai/China);
 Friday, August 26 ⋅ 21:00 - 04:00 UTC-4 (Eastern Daylight Time);
