@@ -25,9 +25,7 @@ object forceName {
     * @param name Name to force to
     */
   def apply[T <: chisel3.Element](signal: T, name: String): T = {
-    if (!signal.isSynthesizable) {
-      Builder.error(s"Using forceName '$name' on non-hardware value $signal")
-    }
+    if (!signal.isSynthesizable) Builder.error(s"Using forceName '$name' on non-hardware value $signal")
     annotate(new ChiselAnnotation with RunFirrtlTransform {
       def toFirrtl = ForceNameAnnotation(signal.toTarget, name)
       override def transformClass: Class[_ <: Transform] = classOf[ForceNamesTransform]
@@ -41,6 +39,7 @@ object forceName {
     * @param signal Signal to name
     */
   def apply[T <: chisel3.Element](signal: T): T = {
+    if (!signal.isSynthesizable) Builder.error(s"Using forceName on non-hardware value $signal")
     annotate(new ChiselAnnotation with RunFirrtlTransform {
       def toFirrtl = ForceNameAnnotation(signal.toTarget, signal.toTarget.ref)
       override def transformClass: Class[_ <: Transform] = classOf[ForceNamesTransform]
