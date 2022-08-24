@@ -183,7 +183,8 @@ class LoadStoreExample extends Module {
   })
   io.load_or_store := io.opcode.isOneOf(Opcode.load, Opcode.store)
 
-  printf(p"io.opcode = ${io.opcode}")
+  val printable = p"${io}"  
+  /* printf(p"io.opcode = ${io.opcode}") */
   /* printf(p"io.opcode = ${prettyEnum(io.opcode)}\n") */
 }
 
@@ -580,7 +581,11 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "work with Printables" in {
-    println(ChiselStage.emitChirrtl(new LoadStoreExample))
+
+    println(ChiselStage.emitChirrtl(new Module {
+      val k = Module(new LoadStoreExample)
+      printf(k.printable)
+    }))
   }
 }
 
