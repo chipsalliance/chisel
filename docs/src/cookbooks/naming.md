@@ -26,7 +26,7 @@ We recommend you manually insert calls to `prefix` to clarify these cases:
 
 ```scala mdoc:silent
 import chisel3.experimental.prefix
-class ExamplePrefix extends Module {
+class ExamplePrefix extends MultiIOModule {
 
   Seq.tabulate{2} {i =>
     Seq.tabulate{2}{ j =>
