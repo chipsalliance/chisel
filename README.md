@@ -22,6 +22,7 @@ The conference agenda is:
 8. From Chisel to Chips in Fully Open-Source - Martin Schoeberl@DTU
 
 See you this week :)
+
 ---
 
 The **Constructing Hardware in a Scala Embedded Language** ([**Chisel**](https://www.chisel-lang.org)) is an open-source hardware description language (HDL) used to describe digital electronics and circuits at the register-transfer level that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
