@@ -4,9 +4,10 @@
 ### CCC 2022
 The annual CCC (Chisel Community Conference) will be held online, You can add [ics file](https://calendar.google.com/calendar/embed?src=c_pluc02j9c4ambkiljlud3620fk%40group.calendar.google.com&ctz=Atlantic%2FAzores) to the calendar for conference agenda.
 
-Saturday, August 27 ⋅ 09:00 - 16:00 GMT +8(Shanghai/China);
-Friday, August 26 ⋅ 18:00 - 25:00 GMT -7(Los Angeles/US);
-Saturday, August 27 ⋅ 02:00 - 9:00 GMT +1(London/UK);
+Saturday, August 27 ⋅ 09:00 - 16:00 UTC+8 (Shanghai/China);
+Friday, August 26 ⋅ 21:00 - 04:00 UTC-4 (Eastern Daylight Time);
+Friday, August 26 ⋅ 18:00 - 25:00 UTC-7 (Los Angeles/US);
+Saturday, August 27 ⋅ 02:00 - 9:00 UTC+1 (London/UK);
 
 Click on [Zoom Link](https://us02web.zoom.us/j/87836037616?pwd=cXVUZjkrWlBDU3JuU0NLTU8zbG0xQT09) to participate.
 
