@@ -251,24 +251,16 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
 
   protected def enumTypeName: String = factory.enumTypeName
 
-  // this should be nicer since we have access to enum type here
-  private def getName[T <: EnumType](x: T): String = {
-    val ParsedEnum = """\w+\((\d+)=(\w+)\)""".r
-    val ParsedEnum(_, name) = x.toString
-    name
-  }
   def toPrintable: Printable = {
-      implicit val sourceInfo = UnlocatableSourceInfo
+    implicit val sourceInfo = UnlocatableSourceInfo
     implicit val compileOptions = ExplicitCompileOptions.Strict
-    val allNamed = this.factory.all.map(x => getName(x) -> x)
+    val allNamed = factory.allNames.zip(factory.all)
     val nameSize = allNamed.map(_._1.length).max
     val allNamedPadded = allNamed.map { case (name, value) => name.padTo(nameSize, ' ') -> value }
 
-    // suggestname on wire here so that the temp wires don't show up as
-    // _WIRE[0] or whatever
-    val result = Wire(Vec(nameSize, UInt(8.W)))
+    val result = Wire(Vec(nameSize, UInt(8.W))).suggestName("EnumRecord")
     result.foreach(_ := '?'.toChar.U)
-    println(s"result = $result")
+
     for ((name, value) <- allNamedPadded) {
       when(this === value) {
         for ((r, c) <- result.zip(name)) {
@@ -309,7 +301,8 @@ abstract class EnumFactory {
 
   def getWidth: Int = width.get
 
-  def all: Seq[Type] = enumInstances
+  def all:      Seq[Type] = enumInstances
+  def allNames: Seq[String] = enumNames
 
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
     enumRecords.find(_.inst.litValue == id).map(_.name)
