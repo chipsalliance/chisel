@@ -267,10 +267,9 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
     case Some(p) =>
       (p._component, this) match {
-        case (Some(c), _) =>
-          refName(c) // normal bound hw (port/wire) OR modules OR memories (this is the standard case)
-        case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName // XMR
-        case (None, _: MemBase[Data]) => _ref.get.localName // ??
+        case (Some(c), _) => refName(c)
+        case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
+        case (None, _: MemBase[Data]) => _ref.get.localName
         case (None, _) =>
           throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }

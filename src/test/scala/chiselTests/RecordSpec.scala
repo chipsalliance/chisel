@@ -147,22 +147,18 @@ trait RecordSpecUtils {
   }
 
   class NestedRecordModule extends Module {
-    val in1 = IO(Input(new InnerRecord))
+    val in = IO(Input(new InnerRecord))
     val out = IO(Output(new InnerRecord))
-
-    out := in1
-
-    // DO NOT do this, just for testing element connection
-    out.elements.head._2 := in1.elements.head._2
-
-    val k = Module(new InnerModule)
+    val inst = Module(new InnerModule)
+    inst.foo := in
+    out := inst.bar
   }
-
   class InnerModule extends Module {
-    val in1 = IO(Input(new InnerRecord))
-    val out = IO(Output(new InnerRecord))
+    val foo = IO(Input(new InnerRecord))
+    val bar = IO(Output(new InnerRecord))
 
-    out := in1
+    // DO NOT do this; just for testing element connections
+    bar.elements.head._2 := foo.elements.head._2
   }
 
   class NamedSingleElementRecord extends Record {
@@ -242,14 +238,25 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     var mod: NestedRecordModule = null
     ChiselStage.elaborate { mod = new NestedRecordModule; mod }
     val testStrings = Seq(
-      mod.in1.toTarget.toString(),
-      mod.in1.k.toTarget.toString(),
-      mod.in1.k.k.toTarget.toString(),
-      mod.in1.elements.head._2.toTarget.toString(),
-      mod.in1.k.elements.head._2.toTarget.toString(),
-      mod.in1.k.k.elements.head._2.toTarget.toString()
+      mod.in.toTarget.toString(),
+      mod.in.k.toTarget.toString(),
+      mod.in.k.k.toTarget.toString(),
+      mod.in.elements.head._2.toTarget.toString(),
+      mod.in.k.elements.head._2.toTarget.toString(),
+      mod.in.k.k.elements.head._2.toTarget.toString()
     )
-    testStrings.foreach(x => assert(x == "~NestedRecordModule|NestedRecordModule>in1"))
+    testStrings.foreach(x => assert(x == "~NestedRecordModule|NestedRecordModule>in"))
+  }
+
+  they should "work correctly when connecting nested opaque type elements" in {
+    val nestedRecordChirrtl = ChiselStage.emitChirrtl { new NestedRecordModule }
+    nestedRecordChirrtl should include("input in : UInt<8>")
+    nestedRecordChirrtl should include("output out : UInt<8>")
+    nestedRecordChirrtl should include("inst.foo <= in")
+    nestedRecordChirrtl should include("out <= inst.bar")
+    nestedRecordChirrtl should include("input foo : UInt<8>")
+    nestedRecordChirrtl should include("output bar : UInt<8>")
+    nestedRecordChirrtl should include("bar <= foo")
   }
 
   they should "throw an error when map contains a named element and opaqueType is overriden to true" in {
