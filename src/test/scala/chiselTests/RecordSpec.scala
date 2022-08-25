@@ -132,6 +132,35 @@ trait RecordSpecUtils {
     out := in1 + in2
   }
 
+  class InnerRecord extends Record {
+    val k = new InnerInnerRecord
+    val elements = SeqMap("" -> k)
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
+  }
+
+  class InnerInnerRecord extends Record {
+    val k = new SingleElementRecord
+    val elements = SeqMap("" -> k)
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
+  }
+
+  class NestedRecordModule extends Module {
+    val in = IO(Input(new InnerRecord))
+    val out = IO(Output(new InnerRecord))
+    val inst = Module(new InnerModule)
+    inst.foo := in
+    out := inst.bar
+  }
+  class InnerModule extends Module {
+    val foo = IO(Input(new InnerRecord))
+    val bar = IO(Output(new InnerRecord))
+
+    // DO NOT do this; just for testing element connections
+    bar.elements.head._2 := foo.elements.head._2
+  }
+
   class NamedSingleElementRecord extends Record {
     private val underlying = UInt(8.W)
     val elements = SeqMap("unused" -> underlying)
@@ -203,6 +232,31 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     singleElementChirrtl should include("input in1 : UInt<8>")
     singleElementChirrtl should include("input in2 : UInt<8>")
     singleElementChirrtl should include("add(in1, in2)")
+  }
+
+  they should "work correctly for toTarget in nested opaque type Records" in {
+    var mod: NestedRecordModule = null
+    ChiselStage.elaborate { mod = new NestedRecordModule; mod }
+    val testStrings = Seq(
+      mod.in.toTarget.toString(),
+      mod.in.k.toTarget.toString(),
+      mod.in.k.k.toTarget.toString(),
+      mod.in.elements.head._2.toTarget.toString(),
+      mod.in.k.elements.head._2.toTarget.toString(),
+      mod.in.k.k.elements.head._2.toTarget.toString()
+    )
+    testStrings.foreach(x => assert(x == "~NestedRecordModule|NestedRecordModule>in"))
+  }
+
+  they should "work correctly when connecting nested opaque type elements" in {
+    val nestedRecordChirrtl = ChiselStage.emitChirrtl { new NestedRecordModule }
+    nestedRecordChirrtl should include("input in : UInt<8>")
+    nestedRecordChirrtl should include("output out : UInt<8>")
+    nestedRecordChirrtl should include("inst.foo <= in")
+    nestedRecordChirrtl should include("out <= inst.bar")
+    nestedRecordChirrtl should include("input foo : UInt<8>")
+    nestedRecordChirrtl should include("output bar : UInt<8>")
+    nestedRecordChirrtl should include("bar <= foo")
   }
 
   they should "throw an error when map contains a named element and opaqueType is overriden to true" in {
