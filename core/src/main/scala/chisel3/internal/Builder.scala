@@ -239,8 +239,18 @@ private[chisel3] trait HasId extends InstanceId {
 
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg.fullName(c)
-    case None =>
-      throwException("You cannot access the .instanceName or .toTarget of non-hardware Data")
+    case None => {
+      val nameGuess = _computeName(None) match {
+        case Some(name) => s": '$name'"
+        case None       => ""
+      }
+      val parentGuess = _parent match {
+        case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
+        case Some(p)          => s", in module '${p.pathName}'"
+        case None             => ""
+      }
+      throwException("You cannot access the .instanceName or .toTarget of non-hardware Data" + nameGuess + parentGuess)
+    }
   }
 
   // Helper for reifying views if they map to a single Target
