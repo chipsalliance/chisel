@@ -136,14 +136,14 @@ trait RecordSpecUtils {
     val k = new InnerInnerRecord
     val elements = SeqMap("" -> k)
     override def opaqueType = elements.size == 1
-    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
+    override def cloneType: this.type = (new InnerRecord).asInstanceOf[this.type]
   }
 
   class InnerInnerRecord extends Record {
     val k = new SingleElementRecord
     val elements = SeqMap("" -> k)
     override def opaqueType = elements.size == 1
-    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
+    override def cloneType: this.type = (new InnerInnerRecord).asInstanceOf[this.type]
   }
 
   class NestedRecordModule extends Module {
@@ -153,6 +153,7 @@ trait RecordSpecUtils {
     inst.foo := in
     out := inst.bar
   }
+
   class InnerModule extends Module {
     val foo = IO(Input(new InnerRecord))
     val bar = IO(Output(new InnerRecord))
