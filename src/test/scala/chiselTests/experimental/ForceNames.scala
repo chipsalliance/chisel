@@ -59,7 +59,7 @@ object ForceNamesHierarchy {
   }
 }
 
-class ForceNamesSpec extends ChiselFlatSpec {
+class ForceNamesSpec extends ChiselFlatSpec with Utils {
 
   def run[T <: RawModule](
     dut:        => T,
@@ -109,5 +109,20 @@ class ForceNamesSpec extends ChiselFlatSpec {
         Seq(ForceNameAnnotation(ReferenceTarget("BundleName", "BundleName", Nil, "in", Nil), "inn"))
       )
     }
+  }
+
+  "Force Name of non-hardware value" should "warn" in {
+    class Example extends Module {
+      val tpe = UInt(8.W)
+      forceName(tpe, "foobar")
+
+      val in = IO(Input(tpe))
+      val out = IO(Output(tpe))
+      out := in
+    }
+
+    val (log, foo) = grabLog(chisel3.stage.ChiselStage.elaborate(new Example))
+    log should include("deprecated")
+    log should include("Using forceName 'foobar' on non-hardware value UInt<8>")
   }
 }
