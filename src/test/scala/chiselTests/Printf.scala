@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.BasicTester
+import chisel3.stage.ChiselStage
 
 class SinglePrintfTester() extends BasicTester {
   val x = 254.U
@@ -28,6 +29,24 @@ class ASCIIPrintableTester extends BasicTester {
   stop()
 }
 
+class ScopeTesterModule extends Module {
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+  out := in
+
+  val p = p"$in"
+}
+
+class PrintablePrintfScopeTester extends BasicTester {
+  ChiselStage.elaborate {
+    new Module {
+      val mod = Module(new ScopeTesterModule)
+      printf(mod.p)
+    }
+  }
+  stop()
+}
+
 class PrintfSpec extends ChiselFlatSpec {
   "A printf with a single argument" should "run" in {
     assertTesterPasses { new SinglePrintfTester }
@@ -40,5 +59,8 @@ class PrintfSpec extends ChiselFlatSpec {
   }
   "A printf with Printable ASCII characters 1-127" should "run" in {
     assertTesterPasses { new ASCIIPrintableTester }
+  }
+  "A printf with Printable with invalid scope" should "error" in {
+    a[ChiselException] should be thrownBy { assertTesterPasses { new PrintablePrintfScopeTester } }
   }
 }

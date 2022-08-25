@@ -25,7 +25,21 @@ import scala.reflect.macros.blackbox
   */
 trait VerifPrintMacrosDoc
 
-object assert extends VerifPrintMacrosDoc {
+private[chisel3] trait ScopeCheck {
+  def checkScope(message: Option[Printable]): Unit =
+    message match {
+      case Some(x) =>
+        if (Builder.currentModule != message.get.context) {
+          val currentModuleString = Builder.currentModule.map(_.name).getOrElse("(unknown module)")
+          Builder.error(
+            s"Printable was built in a different module ${message.get.context.map(_.name).getOrElse("(unknown module)")} from where it was invoked ($currentModuleString)"
+          )
+        }
+      case None =>
+    }
+}
+
+object assert extends ScopeCheck with VerifPrintMacrosDoc {
 
   /** Checks for a condition to be valid in the circuit at rising clock edge
     * when not in reset. If the condition evaluates to false, the circuit
@@ -178,6 +192,7 @@ object assert extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assert = {
     val id = new Assert()
+    checkScope(message)
     when(!Module.reset.asBool()) {
       failureMessage("Assertion", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
@@ -186,7 +201,7 @@ object assert extends VerifPrintMacrosDoc {
   }
 }
 
-object assume extends VerifPrintMacrosDoc {
+object assume extends ScopeCheck with VerifPrintMacrosDoc {
 
   /** Assumes a condition to be valid in the circuit at all times.
     * Acts like an assertion in simulation and imposes a declarative
@@ -343,6 +358,7 @@ object assume extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assume = {
     val id = new Assume()
+    checkScope(message)
     when(!Module.reset.asBool()) {
       failureMessage("Assumption", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))

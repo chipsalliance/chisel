@@ -45,6 +45,8 @@ import java.util.{MissingFormatArgumentException, UnknownFormatConversionExcepti
 // TODO Should we provide more functions like map and mkPrintable?
 sealed abstract class Printable {
 
+  val context = internal.Builder.currentModule
+
   /** Unpack into format String and a List of String arguments (identifiers)
     * @note This must be called after elaboration when Chisel nodes actually
     *   have names

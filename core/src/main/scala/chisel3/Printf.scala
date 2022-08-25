@@ -108,6 +108,14 @@ object printf {
   ): Printf = {
     val clock = Builder.forcedClock
     val printfId = new Printf(pable)
+
+    if (Builder.currentModule != pable.context) {
+      val currentModuleString = Builder.currentModule.map(_.name).getOrElse("(unknown module)")
+      Builder.error(
+        s"Printable was built in a different module ${pable.context.map(_.name).getOrElse("(unknown module)")} than where it was invoked ($currentModuleString)"
+      )
+    }
+
     pushCommand(chisel3.internal.firrtl.Printf(printfId, sourceInfo, clock.ref, pable))
     printfId
   }

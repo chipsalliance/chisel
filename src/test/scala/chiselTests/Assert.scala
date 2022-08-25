@@ -73,6 +73,30 @@ class PrintableBadUnescapedPercentAssertTester extends BasicTester {
   stop()
 }
 
+class AssumePrintableFailingScope extends BasicTester {
+  ChiselStage.elaborate {
+    new Module {
+      val mod = Module(new PrintableScopeTester)
+      assume(1.U === 1.U, mod.printable)
+    }
+  }
+  stop()
+}
+
+class PrintableScopeTester extends Module {
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+  out := in
+
+  val printable = p"${in}"
+}
+
+class AssertPrintableFailingScope extends BasicTester {
+  val mod = Module(new PrintableScopeTester)
+  assert(1.U === 2.U, mod.printable)
+  stop()
+}
+
 class PrintableAssumeTester extends Module {
   val in = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
@@ -94,6 +118,14 @@ class AssertSpec extends ChiselFlatSpec with Utils {
   "An assertion" should "not assert until we come out of reset" in {
     assertTesterPasses { new PipelinedResetTester }
   }
+  "Assert Printables" should "respect scope" in {
+    a[ChiselException] should be thrownBy { assertTesterPasses { new AssertPrintableFailingScope } }
+  }
+
+  "Assume Printables" should "respect scope" in {
+    a[ChiselException] should be thrownBy { assertTesterPasses { new AssumePrintableFailingScope } }
+  }
+
   "Assertions" should "allow the modulo operator % in the message" in {
     assertTesterPasses { new ModuloAssertTester }
   }
