@@ -63,7 +63,7 @@ object SerializerSpec {
   val childModuleTabbed: String = tab(childModule)
 
   val simpleCircuit: String =
-    "circuit test :\n" + childModuleTabbed + "\n\n" + testModuleTabbed + "\n"
+    s"FIRRTL version ${Serializer.version.serialize}\ncircuit test :\n" + childModuleTabbed + "\n\n" + testModuleTabbed + "\n"
 }
 
 class SerializerSpec extends AnyFlatSpec with Matchers {

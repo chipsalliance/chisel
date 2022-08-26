@@ -92,6 +92,67 @@ class ParserSpec extends FirrtlFlatSpec {
     ) ++ PrimOps.listing
   }
 
+  // ********** FIRRTL version number **********
+  "Version 1.1.0" should "be accepted" in {
+    val input = """
+                  |FIRRTL version 1.1.0
+                  |circuit Test :
+                  |  module Test :
+                  |    input in : UInt<1>
+                  |    in <= UInt(0)
+      """.stripMargin
+    val c = firrtl.Parser.parse(input)
+    firrtl.Parser.parse(c.serialize)
+  }
+
+  "Version 1.1.1" should "be accepted" in {
+    val input = """
+                  |FIRRTL version 1.1.1
+                  |circuit Test :
+                  |  module Test :
+                  |    input in : UInt<1>
+                  |    in <= UInt(0)
+      """.stripMargin
+    val c = firrtl.Parser.parse(input)
+    firrtl.Parser.parse(c.serialize)
+  }
+
+  "No version" should "be accepted" in {
+    val input = """
+                  |circuit Test :
+                  |  module Test :
+                  |    input in : { 0 : { 0 : { 0 : UInt<32>, flip 1 : UInt<32> } } }
+                  |    in.0.0.1 <= in.0.0.0
+      """.stripMargin
+    val c = firrtl.Parser.parse(input)
+    firrtl.Parser.parse(c.serialize)
+  }
+
+  an[UnsupportedVersionException] should be thrownBy {
+    val input = """
+                  |FIRRTL version 1.2.0
+                  |circuit Test :
+                  |  module Test :
+                  |    input in : UInt<1>
+                  |    in <= UInt(0)
+      """.stripMargin
+    firrtl.Parser.parse(input)
+  }
+
+  an[UnsupportedVersionException] should be thrownBy {
+    val input = """
+                  |FIRRTL version 2.0.0
+                  |crcuit Test :
+                  |  module Test @@#!# :
+                  |    input in1 : UInt<2>
+                  |    input in2 : UInt<3>
+                  |    output out : UInt<4>
+                  |    out[1:0] <= in1
+                  |    out[3:2] <= in2[1:0]
+      """.stripMargin
+    firrtl.Parser.parse(input)
+  }
+
   // ********** Memories **********
   "Memories" should "allow arbitrary ordering of fields" in {
     val fields = MemTests.fieldsToSeq(MemTests.fields)

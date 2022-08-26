@@ -29,7 +29,16 @@ import firrtl.LexerHelper;
 
 // Does there have to be at least one module?
 circuit
-  : 'circuit' id ':' info? INDENT module* DEDENT EOF
+  : version? NEWLINE* 'circuit' id ':' info? INDENT module* DEDENT EOF
+  ;
+
+version
+  : 'FIRRTL' 'version' semver NEWLINE
+  ;
+
+// Due to lexer problems, something like 1.1.0 is lexed as DoubleLit '.' UnsignedInt
+semver
+  : DoubleLit '.' UnsignedInt
   ;
 
 module

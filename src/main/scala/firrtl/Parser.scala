@@ -17,6 +17,7 @@ case class ParameterRedefinedException(message: String) extends ParserException(
 case class InvalidStringLitException(message: String) extends ParserException(message)
 case class InvalidEscapeCharException(message: String) extends ParserException(message)
 case class SyntaxErrorsException(message: String) extends ParserException(message)
+case class UnsupportedVersionException(message: String) extends ParserException(message)
 
 object Parser extends LazyLogging {
 
