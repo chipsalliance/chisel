@@ -254,14 +254,14 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
   def toPrintable: Printable = {
     implicit val sourceInfo = UnlocatableSourceInfo
     implicit val compileOptions = ExplicitCompileOptions.Strict
-    val allNamed = factory.allNames.zip(factory.all)
-    val nameSize = allNamed.map(_._1.length).max
-    val allNamedPadded = allNamed.map { case (name, value) => name.padTo(nameSize, ' ') -> value }
+    val allNames = factory.allNames.zip(factory.all)
+    val nameSize = allNames.map(_._1.length).max
+    val allNamesPadded = allNames.map { case (name, value) => name.padTo(nameSize, ' ') -> value }
 
     val result = Wire(Vec(nameSize, UInt(8.W))).suggestName("EnumRecord")
     result.foreach(_ := '?'.toChar.U)
 
-    for ((name, value) <- allNamedPadded) {
+    for ((name, value) <- allNamesPadded) {
       when(this === value) {
         for ((r, c) <- result.zip(name)) {
           r := c.toChar.U
