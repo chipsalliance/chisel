@@ -141,7 +141,7 @@ object ChiselStage {
     }
 
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), NoRunFirrtlCompilerAnnotation))
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation))
       .collectFirst {
         case ChiselCircuitAnnotation(a) => a
       }

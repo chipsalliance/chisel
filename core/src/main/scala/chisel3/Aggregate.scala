@@ -16,6 +16,7 @@ import chisel3.internal.sourceinfo._
 
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
+import os.FileType
 
 class AliasedAggregateFieldException(message: String) extends ChiselException(message)
 
@@ -275,9 +276,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * @group Connect
     */
   def <>(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    if (this.length != that.length) {
-      Builder.error("Vec and Seq being bulk connected have different lengths!")
-    }
+    if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being bulk connected have different lengths!")
     for ((a, b) <- this.zip(that))
       a <> b
   }
@@ -295,35 +294,28 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   def <>(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit =
     this.bulkConnect(that.asInstanceOf[Data])
 
-  /** Bi-directional connection from a producer to consumer.
-    *
-    * This version works for connecting to results of e.g. Vec.map.
-    *
-    * @note The length of this Vec must match the length of the input Seq
-    *
-    * @group Connect
-    */
-  def :<>=(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    require(
-      this.length == that.length,
-      s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}"
-    )
-    for ((a, b) <- this.zip(that))
-      a :<>= b
-  }
 
-  /** Bi-directional connection from a producer to consumer.
-    *
-    * This version only exists to disambiguate from the `:<>= Seq` and `:<>= Data`,
-    * since Vec inherits both Seq and Data.
-    *
-    * The length of `this` Vec and `that` Vec must match
-    *
-    * @group Connect
-    */
-  def :<>=(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    this.directionalBulkConnect(that.asInstanceOf[Data])
-  }
+  // TODO: I think we don't need this duplicate definitions because dataview enables viewing a Seq -> Vec, so we can just support connections with Data
+  //def :<=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+  //  if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being connected have different lengths!")
+  //  for ((a, b) <- this.zip(that)) { a :<= b }
+  //}
+  //def :<=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = super.:<=(that) // Method duplication to avoid Scala confusion as Vec extends Seq
+  //def :>=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+  //  if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being connected have different lengths!")
+  //  for ((a, b) <- this.zip(that)) { a :>= b }
+  //}
+  //def :>=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = super.:>=(that) // Method duplication to avoid Scala confusion as Vec extends Seq
+  //def :<>=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+  //  if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being connected have different lengths!")
+  //  for ((a, b) <- this.zip(that)) { a :<>= b }
+  //}
+  //def :<>=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = super.:<>=(that) // Method duplication to avoid Scala confusion as Vec extends Seq
+  //def :#=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+  //  if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being connected have different lengths!")
+  //  for ((a, b) <- this.zip(that)) { a :#= b }
+  //}
+  //def :#=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = super.:#=(that) // Method duplication to avoid Scala confusion as Vec extends Seq
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *

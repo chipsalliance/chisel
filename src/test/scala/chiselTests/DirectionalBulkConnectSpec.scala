@@ -47,6 +47,20 @@ class CrossDirectionalBulkConnectsWithWires(inType: Data, outType: Data, nTmps: 
   }
 }
 
+class CrossDirectionalMonoConnectsWithWires(inType: Data, outType: Data, nTmps: Int) extends Module {
+  val io = IO(new Bundle {
+    val in = Flipped(inType)
+    val out = Output(outType) // no clonetype, no Aligned (yet)
+  })
+  require(nTmps > 0)
+  val wiresIn = Seq.fill(nTmps)(Wire(inType))
+  val wiresOut = Seq.fill(nTmps)(Wire(outType))
+  (Seq(io.out) ++ wiresOut ++ wiresIn).zip(wiresOut ++ wiresIn :+ io.in).foreach {
+    case (l, r) =>
+      l :#= r
+  }
+}
+
 class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
 
   // (D)irectional Bulk Connect tests
@@ -185,6 +199,19 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
     intercept[ChiselException] {
       ChiselStage.elaborate { new ConnectFieldMismatchModule() }
     }
+  }
+
+  property(
+    "(D.m) :#= is the same as chisel3.:=, in that fields must match and all consumer fields are written to, regardless of flippedness"
+  ) {
+    // This is copied from CompatibilitySpec but the := is replaced with :<>=
+    class Decoupled extends Bundle {
+      val bits = UInt(3.W)
+      val valid = Bool()
+      val ready = Flipped(Bool())
+    }
+    val out = ChiselStage.emitChirrtl { new CrossDirectionalMonoConnectsWithWires(new Decoupled, new Decoupled, 1) }
+    assert(out.contains("io.out <= io.in"))
   }
 
   property("(D.n) :<>= works with DataView to connect a bundle that is a subtype") {
