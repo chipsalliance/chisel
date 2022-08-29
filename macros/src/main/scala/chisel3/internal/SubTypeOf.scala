@@ -6,7 +6,7 @@ import scala.reflect.macros.blackbox.Context
 trait ChiselSubTypeOf[A, B]
 
 object ChiselSubTypeOf {
-  def genChiselSubTypeOf[A : c.WeakTypeTag, B : c.WeakTypeTag](c: Context): c.Tree = {
+  def genChiselSubTypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context): c.Tree = {
     import c.universe._
 
     def subtypeOf(a: Type, b: Type): Boolean = {
@@ -40,7 +40,11 @@ object ChiselSubTypeOf {
     val empty = q""
 
     if (!subtypeOf(ta.tpe, tb.tpe)) {
-      c.error(empty.pos, s"${tb.tpe} is not a Chisel subset type of ${ta.tpe}")
+      c.error(
+        empty.pos,
+        s"${ta.tpe} is not a Chisel subtype of ${tb.tpe}. Did you mean .viewAs[${tb.tpe}]? " +
+          "Please see https://www.chisel-lang.org/chisel3/docs/cookbooks/dataview"
+      )
     }
 
     return empty

@@ -195,9 +195,9 @@ class DataViewSpec extends ChiselFlatSpec {
     }
 
     class MyModule extends Module {
-      val io = IO(new Bundle{
+      val io = IO(new Bundle {
         val a = Input(new A)
-        val b = Output(new B) 
+        val b = Output(new B)
         val c = Output(new C)
       })
 
