@@ -16,7 +16,6 @@ import chisel3.internal.sourceinfo._
 
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
-import os.FileType
 
 class AliasedAggregateFieldException(message: String) extends ChiselException(message)
 

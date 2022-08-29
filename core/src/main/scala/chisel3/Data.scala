@@ -666,96 +666,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       this.firrtlPartialConnect(that)
     }
   }
-  // Used by :<>= for child elements to switch directionality
-  private def directionalBulkConnectDescend(
-    that: Data
-  )(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions
-  ): Unit = {
-    println(s"SpecifiedDirectionOf ${this} is ${DataMirror.specifiedDirectionOf(this)}")
-    DataMirror.specifiedDirectionOf(this) match {
-      case SpecifiedDirection.Unspecified => this.directionalBulkConnect(that)
-      case SpecifiedDirection.Output      => this.directionalBulkConnect(that);
-      case SpecifiedDirection.Input       => that.directionalBulkConnect(this)
-      case SpecifiedDirection.Flip        => that.directionalBulkConnect(this)
-    }
-  }
-
-  private[chisel3] def directionalBulkConnect(
-    that: Data
-  )(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions
-  ): Unit = {
-    requireIsHardware(this, s"LHS (sink) data to be bulk-connected")
-    requireIsHardware(that, s"RHS (source) data to be bulk-connected")
-    (this.topBinding, that.topBinding) match {
-      case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
-      // DontCare cannot be a sink (LHS)
-      case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
-      case _ => // fine
-    }
-
-    import chisel3.experimental.dataview.{isView, reifySingleData, reifyToAggregate}
-
-    // Handle a DataView -- breaking out fields into sub-connects
-    if (isView(this) || isView(that)) {
-      val leftReified:  Option[Data] = if (isView(this)) reifySingleData(this) else Some(this)
-      val rightReified: Option[Data] = if (isView(that)) reifySingleData(that) else Some(that)
-
-      if (leftReified.isEmpty || rightReified.isEmpty) {
-        // We have an aggregate and can recurse into the elements.
-        val left = this.asInstanceOf[Record]
-        val right = that.asInstanceOf[Record]
-        val hright = HashMap(right.elements.toList: _*)
-        left.elements.foreach {
-          case (key, vleft) =>
-            require(hright.contains(key), s"Attempt to assign ${this} :<>= ${that}, with missing source element ${key}")
-            println(s"Calling ${vleft}.directionalBulkConenctDescent(${hright(key)}")
-            vleft.directionalBulkConnectDescend(hright(key))
-        }
-        hright --= left.elements.keys
-        require(
-          hright.isEmpty,
-          s"Attempt to assign ${this} :<>= ${that}, with extra source elements ${hright.keys.mkString(",")}"
-        )
-      } else {
-        try {
-          BiConnect.canFirrtlConnectData(
-            leftReified.get,
-            rightReified.get,
-            sourceInfo,
-            connectCompileOptions,
-            Builder.referenceUserModule,
-            throwIfFalse = true
-          )
-        } catch {
-          case BiConnectException(message) =>
-            Builder.error(
-              s"Cannot issue a directional bulk connect:\n${leftReified.get} :<>= ${rightReified.get}\nbecause:\n${message}"
-            )
-        }
-        leftReified.get.firrtlConnect(rightReified.get)
-      }
-    } else {
-
-      try {
-        BiConnect.canFirrtlConnectData(
-          this,
-          that,
-          sourceInfo,
-          connectCompileOptions,
-          Builder.referenceUserModule,
-          throwIfFalse = true
-        )
-      } catch {
-        case BiConnectException(message) =>
-          Builder.error(s"Cannot issue a directional bulk connect:\n${this} :<>= ${that}\nbecause:\n${message}")
-      }
-      this.firrtlConnect(that)
-    }
-  }
 
   /** Whether this Data has the same model ("data type") as that Data.
     * Data subtypes should overload this with checks against their own type.
@@ -896,7 +806,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
     }
   }
-
 
   def isLit: Boolean = litOption.isDefined
 
