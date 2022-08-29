@@ -45,6 +45,28 @@ object PopCount extends PopCount$Intf {
   protected def _applyImpl(in: Bits)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(
     (0 until in.getWidth).map(in(_))
   )
+
+  /** a threshold PopCount which has optimization to 0,1,2.
+    * @param n the threshold which will be counted
+    * @param x UInt need to be counted
+    * @return true.B when x has more then n set bits.
+    */
+  def atLeast(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): UInt = {
+    def two(x: UInt): (Bool, Bool) = x.getWidth match {
+      case 1 => (x.asBool, false.B)
+      case _ =>
+        val half = x.getWidth / 2
+        val (leftOne, leftTwo) = two(x(half - 1, 0))
+        val (rightOne, rightTwo) = two(x(x.getWidth - 1, half))
+        (leftOne || rightOne, leftTwo || rightTwo || (leftOne && rightOne))
+    }
+    n match {
+      case 0 => true.B
+      case 1 => x.orR
+      case 2 => two(x)._2
+      case 3 => PopCount(x) >= n.U
+    }
+  }
 }
 
 /** Create repetitions of the input using a tree fanout topology.
