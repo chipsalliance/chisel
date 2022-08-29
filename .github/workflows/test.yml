@@ -19,6 +19,7 @@ jobs:
         jvm: ["adopt@1.8"]
         scala: ["2.13.6", "2.12.16"]
         espresso: ["2.4"]
+        circt: ["sifive/1/14/0"]
     runs-on: ${{ matrix.system }}
 
     steps:
@@ -45,7 +46,9 @@ jobs:
       - name: Install CIRCT
         run: |
           mkdir usr
-          wget https://github.com/llvm/circt/releases/download/sifive%2F1%2F11%2F0/circt-bin-ubuntu-20.04.tar.gz -O - | tar -zx -C usr/
+          # Escape version forward slashes for use in URL
+          VERSION=$(echo ${{ matrix.circt }} | sed 's|/|%2F|g')
+          wget https://github.com/llvm/circt/releases/download/${VERSION}/circt-bin-ubuntu-20.04.tar.gz -O - | tar -zx -C usr/
           echo "$(pwd)/usr/bin" >> $GITHUB_PATH
       - name: Cache Scala
         uses: coursier/cache-action@v5
