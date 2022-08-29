@@ -177,6 +177,39 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("fooOut.foo <= barIn.foo")
   }
 
+  it should "support viewing structural super types" in {
+    class A extends Bundle {
+      val x = UInt(3.W)
+      val y = UInt(3.W)
+      val z = UInt(3.W)
+    }
+
+    class B extends Bundle {
+      val x = UInt(3.W)
+      val y = UInt(3.W)
+    }
+
+    class C extends Bundle {
+      val y = UInt(3.W)
+      val z = UInt(3.W)
+    }
+
+    class MyModule extends Module {
+      val io = IO(new Bundle{
+        val a = Input(new A)
+        val b = Output(new B) 
+        val c = Output(new C)
+      })
+
+      io.b <> io.a.viewAsSupertype(new B)
+      io.c <> io.a.viewAsSupertype(new C)
+    }
+
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("io.b.x <= io.a.x")
+    chirrtl should include("io.c.z <= io.a.z")
+  }
+
   it should "error if viewing a parent Bundle as a child Bundle type" in {
     assertTypeError("""
       class Foo extends Bundle {
