@@ -897,93 +897,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  /** The "aligned connection operator" between a producer and consumer.
-    * 
-    * For `consumer :<= producer`, each of consumer's leaf fields WHO ARE ALIGNED WITH RESPECT TO CONSUMER are driven from the corresponding producer leaf field
-    * All producer's leaf/branch alignments (with respect to producer) do not influence the connection.
-    *
-    * The following restrictions apply:
-    *  - The Chisel type of consumer and producer must be the "same shape" recursively:
-    *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
-    *    - All vector types are the same length
-    *    - All bundle types have the same field names, but the flips of fields can be different between producer and consumer
-    *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
-    * 
-    * @param this the consumer; the left-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connection ("aligned connection")
-    * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
-    * @param sourceInfo
-    */
-  def :<=(producer: => Data)(implicit sourceInfo: SourceInfo): Unit = {
-    prefix(this) {
-      DirectionalConnectionFunctions.assign(this, producer, DirectionalConnectionFunctions.ConsumerIsActive)
-    }
-  }
-
-  /** The "flipped connection operator" between a producer and consumer.
-    * 
-    * For `consumer :>= producer`, each of producers's leaf fields WHO ARE FLIPPED WITH RESPECT TO PRODUCER are driven from the corresponding consumer leaf field
-    * All consumer's leaf/branch alignments (with respect to consumer) do not influence the connection.
-    *
-    * The following restrictions apply:
-    *  - The Chisel type of consumer and producer must be the "same shape":
-    *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
-    *    - All vector types are the same length
-    *    - All bundle types have the same field names, but the flips of fields can be different
-    *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
-    * 
-    * TODO: Example: Decoupled, move to Typeclass, talk about width truncation
-    *
-    * @param this the consumer; the left-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("flipped connection")
-    * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
-    * @param sourceInfo
-    */
-  def :>=(producer: => Data)(implicit sourceInfo: SourceInfo): Unit = {
-    prefix(this) {
-      DirectionalConnectionFunctions.assign(this, producer, DirectionalConnectionFunctions.ProducerIsActive)
-    }
-  }
-
-  /** The "bi-direction connection operator", aka the "tur-duck-en operator"
-    * 
-    * For `consumer :<>= producer`, both producer and consumer leafs could be driving or be driven-to:
-    *   - consumer's fields aligned w.r.t. consumer will be driven by corresponding fields of producer
-    *   - producer's fields flipped w.r.t. producer will be driven by corresponding fields of consumer
-    * 
-    * Identical to calling both :<= and :>= in sequence (order is irrelevant), e.g.:
-    *   consumer :<= producer
-    *   consumer :>= producer
-    * 
-    * @note This may have surprising-to-new-users behavior if the flips of consumer and producer do not match. Save yourself the headache and internalize what
-    * :<= and :>= do, and then you'll be able to reason your way to understanding what's happening :)
-    *
-    * @param this the left-hand-side of the connection (read above comment for more info)
-    * @param producer the right-hand-side of the connection (read above comment for more info)
-    * @param sourceInfo
-    */
-  final def :<>=(producer: => Data)(implicit sourceInfo: SourceInfo): Unit = {
-    this.:<=(producer)
-    this.:>=(producer)
-  }
-
-  /** The "mono-direction connection operator", aka the "coercion operator"
-    * 
-    * For `consumer :#= producer`, all leaf fields of consumer (regardless of relative flip) are driven by the corresponding leaf fields of producer (regardless of relative flip)
-    * 
-    * Identical to calling :<= and :>=, but swapping consumer/producer for :>=: (order is irrelevant), e.g.:
-    *   consumer :<= producer
-    *   producer :>= consumer
-    * 
-    * @note Functionally equivalent to chisel3.:=, but different than Chisel.:=
-    *
-    * @param this the left-hand-side of the connection, all fields will be driven-to
-    * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
-    * @param sourceInfo
-    */
-  final def :#=(producer: => Data)(implicit sourceInfo: SourceInfo): Unit = {
-    this.:<=(producer)
-    producer.:>=(this)
-  }
-
 
   def isLit: Boolean = litOption.isDefined
 
@@ -1072,6 +985,126 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Default pretty printing */
   def toPrintable: Printable
+}
+
+object Data {
+
+  /** Connectable Typeclass defines the following operators on all subclasses of Data: :<=, :>=, :<>=, :#=
+    *
+    * @param consumer the left-hand-side of the connection
+    */
+  implicit class ConnectableData[T <: Data](consumer: T) {
+
+    /** The "aligned connection operator" between a producer and consumer.
+      * 
+      * For `consumer :<= producer`, each of consumer's leaf fields WHO ARE ALIGNED WITH RESPECT TO CONSUMER are driven from the corresponding producer leaf field
+      * All producer's leaf/branch alignments (with respect to producer) do not influence the connection.
+      *
+      * The following restrictions apply:
+      *  - The Chisel type of consumer and producer must be the "same shape" recursively:
+      *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
+      *    - All vector types are the same length
+      *    - All bundle types have the same field names, but the flips of fields can be different between producer and consumer
+      *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
+      * 
+      * @note Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
+      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
+      * 
+      * @param consumer the left-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connection ("aligned connection")
+      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
+      * @param sourceInfo
+      */
+    final def :<=(producer: => Data)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ConsumerIsActive)
+      }
+    }
+
+    /** The "flipped connection operator" between a producer and consumer.
+      * 
+      * For `consumer :>= producer`, each of producers's leaf fields WHO ARE FLIPPED WITH RESPECT TO PRODUCER are driven from the corresponding consumer leaf field
+      * All consumer's leaf/branch alignments (with respect to consumer) do not influence the connection.
+      *
+      * The following restrictions apply:
+      *  - The Chisel type of consumer and producer must be the "same shape":
+      *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
+      *    - All vector types are the same length
+      *    - All bundle types have the same field names, but the flips of fields can be different
+      *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
+      * 
+      * @note Connecting two [[Decoupled]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
+      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
+      * 
+      * @param consumer the left-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("flipped connection")
+      * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
+      * @param sourceInfo
+      */
+    final def :>=(producer: => Data)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ProducerIsActive)
+      }
+    }
+
+    /** The "bi-direction connection operator", aka the "tur-duck-en operator"
+      * 
+      * For `consumer :<>= producer`, both producer and consumer leafs could be driving or be driven-to:
+      *   - consumer's fields aligned w.r.t. consumer will be driven by corresponding fields of producer
+      *   - producer's fields flipped w.r.t. producer will be driven by corresponding fields of consumer
+      * 
+      * Identical to calling both :<= and :>= in sequence (order is irrelevant), e.g.:
+      *   consumer :<= producer
+      *   consumer :>= producer
+      * 
+      * @note Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
+      * @note This may have surprising-to-new-users behavior if the flips of consumer and producer do not match. Save yourself the headache and internalize what
+      * :<= and :>= do, and then you'll be able to reason your way to understanding what's happening :)
+      * @note If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
+      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
+      *
+      * @param consumer the left-hand-side of the connection (read above comment for more info)
+      * @param producer the right-hand-side of the connection (read above comment for more info)
+      * @param sourceInfo
+      */
+    final def :<>=(producer: => Data)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        val canFirrtlConnect = try {
+          BiConnect.canFirrtlConnectData(consumer, producer, sourceInfo, DirectionalConnectionFunctions.compileOptions, Builder.referenceUserModule)
+        } catch {
+          // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
+          //  when calling DirectionConnectionFunctions.assign. Hence, we can just default to false to take the non-optimized emission path
+          case e: Throwable => false
+        }
+        if(canFirrtlConnect) {
+          consumer.firrtlConnect(producer)
+        } else {
+          // cannot call :<= and :>= directly because otherwise prefix is called twice
+          DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ProducerIsActive)
+          DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ConsumerIsActive)
+        }
+      }
+    }
+
+    /** The "mono-direction connection operator", aka the "coercion operator"
+      * 
+      * For `consumer :#= producer`, all leaf fields of consumer (regardless of relative flip) are driven by the corresponding leaf fields of producer (regardless of relative flip)
+      * 
+      * Identical to calling :<= and :>=, but swapping consumer/producer for :>=: (order is irrelevant), e.g.:
+      *   consumer :<= producer
+      *   producer :>= consumer
+      * 
+      * @note Connecting two [[Decoupled]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
+      * @note Functionally equivalent to chisel3.:=, but different than Chisel.:=
+      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
+      *
+      * @param consumer the left-hand-side of the connection, all fields will be driven-to
+      * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
+      * @param sourceInfo
+      */
+    final def :#=(producer: => Data)(implicit sourceInfo: SourceInfo): Unit = {
+      consumer.:<=(producer)
+      producer.:>=(consumer)
+    }
+  }
 }
 
 trait WireFactory {
@@ -1346,34 +1379,43 @@ private[chisel3] object DirectionalConnectionFunctions {
       */
     def recursiveAssign(consumer: Data, producer: Data, orientation: RelativeOrientation): Unit = {
       (consumer, producer) match {
-        case (vc: Vec[_], vp: Vec[_])                             => {
-          require(vc.size == vp.size, s"Assignment between vectors of unequal length (${vc.size} != ${vp.size})")
-          (vc.zip(vp)).foreach { case (ec, ep) => recursiveAssign(ec, ep, orientation) }
+        case (vc: Vec[_], vp: Vec[_]) => {
+          if(vc.size != vp.size) {
+            Builder.error(s"Assignment between vectors of unequal length (${vc.size} != ${vp.size})")
+          } else {
+            (vc.zip(vp)).foreach { case (ec, ep) => recursiveAssign(ec, ep, orientation) }
+          }
         }
-        case (rc: Record, rp: Record)                             => {
-          require((rc.elements.keySet == rp.elements.keySet), s"Assignment between ${consumer} and ${producer} must have identical fields")
-          val active = if (activeSide == ProducerIsActive) producer else consumer
-          active.asInstanceOf[Record].elements.foreach {
-            case (key, ea) =>
-              val elementOrientation = deriveOrientation(ea, orientation)
-              val ec = rc.elements(key)
-              val ep = rp.elements(key)
-              recursiveAssign(ec, ep, elementOrientation)
+        case (rc: Record, rp: Record) => {
+          if(!rc.elements.keySet.sameElements(rp.elements.keySet)) {
+            Builder.error(s"Assignment between ${consumer} and ${producer} must have identical fields")
+          } else {
+            val active = if (activeSide == ProducerIsActive) producer else consumer
+            active.asInstanceOf[Record].elements.foreach {
+              case (key, ea) =>
+                val elementOrientation = deriveOrientation(ea, orientation)
+                val ec = rc.elements(key)
+                val ep = rp.elements(key)
+                recursiveAssign(ec, ep, elementOrientation)
+            }
           }
         }
         // Active side must be vc due to earlier requirement
-        case (vc: Vec[_], DontCare)                               => vc.foreach { case ec => recursiveAssign(ec, DontCare, orientation) }
+        case (vc: Vec[_], DontCare) => vc.foreach { case ec => recursiveAssign(ec, DontCare, orientation) }
         // Active side must be vp due to earlier requirement
-        case (DontCare, vp: Vec[_])                               => vp.foreach { case ep => recursiveAssign(DontCare, ep, orientation) }
+        case (DontCare, vp: Vec[_]) => vp.foreach { case ep => recursiveAssign(DontCare, ep, orientation) }
         // Active side must be rc due to earlier requirement
-        case (rc: Record, DontCare)                               => rc.elements.foreach { case (_, ec) => recursiveAssign(ec, DontCare, deriveOrientation(ec, orientation)) }
+        case (rc: Record, DontCare) => rc.elements.foreach { case (_, ec) => recursiveAssign(ec, DontCare, deriveOrientation(ec, orientation)) }
         // Active side must be rp due to earlier requirement
-        case (DontCare, rp: Record)                               => rp.elements.foreach { case (_, ep) => recursiveAssign(DontCare, ep, deriveOrientation(ep, orientation)) }
-        case (ac: Analog, ap: Analog)                             => assignAnalog(ac, ap)
-        case (ac: Analog, DontCare)                               => assignAnalog(ac, DontCare)
-        case (DontCare, ap: Analog)                               => assignAnalog(ap, DontCare)
+        case (DontCare, rp: Record) => rp.elements.foreach { case (_, ep) => recursiveAssign(DontCare, ep, deriveOrientation(ep, orientation)) }
+
+        // Analog cases
+        case (ac: Analog, ap: Analog) => assignAnalog(ac, ap)
+        case (ac: Analog, DontCare)   => assignAnalog(ac, DontCare)
+        case (DontCare, ap: Analog)   => assignAnalog(ap, DontCare)
+
         // Only non-Analog Ground types are left
-        case _                                                    => (orientation, activeSide) match {
+        case _ => (orientation, activeSide) match {
           case (AlignedWithRoot, ConsumerIsActive) => consumer := producer // assign leaf fields (UInt/etc)
           case (FlippedWithRoot, ProducerIsActive) => producer := consumer // assign leaf fields (UInt/etc)
           case _ =>
@@ -1390,12 +1432,12 @@ private[chisel3] object DirectionalConnectionFunctions {
     try {
       as.foreach { a => BiConnect.markAnalogConnected(sourceInfo, a, currentModule) }
     } catch { // convert attach exceptions to BiConnectExceptions
-      case experimental.attach.AttachException(message) => throw BiConnectException(message)
+      case experimental.attach.AttachException(message) => Builder.error(message)
     }
   }
 
   def assignAnalog(a: Analog, b: Data)(implicit sourceInfo: SourceInfo): Unit = b match {
-    case (ba: Analog)                             => {
+    case (ba: Analog) => {
       checkAnalog(a, ba)
       val currentModule = Builder.currentModule.get.asInstanceOf[RawModule]
       experimental.attach.impl(Seq(a, ba), currentModule)(sourceInfo)
@@ -1405,80 +1447,4 @@ private[chisel3] object DirectionalConnectionFunctions {
       pushCommand(DefInvalid(sourceInfo, a.lref))
     }
   }
-  /*
-
-  // Used by :<= for child elements to switch directionality
-  def descendL(consumer: Data, producer: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    DataMirror.specifiedDirectionOf(consumer) match {
-      case SpecifiedDirection.Unspecified => assignL(consumer, producer)
-      case SpecifiedDirection.Output      => assignL(consumer, producer); assignR(producer, consumer)
-      case SpecifiedDirection.Input       => ()
-      case SpecifiedDirection.Flip        => assignR(producer, consumer)
-    }
-  }
-
-  // Used by :>= for child elements to switch directionality
-  def descendR(consumer: Data, producer: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    DataMirror.specifiedDirectionOf(producer) match {
-      case SpecifiedDirection.Unspecified => assignR(consumer, producer)
-      case SpecifiedDirection.Output      => ()
-      case SpecifiedDirection.Input       => assignL(producer, consumer); assignR(consumer, producer)
-      case SpecifiedDirection.Flip        => assignL(producer, consumer)
-    }
-  }
-
-  // The default implementation of 'consumer :<= producer'
-  // Assign all output fields of consumer from producer
-  def assignL(consumer: Data, producer: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    (consumer, producer) match {
-      case (vx: Vec[_], vy: Vec[_])                             => {
-        require(vx.size == vy.size, s"Assignment between vectors of unequal length (${vx.size} != ${vy.size})")
-        (vx.zip(vy)).foreach { case (ex, ey) => descendL(ex, ey) }
-      }
-      case (rx: Record, ry: Record)                             => {
-        val hy = HashMap(ry.elements.toList: _*)
-        rx.elements.foreach { case (key, vx) =>
-          require(hy.contains(key), s"Attempt to assign ${consumer} :<= ${producer}, where RHS is missing field ${key}")
-          descendL(vx, hy(key))
-        }
-        hy --= rx.elements.keys
-        require(hy.isEmpty, s"Attempt to assign ${consumer} :<= ${producer}, where RHS has excess field ${hy.last._1}")
-      }
-      case (vx: Vec[_], DontCare)                               => vx.foreach { case ex => descendL(ex, DontCare) }
-      case (rx: Record, DontCare)                               => rx.elements.foreach { case (_, dx) => descendL(dx, DontCare) }
-      // We have to handle Analog specially here. If Analog has already been connected, we need to error, rather than override the analog connection
-      case (ax: Analog, ay: Analog)                             => assignAnalog(ax, ay)
-      case (ax: Analog, DontCare)                               => assignAnalog(ax, DontCare)
-      case (DontCare, ay: Analog)                               => assignAnalog(ay, DontCare)
-      case _                                                    => consumer := producer // assign leaf fields (UInt/etc)
-    }
-  }
-
-  // The default implementation of 'consumer :>= producer'
-  // Assign all fields of producer who are flipped relative to producer, from consumer
-  def assignR(consumer: Data, producer: Data)(implicit sourceInfo: SourceInfo) = {
-    (consumer, producer) match {
-      case (vx: Vec[_], vy: Vec[_])                             => {
-        require(vx.size == vy.size, s"Assignment between vectors of unequal length (${vx.size} != ${vy.size})")
-        (vx.zip(vy)).foreach { case (ex, ey) => descendR(ex, ey) }
-      }
-      case (rx: Record, ry: Record)                             => {
-        val hx = HashMap(rx.elements.toList: _*)
-        ry.elements.foreach { case (key, vy) =>
-          require(hx.contains(key), s"Attempt to assign ${consumer} :>= ${producer}, where RHS has excess field ${key}")
-          descendR(hx(key), vy)
-        }
-        hx --= ry.elements.keys
-        require(hx.isEmpty, s"Attempt to assign ${consumer} :>= ${producer}, where RHS is missing field ${hx.last._1}")
-      }
-      case (DontCare, vy: Vec[_])                               => vy.foreach { case ey => descendR(DontCare, ey) }
-      case (DontCare, ry: Record)                               => ry.elements.foreach { case (_, dy) => descendR(DontCare, dy) }
-      case (ax: Analog, ay: Analog)                             => assignAnalog(ax, ay)
-      case (ax: Analog, DontCare)                               => assignAnalog(ax, DontCare)
-      case (DontCare, ay: Analog)                               => assignAnalog(ay, DontCare)
-      case _                                                    => // no-op for leaf fields
-    }
-  }
-
-  */
 }

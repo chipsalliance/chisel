@@ -202,7 +202,7 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
   }
 
   property(
-    "(D.m) :#= is the same as chisel3.:=, in that fields must match and all consumer fields are written to, regardless of flippedness"
+    "(D.n) :#= is the same as chisel3.:=, in that fields must match and all consumer fields are written to, regardless of flippedness"
   ) {
     // This is copied from CompatibilitySpec but the := is replaced with :<>=
     class Decoupled extends Bundle {
@@ -211,10 +211,14 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
       val ready = Flipped(Bool())
     }
     val out = ChiselStage.emitChirrtl { new CrossDirectionalMonoConnectsWithWires(new Decoupled, new Decoupled, 1) }
-    assert(out.contains("io.out <= io.in"))
+    assert(out.contains(
+      "wiresIn_0.bits <= io.in.bits",
+      "wiresIn_0.valid <= io.in.valid",
+      "wiresIn_0.ready <= io.in.ready",
+    ))
   }
 
-  property("(D.n) :<>= works with DataView to connect a bundle that is a subtype") {
+  property("(D.o) :<>= works with DataView to connect a bundle that is a subtype") {
     import chisel3.experimental.dataview._
 
     class SmallBundle extends Bundle {
@@ -253,7 +257,7 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
     assert(!out.contains("io.bar <- io.foo"))
 
   }
-  property("(D.o) :<>= works with DataView to connect a two Bundles with a common trait") {
+  property("(D.p) :<>= works with DataView to connect a two Bundles with a common trait") {
     import chisel3.experimental.dataview._
 
     class SmallBundle extends Bundle {
