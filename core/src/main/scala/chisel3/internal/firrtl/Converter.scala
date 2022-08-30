@@ -337,9 +337,8 @@ private[chisel3] object Converter {
       case SpecifiedDirection.Input | SpecifiedDirection.Output     => true
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => false
     }
-    val info = UnlocatableSourceInfo // Unfortunately there is no source locator for ports ATM
-    val tpe = extractType(port.id, clearDir, info)
-    fir.Port(fir.NoInfo, getRef(port.id, info).name, dir, tpe)
+    val tpe = extractType(port.id, clearDir, port.sourceInfo)
+    fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe)
   }
 
   def convert(component: Component): fir.DefModule = component match {

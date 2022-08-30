@@ -72,7 +72,7 @@ package experimental {
       // Ports are named in the same way as regular Modules
       namePorts()
 
-      val firrtlPorts = getModulePorts.map { port => Port(port, port.specifiedDirection) }
+      val firrtlPorts = getModulePorts.map { case (port, _) => Port(port, port.specifiedDirection) }
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
       _component
@@ -81,8 +81,8 @@ package experimental {
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
       implicit val sourceInfo = UnlocatableSourceInfo
 
-      for (x <- getModulePorts) {
-        pushCommand(DefInvalid(sourceInfo, x.ref))
+      for ((port, _) <- getModulePorts) {
+        pushCommand(DefInvalid(sourceInfo, port.ref))
       }
     }
   }
