@@ -2,8 +2,11 @@
 
 package chisel3
 
-import internal.{Builder, BiConnect, prefix}
+import chisel3.internal.{Builder, BiConnect, prefix}
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.{DataMirror, Analog}
 
 
 /** The default connection operators for Chisel hardware components */
