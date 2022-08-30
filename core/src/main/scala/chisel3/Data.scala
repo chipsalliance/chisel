@@ -786,7 +786,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     *
     * For chisel3._, this operator is mono-directioned; all sub-elements of `this` will be driven by sub-elements of `that`.
     *  - Equivalent to `this :#= that`
-    * 
+    *
     * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
     *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
     *
@@ -802,7 +802,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     *
     * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
     *  - Complicated semantics, hard to write quickly, will likely be deprecated in the future
-    * 
+    *
     * For Chisel._, emits the FIRRTL.<- operator
     *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match
     *
