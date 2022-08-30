@@ -100,7 +100,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _circuit_=(target: Option[BaseModule]): Unit = {
     _circuitVar = target.getOrElse(null)
   }
-  private[chisel3] def getCircuit: Option[BaseModule] = Option(_circuit).orElse(_parent match {
+  private[chisel3] def getCircuit: Option[BaseModule] = _circuit.orElse(_parent match {
     case None =>
       this match {
         case b: BaseModule => Some(b)

@@ -8,7 +8,6 @@ import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
 import java.util.IdentityHashMap
 import chisel3.internal.{Builder, DynamicContext}
-import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.Definition
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
@@ -71,7 +70,7 @@ object Definition {
 /** Stores a [[Definition]] that is imported so that its Instances can be
   * compiled separately.
   */
-case class ImportDefinitionAnnotation[T <: BaseModule with IsInstantiable](
+case class ImportDefinitionAnnotation[T <: BaseModule](
   definition:      Definition[T],
   overrideDefName: Option[String] = None)
     extends NoTargetAnnotation

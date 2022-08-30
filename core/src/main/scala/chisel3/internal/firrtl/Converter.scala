@@ -349,7 +349,7 @@ private[chisel3] object Converter {
     case ctx @ DefModule(module, name, ports, cmds, Some(i)) =>
       val comps = module.myComponents match {
         case None =>
-          val dynamicContext = new chisel3.internal.DynamicContext(Nil, true)
+          val dynamicContext = new chisel3.internal.DynamicContext(Nil, true, false)
           // Add existing module names into the namespace. If injection logic instantiates new modules
           //  which would share the same name, they will get uniquified accordingly
           //moduleNames.foreach { n =>

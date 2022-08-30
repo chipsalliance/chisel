@@ -9,7 +9,6 @@ import java.util.IdentityHashMap
 
 import scala.language.experimental.macros
 import chisel3._
-import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
 import chisel3.internal.Builder
 import chisel3.internal.sourceinfo.{InstanceTransform, SourceInfo}
 import chisel3.experimental.{BaseModule, ExtModule}

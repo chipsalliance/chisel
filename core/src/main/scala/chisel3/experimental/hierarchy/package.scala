@@ -53,7 +53,7 @@ package object hierarchy {
       }
       def buildDefinition(proto: => V): ModuleDefinition[V] = {
         implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
-        val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError)
+        val dynamicContext = new DynamicContext(Nil, Builder.captureContext().throwOnFirstError, Builder.captureContext().warningsAsErrors)
         Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
         dynamicContext.inDefinition = true
         val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
