@@ -183,31 +183,68 @@ class DataViewSpec extends ChiselFlatSpec {
       val y = UInt(3.W)
       val z = UInt(3.W)
     }
-
     class B extends Bundle {
       val x = UInt(3.W)
       val y = UInt(3.W)
     }
-
     class C extends Bundle {
       val y = UInt(3.W)
       val z = UInt(3.W)
     }
-
     class MyModule extends Module {
       val io = IO(new Bundle {
         val a = Input(new A)
         val b = Output(new B)
         val c = Output(new C)
+        val inc = Input(new C)
+        val outa = Output(new A)
       })
-
       io.b <> io.a.viewAsSupertype(new B)
       io.c <> io.a.viewAsSupertype(new C)
+      io.outa.viewAsSupertype(new C) <> io.inc
     }
-
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     chirrtl should include("io.b.x <= io.a.x")
     chirrtl should include("io.c.z <= io.a.z")
+    chirrtl should include("io.outa.z <= io.inc.z")
+    chirrtl should include("io.outa.y <= io.inc.y")
+  }
+
+  it should "support viewing structural supertypes with bundles" in {
+    class Foo extends Bundle {
+      val y = UInt(3.W)
+    }
+    class A extends Bundle {
+      val foo = new Foo
+      val x = UInt(3.W)
+      val z = UInt(3.W)
+    }
+    class B extends Bundle {
+      val x = UInt(3.W)
+      val foo = new Foo
+    }
+    class C extends Bundle {
+      val foo = new Foo
+      val z = UInt(3.W)
+    }
+    class MyModule extends Module {
+      val io = IO(new Bundle {
+        val a = Input(new A)
+        val b = Output(new B)
+        val c = Output(new C)
+        val inc = Input(new C)
+        val outa = Output(new A)
+      })
+      io.b <> io.a.viewAsSupertype(new B)
+      io.c <> io.a.viewAsSupertype(new C)
+      io.outa.viewAsSupertype(new C) <> io.inc
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("io.b.x <= io.a.x")
+    chirrtl should include("io.c.z <= io.a.z")
+    chirrtl should include("io.outa.foo <= io.inc.foo")
+    chirrtl should include("io.b.foo <= io.a.foo")
+    chirrtl should include("io.c.foo <= io.a.foo")
   }
 
   it should "throw a type error for structural non-supertypes" in {
@@ -217,7 +254,6 @@ class DataViewSpec extends ChiselFlatSpec {
         val y = UInt(3.W)
         val z = UInt(3.W)
       }
-
       class B extends Bundle {
         val x = UInt(3.W)
         val y = UInt(3.W)
@@ -227,7 +263,6 @@ class DataViewSpec extends ChiselFlatSpec {
           val a = Input(new A)
           val b = Output(new B) 
         })
-
         io.a <> io.b.viewAsSupertype(new A)
       }
       """)

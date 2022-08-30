@@ -21,7 +21,7 @@ object ChiselSubTypeOf {
         if (bval.isPublic) {
           if (bval.isTerm && bval.asTerm.isGetter) {
             val aval = a.member(TermName(bval.name.toString()))
-            if (!subtypeOf(aval.info, bval.info)) {
+            if (aval.info != bval.info) {
               return false
             }
           } else if (!bval.isTerm) {
