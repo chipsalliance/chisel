@@ -274,7 +274,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     *
     * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
     *  - Complicated semantics, will likely be deprecated in the future
-    * 
+    *
     * For Chisel._, emits the FIRRTL.<- operator
     *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match
     *
@@ -282,7 +282,10 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * @param that the Seq to connect from
     */
   def <>(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being bulk connected have different lengths!")
+    if (this.length != that.length)
+      Builder.error(
+        s"Vec (size ${this.length}) and Seq (size ${that.length}) being bulk connected have different lengths!"
+      )
     for ((a, b) <- this.zip(that)) {
       a <> b
     }
@@ -292,7 +295,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     *
     * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
     *  - Complicated semantics, hard to write quickly, will likely be deprecated in the future
-    * 
+    *
     * For Chisel._, emits the FIRRTL.<- operator
     *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match
     *
@@ -307,7 +310,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     *
     * For chisel3._, this operator is mono-directioned; all sub-elements of `this` will be driven by sub-elements of `that`.
     *  - Equivalent to `this :#= that`
-    * 
+    *
     * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
     *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
     *
@@ -326,7 +329,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     *
     * For chisel3._, this operator is mono-directioned; all sub-elements of `this` will be driven by sub-elements of `that`.
     *  - Equivalent to `this :#= that`
-    * 
+    *
     * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
     *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
     *
