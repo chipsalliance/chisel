@@ -5,7 +5,7 @@ package chisel3.internal.firrtl
 import firrtl.{ir => fir}
 import chisel3._
 import chisel3.internal._
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
