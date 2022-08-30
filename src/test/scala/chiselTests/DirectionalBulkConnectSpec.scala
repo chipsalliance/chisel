@@ -194,7 +194,7 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
         val in = Input((new SmallBundle))
         val out = Output((new BigBundle))
       })
-      io.out :<>= io.in
+      (io.out: Data) :<>= (io.in: Data)
     }
     intercept[ChiselException] {
       ChiselStage.elaborate { new ConnectFieldMismatchModule() }
@@ -287,6 +287,22 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
     assert(out.contains("io.in.commonFlipped <= io.out.commonFlipped"))
     assert(!out.contains("io.out.b <= io.in.b"))
     assert(!out.contains("io.in.a  <= io.out.a"))
+  }
+
+  property("(D.q) :<>= works between Vec and Seq, as well as Vec and Vec") {
+    class ConnectVecSeqAndVecVec extends Module {
+      val a = IO(Vec(3, UInt(3.W)))
+      val b = IO(Vec(3, UInt(3.W)))
+      a :<>= Seq(0.U, 1.U, 2.U)
+      b :<>= VecInit(0.U, 1.U, 2.U)
+    }
+    val out = ChiselStage.emitChirrtl { new ConnectVecSeqAndVecVec() }
+    assert(out.contains("""a[0] <= UInt<1>("h0")"""))
+    assert(out.contains("""a[1] <= UInt<1>("h1")"""))
+    assert(out.contains("""a[2] <= UInt<2>("h2")"""))
+    assert(out.contains("""b[0] <= _WIRE[0]"""))
+    assert(out.contains("""b[1] <= _WIRE[1]"""))
+    assert(out.contains("""b[2] <= _WIRE[2]"""))
   }
 
 }

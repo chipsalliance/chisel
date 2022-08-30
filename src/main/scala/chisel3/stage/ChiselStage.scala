@@ -164,7 +164,7 @@ object ChiselStage {
     }
 
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen))
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen)))
       .collectFirst {
         case FirrtlCircuitAnnotation(a) => a
       }

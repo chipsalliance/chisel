@@ -294,28 +294,6 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     this.bulkConnect(that.asInstanceOf[Data])
 
 
-  // TODO: I think we don't need this duplicate definitions because dataview enables viewing a Seq -> Vec, so we can just support connections with Data
-  //def :<=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
-  //  if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being connected have different lengths!")
-  //  for ((a, b) <- this.zip(that)) { a :<= b }
-  //}
-  //def :<=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = super.:<=(that) // Method duplication to avoid Scala confusion as Vec extends Seq
-  //def :>=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
-  //  if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being connected have different lengths!")
-  //  for ((a, b) <- this.zip(that)) { a :>= b }
-  //}
-  //def :>=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = super.:>=(that) // Method duplication to avoid Scala confusion as Vec extends Seq
-  //def :<>=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
-  //  if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being connected have different lengths!")
-  //  for ((a, b) <- this.zip(that)) { a :<>= b }
-  //}
-  //def :<>=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = super.:<>=(that) // Method duplication to avoid Scala confusion as Vec extends Seq
-  //def :#=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
-  //  if (this.length != that.length) Builder.error(s"Vec (size ${this.length}) and Seq (size ${that.length}) being connected have different lengths!")
-  //  for ((a, b) <- this.zip(that)) { a :#= b }
-  //}
-  //def :#=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = super.:#=(that) // Method duplication to avoid Scala confusion as Vec extends Seq
-
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
     * @note the length of this Vec must match the length of the input Seq
