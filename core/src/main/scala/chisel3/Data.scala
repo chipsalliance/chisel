@@ -12,6 +12,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
+
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -634,7 +635,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
-      this.legacyConnect(that)
+      this.firrtlPartialConnect(that)
     }
   }
   private[chisel3] def bulkConnect(
@@ -663,7 +664,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
-      this.legacyConnect(that)
+      this.firrtlPartialConnect(that)
     }
   }
 
@@ -757,7 +758,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[chisel3] def width: Width
-  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def firrtlConnect(that:        Data)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
@@ -780,12 +782,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     clone
   }
 
-  /** Connect this $coll to that $coll mono-directionally and element-wise.
+  /** The "strong connect" operator.
     *
-    * This uses the [[MonoConnect]] algorithm.
+    * For chisel3._, this operator is mono-directioned; all sub-elements of `this` will be driven by sub-elements of `that`.
+    *  - Equivalent to `this :#= that`
+    * 
+    * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
+    *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
     *
-    * @param that the $coll to connect to
-    * @group Connect
+    * @param that the Data to connect from
     */
   final def :=(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
     prefix(this) {
@@ -793,12 +798,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  /** Connect this $coll to that $coll bi-directionally and element-wise.
+  /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
     *
-    * This uses the [[BiConnect]] algorithm.
+    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    *  - Complicated semantics, hard to write quickly, will likely be deprecated in the future
+    * 
+    * For Chisel._, emits the FIRRTL.<- operator
+    *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match
     *
-    * @param that the $coll to connect to
-    * @group Connect
+    * @param that the Data to connect from
     */
   final def <>(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
     prefix(this) {
@@ -896,6 +904,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 }
 
 object Data {
+
+  // Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data
+  implicit class ConnectableData[T <: Data](consumer: T) extends Connectable.ConnectableData[T](consumer)
+
+  // Provides :<>=, :<=, :>=, and :#= between a (consumer: Vec) and (producer: Seq)
+  implicit class ConnectableVec[T <: Data](consumer: Vec[T]) extends Connectable.ConnectableVec[T](consumer)
 
   /**
     * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
