@@ -247,6 +247,26 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("io.c.foo <= io.a.foo")
   }
 
+  it should "error during elaboration for sub-type errors that cannot be found at compile-time" in {
+    class A extends Bundle {
+      val x = UInt(3.W)
+      val y = UInt(4.W)
+      val z = UInt(3.W)
+    }
+    class B extends Bundle {
+      val x = UInt(3.W)
+      val y = UInt(3.W)
+    }
+    class MyModule extends Module {
+      val io = IO(new Bundle {
+        val a = Input(new A)
+        val b = Output(new B)
+      })
+      io.b <> io.a.viewAsSupertype(new B)
+    }
+    a[ChiselException] should be thrownBy (ChiselStage.emitVerilog(new MyModule))
+  }
+
   it should "support viewing structural supertypes with generated types" in {
     class Foo extends Bundle {
       val foo = UInt(8.W)
