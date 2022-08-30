@@ -9,35 +9,31 @@ object ChiselSubTypeOf {
   def genChiselSubTypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context): c.Tree = {
     import c.universe._
 
-    def subtypeOf(a: Type, b: Type): Boolean = {
-      if (a == NoType) {
-        return false
-      }
-
-      val va = a.members
-      val vb = b.members
-
-      for (bval <- vb) {
-        if (bval.isPublic) {
-          if (bval.isTerm && bval.asTerm.isGetter) {
-            val aval = a.member(TermName(bval.name.toString()))
-            if (aval.info != bval.info) {
-              return false
-            }
-          } else if (!bval.isTerm) {
-            val aval = a.member(TypeName(bval.name.toString()))
-            if (aval.info != bval.info) {
-              return false
-            }
-          }
-        }
-      }
-      return true
-    }
-
     val ta = implicitly[c.WeakTypeTag[A]]
     val tb = implicitly[c.WeakTypeTag[B]]
     val empty = q""
+
+    // Returns true if 'a' and 'b' are structurally equivalent types.
+    def typeEquals(a: Type, b: Type): Boolean = {
+      if (a == NoType || b == NoType) {
+        return false
+      }
+      // Two types are equal if they are both subtypes of each other.
+      subtypeOf(a, b) && subtypeOf(b, a)
+    }
+
+    // Returns true if 'a' is a structural subtype of 'b' (i.e. all fields of
+    // 'b' exist within 'a' with the same names and the same types).
+    def subtypeOf(a: Type, b: Type): Boolean = {
+      val mb = b.members.filter(_.isPublic)
+      // Go through every public member of b and make sure a member with the
+      // same name exists in a and it has the same structural type.
+      mb.filter(vb => vb.isTerm && vb.asTerm.isGetter)
+        .forall(vb => {
+          val va = a.member(TermName(vb.name.toString))
+          typeEquals(va.info, vb.info)
+        })
+    }
 
     if (!subtypeOf(ta.tpe, tb.tpe)) {
       c.error(

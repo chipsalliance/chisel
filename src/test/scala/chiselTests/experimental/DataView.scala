@@ -247,6 +247,26 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("io.c.foo <= io.a.foo")
   }
 
+  it should "support viewing structural supertypes with generated types" in {
+    class Foo extends Bundle {
+      val foo = UInt(8.W)
+    }
+    class Bar extends Foo {
+      val bar = UInt(8.W)
+    }
+    class MyInterface[T <: Data](gen: () => T) extends Bundle {
+      val foo = gen()
+      val fizz = UInt(8.W)
+      val buzz = UInt(8.W)
+    }
+    class MyModule extends Module {
+      val fooIf = IO(Input(new MyInterface(() => UInt(8.W))))
+      val fooOut = IO(Output(new Foo))
+      fooOut <> fooIf.viewAsSupertype(new Foo)
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+  }
+
   it should "throw a type error for structural non-supertypes" in {
     assertTypeError("""
       class A extends Bundle {
