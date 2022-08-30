@@ -92,10 +92,11 @@ object Arg {
     case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
     case Some(Index(Node(imm), arg))         => s"${earlyLocalName(imm)}[${arg.localName}]"
     case Some(Slot(Node(imm), name))         => s"${earlyLocalName(imm)}.$name"
+    case Some(OpaqueSlot(Node(imm)))         => s"${earlyLocalName(imm)}"
     case Some(arg)                           => arg.name
     case None =>
       id match {
-        case data: Data => data._computeName(None, Some("?")).get
+        case data: Data => data._computeName(Some("?")).get
         case _ => "?"
       }
   }
@@ -217,6 +218,11 @@ case class Slot(imm: Node, name: String) extends Arg {
     val immName = imm.localName
     if (immName.isEmpty) name else s"$immName.$name"
   }
+}
+
+case class OpaqueSlot(imm: Node) extends Arg {
+  override def contextualName(ctx: Component): String = imm.contextualName(ctx)
+  override def name: String = imm.name
 }
 
 case class Index(imm: Arg, value: Arg) extends Arg {
@@ -869,7 +875,40 @@ case class DefBlackBox(
   params: Map[String, Param])
     extends Component
 
-case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap) {
-  def firrtlAnnotations: Iterable[Annotation] = annotations.flatMap(_.toFirrtl.update(renames))
+case class Circuit(
+  name:       String,
+  components: Seq[Component],
+  @deprecated("Do not use annotations val of Circuit directly - use firrtlAnnotations instead. Will be removed in a future release",
+    "Chisel 3.5")
+  annotations: Seq[ChiselAnnotation],
+  renames:     RenameMap,
+  @deprecated("Do not use newAnnotations val of Circuit directly - use firrtlAnnotations instead. Will be removed in a future release",
+    "Chisel 3.5")
 
+  newAnnotations: Seq[ChiselMultiAnnotation]) {
+
+  def this(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap) =
+    this(name, components, annotations, renames, Seq.empty)
+
+  def firrtlAnnotations: Iterable[Annotation] =
+    annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
+      _.toFirrtl.flatMap(_.update(renames))
+    )
+
+  def copy(
+    name:        String = name,
+    components:  Seq[Component] = components,
+    annotations: Seq[ChiselAnnotation] = annotations,
+    renames:     RenameMap = renames
+  ) = Circuit(name, components, annotations, renames, newAnnotations)
+
+}
+object Circuit
+    extends scala.runtime.AbstractFunction4[String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Circuit] {
+  def unapply(c: Circuit): Option[(String, Seq[Component], Seq[ChiselAnnotation], RenameMap)] = {
+    Some((c.name, c.components, c.annotations, c.renames))
+  }
+
+  def apply(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap): Circuit =
+    new Circuit(name, components, annotations, renames)
 }

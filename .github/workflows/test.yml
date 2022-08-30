@@ -17,8 +17,9 @@ jobs:
       matrix:
         system: ["ubuntu-20.04"]
         jvm: ["adopt@1.8"]
-        scala: ["2.13.6", "2.12.15"]
+        scala: ["2.13.6", "2.12.16"]
         espresso: ["2.4"]
+        circt: ["sifive/1/14/0"]
     runs-on: ${{ matrix.system }}
 
     steps:
@@ -42,6 +43,13 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: ${{ matrix.jvm }}
+      - name: Install CIRCT
+        run: |
+          mkdir usr
+          # Escape version forward slashes for use in URL
+          VERSION=$(echo ${{ matrix.circt }} | sed 's|/|%2F|g')
+          wget https://github.com/llvm/circt/releases/download/${VERSION}/circt-bin-ubuntu-20.04.tar.gz -O - | tar -zx -C usr/
+          echo "$(pwd)/usr/bin" >> $GITHUB_PATH
       - name: Cache Scala
         uses: coursier/cache-action@v5
       - name: Check Formatting (Scala 2.12 only)
@@ -81,13 +89,38 @@ jobs:
       - name: Integration Tests
         run: sbt integrationTests/test
 
+  std:
+    name: Standard Library Tests
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        scala: [ "2.13.6", "2.12.16" ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
+        uses: YosysHQ/setup-oss-cad-suite@v1
+        with:
+          osscadsuite-version: '2021-11-09'
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.11"
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Check Formatting (Scala 2.12 only)
+        if: startsWith(matrix.scala, '2.12')
+        run: sbt ++${{ matrix.scala }} standardLibrary/scalafmtCheckAll
+      - name: Unit Tests
+        run: sbt ++${{ matrix.scala }} standardLibrary/test
+
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
   #
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [ci, integration]
+    needs: [ci, integration, std]
     runs-on: ubuntu-20.04
     steps:
       - run: echo Success!

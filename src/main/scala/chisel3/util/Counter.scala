@@ -3,7 +3,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.internal.naming.chiselName // can't use chisel3_ version because of compile order
+import chisel3.experimental.AffectsChiselPrefix
 
 /** Used to generate an inline (logic directly in the containing Module, no internal Module is created)
   * hardware counter.
@@ -27,8 +27,7 @@ import chisel3.internal.naming.chiselName // can't use chisel3_ version because 
   *   }
   * }}}
   */
-@chiselName
-class Counter private (r: Range, oldN: Option[Int] = None) {
+class Counter private (r: Range, oldN: Option[Int] = None) extends AffectsChiselPrefix {
   require(r.length > 0, s"Counter range cannot be empty, got: $r")
   require(r.start >= 0 && r.end >= 0, s"Counter range must be positive, got: $r")
 
@@ -113,7 +112,6 @@ object Counter {
     * @return tuple of the counter value and whether the counter will wrap (the value is at
     * maximum and the condition is true).
     */
-  @chiselName
   def apply(cond: Bool, n: Int): (UInt, Bool) = {
     val c = new Counter(n)
     val wrap = WireInit(false.B)
@@ -129,7 +127,6 @@ object Counter {
     * @return tuple of the counter value and whether the counter will wrap (the value is at
     * maximum and the condition is true).
     */
-  @chiselName
   def apply(r: Range, enable: Bool = true.B, reset: Bool = false.B): (UInt, Bool) = {
     val c = new Counter(r)
     val wrap = WireInit(false.B)

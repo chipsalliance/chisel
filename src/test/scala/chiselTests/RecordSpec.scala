@@ -108,6 +108,90 @@ trait RecordSpecUtils {
     require(DataMirror.checkTypeEquivalence(wire0, wire1))
     require(!DataMirror.checkTypeEquivalence(wire1, wire2))
   }
+
+  class SingleElementRecord extends Record {
+    private val underlying = UInt(8.W)
+    val elements = SeqMap("" -> underlying)
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
+
+    def +(that: SingleElementRecord): SingleElementRecord = {
+      val _w = Wire(new SingleElementRecord)
+      _w.underlying := this.underlying + that.underlying
+      _w
+    }
+  }
+
+  class SingleElementRecordModule extends Module {
+    val in1 = IO(Input(new SingleElementRecord))
+    val in2 = IO(Input(new SingleElementRecord))
+    val out = IO(Output(new SingleElementRecord))
+
+    val r = new SingleElementRecord
+
+    out := in1 + in2
+  }
+
+  class InnerRecord extends Record {
+    val k = new InnerInnerRecord
+    val elements = SeqMap("" -> k)
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new InnerRecord).asInstanceOf[this.type]
+  }
+
+  class InnerInnerRecord extends Record {
+    val k = new SingleElementRecord
+    val elements = SeqMap("" -> k)
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new InnerInnerRecord).asInstanceOf[this.type]
+  }
+
+  class NestedRecordModule extends Module {
+    val in = IO(Input(new InnerRecord))
+    val out = IO(Output(new InnerRecord))
+    val inst = Module(new InnerModule)
+    inst.io.foo := in
+    out := inst.io.bar
+  }
+
+  class InnerModule extends Module {
+    val io = IO(new Bundle {
+      val foo = Input(new InnerRecord)
+      val bar = Output(new InnerRecord)
+    })
+
+    // DO NOT do this; just for testing element connections
+    io.bar.elements.head._2 := io.foo.elements.head._2
+  }
+
+  class NamedSingleElementRecord extends Record {
+    private val underlying = UInt(8.W)
+    val elements = SeqMap("unused" -> underlying)
+
+    override def opaqueType = elements.size == 1
+    override def cloneType: this.type = (new NamedSingleElementRecord).asInstanceOf[this.type]
+  }
+
+  class NamedSingleElementModule extends Module {
+    val in = IO(Input(new NamedSingleElementRecord))
+    val out = IO(Output(new NamedSingleElementRecord))
+    out := in
+  }
+
+  class ErroneousOverride extends Record {
+    private val underlyingA = UInt(8.W)
+    private val underlyingB = UInt(8.W)
+    val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
+
+    override def opaqueType = true
+    override def cloneType: this.type = (new ErroneousOverride).asInstanceOf[this.type]
+  }
+
+  class ErroneousOverrideModule extends Module {
+    val in = IO(Input(new ErroneousOverride))
+    val out = IO(Output(new ErroneousOverride))
+    out := in
+  }
 }
 
 class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
@@ -133,7 +217,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     class AliasedFieldRecord extends Record {
       val foo = UInt(8.W)
       val elements = SeqMap("foo" -> foo, "bar" -> foo)
-      override def cloneType: AliasedFieldRecord.this.type = this
+      override def cloneType: AliasedFieldRecord.this.type = (new AliasedFieldRecord).asInstanceOf[this.type]
     }
 
     val e = intercept[AliasedAggregateFieldException] {
@@ -144,6 +228,62 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
       }
     }
     e.getMessage should include("contains aliased fields named (bar,foo)")
+  }
+
+  they should "be OpaqueType for maps with single unnamed elements" in {
+    val singleElementChirrtl = ChiselStage.emitChirrtl { new SingleElementRecordModule }
+    singleElementChirrtl should include("input in1 : UInt<8>")
+    singleElementChirrtl should include("input in2 : UInt<8>")
+    singleElementChirrtl should include("add(in1, in2)")
+  }
+
+  they should "work correctly for toTarget in nested opaque type Records" in {
+    var mod: NestedRecordModule = null
+    ChiselStage.elaborate { mod = new NestedRecordModule; mod }
+    val testStrings = Seq(
+      mod.inst.io.foo.toTarget.serialize,
+      mod.inst.io.foo.k.toTarget.serialize,
+      mod.inst.io.foo.k.k.toTarget.serialize,
+      mod.inst.io.foo.elements.head._2.toTarget.serialize,
+      mod.inst.io.foo.k.elements.head._2.toTarget.serialize,
+      mod.inst.io.foo.k.k.elements.head._2.toTarget.serialize
+    )
+    testStrings.foreach(x => assert(x == "~NestedRecordModule|InnerModule>io.foo"))
+  }
+
+  they should "work correctly when connecting nested opaque type elements" in {
+    val nestedRecordChirrtl = ChiselStage.emitChirrtl { new NestedRecordModule }
+    nestedRecordChirrtl should include("input in : UInt<8>")
+    nestedRecordChirrtl should include("output out : UInt<8>")
+    nestedRecordChirrtl should include("inst.io.foo <= in")
+    nestedRecordChirrtl should include("out <= inst.io.bar")
+    nestedRecordChirrtl should include("output io : { flip foo : UInt<8>, bar : UInt<8>}")
+    nestedRecordChirrtl should include("io.bar <= io.foo")
+  }
+
+  they should "throw an error when map contains a named element and opaqueType is overriden to true" in {
+    (the[Exception] thrownBy extractCause[Exception] {
+      ChiselStage.elaborate { new NamedSingleElementModule }
+    }).getMessage should include("Opaque types must have exactly one element with an empty name")
+  }
+
+  they should "throw an error when map contains more than one element and opaqueType is overriden to true" in {
+    (the[Exception] thrownBy extractCause[Exception] {
+      ChiselStage.elaborate { new ErroneousOverrideModule }
+    }).getMessage should include("Opaque types must have exactly one element with an empty name")
+  }
+
+  they should "work with .toTarget" in {
+    var m: SingleElementRecordModule = null
+    ChiselStage.elaborate { m = new SingleElementRecordModule; m }
+    val q = m.in1.toTarget.toString
+    assert(q == "~SingleElementRecordModule|SingleElementRecordModule>in1")
+  }
+
+  they should "NOT work with .toTarget on non-data OpaqueType Record" in {
+    var m: SingleElementRecordModule = null
+    ChiselStage.elaborate { m = new SingleElementRecordModule; m }
+    a[ChiselException] shouldBe thrownBy { m.r.toTarget }
   }
 
   they should "follow UInt serialization/deserialization API" in {

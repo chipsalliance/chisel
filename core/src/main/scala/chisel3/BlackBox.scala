@@ -69,12 +69,8 @@ package experimental {
       require(!_closed, "Can't generate module more than once")
       _closed = true
 
-      // All suggestions are in, force names to every node.
-      // While BlackBoxes are not supposed to have an implementation, we still need to call
-      // _onModuleClose on all nodes (for example, Aggregates use it for recursive naming).
-      for (id <- getIds) {
-        id._onModuleClose
-      }
+      // Ports are named in the same way as regular Modules
+      namePorts()
 
       val firrtlPorts = getModulePorts.map { port => Port(port, port.specifiedDirection) }
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
@@ -147,7 +143,7 @@ abstract class BlackBox(
     _compatAutoWrapPorts() // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
-    if (!_io.forall(portsContains)) {
+    if (!_io.exists(portsContains)) {
       throwException(s"BlackBox '$this' must have a port named 'io' of type Record wrapped in IO(...)!")
     }
 
@@ -168,14 +164,6 @@ abstract class BlackBox(
       this.findPort("io").get.setRef(ModuleIO(internal.ViewParent, ""), force = true)
       // We have to force override the _ref because it was set during IO binding
       port.setRef(ModuleIO(this, _namespace.name(name)), force = true)
-    }
-
-    // We need to call forceName and onModuleClose on all of the sub-elements
-    // of the io bundle, but NOT on the io bundle itself.
-    // Doing so would cause the wrong names to be assigned, since their parent
-    // is now the module itself instead of the io bundle.
-    for (id <- getIds; if id ne io) {
-      id._onModuleClose
     }
 
     val firrtlPorts = namedPorts.map { namedPort => Port(namedPort._2, namedPort._2.specifiedDirection) }

@@ -6,7 +6,6 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.internal.naming.chiselName // can't use chisel3_ version because of compile order
 
 /** IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs
   * (selects) at most one.
@@ -78,6 +77,7 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
 
 class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
+  // this register is not initialized on purpose, see #267
   lazy val lastGrant = RegEnable(io.chosen, io.out.fire)
   lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
   lazy val validMask = io.in.zip(grantMask).map { case (in, g) => in.valid && g }
@@ -115,7 +115,6 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   * consumer.io.in <> arb.io.out
   * }}}
   */
-@chiselName
 class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](gen, n, 1)
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
@@ -131,7 +130,6 @@ class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](g
   * consumer.io.in <> arb.io.out
   * }}}
   */
-@chiselName
 class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
   val io = IO(new ArbiterIO(gen, n))
 

@@ -3,9 +3,11 @@
 package chiselTests.naming
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.aop.Select
 import chisel3.experimental.{dump, noPrefix, prefix, treedump}
 import chiselTests.{ChiselPropSpec, Utils}
+import chisel3.experimental.AffectsChiselPrefix
 
 class PrefixSpec extends ChiselPropSpec with Utils {
   implicit val minimumMajorVersion: Int = 12
@@ -232,18 +234,46 @@ class PrefixSpec extends ChiselPropSpec with Utils {
     }
   }
 
-  property("Prefixing should be the prefix during the last call to autoName/suggestName") {
+  property("Prefixing should NOT be influenced by suggestName") {
     class Test extends Module {
       {
         val wire = {
-          val x = Wire(UInt(3.W)).suggestName("mywire")
-          x
+          val x = Wire(UInt(3.W)) // wire_x
+          Wire(UInt(3.W)).suggestName("foo")
         }
       }
     }
     aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("mywire"))
-      Select.wires(top).map(_.instanceName) shouldNot be(List("wire_mywire"))
+      Select.wires(top).map(_.instanceName) should be(List("wire_x", "foo"))
+    }
+  }
+
+  property("Prefixing should be influenced by the \"current name\" of the signal") {
+    class Test extends Module {
+      {
+        val wire = {
+          val y = Wire(UInt(3.W)).suggestName("foo")
+          val x = Wire(UInt(3.W)) // wire_x
+          y
+        }
+
+        val wire2 = Wire(UInt(3.W))
+        wire2 := {
+          val x = Wire(UInt(3.W)) // wire2_x
+          x + 1.U
+        }
+        wire2.suggestName("bar")
+
+        val wire3 = Wire(UInt(3.W))
+        wire3.suggestName("fizz")
+        wire3 := {
+          val x = Wire(UInt(3.W)) // fizz_x
+          x + 1.U
+        }
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("foo", "wire_x", "bar", "wire2_x", "fizz", "fizz_x"))
     }
   }
 
@@ -391,6 +421,104 @@ class PrefixSpec extends ChiselPropSpec with Utils {
     aspectTest(() => new Test) { top: Test =>
       Select.wires(top).map(_.instanceName) should be(List("x", "x_w_w", "x_w_w_w", "x_w_w_w_w"))
     }
+  }
 
+  property("Prefixing should work for verification ops") {
+    class Test extends Module {
+      val foo, bar = IO(Input(UInt(8.W)))
+
+      {
+        val x5 = {
+          val x1 = chisel3.assert(1.U === 1.U)
+          val x2 = cover(foo =/= bar)
+          val x3 = chisel3.assume(foo =/= 123.U)
+          val x4 = printf("foo = %d\n", foo)
+          x1
+        }
+      }
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new Test)
+    (chirrtl should include).regex("assert.*: x5")
+    (chirrtl should include).regex("cover.*: x5_x2")
+    (chirrtl should include).regex("assume.*: x5_x3")
+    (chirrtl should include).regex("printf.*: x5_x4")
+  }
+
+  property("Leading '_' in val names should be ignored in prefixes") {
+    class Test extends Module {
+      {
+        val a = {
+          val _b = {
+            val c = Wire(UInt(3.W))
+            4.U // literal because there is no name
+          }
+          _b
+        }
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("a_b_c"))
+    }
+  }
+
+  // This checks that we don't just blanket ignore leading _ in prefixes
+  property("User-specified prefixes with '_' should be respected") {
+    class Test extends Module {
+      {
+        val a = {
+          val _b = prefix("_b") {
+            val c = Wire(UInt(3.W))
+          }
+          4.U
+        }
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("a__b_c"))
+    }
+  }
+
+  property("Leading '_' in signal names should be ignored in prefixes from connections") {
+    class Test extends Module {
+      {
+        val a = {
+          val b = {
+            val _c = IO(Output(UInt(3.W))) // port so not selected as wire
+            _c := {
+              val d = Wire(UInt(3.W))
+              d
+            }
+            4.U // literal so there is no name
+          }
+          b
+        }
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("a_b_c_d"))
+    }
+  }
+
+  property("Prefixing of AffectsChiselPrefix objects should work") {
+    class NotAData extends AffectsChiselPrefix {
+      val value = Wire(UInt(3.W))
+    }
+    class NotADataUnprefixed {
+      val value = Wire(UInt(3.W))
+    }
+    class Test extends Module {
+      {
+        val nonData = new NotAData
+        // Instance name of nonData.value should be nonData_value
+        nonData.value := RegNext(3.U)
+
+        val nonData2 = new NotADataUnprefixed
+        // Instance name of nonData2.value should be value
+        nonData2.value := RegNext(3.U)
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("nonData_value", "value"))
+    }
   }
 }

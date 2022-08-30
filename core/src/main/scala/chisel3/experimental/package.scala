@@ -170,7 +170,41 @@ package object experimental {
     * }
     * }}}
     */
+  @deprecated(
+    "@chiselName and NoChiselNamePrefix have been replaced by the compiler plugin and AffectsChiselPrefix. Use these instead",
+    "Chisel 3.5"
+  )
   trait NoChiselNamePrefix
+
+  /** Generate prefixes from values of this type in the Chisel compiler plugin
+    *
+    * Users can mixin this trait to tell the Chisel compiler plugin to include the names of
+    * vals of this type when generating prefixes for naming `Data` and `Mem` instances.
+    * This is generally useful whenever creating a `class` that contains `Data`, `Mem`,
+    * or `Module` instances but does not itself extend `Data` or `Module`.
+    *
+    * @see See [[https://www.chisel-lang.org/chisel3/docs/explanations/naming.html the compiler plugin documentation]] for more information on this process.
+    *
+    * @example {{{
+    * import chisel3._
+    * import chisel3.experimental.AffectsChiselPrefix
+    *
+    * class MyModule extends Module {
+    *   // Note: This contains a Data but is not a named component itself
+    *   class NotAData extends AffectsChiselPrefix {
+    *     val value = Wire(Bool())
+    *   }
+    *
+    *   // Name with AffectsChiselPrefix:    "nonData_value"
+    *   // Name without AffectsChiselPrefix: "value"
+    *   val nonData = new NotAData
+    *
+    *   // Name with AffectsChiselPrefix:    "nonData2_value"
+    *   // Name without AffectsChiselPrefix: "value_1"
+    *   val nonData2 = new NotAData
+    * }
+    */
+  trait AffectsChiselPrefix
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
@@ -211,9 +245,33 @@ package object experimental {
     }
   }
 
-  // Use to add a prefix to any component generated in input scope
+  /** Use to add a prefix to any components generated in the provided scope.
+    *
+    * @example {{{
+    *
+    * val x1 = prefix("first") {
+    *   // Anything generated here will be prefixed with "first"
+    * }
+    *
+    * val x2 = prefix(mysignal) {
+    *   // Anything generated here will be prefixed with the name of mysignal
+    * }
+    *
+    * }}}
+    */
   val prefix = chisel3.internal.prefix
-  // Use to remove prefixes not in provided scope
+
+  /** Use to clear existing prefixes so no signals within the scope are prefixed
+    * by signals/names outside the scope
+    *
+    * @example {{{
+    *
+    * val x1 = prefix("first") {
+    *   // Anything generated here will have no prefix.
+    *   // The result returned from this would *still* be called `x1` however.
+    * }
+    * }}}
+    */
   val noPrefix = chisel3.internal.noPrefix
 
   // ****************************** Hardware equivalents of Scala Tuples ******************************
@@ -228,6 +286,10 @@ package object experimental {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin:   Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple2(chiselTypeClone(_1), chiselTypeClone(_2))
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2
+    )
   }
 
   /** [[Data]] equivalent of Scala's [[Tuple3]]
@@ -246,6 +308,11 @@ package object experimental {
       chiselTypeClone(_1),
       chiselTypeClone(_2),
       chiselTypeClone(_3)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3
     )
   }
 
@@ -267,6 +334,12 @@ package object experimental {
       chiselTypeClone(_2),
       chiselTypeClone(_3),
       chiselTypeClone(_4)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4
     )
   }
 
@@ -290,6 +363,13 @@ package object experimental {
       chiselTypeClone(_3),
       chiselTypeClone(_4),
       chiselTypeClone(_5)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5
     )
   }
 
@@ -315,6 +395,14 @@ package object experimental {
       chiselTypeClone(_4),
       chiselTypeClone(_5),
       chiselTypeClone(_6)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6
     )
   }
 
@@ -350,6 +438,15 @@ package object experimental {
       chiselTypeClone(_5),
       chiselTypeClone(_6),
       chiselTypeClone(_7)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6,
+      "_7" -> _7
     )
   }
 
@@ -388,6 +485,16 @@ package object experimental {
       chiselTypeClone(_6),
       chiselTypeClone(_7),
       chiselTypeClone(_8)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6,
+      "_7" -> _7,
+      "_8" -> _8
     )
   }
 
@@ -429,6 +536,17 @@ package object experimental {
       chiselTypeClone(_7),
       chiselTypeClone(_8),
       chiselTypeClone(_9)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6,
+      "_7" -> _7,
+      "_8" -> _8,
+      "_9" -> _9
     )
   }
 
@@ -473,6 +591,18 @@ package object experimental {
       chiselTypeClone(_8),
       chiselTypeClone(_9),
       chiselTypeClone(_10)
+    )
+    override protected def _elementsImpl: Iterable[(String, Any)] = Vector(
+      "_1" -> _1,
+      "_2" -> _2,
+      "_3" -> _3,
+      "_4" -> _4,
+      "_5" -> _5,
+      "_6" -> _6,
+      "_7" -> _7,
+      "_8" -> _8,
+      "_9" -> _9,
+      "_10" -> _10
     )
   }
 }

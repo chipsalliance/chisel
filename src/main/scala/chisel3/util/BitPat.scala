@@ -5,6 +5,8 @@ package chisel3.util
 import scala.language.experimental.macros
 import chisel3._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import scala.collection.mutable
+import scala.util.hashing.MurmurHash3
 
 object BitPat {
 
@@ -142,6 +144,67 @@ package experimental {
       bs.getWidth
       bs
     }
+
+    /** Construct a [[BitSet]] matching a range of value
+      * automatically infer width by the bit length of (start + length - 1)
+      *
+      * @param start The smallest matching value
+      * @param length The length of the matching range
+      * @return A [[BitSet]] matching exactly all inputs in range [start, start + length)
+      */
+    def fromRange(
+      start:  BigInt,
+      length: BigInt
+    ): BitSet = fromRange(start, length, (start + length - 1).bitLength)
+
+    /** Construct a [[BitSet]] matching a range of value
+      *
+      * @param start The smallest matching value
+      * @param length The length of the matching range
+      * @param width The width of the constructed [[BitSet]]. If not given, the returned [[BitSet]] have the width of the maximum possible matching value.
+      * @return A [[BitSet]] matching exactly all inputs in range [start, start + length)
+      */
+    def fromRange(
+      start:  BigInt,
+      length: BigInt,
+      width:  Int
+    ): BitSet = {
+      require(length > 0, "Cannot construct a empty BitSetRange")
+      val maxKnownLength = (start + length - 1).bitLength
+      require(
+        width >= maxKnownLength,
+        s"Cannot construct a BitSetRange with width($width) smaller than its range end(b${(start + length - 1).toString(2)})"
+      )
+
+      // Break down to individual bitpats
+      val atoms = {
+        val collected = mutable.Set[BitPat]()
+        var ptr = start
+        var left = length
+        while (left > 0) {
+          var curPow = left.bitLength - 1
+          if (ptr != 0) {
+            val maxPow = ptr.lowestSetBit
+            if (maxPow < curPow) curPow = maxPow
+          }
+
+          val inc = BigInt(1) << curPow
+          require((ptr & inc - 1) == 0, "BitPatRange: Internal sanity check")
+          val mask = (BigInt(1) << width) - inc
+          collected.add(new BitPat(ptr, mask, width))
+          ptr += inc
+          left -= inc
+        }
+
+        collected.toSet
+      }
+
+      new BitSet {
+        def terms = atoms
+        override def getWidth: Int = width
+        override def toString: String = s"BitSetRange(0x${start.toString(16)} - 0x${(start + length).toString(16)})"
+      }
+    }
   }
 
   /** A Set of [[BitPat]] represents a set of bit vector with mask. */
@@ -164,6 +227,8 @@ package experimental {
 
     /** whether this [[BitSet]] is empty (i.e. no value matches) */
     def isEmpty: Boolean = terms.forall(_.isEmpty)
+
+    def matches(input: UInt) = VecInit(terms.map(_ === input).toSeq).asUInt.orR
 
     /** Check whether this [[BitSet]] overlap with that [[BitSet]], i.e. !(intersect.isEmpty)
       *
@@ -224,8 +289,17 @@ package experimental {
         case _ => false
       }
     }
-  }
 
+    /**
+      * Calculate the inverse of this pattern set.
+      *
+      * @return A BitSet matching all value (of the given with) iff it doesn't match this pattern.
+      */
+    def inverse: BitSet = {
+      val total = BitPat("b" + ("?" * this.getWidth))
+      total.subtract(this)
+    }
+  }
 }
 
 /** Bit patterns are literals with masks, used to represent values with don't
@@ -252,6 +326,9 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
   def ===(that: UInt):   Bool = macro SourceInfoTransform.thatArg
   def =/=(that: UInt):   Bool = macro SourceInfoTransform.thatArg
   def ##(that:  BitPat): BitPat = macro SourceInfoTransform.thatArg
+
+  override def hashCode: Int =
+    MurmurHash3.seqHash(Seq(this.value, this.mask, this.width))
 
   /** @group SourceInfoTransformMacro */
   def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
@@ -348,15 +425,29 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
   override def isEmpty: Boolean = false
 
   /** Generate raw string of a [[BitPat]]. */
-  def rawString: String = Seq
-    .tabulate(width) { i =>
-      (value.testBit(width - i - 1), mask.testBit(width - i - 1)) match {
-        case (true, true)  => "1"
-        case (false, true) => "0"
-        case (_, false)    => "?"
-      }
+  def rawString: String = _rawString
+
+  // This is micro-optimized and memoized because it is used for lots of BitPat operations
+  private lazy val _rawString: String = {
+    val sb = new StringBuilder(width)
+    var i = 0
+    while (i < width) {
+      val bitIdx = width - i - 1
+      val char =
+        if (mask.testBit(bitIdx)) {
+          if (value.testBit(bitIdx)) {
+            '1'
+          } else {
+            '0'
+          }
+        } else {
+          '?'
+        }
+      sb += char
+      i += 1
     }
-    .mkString
+    sb.result()
+  }
 
   override def toString = s"BitPat($rawString)"
 }

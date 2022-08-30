@@ -104,4 +104,21 @@ class TruthTableSpec extends AnyFlatSpec {
     assert(t.toString contains "111->?")
     assert(t.toString contains "     0")
   }
+
+  "Using TruthTable.fromEspressoOutput" should "merge rows on conflict" in {
+    val mapping = List(
+      (BitPat("b110"), BitPat("b001")),
+      (BitPat("b111"), BitPat("b001")),
+      (BitPat("b111"), BitPat("b010")),
+      (BitPat("b111"), BitPat("b100"))
+    )
+
+    assert(
+      TruthTable.fromEspressoOutput(mapping, BitPat("b?")) ==
+        TruthTable.fromString("""110->001
+                                |111->111
+                                |?
+                                |""".stripMargin)
+    )
+  }
 }

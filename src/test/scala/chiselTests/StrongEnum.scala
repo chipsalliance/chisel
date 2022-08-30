@@ -4,8 +4,9 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselEnum
+import chisel3.experimental.AffectsChiselPrefix
+import chisel3.experimental.suppressEnumCastWarning
 import chisel3.internal.firrtl.UnknownWidth
-import chisel3.internal.naming.chiselName
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
 import chisel3.testers.BasicTester
@@ -481,6 +482,46 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
     (log should not).include("warn")
   }
 
+  it should "suppress warning using suppressEnumCastWarning" in {
+    object TestEnum extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+
+    class MyModule extends Module {
+      val in = IO(Input(UInt(2.W)))
+      val out = IO(Output(TestEnum()))
+      suppressEnumCastWarning {
+        val res = TestEnum(in)
+        out := res
+      }
+    }
+    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    (log should not).include("warn")
+  }
+
+  it should "suppress exactly one warning using suppressEnumCastWarning" in {
+    object TestEnum1 extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+    object TestEnum2 extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+
+    class MyModule extends Module {
+      val in = IO(Input(UInt(2.W)))
+      val out1 = IO(Output(TestEnum1()))
+      val out2 = IO(Output(TestEnum2()))
+      suppressEnumCastWarning {
+        out1 := TestEnum1(in)
+      }
+      out2 := TestEnum2(in)
+    }
+    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    log should include("warn")
+    log should include("TestEnum2") // not suppressed
+    (log should not).include("TestEnum1") // suppressed
+  }
+
   "Casting a UInt to an Enum with .safe" should "NOT warn" in {
     object MyEnum extends ChiselEnum {
       val e0, e1, e2 = Value
@@ -575,11 +616,10 @@ class StrongEnumAnnotator extends Module {
   val indexed2 = vec_of_bundles(cycle)
 }
 
-@chiselName
 class StrongEnumAnnotatorWithChiselName extends Module {
   import EnumExample._
 
-  object LocalEnum extends ChiselEnum {
+  object LocalEnum extends ChiselEnum with AffectsChiselPrefix {
     val le0, le1 = Value
     val le2 = Value
     val le100 = Value(100.U)

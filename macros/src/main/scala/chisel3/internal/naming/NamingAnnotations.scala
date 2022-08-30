@@ -125,7 +125,7 @@ class NamingTransforms(val c: Context) {
     q"""
     val $contextVar = $globalNamingStack.pushContext()
     ..$transformedBody
-    if($globalNamingStack.length == 1){
+    if($globalNamingStack.length() == 1){
       $contextVar.namePrefix("")
     }
     $globalNamingStack.popReturnContext(this, $contextVar)
@@ -207,6 +207,10 @@ class treedump extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.treedump
 }
 @compileTimeOnly("enable macro paradise to expand macro annotations")
+@deprecated(
+  "Use chisel3.experimental.AffectsChiselPrefix instead. @chiselName will be removed in Chisel 3.6",
+  "Chisel 3.5"
+)
 class chiselName extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
 }

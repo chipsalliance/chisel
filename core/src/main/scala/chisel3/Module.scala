@@ -142,6 +142,15 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
     val inferReset = (_parent.isDefined || Builder.inDefinition) && moduleCompileOptions.inferModuleReset
+    if (moduleCompileOptions.migrateInferModuleReset && !moduleCompileOptions.inferModuleReset) {
+      this match {
+        case _: RequireSyncReset => // Good! It's been migrated.
+        case _ => // Bad! It hasn't been migrated.
+          Builder.error(
+            s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
+          )
+      }
+    }
     if (inferReset) Reset() else Bool()
   }
 
@@ -179,21 +188,26 @@ package experimental {
       * requested (so that all calls to ports will return the same information).
       * Internal API.
       */
-    def apply[T <: Data](iodef: T): T = {
+    def apply[T <: Data](iodef: => T): T = {
       val module = Module.currentModule.get // Impossible to fail
       require(!module.isClosed, "Can't add more ports after module close")
-      requireIsChiselType(iodef, "io type")
+      val prevId = Builder.idGen.value
+      val data = iodef // evaluate once (passed by name)
+      requireIsChiselType(data, "io type")
 
       // Clone the IO so we preserve immutability of data types
+      // Note: we don't clone if the data is fresh (to avoid unnecessary clones)
       val iodefClone =
-        try {
-          iodef.cloneTypeFull
-        } catch {
-          // For now this is going to be just a deprecation so we don't suddenly break everyone's code
-          case e: AutoClonetypeException =>
-            Builder.deprecated(e.getMessage, Some(s"${iodef.getClass}"))
-            iodef
-        }
+        if (!data.mustClone(prevId)) data
+        else
+          try {
+            data.cloneTypeFull
+          } catch {
+            // For now this is going to be just a deprecation so we don't suddenly break everyone's code
+            case e: AutoClonetypeException =>
+              Builder.deprecated(e.getMessage, Some(s"${data.getClass}"))
+              data
+          }
       module.bindIoInPlace(iodefClone)
       iodefClone
     }
@@ -258,7 +272,7 @@ package internal {
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
-      if (!compileOptions.explicitInvalidate) {
+      if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
         // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
@@ -364,6 +378,27 @@ package experimental {
     /** Sets up this module in the parent context
       */
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit
+
+    private[chisel3] def namePorts(): Unit = {
+      for (port <- getModulePorts) {
+        port._computeName(None) match {
+          case Some(name) =>
+            if (_namespace.contains(name)) {
+              Builder.error(
+                s"""Unable to name port $port to "$name" in $this,""" +
+                  " name is already taken by another port!"
+              )
+            }
+            port.setRef(ModuleIO(this, _namespace.name(name)))
+          case None =>
+            Builder.error(
+              s"Unable to name port $port in $this, " +
+                "try making it a public field of the Module"
+            )
+            port.setRef(ModuleIO(this, "<UNNAMED>"))
+        }
+      }
+    }
 
     //
     // Chisel Internals
@@ -503,33 +538,34 @@ package experimental {
       */
     protected def _bindIoInPlace(iodef: Data): Unit = {
       // Compatibility code: Chisel2 did not require explicit direction on nodes
-      // (unspecified treated as output, and flip on nothing was input).
-      // This sets assigns the explicit directions required by newer semantics on
-      // Bundles defined in compatibility mode.
+      //   (unspecified treated as output, and flip on nothing was input).
+      // However, we are going to go back to Chisel2 semantics, so we need to make it work
+      //   even for chisel3 code.
+      // This assigns the explicit directions required by both semantics on all Bundles.
       // This recursively walks the tree, and assigns directions if no explicit
-      // direction given by upper-levels (override Input / Output) AND element is
-      // directly inside a compatibility Bundle determined by compile options.
-      def assignCompatDir(data: Data, insideCompat: Boolean): Unit = {
+      //   direction given by upper-levels (override Input / Output)
+      def assignCompatDir(data: Data): Unit = {
         data match {
-          case data: Element if insideCompat => data._assignCompatibilityExplicitDirection
-          case data: Element => // Not inside a compatibility Bundle, nothing to be done
+          case data: Element => data._assignCompatibilityExplicitDirection
           case data: Aggregate =>
             data.specifiedDirection match {
               // Recurse into children to ensure explicit direction set somewhere
               case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
                 data match {
                   case record: Record =>
-                    val compatRecord = !record.compileOptions.dontAssumeDirectionality
-                    record.getElements.foreach(assignCompatDir(_, compatRecord))
+                    record.getElements.foreach(assignCompatDir(_))
                   case vec: Vec[_] =>
-                    vec.getElements.foreach(assignCompatDir(_, insideCompat))
+                    vec.getElements.foreach(assignCompatDir(_))
                 }
-              case SpecifiedDirection.Input | SpecifiedDirection.Output => // forced assign, nothing to do
+              case SpecifiedDirection.Input | SpecifiedDirection.Output =>
+              // forced assign, nothing to do
+              // Note this is because Input and Output recurse down their types to align all fields to that SpecifiedDirection
+              // Thus, no implicit assigment is necessary.
             }
         }
       }
 
-      assignCompatDir(iodef, false)
+      assignCompatDir(iodef)
 
       iodef.bind(PortBinding(this))
       _ports += iodef
@@ -554,7 +590,7 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: T):             T = chisel3.experimental.IO.apply(iodef)
+    protected def IO[T <: Data](iodef: => T):             T = chisel3.experimental.IO.apply(iodef)
     protected def IO[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.modify(chisel3.experimental.IO.Apply())
 
     //

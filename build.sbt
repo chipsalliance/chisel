@@ -5,7 +5,10 @@ enablePlugins(SiteScaladocPlugin)
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
   "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT",
-  "chiseltest" -> "edu.berkeley.cs" %% "chiseltest" % "0.6-SNAPSHOT"
+  // chiseltest intentionally excluded so that release automation does not try to set its version
+  // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
+  // when doing publishing and will not find a chiseltest release since chiseltest depends on
+  // chisel3
 )
 
 lazy val commonSettings = Seq(
@@ -16,8 +19,8 @@ lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "3.6-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.15",
-  crossScalaVersions := Seq("2.13.6", "2.12.15"),
+  scalaVersion := "2.12.16",
+  crossScalaVersions := Seq("2.13.6", "2.12.16"),
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
@@ -68,7 +71,7 @@ lazy val publishSettings = Seq(
 lazy val chiselSettings = Seq(
   name := "chisel3",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.11" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.12" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "os-lib" % "0.8.1"
   )
@@ -103,6 +106,7 @@ lazy val pluginScalaVersions = Seq(
   "2.12.13",
   "2.12.14",
   "2.12.15",
+  "2.12.16",
   "2.13.0",
   "2.13.1",
   "2.13.2",
@@ -195,8 +199,11 @@ lazy val chisel = (project in file("."))
   .settings(
     mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",
-    Test / scalacOptions += "-P:chiselplugin:genBundleElements",
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
+    // Forward doc command to unidoc
+    Compile / doc := (ScalaUnidoc / doc).value,
+    // Include unidoc as the ScalaDoc for publishing
+    Compile / packageDoc / mappings := (ScalaUnidoc / packageDoc / mappings).value,
     Compile / doc / scalacOptions ++= Seq(
       "-diagrams",
       "-groups",
@@ -233,14 +240,22 @@ lazy val chisel = (project in file("."))
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
 lazy val integrationTests = (project in file("integration-tests"))
   .dependsOn(chisel)
+  .dependsOn(standardLibrary)
   .settings(commonSettings: _*)
   .settings(chiselSettings: _*)
   .settings(usePluginSettings: _*)
   .settings(
     Seq(
-      libraryDependencies += defaultVersions("chiseltest") % "test"
+      libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.6-SNAPSHOT" % "test"
     )
   )
+
+// the chisel standard library
+lazy val standardLibrary = (project in file("stdlib"))
+  .dependsOn(chisel)
+  .settings(commonSettings: _*)
+  .settings(chiselSettings: _*)
+  .settings(usePluginSettings: _*)
 
 lazy val docs = project // new documentation project
   .in(file("docs-target")) // important: it must not be docs/

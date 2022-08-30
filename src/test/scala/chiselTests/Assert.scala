@@ -61,6 +61,29 @@ class BadUnescapedPercentAssertTester extends BasicTester {
   stop()
 }
 
+class PrintableFormattedAssertTester extends BasicTester {
+  val foobar = Wire(UInt(32.W))
+  foobar := 123.U
+  assert(foobar === 123.U, cf"Error! Wire foobar =/= $foobar%x This is 100%% wrong.\n")
+  stop()
+}
+
+class PrintableBadUnescapedPercentAssertTester extends BasicTester {
+  assert(1.U === 1.U, p"I'm 110% sure this is an invalid message")
+  stop()
+}
+
+class PrintableAssumeTester extends Module {
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+
+  val w = Wire(UInt(8.W))
+  w := 255.U
+  assume(w === 255.U, cf"Assumption failed, Wire w =/= $w%x")
+
+  out := in
+}
+
 class AssertSpec extends ChiselFlatSpec with Utils {
   "A failing assertion" should "fail the testbench" in {
     assert(!runTester { new FailingAssertTester })
@@ -77,6 +100,12 @@ class AssertSpec extends ChiselFlatSpec with Utils {
   they should "allow printf-style format strings with arguments" in {
     assertTesterPasses { new FormattedAssertTester }
   }
+  they should "allow printf-style format strings in Assumes" in {
+    val chirrtl = ChiselStage.emitChirrtl(new PrintableAssumeTester)
+    chirrtl should include(
+      """assume(w === 255.U, cf\"Assumption failed, Wire w =/= $w%%%%x\")\n", w)"""
+    )
+  }
   they should "not allow unescaped % in the message" in {
     a[java.util.UnknownFormatConversionException] should be thrownBy {
       extractCause[java.util.UnknownFormatConversionException] {
@@ -84,4 +113,16 @@ class AssertSpec extends ChiselFlatSpec with Utils {
       }
     }
   }
+
+  they should "allow printable format strings with arguments" in {
+    assertTesterPasses { new FormattedAssertTester }
+  }
+  they should "not allow unescaped % in the printable message" in {
+    a[java.util.UnknownFormatConversionException] should be thrownBy {
+      extractCause[java.util.UnknownFormatConversionException] {
+        ChiselStage.elaborate { new BadUnescapedPercentAssertTester }
+      }
+    }
+  }
+
 }

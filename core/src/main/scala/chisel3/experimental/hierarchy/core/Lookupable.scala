@@ -79,6 +79,11 @@ object Lookupable {
       val ret = value.asInstanceOf[Iterable[B]]
       ret.map { x: B => lookupable[P](getter, x) }.asInstanceOf[H]
     }
+
+    //result.bind(newBinding)
+    //result.setAllParents(Some(ViewParent))
+    //result.forceName("view", Builder.viewNamespace)
+    //result
   }
 
   implicit def lookupIsWrappable[U <: IsWrappable] = new Lookupable[U] {

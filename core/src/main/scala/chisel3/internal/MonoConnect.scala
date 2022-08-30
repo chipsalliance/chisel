@@ -210,7 +210,9 @@ private[chisel3] object MonoConnect {
         }
 
       // Source is DontCare - it may be connected to anything. It generates a defInvalid for the sink.
-      case (sink, DontCare) => pushCommand(DefInvalid(sourceInfo, sink.lref))
+      case (_sink: Element, DontCare) =>
+        val sink = reify(_sink) // Handle views
+        pushCommand(DefInvalid(sourceInfo, sink.lref))
       // DontCare as a sink is illegal.
       case (DontCare, _) => throw DontCareCantBeSink
       // Analog is illegal in mono connections.

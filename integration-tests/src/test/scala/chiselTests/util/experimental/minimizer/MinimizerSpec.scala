@@ -16,7 +16,7 @@ class DecodeTestModule(minimizer: Minimizer, table: TruthTable) extends Module {
   unminimizedI := i
   val minimizedO: UInt = decoder(minimizer, i, table)
 
-  chisel3.experimental.verification.assert(
+  assert(
     // for each instruction, if input matches, output should match, not no matched, fallback to default
     (table.table.map { case (key, value) => (i === key) && (minimizedO === value) } ++
       Seq(table.table.map(_._1).map(i =/= _).reduce(_ && _) && minimizedO === table.default)).reduce(_ || _)

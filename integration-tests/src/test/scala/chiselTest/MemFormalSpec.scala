@@ -3,7 +3,7 @@
 package chiselTest
 
 import chisel3._
-import chisel3.experimental._
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import chiseltest._
 import chiseltest.formal._
 import firrtl.annotations.MemoryArrayInitAnnotation
@@ -69,13 +69,13 @@ abstract class ReadEnTestModule(testShouldRead: Boolean) extends Module {
 
   if(testShouldRead) {
     when(!firstCycle && RegNext(shouldRead)) {
-      verification.assert(out === RegNext(addr))
+      assert(out === RegNext(addr))
     }
   } else {
     when(!firstCycle && RegNext(shouldNotRead)) {
       // this can only fail if the read enable is false and an arbitrary value is provided
       // note that this test is not complete!!
-      verification.assert(out === 200.U)
+      assert(out === 200.U)
     }
   }
 }

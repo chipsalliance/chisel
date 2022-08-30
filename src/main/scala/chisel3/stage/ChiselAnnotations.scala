@@ -79,6 +79,47 @@ case object ThrowOnFirstErrorAnnotation
 
 }
 
+/** When enabled, warnings will be treated as errors.
+  */
+case object WarningsAsErrorsAnnotation
+    extends NoTargetAnnotation
+    with ChiselOption
+    with HasShellOptions
+    with Unserializable {
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "warnings-as-errors",
+      toAnnotationSeq = _ => Seq(WarningsAsErrorsAnnotation),
+      helpText = "Treat warnings as errors"
+    )
+  )
+
+}
+
+/** Warn when reflective naming changes names of signals */
+@deprecated("Support for reflective naming has been removed, this object no longer does anything", "Chisel 3.6")
+case object WarnReflectiveNamingAnnotation
+    extends NoTargetAnnotation
+    with ChiselOption
+    with HasShellOptions
+    with Unserializable {
+
+  private val longOption = "warn:reflective-naming"
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = longOption,
+      toAnnotationSeq = _ => {
+        val msg = s"'$longOption' no longer does anything and will be removed in Chisel 3.7"
+        firrtl.options.StageUtils.dramaticWarning(msg)
+        Seq(this)
+      },
+      helpText = "(deprecated, this option does nothing)"
+    )
+  )
+}
+
 /** An [[firrtl.annotations.Annotation]] storing a function that returns a Chisel module
   * @param gen a generator function
   */

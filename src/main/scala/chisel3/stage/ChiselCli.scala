@@ -3,13 +3,17 @@
 package chisel3.stage
 
 import firrtl.options.Shell
+import scala.annotation.nowarn
 
+@nowarn("cat=deprecation&msg=WarnReflectiveNamingAnnotation")
 trait ChiselCli { this: Shell =>
   parser.note("Chisel Front End Options")
   Seq(
     NoRunFirrtlCompilerAnnotation,
     PrintFullStackTraceAnnotation,
     ThrowOnFirstErrorAnnotation,
+    WarningsAsErrorsAnnotation,
+    WarnReflectiveNamingAnnotation,
     ChiselOutputFileAnnotation,
     ChiselGeneratorAnnotation
   )

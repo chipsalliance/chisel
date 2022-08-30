@@ -60,4 +60,28 @@ class CatSpec extends ChiselFlatSpec {
     chirrtl should include("node hi_hi = cat(in[0], in[1])")
   }
 
+  it should "have a source locator when passing a seq" in {
+    class MyModule extends RawModule {
+      val in = IO(Input(Vec(8, UInt(8.W))))
+      val out = IO(Output(UInt()))
+
+      // noPrefix to avoid `out` as prefix
+      out := Cat(in)
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("cat(in[0], in[1]) @[CatSpec.scala")
+    (chirrtl should not).include("Cat.scala")
+  }
+
+  it should "have a source locator when passing args" in {
+    class MyModule extends RawModule {
+      val in = IO(Input(Vec(8, UInt(8.W))))
+      val out = IO(Output(UInt()))
+      out := Cat(in(0), in(1))
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("cat(in[0], in[1]) @[CatSpec.scala")
+    (chirrtl should not).include("Cat.scala")
+  }
+
 }
