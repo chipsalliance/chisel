@@ -28,10 +28,10 @@ object ChiselSubTypeOf {
       val mb = b.members.filter(_.isPublic)
       // Go through every public member of b and make sure a member with the
       // same name exists in a and it has the same structural type.
-      mb.filter(vb => vb.isTerm && vb.asTerm.isGetter)
+      mb.filter(vb => vb.isTerm && vb.asTerm.isGetter || vb.isType)
         .forall(vb => {
-          val va = a.member(TermName(vb.name.toString))
-          typeEquals(va.info, vb.info)
+          val name = if (vb.isTerm) TermName(vb.name.toString) else TypeName(vb.name.toString)
+          typeEquals(a.member(name).info, vb.info)
         })
     }
 
