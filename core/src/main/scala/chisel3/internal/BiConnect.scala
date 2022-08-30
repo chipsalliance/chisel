@@ -299,10 +299,12 @@ private[chisel3] object BiConnect {
     def flowSourceCheck = MonoConnect.canBeSource(source, context_mod)
 
     // do not bulk connect source literals (results in infinite recursion from calling .ref)
-    def sourceNotLiteralCheck = source.topBinding match {
+    def sourceAndSinkNotLiteralOrViewCheck = List(source, sink).forall { _.topBinding match {
       case _: LitBinding => false
+      case _: ViewBinding => false
+      case _: AggregateViewBinding => false
       case _ => true
-    }
+    }}
 
     // do not bulk connect the 'io' pseudo-bundle of a BlackBox since it will be decomposed in FIRRTL
     def blackBoxCheck = Seq(source, sink).map(_._parent).forall {
@@ -310,7 +312,7 @@ private[chisel3] object BiConnect {
       case _ => true
     }
 
-    typeCheck && contextCheck && bindingCheck && flowSinkCheck && flowSourceCheck && sourceNotLiteralCheck && blackBoxCheck
+    typeCheck && contextCheck && bindingCheck && flowSinkCheck && flowSourceCheck && sourceAndSinkNotLiteralOrViewCheck && blackBoxCheck
   }
 
   // These functions (finally) issue the connection operation
