@@ -211,11 +211,9 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
       val ready = Flipped(Bool())
     }
     val out = ChiselStage.emitChirrtl { new CrossDirectionalMonoConnectsWithWires(new Decoupled, new Decoupled, 1) }
-    assert(out.contains(
-      "wiresIn_0.bits <= io.in.bits",
-      "wiresIn_0.valid <= io.in.valid",
-      "wiresIn_0.ready <= io.in.ready",
-    ))
+    assert(out.contains("wiresIn_0.bits <= io.in.bits"))
+    assert(out.contains("wiresIn_0.valid <= io.in.valid"))
+    assert(out.contains("wiresIn_0.ready <= io.in.ready"))
   }
 
   property("(D.o) :<>= works with DataView to connect a bundle that is a subtype") {
