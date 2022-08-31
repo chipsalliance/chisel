@@ -220,7 +220,7 @@ case class Slot(imm: Node, name: String) extends Arg {
 }
 
 case class OpaqueSlot(imm: Node) extends Arg {
-  override def contextualName(ctx: Component): String = imm.name
+  override def contextualName(ctx: Component): String = imm.contextualName(ctx)
   override def name: String = imm.name
 }
 
