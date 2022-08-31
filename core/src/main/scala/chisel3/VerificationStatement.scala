@@ -23,7 +23,7 @@ import scala.reflect.macros.blackbox
   *
   * @groupprio VerifPrintMacros 1001
   */
-private[chisel3] trait VerifPrintMacrosDoc
+trait VerifPrintMacrosDoc
 
 object assert extends VerifPrintMacrosDoc {
 
