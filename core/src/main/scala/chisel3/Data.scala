@@ -434,7 +434,7 @@ object Input {
   def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Input)
   }
-  def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions): Definitive[T] = {
+  def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions, sourceInfo: SourceInfo): Definitive[T] = {
     source.modify(Apply(compileOptions))
   }
   case class Apply[T <: Data](compileOptions: CompileOptions)
@@ -449,7 +449,7 @@ object Output {
   def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Output)
   }
-  def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions): Definitive[T] = {
+  def apply[T <: Data](source: Definitive[T])(implicit compileOptions: CompileOptions, sourceInfo: SourceInfo): Definitive[T] = {
     source.modify(Apply(compileOptions))
   }
   case class Apply[T <: Data](compileOptions: CompileOptions)

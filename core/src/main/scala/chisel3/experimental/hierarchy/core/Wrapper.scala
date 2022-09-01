@@ -33,17 +33,38 @@ trait Wrapper[+P] {
   ): lookupable.H = {
     // TODO: Call to 'that' should be replaced with shapeless to enable deserialized Underlying
     val protoValue = that(proto)
-    proxy
-      .retrieveMe(protoValue)
-      .orElse {
+    //println(s"$proxy(${proxy.identity}): protoValue=$protoValue, visited=${proxy.visited(protoValue)}: ")
+    val cachedValue = proxy.retrieveMe(protoValue)
+    cachedValue match {
+      case None if proxy.nVisits(protoValue) > 1 => // Second time around cycle is done, error!
+        val debug = protoValue match {
+          case w: Wrapper[_] => w.proxy.debug
+          case other => proxy.debug + s"/$other"
+        }
+        throw new Exception(s"Cycle! $debug")
+      case None if proxy.nVisits(protoValue) > 0 => // A cycle is found, go around again to print debug info
+        val debug = protoValue match {
+          case w: Wrapper[_] => w.proxy.debug
+          case other => proxy.debug + s"/$other"
+        }
+        println(s"Cycle! $debug")
+      case other => other
+    }
+    cachedValue match {
+      case None =>
+        //println(s"- $proxy(${proxy.identity}): missedCache")
+        proxy.visit(protoValue)
         val retValue = lookupable.apply(this, protoValue)
         proxy.cacheMe(protoValue, retValue)
-        //println(s"Caching $retValue for $protoValue in $proxy")
-        Some(retValue)
-      }
-      .get
-      .asInstanceOf[lookupable.H]
+        //println(s"- $proxy(${proxy.identity}): returned with $retValue")
+        retValue
+      case Some(x: lookupable.H) =>
+        //println(s"- $proxy(${proxy.identity}): cache hit with $x")
+        x
+    }
   }
+  def debug = proxy.debug
+  def identity = proxy.identity
 
   //def query(path: String) = proxy.query(path)
 
@@ -83,9 +104,9 @@ trait Wrapper[+P] {
     val tptag = implicitly[TypeTag[B]]
     // drop any type information for the comparison, because the proto will not have that information.
     val name = tptag.tpe.toString.takeWhile(_ != '[')
-    println("Start")
+    //println("Start")
     val x = superClasses.contains(name)
-    println("End")
+    //println("End")
     x
   }
 
@@ -130,7 +151,7 @@ object Wrapper {
   }
 
   private def calculateSuperClasses(clz: Class[_]): Set[String] = {
-    println(clz)
+    //println(clz)
     if (clz != null) {
       Set(modifyNestedObjects(modifyReplString(clz.getCanonicalName()))) ++
         clz.getInterfaces().flatMap(i => calculateSuperClasses(i)) ++

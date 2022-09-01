@@ -90,7 +90,7 @@ package object hierarchy {
       }
       def mockValue[P](value: V, parent: Hierarchy[P]): Instance[V] = {
         implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
-        val d = (new ModuleDefinition(core.Raw(value), None)).toDefinition
+        val d = ModuleDefinition(value, None).toDefinition
         val t = ModuleTransparent(d.proxyAs[ModuleRoot[V]])
         ModuleMock(t, parent.proxyAs[BaseModule]).toInstance
       }
@@ -199,21 +199,22 @@ package object hierarchy {
       case p: ChiselContextual[_] => p.parent
       case p: ContextualValue[_]  => None
     }
-    def buildDefinitiveFrom[X, Y](c: Contextual[X], f: CombinerFunction): DefinitiveProxy[Y] = {
-      val x: DefinitiveProxy[Y] = new ChiselDefinitive(Some(ContextualToDefinitiveDerivation(c.proxy, f)))
+    def buildDefinitiveFrom[X, Y](c: Contextual[X], f: CombinerFunction, sourceInfo: SourceInfo): DefinitiveProxy[Y] = {
+      val x: DefinitiveProxy[Y] = new ChiselDefinitive(Some(ContextualToDefinitiveDerivation(c.proxy, f)), sourceInfo)
       x
     }
-    def buildDefinitiveFrom[X, Y](d: Definitive[X], f: ParameterFunction): DefinitiveProxy[Y] = {
+    def buildDefinitiveFrom[X, Y](d: Definitive[X], f: ParameterFunction, sourceInfo: SourceInfo): DefinitiveProxy[Y] = {
       val x: DefinitiveProxy[Y] = new ChiselDefinitive(
-        Some(DefinitiveToDefinitiveDerivation(d.proxyAs[DefinitiveProxy[X]], f.asInstanceOf[ParameterFunction]))
+        Some(DefinitiveToDefinitiveDerivation(d.proxyAs[DefinitiveProxy[X]], f.asInstanceOf[ParameterFunction])),
+        sourceInfo
       )
       x
     }
-    def buildDefinitive[X](v: Option[X]): DefinitiveProxy[X] = {
+    def buildDefinitive[X](v: Option[X], sourceInfo: SourceInfo): DefinitiveProxy[X] = {
       v match {
-        case None => new ChiselDefinitive[X](None)
+        case None => new ChiselDefinitive[X](None, sourceInfo)
         case Some(value) =>
-          new ChiselDefinitive[X](Some(DefinitiveToDefinitiveDerivation(DefinitiveValue(value), Identity())))
+          new ChiselDefinitive[X](Some(DefinitiveToDefinitiveDerivation(DefinitiveValue(value, sourceInfo), Identity())), sourceInfo)
       }
     }
     def buildContextualFrom[X, Y](c: Contextual[X], f: ParameterFunction, sourceInfo: SourceInfo): ContextualProxy[Y] = {
@@ -289,6 +290,7 @@ package object hierarchy {
     def toInstance:   core.Instance[P] = asInstanceProxy.toInstance
     def toDefinition: core.Definition[P] = {
       implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
+      //println("toDefinition BaseModuleExtensions")
       ModuleDefinition(proto, proto.getCircuit).toDefinition
     }
   }
@@ -340,7 +342,10 @@ package object hierarchy {
   }
 
   implicit class IsWrappableExtensions[T <: IsWrappable](proto: T) {
-    def toDefinition: Definition[T] = IsWrappableDefinition(Raw(proto)).toDefinition
+    def toDefinition: Definition[T] = {
+      println("IsWrappable toDefinition")
+      IsWrappableDefinition(Raw(proto)).toDefinition
+    }
     def asInstanceProxy: core.InstanceProxy[T] = {
       //require(proto._parent.nonEmpty, s"Cannot call .asInstance on $proto because it has no parent! Try .toDefinition?")
       proto match {

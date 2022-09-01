@@ -11,7 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{Contextual, Definitive}
+import chisel3.experimental.hierarchy.{Contextual, Definitive, ModuleDefinition}
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -211,7 +211,7 @@ package experimental {
       module.bindIoInPlace(iodefClone)
       iodefClone
     }
-    def apply[T <: Data](iodef: Definitive[T]): Definitive[T] = {
+    def apply[T <: Data](iodef: Definitive[T])(implicit si: SourceInfo): Definitive[T] = {
       iodef.modify(Apply())
     }
     case class Apply[T <: Data]()
@@ -295,6 +295,7 @@ package experimental {
     private[chisel3] val definitives: ArrayBuffer[Definitive[_]] = ArrayBuffer[Definitive[_]]()
     private[chisel3] val contextuals: ArrayBuffer[Contextual[_]] = ArrayBuffer[Contextual[_]]()
     private[chisel3] val definitiveIOs: ArrayBuffer[Definitive[_]] = ArrayBuffer[Definitive[_]]()
+    private[chisel3] var definitionProxy: Option[ModuleDefinition[_]] = None
 
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
@@ -478,8 +479,8 @@ package experimental {
       * the correct [[InstanceTarget]]s whenever using the Definition/Instance API.
       */
     private[chisel3] def getTarget: IsModule = this match {
-      case m: experimental.hierarchy.ModuleTransparent[_] if m._parent.nonEmpty =>
-        ModuleTarget(this._circuit.get.circuitName, this.name)
+      case m: experimental.hierarchy.ModuleTransparent[_] if m._parent.nonEmpty => m.suffixProxy.getTarget
+        //ModuleTarget(this._circuit.get.circuitName, this.name)
       case m: experimental.hierarchy.ModuleMock[_] if m._parent.nonEmpty =>
         m._parent.get.getTarget.instOf(instanceName, name)
       case m: experimental.hierarchy.ModuleClone[_] if m._madeFromDefinition =>
@@ -591,7 +592,7 @@ package experimental {
       * are problematic.
       */
     protected def IO[T <: Data](iodef: => T):             T = chisel3.experimental.IO.apply(iodef)
-    protected def IO[T <: Data](iodef: Definitive[T]): Definitive[T] = iodef.modify(chisel3.experimental.IO.Apply())
+    protected def IO[T <: Data](iodef: Definitive[T])(implicit si: SourceInfo): Definitive[T] = iodef.modify(chisel3.experimental.IO.Apply())
 
     //
     // Internal Functions
@@ -605,8 +606,8 @@ package experimental {
       if (_parent == None) name
       else
         _component match {
-          case None    => getRef.name
-          case Some(c) => getRef.fullName(c)
+          case None    => try { getRef.name } catch { case e => hashCode.toString }
+          case Some(c) => try { getRef.fullName(c) } catch { case e => hashCode.toString}
         }
 
   }

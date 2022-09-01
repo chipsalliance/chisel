@@ -7,6 +7,7 @@ import firrtl.Utils
 import firrtl.constraint.IsKnown
 import firrtl.ir.{Closed, IntWidth, Open}
 import experimental.hierarchy.{func, Definitive}
+import chisel3.internal.sourceinfo.SourceInfo
 
 // This is currently a factory because both Bits and UInt inherit it.
 object Foo {
@@ -28,7 +29,7 @@ trait UIntFactory {
   def apply(width: Width): UInt = new UInt(width)
 
   /** Create a UInt port with specified width. */
-  def apply(width: Definitive[Width]): Definitive[UInt] = width.modify(Foo.Apply())
+  def apply(width: Definitive[Width])(implicit si: SourceInfo): Definitive[UInt] = width.modify(Foo.Apply())
 
   /** Create a UInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {

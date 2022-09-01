@@ -3,6 +3,7 @@
 import chisel3.internal.firrtl.BinaryPoint
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 import scala.collection.mutable
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** This package contains the main chisel3 API.
   */
@@ -179,7 +180,7 @@ package object chisel3 {
   }
 
   implicit class fromDIntToDWidth(int: Definitive[Int]) {
-    def W: Definitive[Width] = int.modify(Width.make())
+    def W(implicit si: SourceInfo): Definitive[Width] = int.modify(Width.make())
   }
 
   val WireInit = WireDefault

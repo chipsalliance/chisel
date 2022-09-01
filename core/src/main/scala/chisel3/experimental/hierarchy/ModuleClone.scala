@@ -21,6 +21,7 @@ private[chisel3] final class ModuleClone[T <: BaseModule](
     with Clone[T] {
   // _parent is set outside, just like a normal module
   contextuals ++= suffixProxy.contextuals
+  def debug = getTarget.toString
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 

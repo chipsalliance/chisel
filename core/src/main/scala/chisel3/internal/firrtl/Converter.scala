@@ -388,7 +388,8 @@ private[chisel3] object Converter {
           }
         case Some(c) => c
       }
-      comps.toList.flatMap(convert)
+      val x = comps.toList.flatMap(convert)
+      x
     case ctx @ DefModule(module, name, ports, cmds, None) =>
       Seq(fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx)))
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
@@ -406,6 +407,7 @@ private[chisel3] object Converter {
   def convert(circuit: Circuit): fir.Circuit = {
     // Last one is the top, by convention. Obviously, this is a bad API.
     computeContextuals(circuit.components.last.id)
+    //require(false, "0")
     fir.Circuit(fir.NoInfo, circuit.components.flatMap(convert), circuit.name)
   }
 
@@ -419,8 +421,15 @@ private[chisel3] object Converter {
     def absolutize(h: Hierarchy[BaseModule]): Unit = {
       h.proxyAs[BaseModule].contextuals.foreach { c: Contextual[_] =>
         import chisel3.experimental.hierarchy.core.Lookupable
+        println(s"L ${c.debug} Looking up in ${h.debug}")
         val myC = h._lookup { _ => c.asInstanceOf[Contextual[Any]] }
+        println(s"R ${c.debug} Returned ${myC.debug}")
+        println(s"A ${c.debug} Absolutizing")
+        println("\n\n\n\n")
+        println(myC.proxy.displaySuffixMatrix)
+        println("\n\n\n\n")
         myC.absolutize(h)
+        println(s"F ${c.debug} Finished absolutizing")
       }
     }
     def resolve(h: Hierarchy[BaseModule]): Unit = {
@@ -430,11 +439,14 @@ private[chisel3] object Converter {
         myC.proxy.markResolved()
       }
     }
-    println("COMPUTING CONTEXTUALS")
+    println(s"COMPUTING CONTEXTUALS of ${m.toTarget}")
     val d = m.toDefinition
     absolutize(d)
+    //require(false, "3")
     allInstancesOf[BaseModule](d).foreach { case i: Instance[BaseModule] => absolutize(i) }
+    //require(false, "2")
     resolve(d)
+    //require(false, "1")
     allInstancesOf[BaseModule](d).foreach { case i: Instance[BaseModule] => resolve(i) }
     println("DONE COMPUTING CONTEXTUALS")
   }

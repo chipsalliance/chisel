@@ -21,6 +21,7 @@ private[chisel3] final class ModuleTransparent[T <: BaseModule] private (
 
   lazy val ioMap: Map[Data, Data] = proto.getChiselPorts.map { case (_, data) => data -> data }.toMap
   contextuals ++= suffixProxy.contextuals
+  def debug = getTarget.toString
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 
@@ -44,8 +45,11 @@ private[chisel3] object ModuleTransparent {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): ModuleTransparent[T] = {
-    val ret = Module.do_pseudo_apply(new ModuleTransparent(suffixProxy))
-    ret._parent = suffixProxy.proto._parent
-    ret
+    if(suffixProxy.transparentProxy.nonEmpty) suffixProxy.transparentProxy.get.asInstanceOf[ModuleTransparent[T]] else {
+      val ret = Module.do_pseudo_apply(new ModuleTransparent(suffixProxy))
+      ret._parent = suffixProxy.proto._parent
+      suffixProxy.transparentProxy = Some(ret)
+      ret
+    }
   }
 }

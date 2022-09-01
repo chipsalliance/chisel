@@ -17,6 +17,7 @@ private[chisel3] final class ChiselContextual[P] private[chisel3] (
     extends ContextualProtoProxy[P] {
 
   derivation = constructionDerivation
+  def debug = sourceInfo.makeMessage(x => s"$x $parentDebug/Contextual($identity)")
 
   parent.map(_.asInstanceOf[BaseModule].contextuals += this.toWrapper)
 }
@@ -28,5 +29,6 @@ private[chisel3] final class ChiselMockContextual[P] private[chisel3] (
     extends ContextualMockProxy[P] {
 
   derivation = constructionDerivation
+  def debug = sourceInfo.makeMessage(x => s"$x $parentDebug/Contextual($identity)")
   val sourceInfo = suffixProxyOpt.get.sourceInfo
 }

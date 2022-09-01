@@ -43,9 +43,9 @@ trait HierarchicalExtensions[V, P] extends Extensions[V, P] {
 trait ParameterExtensions[V, P] extends Extensions[V, P] {
   def getProxyParent(x:            Proxy[V]): Option[P]
   def mockContextual[P](value:     Contextual[V], parent: Hierarchy[P]): Contextual[V]
-  def buildDefinitiveFrom[X, Y](d: Definitive[X], f: ParameterFunction): DefinitiveProxy[Y]
-  def buildDefinitiveFrom[X, Y](c: Contextual[X], f: CombinerFunction): DefinitiveProxy[Y]
-  def buildDefinitive[X](x:        Option[X]): DefinitiveProxy[X]
+  def buildDefinitiveFrom[X, Y](d: Definitive[X], f: ParameterFunction, sourceInfo: SourceInfo): DefinitiveProxy[Y]
+  def buildDefinitiveFrom[X, Y](c: Contextual[X], f: CombinerFunction, sourceInfo: SourceInfo): DefinitiveProxy[Y]
+  def buildDefinitive[X](x:        Option[X], sourceInfo: SourceInfo): DefinitiveProxy[X]
   def buildContextualFrom[X, Y](d: Contextual[X], f: ParameterFunction, sourceInfo: SourceInfo): ContextualProxy[Y]
   def buildContextual[X](x:        Option[X], sourceInfo: SourceInfo): ContextualProxy[X]
 }

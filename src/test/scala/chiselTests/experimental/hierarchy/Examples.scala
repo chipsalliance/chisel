@@ -358,7 +358,9 @@ object ContextualExamples {
 
   object DiplomacyExample {
 
-    @func def capitalize()(language: String): String = language.capitalize
+    @func def capitalize()(language: String): String = {
+      language.toUpperCase()
+    }
     case class Aggregate() extends core.CustomCombinerFunction[String, List[String]] {
       type I = String
       type O = List[String]
@@ -369,36 +371,37 @@ object ContextualExamples {
     @instantiable
     class SourceNode(val dnValue: Contextual[String]) extends IsWrappable {
       @public val dnOutgoing = dnValue
-      @public val upIncoming = Contextual.empty[String]
-      @public val edge = (upIncoming, dnValue)
+      @public val upOutgoing = Contextual.empty[String]
+      @public val edgeOutgoing = (dnOutgoing, upOutgoing)
     }
     @instantiable
     class SinkNode(val upValue: Contextual[String]) extends IsWrappable {
-      @public val upOutgoing = upValue
+      @public val upIncoming = upValue
       @public val dnIncoming = Contextual.empty[String]
-      @public val edge = (upValue, dnIncoming)
+      @public val edgeIncoming = (dnIncoming, upIncoming)
     }
     object SinkNode {
-      implicit class SinkNodeExtension(e: Instance[SinkNode]) {
-        def :=(a: AdapterNode): AdapterNode = {
-          e.dnIncoming.setAs(a.dnOutgoing)
-          a.upIncoming.setAs(e.upOutgoing)
-          a
+      implicit class SinkNodeExtension(sink: Instance[SinkNode]) {
+        def :=(adapter: AdapterNode): AdapterNode = {
+          sink.dnIncoming.setAs(adapter.dnOutgoing)
+          adapter.upOutgoing.setAs(sink.upIncoming)
+          adapter
         }
       }
     }
     @instantiable
     class AdapterNode(upFunc: ParameterFunction, dnFunc: ParameterFunction) extends IsWrappable {
-      val upIncoming = Contextual.empty[String]
-      val upOutgoing = Contextual.empty[String]
       val dnIncoming = Contextual.empty[String]
+      val upIncoming = Contextual.empty[String]
       val dnOutgoing = Contextual.empty[String]
+      val upOutgoing = Contextual.empty[String]
       dnOutgoing.setAs(dnIncoming.modify(dnFunc))
-      upOutgoing.setAs(upIncoming.modify(upFunc))
+      upIncoming.setAs(upOutgoing.modify(upFunc))
 
       def :=(src: Instance[SourceNode]): AdapterNode = {
-        src.upIncoming.setAs(upOutgoing)
+        src.upOutgoing.setAs(upIncoming)
         dnIncoming.setAs(src.dnOutgoing)
+        println(s"Setting dnIncoming ${dnIncoming.identity} as ${src.dnOutgoing.identity}")
         this
       }
     }
@@ -406,46 +409,47 @@ object ContextualExamples {
     class Mouth() extends Module {
       @public val language = Contextual.empty[String]
       @public val node = new SourceNode(language)
-      @public val upResult = node.edge._1.combine(Aggregate())
-      @public val dnResult = node.edge._2.combine(Aggregate())
+      @public val upResult = node.edgeOutgoing._1.combine(Aggregate())
+      @public val dnResult = node.edgeOutgoing._2.combine(Aggregate())
     }
 
     @instantiable
     class Ear() extends Module {
       @public val language = Contextual.empty[String]
       @public val node = new SinkNode(language)
-      @public val upResult = node.edge._1.combine(Aggregate())
-      @public val dnResult = node.edge._2.combine(Aggregate())
+      @public val upResult = node.edgeIncoming._1.combine(Aggregate())
+      @public val dnResult = node.edgeIncoming._2.combine(Aggregate())
     }
 
     @instantiable
     class Top() extends Module {
       val mouthDef = Definition(new Mouth())
       @public val m0 = Instance(mouthDef)
+      //@public val m1 = Instance(mouthDef)
       m0.language.value = "English"
-      @public val m1 = Instance(mouthDef)
-      m1.language.value = "Spanish"
+      //m1.language.value = "Spanish"
 
       val earDef = Definition(new Ear())
       @public val e0 = Instance(earDef)
       e0.language.value = "Hebrew"
-      @public val e1 = Instance(earDef)
-      e1.language.value = "Portuguese"
+      //@public val e1 = Instance(earDef)
+      //e1.language.value = "Portuguese"
 
       @public val a0 = new AdapterNode(capitalize(), capitalize())
       e0.node := a0 := m0.node
 
-      @public val a1 = new AdapterNode(capitalize(), capitalize())
-      e1.node := a1 := m1.node
+      //@public val a1 = new AdapterNode(capitalize(), capitalize())
+      //e1.node := a1 := m1.node
+      override val implementation: Option[Implementation] = Some(TopImp)
     }
 
     object TopImp extends CustomImplementation {
       type P = Top
       def implement(d: ResolvedDefinition[Top]): Unit = {
         println(s"M0: ${d.m0.upResult.value}, ${d.m0.dnResult.value}")
-        println(s"M1: ${d.m1.upResult.value}, ${d.m1.dnResult.value}")
+        //println(s"M1: ${d.m1.upResult.value}, ${d.m1.dnResult.value}")
         println(s"E0: ${d.e0.upResult.value}, ${d.e0.dnResult.value}")
-        println(s"E1: ${d.e1.upResult.value}, ${d.e1.dnResult.value}")
+        //println(s"E1: ${d.e1.upResult.value}, ${d.e1.dnResult.value}")
       }
     }
 

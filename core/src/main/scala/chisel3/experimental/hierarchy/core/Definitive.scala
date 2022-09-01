@@ -8,11 +8,12 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
 import java.util.IdentityHashMap
+import chisel3.internal.sourceinfo.SourceInfo
 
-case class Definitive[P] private[chisel3] (proxy: DefinitiveProxy[P]) extends Wrapper[P] {
-  def value_=(v: P) = {
+case class Definitive[P] private[chisel3] (proxy: DefinitiveProxy[P], sourceInfo: SourceInfo) extends Wrapper[P] {
+  def value_=(v: P)(implicit si: SourceInfo) = {
     require(!proxy.hasDerivation, s"Cannot set a definitive twice!")
-    proxy.derivation = Some(DefinitiveToDefinitiveDerivation(DefinitiveValue(v), Identity()))
+    proxy.derivation = Some(DefinitiveToDefinitiveDerivation(DefinitiveValue(v, si), Identity()))
   }
   def value: P = proto
   def setAs(d: Definitive[P]): Unit = {
@@ -23,7 +24,7 @@ case class Definitive[P] private[chisel3] (proxy: DefinitiveProxy[P]) extends Wr
   def hasDerivation = proxy.hasDerivation
   def valueOpt: Option[P] = proxy.compute
 
-  def modify[X](f: ParameterFunction): Definitive[X] = Definitive.buildFromDF(this, f)
+  def modify[X](f: ParameterFunction)(implicit si: SourceInfo): Definitive[X] = Definitive.buildFromDF(this, f)
 }
 
 object Definitive {
@@ -31,17 +32,19 @@ object Definitive {
     d: Definitive[P],
     f: ParameterFunction
   )(
-    implicit extensions: ParameterExtensions[_, _]
-  ): Definitive[X] = extensions.buildDefinitiveFrom(d, f).toWrapper
+    implicit extensions: ParameterExtensions[_, _],
+    sourceInfo: SourceInfo
+  ): Definitive[X] = extensions.buildDefinitiveFrom(d, f, sourceInfo).toWrapper
   def buildFromCF[P, X](
     c: Contextual[P],
     f: CombinerFunction
   )(
-    implicit extensions: ParameterExtensions[_, _]
+    implicit extensions: ParameterExtensions[_, _],
+    sourceInfo: SourceInfo
   ): Definitive[X] =
-    extensions.buildDefinitiveFrom(c, f).toWrapper
-  def apply[P](p: P)(implicit extensions: ParameterExtensions[_, _]): Definitive[P] =
-    extensions.buildDefinitive(Some(p)).toWrapper
-  def empty[P](implicit extensions: ParameterExtensions[_, _]): Definitive[P] =
-    extensions.buildDefinitive(None).toWrapper
+    extensions.buildDefinitiveFrom(c, f, sourceInfo).toWrapper
+  def apply[P](p: P)(implicit extensions: ParameterExtensions[_, _], sourceInfo: SourceInfo): Definitive[P] =
+    extensions.buildDefinitive(Some(p), sourceInfo).toWrapper
+  def empty[P](implicit extensions: ParameterExtensions[_, _], sourceInfo: SourceInfo): Definitive[P] =
+    extensions.buildDefinitive(None, sourceInfo).toWrapper
 }

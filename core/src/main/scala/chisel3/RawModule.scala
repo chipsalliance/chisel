@@ -160,6 +160,7 @@ package object internal {
   /** Marker trait for modules that are not true modules */
   private[chisel3] trait PseudoModule extends BaseModule
 
+
   /* Check if a String name is a temporary name */
   def isTemp(name: String): Boolean = name.nonEmpty && name.head == '_'
 

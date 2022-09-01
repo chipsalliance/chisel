@@ -13,13 +13,32 @@ trait Proxy[+P] {
   /** @return Original object that we are proxy'ing */
   def proto: P
 
+  def debug: String
+  def parentColumn: List[String]
+  def suffixMatrix: List[List[String]]
+  def displaySuffixMatrix: String = {
+    println(suffixMatrix)
+    def align(str: String, l: Int) = str + (" "*(str.length - l))
+    val lengths = suffixMatrix.map {
+      pc => pc.foldLeft(0){ (sz: Int, d: String) => sz.max(d.length) }
+    }
+    val colSize = suffixMatrix.head.length
+    (0 until colSize).map { colIndex =>
+      suffixMatrix.zip(lengths).map { case (pc, l) => align(pc(colIndex), l) }.mkString(" -S> ")
+    }.mkString("\n")
+  }
+
   private[chisel3] val cache = new IdentityHashMap[Any, Any]()
+  private[chisel3] val visitTracker = new IdentityHashMap[Any, Int]()
 
   private[chisel3] val protoToName = new IdentityHashMap[Any, String]()
   private[chisel3] val nameToProto = new IdentityHashMap[Any, String]()
 
+  def identity = this.hashCode
+
   def getIdentity(value: Any): Any = value match {
     case w: Wrapper[_] => w.proxy
+    case w: Contextual[_] => w.proxy
     case other => other
   }
   def cacheMe[V, R](protoValue: V, retValue: R): Unit = {
@@ -34,6 +53,15 @@ trait Proxy[+P] {
       }
     } else None
   }
+  def visit[V](protoValue: V): Unit = {
+    val key = getIdentity(protoValue)
+    val nVisits = if(visitTracker.containsKey(key)) visitTracker.get(key) + 1 else 1
+    visitTracker.put(key, nVisits)
+  }
+  def nVisits[V](protoValue: V): Int = {
+    val key = getIdentity(protoValue)
+    visitTracker.getOrDefault(key, 0)
+  }
 
   /** @return a Definition wrapping this Proxy */
   //def toSetter: Setter[P]
@@ -47,6 +75,8 @@ trait HierarchicalProxy[+P] extends Proxy[P] {
   def toHierarchy: Hierarchy[P]
   def toRoot:      Root[P]
   def parentOpt:   Option[Proxy[Any]]
+  def parentDebug = parentOpt.map(_.debug).getOrElse("~")
+  def parentColumn: List[String] = List(this.debug) ++ parentOpt.map(_.parentColumn).getOrElse(List.empty[String])
   def toWrapper: Hierarchy[P] = toHierarchy
   def isResolved: Boolean
 }
@@ -62,6 +92,7 @@ sealed trait InstanceProxy[+P] extends HierarchicalProxy[P] {
     * @return the suffixProxy proxy of this proxy
     */
   def suffixProxy: HierarchicalProxy[P]
+  def suffixMatrix: List[List[String]] = List(parentColumn) ++ suffixProxy.suffixMatrix
   def isResolved: Boolean = suffixProxy.isResolved
 
   /** @return the InstanceProxy closest to the proto in the chain of suffixProxy proxy's */
@@ -80,11 +111,6 @@ sealed trait InstanceProxy[+P] extends HierarchicalProxy[P] {
   override def toHierarchy: Hierarchy[P] = toInstance
 
   //override def toSetter: HierarchySetter[P] = HierarchySetter(this)
-
-  /** If this proxy was created by being looked up in a parent proxy, parent refers to that parent proxy.
-    * @return parent proxy from whom this proxy was looked up from
-    */
-  def parentOpt: Option[Proxy[Any]]
 }
 
 /** InstanceProxy representing a new Instance which was instantiated in a proto.
@@ -141,6 +167,7 @@ trait RootProxy[+P] extends HierarchicalProxy[P] {
   def predecessorOption: Option[RootProxy[P]]
   def builder:           Option[Implementation]
   def parentOpt: Option[Proxy[Any]] = None
+  def suffixMatrix: List[List[String]] = List(parentColumn)
 }
 
 trait DefinitionProxy[+P] extends RootProxy[P] {
@@ -165,19 +192,24 @@ sealed trait DefinitiveProxy[P] extends Proxy[P] {
   var derivation: Option[DefinitiveDerivation]
   def isResolved:             Boolean = compute.nonEmpty
   private[chisel3] val namer: mutable.ArrayBuffer[Any => Unit] = mutable.ArrayBuffer[Any => Unit]()
+  val sourceInfo: SourceInfo
 
   final def compute[H](h: Hierarchy[H]): Option[P] = compute
   def parentOpt: Option[Proxy[Any]] = None
+  def parentDebug = parentOpt.map(_.debug).getOrElse("~")
+  def parentColumn: List[String] = List(this.debug) ++ parentOpt.map(_.parentColumn).getOrElse(List.empty[String])
+  def suffixMatrix: List[List[String]] = List(parentColumn)
   def hasDerivation = derivation.nonEmpty
   def toWrapper = toDefinitive
-  def toDefinitive = Definitive(this)
+  def toDefinitive = Definitive(this, sourceInfo)
 }
 
-case class DefinitiveValue[P](value: P) extends DefinitiveProxy[P] {
+case class DefinitiveValue[P](value: P, sourceInfo: SourceInfo) extends DefinitiveProxy[P] {
   var derivation: Option[DefinitiveDerivation] = None
   def compute:    Option[P] = Some(value)
   override def hasDerivation = true
   def proto = value
+  def debug = sourceInfo.makeMessage(x => s"$x $parentDebug/Definitive($value, $sourceInfo)")
 }
 
 trait DefinitiveProtoProxy[P] extends DefinitiveProxy[P] {
@@ -210,14 +242,17 @@ trait DefinitiveProtoProxy[P] extends DefinitiveProxy[P] {
 
 sealed trait ContextualProxy[P] extends Proxy[P] {
   def parentOpt: Option[Proxy[Any]]
+  def parentDebug = parentOpt.map(_.debug).getOrElse("~")
   val suffixProxyOpt: Option[ContextualProxy[P]]
+  def parentColumn: List[String] = List(this.debug) ++ parentOpt.map(_.parentColumn).getOrElse(List.empty[String])
+  def suffixMatrix: List[List[String]] = List(parentColumn)
   var derivation: Option[ContextualDerivation]
   var isResolved: Boolean = false
   def hasDerivation = derivation.nonEmpty
   def values: List[P]
   def setValue[H](value: P): Unit
   def toWrapper = toContextual
-  def toContextual = Contextual(this)
+  def toContextual = new Contextual(this, sourceInfo)
   def compute[H](h: Hierarchy[H]): Option[P]
   def markResolved(): Unit = {
     isResolved = true
@@ -231,11 +266,15 @@ case class ContextualValue[P](value: P, sourceInfo: SourceInfo) extends Contextu
   def proto = value
   isResolved = true
   def values: List[P] = ??? // Should never call .values on a ContextualValue
-  override def compute[H](h: Hierarchy[H]): Option[P] = Some(value)
+  override def compute[H](h: Hierarchy[H]): Option[P] = {
+    println(s"computing $this on $h")
+    Some(value)
+  }
   var derivation: Option[ContextualDerivation] = None
   override def hasDerivation = true
   def setValue[H](value: P): Unit = Unit
   val suffixProxyOpt: Option[ContextualProxy[P]] = None
+  def debug = sourceInfo.makeMessage(x => s"$x $parentDebug/Contextual($identity, $value)")
 }
 
 trait ContextualUserProxy[P] extends ContextualProxy[P] {
@@ -244,14 +283,19 @@ trait ContextualUserProxy[P] extends ContextualProxy[P] {
   var derivation:     Option[ContextualDerivation] = None
   val absoluteValues: mutable.ArrayBuffer[P] = mutable.ArrayBuffer[P]()
 
+  val sourceInfo: SourceInfo
   def compute[H](h: Hierarchy[H]): Option[P] = {
     if (cache.containsKey(h.proxy)) cache.get(h.proxy).asInstanceOf[Some[P]]
     else {
       val absoluteValue = derivation match {
         case None =>
           suffixProxyOpt match {
-            case None              => None
-            case Some(suffixProxy) => suffixProxy.compute(h)
+            case None              =>
+              println(s"$debug no derivation, no suffix!")
+              None
+            case Some(suffixProxy) =>
+              println(s"$debug no derivation, suffix!")
+              suffixProxy.compute(h)
           }
         case Some(p) => p.compute(h)
       }
@@ -269,7 +313,7 @@ trait ContextualUserProxy[P] extends ContextualProxy[P] {
   }
 
   def values: List[P] = {
-    require(isResolved, s"$this is not resolved")
+    require(isResolved, s"$debug is not resolved $derivation")
     if (cache.containsKey("values")) cache.get("values").asInstanceOf[List[P]]
     else {
       val allValuesList = absoluteValues.toList
@@ -335,8 +379,20 @@ trait ContextualProtoProxy[P] extends ContextualUserProxy[P] {
   * TODO Move to IsWrappable.scala
   * @param proto underlying object we are creating a proxy of
   */
-final case class IsWrappableDefinition[P](underlying: Underlying[P]) extends DefinitionProxy[P] {
+final class IsWrappableDefinition[P](val underlying: Underlying[P]) extends DefinitionProxy[P] {
+  def debug = "IsWrappableDefinition"
   def builder = None
+}
+object IsWrappableDefinition {
+  val cache: IdentityHashMap[Any, Any] = new IdentityHashMap[Any, Any]()
+  def apply[P](underlying: Underlying[P]): IsWrappableDefinition[P] = {
+    val key = underlying.proto
+    if (cache.containsKey(key)) cache.get(key).asInstanceOf[IsWrappableDefinition[P]] else {
+      val ret = new IsWrappableDefinition(underlying)
+      cache.put(key, ret)
+      ret
+    }
+  }
 }
 
 /** Transparent implementation for all proto's which extend IsWrappable
@@ -346,7 +402,20 @@ final case class IsWrappableDefinition[P](underlying: Underlying[P]) extends Def
   * TODO Move to IsWrappable.scala
   * @param proto underlying object we are creating a proxy of
   */
-final case class IsWrappableTransparent[P](suffixProxy: IsWrappableDefinition[P]) extends Transparent[P]
+final class IsWrappableTransparent[P](val suffixProxy: IsWrappableDefinition[P]) extends Transparent[P] {
+  def debug = "IsWrappableTransparent"
+}
+object IsWrappableTransparent {
+  val cache: IdentityHashMap[Any, Any] = new IdentityHashMap[Any, Any]()
+  def apply[P](suffixProxy: IsWrappableDefinition[P]): IsWrappableTransparent[P] = {
+    val key = suffixProxy
+    if (cache.containsKey(key)) cache.get(key).asInstanceOf[IsWrappableTransparent[P]] else {
+      val ret = new IsWrappableTransparent(suffixProxy)
+      cache.put(key, ret)
+      ret
+    }
+  }
+}
 
 /** Mock implementation for all proto's which extend IsWrappable
   *
@@ -355,4 +424,17 @@ final case class IsWrappableTransparent[P](suffixProxy: IsWrappableDefinition[P]
   * TODO Move to IsWrappable.scala
   * @param proto underlying object we are creating a proxy of
   */
-final case class IsWrappableMock[P](suffixProxy: InstanceProxy[P], parent: Proxy[Any]) extends Mock[P]
+final class IsWrappableMock[P](val suffixProxy: InstanceProxy[P], val parent: Proxy[Any]) extends Mock[P] {
+  def debug = "IsWrappableMock"
+}
+object IsWrappableMock {
+  val cache: IdentityHashMap[Any, Any] = new IdentityHashMap[Any, Any]()
+  def apply[P](suffixProxy: InstanceProxy[P], parent: Proxy[Any]): IsWrappableMock[P] = {
+    val key = (suffixProxy, parent)
+    if (cache.containsKey(key)) cache.get(key).asInstanceOf[IsWrappableMock[P]] else {
+      val ret = new IsWrappableMock(suffixProxy, parent)
+      cache.put(key, ret)
+      ret
+    }
+  }
+}

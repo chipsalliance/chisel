@@ -9,10 +9,12 @@ import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 import java.util.IdentityHashMap
 
-case class Contextual[P] private[chisel3] (proxy: ContextualProxy[P]) extends Wrapper[P] {
-  def value_=(v: P)(implicit sourceInfo: SourceInfo) = {
-    require(!proxy.hasDerivation, s"Cannot set a definitive twice! $proto is $value, cannot be set to $v")
-    proxy.derivation = Some(ContextualToContextualDerivation(ContextualValue(v, sourceInfo), Identity()))
+case class Contextual[P] private[chisel3] (proxy: ContextualProxy[P], sourceInfo: SourceInfo) extends Wrapper[P] {
+  def value_=(v: P)(implicit si: SourceInfo) = {
+    require(!proxy.hasDerivation, s"Cannot set a definitive twice! $debug")
+    val cv = ContextualValue(v, si)
+    println(s"Setting ${proxy.debug} as ${cv.debug}")
+    proxy.derivation = Some(ContextualToContextualDerivation(cv, Identity()))
   }
   def value: P = proto
   def setAs(d: Contextual[P]): Unit = {
@@ -34,7 +36,10 @@ case class Contextual[P] private[chisel3] (proxy: ContextualProxy[P]) extends Wr
   }
   private[chisel3] def absolutize(h: Hierarchy[_]): Unit = {
     val value = proxy.compute(h)
-    require(value.nonEmpty, proxy.sourceInfo.makeMessage(i => s"$i: $this, ${proxy.hasDerivation}"))
+    if(value.isEmpty) {
+      println(s"$debug: ${h.debug}, ${proxy.hasDerivation}")
+      throw new Exception(s"Couldn't absolutize a value for $debug")
+    }
     proxy.setValue(value.get)
   }
 }
