@@ -60,6 +60,9 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   // ensure memory ports are created with the same clock unless explicitly specified to use a different clock
   private val clockInst: Option[Clock] = Builder.currentClock
 
+  // Only kept for binary compatibility reasons, impossible for users to call
+  protected def clockWarning(sourceInfo: Option[SourceInfo]): Unit = clockWarning(sourceInfo, MemPortDirection.INFER)
+
   protected def clockWarning(sourceInfo: Option[SourceInfo], dir: MemPortDirection): Unit = {
     // Turn into pretty String if possible, if not, Builder.deprecated will find one via stack trace
     val infoStr = sourceInfo.collect { case SourceLine(file, line, col) => s"$file:$line:$col" }
