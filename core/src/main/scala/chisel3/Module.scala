@@ -117,8 +117,8 @@ object Module extends SourceInfoDoc {
   */
 abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock())).suggestName("clock")
-  final val reset: Reset = IO(Input(mkReset)).suggestName("reset")
+  final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("clock")
+  final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("reset")
 
   // TODO It's hard to remove these deprecated override methods because they're used by
   //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
@@ -347,7 +347,9 @@ package experimental {
 
     // These methods allow checking some properties of ports before the module is closed,
     // mainly for compatibility purposes.
-    protected def portsContains(elem: Data): Boolean = _ports contains elem
+    protected def portsContains(elem: Data): Boolean = {
+      _ports.exists { port => port._1 == elem }
+    }
 
     // This is dangerous because it can be called before the module is closed and thus there could
     // be more ports and names have not yet been finalized.

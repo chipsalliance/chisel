@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.DataMirror
+import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Unserializable
@@ -203,7 +204,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     // Note this also uses deprecated Port
     import chisel3.internal.firrtl.Port
     import SpecifiedDirection.{Input => IN, Unspecified}
-    (mod.getPorts should contain).theSameElementsInOrderAs(
+    (mod.getPorts.map { port => port.copy(sourceInfo = UnlocatableSourceInfo)} should contain).theSameElementsInOrderAs(
       Seq(
         Port(mod.clock, IN),
         Port(mod.reset, IN),

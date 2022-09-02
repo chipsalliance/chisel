@@ -290,7 +290,7 @@ package object internal {
 
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
       }
     }
   }
@@ -314,7 +314,7 @@ package object internal {
     // required) to build.
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
       }
     }
   }
