@@ -3,14 +3,15 @@ package chisel3.internal
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
-trait ChiselSubTypeOf[A, B]
+trait ChiselSubTypeOf[A, B, Data]
 
 object ChiselSubTypeOf {
-  def genChiselSubTypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context): c.Tree = {
+  def genChiselSubTypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag, Data: c.WeakTypeTag](c: Context): c.Tree = {
     import c.universe._
 
     val ta = implicitly[c.WeakTypeTag[A]]
     val tb = implicitly[c.WeakTypeTag[B]]
+    val tdata = implicitly[c.WeakTypeTag[Data]]
     val empty = q""
 
     // Returns true if 'a' and 'b' are structurally equivalent types.
@@ -25,11 +26,13 @@ object ChiselSubTypeOf {
     // Returns true if 'a' is a structural subtype of 'b' (i.e. all fields of
     // 'b' exist within 'a' with the same names and the same types).
     def subtypeOf(a: Type, b: Type): Boolean = {
-      val mb = b.members.filter(_.isPublic)
+      // Only look at public members that are getters and that are subtypes of Data.
+      val mb = b.members.filter(m => {
+        m.isPublic && m.isMethod && m.asMethod.isGetter && m.asMethod.returnType <:< tdata.tpe
+      })
       // Go through every public member of b and make sure a member with the
       // same name exists in a and it has the same structural type.
-      mb.filter(vb => vb.isTerm && vb.asTerm.isGetter || vb.isType)
-        .forall(vb => {
+      mb.forall(vb => {
           val name = if (vb.isTerm) TermName(vb.name.toString) else TypeName(vb.name.toString)
           typeEquals(a.member(name).info, vb.info)
         })
@@ -45,5 +48,5 @@ object ChiselSubTypeOf {
 
     return empty
   }
-  implicit def genChisel[A, B]: ChiselSubTypeOf[A, B] = macro ChiselSubTypeOf.genChiselSubTypeOf[A, B]
+  implicit def genChisel[A, B, Data]: ChiselSubTypeOf[A, B, Data] = macro ChiselSubTypeOf.genChiselSubTypeOf[A, B, Data]
 }
