@@ -258,7 +258,7 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
     val nameSize = allNames.map(_._1.length).max
     val allNamesPadded = allNames.map { case (name, value) => name.padTo(nameSize, ' ') -> value }
 
-    val result = Wire(Vec(nameSize, UInt(8.W))).suggestName("EnumRecord")
+    val result = Wire(Vec(nameSize, UInt(8.W))).suggestName(s"_${enumTypeName}Printable")
     result.foreach(_ := '?'.toChar.U)
 
     for ((name, value) <- allNamesPadded) {
@@ -302,6 +302,7 @@ abstract class EnumFactory {
   def getWidth: Int = width.get
 
   def all:      Seq[Type] = enumInstances
+  // Public accessor for Seq of names in enumRecords
   def allNames: Seq[String] = enumNames
 
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
