@@ -19,10 +19,10 @@ class PortSpec extends ChiselFreeSpec {
   "Ports now have source locators" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Dummy)
     // Automatic clock and reset coming from Module do not get source locators
-    chirrtl should include ("input clock : Clock")
-    chirrtl should include ("input reset : UInt<1>")
+    chirrtl should include("input clock : Clock")
+    chirrtl should include("input reset : UInt<1>")
     // other ports get source locators
-    chirrtl should include ("output in : { flip foo : UInt<1>, flip bar : UInt<8>} @[PortSpec.scala")
-    chirrtl should include ("output out : UInt<1> @[PortSpec.scala")
+    chirrtl should include("output in : { flip foo : UInt<1>, flip bar : UInt<8>} @[PortSpec.scala")
+    chirrtl should include("output out : UInt<1> @[PortSpec.scala")
   }
 }
