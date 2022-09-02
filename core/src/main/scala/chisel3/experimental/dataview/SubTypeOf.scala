@@ -34,18 +34,20 @@ object ChiselSubTypeOf {
       })
       // Go through every public member of b and make sure a member with the
       // same name exists in a and it has the same structural type.
-      mb.forall(vb => {
+      for (vb <- mb) {
         val name = if (vb.isTerm) TermName(vb.name.toString) else TypeName(vb.name.toString)
-        typeEquals(a.member(name).info, vb.info)
-      })
-    }
-
-    if (!subtypeOf(ta.tpe, tb.tpe)) {
-      c.error(
-        empty.pos,
-        s"${ta.tpe} is not a Chisel subtype of ${tb.tpe}. Did you mean .viewAs[${tb.tpe}]? " +
-          "Please see https://www.chisel-lang.org/chisel3/docs/cookbooks/dataview"
-      )
+        val vaTyp = a.member(name).info
+        if (!typeEquals(vaTyp, vb.info)) {
+          val err = if (vaTyp == NoType) s"${ta.tpe}.${name} does not exist" else s"${vaTyp} != ${vb.info}"
+          c.error(
+            empty.pos,
+            s"${ta.tpe} is not a Chisel subtype of ${tb.tpe}: mismatch at ${tb.tpe}.${name}: $err. Did you mean .viewAs[${tb.tpe}]? " +
+              "Please see https://www.chisel-lang.org/chisel3/docs/cookbooks/dataview"
+          )
+          return false
+        }
+      }
+      return true
     }
 
     return empty
