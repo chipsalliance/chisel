@@ -1,12 +1,14 @@
-package chisel3.internal
+package chisel3.experimental
+
+import chisel3._
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
-trait ChiselSubTypeOf[A, B, Data]
+trait ChiselSubTypeOf[A, B]
 
 object ChiselSubTypeOf {
-  def genChiselSubTypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag, Data: c.WeakTypeTag](c: Context): c.Tree = {
+  def genChiselSubTypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context): c.Tree = {
     import c.universe._
 
     val ta = implicitly[c.WeakTypeTag[A]]
@@ -48,5 +50,5 @@ object ChiselSubTypeOf {
 
     return empty
   }
-  implicit def genChisel[A, B, Data]: ChiselSubTypeOf[A, B, Data] = macro ChiselSubTypeOf.genChiselSubTypeOf[A, B, Data]
+  implicit def genChisel[A, B]: ChiselSubTypeOf[A, B] = macro ChiselSubTypeOf.genChiselSubTypeOf[A, B]
 }
