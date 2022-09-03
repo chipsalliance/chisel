@@ -49,6 +49,7 @@ object ChiselSubTypeOf {
       }
       return true
     }
+    subtypeOf(ta.tpe, tb.tpe)
 
     return empty
   }
