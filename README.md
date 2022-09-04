@@ -4,27 +4,17 @@
 ### CCC 2022
 CCC(Chisel Community Conference) is an annual gathering of Chisel community enthusiasts and technical exchange workshop. With the support of the Chisel development community and RISC-V International, this conference will bring together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.
 
-CCC2022 will be held online, You can add [ics file](https://calendar.google.com/calendar/embed?src=c_pluc02j9c4ambkiljlud3620fk%40group.calendar.google.com&ctz=Atlantic%2FAzores) to the calendar for conference agenda.
+The recording of CCC 2022 has been uploaded: 
+1. [Constellation, a Open-source Chisel NoC Generator for SoCs - Jerry Zhao@UCB BAR](https://www.youtube.com/watch?v=8FGnu0Tq3Qk&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=1)
+2. [The formal verification capabilities of chiseltest - Kevin Laeufer@UCB BAR](https://www.youtube.com/watch?v=-BUcTwE_URg&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=2)
+3. [Chisel Breakdown 03 - Jack Koenig@SiFive](https://www.youtube.com/watch?v=4vgSrW7Cdkk&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=3)
+4. [The Next Generation FIRRTL Compiler is Here! - Prithayan Barua&Hideto Ueno@SiFive](https://www.youtube.com/watch?v=V3h30s31qfk&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=4)
+5. [Implementing RISC-V Scalar Cryptography/Bitmanip extensions in Chisel - Hongren Zheng@Tsinghua University+PLCT](https://www.youtube.com/watch?v=hXaZMQPRXo0&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=5)
+6. [SCIRT: Bridging the Type System Gap for Circuit Generators - Ruikang Wang@Tsinghua University+PLCT](https://www.youtube.com/watch?v=fPl4eZHh1-M&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=6)
+7. [ChiselDB: Mapping Hardware Data Structures to Database Tables for Efficient Data Analysis Jiawei Lin@ICT](https://www.youtube.com/watch?v=Df1l9h351BM&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=7)
+8. [From Chisel to Chips in Fully Open-Source - Martin Schoeberl@DTU](https://www.youtube.com/watch?v=FenSOWKBbAw&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=8)
 
-Conference Time (in various time zones)
-* Saturday, August 27 ⋅ 09:00 - 16:00 UTC+8 (Shanghai/China)
-* Friday, August 26 ⋅ 21:00 - 04:00 UTC-4 (Eastern Daylight Time)
-* Friday, August 26 ⋅ 18:00 - 25:00 UTC-7 (Los Angeles/US)
-* Saturday, August 27 ⋅ 02:00 - 9:00 UTC+1 (London/UK)
-
-Click on [Zoom Link](https://us02web.zoom.us/j/87836037616?pwd=cXVUZjkrWlBDU3JuU0NLTU8zbG0xQT09) to participate.
-
-The conference agenda is:
-1. Constellation, a Open-source Chisel NoC Generator for SoCs - Jerry Zhao@UCB BAR
-2. The formal verification capabilities of chiseltest - Kevin Laeufer@UCB BAR
-3. Chisel Breakdown 03 - Jack Koenig@SiFive
-4. The Next Generation FIRRTL Compiler is Here! - Prithayan Barua&Hideto Ueno@SiFive
-5. Implementing RISC-V Scalar Cryptography/Bitmanip extensions in Chisel - Hongren Zheng@Tsinghua University+PLCT
-6. SCIRT: Bridging the Type System Gap for Circuit Generators - Ruikang Wang@Tsinghua University+PLCT
-7. ChiselDB: Mapping Hardware Data Structures to Database Tables for Efficient Data Analysis Jiawei Lin@ICT
-8. From Chisel to Chips in Fully Open-Source - Martin Schoeberl@DTU
-
-See you this week :)
+See you next year :)
 
 ---
 
