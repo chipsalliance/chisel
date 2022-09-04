@@ -51,7 +51,7 @@ class CastToUInt extends Module {
     val out = Output(UInt())
   })
 
-  io.out := io.in.asUInt()
+  io.out := io.in.asUInt
 }
 
 class CastFromLit(in: UInt) extends Module {
@@ -259,12 +259,12 @@ class EnumOpsTester extends BasicTester {
     mod.io.x := x
     mod.io.y := y
 
-    assert(mod.io.lt === (x.asUInt() < y.asUInt()))
-    assert(mod.io.le === (x.asUInt() <= y.asUInt()))
-    assert(mod.io.gt === (x.asUInt() > y.asUInt()))
-    assert(mod.io.ge === (x.asUInt() >= y.asUInt()))
-    assert(mod.io.eq === (x.asUInt() === y.asUInt()))
-    assert(mod.io.ne === (x.asUInt() =/= y.asUInt()))
+    assert(mod.io.lt === (x.asUInt < y.asUInt))
+    assert(mod.io.le === (x.asUInt <= y.asUInt))
+    assert(mod.io.gt === (x.asUInt > y.asUInt))
+    assert(mod.io.ge === (x.asUInt >= y.asUInt))
+    assert(mod.io.eq === (x.asUInt === y.asUInt))
+    assert(mod.io.ne === (x.asUInt =/= y.asUInt))
   }
   stop()
 }

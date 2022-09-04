@@ -92,12 +92,6 @@ Note: Chisel `Module`s have an implicit clock (called `clock`) and
 an implicit reset (called `reset`). To create modules without implicit
 clock and reset, Chisel provides `RawModule`.
 
-> Historical Note: Prior to Chisel 3.5, Modules were restricted to only
-having a single user-defined port named `io`. There was also a type called
-`MultiIOModule` that provided implicit clock and reset while allowing the
-user to define as many ports as they want. This is now the functionality
-of `Module`.
-
 ### `RawModule`
 
 A `RawModule` is a module that **does not provide an implicit clock and reset.**

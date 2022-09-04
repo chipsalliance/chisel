@@ -74,8 +74,8 @@ class RiscTester(c: Risc) extends Tester(c) {
     step(1)
   }
   def I (op: UInt, rc: Int, ra: Int, rb: Int) = {
-    // val cr = Cat(op, rc.asUInt(8.W), ra.asUInt(8.W), rb.asUInt(8.W)).litValue()
-    val cr = op.litValue() << 24 | rc << 16 | ra << 8 | rb
+    // val cr = Cat(op, rc.asUInt(8.W), ra.asUInt(8.W), rb.asUInt(8.W)).litValue
+    val cr = op.litValue << 24 | rc << 16 | ra << 8 | rb
     println("I = " + cr)
     cr
   }

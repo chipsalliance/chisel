@@ -19,7 +19,7 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
   val added = counter + 1.U
   counter := added
   val overflow = counter >= values.length.U
-  val nreset = reset.asBool() === false.B
+  val nreset = reset.asBool === false.B
   val selected = values(counter)
   val zero = 0.U + 0.U
   var p: printf.Printf = null

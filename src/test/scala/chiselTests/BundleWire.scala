@@ -37,7 +37,7 @@ class BundleToUnitTester extends BasicTester {
   bundle2.a := 0.U
   bundle2.b := 27.U
 
-  assert(bundle1.asUInt() === bundle2.asUInt())
+  assert(bundle1.asUInt === bundle2.asUInt)
 
   stop()
 }

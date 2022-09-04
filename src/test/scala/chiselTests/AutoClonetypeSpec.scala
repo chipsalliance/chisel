@@ -265,7 +265,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Autoclonetype" should "support Bundles with if-blocks" in {
-    class MyModule(n: Int) extends MultiIOModule {
+    class MyModule(n: Int) extends Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
         val out = Output(UInt(8.W))
@@ -281,7 +281,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   behavior.of("Compiler Plugin Autoclonetype")
 
   it should "NOT break code that extends chisel3.util Bundles if they use the plugin" in {
-    class MyModule extends MultiIOModule {
+    class MyModule extends Module {
       val io = IO(new InheritingBundle)
       io.deq <> io.enq
       io.count := 0.U
@@ -295,7 +295,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val foo = UInt(i.W)
     }
     elaborate {
-      new MultiIOModule {
+      new Module {
         val in = IO(Input(new MyBundle(8)))
         val out = IO(Output(new MyBundle(8)))
         out := in
@@ -308,7 +308,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val foo = gen
     }
     elaborate {
-      new MultiIOModule {
+      new Module {
         val in = IO(Input(new MyBundle(UInt(8.W))))
         val out = IO(Output(new MyBundle(UInt(8.W))))
         out := in
@@ -321,7 +321,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val foo = UInt(i.W)
     }
     elaborate {
-      new MultiIOModule {
+      new Module {
         implicit val x = 8
         val in = IO(Input(new MyBundle))
         val out = IO(Output(new MyBundle))
@@ -335,7 +335,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val foo = UInt((i + j + jj + k.getWidth).W)
     }
     elaborate {
-      new MultiIOModule {
+      new Module {
         val in = IO(Input(new MyBundle(8)(8, 8)(UInt(8.W))))
         val out = IO(Output(new MyBundle(8)(8, 8)(UInt(8.W))))
         out := in
@@ -348,7 +348,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val foo = UInt(i.W)
     }
     elaborate {
-      new MultiIOModule {
+      new Module {
         val in = IO(Input(new MyBundle(8)))
         val out = IO(Output(new MyBundle(8)))
         out := in
@@ -357,7 +357,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "support Bundles that capture type parameters from their parent scope" in {
-    class MyModule[T <: Data](gen: T) extends MultiIOModule {
+    class MyModule[T <: Data](gen: T) extends Module {
       class MyBundle(n: Int) extends Bundle {
         val foo = Vec(n, gen)
       }
@@ -375,7 +375,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     class MyBundle[A <: Data, B <: DataGen[A]](gen: B) extends Bundle {
       val foo = gen.newType
     }
-    class MyModule extends MultiIOModule {
+    class MyModule extends Module {
       val io = IO(Output(new MyBundle[UInt, DataGen[UInt]](new DataGen(UInt(3.W)))))
       io.foo := 0.U
     }

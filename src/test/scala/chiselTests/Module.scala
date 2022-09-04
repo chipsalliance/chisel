@@ -200,19 +200,6 @@ class ModuleSpec extends ChiselPropSpec with Utils {
         "extra" -> mod.extra
       )
     )
-    // Delete this when the deprecated API is deleted
-    // Note this also uses deprecated Port
-    import chisel3.internal.firrtl.Port
-    import SpecifiedDirection.{Input => IN, Unspecified}
-    (mod.getPorts.map { port => port.copy(sourceInfo = UnlocatableSourceInfo) } should contain)
-      .theSameElementsInOrderAs(
-        Seq(
-          Port(mod.clock, IN, UnlocatableSourceInfo),
-          Port(mod.reset, IN, UnlocatableSourceInfo),
-          Port(mod.io, Unspecified, UnlocatableSourceInfo),
-          Port(mod.extra, IN, UnlocatableSourceInfo)
-        )
-      ): @nowarn // delete when Port and getPorts become private
   }
 
   property("DataMirror.fullModulePorts should return all ports including children of Aggregates") {

@@ -38,9 +38,6 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   //
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
 
-  @deprecated("Use DataMirror.modulePorts instead. this API will be removed in Chisel 3.6", "Chisel 3.5")
-  lazy val getPorts: Seq[Port] = _firrtlPorts.get
-
   val compileOptions = moduleCompileOptions
 
   private[chisel3] def checkPorts(): Unit = {

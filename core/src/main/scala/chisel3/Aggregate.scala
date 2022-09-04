@@ -115,7 +115,7 @@ sealed abstract class Aggregate extends Data {
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
-    SeqUtils.do_asUInt(flatten.map(_.asUInt()))
+    SeqUtils.do_asUInt(flatten.map(_.asUInt))
   }
 
   private[chisel3] override def connectFromBits(
