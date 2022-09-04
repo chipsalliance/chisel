@@ -17,7 +17,7 @@ class VecLeftRotater[T <: Data](len: Int, gen: T, layerSize: Int = 1) extends Mo
   outputs := BarrelShifter.leftRotate(inputs, shift, layerSize)
 
   // Note: see note in VecLeftShifter
-  assert(inputs.asUInt().rotateRight(shift * gen.getWidth.U) === outputs.asUInt())
+  assert(inputs.asUInt.rotateRight(shift * gen.getWidth.U) === outputs.asUInt)
 }
 
 class VecLeftShifter[T <: Data](len: Int, gen: T, layerSize: Int = 1) extends Module {
@@ -29,7 +29,7 @@ class VecLeftShifter[T <: Data](len: Int, gen: T, layerSize: Int = 1) extends Mo
   outputs := BarrelShifter.leftShift(inputs, shift, layerSize)
 
   // Note: left shift for Vec is right shift for UInt
-  assert((inputs.asUInt() >> (shift * gen.getWidth.U)).pad(inputs.getWidth) === outputs.asUInt())
+  assert((inputs.asUInt >> (shift * gen.getWidth.U)).pad(inputs.getWidth) === outputs.asUInt)
 }
 
 class VecRightRotater[T <: Data](len: Int, gen: T, layerSize: Int = 1) extends Module {
@@ -41,7 +41,7 @@ class VecRightRotater[T <: Data](len: Int, gen: T, layerSize: Int = 1) extends M
   outputs := BarrelShifter.rightRotate(inputs, shift, layerSize)
 
   // Note: see note in VecRightShifter
-  assert(inputs.asUInt().rotateLeft(shift * gen.getWidth.U) === outputs.asUInt())
+  assert(inputs.asUInt.rotateLeft(shift * gen.getWidth.U) === outputs.asUInt)
 }
 
 class VecRightShifter[T <: Data](len: Int, gen: T, layerSize: Int = 1) extends Module {
@@ -54,7 +54,7 @@ class VecRightShifter[T <: Data](len: Int, gen: T, layerSize: Int = 1) extends M
 
   // Note: right shift for Vec is left shift for UInt
   // on << shift width: UInt(this.width + that)
-  assert(((inputs.asUInt() << (shift * gen.getWidth.U))(inputs.getWidth - 1, 0)) === outputs.asUInt())
+  assert(((inputs.asUInt << (shift * gen.getWidth.U))(inputs.getWidth - 1, 0)) === outputs.asUInt)
 }
 
 class BarrelShifterTester extends AnyFlatSpec with ChiselScalatestTester with Formal {

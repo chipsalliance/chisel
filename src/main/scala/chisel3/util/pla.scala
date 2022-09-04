@@ -95,7 +95,7 @@ object pla {
           }
         }
         .flatten
-      if (andMatrixInput.nonEmpty) t.toString -> Cat(andMatrixInput).andR() else t.toString -> true.B
+      if (andMatrixInput.nonEmpty) t.toString -> Cat(andMatrixInput).andR else t.toString -> true.B
     }.toMap
 
     // the OR matrix
@@ -111,7 +111,7 @@ object pla {
                 andMatrixOutputs(inputTerm.toString)
             }
           if (andMatrixLines.isEmpty) false.B
-          else Cat(andMatrixLines).orR()
+          else Cat(andMatrixLines).orR
         }
         .reverse
     )

@@ -185,7 +185,7 @@ object assert extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assert = {
     val id = new Assert()
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       failureMessage("Assertion", line, cond, message.map(Printable.pack(_, data: _*)))
       Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
@@ -203,7 +203,7 @@ object assert extends VerifPrintMacrosDoc {
   ): Assert = {
     val id = new Assert()
     message.foreach(Printable.checkScope(_))
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       failureMessage("Assertion", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
@@ -375,7 +375,7 @@ object assume extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assume = {
     val id = new Assume()
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       failureMessage("Assumption", line, cond, message.map(Printable.pack(_, data: _*)))
       Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
@@ -393,7 +393,7 @@ object assume extends VerifPrintMacrosDoc {
   ): Assume = {
     val id = new Assume()
     message.foreach(Printable.checkScope(_))
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       failureMessage("Assumption", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
@@ -464,7 +464,7 @@ object cover extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Cover = {
     val id = new Cover()
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       Builder.pushCommand(Verification(id, Formal.Cover, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
     id
