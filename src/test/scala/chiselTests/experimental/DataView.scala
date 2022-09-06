@@ -287,7 +287,7 @@ class DataViewSpec extends ChiselFlatSpec {
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
   }
 
-  it should "throw a type error for structural non-supertypes" in {
+  it should "throw a type error for structural non-supertypes with different members" in {
     assertTypeError("""
       class A extends Bundle {
         val x = UInt(3.W)
@@ -301,9 +301,30 @@ class DataViewSpec extends ChiselFlatSpec {
       class MyModule extends Module {
         val io = IO(new Bundle{
           val a = Input(new A)
-          val b = Output(new B) 
+          val b = Output(new B)
         })
         io.a <> io.b.viewAsSupertype(new A)
+      }
+      """)
+  }
+
+  it should "throw a type error for structural non-supertypes with different types" in {
+    assertTypeError("""
+      class A extends Bundle {
+        val x = SInt(3.W)
+        val y = UInt(3.W)
+        val z = UInt(3.W)
+      }
+      class B extends Bundle {
+        val x = UInt(3.W)
+        val y = UInt(3.W)
+      }
+      class MyModule extends Module {
+        val io = IO(new Bundle{
+          val a = Input(new A)
+          val b = Output(new B)
+        })
+        io.b <> io.a.viewAsSupertype(new B)
       }
       """)
   }
