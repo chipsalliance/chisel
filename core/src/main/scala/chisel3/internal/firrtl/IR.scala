@@ -835,7 +835,7 @@ case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) ext
   "This API should never have been public, for Module port reflection, use DataMirror.modulePorts",
   "Chisel 3.5"
 )
-case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo = UnlocatableSourceInfo)
+case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
 case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 object Formal extends Enumeration {
   val Assert = Value("assert")

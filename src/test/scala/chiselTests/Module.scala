@@ -207,10 +207,10 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     (mod.getPorts.map { port => port.copy(sourceInfo = UnlocatableSourceInfo) } should contain)
       .theSameElementsInOrderAs(
         Seq(
-          Port(mod.clock, IN),
-          Port(mod.reset, IN),
-          Port(mod.io, Unspecified),
-          Port(mod.extra, IN)
+          Port(mod.clock, IN, UnlocatableSourceInfo),
+          Port(mod.reset, IN, UnlocatableSourceInfo),
+          Port(mod.io, Unspecified, UnlocatableSourceInfo),
+          Port(mod.extra, IN, UnlocatableSourceInfo)
         )
       ): @nowarn // delete when Port and getPorts become private
   }

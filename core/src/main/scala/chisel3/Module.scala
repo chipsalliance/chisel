@@ -355,7 +355,10 @@ package experimental {
     // be more ports and names have not yet been finalized.
     // This should only to be used during the process of closing when it is safe to do so.
     private[chisel3] def findPort(name: String): Option[Data] = {
-      _ports.map(_._1).find { _.seedOpt.contains(name) }
+      _ports.find(_._1.seedOpt.contains(name)) match {
+        case Some((data, _)) => Some(data)
+        case _ => None
+      }
     }
 
     protected def portsSize: Int = _ports.size
