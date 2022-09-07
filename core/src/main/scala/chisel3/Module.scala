@@ -357,7 +357,7 @@ package experimental {
     private[chisel3] def findPort(name: String): Option[Data] = {
       _ports.find(_._1.seedOpt.contains(name)) match {
         case Some((data, _)) => Some(data)
-        case _ => None
+        case _               => None
       }
     }
 

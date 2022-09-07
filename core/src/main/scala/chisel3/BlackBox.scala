@@ -72,7 +72,9 @@ package experimental {
       // Ports are named in the same way as regular Modules
       namePorts()
 
-      val firrtlPorts = getModulePorts.map { case (port, _) => Port(port, port.specifiedDirection, UnlocatableSourceInfo) }
+      val firrtlPorts = getModulePorts.map {
+        case (port, _) => Port(port, port.specifiedDirection, UnlocatableSourceInfo)
+      }
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
       _component
@@ -166,7 +168,9 @@ abstract class BlackBox(
       port.setRef(ModuleIO(this, _namespace.name(name)), force = true)
     }
 
-    val firrtlPorts = namedPorts.map { namedPort => Port(namedPort._2, namedPort._2.specifiedDirection, UnlocatableSourceInfo) }
+    val firrtlPorts = namedPorts.map { namedPort =>
+      Port(namedPort._2, namedPort._2.specifiedDirection, UnlocatableSourceInfo)
+    }
     val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params)
     _component = Some(component)
     _component
