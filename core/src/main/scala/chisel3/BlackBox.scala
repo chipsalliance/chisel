@@ -83,7 +83,9 @@ package experimental {
 
       closeUnboundIds(names)
 
-      val firrtlPorts = getModulePorts.map { port => Port(port, port.specifiedDirection) }
+      val firrtlPorts = getModulePorts.map {
+        case port => Port(port, port.specifiedDirection, UnlocatableSourceInfo)
+      }
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
       _component
@@ -92,8 +94,8 @@ package experimental {
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
       implicit val sourceInfo = UnlocatableSourceInfo
 
-      for (x <- getModulePorts) {
-        pushCommand(DefInvalid(sourceInfo, x.ref))
+      for (port <- getModulePorts) {
+        pushCommand(DefInvalid(sourceInfo, port.ref))
       }
     }
   }
@@ -185,7 +187,10 @@ abstract class BlackBox(
       id._onModuleClose
     }
 
-    val firrtlPorts = namedPorts.map { namedPort => Port(namedPort._2, namedPort._2.specifiedDirection) }
+    val firrtlPorts = namedPorts.map { namedPort =>
+      Port(namedPort._2, namedPort._2.specifiedDirection, UnlocatableSourceInfo)
+    }
+
     val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params)
     _component = Some(component)
     _component

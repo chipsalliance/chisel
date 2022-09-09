@@ -117,8 +117,8 @@ object Module extends SourceInfoDoc {
   */
 abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock())).suggestName("clock")
-  final val reset: Reset = IO(Input(mkReset)).suggestName("reset")
+  final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("clock")
+  final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("reset")
 
   // TODO It's hard to remove these deprecated override methods because they're used by
   //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
@@ -187,7 +187,7 @@ package experimental {
       * requested (so that all calls to ports will return the same information).
       * Internal API.
       */
-    def apply[T <: Data](iodef: T): T = {
+    def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
       val module = Module.currentModule.get // Impossible to fail
       require(!module.isClosed, "Can't add more ports after module close")
       requireIsChiselType(iodef, "io type")
@@ -467,22 +467,31 @@ package experimental {
       _ids.toSeq
     }
 
-    private val _ports = new ArrayBuffer[Data]()
+    private val _ports = new ArrayBuffer[(Data, SourceInfo)]()
 
     // getPorts unfortunately already used for tester compatibility
-    protected[chisel3] def getModulePorts = {
+    protected[chisel3] def getModulePortsAndSourceInfo = {
       require(_closed, "Can't get ports before module close")
       _ports.toSeq
     }
 
+    // getPorts unfortunately already used for tester compatibility
+    protected[chisel3] def getModulePorts = {
+      require(_closed, "Can't get ports before module close")
+      _ports.toSeq.map(_._1)
+    }
+
     // These methods allow checking some properties of ports before the module is closed,
     // mainly for compatibility purposes.
-    protected def portsContains(elem: Data): Boolean = _ports contains elem
+    protected def portsContains(elem: Data): Boolean = {
+      _ports.exists { port => port._1 == elem }
+    }
 
     // This is dangerous because it can be called before the module is closed and thus there could
     // be more ports and names have not yet been finalized.
     // This should only to be used during the process of closing when it is safe to do so.
-    private[chisel3] def findPort(name: String): Option[Data] = _ports.find(_.seedOpt.contains(name))
+    private[chisel3] def findPort(name: String): Option[Data] =
+      _ports.collectFirst { case (data, _) if data.seedOpt.contains(name) => data }
 
     protected def portsSize: Int = _ports.size
 
@@ -690,7 +699,7 @@ package experimental {
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
-    protected def _bindIoInPlace(iodef: Data): Unit = {
+    protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
       // Compatibility code: Chisel2 did not require explicit direction on nodes
       // (unspecified treated as output, and flip on nothing was input).
       // This sets assigns the explicit directions required by newer semantics on
@@ -721,11 +730,16 @@ package experimental {
       assignCompatDir(iodef, false)
 
       iodef.bind(PortBinding(this))
-      _ports += iodef
+      _ports += iodef -> sourceInfo
     }
 
     /** Private accessor for _bindIoInPlace */
-    private[chisel3] def bindIoInPlace(iodef: Data): Unit = _bindIoInPlace(iodef)
+    private[chisel3] def bindIoInPlace(
+      iodef: Data
+    )(
+      implicit sourceInfo: SourceInfo,
+      compileOptions:      CompileOptions
+    ): Unit = _bindIoInPlace(iodef)
 
     /**
       * This must wrap the datatype used to set the io field of any Module.
@@ -743,8 +757,9 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef)
-
+    protected def IO[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      chisel3.experimental.IO.apply(iodef)
+    }
     //
     // Internal Functions
     //
