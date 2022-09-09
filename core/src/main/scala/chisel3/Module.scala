@@ -354,12 +354,8 @@ package experimental {
     // This is dangerous because it can be called before the module is closed and thus there could
     // be more ports and names have not yet been finalized.
     // This should only to be used during the process of closing when it is safe to do so.
-    private[chisel3] def findPort(name: String): Option[Data] = {
-      _ports.find(_._1.seedOpt.contains(name)) match {
-        case Some((data, _)) => Some(data)
-        case _               => None
-      }
-    }
+    private[chisel3] def findPort(name: String): Option[Data] =
+      _ports.collectFirst { case (data, _) if data.seedOpt.contains(name) => data }
 
     protected def portsSize: Int = _ports.size
 
