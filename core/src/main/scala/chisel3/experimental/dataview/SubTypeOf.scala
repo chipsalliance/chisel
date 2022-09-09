@@ -18,6 +18,12 @@ object ChiselSubTypeOf {
 
     def baseType(t: Type): Type = t.baseType(t.baseClasses(0))
 
+    def couldBeEqual(a: Type, b: Type) =
+      // If one baseType is a subtype the other baseType, then these two
+      // types could be equal, so we allow it and leave it to elaboration to
+      // figure out. Otherwise, the types must be equal or we throw an error.
+      (baseType(b) <:< baseType(a) || baseType(a) <:< baseType(b)) || a =:= b
+
     // Returns true if 'a' is a structural subtype of 'b' (i.e. all fields of
     // 'b' exist within 'a' with the same names and the same types).
     def subtypeOf(a: Type, b: Type) = {
@@ -31,10 +37,7 @@ object ChiselSubTypeOf {
         val name = TermName(vb.name.toString)
         val vaTyp = a.member(name).info.resultType
         val vbTyp = vb.info.resultType
-        // If one baseType is a subtype the other baseType, then these two
-        // types could be equal, so we allow it and leave it to elaboration to
-        // figure out. Otherwise, the types must be equal or we throw an error.
-        if (vaTyp == NoType || (!(baseType(vbTyp) <:< baseType(vaTyp) || baseType(vaTyp) <:< baseType(vbTyp))) && !(vaTyp =:= vbTyp)) {
+        if (vaTyp == NoType || vbTyp == NoType || !couldBeEqual(vaTyp, vbTyp)) {
           val err = if (vaTyp == NoType) s"${ta.tpe}.${name} does not exist" else s"${vaTyp} != ${vbTyp}"
           c.error(
             empty.pos,
