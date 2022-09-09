@@ -5,6 +5,27 @@ import chisel3._
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
+/** Enforces that A is a Chisel subtype of B.
+  *
+  * A is a Chisel subtype of B if A contains all of B's fields (same names and
+  * same types). Only public fields that are subtypes of chisel3.Data are
+  * considered when checking for containment.
+  *
+  * In the following example A is a Chisel subtype of B:
+  *
+  *  {{{
+  *    class A extends Bundle {
+  *      val x = UInt(3.W)
+  *      val y = UInt(3.W)
+  *      val z = UInt(3.W)
+  *    }
+  *    class B extends Bundle {
+  *      val x = UInt(3.W)
+  *      val y = UInt(3.W)
+  *    }
+  *  }}}
+  *
+  */
 trait ChiselSubtypeOf[A, B]
 
 object ChiselSubtypeOf {
