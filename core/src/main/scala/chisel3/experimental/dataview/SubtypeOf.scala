@@ -24,7 +24,6 @@ import scala.reflect.macros.blackbox.Context
   *      val y = UInt(3.W)
   *    }
   *  }}}
-  *
   */
 trait ChiselSubtypeOf[A, B]
 
