@@ -34,7 +34,7 @@ object ChiselSubTypeOf {
         // If one baseType is a subtype the other baseType, then these two
         // types could be equal, so we allow it and leave it to elaboration to
         // figure out. Otherwise, the types must be equal or we throw an error.
-        if ((!(baseType(vbTyp) <:< baseType(vaTyp) || baseType(vaTyp) <:< baseType(vbTyp))) && !(vaTyp =:= vbTyp)) {
+        if (vaTyp == NoType || (!(baseType(vbTyp) <:< baseType(vaTyp) || baseType(vaTyp) <:< baseType(vbTyp))) && !(vaTyp =:= vbTyp)) {
           val err = if (vaTyp == NoType) s"${ta.tpe}.${name} does not exist" else s"${vaTyp} != ${vbTyp}"
           c.error(
             empty.pos,
