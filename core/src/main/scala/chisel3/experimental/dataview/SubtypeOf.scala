@@ -5,10 +5,10 @@ import chisel3._
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
-trait ChiselSubTypeOf[A, B]
+trait ChiselSubtypeOf[A, B]
 
-object ChiselSubTypeOf {
-  def genChiselSubTypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context): c.Tree = {
+object ChiselSubtypeOf {
+  def genChiselSubtypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context): c.Tree = {
     import c.universe._
 
     def baseType(t: Type): Type =
@@ -26,7 +26,6 @@ object ChiselSubTypeOf {
     val a = implicitly[c.WeakTypeTag[A]].tpe
     val b = implicitly[c.WeakTypeTag[B]].tpe
     val tdata = implicitly[c.WeakTypeTag[Data]].tpe
-    val empty = q""
 
     // Only look at public members that are getters and that are subtypes of Data.
     val mb = b.members.filter(m => {
@@ -41,14 +40,14 @@ object ChiselSubTypeOf {
       if (vaTyp == NoType || vbTyp == NoType || !couldBeEqual(vaTyp, vbTyp)) {
         val err = if (vaTyp == NoType) s"${a}.${name} does not exist" else s"${vaTyp} != ${vbTyp}"
         c.error(
-          empty.pos,
+          c.enclosingPosition,
           s"${a} is not a Chisel subtype of ${b}: mismatch at ${b}.${name}: $err. Did you mean .viewAs[${b}]? " +
             "Please see https://www.chisel-lang.org/chisel3/docs/cookbooks/dataview"
         )
       }
     }
 
-    return empty
+    q""
   }
-  implicit def genChisel[A, B]: ChiselSubTypeOf[A, B] = macro ChiselSubTypeOf.genChiselSubTypeOf[A, B]
+  implicit def genChisel[A, B]: ChiselSubtypeOf[A, B] = macro ChiselSubtypeOf.genChiselSubtypeOf[A, B]
 }
