@@ -5,7 +5,7 @@ package chisel3.internal.firrtl
 import firrtl.{ir => fir}
 import chisel3._
 import chisel3.internal._
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
@@ -835,7 +835,7 @@ case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) ext
   "This API should never have been public, for Module port reflection, use DataMirror.modulePorts",
   "Chisel 3.5"
 )
-case class Port(id: Data, dir: SpecifiedDirection)
+case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
 case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 object Formal extends Enumeration {
   val Assert = Value("assert")

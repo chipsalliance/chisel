@@ -166,14 +166,6 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   }
 
   "Differing clocks at memory and read accessor instantiation" should "warn" in {
-    class modMemReadDifferingClock extends Module {
-      val myClock = IO(Input(Clock()))
-      val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
-      val readVal = mem.read(0.U)
-    }
-    val (logMemReadDifferingClock, _) = grabLog(ChiselStage.elaborate(new modMemReadDifferingClock))
-    logMemReadDifferingClock should include("memory is different")
-
     class modSyncReadMemReadDifferingClock extends Module {
       val myClock = IO(Input(Clock()))
       val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }

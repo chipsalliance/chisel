@@ -44,7 +44,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   val compileOptions = moduleCompileOptions
 
   private[chisel3] def checkPorts(): Unit = {
-    for (port <- getModulePorts) {
+    for ((port, _) <- getModulePorts) {
       if (port._computeName(None).isEmpty) {
         Builder.error(
           s"Unable to name port $port in $this, " +
@@ -92,24 +92,25 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       }
     }
 
-    val firrtlPorts = getModulePorts.map { port: Data =>
-      // Special case Vec to make FIRRTL emit the direction of its
-      // element.
-      // Just taking the Vec's specifiedDirection is a bug in cases like
-      // Vec(Flipped()), since the Vec's specifiedDirection is
-      // Unspecified.
-      val direction = port match {
-        case v: Vec[_] =>
-          v.specifiedDirection match {
-            case SpecifiedDirection.Input       => SpecifiedDirection.Input
-            case SpecifiedDirection.Output      => SpecifiedDirection.Output
-            case SpecifiedDirection.Flip        => SpecifiedDirection.flip(v.sample_element.specifiedDirection)
-            case SpecifiedDirection.Unspecified => v.sample_element.specifiedDirection
-          }
-        case _ => port.specifiedDirection
-      }
+    val firrtlPorts = getModulePorts.map {
+      case (port, sourceInfo) =>
+        // Special case Vec to make FIRRTL emit the direction of its
+        // element.
+        // Just taking the Vec's specifiedDirection is a bug in cases like
+        // Vec(Flipped()), since the Vec's specifiedDirection is
+        // Unspecified.
+        val direction = port match {
+          case v: Vec[_] =>
+            v.specifiedDirection match {
+              case SpecifiedDirection.Input       => SpecifiedDirection.Input
+              case SpecifiedDirection.Output      => SpecifiedDirection.Output
+              case SpecifiedDirection.Flip        => SpecifiedDirection.flip(v.sample_element.specifiedDirection)
+              case SpecifiedDirection.Unspecified => v.sample_element.specifiedDirection
+            }
+          case _ => port.specifiedDirection
+        }
 
-      Port(port, direction)
+        Port(port, direction, sourceInfo)
     }
     _firrtlPorts = Some(firrtlPorts)
 
@@ -117,7 +118,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     //  unless the client wants explicit control over their generation.
     val invalidateCommands = {
       if (!compileOptions.explicitInvalidate || this.isInstanceOf[ImplicitInvalidate]) {
-        getModulePorts.map { port => DefInvalid(UnlocatableSourceInfo, port.ref) }
+        getModulePorts.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
       } else {
         Seq()
       }
@@ -131,7 +132,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     implicit val sourceInfo = UnlocatableSourceInfo
 
     if (!parentCompileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      for (port <- getModulePorts) {
+      for ((port, sourceInfo) <- getModulePorts) {
         pushCommand(DefInvalid(sourceInfo, port.ref))
       }
     }
@@ -290,7 +291,7 @@ package object internal {
 
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
       }
     }
   }
@@ -314,7 +315,7 @@ package object internal {
     // required) to build.
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
       }
     }
   }
