@@ -177,6 +177,158 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("fooOut.foo <= barIn.foo")
   }
 
+  it should "support viewing structural supertypes" in {
+    class A extends Bundle {
+      val x = UInt(3.W)
+      val y = UInt(3.W)
+      val z = UInt(3.W)
+    }
+    class B extends Bundle {
+      val x = UInt(3.W)
+      val y = UInt(3.W)
+    }
+    class C extends Bundle {
+      val y = UInt(3.W)
+      val z = UInt(3.W)
+    }
+    class MyModule extends Module {
+      val io = IO(new Bundle {
+        val a = Input(new A)
+        val b = Output(new B)
+        val c = Output(new C)
+        val inc = Input(new C)
+        val outa = Output(new A)
+      })
+      io.b <> io.a.viewAsSupertype(new B)
+      io.c <> io.a.viewAsSupertype(new C)
+      io.outa.viewAsSupertype(new C) <> io.inc
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("io.b.x <= io.a.x")
+    chirrtl should include("io.c.z <= io.a.z")
+    chirrtl should include("io.outa.z <= io.inc.z")
+    chirrtl should include("io.outa.y <= io.inc.y")
+  }
+
+  it should "support viewing structural supertypes with bundles" in {
+    class Foo extends Bundle {
+      val y = UInt(3.W)
+    }
+    class A extends Bundle {
+      val foo = new Foo
+      val x = UInt(3.W)
+      val z = UInt(3.W)
+    }
+    class B extends Bundle {
+      val x = UInt(3.W)
+      val foo = new Foo
+    }
+    class C extends Bundle {
+      val foo = new Foo
+      val z = UInt(3.W)
+    }
+    class MyModule extends Module {
+      val io = IO(new Bundle {
+        val a = Input(new A)
+        val b = Output(new B)
+        val c = Output(new C)
+        val inc = Input(new C)
+        val outa = Output(new A)
+      })
+      io.b <> io.a.viewAsSupertype(new B)
+      io.c <> io.a.viewAsSupertype(new C)
+      io.outa.viewAsSupertype(new C) <> io.inc
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("io.b.x <= io.a.x")
+    chirrtl should include("io.c.z <= io.a.z")
+    chirrtl should include("io.outa.foo <= io.inc.foo")
+    chirrtl should include("io.b.foo <= io.a.foo")
+    chirrtl should include("io.c.foo <= io.a.foo")
+  }
+
+  it should "error during elaboration for sub-type errors that cannot be found at compile-time" in {
+    class A extends Bundle {
+      val x = UInt(3.W)
+      val y = UInt(4.W)
+      val z = UInt(3.W)
+    }
+    class B extends Bundle {
+      val x = UInt(3.W)
+      val y = UInt(3.W)
+    }
+    class MyModule extends Module {
+      val io = IO(new Bundle {
+        val a = Input(new A)
+        val b = Output(new B)
+      })
+      io.b <> io.a.viewAsSupertype(new B)
+    }
+    a[ChiselException] should be thrownBy (ChiselStage.emitVerilog(new MyModule))
+  }
+
+  it should "support viewing structural supertypes with generated types" in {
+    class Foo extends Bundle {
+      val foo = UInt(8.W)
+    }
+    class Bar extends Foo {
+      val bar = UInt(8.W)
+    }
+    class MyInterface[T <: Data](gen: () => T) extends Bundle {
+      val foo = gen()
+      val fizz = UInt(8.W)
+      val buzz = UInt(8.W)
+    }
+    class MyModule extends Module {
+      val fooIf = IO(Input(new MyInterface(() => UInt(8.W))))
+      val fooOut = IO(Output(new Foo))
+      fooOut <> fooIf.viewAsSupertype(new Foo)
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+  }
+
+  it should "throw a type error for structural non-supertypes with different members" in {
+    assertTypeError("""
+      class A extends Bundle {
+        val x = UInt(3.W)
+        val y = UInt(3.W)
+        val z = UInt(3.W)
+      }
+      class B extends Bundle {
+        val x = UInt(3.W)
+        val y = UInt(3.W)
+      }
+      class MyModule extends Module {
+        val io = IO(new Bundle{
+          val a = Input(new A)
+          val b = Output(new B)
+        })
+        io.a <> io.b.viewAsSupertype(new A)
+      }
+      """)
+  }
+
+  it should "throw a type error for structural non-supertypes with different types" in {
+    assertTypeError("""
+      class A extends Bundle {
+        val x = SInt(3.W)
+        val y = UInt(3.W)
+        val z = UInt(3.W)
+      }
+      class B extends Bundle {
+        val x = UInt(3.W)
+        val y = UInt(3.W)
+      }
+      class MyModule extends Module {
+        val io = IO(new Bundle{
+          val a = Input(new A)
+          val b = Output(new B)
+        })
+        io.b <> io.a.viewAsSupertype(new B)
+      }
+      """)
+  }
+
   it should "error if viewing a parent Bundle as a child Bundle type" in {
     assertTypeError("""
       class Foo extends Bundle {
