@@ -25,7 +25,7 @@ import scala.reflect.macros.blackbox.Context
   *    }
   *  }}}
   */
-trait ChiselSubtypeOf[A, B]
+sealed trait ChiselSubtypeOf[A, B]
 
 object ChiselSubtypeOf {
   def genChiselSubtypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context): c.Tree = {
