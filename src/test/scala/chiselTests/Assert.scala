@@ -73,30 +73,6 @@ class PrintableBadUnescapedPercentAssertTester extends BasicTester {
   stop()
 }
 
-class AssumePrintableFailingScope extends BasicTester {
-  ChiselStage.elaborate {
-    new Module {
-      val mod = Module(new PrintableScopeTester)
-      assume(1.U === 1.U, mod.printable)
-    }
-  }
-  stop()
-}
-
-class PrintableScopeTester extends Module {
-  val in = IO(Input(UInt(8.W)))
-  val out = IO(Output(UInt(8.W)))
-  out := in
-
-  val printable = p"${in}"
-}
-
-class AssertPrintableFailingScope extends BasicTester {
-  val mod = Module(new PrintableScopeTester)
-  assert(1.U === 2.U, mod.printable)
-  stop()
-}
-
 class PrintableAssumeTester extends Module {
   val in = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
@@ -106,6 +82,78 @@ class PrintableAssumeTester extends Module {
   assume(w === 255.U, cf"Assumption failed, Wire w =/= $w%x")
 
   out := in
+}
+
+class PrintableScopeTester extends Module {
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+  out := in
+
+  val w = Wire(UInt(8.W))
+  w := 255.U
+
+  val printableWire = p"$w"
+  val printablePort = p"$in"
+}
+
+class AssertPrintableWireScope extends BasicTester {
+  val mod = Module(new PrintableScopeTester)
+  assert(1.U === 2.U, mod.printableWire)
+  stop()
+}
+
+class AssertPrintablePortScope extends BasicTester {
+  ChiselStage.elaborate {
+    new Module {
+      val mod = Module(new PrintableScopeTester)
+      assert(1.U === 2.U, mod.printablePort)
+    }
+  }
+  stop()
+}
+
+class AssertPrintableFailingWhenScope extends BasicTester {
+  ChiselStage.elaborate {
+    new Module {
+      val mod = Module(new PrintableWhenScopeTester)
+      assert(1.U === 2.U, mod.printable)
+    }
+  }
+  stop()
+}
+
+class AssumePrintableWireScope extends BasicTester {
+  ChiselStage.elaborate {
+    new Module {
+      val mod = Module(new PrintableScopeTester)
+      assume(1.U === 1.U, mod.printableWire)
+    }
+  }
+  stop()
+}
+
+class AssumePrintablePortScope extends BasicTester {
+  ChiselStage.elaborate {
+    new Module {
+      val mod = Module(new PrintableScopeTester)
+      assume(1.U === 1.U, mod.printablePort)
+    }
+  }
+  stop()
+}
+
+class PrintableWhenScopeTester extends Module {
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+
+  out := in
+
+  val w = Wire(UInt(8.W))
+  w := 255.U
+  var printable = cf""
+  when(true.B) {
+    printable = cf"$w"
+  }
 }
 
 class AssertSpec extends ChiselFlatSpec with Utils {
@@ -118,12 +166,23 @@ class AssertSpec extends ChiselFlatSpec with Utils {
   "An assertion" should "not assert until we come out of reset" in {
     assertTesterPasses { new PipelinedResetTester }
   }
-  "Assert Printables" should "respect scope" in {
-    a[ChiselException] should be thrownBy { assertTesterPasses { new AssertPrintableFailingScope } }
+
+  "Assert Printables" should "respect port scoping" in {
+    assertTesterPasses { new AssertPrintablePortScope }
+  }
+  "Assert Printables" should "respect wire scoping" in {
+    a[ChiselException] should be thrownBy { assertTesterPasses { new AssertPrintableWireScope } }
+  }
+  "Assume Printables" should "respect port scoping" in {
+    assertTesterPasses { new AssumePrintablePortScope }
   }
 
-  "Assume Printables" should "respect scope" in {
-    a[ChiselException] should be thrownBy { assertTesterPasses { new AssumePrintableFailingScope } }
+  "Assume Printables" should "respect wire scoping" in {
+    a[ChiselException] should be thrownBy { assertTesterPasses { new AssumePrintableWireScope } }
+  }
+
+  "Assert Printables" should "respect when scope" in {
+    a[ChiselException] should be thrownBy { assertTesterPasses { new AssertPrintableFailingWhenScope } }
   }
 
   "Assertions" should "allow the modulo operator % in the message" in {

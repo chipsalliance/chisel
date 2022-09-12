@@ -26,17 +26,22 @@ import scala.reflect.macros.blackbox
 trait VerifPrintMacrosDoc
 
 private[chisel3] trait ScopeCheck {
-  def checkScope(message: Option[Printable]): Unit =
-    message match {
-      case Some(x) =>
-        if (Builder.currentModule != message.get.context) {
-          val currentModuleString = Builder.currentModule.map(_.name).getOrElse("(unknown module)")
-          Builder.error(
-            s"Printable was built in a different module ${message.get.context.map(_.name).getOrElse("(unknown module)")} from where it was invoked ($currentModuleString)"
-          )
-        }
-      case None =>
+  def checkScope(message: Option[Printable]): Unit = {
+    def getData(x: Printable): Seq[Data] = {
+      x match {
+        case y: FirrtlFormat => Seq(y.bits)
+        case Name(d)       => Seq(d)
+        case FullName(d)   => Seq(d)
+        case Printables(p) => p.flatMap(getData(_)).toSeq
+        case _             => Seq() // Handles subtypes PString and Percent
+      }
     }
+
+    message match {
+      case Some(x) => getData(x).map(_.requireVisible())
+      case _       =>
+    }
+  }
 }
 
 object assert extends ScopeCheck with VerifPrintMacrosDoc {

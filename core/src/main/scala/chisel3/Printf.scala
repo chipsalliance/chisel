@@ -100,6 +100,23 @@ object printf {
     printfId
   }
 
+  def checkScope(message: Option[Printable]): Unit = {
+    def getData(x: Printable): Seq[Data] = {
+      x match {
+        case y: FirrtlFormat => Seq(y.bits)
+        case Name(d)       => Seq(d)
+        case FullName(d)   => Seq(d)
+        case Printables(p) => p.flatMap(getData(_)).toSeq
+        case _             => Seq() // Handles subtypes PString and Percent
+      }
+    }
+
+    message match {
+      case Some(x) => getData(x).map(_.requireVisible())
+      case _       =>
+    }
+  }
+
   private[chisel3] def printfWithoutReset(
     pable: Printable
   )(
@@ -109,12 +126,7 @@ object printf {
     val clock = Builder.forcedClock
     val printfId = new Printf(pable)
 
-    if (Builder.currentModule != pable.context) {
-      val currentModuleString = Builder.currentModule.map(_.name).getOrElse("(unknown module)")
-      Builder.error(
-        s"Printable was built in a different module ${pable.context.map(_.name).getOrElse("(unknown module)")} than where it was invoked ($currentModuleString)"
-      )
-    }
+    checkScope(Some(pable))
 
     pushCommand(chisel3.internal.firrtl.Printf(printfId, sourceInfo, clock.ref, pable))
     printfId

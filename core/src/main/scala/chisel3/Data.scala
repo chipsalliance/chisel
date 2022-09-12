@@ -672,7 +672,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   private[chisel3] def typeEquivalent(that: Data): Boolean
 
-  private def requireVisible(): Unit = {
+  private[chisel3] def requireVisible(): Unit = {
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
