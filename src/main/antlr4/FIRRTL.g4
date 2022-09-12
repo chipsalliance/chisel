@@ -281,6 +281,7 @@ keywordAsId
   | 'assert'
   | 'assume'
   | 'cover'
+  | 'version'
   ;
 
 // Parentheses are added as part of name because semantics require no space between primop and open parentheses

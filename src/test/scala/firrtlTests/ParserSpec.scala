@@ -88,7 +88,8 @@ class ParserSpec extends FirrtlFlatSpec {
       "attach",
       "assert",
       "assume",
-      "cover"
+      "cover",
+      "version"
     ) ++ PrimOps.listing
   }
 
