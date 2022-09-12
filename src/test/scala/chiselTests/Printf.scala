@@ -34,7 +34,11 @@ class ScopeTesterModule extends Module {
   val out = IO(Output(UInt(8.W)))
   out := in
 
-  val p = p"$in"
+  val w = Wire(UInt(8.W))
+  w := 125.U
+
+  val p = cf"$in"
+  val wp = cf"$w"
 }
 
 class PrintablePrintfScopeTester extends BasicTester {
@@ -42,6 +46,16 @@ class PrintablePrintfScopeTester extends BasicTester {
     new Module {
       val mod = Module(new ScopeTesterModule)
       printf(mod.p)
+    }
+  }
+  stop()
+}
+
+class PrintablePrintfWireScopeTester extends BasicTester {
+  ChiselStage.elaborate {
+    new Module {
+      val mod = Module(new ScopeTesterModule)
+      printf(mod.wp)
     }
   }
   stop()
@@ -60,7 +74,10 @@ class PrintfSpec extends ChiselFlatSpec {
   "A printf with Printable ASCII characters 1-127" should "run" in {
     assertTesterPasses { new ASCIIPrintableTester }
   }
-  "A printf with Printable with invalid scope" should "error" in {
-    a[ChiselException] should be thrownBy { assertTesterPasses { new PrintablePrintfScopeTester } }
+  "A printf with Printable" should "respect port scopes" in {
+    assertTesterPasses { new PrintablePrintfScopeTester }
+  }
+  "A printf with Printable" should "respect wire scopes" in {
+    a[ChiselException] should be thrownBy { assertTesterPasses { new PrintablePrintfWireScopeTester } }
   }
 }
