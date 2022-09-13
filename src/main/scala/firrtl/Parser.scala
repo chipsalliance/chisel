@@ -10,6 +10,8 @@ import firrtl.parser.Listener
 import firrtl.Utils.time
 import firrtl.antlr.{FIRRTLParser, _}
 
+import scala.util.control.NonFatal
+
 class ParserException(message: String) extends FirrtlUserException(message)
 
 case class ParameterNotSpecifiedException(message: String) extends ParserException(message)
@@ -42,11 +44,24 @@ object Parser extends LazyLogging {
       parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
       parser.addParseListener(listener)
 
-      // Concrete Syntax Tree
-      parser.circuit
+      // Syntax errors may violate assumptions in the Listener and Visitor.
+      // We need to handle these errors gracefully.
+      val throwable =
+        try {
+          parser.circuit
+          None
+        } catch {
+          case e: ParserException => throw e
+          case NonFatal(e) => Some(e)
+        }
 
       val numSyntaxErrors = parser.getNumberOfSyntaxErrors
       if (numSyntaxErrors > 0) throw new SyntaxErrorsException(s"$numSyntaxErrors syntax error(s) detected")
+
+      // Note that this should never happen because any throwables caught should be due to syntax
+      // errors that are reported above. This is just to ensure that we don't accidentally mask any
+      // bugs in the Parser, Listener, or Visitor.
+      if (throwable.nonEmpty) Utils.throwInternalError(exception = throwable)
 
       listener.getCircuit
     }
