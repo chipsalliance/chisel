@@ -45,8 +45,6 @@ printf(cf"myUInt = $myUInt%b") // myUInt = 100001
 printf(cf"myUInt = $myUInt%c") // myUInt = !
 ```
 
-We recognize that the format specifiers are verbose, so we are working on a more concise syntax.
-
 #### Aggregate data-types
 
 Chisel provides default custom "pretty-printing" for Vecs and Bundles. The default printing of a Vec is similar to printing a Seq or List in Scala while printing a Bundle is similar to printing a Scala Map.
