@@ -103,7 +103,7 @@ Message:
   data   : 0x00000000deadbeef
 ```
 
-Notice the use of `+` between `cf` interpolated "strings". The results of `cf` interpolation can be concatenated by using the `+` operator. For more information, please see the documentation
+Notice the use of `+` between `cf` interpolated "strings". The results of `cf` interpolation can be concatenated by using the `+` operator.
 
 ### C-Style
 
