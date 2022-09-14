@@ -147,7 +147,7 @@ object Printable {
     }
 
     message match {
-      case Some(x) => getData(x).map(_.requireVisible())
+      case Some(x) => getData(x).foreach(_.requireVisible())
       case _       =>
     }
   }
