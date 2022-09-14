@@ -100,23 +100,6 @@ object printf {
     printfId
   }
 
-  def checkScope(message: Option[Printable]): Unit = {
-    def getData(x: Printable): Seq[Data] = {
-      x match {
-        case y: FirrtlFormat => Seq(y.bits)
-        case Name(d)       => Seq(d)
-        case FullName(d)   => Seq(d)
-        case Printables(p) => p.flatMap(getData(_)).toSeq
-        case _             => Seq() // Handles subtypes PString and Percent
-      }
-    }
-
-    message match {
-      case Some(x) => getData(x).map(_.requireVisible())
-      case _       =>
-    }
-  }
-
   private[chisel3] def printfWithoutReset(
     pable: Printable
   )(
@@ -126,7 +109,7 @@ object printf {
     val clock = Builder.forcedClock
     val printfId = new Printf(pable)
 
-    checkScope(Some(pable))
+    Printable.checkScope(Some(pable))
 
     pushCommand(chisel3.internal.firrtl.Printf(printfId, sourceInfo, clock.ref, pable))
     printfId

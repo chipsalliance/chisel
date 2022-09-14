@@ -25,26 +25,7 @@ import scala.reflect.macros.blackbox
   */
 trait VerifPrintMacrosDoc
 
-private[chisel3] trait ScopeCheck {
-  def checkScope(message: Option[Printable]): Unit = {
-    def getData(x: Printable): Seq[Data] = {
-      x match {
-        case y: FirrtlFormat => Seq(y.bits)
-        case Name(d)       => Seq(d)
-        case FullName(d)   => Seq(d)
-        case Printables(p) => p.flatMap(getData(_)).toSeq
-        case _             => Seq() // Handles subtypes PString and Percent
-      }
-    }
-
-    message match {
-      case Some(x) => getData(x).map(_.requireVisible())
-      case _       =>
-    }
-  }
-}
-
-object assert extends ScopeCheck with VerifPrintMacrosDoc {
+object assert extends VerifPrintMacrosDoc {
 
   /** Checks for a condition to be valid in the circuit at rising clock edge
     * when not in reset. If the condition evaluates to false, the circuit
@@ -197,7 +178,7 @@ object assert extends ScopeCheck with VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assert = {
     val id = new Assert()
-    checkScope(message)
+    Printable.checkScope(message)
     when(!Module.reset.asBool()) {
       failureMessage("Assertion", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
@@ -206,7 +187,7 @@ object assert extends ScopeCheck with VerifPrintMacrosDoc {
   }
 }
 
-object assume extends ScopeCheck with VerifPrintMacrosDoc {
+object assume extends VerifPrintMacrosDoc {
 
   /** Assumes a condition to be valid in the circuit at all times.
     * Acts like an assertion in simulation and imposes a declarative
@@ -363,7 +344,7 @@ object assume extends ScopeCheck with VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assume = {
     val id = new Assume()
-    checkScope(message)
+    Printable.checkScope(message)
     when(!Module.reset.asBool()) {
       failureMessage("Assumption", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))

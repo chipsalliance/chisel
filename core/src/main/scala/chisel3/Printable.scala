@@ -136,6 +136,23 @@ object Printable {
     val bufEscapeBackSlash = buf.map(_.replace("\\", "\\\\"))
     StringContext(bufEscapeBackSlash.toSeq: _*).cf(data: _*)
   }
+
+  private[chisel3] def checkScope(message: Option[Printable]): Unit = {
+    def getData(x: Printable): Seq[Data] = {
+      x match {
+        case y: FirrtlFormat => Seq(y.bits)
+        case Name(d)       => Seq(d)
+        case FullName(d)   => Seq(d)
+        case Printables(p) => p.flatMap(getData(_)).toSeq
+        case _             => Seq() // Handles subtypes PString and Percent
+      }
+    }
+
+    message match {
+      case Some(x) => getData(x).map(_.requireVisible())
+      case _       =>
+    }
+  }
 }
 
 case class Printables(pables: Iterable[Printable]) extends Printable {
