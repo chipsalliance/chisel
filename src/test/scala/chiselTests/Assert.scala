@@ -92,8 +92,8 @@ class PrintableScopeTester extends Module {
   val w = Wire(UInt(8.W))
   w := 255.U
 
-  val printableWire = p"$w"
-  val printablePort = p"$in"
+  val printableWire = cf"$w"
+  val printablePort = cf"$in"
 }
 
 class AssertPrintableWireScope extends BasicTester {
