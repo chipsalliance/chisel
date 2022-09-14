@@ -180,6 +180,14 @@ class BlackBoxWithParamsTester extends BasicTester {
   when(end) { stop() }
 }
 
+class ParameterizedBlackBox(m: Map[String, Param]) extends BlackBox(m) {
+  val io = IO(new Bundle {
+    val O = Output(Clock())
+    val I = Input(Clock())
+    val IB = Input(Clock())
+  })
+}
+
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
     assertTesterPasses({ new BlackBoxTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
@@ -221,5 +229,49 @@ class BlackBoxSpec extends ChiselFlatSpec {
         val inst = Module(new BlackBoxUIntIO)
       })
     }).getMessage should include("must have a port named 'io' of type Record")
+  }
+
+  "BlackBoxes" should "sort the verilog output of their param map by param key" in {
+    val rand = scala.util.Random
+    rand.setSeed(0)
+
+    class Top(m: Map[String, Param]) extends Module {
+      val io = IO(new Bundle {})
+      val ibufds = Module(new ParameterizedBlackBox(m))
+      ibufds.io.I := clock
+    }
+
+    def keysInOrder(s: String): Boolean = {
+      val nums = s.split(", ").map { ss => ss.drop(5).take(3) }
+      nums.zip(nums.tail).forall { case (a, b) => a < b }
+    }
+
+    // make a list of keys / param pairs and add them as they
+    // are generated in random order
+    // rendering verilopg will
+    for (_ <- 0 until 16) {
+      val numberOfKeys = rand.nextInt(32)
+      val paramMap = (0 until numberOfKeys).map {
+        case _ =>
+          val keyNumber = rand.nextInt(48)
+          f"key_$keyNumber%03d" -> IntParam(keyNumber)
+      }
+
+      val verilogString = getVerilogString(new Top(paramMap.toMap))
+
+      var paramsSeen = false
+      val paramsShowInOrder = verilogString.split("\n").exists { line =>
+        val offset = line.indexOf(".key_0")
+        val result = if (offset >= 0) {
+          paramsSeen = true
+          keysInOrder(line.drop(offset))
+        } else {
+          false
+        }
+        result
+      } || !paramsSeen
+
+      paramsShowInOrder should be(true)
+    }
   }
 }

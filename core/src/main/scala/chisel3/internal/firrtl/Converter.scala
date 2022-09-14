@@ -350,7 +350,7 @@ private[chisel3] object Converter {
         name,
         ports.map(p => convert(p, topDir)),
         id.desiredName,
-        params.map { case (name, p) => convert(name, p) }.toSeq
+        params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
   }
 
