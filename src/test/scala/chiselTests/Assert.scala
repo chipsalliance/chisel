@@ -171,18 +171,18 @@ class AssertSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses { new AssertPrintablePortScope }
   }
   "Assert Printables" should "respect wire scoping" in {
-    a[ChiselException] should be thrownBy { assertTesterPasses { new AssertPrintableWireScope } }
+    a[ChiselException] should be thrownBy { ChiselStage.elaborate(new AssertPrintableWireScope) }
   }
   "Assume Printables" should "respect port scoping" in {
     assertTesterPasses { new AssumePrintablePortScope }
   }
 
   "Assume Printables" should "respect wire scoping" in {
-    a[ChiselException] should be thrownBy { assertTesterPasses { new AssumePrintableWireScope } }
+    a[ChiselException] should be thrownBy { ChiselStage.elaborate(new AssumePrintableWireScope) }
   }
 
   "Assert Printables" should "respect when scope" in {
-    a[ChiselException] should be thrownBy { assertTesterPasses { new AssertPrintableFailingWhenScope } }
+    a[ChiselException] should be thrownBy { ChiselStage.elaborate(new AssertPrintableFailingWhenScope) }
   }
 
   "Assertions" should "allow the modulo operator % in the message" in {
