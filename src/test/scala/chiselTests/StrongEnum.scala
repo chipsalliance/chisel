@@ -173,7 +173,7 @@ object Opcode extends ChiselEnum {
 }
 
 class PrintableExecutionTest extends BasicTester {
-  val (count, done) = Counter(true.B, 5)
+  val (count, done) = Counter(true.B, 6)
   val w = WireDefault(Opcode.load)
   when(count === 0.U) {
     w := Opcode.load
@@ -188,12 +188,13 @@ class PrintableExecutionTest extends BasicTester {
     w := Opcode.store
   }
   when(count === 4.U) { // invalid state
-    w := Opcode(Opcode.litValues.last + 0x1.U)
+    val invalidWire = WireInit(UInt(6.W), 0.U)
+    w := Opcode.safe(invalidWire)._1
   }
   when(done) {
     stop()
   }
-  printf(cf"$w ")
+  printf(cf"'$w'\n")
 }
 
 class CastToUIntTester extends BasicTester {
@@ -594,6 +595,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
     log should include("imm")
     log should include("auipc")
     log should include("store")
+    log should include("?????")
   }
 }
 

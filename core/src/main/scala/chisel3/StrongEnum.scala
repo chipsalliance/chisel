@@ -256,10 +256,13 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
     implicit val compileOptions = ExplicitCompileOptions.Strict
     val allNames = factory.allNames.zip(factory.all)
     val nameSize = allNames.map(_._1.length).max
-    val allNamesPadded = allNames.map { case (name, value) => name.padTo(nameSize, ' ') -> value }
+    def leftPad(str: String): String = {
+      str.reverse.padTo(nameSize, ' ').reverse
+    }
+    val allNamesPadded = allNames.map { case (name, value) => leftPad(name) -> value }
 
     val result = Wire(Vec(nameSize, UInt(8.W))).suggestName(s"_${enumTypeName}Printable")
-    result.foreach(_ := '?'.toChar.U)
+    result.foreach(_ := '?'.U)
 
     for ((name, value) <- allNamesPadded) {
       when(this === value) {
