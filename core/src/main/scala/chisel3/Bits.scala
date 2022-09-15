@@ -896,7 +896,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
 
-  /** Unary negation (expanding width)
+  /** Unary negation (constant width)
     *
     * @return a hardware $coll equal to zero minus this $coll
     * $constantWidth
