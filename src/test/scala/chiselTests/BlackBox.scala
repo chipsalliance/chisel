@@ -180,14 +180,6 @@ class BlackBoxWithParamsTester extends BasicTester {
   when(end) { stop() }
 }
 
-class ParameterizedBlackBox(m: Map[String, Param]) extends BlackBox(m) {
-  val io = IO(new Bundle {
-    val O = Output(Clock())
-    val I = Input(Clock())
-    val IB = Input(Clock())
-  })
-}
-
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
     assertTesterPasses({ new BlackBoxTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
@@ -232,46 +224,39 @@ class BlackBoxSpec extends ChiselFlatSpec {
   }
 
   "BlackBoxes" should "sort the verilog output of their param map by param key" in {
-    val rand = scala.util.Random
-    rand.setSeed(0)
+
+    class ParameterizedBlackBox(m: Map[String, Param]) extends BlackBox(m) {
+      val io = IO(new Bundle {
+        val out = Output(Clock())
+        val in = Input(Clock())
+      })
+    }
 
     class Top(m: Map[String, Param]) extends Module {
       val io = IO(new Bundle {})
-      val ibufds = Module(new ParameterizedBlackBox(m))
-      ibufds.io.I := clock
+      val pbb = Module(new ParameterizedBlackBox(m))
+      pbb.io.in := clock
     }
 
-    def keysInOrder(s: String): Boolean = {
-      val nums = s.split(", ").map { ss => ss.drop(5).take(3) }
-      nums.zip(nums.tail).forall { case (a, b) => a < b }
-    }
+    val sixteenParams = ('a' until 'p').map { key => key.toString -> IntParam(1) }
 
-    // make a list of keys / param pairs and add them as they
-    // are generated in random order
-    // rendering verilopg will
-    for (_ <- 0 until 16) {
-      val numberOfKeys = rand.nextInt(32)
-      val paramMap = (0 until numberOfKeys).map {
-        case _ =>
-          val keyNumber = rand.nextInt(48)
-          f"key_$keyNumber%03d" -> IntParam(keyNumber)
-      }
+    getVerilogString(new Top(Map())) should include("ParameterizedBlackBox pbb ( //")
+    getVerilogString(new Top(Map("a" -> IntParam(1)))) should include("ParameterizedBlackBox #(.a(1)) pbb ( //")
 
-      val verilogString = getVerilogString(new Top(paramMap.toMap))
+    // check that both param orders are the same
+    getVerilogString(new Top(Map("a" -> IntParam(1), "b" -> IntParam(1)))) should include(
+      "ParameterizedBlackBox #(.a(1), .b(1)) pbb ( //"
+    )
+    getVerilogString(new Top(Map("b" -> IntParam(1), "a" -> IntParam(1)))) should include(
+      "ParameterizedBlackBox #(.a(1), .b(1)) pbb ( //"
+    )
 
-      var paramsSeen = false
-      val paramsShowInOrder = verilogString.split("\n").exists { line =>
-        val offset = line.indexOf(".key_0")
-        val result = if (offset >= 0) {
-          paramsSeen = true
-          keysInOrder(line.drop(offset))
-        } else {
-          false
-        }
-        result
-      } || !paramsSeen
-
-      paramsShowInOrder should be(true)
-    }
+    // check that both param orders are the same, note that verilog output does a newline when more params are present
+    getVerilogString(new Top(sixteenParams.toMap)) should include(
+      "(.a(1), .b(1), .c(1), .d(1), .e(1), .f(1), .g(1), .h(1), .i(1), .j(1), .k(1), .l(1), .m(1), .n(1), .o(1)) pbb ( //"
+    )
+    getVerilogString(new Top(sixteenParams.reverse.toMap)) should include(
+      "(.a(1), .b(1), .c(1), .d(1), .e(1), .f(1), .g(1), .h(1), .i(1), .j(1), .k(1), .l(1), .m(1), .n(1), .o(1)) pbb ( //"
+    )
   }
 }
