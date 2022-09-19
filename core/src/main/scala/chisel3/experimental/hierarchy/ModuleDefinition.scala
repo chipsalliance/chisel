@@ -30,6 +30,7 @@ private[chisel3] final class ModuleDefinition[T <: BaseModule] private (
       case _ => false
     }
   }
+  override def debug = getTarget.toString + identity + "DEFINITION"
   contextuals ++= underlying.proto.contextuals
 
   // ======== THINGS TO MAKE CHISEL WORK ========

@@ -4,6 +4,7 @@ package chisel3.experimental.hierarchy.core
 import java.util.IdentityHashMap
 import scala.collection.mutable
 import chisel3.internal.sourceinfo.SourceInfo
+import Contextual.log
 
 /** Representation of a hierarchical version of an object
   * Has two subclasses, a DefinitionProxy and InstanceProxy, which are wrapped with Definition(..) and Instance(..)
@@ -17,7 +18,6 @@ trait Proxy[+P] {
   def parentColumn: List[String]
   def suffixMatrix: List[List[String]]
   def displaySuffixMatrix: String = {
-    println(suffixMatrix)
     def align(str: String, l: Int) = str + (" "*(str.length - l))
     val lengths = suffixMatrix.map {
       pc => pc.foldLeft(0){ (sz: Int, d: String) => sz.max(d.length) }
@@ -35,6 +35,15 @@ trait Proxy[+P] {
   private[chisel3] val nameToProto = new IdentityHashMap[Any, String]()
 
   def identity = this.hashCode
+
+  def mock[X](args: Any*)(buildMock: => X): X = {
+    val key = args
+    if (cache.containsKey(key)) cache.get(key).asInstanceOf[X] else {
+      val ret = buildMock
+      cache.put(key, ret)
+      ret
+    }
+  }
 
   def getIdentity(value: Any): Any = value match {
     case w: Wrapper[_] => w.proxy
@@ -243,11 +252,13 @@ trait DefinitiveProtoProxy[P] extends DefinitiveProxy[P] {
 sealed trait ContextualProxy[P] extends Proxy[P] {
   def parentOpt: Option[Proxy[Any]]
   def parentDebug = parentOpt.map(_.debug).getOrElse("~")
+  def protoContextual: ContextualProxy[P] = suffixProxyOpt.map(_.protoContextual).getOrElse(this)
   val suffixProxyOpt: Option[ContextualProxy[P]]
   def parentColumn: List[String] = List(this.debug) ++ parentOpt.map(_.parentColumn).getOrElse(List.empty[String])
   def suffixMatrix: List[List[String]] = List(parentColumn)
   var derivation: Option[ContextualDerivation]
   var isResolved: Boolean = false
+  var name: String = ""
   def hasDerivation = derivation.nonEmpty
   def values: List[P]
   def setValue[H](value: P): Unit
@@ -265,9 +276,10 @@ case class ContextualValue[P](value: P, sourceInfo: SourceInfo) extends Contextu
   def parentOpt: Option[Proxy[Any]] = None
   def proto = value
   isResolved = true
+  name = value.toString
   def values: List[P] = ??? // Should never call .values on a ContextualValue
   override def compute[H](h: Hierarchy[H]): Option[P] = {
-    println(s"computing $this on $h")
+    log(s"computing $this on $h")
     Some(value)
   }
   var derivation: Option[ContextualDerivation] = None
@@ -291,10 +303,10 @@ trait ContextualUserProxy[P] extends ContextualProxy[P] {
         case None =>
           suffixProxyOpt match {
             case None              =>
-              println(s"$debug no derivation, no suffix!")
+              log(s"$debug no derivation, no suffix!")
               None
             case Some(suffixProxy) =>
-              println(s"$debug no derivation, suffix!")
+              log(s"$debug no derivation, suffix!")
               suffixProxy.compute(h)
           }
         case Some(p) => p.compute(h)
@@ -430,11 +442,12 @@ final class IsWrappableMock[P](val suffixProxy: InstanceProxy[P], val parent: Pr
 object IsWrappableMock {
   val cache: IdentityHashMap[Any, Any] = new IdentityHashMap[Any, Any]()
   def apply[P](suffixProxy: InstanceProxy[P], parent: Proxy[Any]): IsWrappableMock[P] = {
-    val key = (suffixProxy, parent)
-    if (cache.containsKey(key)) cache.get(key).asInstanceOf[IsWrappableMock[P]] else {
-      val ret = new IsWrappableMock(suffixProxy, parent)
-      cache.put(key, ret)
-      ret
-    }
+    suffixProxy.mock(suffixProxy, parent)(new IsWrappableMock(suffixProxy, parent))
+    //val key = (suffixProxy, parent)
+    //if (cache.containsKey(key)) cache.get(key).asInstanceOf[IsWrappableMock[P]] else {
+    //  val ret = new IsWrappableMock(suffixProxy, parent)
+    //  cache.put(key, ret)
+    //  ret
+    //}
   }
 }

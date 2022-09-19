@@ -20,7 +20,7 @@ private[chisel3] final class ModuleMock[T <: BaseModule] private (
     extends PseudoModule
     with Mock[T] {
   contextuals ++= suffixProxy.contextuals
-  def debug = getTarget.toString
+  def debug = getTarget.toString + identity + "MOCK"
 
   override def parent = _parent.get.asInstanceOf[Proxy[BaseModule]]
 

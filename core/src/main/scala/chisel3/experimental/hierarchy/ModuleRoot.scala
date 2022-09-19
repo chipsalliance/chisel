@@ -21,5 +21,5 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   */
 private[chisel3] trait ModuleRoot[T <: BaseModule] extends PseudoModule with RootProxy[T] {
   private[chisel3] var transparentProxy: Option[ModuleTransparent[T]] = None
-  def debug = getTarget.toString
+  def debug = getTarget.toString + "ROOT"
 }

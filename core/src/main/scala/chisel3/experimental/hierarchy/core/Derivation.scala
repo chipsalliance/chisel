@@ -1,4 +1,5 @@
 package chisel3.experimental.hierarchy.core
+import Contextual.log
 
 trait Derivation {
   implicit val mg = Lookupable.mg
@@ -16,17 +17,16 @@ case class ContextualToContextualDerivation[V](p: ContextualProxy[V], f: Paramet
     extends ContextualDerivation {
   def compute[H](h: Hierarchy[H]): Option[Any] = {
     implicit val mg = Lookupable.mg
-    //println(s"C2CD: ${p.debug} with context ${h.debug}")
-    println(s"entering c2c, context=${h.debug}, input=${p.debug}")
+    log(s"entering c2c, context=${h.debug}, input=${p.debug}")
     val pViewedFromH = h._lookup{_ => 
       val y = p.toContextual
-      println(s"In Lookup.that: ${y.debug}")
+      log(s"In Lookup.that: ${y.debug}")
       y
     }
     //require(false, "never finished C2C")
-    println(s"middle c2c: context=${h.debug}, input=${p.debug}, contextP=${pViewedFromH.debug}")
+    log(s"middle c2c: context=${h.debug}, input=${p.debug}, contextP=${pViewedFromH.debug}")
     val ret = pViewedFromH.proxy.compute(h).map(f.applyAny)
-    println(s"returning c2c: context=${h.debug}, input=${p.debug}, output=${ret.map(_.asInstanceOf[Proxy[_]].debug)}")
+    log(s"returning c2c: context=${h.debug}, input=${p.debug}, output=$ret")
     ret
   }
 }

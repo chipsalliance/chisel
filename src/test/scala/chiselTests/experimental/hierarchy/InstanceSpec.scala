@@ -1271,7 +1271,19 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       chirrtl.serialize should include("""w <= UInt<3>("h5")""")
     }
-    it("(13.d): Diplomacy example") {
+    it("(13.d): Accessing the same contextual twice gives same value") {
+      class Top extends Module {
+        val definition = Definition(new Child)
+        val i0 = Instance(definition)
+        i0.index.value = 0
+        val i1 = Instance(definition)
+        i1.index.value = 1
+        require(i0.index.proxy == i0.index.proxy)
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include("""w <= UInt<1>("h1")""")
+    }
+    it("(13.???): Diplomacy example") {
       import DiplomacyExample._
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       chirrtl.serialize should include("""w <= UInt<3>("h5")""")

@@ -8,16 +8,18 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 import java.util.IdentityHashMap
+import Contextual.log
 
 case class Contextual[P] private[chisel3] (proxy: ContextualProxy[P], sourceInfo: SourceInfo) extends Wrapper[P] {
   def value_=(v: P)(implicit si: SourceInfo) = {
-    require(!proxy.hasDerivation, s"Cannot set a definitive twice! $debug")
     val cv = ContextualValue(v, si)
-    println(s"Setting ${proxy.debug} as ${cv.debug}")
+    log(s"Setting ${proxy.debug} as $cv")
+    require(!proxy.hasDerivation, s"Cannot set a contextual twice! $debug")
     proxy.derivation = Some(ContextualToContextualDerivation(cv, Identity()))
   }
   def value: P = proto
   def setAs(d: Contextual[P]): Unit = {
+    log(s"Set As ${proxy.debug} as ${d.debug}")
     require(!proxy.hasDerivation, s"Cannot set a definitive twice! $proto is $value, cannot be set to $d")
     proxy.derivation = Some(ContextualToContextualDerivation(d.proxy, Identity()))
   }
@@ -26,6 +28,7 @@ case class Contextual[P] private[chisel3] (proxy: ContextualProxy[P], sourceInfo
   def hasDerivation = proxy.hasDerivation
 
   def values = proxy.values
+  def protoContextual: Contextual[P] = proxy.protoContextual.toContextual
 
   def modify[X](f:  ParameterFunction)(implicit sourceInfo: SourceInfo): Contextual[X] = Contextual.buildFromDF(this, f)
   def combine[X](f: CombinerFunction)(implicit sourceInfo: SourceInfo):  Definitive[X] = Definitive.buildFromCF(this, f)
@@ -42,6 +45,10 @@ case class Contextual[P] private[chisel3] (proxy: ContextualProxy[P], sourceInfo
     }
     proxy.setValue(value.get)
   }
+  def name_=(n: String): Contextual[P] = proxy match {
+    case x: ContextualUserProxy[_] => x.name = n; this
+    case other => this
+  }
 }
 
 object Contextual {
@@ -55,4 +62,7 @@ object Contextual {
     extensions.buildContextual(Some(p), sourceInfo).toWrapper
   def empty[P](implicit extensions: ParameterExtensions[_, _], sourceInfo: SourceInfo): Contextual[P] =
     extensions.buildContextual(None, sourceInfo).toWrapper
+
+  val verbose = true
+  def log(str: String): Unit = if(verbose) println(str)
 }

@@ -6,6 +6,7 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DefinitionTransform, InstanceTransform}
 import scala.language.higherKinds // Necessary for lookupableIterable
+import Contextual.log
 
 /** Typeclass describing the return result (and type) when looking up a value of type V from a Wrapper[P]
   *
@@ -105,20 +106,33 @@ object Lookupable {
       type H = Instance[V]
       def apply[P](getter: Wrapper[P], value: Instance[V]) = {
         // Converting Wrapper to Instance shouldn't error, as you can't create an Instance(this)
+        val id = getter.identity * value.identity
+        log(s"LookupInstance(0)$id: getter=${getter.debug}, value=${value.debug}")
         if (shareProto(value.proxy, getter)) getter.asInstanceOf[Instance[V]]
         else {
           // Value should always have a parent because it is an instance, so this is safe to get
+          val oldParent = extensions.getProxyParent(value.proxy).get
+          val rt = if(oldParent.isInstanceOf[Proxy[_]]) oldParent.asInstanceOf[Proxy[_]].debug else oldParent.toString
+          log(s"LookupInstance(1)$id: oldParent=${rt}")
           val newParentWrapper = getter._lookup { _ => extensions.getProxyParent(value.proxy).get }(
             lookupUncloneableValue(extensions.parentExtensions),
             mg
           )
-          val suffix = newParentWrapper match {
-            case Instance(proxy) if proxy.suffixProxy == getter.proxy => value // value is outside scope of getter
-            case Instance(proxy)           => proxy.suffixProxy.toHierarchy._lookup { _ => value }(lookupInstance(extensions), mg)
-            case Definition(proxy)         => value
-            case ResolvedDefinition(proxy) => value
+          log(s"LookupInstance(1)$id: newParent=${newParentWrapper.proxy.debug}")
+          (oldParent, newParentWrapper.proxy) match {
+            case (oldParent, newParent) if oldParent == newParent => value
+            case (oldParent, newParent: RootProxy[_]) => value
+            case (oldParent, newParent: InstanceProxy[_]) =>
+              val suffix = newParent.suffixProxy.toHierarchy._lookup { _ => value }(lookupInstance(extensions), mg)
+              if(value.proxy.suffixProxy == suffix.proxy) value else extensions.mock(suffix.proxy, newParentWrapper)
           }
-          extensions.mock(suffix.proxy, newParentWrapper)
+          //val suffix = newParentWrapper match {
+          //  case Instance(proxy) if proxy.suffixProxy == getter.proxy => value // value is outside scope of getter
+          //  case Instance(proxy)           => proxy.suffixProxy.toHierarchy._lookup { _ => value }(lookupInstance(extensions), mg)
+          //  case Definition(proxy)         => value
+          //  case ResolvedDefinition(proxy) => value
+          //}
+          //extensions.mock(suffix.proxy, newParentWrapper)
         }
       }
     }
@@ -137,35 +151,67 @@ object Lookupable {
   ): Aux[Contextual[V], Contextual[V]] = new Lookupable[Contextual[V]] {
     type H = Contextual[V]
     def apply[P](getter: Wrapper[P], value: Contextual[V]) = {
+      val id = value.identity * getter.identity
       // Converting Wrapper to Contextual shouldn't error, as you can't create an Instance(this)
-      println(s"LookupContextual(0): ${getter.debug} ${value.debug}")
-      extensions.getProxyParent(value.proxy) match {
+      log(s"LookupContextual(0)$id: getter=${getter.debug}, value=${value.debug}")
+      val ret = extensions.getProxyParent(value.proxy) match {
         case None                         => value
         case Some(p) if p == getter.proxy => value
         case Some(p)                      =>
           // Value should always have a parent because it is an instance, so this is safe to get
-          println(s"LookupContextual(1): parent $p")
+          val rt = if(p.isInstanceOf[Proxy[_]]) p.asInstanceOf[Proxy[_]].debug else p.toString
+          log(s"LookupContextual(1)$id: parent=$rt")
           val newParentWrapper = getter._lookup { _ => p }(lookupUncloneableValue(extensions.parentExtensions), mg)
-          println(s"LookupContextual(2): contextParent ${p} became ${newParentWrapper.debug}")
+          log(s"LookupContextual(2)$id: newParent=${newParentWrapper.debug}")
 
-          val suffixProxy: Option[Contextual[V]] = newParentWrapper match {
-            case Instance(proxy) if proxy.suffixProxy == getter.proxy => None
-            case Instance(proxy) if proxy.suffixProxy != getter.proxy =>
-              println(s"LookupContextual(3): contextParentSuffix${proxy.suffixProxy.debug}")
-              require(proxy.suffixProxy != getter.proxy, s"suffixProxy cannot equal getterProxy")
-              val ret = proxy.suffixProxy.toHierarchy._lookup { _ => value }(lookupContextual(extensions), mg)
-              println(s"LookupContextual(4): ${ret.debug}")
-              Some(ret)
-            case Definition(proxy)         => None
-            case ResolvedDefinition(proxy) => None
+          //(newParentWrapper.proxy, getter.proxy) match {
+          //  case (newParentProxy, getterProxy) if newParentProxy == getterProxy => 
+          //}
+
+          val x = (p, newParentWrapper.proxy) match {
+            case (oldParent, newParent) if oldParent == newParent =>
+              log(s"LookupContextual(3)$id: newParent == oldParent, returning value ${value.debug}")
+              value
+            //case (oldParent, newParent: InstanceProxy[_]) if newParent.suffixProxy == getter.proxy =>
+            //  log(s"LookupContextual(4)$id: newParent != oldParent, newParent.suffixProxy == getter.proxy, returning ${value.debug}")
+            //  value
+            case (oldParent, newParent: RootProxy[_]) =>
+              log(s"LookupContextual(5)$id: newParent != oldParent, newParent=RootProxy")
+              val y = extensions.mockContextual(value, newParentWrapper)
+              log(s"LookupContextual(6)$id: newParent != oldParent, returning ${y.debug}")
+              y
+            case (oldParent, newParent: InstanceProxy[_]) =>
+              log(s"LookupContextual(7)$id: newParent != oldParent, newParent=InstanceProxy, newParentsuffix = ${newParent.suffixProxy.debug}")
+              val newSuffixProxy = newParent.suffixProxy.toHierarchy._lookup { _ => value.protoContextual}(lookupContextual(extensions), mg)
+              val oldSuffixProxy = value.proxy.suffixProxyOpt
+              log(s"LookupContextual(8)$id: newSuffixProxy = ${newSuffixProxy.debug}, oldSuffixProxy = ${oldSuffixProxy.map(_.debug)}")
+              val y = if(Some(newSuffixProxy) != value.proxy.suffixProxyOpt) {
+                log(s"LookupContextual(9)$id: Mocking!}")
+                extensions.mockContextual(newSuffixProxy, newParentWrapper)
+              } else {
+                log(s"LookupContextual(A)$id: Not Mocking!}")
+                value
+              }
+              log(s"LookupContextual(B)$id: newParent != oldParent, returning ${y.debug}")
+              y
+            //case Instance(newParent) if newParent.suffixProxy == getter.proxy => Some(value)
+            //case Instance(newParent) => // if proxy.suffixProxy != getter.proxy =>
+            //  log(s"LookupContextual(3)$id: contextParentSuffix${proxy.suffixProxy.debug}")
+            //  //require(proxy.suffixProxy != getter.proxy, s"suffixProxy cannot equal getterProxy")
+            //  val ret = proxy.suffixProxy.toHierarchy._lookup { _ => value }(lookupContextual(extensions), mg)
+            //  log(s"LookupContextual(4)$id: ${ret.debug}")
+            //  Some(ret)
           }
-          println(s"LookupContextual(5): ${suffixProxy.map(_.debug)}")
-          val x = if(suffixProxy.nonEmpty) extensions.mockContextual(suffixProxy.get, newParentWrapper) else value
-          //val x = if(suffixProxy != value) extensions.mockContextual(suffixProxy, newParentWrapper) else value
-          println(s"LookupContextual(6): ${value.debug} became ${x.debug}")
+          //(suffixProxyOpt, newParentWrapper.proxy, getter.proxy) match {
+          //  case (None, newParentProxy, getterProxy) if newParentProxy == getterProxy => extensions.mockContextual()
+          //}
+          //val x = if(suffixProxy.nonEmpty && suffixProxy.get != value) extensions.mockContextual(suffixProxy.get, newParentWrapper) else value
+          ////val x = if(suffixProxy != value) extensions.mockContextual(suffixProxy, newParentWrapper) else value
           //println(s"Mocking contextual $x with suffix $suffixProxy and parent $newParentWrapper")
           x
       }
+      log(s"LookupContextual(C)$id: ${getter.debug}?${value.debug} => ${ret.debug}")
+      ret
     }
   }
 
@@ -174,6 +220,8 @@ object Lookupable {
     implicit extensions: HierarchicalExtensions[V, P]
   ): HierarchicalLookupable[V] = new HierarchicalLookupable[V] {
     def apply[P](getter: Wrapper[P], value: V) = {
+      val id = getter.identity * value.hashCode()
+      log(s"LookupUncloneableValue(0)$id: getter=${getter.debug}, value=${value}")
       val relevantGetter = getter match {
         case x: Hierarchy[_] =>
           x.getClosestParentOf(extensions.parentSelection) match {
@@ -181,8 +229,9 @@ object Lookupable {
             case None => getter
           }
       }
+      log(s"LookupUncloneableValue(1)$id: relevantGetter=${relevantGetter.debug}")
       //TODO This may be unnecessary if IsWrappables record a parent
-      value match {
+      val ret = value match {
         case v if shareProto(v, relevantGetter) => relevantGetter.asInstanceOf[Hierarchy[V]]
         case other =>
           extensions.getParent(value) match {
@@ -192,19 +241,33 @@ object Lookupable {
             case None =>
               relevantGetter match {
                 case i: Instance[_] =>
+                  log(s"LookupUncloneableValue(2)$id: ${i.proxy.parentOpt}")
                   i.proxy.parentOpt match {
-                    case None => extensions.toDefinition(value)
+                    case None =>
+                      log(s"LookupUncloneableValue(3)$id: ${i.proxy.parentOpt}")
+                      extensions.toDefinition(value)
                     case Some(p: Proxy[_]) =>
+                      log(s"LookupUncloneableValue(4)$id: ${i.proxy.parentOpt}")
                       p.toWrapper._lookup(_ => value)(lookupUncloneableValue(extensions), mg)
                   }
-                case other => extensions.toDefinition(value)
+                case other =>
+                  log(s"LookupUncloneableValue(5)$id: notInstance: $other")
+                  extensions.toDefinition(value)
               }
             case Some(p) =>
+              log(s"LookupUncloneableValue(6)$id: p= $p")
               val newParentHierarchy =
                 relevantGetter._lookup(_ => p)(lookupUncloneableValue(extensions.parentExtensions), mg)
-              extensions.mockValue(value, newParentHierarchy)
+              log(s"LookupUncloneableValue(6)$id: newParentHierarchy: ${newParentHierarchy.debug}")
+              extensions.mock(value, newParentHierarchy)
+              //value match {
+              //  case i: InstanceProxy[V] => extensions.mockInstance(i.toInstance, newParentHierarchy)
+              //  case o => extensions.mockValue(value, newParentHierarchy)
+              //}
           }
       }
+      log(s"LookupUncloneableValue(X)$id: ret=${ret}")
+      ret
     }
     //def apply[P](setter: Setter[P], value: V) = apply(setter.toWrapper, value).toSetter
   }

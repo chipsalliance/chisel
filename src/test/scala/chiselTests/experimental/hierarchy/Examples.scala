@@ -371,13 +371,13 @@ object ContextualExamples {
     @instantiable
     class SourceNode(val dnValue: Contextual[String]) extends IsWrappable {
       @public val dnOutgoing = dnValue
-      @public val upOutgoing = Contextual.empty[String]
+      @public val upOutgoing = Contextual.empty[String].name_=("upOutgoing")
       @public val edgeOutgoing = (dnOutgoing, upOutgoing)
     }
     @instantiable
     class SinkNode(val upValue: Contextual[String]) extends IsWrappable {
       @public val upIncoming = upValue
-      @public val dnIncoming = Contextual.empty[String]
+      @public val dnIncoming = Contextual.empty[String].name_=("dnIncoming")
       @public val edgeIncoming = (dnIncoming, upIncoming)
     }
     object SinkNode {
@@ -389,25 +389,48 @@ object ContextualExamples {
         }
       }
     }
+
+
+    /* Contextual is an output param
+    IR:
+
+     definitive dnOutgoing: String
+     definitive dnIncoming: String
+     dnOutgoing <= (dnFunc) <= dnIncoming
+     */
     @instantiable
-    class AdapterNode(upFunc: ParameterFunction, dnFunc: ParameterFunction) extends IsWrappable {
-      val dnIncoming = Contextual.empty[String]
-      val upIncoming = Contextual.empty[String]
-      val dnOutgoing = Contextual.empty[String]
-      val upOutgoing = Contextual.empty[String]
-      dnOutgoing.setAs(dnIncoming.modify(dnFunc))
+    class AdapterNode(upFunc: ParameterFunction, dnFunc: ParameterFunction, index: Int) extends IsWrappable {
+      val dnIncoming = Contextual.empty[String].name_=(s"dnIncoming$index")
+      val upIncoming = Contextual.empty[String].name_=(s"upIncoming$index")
+      val dnOutgoing = Contextual.empty[String].name_=(s"dnOutgoing$index")
+      val upOutgoing = Contextual.empty[String].name_=(s"upOutgoing$index")
+      dnOutgoing.setAs(dnIncoming.modify(dnFunc)) ///  dnOutgoing <= dnFuncCALLOUT <= dnIncoming
       upIncoming.setAs(upOutgoing.modify(upFunc))
 
       def :=(src: Instance[SourceNode]): AdapterNode = {
         src.upOutgoing.setAs(upIncoming)
         dnIncoming.setAs(src.dnOutgoing)
-        println(s"Setting dnIncoming ${dnIncoming.identity} as ${src.dnOutgoing.identity}")
         this
       }
     }
+
+    /*
+    module Mouth:
+      contextual language: String
+      definitive suggested: Int
+      definitive width: Int
+
+      inst node: SourceNode
+      node.dnOutgoing <= language
+      definitive upResult: String   // Compiler verifies that all instances of Mouth have the same value for upResult
+      definitive dnResult: String   // Compiler verifies that all instances of Mouth have the same value for dnResult
+      upResult <= node.upIncoming.AGGREGATE((aggregateFuncCallout)) // Says for all absolute instances of Mouth, aggregate the contextual values of node.upIncoming, and pick a final value as specified by aggregateFuncCallout
+      dnResult <= node.dnOutgoing.AGGREGATE((aggregateFuncCallout))
+    */
     @instantiable
     class Mouth() extends Module {
       @public val language = Contextual.empty[String]
+      language.name_=("language")
       @public val node = new SourceNode(language)
       @public val upResult = node.edgeOutgoing._1.combine(Aggregate())
       @public val dnResult = node.edgeOutgoing._2.combine(Aggregate())
@@ -416,6 +439,7 @@ object ContextualExamples {
     @instantiable
     class Ear() extends Module {
       @public val language = Contextual.empty[String]
+      language.name_=("language")
       @public val node = new SinkNode(language)
       @public val upResult = node.edgeIncoming._1.combine(Aggregate())
       @public val dnResult = node.edgeIncoming._2.combine(Aggregate())
@@ -425,21 +449,21 @@ object ContextualExamples {
     class Top() extends Module {
       val mouthDef = Definition(new Mouth())
       @public val m0 = Instance(mouthDef)
-      //@public val m1 = Instance(mouthDef)
+      @public val m1 = Instance(mouthDef)
       m0.language.value = "English"
-      //m1.language.value = "Spanish"
+      m1.language.value = "Spanish"
 
       val earDef = Definition(new Ear())
       @public val e0 = Instance(earDef)
       e0.language.value = "Hebrew"
-      //@public val e1 = Instance(earDef)
-      //e1.language.value = "Portuguese"
+      @public val e1 = Instance(earDef)
+      e1.language.value = "Portuguese"
 
-      @public val a0 = new AdapterNode(capitalize(), capitalize())
+      @public val a0 = new AdapterNode(capitalize(), capitalize(), 0)
       e0.node := a0 := m0.node
 
-      //@public val a1 = new AdapterNode(capitalize(), capitalize())
-      //e1.node := a1 := m1.node
+      @public val a1 = new AdapterNode(capitalize(), capitalize(), 1)
+      e1.node := a1 := m1.node
       override val implementation: Option[Implementation] = Some(TopImp)
     }
 

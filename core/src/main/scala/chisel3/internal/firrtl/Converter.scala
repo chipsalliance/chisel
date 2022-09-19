@@ -4,6 +4,7 @@ package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.hierarchy._
+import chisel3.experimental.hierarchy.Contextual.log
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
@@ -365,11 +366,11 @@ private[chisel3] object Converter {
           Builder.dynamicContextVar.withValue(Some(dynamicContext)) {
             module._closed = false
             internal.Builder.currentModule = Some(module)
-            println(s"On ${module.name}")
+            log(s"On ${module.name}")
             val mod = module match {
               case x: Module =>
                 withClockAndReset(x.clock, x.reset) {
-                  println(module.definitives.mkString("\n"))
+                  log(module.definitives.mkString("\n"))
                   module.definitives.foreach(_.valueOpt)
                   i.implement(d.asInstanceOf[hierarchy.ResolvedDefinition[i.P]])
                 }
@@ -421,15 +422,15 @@ private[chisel3] object Converter {
     def absolutize(h: Hierarchy[BaseModule]): Unit = {
       h.proxyAs[BaseModule].contextuals.foreach { c: Contextual[_] =>
         import chisel3.experimental.hierarchy.core.Lookupable
-        println(s"L ${c.debug} Looking up in ${h.debug}")
+        log(s"L ${c.debug} Looking up in ${h.debug}")
         val myC = h._lookup { _ => c.asInstanceOf[Contextual[Any]] }
-        println(s"R ${c.debug} Returned ${myC.debug}")
-        println(s"A ${c.debug} Absolutizing")
-        println("\n\n\n\n")
-        println(myC.proxy.displaySuffixMatrix)
-        println("\n\n\n\n")
+        log(s"R ${c.debug} Returned ${myC.debug}")
+        log(s"A ${c.debug} Absolutizing")
+        log("\n\n\n\n")
+        log(myC.proxy.displaySuffixMatrix)
+        log("\n\n\n\n")
         myC.absolutize(h)
-        println(s"F ${c.debug} Finished absolutizing")
+        log(s"F ${c.debug} Finished absolutizing")
       }
     }
     def resolve(h: Hierarchy[BaseModule]): Unit = {
@@ -439,7 +440,7 @@ private[chisel3] object Converter {
         myC.proxy.markResolved()
       }
     }
-    println(s"COMPUTING CONTEXTUALS of ${m.toTarget}")
+    log(s"COMPUTING CONTEXTUALS of ${m.toTarget}")
     val d = m.toDefinition
     absolutize(d)
     //require(false, "3")
@@ -448,7 +449,7 @@ private[chisel3] object Converter {
     resolve(d)
     //require(false, "1")
     allInstancesOf[BaseModule](d).foreach { case i: Instance[BaseModule] => resolve(i) }
-    println("DONE COMPUTING CONTEXTUALS")
+    log("DONE COMPUTING CONTEXTUALS")
   }
 
   /** Selects all instances/modules directly instantiated within given definition

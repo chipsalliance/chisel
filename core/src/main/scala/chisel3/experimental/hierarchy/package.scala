@@ -74,25 +74,29 @@ package object hierarchy {
       //def transparent(proto: V): ModuleTransparent[V] = ???
       def clone[P](value: Hierarchy[V], hierarchy: Hierarchy[P]): InstanceProxy[V] = {
         implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
-        (value, hierarchy.proxy) match {
-          case (d: Root[V], t: ModuleTransparent[V]) =>
-            val ports = experimental.CloneModuleAsRecord(d)
-            val clone = ports._parent.get.asInstanceOf[ModuleClone[V]]
-            clone._madeFromDefinition = true
-            clone
-          case (i: Instance[V], _) =>
-            ModuleMock(i.proxyAs[BaseModule], hierarchy.proxyAs[BaseModule])
+        value.mock(hierarchy) {
+          (value, hierarchy.proxy) match {
+            case (d: Root[V], t: ModuleTransparent[V]) =>
+              val ports = experimental.CloneModuleAsRecord(d)
+              val clone = ports._parent.get.asInstanceOf[ModuleClone[V]]
+              clone._madeFromDefinition = true
+              clone
+            case (i: Instance[V], _) =>
+              ModuleMock(i.proxyAs[BaseModule], hierarchy.proxyAs[BaseModule])
+          }
         }
       }
       def mockInstance[P](value: Instance[V], parent: Hierarchy[P]): Instance[V] = {
         implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
-        ModuleMock(value.proxyAs[BaseModule], parent.proxyAs[BaseModule]).toInstance
+        value.proxy.mock(value, parent)(ModuleMock(value.proxyAs[BaseModule], parent.proxyAs[BaseModule]).toInstance)
       }
       def mockValue[P](value: V, parent: Hierarchy[P]): Instance[V] = {
         implicit val info = chisel3.internal.sourceinfo.UnlocatableSourceInfo
         val d = ModuleDefinition(value, None).toDefinition
-        val t = ModuleTransparent(d.proxyAs[ModuleRoot[V]])
-        ModuleMock(t, parent.proxyAs[BaseModule]).toInstance
+        d.proxy.mock(parent){
+          val t = ModuleTransparent(d.proxyAs[ModuleRoot[V]])
+          ModuleMock(t, parent.proxyAs[BaseModule]).toInstance
+        }
       }
       def parentSelection: PartialFunction[Any, Hierarchy[BaseModule]] = {
         case h: Hierarchy[BaseModule] if h.isA[BaseModule] => h
@@ -237,7 +241,7 @@ package object hierarchy {
       }
     }
     def mockContextual[P](value: Contextual[V], parent: Hierarchy[P]): Contextual[V] = {
-      new ChiselMockContextual(None, Some(value.proxy), Some(parent.proxy.asInstanceOf[Proxy[BaseModule]])).toContextual
+      value.mock(parent){ new ChiselMockContextual(None, Some(value.proxy), Some(parent.proxy.asInstanceOf[Proxy[BaseModule]])).toContextual }
     }
 
   }

@@ -21,7 +21,7 @@ private[chisel3] final class ModuleTransparent[T <: BaseModule] private (
 
   lazy val ioMap: Map[Data, Data] = proto.getChiselPorts.map { case (_, data) => data -> data }.toMap
   contextuals ++= suffixProxy.contextuals
-  def debug = getTarget.toString
+  def debug = getTarget.toString + identity + "TRANS"
 
   // ======== THINGS TO MAKE CHISEL WORK ========
 

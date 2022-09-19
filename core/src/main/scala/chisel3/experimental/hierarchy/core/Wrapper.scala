@@ -65,6 +65,7 @@ trait Wrapper[+P] {
   }
   def debug = proxy.debug
   def identity = proxy.identity
+  def mock[X](args: Any*)(buildMock: => X): X = proxy.mock(args)(buildMock)
 
   //def query(path: String) = proxy.query(path)
 
