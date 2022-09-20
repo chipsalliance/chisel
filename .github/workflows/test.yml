@@ -144,7 +144,6 @@ jobs:
       # Pass only if check-tests set its output value
       - run: |
         # Maybe a comment will help
-        export PASSED=$(echo "false")
         if [[ $PASSED == "true" ]]; then
           echo "All tests passed!"
           exit 0
