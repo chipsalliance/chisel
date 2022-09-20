@@ -229,7 +229,7 @@ private[chisel3] trait HasId extends InstanceId {
   }
   private[chisel3] def setRef(parent: HasId, name: String, opaque: Boolean = false): Unit = {
     if (!opaque) setRef(Slot(Node(parent), name))
-    else setRef(OpaqueSlot(Node(parent), name))
+    else setRef(OpaqueSlot(Node(parent)))
   }
 
   private[chisel3] def setRef(parent: HasId, index: Int):  Unit = setRef(Index(Node(parent), ILit(index)))
@@ -239,8 +239,18 @@ private[chisel3] trait HasId extends InstanceId {
 
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg.fullName(c)
-    case None =>
-      throwException("You cannot access the .instanceName or .toTarget of non-hardware Data")
+    case None => {
+      val nameGuess = _computeName(None) match {
+        case Some(name) => s": '$name'"
+        case None       => ""
+      }
+      val parentGuess = _parent match {
+        case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
+        case Some(p)          => s", in module '${p.pathName}'"
+        case None             => ""
+      }
+      throwException("You cannot access the .instanceName or .toTarget of non-hardware Data" + nameGuess + parentGuess)
+    }
   }
 
   // Helper for reifying views if they map to a single Target
@@ -482,7 +492,7 @@ private[chisel3] object Builder extends LazyLogging {
     def buildAggName(id: HasId): Option[String] = {
       def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
         case Slot(_, field)       => Some(field) // Record
-        case OpaqueSlot(_, field) => None // Record with single element
+        case OpaqueSlot(_)        => None // OpaqueSlots don't contribute to the name
         case Index(_, ILit(n))    => Some(n.toString) // Vec static indexing
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing

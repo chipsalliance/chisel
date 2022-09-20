@@ -5,7 +5,7 @@ package chisel3.internal.firrtl
 import firrtl.{ir => fir}
 import chisel3._
 import chisel3.internal._
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
@@ -91,7 +91,7 @@ object Arg {
     case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
     case Some(Index(Node(imm), arg))         => s"${earlyLocalName(imm)}[${arg.localName}]"
     case Some(Slot(Node(imm), name))         => s"${earlyLocalName(imm)}.$name"
-    case Some(OpaqueSlot(Node(imm), name))   => s"${earlyLocalName(imm)}"
+    case Some(OpaqueSlot(Node(imm)))         => s"${earlyLocalName(imm)}"
     case Some(arg)                           => arg.name
     case None =>
       id match {
@@ -219,9 +219,9 @@ case class Slot(imm: Node, name: String) extends Arg {
   }
 }
 
-case class OpaqueSlot(imm: Node, name: String) extends Arg {
-  override def contextualName(ctx: Component): String = imm.name
-  override def localName: String = imm.name
+case class OpaqueSlot(imm: Node) extends Arg {
+  override def contextualName(ctx: Component): String = imm.contextualName(ctx)
+  override def name: String = imm.name
 }
 
 case class Index(imm: Arg, value: Arg) extends Arg {
@@ -835,7 +835,7 @@ case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) ext
   "This API should never have been public, for Module port reflection, use DataMirror.modulePorts",
   "Chisel 3.5"
 )
-case class Port(id: Data, dir: SpecifiedDirection)
+case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
 case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 object Formal extends Enumeration {
   val Assert = Value("assert")

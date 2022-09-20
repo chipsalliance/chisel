@@ -38,18 +38,11 @@ package object dataview {
     }
   }
 
-  // This private type alias lets us provide a custom error message for misuing the .viewAs for upcasting Bundles
-  @implicitNotFound(
-    "${A} is not a subtype of ${B}! Did you mean .viewAs[${B}]? " +
-      "Please see https://www.chisel-lang.org/chisel3/docs/cookbooks/dataview"
-  )
-  private type SubTypeOf[A, B] = A <:< B
-
   /** Provides `viewAsSupertype` for subclasses of [[Bundle]] */
   implicit class BundleUpcastable[T <: Bundle](target: T) {
 
     /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
-    def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: SubTypeOf[T, V], sourceInfo: SourceInfo): V = {
+    def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
       implicit val dataView = PartialDataView.mapping[T, V](
         _ => proto,
         {
