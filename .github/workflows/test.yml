@@ -140,8 +140,8 @@ jobs:
     runs-on: ubuntu-20.04
     if: always() # Always run so that we never skip this check
     needs: check-tests
-      # Pass only if check-tests set its output value
     steps:
+      # Pass only if check-tests set its output value
       - name: okay
         run: |
           echo "hi"
