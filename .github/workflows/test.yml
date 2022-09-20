@@ -141,9 +141,7 @@ jobs:
     if: always() # Always run so that we never skip this check
     needs: check-tests
     steps:
-      # Pass only if check-tests set its output value
-      - name: okay
-        run: |
+      - run: |
           echo "hi"
           echo "bye"
 
