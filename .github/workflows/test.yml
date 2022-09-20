@@ -142,7 +142,7 @@ jobs:
     needs: check-tests
       # Pass only if check-tests set its output value
     steps:
-      run: |
+      - run: |
         PASSED="${{ needs.check-tests.outputs.success }}"
         if [[ $PASSED == "true" ]]; then
           echo "All tests passed!"
