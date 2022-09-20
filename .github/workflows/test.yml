@@ -126,8 +126,8 @@ jobs:
     outputs:
       success: ${{ steps.setoutput.outputs.success }}
     steps:
-      id: setoutput
-      run: echo "::set-output name=success::true"
+      - id: setoutput
+        run: echo "::set-output name=success::true"
 
   # Related to check-tests above, this job _always_ runs (even if tests fail
   # and thus check-steps is skipped). This two sentinel job approach avoids an
