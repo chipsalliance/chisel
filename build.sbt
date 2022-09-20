@@ -143,11 +143,12 @@ lazy val plugin = (project in file("plugin")).
   ).
   settings(
     mimaPreviousArtifacts := {
-      // There is not yet a 2.12.16 artifact, so suppress until 3.5.4 is released
-      if (scalaVersion.value == "2.12.16") {
+      // There is not yet a 2.12.17 nor 2.13.9 artifact, so suppress until 3.5.5 is released
+      val skipVersions = Seq("2.12.17", "2.13.9")
+      if (skipVersions.contains(scalaVersion.value)) {
         Set()
       } else {
-        Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.3" cross CrossVersion.full)
+        Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.4" cross CrossVersion.full)
       }
     }
   )
@@ -167,7 +168,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.5.3"))
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.5.4"))
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -182,7 +183,7 @@ lazy val core = (project in file("core")).
   ).
   settings(publishSettings: _*).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.3"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.4"),
     mimaBinaryIssueFilters ++= Seq(
       // Modified package private methods (https://github.com/lightbend/mima/issues/53)
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data._computeName"),
@@ -228,7 +229,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.5.3"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.5.4"),
     mimaBinaryIssueFilters ++= Seq(
       // Modified package private methods (https://github.com/lightbend/mima/issues/53)
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this"),
