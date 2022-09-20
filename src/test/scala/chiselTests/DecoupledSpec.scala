@@ -101,7 +101,7 @@ class DecoupledSpec extends ChiselFlatSpec {
     chirrtl should include("""wire _deq_map : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}""")
 
     // Check for data assignment
-    chirrtl should include("""node _deq_map_bits = and(enq.bits.foo, enq.bits.bar)""")
+    chirrtl should include("""node _deq_map_bits = and(enq.bits.foowefoiwefoij, enq.bits.bar)""")
     chirrtl should include("""_deq_map.bits <= _deq_map_bits""")
     chirrtl should include("""deq <= _deq_map""")
 
