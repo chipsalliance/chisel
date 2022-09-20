@@ -139,9 +139,18 @@ jobs:
     name: "all tests passed"
     runs-on: ubuntu-20.04
     if: always() # Always run so that we never skip this check
-    needs: [check-tests]
+    needs: check-tests
+      # Pass only if check-tests set its output value
     steps:
-      - run: echo "hi"
+      - run: |
+        PASSED="${{ needs.check-tests.outputs.success }}"
+        if [[ $PASSED == "true" ]]; then
+          echo "All tests passed!"
+          exit 0
+        else
+          echo "One or more tests FAILED!"
+          exit 1
+        fi
 
   # sbt ci-release publishes all cross versions so this job needs to be
   # separate from a Scala versions build matrix to avoid duplicate publishing
