@@ -87,7 +87,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   check-tests:
     name: "check tests"
-    needs: [ci, integration, std]
+    needs: [ci, integration]
     runs-on: ubuntu-20.04
     if: success() # only run if all tests have passed
     outputs:
@@ -104,10 +104,6 @@ jobs:
   # See: https://brunoscheufler.com/blog/2022-04-09-the-required-github-status-check-that-wasnt
   all_tests_passed:
     name: "all tests passed"
-<<<<<<< HEAD
-    needs: [ci, integration]
-=======
->>>>>>> cc507a84 (Improve CI sentinel job for better branch protection (#2743))
     runs-on: ubuntu-20.04
     if: always() # Always run so that we never skip this check
     needs: check-tests
