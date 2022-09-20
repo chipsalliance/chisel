@@ -142,7 +142,8 @@ jobs:
     needs: check-tests
       # Pass only if check-tests set its output value
     steps:
-      - run: |
+      - name: okay
+        run: |
           echo "hi"
           echo "bye"
 
