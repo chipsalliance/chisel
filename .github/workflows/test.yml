@@ -44,15 +44,42 @@ jobs:
         run: sbt ++2.12.13 "plugin / mimaReportBinaryIssues"
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
-  # protection and in Mergify
+  # protection and in Mergify. This job checks that all jobs were successful.
   #
   # When adding new jobs, please add them to `needs` below
+  check-tests:
+    name: "check tests"
+    needs: [ci]
+    runs-on: ubuntu-20.04
+    if: success() # only run if all tests have passed
+    outputs:
+      success: ${{ steps.setoutput.outputs.success }}
+    steps:
+      - id: setoutput
+        run: echo "::set-output name=success::true"
+
+  # Related to check-tests above, this job _always_ runs (even if tests fail
+  # and thus check-steps is skipped). This two sentinel job approach avoids an
+  # issue where failing tests causes a single sentinel job to be skipped which
+  # counts as passing for purposes of branch protection.
+  #
+  # See: https://brunoscheufler.com/blog/2022-04-09-the-required-github-status-check-that-wasnt
   all_tests_passed:
     name: "all tests passed"
-    needs: [ci]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    if: always() # Always run so that we never skip this check
+    needs: check-tests
+      # Pass only if check-tests set its output value
     steps:
-      - run: echo Success!
+      - run: |
+          PASSED="${{ needs.check-tests.outputs.success }}"
+          if [[ $PASSED == "true" ]]; then
+            echo "All tests passed!"
+            exit 0
+          else
+            echo "One or more tests FAILED!"
+            exit 1
+          fi
 
   # sbt ci-release publishes all cross versions so this job needs to be
   # separate from a Scala versions build matrix to avoid duplicate publishing
