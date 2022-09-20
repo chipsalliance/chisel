@@ -141,9 +141,7 @@ jobs:
     if: always() # Always run so that we never skip this check
     needs: [check-tests]
     steps:
-      - run: |
-          echo "hi"
-          echo "bye"
+      - run: echo "hi"
 
   # sbt ci-release publishes all cross versions so this job needs to be
   # separate from a Scala versions build matrix to avoid duplicate publishing
