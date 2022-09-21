@@ -222,4 +222,41 @@ class BlackBoxSpec extends ChiselFlatSpec {
       })
     }).getMessage should include("must have a port named 'io' of type Record")
   }
+
+  "BlackBoxes" should "sort the verilog output of their param map by param key" in {
+
+    class ParameterizedBlackBox(m: Map[String, Param]) extends BlackBox(m) {
+      val io = IO(new Bundle {
+        val out = Output(Clock())
+        val in = Input(Clock())
+      })
+    }
+
+    class Top(m: Map[String, Param]) extends Module {
+      val io = IO(new Bundle {})
+      val pbb = Module(new ParameterizedBlackBox(m))
+      pbb.io.in := clock
+    }
+
+    val sixteenParams = ('a' until 'p').map { key => key.toString -> IntParam(1) }
+
+    getVerilogString(new Top(Map())) should include("ParameterizedBlackBox pbb ( //")
+    getVerilogString(new Top(Map("a" -> IntParam(1)))) should include("ParameterizedBlackBox #(.a(1)) pbb ( //")
+
+    // check that both param orders are the same
+    getVerilogString(new Top(Map("a" -> IntParam(1), "b" -> IntParam(1)))) should include(
+      "ParameterizedBlackBox #(.a(1), .b(1)) pbb ( //"
+    )
+    getVerilogString(new Top(Map("b" -> IntParam(1), "a" -> IntParam(1)))) should include(
+      "ParameterizedBlackBox #(.a(1), .b(1)) pbb ( //"
+    )
+
+    // check that both param orders are the same, note that verilog output does a newline when more params are present
+    getVerilogString(new Top(sixteenParams.toMap)) should include(
+      "(.a(1), .b(1), .c(1), .d(1), .e(1), .f(1), .g(1), .h(1), .i(1), .j(1), .k(1), .l(1), .m(1), .n(1), .o(1)) pbb ( //"
+    )
+    getVerilogString(new Top(sixteenParams.reverse.toMap)) should include(
+      "(.a(1), .b(1), .c(1), .d(1), .e(1), .f(1), .g(1), .h(1), .i(1), .j(1), .k(1), .l(1), .m(1), .n(1), .o(1)) pbb ( //"
+    )
+  }
 }
