@@ -55,7 +55,7 @@ class Foo extends RawModule {
   bundle.foo := 0xc.U
   bundle.bar := 0x3.U
   val uint = bundle.asUInt
-  printf(p"$uint") // 195
+  printf(cf"$uint") // 195
 
   // Test
   assert(uint === 0xc3.U)
@@ -78,7 +78,7 @@ class Foo extends RawModule {
   val uint = 0xb4.U
   val bundle = uint.asTypeOf(new MyBundle)
   
-  printf(p"$bundle") // Bundle(foo -> 11, bar -> 4)
+  printf(cf"$bundle") // Bundle(foo -> 11, bar -> 4)
 
   // Test
   assert(bundle.foo === 0xb.U)
@@ -126,7 +126,7 @@ class Foo extends RawModule {
   val uint = 0xc.U
   val vec = VecInit(uint.asBools)
 
-  printf(p"$vec") // Vec(0, 0, 1, 1)
+  printf(cf"$vec") // Vec(0, 0, 1, 1)
 
   // Test
   assert(vec(0) === false.B)
@@ -147,7 +147,7 @@ class Foo extends RawModule {
   val vec = VecInit(true.B, false.B, true.B, true.B)
   val uint = vec.asUInt
 
-  printf(p"$uint") // 13
+  printf(cf"$uint") // 13
 
   // Test
   // (remember leftmost Bool in Vec is low order bit)
