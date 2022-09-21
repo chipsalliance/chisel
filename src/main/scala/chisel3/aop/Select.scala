@@ -14,7 +14,6 @@ import firrtl.annotations.ReferenceTarget
 import scala.reflect.runtime.universe.TypeTag
 
 import scala.collection.mutable
-import chisel3.internal.naming.chiselName
 
 /** Use to select Chisel components in a module, after that module has been constructed
   * Useful for adding additional Chisel annotations or for use within an [[Aspect]]

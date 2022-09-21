@@ -657,7 +657,6 @@ package object Chisel {
 
     class dump extends chisel3.internal.naming.dump
     class treedump extends chisel3.internal.naming.treedump
-    class chiselName extends chisel3.internal.naming.chiselName
   }
 
   implicit class DataCompatibility(a: Data) {
