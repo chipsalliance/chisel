@@ -43,12 +43,12 @@ object assert extends VerifPrintMacrosDoc {
   // Macros currently can't take default arguments, so we need two functions to emulate defaults.
   def apply(
     cond:    Bool,
-    message: String,
+    message: => String,
     data:    Bits*
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): Assert = macro _applyMacroWithStringMessage
+  ): Assert = macro _applyMacroWithInterpolatorCheck
 
   /** Checks for a condition to be valid in the circuit at all times. If the
     * condition evaluates to false, the circuit simulation stops with an error.
@@ -79,6 +79,29 @@ object assert extends VerifPrintMacrosDoc {
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Assert =
     macro _applyMacroWithNoMessage
 
+  import VerificationStatement._
+
+  def _applyMacroWithInterpolatorCheck(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    message match {
+      case q"scala.StringContext.apply(..$_).s(..$_)" =>
+        c.warning(
+          c.enclosingPosition,
+          "s-interpolators for Chisel assert, assume and printf statements will be deprecated in 3.5; use p or cf interpolators instead"
+        )
+      case _ =>
+    }
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
+    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
+  }
+
   /** An elaboration-time assertion. Calls the built-in Scala assert function. */
   def apply(cond: Boolean, message: => String): Unit = Predef.assert(cond, message)
 
@@ -87,8 +110,6 @@ object assert extends VerifPrintMacrosDoc {
 
   /** Named class for assertions. */
   final class Assert private[chisel3] () extends VerificationStatement
-
-  import VerificationStatement._
 
   /** @group VerifPrintMacros */
   @deprecated(
