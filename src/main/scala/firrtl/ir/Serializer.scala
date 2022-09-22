@@ -157,6 +157,8 @@ object Serializer {
       while (next == null && hasNextStmt) {
         val head = underlying
         head.next() match {
+          case b: Block if b.stmts.isEmpty =>
+            next = EmptyStmt
           case b: Block =>
             val first = b.stmts.iterator
             val last = underlying
@@ -200,21 +202,22 @@ object Serializer {
       def consumeStmt(stmt: Statement): Unit = {
         stmt match {
           case wb: WhenBegin =>
-            newLineAndIndent()
+            doIndent()
             b ++= "when "; s(wb.pred); b ++= " :"; s(wb.info)
             indent += 1
           case AltBegin =>
             indent -= 1
-            newLineAndIndent()
+            doIndent()
             b ++= "else :"
             indent += 1
           case WhenEnd =>
             indent -= 1
           case other =>
+            doIndent()
             s(other)
         }
-        if (this.hasNext) {
-          newLineAndIndent()
+        if (this.hasNext && stmt != WhenEnd) {
+          newLineNoIndent()
         }
       }
       b.clear()
@@ -233,11 +236,12 @@ object Serializer {
 
   private def sIt(node: Statement)(implicit indent: Int): Iterator[String] = node match {
     case b: Block =>
-      if (b.stmts.isEmpty) Iterator("skip")
+      if (b.stmts.isEmpty) sIt(EmptyStmt)
       else new StmtsSerializer(b.stmts, indent)
     case cond: Conditionally => new StmtsSerializer(Seq(cond), indent)
     case other =>
       implicit val b = new StringBuilder
+      doIndent()
       s(other)
       Iterator(b.toString)
   }
@@ -383,7 +387,7 @@ object Serializer {
         doIndent(0); b ++= "module "; b ++= name; b ++= " :"; s(info)
         ports.foreach { p => newLineAndIndent(1); s(p) }
         newLineNoIndent() // add a blank line between port declaration and body
-        newLineAndIndent(1) // also indent before body
+        newLineNoIndent() // newline for body, sIt will indent
         b.toString
       }
       Iterator(start) ++ sIt(body)(indent + 1)
@@ -434,7 +438,7 @@ object Serializer {
   private def newLineNoIndent()(implicit b: StringBuilder): Unit = b += NewLine
 
   /** create indent, inc allows for a temporary increment */
-  private def doIndent(inc: Int)(implicit b: StringBuilder, indent: Int): Unit = {
+  private def doIndent(inc: Int = 0)(implicit b: StringBuilder, indent: Int): Unit = {
     (0 until (indent + inc)).foreach { _ => b ++= Indent }
   }
 
