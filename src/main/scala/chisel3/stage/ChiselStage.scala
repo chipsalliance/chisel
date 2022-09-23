@@ -214,7 +214,7 @@ object ChiselStage {
     )
 
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new HighFirrtlEmitter)))
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new HighFirrtlEmitter), PrintFullStackTraceAnnotation))
       .collectFirst {
         case EmittedFirrtlCircuitAnnotation(a) => a
       }

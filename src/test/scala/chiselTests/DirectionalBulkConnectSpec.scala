@@ -5,7 +5,9 @@ package chiselTests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.{Analog, FixedPoint}
+import chisel3.experimental.{Analog, FixedPoint, Defaulting}
+import chisel3.experimental.BundleLiterals._
+import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
@@ -303,4 +305,28 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
     assert(out.contains("""b[2] <= _WIRE[2]"""))
   }
 
+  property("(D.r) :<>= works for different missing Defaulting subfields") {
+    trait Info extends Bundle {
+      val info = UInt(32.W)
+    }
+    class InfoECC extends Info {
+      val ecc = Defaulting(false.B)
+    }
+    class InfoControl extends Info {
+      val control = Defaulting(false.B)
+    }
+    val firrtl = ChiselStage.emitFirrtl { new CrossDirectionalBulkConnectsWithWires(new InfoECC() : Info, new InfoControl() : Info, 1) }
+    println(firrtl)
+    assert(firrtl.contains("wiresOut_0.control <= UInt<1>(\"h0\")"))
+    assert(firrtl.contains("wiresOut_0.info <= wiresIn_0.info"))
+  }
+  property("(D.s) :<>= works for different missing Defaulting subindexes") {
+    def vecType(size: Int) = Vec(size, Defaulting(UInt(3.W), 0.U))
+    val firrtl = ChiselStage.emitFirrtl { new CrossDirectionalBulkConnectsWithWires(vecType(2), vecType(3), 1) }
+    println(firrtl)
+    assert(firrtl.contains("wiresOut_0[2] <= UInt<1>(\"h0\")"))
+    assert(firrtl.contains("wiresOut_0[1] <= wiresIn_0[1]"))
+    assert(firrtl.contains("wiresOut_0[0] <= wiresIn_0[0]"))
+
+  }
 }
