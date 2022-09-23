@@ -330,23 +330,46 @@ private[chisel3] object DirectionalConnectionFunctions {
     def recursiveAssign(consumer: Data, producer: Data, orientation: RelativeOrientation): Unit = {
       (consumer, producer) match {
         case (vc: Vec[_], vp: Vec[_]) => {
-          if (vc.size != vp.size) {
-            Builder.error(s"Assignment between vectors of unequal length (${vc.size} != ${vp.size})")
+          val (active, inactive) = if (activeSide == ProducerIsActive) (vp, vc) else (vc, vp)
+          val (defaultableSubIndexes, unassignedSubIndexes) = if (active.size > inactive.size) {
+            active(0) match {
+              case d: experimental.Defaulting[_] =>
+                ((inactive.size until active.size).map { i => active(i) }, Nil)
+              case o => 
+                (Nil, (inactive.size until active.size).map { i => active(i) })
+            }
+          } else (Nil, Nil)
+          if(unassignedSubIndexes.nonEmpty) {
+            Builder.error(s"Connection has unassigned subindexes ${unassignedSubIndexes.mkString(", ")}")
           } else {
             (vc.zip(vp)).foreach { case (ec, ep) => recursiveAssign(ec, ep, orientation) }
+            defaultableSubIndexes.map { case d: experimental.Defaulting[Data] => 
+              if(activeSide == ProducerIsActive) recursiveAssign(d.default, d.underlying, orientation)
+              else recursiveAssign(d.underlying, d.default, orientation)
+            }
           }
         }
         case (rc: Record, rp: Record) => {
-          if (!rc.elements.keySet.sameElements(rp.elements.keySet)) {
-            Builder.error(s"Assignment between ${consumer} and ${producer} must have identical fields")
+          val (active, inactive) = if (activeSide == ProducerIsActive) (rp, rc) else (rc, rp)
+          val (defaultableKeys, unassignableKeys) = {
+            val missingKeys = active.elements.keySet -- inactive.elements.keySet
+            missingKeys.partition { k => active.elements(k).isInstanceOf[experimental.Defaulting[_]] }
+          }
+          if(unassignableKeys.nonEmpty) {
+            val unassignableFields = unassignableKeys.map(k => active.elements(k))
+            Builder.error(s"Connection between $consumer and $producer has unassigned fields ${unassignableFields.mkString(", ")} in $active.")
           } else {
-            val active = if (activeSide == ProducerIsActive) producer else consumer
             active.asInstanceOf[Record].elements.foreach {
-              case (key, ea) =>
-                val elementOrientation = deriveOrientation(ea, orientation)
-                val ec = rc.elements(key)
-                val ep = rp.elements(key)
-                recursiveAssign(ec, ep, elementOrientation)
+                case (key, ea: experimental.Defaulting[Data]) if defaultableKeys.contains(key) =>
+                  val field = active.elements(key).asInstanceOf[experimental.Defaulting[Data]]
+                  val elementOrientation = deriveOrientation(ea, orientation)
+                  if(activeSide == ProducerIsActive) recursiveAssign(ea.default, ea.underlying, elementOrientation)
+                  else recursiveAssign(ea.underlying, ea.default, elementOrientation)
+                case (key, ea) =>
+                  val elementOrientation = deriveOrientation(ea, orientation)
+                  val ec = rc.elements(key)
+                  val ep = rp.elements(key)
+                  recursiveAssign(ec, ep, elementOrientation)
             }
           }
         }

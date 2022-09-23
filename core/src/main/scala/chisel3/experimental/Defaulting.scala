@@ -2,7 +2,8 @@
 
 package chisel3.experimental
 
-import chisel3.{chiselTypeOf, Record, Data, Element}
+import chisel3._
+import chisel3.internal.sourceinfo.SourceInfo
 
 import scala.collection.immutable.SeqMap
 
@@ -12,7 +13,7 @@ import scala.collection.immutable.SeqMap
   *
   * @note This API is experimental and subject to change
   */
-final class Defaulting[T <: Data] private (private[chisel3] val tpe: T, val defaultValue: T) extends Record {
+final class Defaulting[T <: Data] private (private[chisel3] val tpe: T, val defaultValue: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) extends Record {
   requireIsChiselType(tpe, s"Chisel hardware type $tpe must be a pure type, not bound to hardware.")
   requireIsHardware(defaultValue, s"Default value $defaultValue must be bound to a hardware component")
 
@@ -24,7 +25,10 @@ final class Defaulting[T <: Data] private (private[chisel3] val tpe: T, val defa
 
   val elements = SeqMap("" -> underlying)
   override def opaqueType = elements.size == 1
-  override def cloneType: this.type = (new Defaulting[T](chiselTypeOf(tpe), defaultValue)).asInstanceOf[this.type]
+  override def cloneType: this.type = {
+    val freshType = if(tpe.isSynthesizable) chiselTypeOf(tpe) else tpe.cloneType
+    (new Defaulting[T](freshType, defaultValue)).asInstanceOf[this.type]
+  }
 }
 
 
@@ -38,11 +42,11 @@ object Defaulting {
     * @param tpe the Chisel data type
     * @param default the Chisel default value, must be bound to a hardware value
     */
-  def apply[T <: Data](tpe: T, default: T): Defaulting[T] = new Defaulting(tpe, default)
+  def apply[T <: Data](tpe: T, default: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Defaulting[T] = new Defaulting(tpe, default)
 
   /** Build a Defaulting[T <: Data]
     *
     * @param default the Chisel default value, must be bound to a hardware value. The underlying type is pulled from the default value.
     */
-  def apply[T <: Data](default: T): Defaulting[T] = new Defaulting(chiselTypeOf(default), default)
+  def apply[T <: Data](default: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Defaulting[T] = new Defaulting(chiselTypeOf(default), default)
 }
