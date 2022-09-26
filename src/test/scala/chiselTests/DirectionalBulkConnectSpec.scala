@@ -5,7 +5,7 @@ package chiselTests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.{Analog, FixedPoint, Defaulting}
+import chisel3.experimental.{Analog, Defaulting, FixedPoint}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
@@ -315,7 +315,9 @@ class DirectionalBulkConnectSpec extends ChiselPropSpec with Utils {
     class InfoControl extends Info {
       val control = Defaulting(false.B)
     }
-    val firrtl = ChiselStage.emitChirrtl { new CrossDirectionalBulkConnectsWithWires(new InfoECC() : Info, new InfoControl() : Info, 1) }
+    val firrtl = ChiselStage.emitChirrtl {
+      new CrossDirectionalBulkConnectsWithWires(new InfoECC(): Info, new InfoControl(): Info, 1)
+    }
     println(firrtl)
     assert(firrtl.contains("wiresOut_0.control <= UInt<1>(\"h0\")"))
     assert(firrtl.contains("wiresOut_0.info <= wiresIn_0.info"))
