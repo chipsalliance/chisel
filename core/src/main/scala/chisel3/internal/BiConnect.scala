@@ -255,12 +255,13 @@ private[chisel3] object BiConnect {
     * FIRRTL specification, the following must hold for FIRRTL connection:
     *
     *   1. The Chisel types of the left-hand and right-hand side expressions must be
-    *       equivalent.
+    *       equivalent (and thus will become the same FIRRTL type).
     *   2. The bit widths of the two expressions must allow for data to always
     *        flow from a smaller bit width to an equal size or larger bit width.
     *   3. The flow of the left-hand side expression must be sink or duplex
     *   4. Either the flow of the right-hand side expression is source or duplex,
     *      or the right-hand side expression has a passive type.
+    *   5. No analog connections
     *
     * @param raiseIfFalse raise a BiConnectException if the result would be false with information about why it's false.
     */

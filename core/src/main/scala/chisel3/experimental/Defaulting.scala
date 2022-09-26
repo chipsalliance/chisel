@@ -7,21 +7,21 @@ import chisel3.internal.sourceinfo.SourceInfo
 
 import scala.collection.immutable.SeqMap
 
-/** Data type for representing any type who has a default value
+/** Data type for representing any type that has a defined default value
   *
   * Uses the underlying opaque type support.
   *
   * @note This API is experimental and subject to change
   */
-final class Defaulting[T <: Data] private (private[chisel3] val tpe: T, val defaultValue: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) extends Record {
+final class Defaulting[T <: Data] private (tpe: => T, defaultValue: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) extends Record {
   requireIsChiselType(tpe, s"Chisel hardware type $tpe must be a pure type, not bound to hardware.")
   requireIsHardware(defaultValue, s"Default value $defaultValue must be bound to a hardware component")
 
-  /** The underlying hardware component, is either the Chisel data type or hardware component */
-  val underlying: T = tpe
+  /** The underlying hardware component, is either the Chisel data type (if `this` is unbound) or hardware component (if `this` is bound to hardware) */
+  lazy val underlying: T = tpe
 
   /** The default value for this Defaulting */
-  val default: T = defaultValue
+  lazy val default: T = defaultValue
 
   val elements = SeqMap("" -> underlying)
   override def opaqueType = elements.size == 1
@@ -32,7 +32,7 @@ final class Defaulting[T <: Data] private (private[chisel3] val tpe: T, val defa
 }
 
 
-/** Object that provides factory methods for [[Analog]] objects
+/** Object that provides factory methods for [[Defaulting]] objects
   *
   * @note This API is experimental and subject to change
   */
