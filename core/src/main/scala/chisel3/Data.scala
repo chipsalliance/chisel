@@ -791,6 +791,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
     *
     * @param that the Data to connect from
+    * @group connection
     */
   final def :=(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
     prefix(this) {
