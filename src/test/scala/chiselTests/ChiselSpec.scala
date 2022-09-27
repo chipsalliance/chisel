@@ -38,7 +38,10 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     annotations:          AnnotationSeq = Seq()
   ): Boolean = {
     // Change this to enable Treadle as a backend
-    val defaultBackend = chisel3.testers.TesterDriver.defaultBackend
+    val defaultBackend = {
+      val useTreadle = sys.env.get("CHISEL3_CI_USE_TREADLE").isDefined
+      if (useTreadle) chisel3.testers.TreadleBackend else chisel3.testers.TesterDriver.defaultBackend
+    }
     val hasBackend = TestUtils.containsBackend(annotations)
     val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
     TesterDriver.execute(() => t, additionalVResources, annos)
