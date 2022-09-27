@@ -35,6 +35,7 @@ object Connectable {
       * @param consumer the left-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connection ("aligned connection")
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       * @param sourceInfo
+      * @group connection
       */
     final def :<=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
@@ -60,6 +61,7 @@ object Connectable {
       * @param consumer the left-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("flipped connection")
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       * @param sourceInfo
+      * @group connection
       */
     final def :>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
@@ -86,6 +88,7 @@ object Connectable {
       * @param consumer the left-hand-side of the connection (read above comment for more info)
       * @param producer the right-hand-side of the connection (read above comment for more info)
       * @param sourceInfo
+      * @group connection
       */
     final def :<>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
@@ -128,6 +131,7 @@ object Connectable {
       * @param consumer the left-hand-side of the connection, all fields will be driven-to
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       * @param sourceInfo
+      * @group connection
       */
     final def :#=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       consumer.:<=(producer)
@@ -159,6 +163,7 @@ object Connectable {
       * @param consumer the left-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connection ("aligned connection")
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       * @param sourceInfo
+      * @group connection
       */
     def :<=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
@@ -186,6 +191,7 @@ object Connectable {
       * @param consumer the left-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("flipped connection")
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       * @param sourceInfo
+      * @group connection
       */
     def :>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
@@ -214,6 +220,7 @@ object Connectable {
       * @param consumer the left-hand-side of the connection (read above comment for more info)
       * @param producer the right-hand-side of the connection (read above comment for more info)
       * @param sourceInfo
+      * @group connection
       */
     def :<>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
@@ -238,6 +245,7 @@ object Connectable {
       * @param consumer the left-hand-side of the connection, all fields will be driven-to
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       * @param sourceInfo
+      * @group connection
       */
     def :#=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
