@@ -101,11 +101,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   check-tests:
     name: "check tests"
-<<<<<<< HEAD
-    needs: [ci, integration]
-=======
-    needs: [ci, integration, std, doc]
->>>>>>> ed269429 ([ci] Split formatting and docs checks into separate task (#2749))
+    needs: [ci, integration, doc]
     runs-on: ubuntu-20.04
     if: success() # only run if all tests have passed
     outputs:
