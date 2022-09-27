@@ -109,7 +109,7 @@ object printf {
     val clock = Builder.forcedClock
     val printfId = new Printf(pable)
 
-    Printable.checkScope(Some(pable))
+    Printable.checkScope(pable)
 
     pushCommand(chisel3.internal.firrtl.Printf(printfId, sourceInfo, clock.ref, pable))
     printfId

@@ -135,7 +135,7 @@ object Printable {
     StringContext(bufEscapeBackSlash.toSeq: _*).cf(data: _*)
   }
 
-  private[chisel3] def checkScope(message: Option[Printable]): Unit = {
+  private[chisel3] def checkScope(message: Printable): Unit = {
     def getData(x: Printable): Seq[Data] = {
       x match {
         case y: FirrtlFormat => Seq(y.bits)
@@ -145,11 +145,7 @@ object Printable {
         case _             => Seq() // Handles subtypes PString and Percent
       }
     }
-
-    message match {
-      case Some(x) => getData(x).foreach(_.requireVisible())
-      case _       =>
-    }
+    getData(message).foreach(_.requireVisible())
   }
 }
 
