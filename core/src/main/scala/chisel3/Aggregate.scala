@@ -115,7 +115,6 @@ sealed abstract class Aggregate extends Data {
   }
 
   // Emits the FIRRTL `this <- that`, or `this is invalid` if that == DontCare
-  // Note that `this <= that` will be emitted if both `this` and `that` are not aggregate types
   private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Partial Connect.
@@ -280,6 +279,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     *
     * @note the length of this Vec and that Seq must match
     * @param that the Seq to connect from
+    * @group connection
     */
   def <>(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     if (this.length != that.length)
@@ -302,6 +302,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * @note This is necessary in [[Aggregate]], rather than relying on [[Data.<>]], due to supporting the Seq
     * @note the length of this Vec and that Vec must match
     * @param that the Vec to connect from
+    * @group connection
     */
   def <>(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit =
     this.bulkConnect(that.asInstanceOf[Data])
@@ -315,6 +316,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
     *
     * @note the length of this Vec must match the length of the input Seq
+    * @group connection
     */
   def :=(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     require(
@@ -335,6 +337,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     *
     * @note This is necessary in [[Aggregate]], rather than relying on [[Data.:=]], due to supporting the Seq
     * @note the length of this Vec must match the length of the input Vec
+    * @group connection
     */
   def :=(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this.connect(that)
 

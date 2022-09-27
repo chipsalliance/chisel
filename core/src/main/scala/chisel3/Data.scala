@@ -807,6 +807,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match
     *
     * @param that the Data to connect from
+    * @group connection
     */
   final def <>(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
     prefix(this) {
