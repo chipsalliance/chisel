@@ -52,12 +52,6 @@ jobs:
           echo "$(pwd)/usr/bin" >> $GITHUB_PATH
       - name: Cache Scala
         uses: coursier/cache-action@v5
-      - name: Check Formatting (Scala 2.12 only)
-        if: startsWith(matrix.scala, '2.12')
-        run: sbt ++${{ matrix.scala }} scalafmtCheckAll
-      - name: Documentation (Scala 2.12 only)
-        if: startsWith(matrix.scala, '2.12')
-        run: sbt ++${{ matrix.scala }} docs/mdoc unidoc
       - name: Use Treadle for Pull Requests
         if: github.event_name == 'pull_request'
         run: echo "CHISEL3_CI_USE_TREADLE=1" >> $GITHUB_ENV
@@ -65,6 +59,23 @@ jobs:
         run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+
+  doc:
+    name: Formatting and Documentation
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.11"
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Check Formatting
+        run: sbt scalafmtCheckAll
+      - name: Documentation
+        run: sbt docs/mdoc unidoc
 
   integration:
     name: Integration Tests (w/ chiseltest)
@@ -123,7 +134,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   check-tests:
     name: "check tests"
-    needs: [ci, integration, std]
+    needs: [ci, integration, std, doc]
     runs-on: ubuntu-20.04
     if: success() # only run if all tests have passed
     outputs:
