@@ -2,10 +2,11 @@
 
 package chisel3
 
-import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.sourceinfo.SourceInfo
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox
 
 /** Prints a message in simulation
   *
@@ -75,8 +76,28 @@ object printf {
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
+  def _applyMacroWithInterpolatorCheck(
+    c:              blackbox.Context
+  )(fmt:            c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    fmt match {
+      case q"scala.StringContext.apply(..$_).s(..$_)" =>
+        c.warning(
+          c.enclosingPosition,
+          "s-interpolators for Chisel assert, assume and printf statements will be deprecated in 3.5; use p or cf interpolators instead"
+        )
+      case _ =>
+    }
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithReset"))
+    q"$apply_impl_do(_root_.chisel3.Printable.pack($fmt, ..$data))($sourceInfo, $compileOptions)"
+  }
+
   def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
-    apply(Printable.pack(fmt, data: _*))
+    macro _applyMacroWithInterpolatorCheck
 
   /** Prints a message in simulation
     *
@@ -93,6 +114,14 @@ object printf {
     * @param pable [[Printable]] to print
     */
   def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf = {
+    var printfId: Printf = null
+    when(!Module.reset.asBool) {
+      printfId = printfWithoutReset(pable)
+    }
+    printfId
+  }
+
+  def _applyWithReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf = {
     var printfId: Printf = null
     when(!Module.reset.asBool) {
       printfId = printfWithoutReset(pable)

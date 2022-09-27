@@ -81,6 +81,7 @@ object assert extends VerifPrintMacrosDoc {
 
   import VerificationStatement._
 
+  /** @group VerifPrintMacros */
   def _applyMacroWithInterpolatorCheck(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -236,7 +237,7 @@ object assume extends VerifPrintMacrosDoc {
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): Assume = macro _applyMacroWithStringMessage
+  ): Assume = macro _applyMacroWithInterpolatorCheck
 
   /** Assumes a condition to be valid in the circuit at all times.
     * Acts like an assertion in simulation and imposes a declarative
@@ -276,6 +277,28 @@ object assume extends VerifPrintMacrosDoc {
   final class Assume private[chisel3] () extends VerificationStatement
 
   import VerificationStatement._
+
+  /** @group VerifPrintMacros */
+  def _applyMacroWithInterpolatorCheck(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    message match {
+      case q"scala.StringContext.apply(..$_).s(..$_)" =>
+        c.warning(
+          c.enclosingPosition,
+          "s-interpolators for Chisel assert, assume and printf statements will be deprecated in 3.5; use p or cf interpolators instead"
+        )
+      case _ =>
+    }
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
+    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
+  }
 
   /** @group VerifPrintMacros */
   @deprecated(
