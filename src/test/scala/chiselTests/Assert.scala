@@ -103,42 +103,26 @@ class AssertPrintableWireScope extends BasicTester {
 }
 
 class AssertPrintablePortScope extends BasicTester {
-  ChiselStage.elaborate {
-    new Module {
-      val mod = Module(new PrintableScopeTester)
-      assert(1.U === 2.U, mod.printablePort)
-    }
-  }
+  val mod = Module(new PrintableScopeTester)
+  assert(1.U === 2.U, mod.printablePort)
   stop()
 }
 
 class AssertPrintableFailingWhenScope extends BasicTester {
-  ChiselStage.elaborate {
-    new Module {
-      val mod = Module(new PrintableWhenScopeTester)
-      assert(1.U === 2.U, mod.printable)
-    }
-  }
+  val mod = Module(new PrintableWhenScopeTester)
+  assert(1.U === 2.U, mod.printable)
   stop()
 }
 
 class AssumePrintableWireScope extends BasicTester {
-  ChiselStage.elaborate {
-    new Module {
-      val mod = Module(new PrintableScopeTester)
-      assume(1.U === 1.U, mod.printableWire)
-    }
-  }
+  val mod = Module(new PrintableScopeTester)
+  assume(1.U === 1.U, mod.printableWire)
   stop()
 }
 
 class AssumePrintablePortScope extends BasicTester {
-  ChiselStage.elaborate {
-    new Module {
-      val mod = Module(new PrintableScopeTester)
-      assume(1.U === 1.U, mod.printablePort)
-    }
-  }
+  val mod = Module(new PrintableScopeTester)
+  assume(1.U === 1.U, mod.printablePort)
   stop()
 }
 
