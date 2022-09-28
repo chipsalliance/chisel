@@ -245,7 +245,7 @@ class SqueezeFunctionalityTester(range: IntervalRange, startNum: BigDecimal, end
   squeezeTemplate := toSqueeze.squeeze(squeezeInterval)
 
   printf(
-    cf"SqueezeTest %d${counter}    %d${toSqueeze.asSInt()}.squeeze($range) => %d${squeezeTemplate.asSInt()}\n"
+    cf"SqueezeTest $counter%d ${toSqueeze.asSInt()}%d.squeeze($range) => ${squeezeTemplate.asSInt()}%d\n"
   )
 }
 
