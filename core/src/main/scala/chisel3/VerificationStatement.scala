@@ -43,7 +43,7 @@ object assert extends VerifPrintMacrosDoc {
   // Macros currently can't take default arguments, so we need two functions to emulate defaults.
   def apply(
     cond:    Bool,
-    message: => String,
+    message: String,
     data:    Bits*
   )(
     implicit sourceInfo: SourceInfo,
@@ -93,9 +93,9 @@ object assert extends VerifPrintMacrosDoc {
     import c.universe._
     message match {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
-        c.warning(
+        c.error(
           c.enclosingPosition,
-          "s-interpolators for Chisel assert, assume and printf statements will be deprecated in 3.5; use p or cf interpolators instead"
+          "s-interpolators for Chisel assert, assume and printf statements are deprecated (since 3.5); use p or cf interpolators instead"
         )
       case _ =>
     }
@@ -290,9 +290,9 @@ object assume extends VerifPrintMacrosDoc {
     import c.universe._
     message match {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
-        c.warning(
+        c.error(
           c.enclosingPosition,
-          "s-interpolators for Chisel assert, assume and printf statements will be deprecated in 3.5; use p or cf interpolators instead"
+          "s-interpolators for Chisel assert, assume and printf statements are deprecated (since 3.5); use p or cf interpolators instead"
         )
       case _ =>
     }

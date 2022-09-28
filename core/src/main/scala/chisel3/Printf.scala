@@ -76,6 +76,9 @@ object printf {
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
+  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
+    macro _applyMacroWithInterpolatorCheck
+
   def _applyMacroWithInterpolatorCheck(
     c:              blackbox.Context
   )(fmt:            c.Tree,
@@ -86,18 +89,15 @@ object printf {
     import c.universe._
     fmt match {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
-        c.warning(
+        c.error(
           c.enclosingPosition,
-          "s-interpolators for Chisel assert, assume and printf statements will be deprecated in 3.5; use p or cf interpolators instead"
+          "s-interpolators for Chisel assert, assume and printf statements are deprecated (since 3.5); use p or cf interpolators instead"
         )
       case _ =>
     }
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithReset"))
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("printfWithReset"))
     q"$apply_impl_do(_root_.chisel3.Printable.pack($fmt, ..$data))($sourceInfo, $compileOptions)"
   }
-
-  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
-    macro _applyMacroWithInterpolatorCheck
 
   /** Prints a message in simulation
     *
@@ -113,15 +113,15 @@ object printf {
     * @see [[Printable]] documentation
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf = {
-    var printfId: Printf = null
-    when(!Module.reset.asBool) {
-      printfId = printfWithoutReset(pable)
-    }
-    printfId
-  }
+  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
+    printfWithReset(pable)(sourceInfo, compileOptions)
 
-  def _applyWithReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf = {
+  private[chisel3] def printfWithReset(
+    pable: Printable
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Printf = {
     var printfId: Printf = null
     when(!Module.reset.asBool) {
       printfId = printfWithoutReset(pable)
