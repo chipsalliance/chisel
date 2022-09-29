@@ -103,6 +103,8 @@ Message:
 
 Notice the use of `+` between `cf` interpolated "strings". The results of `cf` interpolation can be concatenated by using the `+` operator.
 
+> :warning: The Scala s-interpolator is deprecated since 3.5 and will output the warning: "s-interpolators for Chisel assert, assume and printf statements are deprecated (since 3.5); use p or cf interpolators instead"
+
 ### C-Style
 
 Chisel provides `printf` in a similar style to its C namesake. It accepts a double-quoted format string and a variable number of arguments which will then be printed on rising clock edges. Chisel supports the following format specifiers:
