@@ -104,13 +104,14 @@ class AssertPrintableWireScope extends BasicTester {
 
 class AssertPrintablePortScope extends BasicTester {
   val mod = Module(new PrintableScopeTester)
-  assert(1.U === 2.U, mod.printablePort)
+  mod.in := 255.U
+  assert(1.U === 1.U, mod.printablePort)
   stop()
 }
 
 class AssertPrintableFailingWhenScope extends BasicTester {
   val mod = Module(new PrintableWhenScopeTester)
-  assert(1.U === 2.U, mod.printable)
+  assert(1.U === 1.U, mod.printable)
   stop()
 }
 
@@ -122,6 +123,7 @@ class AssumePrintableWireScope extends BasicTester {
 
 class AssumePrintablePortScope extends BasicTester {
   val mod = Module(new PrintableScopeTester)
+  mod.in := 255.U
   assume(1.U === 1.U, mod.printablePort)
   stop()
 }
