@@ -178,6 +178,7 @@ object assert extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assert = {
     val id = new Assert()
+    message.foreach(Printable.checkScope(_))
     when(!Module.reset.asBool()) {
       failureMessage("Assertion", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
@@ -343,6 +344,7 @@ object assume extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assume = {
     val id = new Assume()
+    message.foreach(Printable.checkScope(_))
     when(!Module.reset.asBool()) {
       failureMessage("Assumption", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
