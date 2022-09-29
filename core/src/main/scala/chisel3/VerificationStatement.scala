@@ -95,7 +95,7 @@ object assert extends VerifPrintMacrosDoc {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
         c.error(
           c.enclosingPosition,
-          "s-interpolators for Chisel assert, assume and printf statements are deprecated (since 3.5); use p or cf interpolators instead"
+          "The s-interpolator for Chisel assert, assume and printf statements are deprecated (since 3.5); use the cf interpolator instead"
         )
       case _ =>
     }
@@ -292,7 +292,7 @@ object assume extends VerifPrintMacrosDoc {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
         c.error(
           c.enclosingPosition,
-          "s-interpolators for Chisel assert, assume and printf statements are deprecated (since 3.5); use p or cf interpolators instead"
+          "The s-interpolator for Chisel assert, assume and printf statements are deprecated (since 3.5); use the cf interpolator instead"
         )
       case _ =>
     }
