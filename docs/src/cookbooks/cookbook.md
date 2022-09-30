@@ -638,7 +638,7 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new ModuleWithOptionalIOs(true))
+getVerilogString(new ModuleWithOptionalIO(true))
 ```
 
 ### How do I create I/O without a prefix?
@@ -797,7 +797,7 @@ class Salt extends Module {
 Elaborating the Chisel module `Salt` yields our "desired names" for `Salt` and `Coffee` in the output Verilog:
 
 ```scala mdoc:verilog
-ChiselStage.emitVerilog(new Salt)
+getVerilogString(new Salt)
 ```
 
 ## Directionality
