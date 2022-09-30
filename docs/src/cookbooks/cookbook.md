@@ -173,9 +173,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new Foo)
+getVerilogString(new Foo)
 ```
 
 ### How do I connect a subset of Bundle fields?
@@ -258,9 +256,7 @@ class Foo extends Module {
 ```
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new Foo)
+getVerilogString(new Foo)
 ```
 
 
@@ -303,11 +299,8 @@ class MyModule2 extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new MyModule)
-ChiselStage.emitVerilog(new MyModule2)
-
+getVerilogString(new MyModule)
+getVerilogString(new MyModule2)
 ```
 
 
@@ -506,9 +499,7 @@ class DetectTwoOnes extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new DetectTwoOnes)
+getVerilogString(new DetectTwoOnes)
 ```
 
 Note: the `is` statement can take multiple conditions e.g. `is (sTwo1s, sOne1) { ... }`.
@@ -553,9 +544,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new Foo)
+getVerilogString(new Foo)
 ```
 
 If you **really** need to do this for a one-off case (Think thrice! It is likely you can better structure the code using bundles), then rocket-chip has a [Split utility](https://github.com/freechipsproject/rocket-chip/blob/723af5e6b69e07b5f94c46269a208a8d65e9d73b/src/main/scala/util/Misc.scala#L140) which can accomplish this.
@@ -580,7 +569,7 @@ class Foo extends Module {
 
 If you try to compile this, you will get an error.
 ```scala mdoc:crash
-ChiselStage.emitVerilog(new Foo)
+getVerilogString(new Foo)
 ```
 
 Chisel3 *does not support subword assignment*.
@@ -605,9 +594,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new Foo)
+getVerilogString(new Foo)
 ```
 
 ### How do I create an optional I/O?
@@ -633,9 +620,7 @@ class ModuleWithOptionalIOs(flag: Boolean) extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new ModuleWithOptionalIOs)
+getVerilogString(new ModuleWithOptionalIOs(true))
 ```
 
 The following is an example where an entire `IO` is optional:
@@ -653,9 +638,7 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new ModuleWithOptionalIOs)
+getVerilogString(new ModuleWithOptionalIOs(true))
 ```
 
 ### How do I create I/O without a prefix?
@@ -826,6 +809,7 @@ to a register:
 
 ```scala mdoc:silent:reset
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.Decoupled
 class BadRegConnect extends Module {
   val io = IO(new Bundle {
@@ -848,6 +832,7 @@ This will have the desired result when used to construct a Register:
 
 ```scala mdoc:silent:reset
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.Decoupled
 class CoercedRegConnect extends Module {
   val io = IO(new Bundle {
