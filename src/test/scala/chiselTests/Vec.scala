@@ -111,7 +111,7 @@ class FillTester(n: Int, value: Int) extends BasicTester {
   val x = VecInit(Array.fill(n)(value.U))
   val u = VecInit.fill(n)(value.U)
 
-  assert(x.asUInt() === u.asUInt(), s"Expected Vec to be filled like $x, instead VecInit.fill created $u")
+  assert(x.asUInt() === u.asUInt(), cf"Expected Vec to be filled like $x, instead VecInit.fill created $u")
   stop()
 }
 
@@ -235,7 +235,7 @@ class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
   val testVec = VecInit.iterate(start.U, len)(f)
   assert(
     controlVec.asUInt() === testVec.asUInt(),
-    s"Expected Vec to be filled like $controlVec, instead creaeted $testVec\n"
+    cf"Expected Vec to be filled like $controlVec, instead created $testVec\n"
   )
   stop()
 }
