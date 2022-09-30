@@ -6,7 +6,10 @@ import chisel3.internal.{prefix, BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
-import chisel3.experimental.{Analog, DataMirror}
+import chisel3.experimental.{Analog, DataMirror, Defaulting}
+
+import scala.collection.mutable
+import chisel3.internal.ChildBinding
 
 /** The default connection operators for Chisel hardware components */
 object Connectable {
@@ -39,7 +42,7 @@ object Connectable {
       */
     final def :<=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ConsumerIsActive)
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessEq)
       }
     }
 
@@ -65,7 +68,7 @@ object Connectable {
       */
     final def :>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ProducerIsActive)
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq)
       }
     }
 
@@ -84,6 +87,7 @@ object Connectable {
       * :<= and :>= do, and then you'll be able to reason your way to understanding what's happening :)
       * @note If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
       * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
+      * @note "turk-duck-en" is a meme where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
       *
       * @param consumer the left-hand-side of the connection (read above comment for more info)
       * @param producer the right-hand-side of the connection (read above comment for more info)
@@ -110,8 +114,7 @@ object Connectable {
           consumer.firrtlConnect(producer)
         } else {
           // cannot call :<= and :>= directly because otherwise prefix is called twice
-          DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ProducerIsActive)
-          DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ConsumerIsActive)
+          DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessGreaterEq)
         }
       }
     }
@@ -134,8 +137,9 @@ object Connectable {
       * @group connection
       */
     final def :#=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
-      consumer.:<=(producer)
-      producer.:>=(consumer)
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq)
+      }
     }
   }
 
@@ -271,15 +275,80 @@ private[chisel3] object DirectionalConnectionFunctions {
     override def emitStrictConnects: Boolean = true
   }
 
-  // Indicates whether the active side is aligned or flipped relative to the active side's root
-  sealed trait RelativeOrientation { def invert: RelativeOrientation }
-  case object AlignedWithRoot extends RelativeOrientation { def invert = FlippedWithRoot }
-  case object FlippedWithRoot extends RelativeOrientation { def invert = AlignedWithRoot }
+  case class LeafConnection(consumer: Option[(Data, RelativeOrientation)], producer: Option[(Data, RelativeOrientation)])
 
-  // Indicates whether the consumer or producer is the active side
-  sealed trait ActiveSide
-  case object ProducerIsActive extends ActiveSide
-  case object ConsumerIsActive extends ActiveSide
+  def buildTrie(consumer: Data, producer: Data): Trie[String, LeafConnection] = {
+    require(consumer != DontCare)
+
+    val trie = Trie.empty[String, LeafConnection]
+    val consumerLeafs = getLeafs(Vector.empty[String], consumer, consumer, AlignedWithRoot)
+    consumerLeafs.foreach { case (path, (d, o)) =>
+      trie.insert(path, LeafConnection(Some((d, o)), None))
+    }
+    if(producer == DontCare) {
+      trie.transform {
+        (path, optLeaf) => optLeaf.map {
+          case LeafConnection(Some((d, o)), None) => LeafConnection(Some(d, AlignedWithRoot), Some(DontCare, AlignedWithRoot))
+        }
+      }
+
+    } else {
+      val producerLeafs = getLeafs(Vector.empty[String], producer, producer, AlignedWithRoot)
+      producerLeafs.foreach { case (path, (d, o)) =>
+        trie.get(path) match {
+          case None => trie.insert(path, LeafConnection(None, Some((d, o))))
+          case Some(LeafConnection(Some((c, co)), None)) =>
+            trie.delete(path)
+            trie.insert(path, LeafConnection(Some((c, co)), Some((d, o))))
+        }
+      }
+      trie
+    }
+  }
+
+  def getLeafs(path: Vector[String], d: Data, r: Data, o: RelativeOrientation): Seq[(Vector[String], (Data, RelativeOrientation))] = {
+    d match {
+      case a: Aggregate if a.getElements.size == 0 => Nil
+      case a: Vec[Data @unchecked] =>
+        a.getElements.zipWithIndex.flatMap { case (d, i) => getLeafs(path :+ i.toString, d, r, o)}
+      case a: Record =>
+        a.elements.flatMap { case (field, d) => getLeafs(path :+ field, d, r, deriveOrientation(d, r, o))}.toList
+      case x => Seq((path, (x, o)))
+    }
+  }
+  def leafConnect(c: Data, p: Data, o: RelativeOrientation)(implicit sourceInfo: SourceInfo): Unit = {
+    require(!c.isInstanceOf[Aggregate] && !p.isInstanceOf[Aggregate])
+    (c, p, o) match {
+      case (x: Analog, y: Analog, _) => assignAnalog(x, y)
+      case (x: Analog, DontCare, _) => assignAnalog(x, DontCare)
+      case (x, y, AlignedWithRoot) => c := p
+      case (x, y, FlippedWithRoot) => p := c
+    }
+  }
+
+  def doAssignment(trie: Trie[String, LeafConnection], op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
+    val errors = mutable.ArrayBuffer[String]()
+    trie.collectDeep {
+      case (path, Some(LeafConnection(Some((c, co)), Some((p, po))))) if co == po => leafConnect(c, p, co)
+      case (path, Some(LeafConnection(Some((c, co)), Some((p, po))))) if co != po =>
+        if(op.noWrongOrientations) errors += (s"inversely oriented fields $c and $p") else {
+          op match {
+            case ColonLessEq => leafConnect(c, p, co)
+            case ColonGreaterEq => leafConnect(c, p, po)
+            case ColonHashEq => leafConnect(c, p, co)
+            case other => throw new Exception("BAD!! Unreachable code is reached, something went wrong")
+          }
+        }
+      case (path, Some(LeafConnection(Some((c, FlippedWithRoot)), None))) => if(op.noDangles) errors += (s"dangling consumer field $c")
+      case (path, Some(LeafConnection(None, Some((p, AlignedWithRoot))))) => if(op.noDangles) errors += (s"dangling producer field $p")
+      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) => if(op.noUnassigned) errors += (s"unassigned consumer field $c")
+      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) => if(op.noUnassigned) errors += (s"unassigned producer field $p")
+      case (path, Some(other)) => throw new Exception("BAD!! Unreachable code is reached, something went wrong")
+    }
+    if(errors.nonEmpty) {
+      Builder.error(errors.mkString("\n"))
+    }
+  }
 
   /** Assignment function which implements both :<= and :>=
     *
@@ -295,143 +364,96 @@ private[chisel3] object DirectionalConnectionFunctions {
     * @param activeSide indicates if the connection was a :<= (consumer is active) or :>= (producer is active)
     * @param sourceInfo source info for where the assignment occurred
     */
-  def assign(consumerRoot: Data, producerRoot: Data, activeSide: ActiveSide)(implicit sourceInfo: SourceInfo): Unit = {
-
-    val activeRoot = if (activeSide == ProducerIsActive) producerRoot else consumerRoot
-    require(
-      activeRoot != DontCare,
-      s"Cannot have the active side be a DontCare! Use _ := DontCare or _ :<= DontCare or DontCare :>= _"
-    )
-
-    /** Determines the aligned/flipped of activeSubMember with respect to activeRoot
-      *
-      * Due to Chisel/chisel3 differences, its a little complicated to calculate the RelativeOrientation, as the information
-      *   is captured with both ActualDirection and SpecifiedDirection. Fortunately, all this complexity is captured in this
-      *   one function.
-      *
-      * References activeRoot, defined earlier in the function
-      *
-      * @param activeSubMember a subfield/subindex of activeRoot (or sub-sub, or sub-sub-sub etc)
-      * @param orientation aligned/flipped of d's direct parent aggregate with respect to activeRoot
-      * @return orientation aligned/flipped of d with respect to activeRoot
-      */
-    def deriveOrientation(activeSubMember: Data, orientation: RelativeOrientation): RelativeOrientation = {
-      (activeRoot.direction, activeSubMember.direction, DataMirror.specifiedDirectionOf(activeSubMember)) match {
-        case (ActualDirection.Output, ActualDirection.Output, _) => AlignedWithRoot
-        case (ActualDirection.Input, ActualDirection.Input, _)   => AlignedWithRoot
-        case (ActualDirection.Output, ActualDirection.Input, _)  => FlippedWithRoot
-        case (ActualDirection.Input, ActualDirection.Output, _)  => FlippedWithRoot
-        case (_, _, SpecifiedDirection.Unspecified)              => orientation
-        case (_, _, SpecifiedDirection.Flip)                     => orientation.invert
-        case (_, _, SpecifiedDirection.Output)                   => orientation
-        case (_, _, SpecifiedDirection.Input)                    => orientation.invert
-        case other                                               => throw new Exception(s"Unexpected internal error! $other")
-      }
-    }
-
-    /** Recurses down our consumer and producer to connect leaf subfield/subindexes, depending on the final orientation
-      *
-      * @param consumer subfield/subindex of consumerRoot (or just is, for the first recursive case)
-      * @param producer subfield/subindex of producerRoot (or just is, for the first recursive case)
-      * @param orientation whether the active side's subfield/subindex (either consumer or producer) is flipped/aligned relative to activeRoot
-      */
-    def recursiveAssign(consumer: Data, producer: Data, orientation: RelativeOrientation): Unit = {
-      (consumer, producer) match {
-        case (vc: Vec[_], vp: Vec[_]) => {
-          val (active, inactive) = if (activeSide == ProducerIsActive) (vp, vc) else (vc, vp)
-          val (defaultableSubIndexes, unassignedSubIndexes) = if (active.size > inactive.size) {
-            active(0) match {
-              case d: experimental.Defaulting[_] =>
-                ((inactive.size until active.size).map { i => active(i) }, Nil)
-              case o =>
-                (Nil, (inactive.size until active.size).map { i => active(i) })
-            }
-          } else (Nil, Nil)
-          if (unassignedSubIndexes.nonEmpty) {
-            Builder.error(s"Connection has unassigned subindexes ${unassignedSubIndexes.mkString(", ")}")
-          } else {
-            (vc.zip(vp)).foreach { case (ec, ep) => recursiveAssign(ec, ep, orientation) }
-            defaultableSubIndexes.map {
-              case d: experimental.Defaulting[Data] =>
-                if (activeSide == ProducerIsActive) recursiveAssign(d.default, d.underlying, orientation)
-                else recursiveAssign(d.underlying, d.default, orientation)
-            }
-          }
-        }
-        case (rc: Record, rp: Record) => {
-          val (active, inactive) = if (activeSide == ProducerIsActive) (rp, rc) else (rc, rp)
-          val (defaultableKeys, unassignableKeys) = {
-            val missingKeys = active.elements.keySet -- inactive.elements.keySet
-            missingKeys.partition { k => active.elements(k).isInstanceOf[experimental.Defaulting[_]] }
-          }
-          if (unassignableKeys.nonEmpty) {
-            val unassignableFields = unassignableKeys.map(k => active.elements(k))
-            Builder.error(
-              s"Connection between $consumer and $producer has unassigned fields ${unassignableFields.mkString(", ")} in $active."
-            )
-          } else {
-            active.asInstanceOf[Record].elements.foreach {
-              case (key, ea: experimental.Defaulting[Data]) if defaultableKeys.contains(key) =>
-                val field = active.elements(key).asInstanceOf[experimental.Defaulting[Data]]
-                val elementOrientation = deriveOrientation(ea, orientation)
-                if (activeSide == ProducerIsActive) recursiveAssign(ea.default, ea.underlying, elementOrientation)
-                else recursiveAssign(ea.underlying, ea.default, elementOrientation)
-              case (key, ea) =>
-                val elementOrientation = deriveOrientation(ea, orientation)
-                val ec = rc.elements(key)
-                val ep = rp.elements(key)
-                recursiveAssign(ec, ep, elementOrientation)
-            }
-          }
-        }
-        // Active side must be vc due to earlier requirement
-        case (vc: Vec[_], DontCare) => vc.foreach { case ec => recursiveAssign(ec, DontCare, orientation) }
-        // Active side must be vp due to earlier requirement
-        case (DontCare, vp: Vec[_]) => vp.foreach { case ep => recursiveAssign(DontCare, ep, orientation) }
-        // Active side must be rc due to earlier requirement
-        case (rc: Record, DontCare) =>
-          rc.elements.foreach { case (_, ec) => recursiveAssign(ec, DontCare, deriveOrientation(ec, orientation)) }
-        // Active side must be rp due to earlier requirement
-        case (DontCare, rp: Record) =>
-          rp.elements.foreach { case (_, ep) => recursiveAssign(DontCare, ep, deriveOrientation(ep, orientation)) }
-
-        // Analog cases
-        case (ac: Analog, ap: Analog) => assignAnalog(ac, ap)
-        case (ac: Analog, DontCare) => assignAnalog(ac, DontCare)
-        case (DontCare, ap: Analog) => assignAnalog(ap, DontCare)
-
-        // Only non-Analog Ground types are left
-        case _ =>
-          (orientation, activeSide) match {
-            case (AlignedWithRoot, ConsumerIsActive) => consumer := producer // assign leaf fields (UInt/etc)
-            case (FlippedWithRoot, ProducerIsActive) => producer := consumer // assign leaf fields (UInt/etc)
-            case _                                   =>
-          }
-      }
-    }
-
-    // For the base recursive case, we start with the roots and they are aligned with themselves
-    recursiveAssign(consumerRoot, producerRoot, AlignedWithRoot)
+  def assign(cRoot: Data, pRoot: Data, cOp: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
+    val trie = buildTrie(cRoot, pRoot)
+    doAssignment(trie, cOp)
   }
+
+
+  // Indicates whether the active side is aligned or flipped relative to the active side's root
+  sealed trait RelativeOrientation { def invert: RelativeOrientation }
+  case object AlignedWithRoot extends RelativeOrientation { def invert = FlippedWithRoot }
+  case object FlippedWithRoot extends RelativeOrientation { def invert = AlignedWithRoot }
+
+  sealed trait ConnectionOperator {
+    val noDangles: Boolean
+    val noUnassigned: Boolean
+    val noWrongOrientations: Boolean
+  }
+  case object ColonLessEq extends ConnectionOperator {
+    val noDangles: Boolean = false
+    val noUnassigned: Boolean = true
+    val noWrongOrientations: Boolean = false
+  }
+  case object ColonGreaterEq extends ConnectionOperator {
+    val noDangles: Boolean = false
+    val noUnassigned: Boolean = true
+    val noWrongOrientations: Boolean = false
+  }
+  case object ColonLessGreaterEq extends ConnectionOperator {
+    val noDangles: Boolean = true
+    val noUnassigned: Boolean = true
+    val noWrongOrientations: Boolean = true
+  }
+  case object ColonHashEq extends ConnectionOperator {
+    val noDangles: Boolean = true
+    val noUnassigned: Boolean = true
+    val noWrongOrientations: Boolean = false
+  }
+
+  /** Determines the aligned/flipped of subMember with respect to activeRoot
+    *
+    * Due to Chisel/chisel3 differences, its a little complicated to calculate the RelativeOrientation, as the information
+    *   is captured with both ActualDirection and SpecifiedDirection. Fortunately, all this complexity is captured in this
+    *   one function.
+    *
+    * References activeRoot, defined earlier in the function
+    *
+    * @param subMember a subfield/subindex of activeRoot (or sub-sub, or sub-sub-sub etc)
+    * @param orientation aligned/flipped of d's direct parent aggregate with respect to activeRoot
+    * @return orientation aligned/flipped of d with respect to activeRoot
+    */
+  def deriveOrientation(subMember: Data, root: Data, orientation: RelativeOrientation): RelativeOrientation = {
+    (root.direction, subMember.direction, DataMirror.specifiedDirectionOf(subMember)) match {
+      case (ActualDirection.Output, ActualDirection.Output, _) => AlignedWithRoot
+      case (ActualDirection.Input, ActualDirection.Input, _)   => AlignedWithRoot
+      case (ActualDirection.Output, ActualDirection.Input, _)  => FlippedWithRoot
+      case (ActualDirection.Input, ActualDirection.Output, _)  => FlippedWithRoot
+      case (_, _, SpecifiedDirection.Unspecified)              => orientation
+      case (_, _, SpecifiedDirection.Flip)                     => orientation.invert
+      case (_, _, SpecifiedDirection.Output)                   => orientation
+      case (_, _, SpecifiedDirection.Input)                    => orientation.invert
+      case other                                               => throw new Exception(s"Unexpected internal error! $other")
+    }
+  }
+
 
   def checkAnalog(as: Analog*)(implicit sourceInfo: SourceInfo): Unit = {
     val currentModule = Builder.currentModule.get.asInstanceOf[RawModule]
     try {
-      as.foreach { a => BiConnect.markAnalogConnected(sourceInfo, a, currentModule) }
-    } catch { // convert attach exceptions to BiConnectExceptions
+      as.toList match {
+        case List(a) => BiConnect.markAnalogConnected(sourceInfo, a, DontCare, currentModule)
+        case List(a, b) =>
+          BiConnect.markAnalogConnected(sourceInfo, a, b, currentModule)
+          BiConnect.markAnalogConnected(sourceInfo, b, a, currentModule)
+      }
+    } catch { // convert Exceptions to Builder.error's so compilation can continue
       case experimental.attach.AttachException(message) => Builder.error(message)
+      case BiConnectException(message) => Builder.error(message)
     }
   }
 
-  def assignAnalog(a: Analog, b: Data)(implicit sourceInfo: SourceInfo): Unit = b match {
-    case (ba: Analog) => {
-      checkAnalog(a, ba)
-      val currentModule = Builder.currentModule.get.asInstanceOf[RawModule]
-      experimental.attach.impl(Seq(a, ba), currentModule)(sourceInfo)
-    }
-    case (DontCare) => {
-      checkAnalog(a)
-      pushCommand(DefInvalid(sourceInfo, a.lref))
+  def assignAnalog(a: Analog, b: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    b match {
+      case (ba: Analog) => {
+        checkAnalog(a, ba)
+        val currentModule = Builder.currentModule.get.asInstanceOf[RawModule]
+        experimental.attach.impl(Seq(a, ba), currentModule)(sourceInfo)
+      }
+      case (DontCare) => {
+        checkAnalog(a)
+        pushCommand(DefInvalid(sourceInfo, a.lref))
+      }
     }
   }
 }
