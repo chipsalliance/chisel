@@ -45,8 +45,8 @@ private[chisel3] object BiConnect {
     BiConnectException(s": Right Record missing field ($field).")
   def MismatchedException(left: String, right: String) =
     BiConnectException(s": Left ($left) and Right ($right) have different types.")
-  def AttachAlreadyBulkConnectedException(sourceInfo: SourceInfo) =
-    BiConnectException(sourceInfo.makeMessage(": Analog previously bulk connected at " + _))
+  def AttachAlreadyBulkConnectedException(analog: String, prevConnection: String, newConnection: String, sourceInfo: SourceInfo) =
+    BiConnectException(sourceInfo.makeMessage(s": Analog $analog previously bulk to $prevConnection is connected to $newConnection at " + _))
   def DontCareCantBeSink =
     BiConnectException(": DontCare cannot be a connection sink (LHS)")
 
@@ -85,15 +85,15 @@ private[chisel3] object BiConnect {
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
         try {
-          markAnalogConnected(sourceInfo, left_a, context_mod)
-          markAnalogConnected(sourceInfo, right_a, context_mod)
+          markAnalogConnected(sourceInfo, left_a, right_a, context_mod)
+          markAnalogConnected(sourceInfo, right_a, left_a, context_mod)
         } catch { // convert attach exceptions to BiConnectExceptions
           case attach.AttachException(message) => throw BiConnectException(message)
         }
         attach.impl(Seq(left_a, right_a), context_mod)(sourceInfo)
       case (left_a: Analog, DontCare) =>
         try {
-          markAnalogConnected(sourceInfo, left_a, context_mod)
+          markAnalogConnected(sourceInfo, left_a, DontCare, context_mod)
         } catch { // convert attach exceptions to BiConnectExceptions
           case attach.AttachException(message) => throw BiConnectException(message)
         }
@@ -456,12 +456,12 @@ private[chisel3] object BiConnect {
   }
 
   // This function checks if analog element-level attaching is allowed, then marks the Analog as connected
-  def markAnalogConnected(implicit sourceInfo: SourceInfo, analog: Analog, contextModule: RawModule): Unit = {
+  def markAnalogConnected(sourceInfo: SourceInfo, analog: Analog, otherAnalog: Data, contextModule: RawModule): Unit = {
     analog.biConnectLocs.get(contextModule) match {
-      case Some(sl) => throw AttachAlreadyBulkConnectedException(sl)
-      case None     => // Do nothing
+      case Some((si, data)) if data != otherAnalog => throw AttachAlreadyBulkConnectedException(analog.toString, data.toString, otherAnalog.toString, si)
+      case _     => // Do nothing
     }
     // Mark bulk connected
-    analog.biConnectLocs(contextModule) = sourceInfo
+    analog.biConnectLocs(contextModule) = (sourceInfo, otherAnalog)
   }
 }
