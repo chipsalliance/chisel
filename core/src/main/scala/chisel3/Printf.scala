@@ -92,8 +92,8 @@ object printf {
         c.error(
           c.enclosingPosition,
           "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
-          "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
-          "an elaboration time print, use println."
+            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+            "an elaboration time print, use println."
         )
       case _ =>
     }

@@ -96,8 +96,8 @@ object assert extends VerifPrintMacrosDoc {
         c.error(
           c.enclosingPosition,
           "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
-          "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
-          "an elaboration time check, call assert with a Boolean condition."
+            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+            "an elaboration time check, call assert with a Boolean condition."
         )
       case _ =>
     }
@@ -295,8 +295,8 @@ object assume extends VerifPrintMacrosDoc {
         c.error(
           c.enclosingPosition,
           "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
-          "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
-          "an elaboration time check, call assert with a Boolean condition."
+            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+            "an elaboration time check, call assert with a Boolean condition."
         )
       case _ =>
     }
