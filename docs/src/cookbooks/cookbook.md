@@ -50,7 +50,7 @@ class MyBundle extends Bundle {
   val bar = UInt(4.W)
 }
 
-class Foo extends RawModule {
+class Foo extends Module {
   val bundle = Wire(new MyBundle)
   bundle.foo := 0xc.U
   bundle.bar := 0x3.U
@@ -60,6 +60,11 @@ class Foo extends RawModule {
   // Test
   assert(uint === 0xc3.U)
 }
+```
+
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new Foo)
 ```
 
 ### How do I create a Bundle from a UInt?
@@ -74,7 +79,7 @@ class MyBundle extends Bundle {
   val bar = UInt(4.W)
 }
 
-class Foo extends RawModule {
+class Foo extends Module {
   val uint = 0xb4.U
   val bundle = uint.asTypeOf(new MyBundle)
   
@@ -84,6 +89,11 @@ class Foo extends RawModule {
   assert(bundle.foo === 0xb.U)
   assert(bundle.bar === 0x4.U)
 }
+```
+
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new Foo)
 ```
 
 ### How can I tieoff a Bundle/Vec to 0?
@@ -100,7 +110,7 @@ class MyBundle extends Bundle {
   val bar = Vec(4, UInt(1.W))
 }
 
-class Foo(typ: MyBundle) extends RawModule {
+class Foo(typ: MyBundle) extends Module {
   val bundleA = IO(Output(typ))
   val bundleB = IO(Output(typ))
   
@@ -122,7 +132,7 @@ Use [`VecInit`](https://www.chisel-lang.org/api/latest/chisel3/VecInit$.html) gi
 ```scala mdoc:silent:reset
 import chisel3._
 
-class Foo extends RawModule {
+class Foo extends Module {
   val uint = 0xc.U
   val vec = VecInit(uint.asBools)
 
@@ -136,6 +146,11 @@ class Foo extends RawModule {
 }
 ```
 
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new Foo)
+```
+
 ### How do I create a UInt from a Vec of Bool?
 
 Use the builtin function [`asUInt`](https://www.chisel-lang.org/api/latest/chisel3/Vec.html#asUInt():chisel3.UInt)
@@ -143,7 +158,7 @@ Use the builtin function [`asUInt`](https://www.chisel-lang.org/api/latest/chise
 ```scala mdoc:silent:reset
 import chisel3._
 
-class Foo extends RawModule {
+class Foo extends Module {
   val vec = VecInit(true.B, false.B, true.B, true.B)
   val uint = vec.asUInt
 
@@ -154,6 +169,11 @@ class Foo extends RawModule {
   assert(0xd.U === uint)
 
 }
+```
+
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new Foo)
 ```
 
 ### How do I connect a subset of Bundle fields?
@@ -220,7 +240,7 @@ For more information, the API Documentation for [`Vec`](https://www.chisel-lang.
 ```scala mdoc:silent:reset
 import chisel3._
 
-class Foo extends RawModule {
+class Foo extends Module {
   val regOfVec = Reg(Vec(4, UInt(32.W))) // Register of 32-bit UInts
   regOfVec(0) := 123.U                   // Assignments to elements of the Vec
   regOfVec(1) := 456.U
@@ -233,6 +253,10 @@ class Foo extends RawModule {
   //   The Reg is then initialized to the value of the Wire (which gives it the same type)
   val initRegOfVec = RegInit(VecInit(Seq.fill(4)(0.U(32.W))))
 }
+```
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new Foo)
 ```
 
 
@@ -271,6 +295,12 @@ class MyModule2 extends Module {
     init
   })
 }
+```
+
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new MyModule)
+getVerilogString(new MyModule2)
 ```
 
 
@@ -467,6 +497,11 @@ class DetectTwoOnes extends Module {
 }
 ```
 
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new DetectTwoOnes)
+```
+
 Note: the `is` statement can take multiple conditions e.g. `is (sTwo1s, sOne1) { ... }`.
 
 ### How do I unpack a value ("reverse concatenation") like in Verilog?
@@ -497,7 +532,7 @@ class MyBundle extends Bundle {
 The easiest way to accomplish this in Chisel would be:
 
 ```scala mdoc:silent
-class Foo extends RawModule {
+class Foo extends Module {
   val z = Wire(UInt(9.W))
   z := DontCare // This is a dummy connection
   val unpacked = z.asTypeOf(new MyBundle)
@@ -505,6 +540,11 @@ class Foo extends RawModule {
   printf("%d", unpacked.b)
   printf("%d", unpacked.c)
 }
+```
+
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new Foo)
 ```
 
 If you **really** need to do this for a one-off case (Think thrice! It is likely you can better structure the code using bundles), then rocket-chip has a [Split utility](https://github.com/freechipsproject/rocket-chip/blob/723af5e6b69e07b5f94c46269a208a8d65e9d73b/src/main/scala/util/Misc.scala#L140) which can accomplish this.
@@ -516,7 +556,7 @@ Below, the left-hand side connection to `io.out(0)` is not allowed.
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
+import chisel3.stage.ChiselStage
 
 class Foo extends Module {
   val io = IO(new Bundle {
@@ -529,7 +569,7 @@ class Foo extends Module {
 
 If you try to compile this, you will get an error.
 ```scala mdoc:crash
-(new ChiselStage).execute(Array("-X", "verilog"), Seq(new ChiselGeneratorAnnotation(() => new Foo)))
+getVerilogString(new Foo)
 ```
 
 Chisel3 *does not support subword assignment*.
@@ -552,6 +592,10 @@ class Foo extends Module {
 }
 ```
 
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new Foo)
+```
 
 ### How do I create an optional I/O?
 
@@ -574,6 +618,11 @@ class ModuleWithOptionalIOs(flag: Boolean) extends Module {
 }
 ```
 
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new ModuleWithOptionalIOs(true))
+```
+
 The following is an example where an entire `IO` is optional:
 
 ```scala mdoc:silent:reset
@@ -585,6 +634,11 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 
   out := in.getOrElse(false.B)
 }
+```
+
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+getVerilogString(new ModuleWithOptionalIO(true))
 ```
 
 ### How do I create I/O without a prefix?
@@ -670,7 +724,9 @@ Use the compiler plugin, and check out the [Naming Cookbook](naming) if that sti
 
 ### How do I get Chisel to name the results of vector reads properly?
 Currently, name information is lost when using dynamic indexing. For example:
-```scala mdoc:silent
+```scala mdoc:silent:reset
+import chisel3._
+
 class Foo extends Module {
   val io = IO(new Bundle {
     val in = Input(Vec(4, Bool()))
@@ -686,26 +742,9 @@ class Foo extends Module {
 ```
 
 The above code loses the `x` name, instead using `_GEN_3` (the other `_GEN_*` signals are expected).
-```verilog
-module Foo(
-  input        clock,
-  input        reset,
-  input        io_in_0,
-  input        io_in_1,
-  input        io_in_2,
-  input        io_in_3,
-  input  [1:0] io_idx,
-  input        io_en,
-  output       io_out
-);
-  wire  _GEN_1; // @[main.scala 15:13]
-  wire  _GEN_2; // @[main.scala 15:13]
-  wire  _GEN_3; // @[main.scala 15:13]
-  assign _GEN_1 = 2'h1 == io_idx ? io_in_1 : io_in_0; // @[main.scala 15:13]
-  assign _GEN_2 = 2'h2 == io_idx ? io_in_2 : _GEN_1; // @[main.scala 15:13]
-  assign _GEN_3 = 2'h3 == io_idx ? io_in_3 : _GEN_2; // @[main.scala 15:13]
-  assign io_out = _GEN_3 & io_en; // @[main.scala 16:10]
-endmodule
+
+```scala mdoc:verilog
+getVerilogString(new Foo)
 ```
 
 This can be worked around by creating a wire and connecting the dynamic index to the wire:
@@ -713,28 +752,26 @@ This can be worked around by creating a wire and connecting the dynamic index to
 val x = WireInit(io.in(io.idx))
 ```
 
-Which produces:
-```verilog
-module Foo(
-  input        clock,
-  input        reset,
-  input        io_in_0,
-  input        io_in_1,
-  input        io_in_2,
-  input        io_in_3,
-  input  [1:0] io_idx,
-  input        io_en,
-  output       io_out
-);
-  wire  _GEN_1;
-  wire  _GEN_2;
-  wire  x;
-  assign _GEN_1 = 2'h1 == io_idx ? io_in_1 : io_in_0;
-  assign _GEN_2 = 2'h2 == io_idx ? io_in_2 : _GEN_1;
-  assign x = 2'h3 == io_idx ? io_in_3 : _GEN_2;
-  assign io_out = x & io_en; // @[main.scala 16:10]
-endmodule
+```scala mdoc:invisible
+class Foo2 extends Module {
+  val io = IO(new Bundle {
+    val in = Input(Vec(4, Bool()))
+    val idx = Input(UInt(2.W))
+    val en = Input(Bool())
+    val out = Output(Bool())
+  })
+
+  val x = WireInit(io.in(io.idx))
+  val y = x && io.en
+  io.out := y
+}
 ```
+
+Which produces:
+```scala mdoc:verilog
+getVerilogString(new Foo2)
+```
+
 ### How can I dynamically set/parametrize the name of a module?
 
 You can override the `desiredName` function. This works with normal Chisel modules and `BlackBox`es. Example:
@@ -758,14 +795,9 @@ class Salt extends Module {
 ```
 
 Elaborating the Chisel module `Salt` yields our "desired names" for `Salt` and `Coffee` in the output Verilog:
-```scala mdoc:silent
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new Salt)
-```
 
 ```scala mdoc:verilog
-ChiselStage.emitVerilog(new Salt)
+getVerilogString(new Salt)
 ```
 
 ## Directionality
@@ -775,7 +807,9 @@ ChiselStage.emitVerilog(new Salt)
 Given a bidirectional port like a `Decoupled`, you will get an error if you try to connect it directly
 to a register:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.Decoupled
 class BadRegConnect extends Module {
   val io = IO(new Bundle {
@@ -796,7 +830,9 @@ While there is no construct to "strip direction" in Chisel3, wrapping a type in 
 set all of the individual elements to output direction.
 This will have the desired result when used to construct a Register:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.Decoupled
 class CoercedRegConnect extends Module {
   val io = IO(new Bundle {
