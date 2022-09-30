@@ -48,7 +48,7 @@ object assert extends VerifPrintMacrosDoc {
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): Assert = macro _applyMacroWithStringMessage
+  ): Assert = macro _applyMacroWithInterpolatorCheck
 
   /** Checks for a condition to be valid in the circuit at all times. If the
     * condition evaluates to false, the circuit simulation stops with an error.
@@ -79,6 +79,32 @@ object assert extends VerifPrintMacrosDoc {
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Assert =
     macro _applyMacroWithNoMessage
 
+  import VerificationStatement._
+
+  /** @group VerifPrintMacros */
+  def _applyMacroWithInterpolatorCheck(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    message match {
+      case q"scala.StringContext.apply(..$_).s(..$_)" =>
+        c.error(
+          c.enclosingPosition,
+          "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
+            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+            "an elaboration time check, call assert with a Boolean condition."
+        )
+      case _ =>
+    }
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
+    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
+  }
+
   /** An elaboration-time assertion. Calls the built-in Scala assert function. */
   def apply(cond: Boolean, message: => String): Unit = Predef.assert(cond, message)
 
@@ -87,8 +113,6 @@ object assert extends VerifPrintMacrosDoc {
 
   /** Named class for assertions. */
   final class Assert private[chisel3] () extends VerificationStatement
-
-  import VerificationStatement._
 
   /** @group VerifPrintMacros */
   @deprecated(
@@ -215,7 +239,7 @@ object assume extends VerifPrintMacrosDoc {
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): Assume = macro _applyMacroWithStringMessage
+  ): Assume = macro _applyMacroWithInterpolatorCheck
 
   /** Assumes a condition to be valid in the circuit at all times.
     * Acts like an assertion in simulation and imposes a declarative
@@ -255,6 +279,30 @@ object assume extends VerifPrintMacrosDoc {
   final class Assume private[chisel3] () extends VerificationStatement
 
   import VerificationStatement._
+
+  /** @group VerifPrintMacros */
+  def _applyMacroWithInterpolatorCheck(
+    c:              blackbox.Context
+  )(cond:           c.Tree,
+    message:        c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    message match {
+      case q"scala.StringContext.apply(..$_).s(..$_)" =>
+        c.error(
+          c.enclosingPosition,
+          "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
+            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+            "an elaboration time check, call assert with a Boolean condition."
+        )
+      case _ =>
+    }
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
+    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
+  }
 
   /** @group VerifPrintMacros */
   @deprecated(
