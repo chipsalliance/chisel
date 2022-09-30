@@ -93,9 +93,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new Foo)
+getVerilogString(new Foo)
 ```
 
 ### How can I tieoff a Bundle/Vec to 0?
