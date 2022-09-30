@@ -91,7 +91,9 @@ object printf {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
         c.error(
           c.enclosingPosition,
-          "The s-interpolator for Chisel assert, assume and printf statements are deprecated (since 3.5); use the cf interpolator instead"
+          "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
+          "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+          "an elaboration time print, use println."
         )
       case _ =>
     }
