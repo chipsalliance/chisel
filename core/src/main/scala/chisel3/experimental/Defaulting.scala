@@ -62,4 +62,54 @@ object Defaulting {
     */
   def apply[T <: Data](default: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Defaulting[T] =
     new Defaulting(chiselTypeOf(default), default)
+
+  implicit class DefaultingTypeclass[T <: Data](h: T) {
+    def withDefault(f: T => Seq[(Data, Data)])(implicit sourceInfo: SourceInfo): T = {
+      f(h).map { case (h, l) => setDefault(h, l) }
+      h
+    }
+    def withDefault(lit: T)(implicit sourceInfo: SourceInfo): T = {
+      if(!lit.isLit) internal.Builder.error("Must provide a literal")
+      if(h.defaultOrNull != null) internal.Builder.error(s"Cannot set a type's default value twice; setting as $lit, but already set as ${lit.defaultOrNull}")
+      setDefault(h, lit)
+      h
+    }
+    def hasDefault: Boolean = h.defaultOrNull != null
+    def default: T = {
+      require(hasDefault)
+      h.defaultOrNull.asInstanceOf[T]
+    }
+  }
+
+  def buildTrie(data: Data): Trie[String, Data] = {
+    val trie = Trie.empty[String, Data]
+    def recBuildTrie(path: Vector[String], d: Data): Unit = {
+      trie.insert(path, d)
+      d match {
+        case a: Aggregate if a.getElements.size == 0 =>
+        case a: Vec[Data @unchecked] =>
+          a.getElements.zipWithIndex.foreach { case (e, i) => recBuildTrie(path :+ ("_$_" + i.toString), e)}
+        case a: Record =>
+          a.elements.foreach { case (field, e) => recBuildTrie(path :+ field, e) }
+        case x =>
+      }
+    }
+    recBuildTrie(Vector.empty[String], data)
+    trie
+  }
+
+  private[chisel3] def setDefault(h: Data, lit: Data): Unit = {
+    val hwTrie = buildTrie(h)
+    val litTrie = buildTrie(lit)
+    hwTrie.collectDeep {
+      case (path, Some(x)) =>
+        val inLit = litTrie.get(path)
+        inLit.map { y => 
+          require(x.defaultOrNull == null)
+          require(y.isLit)
+          x.defaultOrNull = y
+        }
+    }
+  }
 }
+
