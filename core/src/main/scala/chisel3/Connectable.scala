@@ -6,7 +6,8 @@ import chisel3.internal.{prefix, BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
-import chisel3.experimental.{Analog, DataMirror, Defaulting}
+import chisel3.experimental.{Analog, DataMirror}
+import chisel3.experimental.Defaulting._
 
 import scala.collection.mutable
 import chisel3.internal.ChildBinding
@@ -291,7 +292,6 @@ private[chisel3] object DirectionalConnectionFunctions {
           case LeafConnection(Some((d, o)), None) => LeafConnection(Some(d, AlignedWithRoot), Some(DontCare, AlignedWithRoot))
         }
       }
-
     } else {
       val producerLeafs = getLeafs(Vector.empty[String], producer, producer, AlignedWithRoot)
       producerLeafs.foreach { case (path, (d, o)) =>
@@ -341,6 +341,11 @@ private[chisel3] object DirectionalConnectionFunctions {
         }
       case (path, Some(LeafConnection(Some((c, FlippedWithRoot)), None))) => if(op.noDangles) errors += (s"dangling consumer field $c")
       case (path, Some(LeafConnection(None, Some((p, AlignedWithRoot))))) => if(op.noDangles) errors += (s"dangling producer field $p")
+      // Defaulting case
+      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if c.hasDefault => leafConnect(c, c.default, AlignedWithRoot)
+      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if p.hasDefault => leafConnect(p.default, p, FlippedWithRoot)
+
+      // Non-defaulting case
       case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) => if(op.noUnassigned) errors += (s"unassigned consumer field $c")
       case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) => if(op.noUnassigned) errors += (s"unassigned producer field $p")
       case (path, Some(other)) => throw new Exception("BAD!! Unreachable code is reached, something went wrong")

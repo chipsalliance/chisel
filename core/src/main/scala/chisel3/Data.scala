@@ -66,7 +66,7 @@ object SpecifiedDirection {
     if (compileOptions.checkSynthesizable) {
       requireIsChiselType(data)
     }
-    val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
+    val out = if (!data.mustClone(prevId)) data else data.cloneTypeWithDefault.asInstanceOf[T]
     out.specifiedDirection = dir(out)
     out
   }
@@ -779,6 +779,19 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     val clone = this.cloneType.asInstanceOf[this.type] // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
+    clone.defaultOrNull = defaultOrNull
+    clone
+  }
+
+  private[chisel3] def cloneTypeWithDefault: this.type = {
+    val clone = this.cloneType.asInstanceOf[this.type] // get a fresh object, without bindings
+    import experimental.Defaulting._
+    val myTrie = buildTrie(this)
+    val clonedTrie = buildTrie(clone)
+    myTrie.collectDeep {
+      case (path, Some(x)) =>
+        clonedTrie.get(path).get.defaultOrNull = x.defaultOrNull
+    }
     clone
   }
 
@@ -903,6 +916,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Default pretty printing */
   def toPrintable: Printable
+
+  private[chisel3] var defaultOrNull: Data = null
 }
 
 object Data {

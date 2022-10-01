@@ -5,8 +5,9 @@ package chiselTests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.{Analog, Defaulting, FixedPoint}
+import chisel3.experimental.{Analog, FixedPoint}
 import chisel3.experimental.BundleLiterals._
+import chisel3.experimental.Defaulting._
 import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
@@ -50,7 +51,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     ChiselStage.emitFirrtl({ new ConnectionTest(outType, inType, inDrivesOut, op, nTmps) }, true, true)
   }
 
-  def vec[T <: Data](tpe: T) = Vec(3, tpe)
+  def vec[T <: Data](tpe: T, n: Int = 3) = Vec(n, tpe)
   def alignedBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(Flipped(fieldType))
@@ -61,6 +62,9 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
   }
   def alignedFooBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
+  }
+  def flippedBarBundle[T <: Data](fieldType: T) = new Bundle {
+    val bar = Flipped(fieldType)
   }
 
   // (D)irectional Bulk Connect tests
@@ -141,17 +145,45 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       testException(UInt(3.W), Clock(), "have different types")
       testException(SInt(3.W), Clock(), "have different types")
     }
-    it("(0.g): Emit 'attach' between Analog types") {
+    it("(0.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
       testCheck(testBuild(Analog(3.W), Analog(3.W), true, {_ :<>= _}, 0), "attach (io.out, io.in)")
+      testCheck(testBuild(mixedBundle(Analog(3.W)), mixedBundle(Analog(3.W)), true, {_ :<>= _}, 0), "attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar")
+      testCheck(testBuild(vec(Analog(3.W), 2), vec(Analog(3.W), 2), true, {_ :<>= _}, 0), "attach (io.out[0], io.in[0])", "attach (io.out[1], io.in[1]")
     }
-    it("(0.h): Error on missing field names from either right-hand-side or left-hand-side") {
+    it("(0.h): Error on missing subfield/subindex from either right-hand-side or left-hand-side") {
+      // Missing flip bar
       testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "dangling consumer field")
       testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unassigned producer field")
+
+      // Missing foo
+      testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unassigned consumer field")
+      testException(flippedBarBundle(Bool()), mixedBundle(Bool()), "dangling producer field")
+
+      // Vec sizes don't match
+      testException(vec(Bool()), vec(Bool(), 4), "dangling producer field")
+      testException(vec(Bool(), 4), vec(Bool()), "unassigned consumer field")
+
+      // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
+      testException(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), "unassigned producer field")
+      testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "dangling consumer field")
     }
     it("(0.i): Error if different absolute flippedness on leaf fields between right-hand-side or left-hand-side") {
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
       testException(alignedBundle(Bool()), mixedBundle(Bool()), "inversely oriented fields")
     }
+    it("(0.j): Emit defaultable assignments on Defaulting, instead of erroring with missing fields") {
+      testCheck(
+        testBuild(alignedBundle(Bool().withDefault(true.B)), alignedFooBundle(Bool()), true, {_ :<>= _}, 0),
+        "io.out.foo <= io.in.foo",
+        "io.out.bar <= UInt<1>(\"h1\")"
+      )
+      testCheck(
+        testBuild(alignedBundle(Bool()).withDefault{t => Seq(t.bar -> true.B)}, alignedFooBundle(Bool()), true, {_ :<>= _}, 0),
+        "io.out.foo <= io.in.foo",
+        "io.out.bar <= UInt<1>(\"h1\")"
+      )
+    }
+    //TODO - should you be able to connect a UInt to a Defaulting(UInt) ?
   }
   //property("(D.a) SInt :<>= SInt should succeed") {
   //  checkTest(buildTest(SInt(16.W), SInt(16.W), true, {_ :<>= _}, 0), "io.out <= io.in")
