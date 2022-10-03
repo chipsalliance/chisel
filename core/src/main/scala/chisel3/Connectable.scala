@@ -316,38 +316,35 @@ private[chisel3] object DirectionalConnectionFunctions {
       case x => Seq((path, (x, o)))
     }
   }
-  def leafConnect(c: Data, p: Data, o: RelativeOrientation)(implicit sourceInfo: SourceInfo): Unit = {
+  def leafConnect(c: Data, p: Data, o: RelativeOrientation, op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
     require(!c.isInstanceOf[Aggregate] && !p.isInstanceOf[Aggregate])
-    (c, p, o) match {
-      case (x: Analog, y: Analog, _) => assignAnalog(x, y)
-      case (x: Analog, DontCare, _) => assignAnalog(x, DontCare)
-      case (x, y, AlignedWithRoot) => c := p
-      case (x, y, FlippedWithRoot) => p := c
+    (c, p, o, op.assignToConsumer, op.assignToProducer) match {
+      case (x: Analog, y: Analog, _, _, _) => assignAnalog(x, y)
+      case (x: Analog, DontCare, _, _, _) => assignAnalog(x, DontCare)
+      case (x, y, AlignedWithRoot, true, _) => c := p
+      case (x, y, FlippedWithRoot, _, true) => p := c
+      case other =>
     }
   }
 
   def doAssignment(trie: Trie[String, LeafConnection], op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
     val errors = mutable.ArrayBuffer[String]()
     trie.collectDeep {
-      case (path, Some(LeafConnection(Some((c, co)), Some((p, po))))) if co == po => leafConnect(c, p, co)
+      case (path, Some(LeafConnection(Some((c, co)), Some((p, po))))) if co == po => leafConnect(c, p, co, op)
       case (path, Some(LeafConnection(Some((c, co)), Some((p, po))))) if co != po =>
         if(op.noWrongOrientations) errors += (s"inversely oriented fields $c and $p") else {
-          op match {
-            case ColonLessEq => leafConnect(c, p, co)
-            case ColonGreaterEq => leafConnect(c, p, po)
-            case ColonHashEq => leafConnect(c, p, co)
-            case other => throw new Exception("BAD!! Unreachable code is reached, something went wrong")
-          }
+          if(op.assignToConsumer) leafConnect(c, p, co, op)
+          if(op.assignToProducer) leafConnect(c, p, po, op)
         }
       case (path, Some(LeafConnection(Some((c, FlippedWithRoot)), None))) => if(op.noDangles) errors += (s"dangling consumer field $c")
       case (path, Some(LeafConnection(None, Some((p, AlignedWithRoot))))) => if(op.noDangles) errors += (s"dangling producer field $p")
       // Defaulting case
-      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if c.hasDefault => leafConnect(c, c.default, AlignedWithRoot)
-      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if p.hasDefault => leafConnect(p.default, p, FlippedWithRoot)
+      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if c.hasDefault => leafConnect(c, c.default, AlignedWithRoot, op)
+      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if p.hasDefault => leafConnect(p.default, p, FlippedWithRoot, op)
 
       // Non-defaulting case
-      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) => if(op.noUnassigned) errors += (s"unassigned consumer field $c")
-      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) => if(op.noUnassigned) errors += (s"unassigned producer field $p")
+      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) => if(op.noUnassigned && op.assignToConsumer) errors += (s"unassigned consumer field $c")
+      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) => if(op.noUnassigned && op.assignToProducer) errors += (s"unassigned producer field $p")
       case (path, Some(other)) => throw new Exception("BAD!! Unreachable code is reached, something went wrong")
     }
     if(errors.nonEmpty) {
@@ -380,30 +377,41 @@ private[chisel3] object DirectionalConnectionFunctions {
   case object AlignedWithRoot extends RelativeOrientation { def invert = FlippedWithRoot }
   case object FlippedWithRoot extends RelativeOrientation { def invert = AlignedWithRoot }
 
+
   sealed trait ConnectionOperator {
     val noDangles: Boolean
     val noUnassigned: Boolean
     val noWrongOrientations: Boolean
+    val assignToConsumer: Boolean
+    val assignToProducer: Boolean
   }
   case object ColonLessEq extends ConnectionOperator {
     val noDangles: Boolean = false
     val noUnassigned: Boolean = true
     val noWrongOrientations: Boolean = false
+    val assignToConsumer: Boolean = true
+    val assignToProducer: Boolean = false
   }
   case object ColonGreaterEq extends ConnectionOperator {
     val noDangles: Boolean = false
     val noUnassigned: Boolean = true
     val noWrongOrientations: Boolean = false
+    val assignToConsumer: Boolean = false
+    val assignToProducer: Boolean = true
   }
   case object ColonLessGreaterEq extends ConnectionOperator {
     val noDangles: Boolean = true
     val noUnassigned: Boolean = true
     val noWrongOrientations: Boolean = true
+    val assignToConsumer: Boolean = true
+    val assignToProducer: Boolean = true
   }
   case object ColonHashEq extends ConnectionOperator {
     val noDangles: Boolean = true
     val noUnassigned: Boolean = true
     val noWrongOrientations: Boolean = false
+    val assignToConsumer: Boolean = true
+    val assignToProducer: Boolean = false
   }
 
   /** Determines the aligned/flipped of subMember with respect to activeRoot
@@ -419,11 +427,12 @@ private[chisel3] object DirectionalConnectionFunctions {
     * @return orientation aligned/flipped of d with respect to activeRoot
     */
   def deriveOrientation(subMember: Data, root: Data, orientation: RelativeOrientation): RelativeOrientation = {
+    //TODO(azidar): write exhaustive tests to demonstrate Chisel and chisel3 type/direction declarations compose
     (root.direction, subMember.direction, DataMirror.specifiedDirectionOf(subMember)) match {
-      case (ActualDirection.Output, ActualDirection.Output, _) => AlignedWithRoot
-      case (ActualDirection.Input, ActualDirection.Input, _)   => AlignedWithRoot
-      case (ActualDirection.Output, ActualDirection.Input, _)  => FlippedWithRoot
-      case (ActualDirection.Input, ActualDirection.Output, _)  => FlippedWithRoot
+      //case (ActualDirection.Output, ActualDirection.Output, _) => AlignedWithRoot
+      //case (ActualDirection.Input, ActualDirection.Input, _)   => AlignedWithRoot
+      //case (ActualDirection.Output, ActualDirection.Input, _)  => FlippedWithRoot
+      //case (ActualDirection.Input, ActualDirection.Output, _)  => FlippedWithRoot
       case (_, _, SpecifiedDirection.Unspecified)              => orientation
       case (_, _, SpecifiedDirection.Flip)                     => orientation.invert
       case (_, _, SpecifiedDirection.Output)                   => orientation
