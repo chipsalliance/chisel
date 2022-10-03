@@ -89,7 +89,7 @@ object printf {
     import c.universe._
     fmt match {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
-        c.error(
+        c.warning(
           c.enclosingPosition,
           "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
             "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
