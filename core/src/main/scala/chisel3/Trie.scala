@@ -1,11 +1,14 @@
-package chisel3
+// SPDX-License-Identifier: Apache-2.0
 
+package chisel3
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 
 /** A prefix tree. Prefixes represented by a list of `Token` values. For each
   * valid path the tree will contain a value of type `Value`.
+  * 
+  * For more information on Trie's, visit https://en.wikipedia.org/wiki/Trie
   *
   * To use this, do not extend this trait (it is sealed). Instead, create an empty trie with
   * the helper method in the object. Then, add items with the insert method.
@@ -120,8 +123,7 @@ sealed trait Trie[Token, Value] {
 
 object Trie {
 
-  /** creates a new empty Trie
-    */
+  /** Create a new empty Trie[Token, Value] */
   def empty[Token, Value]: Trie[Token, Value] = {
     new Trie[Token, Value] {
       var value: Option[Value] = None
