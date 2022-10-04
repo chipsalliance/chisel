@@ -455,7 +455,6 @@ object Flipped {
   */
 abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // This is a bad API that punches through object boundaries.
-  @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {
       case elt: Aggregate => elt.getElements.toIndexedSeq.flatMap { _.flatten }
