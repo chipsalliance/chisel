@@ -318,11 +318,12 @@ private[chisel3] object DirectionalConnectionFunctions {
   }
   def leafConnect(c: Data, p: Data, o: RelativeOrientation, op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
     require(!c.isInstanceOf[Aggregate] && !p.isInstanceOf[Aggregate])
-    (c, p, o, op.assignToConsumer, op.assignToProducer) match {
-      case (x: Analog, y: Analog, _, _, _) => assignAnalog(x, y)
-      case (x: Analog, DontCare, _, _, _) => assignAnalog(x, DontCare)
-      case (x, y, AlignedWithRoot, true, _) => c := p
-      case (x, y, FlippedWithRoot, _, true) => p := c
+    (c, p, o, op.assignToConsumer, op.assignToProducer, op.alwaysAssignToConsumer) match {
+      case (x: Analog, y: Analog, _, _, _, _) => assignAnalog(x, y)
+      case (x: Analog, DontCare, _, _, _, _) => assignAnalog(x, DontCare)
+      case (x, y, AlignedWithRoot, true, _, _) => c := p
+      case (x, y, FlippedWithRoot, _, true, _) => p := c
+      case (x, y, _, _, _, true) => c := p
       case other =>
     }
   }
@@ -384,6 +385,7 @@ private[chisel3] object DirectionalConnectionFunctions {
     val noWrongOrientations: Boolean
     val assignToConsumer: Boolean
     val assignToProducer: Boolean
+    val alwaysAssignToConsumer: Boolean
   }
   case object ColonLessEq extends ConnectionOperator {
     val noDangles: Boolean = false
@@ -391,6 +393,7 @@ private[chisel3] object DirectionalConnectionFunctions {
     val noWrongOrientations: Boolean = false
     val assignToConsumer: Boolean = true
     val assignToProducer: Boolean = false
+    val alwaysAssignToConsumer: Boolean = false
   }
   case object ColonGreaterEq extends ConnectionOperator {
     val noDangles: Boolean = false
@@ -398,6 +401,7 @@ private[chisel3] object DirectionalConnectionFunctions {
     val noWrongOrientations: Boolean = false
     val assignToConsumer: Boolean = false
     val assignToProducer: Boolean = true
+    val alwaysAssignToConsumer: Boolean = false
   }
   case object ColonLessGreaterEq extends ConnectionOperator {
     val noDangles: Boolean = true
@@ -405,6 +409,7 @@ private[chisel3] object DirectionalConnectionFunctions {
     val noWrongOrientations: Boolean = true
     val assignToConsumer: Boolean = true
     val assignToProducer: Boolean = true
+    val alwaysAssignToConsumer: Boolean = false
   }
   case object ColonHashEq extends ConnectionOperator {
     val noDangles: Boolean = true
@@ -412,6 +417,7 @@ private[chisel3] object DirectionalConnectionFunctions {
     val noWrongOrientations: Boolean = false
     val assignToConsumer: Boolean = true
     val assignToProducer: Boolean = false
+    val alwaysAssignToConsumer: Boolean = true
   }
 
   /** Determines the aligned/flipped of subMember with respect to activeRoot

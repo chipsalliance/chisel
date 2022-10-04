@@ -13,10 +13,16 @@ import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 object DirectionalBulkConnectSpec {
-  class ConnectionTest[T <: Data, S <: Data](outType: S, inType: T, inDrivesOut: Boolean, op: (Data, Data) => Unit, nTmps: Int) extends Module {
+  class ConnectionTest[T <: Data, S <: Data](outType: S, inType: T, inDrivesOut: Boolean, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit], nTmps: Int) extends Module {
     val io = IO(new Bundle {
       val in = Flipped(inType)
       val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
+      val monitor = monitorOp.map(mop => {
+        Output(inType)
+      })
+    })
+    monitorOp.map(mop => {
+      mop(io.monitor.get, io.in)
     })
   
     val wiresIn = Seq.fill(nTmps)(Wire(inType))
@@ -73,10 +79,10 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     assert(badMatches.isEmpty, s"Matched in output when shouldn't:\n$firrtl")
     firrtl
   }
-  def testBuild[T <: Data, S <: Data](outType: S, inType: T)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit): String = {
-    ChiselStage.emitFirrtl({ new ConnectionTest(outType, inType, inDrivesOut, op, nTmps) }, true, true)
+  def testBuild[T <: Data, S <: Data](outType: S, inType: T)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit]): String = {
+    ChiselStage.emitChirrtl({ new ConnectionTest(outType, inType, inDrivesOut, op, monitorOp, nTmps) }, true, true)
   }
-  def testException[T <: Data, S <: Data](outType: S, inType: T, messageMatches: String*)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit): String = {
+  def testException[T <: Data, S <: Data](outType: S, inType: T, messageMatches: String*)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit]): String = {
     val x = intercept[ChiselException] {
       testBuild(outType, inType)
     }
@@ -86,13 +92,14 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     message
   }
-  def testDistinctTypes(tpeOut: Data, tpeIn: Data, matches: Seq[String] = Seq("io.out <= io.in"), nonMatches: Seq[String] = Nil)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit): String = testCheck(testBuild(tpeOut, tpeIn), matches, nonMatches)
-  def test(tpeIn: Data, matches: Seq[String] = Seq("io.out <= io.in"), nonMatches: Seq[String] = Nil)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit): String = testDistinctTypes(tpeIn, tpeIn, matches, nonMatches)
+  def testDistinctTypes(tpeOut: Data, tpeIn: Data, matches: Seq[String] = Seq("io.out <= io.in"), nonMatches: Seq[String] = Nil)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit]): String = testCheck(testBuild(tpeOut, tpeIn), matches, nonMatches)
+  def test(tpeIn: Data, matches: Seq[String] = Seq("io.out <= io.in"), nonMatches: Seq[String] = Nil)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit]): String = testDistinctTypes(tpeIn, tpeIn, matches, nonMatches)
 
 
   // (D)irectional Bulk Connect tests
   describe("(0) :<>=") {
     implicit val op: (Data, Data) => Unit = {_ :<>= _}
+    implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
     implicit val nTmps = 0
 
@@ -206,6 +213,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
   }
   describe("(1): :<= ") {
     implicit val op: (Data, Data) => Unit = {_ :<= _}
+    implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
     implicit val nTmps = 0
 
@@ -402,6 +410,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
   }
   describe("(2): :>= ") {
     implicit val op: (Data, Data) => Unit = {_ :>= _}
+    implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
     implicit val nTmps = 0
 
@@ -541,6 +550,197 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     it("(2.i): Use producer orientation if different root-relative flippedness on leaf fields between right-hand-side or left-hand-side") {
       testDistinctTypes(mixedBundle(Bool()), alignedBundle(Bool()), Seq("skip"), Seq("<="))
       testDistinctTypes(alignedBundle(Bool()), mixedBundle(Bool()), Seq("io.in.bar <= io.out.bar"), Seq("io.out.foo <= io.in.foo"))
+    }
+  }
+  describe("(3): :#= ") {
+    implicit val op: (Data, Data) => Unit = {_ :<>= _}
+    implicit val monitorOp: Option[(Data, Data) => Unit] = Some({_ :#= _})
+    implicit val inDrivesOut = true
+    implicit val nTmps = 0
+
+    it("(3.a): Emit '<=' between identical non-Analog ground types") {
+      test(Bool())
+      test(UInt(16.W))
+      test(SInt(16.W))
+      test(Clock())
+      testDistinctTypes(UInt(16.W), Bool()) // Bool inherits UInt, so this should work
+      testDistinctTypes(Bool(), UInt(16.W)) // Bool inherits UInt, so this should work
+    }
+    it("(3.b): Emit multiple '<=' between identical aligned aggregate types") {
+      val vecMatches = Seq(
+        "io.monitor[0] <= io.in[0]",
+        "io.monitor[1] <= io.in[1]",
+        "io.monitor[2] <= io.in[2]",
+      )
+      test(vec(Bool()), vecMatches)
+      test(vec(UInt(16.W)), vecMatches)
+      test(vec(SInt(16.W)), vecMatches)
+      test(vec(Clock()), vecMatches)
+
+      val bundleMatches = Seq(
+        "io.monitor.bar <= io.in.bar",
+        "io.monitor.foo <= io.in.foo",
+      )
+      test(alignedBundle(Bool()), bundleMatches)
+      test(alignedBundle(UInt(16.W)), bundleMatches)
+      test(alignedBundle(SInt(16.W)), bundleMatches)
+      test(alignedBundle(Clock()), bundleMatches)
+    }
+    it("(3.c): Emit multiple '<=' between identical aligned aggregate types, hierarchically") {
+      val vecVecMatches = Seq(
+        "io.monitor[0][0] <= io.in[0][0]",
+        "io.monitor[0][1] <= io.in[0][1]",
+        "io.monitor[0][2] <= io.in[0][2]",
+        "io.monitor[1][0] <= io.in[1][0]",
+        "io.monitor[1][1] <= io.in[1][1]",
+        "io.monitor[1][2] <= io.in[1][2]",
+        "io.monitor[2][0] <= io.in[2][0]",
+        "io.monitor[2][1] <= io.in[2][1]",
+        "io.monitor[2][2] <= io.in[2][2]",
+      )
+      test(vec(vec(Bool())), vecVecMatches)
+      test(vec(vec(UInt(16.W))), vecVecMatches)
+      test(vec(vec(SInt(16.W))), vecVecMatches)
+      test(vec(vec(Clock())), vecVecMatches)
+
+      val vecBundleMatches = Seq(
+        "io.monitor[0].bar <= io.in[0].bar",
+        "io.monitor[0].foo <= io.in[0].foo",
+        "io.monitor[1].bar <= io.in[1].bar",
+        "io.monitor[1].foo <= io.in[1].foo",
+        "io.monitor[2].bar <= io.in[2].bar",
+        "io.monitor[2].foo <= io.in[2].foo",
+      )
+      test(vec(alignedBundle(Bool())), vecBundleMatches)
+      test(vec(alignedBundle(UInt(16.W))), vecBundleMatches)
+      test(vec(alignedBundle(SInt(16.W))), vecBundleMatches)
+      test(vec(alignedBundle(Clock())), vecBundleMatches)
+
+      val bundleVecMatches = Seq(
+        "io.monitor.bar[0] <= io.in.bar[0]",
+        "io.monitor.bar[1] <= io.in.bar[1]",
+        "io.monitor.bar[2] <= io.in.bar[2]",
+        "io.monitor.foo[0] <= io.in.foo[0]",
+        "io.monitor.foo[1] <= io.in.foo[1]",
+        "io.monitor.foo[2] <= io.in.foo[2]",
+      )
+      test(alignedBundle(vec(Bool())), bundleVecMatches)
+      test(alignedBundle(vec(UInt(16.W))), bundleVecMatches)
+      test(alignedBundle(vec(SInt(16.W))), bundleVecMatches)
+      test(alignedBundle(vec(Clock())), bundleVecMatches)
+
+      val bundleBundleMatches = Seq(
+        "io.monitor.bar.bar <= io.in.bar.bar",
+        "io.monitor.bar.foo <= io.in.bar.foo",
+        "io.monitor.foo.bar <= io.in.foo.bar",
+        "io.monitor.foo.foo <= io.in.foo.foo",
+      )
+      test(alignedBundle(alignedBundle(Bool())), bundleBundleMatches)
+      test(alignedBundle(alignedBundle(UInt(16.W))), bundleBundleMatches)
+      test(alignedBundle(alignedBundle(SInt(16.W))), bundleBundleMatches)
+      test(alignedBundle(alignedBundle(Clock())), bundleBundleMatches)
+    }
+    it("(3.d): Emit '<=' between identical aggregate types with mixed flipped/aligned fields") {
+      val bundleMatches = Seq("io.monitor.foo <= io.in.foo", "io.monitor.bar <= io.in.bar")
+      test(mixedBundle(Bool()), bundleMatches)
+      test(mixedBundle(UInt(16.W)), bundleMatches)
+      test(mixedBundle(SInt(16.W)), bundleMatches)
+      test(mixedBundle(Clock()), bundleMatches)
+    }
+    it("(3.e): Emit '<=' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
+      val vecBundleMatches = Seq(
+        "io.monitor[0].foo <= io.in[0].foo",
+        "io.monitor[1].foo <= io.in[1].foo",
+        "io.monitor[2].foo <= io.in[2].foo",
+        "io.monitor[0].bar <= io.in[0].bar",
+        "io.monitor[1].bar <= io.in[1].bar",
+        "io.monitor[2].bar <= io.in[2].bar",
+      )
+      val x = test(vec(mixedBundle(Bool())), vecBundleMatches)
+      println(x)
+      test(vec(mixedBundle(UInt(16.W))), vecBundleMatches)
+      test(vec(mixedBundle(SInt(16.W))), vecBundleMatches)
+      test(vec(mixedBundle(Clock())), vecBundleMatches)
+
+      val bundleVecMatches = Seq(
+        "io.monitor.foo[0] <= io.in.foo[0]",
+        "io.monitor.foo[1] <= io.in.foo[1]",
+        "io.monitor.foo[2] <= io.in.foo[2]",
+        "io.monitor.bar[0] <= io.in.bar[0]",
+        "io.monitor.bar[1] <= io.in.bar[1]",
+        "io.monitor.bar[2] <= io.in.bar[2]",
+      )
+      test(mixedBundle(vec(Bool())), bundleVecMatches)
+      test(mixedBundle(vec(UInt(16.W))), bundleVecMatches)
+      test(mixedBundle(vec(SInt(16.W))), bundleVecMatches)
+      test(mixedBundle(vec(Clock())), bundleVecMatches)
+
+      val bundleBundleMatches = Seq(
+        "io.monitor.bar.bar <= io.in.bar.bar",
+        "io.monitor.foo.foo <= io.in.foo.foo",
+        "io.monitor.bar.foo <= io.in.bar.foo",
+        "io.monitor.foo.bar <= io.in.foo.bar",
+      )
+      test(mixedBundle(mixedBundle(Bool())), bundleBundleMatches)
+      test(mixedBundle(mixedBundle(UInt(16.W))), bundleBundleMatches)
+      test(mixedBundle(mixedBundle(SInt(16.W))), bundleBundleMatches)
+      test(mixedBundle(mixedBundle(Clock())), bundleBundleMatches)
+    }
+    it("(3.f): Throw exception between differing ground types") {
+      testException(UInt(3.W), SInt(3.W), "have different types")
+      testException(UInt(3.W), Clock(), "have different types")
+      testException(SInt(3.W), Clock(), "have different types")
+    }
+    it("(3.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
+      test(Analog(3.W), Seq("attach (io.out, io.in)"))
+      test(mixedBundle(Analog(3.W)), Seq("attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar"))
+      test(vec(Analog(3.W), 2), Seq("attach (io.out[0], io.in[0])", "attach (io.out[1], io.in[1]"))
+    }
+    it("(3.h): Error on unassigned subfield/subindex from either side, but do not throw exception for dangling fields") {
+      // Missing flip bar
+      testDistinctTypes(mixedBundle(Bool()), alignedFooBundle(Bool()), Seq("io.out.foo <= io.in.foo"))
+      testDistinctTypes(alignedFooBundle(Bool()), mixedBundle(Bool()), Seq("io.out.foo <= io.in.foo"))
+
+      // Missing foo
+      testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unassigned consumer field")
+      testDistinctTypes(flippedBarBundle(Bool()), mixedBundle(Bool()), Seq("skip"), Seq("<=")) // No connection should be emitted
+
+      // Vec sizes don't match
+      testDistinctTypes(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), Seq(
+        "io.out[0].foo <= io.in[0].foo",
+        "io.out[1].foo <= io.in[1].foo",
+        "io.out[2].foo <= io.in[2].foo"
+      ))
+      testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
+      testDistinctTypes(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), Seq("skip"))
+      testDistinctTypes(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), Seq("skip"))
+
+      // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
+      testDistinctTypes(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), Seq(
+        "io.out[0].foo <= io.in[0].foo",
+        "io.out[1].foo <= io.in[1].foo",
+        "io.out[2].foo <= io.in[2].foo"
+      ))
+      testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
+    }
+    it("(3.i): Use consumer orientation if different root-relative flippedness on leaf fields between right-hand-side or left-hand-side") {
+      testDistinctTypes(mixedBundle(Bool()), alignedBundle(Bool()), Seq("io.out.foo <= io.in.foo"), Seq("io.in.bar <= io.out.bar"))
+      testDistinctTypes(alignedBundle(Bool()), mixedBundle(Bool()), Seq(
+        "io.out.foo <= io.in.foo",
+        "io.out.bar <= io.in.bar"
+      ))
+    }
+    it("(3.j): Emit defaultable assignments on type with default, instead of erroring with missing fields") {
+      testDistinctTypes(
+        alignedBundle(Bool().withDefault(true.B)),
+        alignedFooBundle(Bool()),
+        Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
+      )
+      testDistinctTypes(
+        alignedBundle(Bool()).withDefault{t => Seq(t.bar -> true.B)},
+        alignedFooBundle(Bool()),
+        Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
+      )
     }
   }
   //property("(D.a) SInt :<>= SInt should succeed") {
