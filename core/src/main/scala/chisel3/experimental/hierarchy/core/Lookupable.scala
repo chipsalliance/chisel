@@ -341,7 +341,7 @@ object Lookupable {
             case Clone(x: ModuleClone[_]) => Some(x.ioMap)
             case Proto(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
             case Clone(x: InstantiableClone[_]) => getIoMap(x._innerContext)
-            case Clone(x: InstanceClone[_]) => None // TODO: understand why this is OK
+            case Clone(x: InstanceClone[_]) => None
             case other => {
               require(false, s"Unexpected case where we can't get IO Map: ${other}")
               None
