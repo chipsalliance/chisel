@@ -305,9 +305,8 @@ object Examples {
     i1.in := i0.out
     out := i1.out
 
-    // Doesn't work though it's equivalent to the above
+    // both are equivalent to the above
     i1.leafIn.bundle := i0.leafOut.bundle
-    // Also Doesn't work
     i1.nested.in.bundle := i0.nested.out.bundle
   }
 
