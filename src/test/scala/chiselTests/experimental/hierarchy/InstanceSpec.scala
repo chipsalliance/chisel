@@ -403,8 +403,9 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         MarkAnnotation("~Top|Top/i:HasMems>syncReadMem".rt, "SyncReadMem")
       )
     }
-    it("(3.p): should work on nested IsInstantiables that have Data in them") {
-      val (_, annos) = getFirrtlAndAnnos(new AddTwoNestedInstantiableData(4))
+    it("(3.p): should make connectable IOs on nested IsInstantiables that have IO Datas in them") {
+      val chirrtl = getFirrtlAndAnnos(new AddTwoNestedInstantiableData(4))._1.serialize
+      exactly(3, chirrtl.split('\n')) should include("i1.in <= i0.out")
     }
   }
   describe("(4) toInstance") {
