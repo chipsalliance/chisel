@@ -343,7 +343,7 @@ object Lookupable {
             case Clone(x: InstantiableClone[_]) => getIoMap(x._innerContext)
             case Clone(x: InstanceClone[_]) => None
             case other => {
-              Builder.throwException(s"Internal Error! Unexpected case where we can't get IO Map: $other")
+              Builder.exception(s"Internal Error! Unexpected case where we can't get IO Map: $other")
             }
           }
         }
