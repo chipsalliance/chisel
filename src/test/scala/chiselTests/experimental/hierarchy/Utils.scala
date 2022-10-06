@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.experimental.hierarchy
+package chiselTests
+package experimental.hierarchy
+
+
 
 import chisel3._
 import _root_.firrtl.annotations._
 import chisel3.stage.{ChiselCircuitAnnotation, CircuitSerializationAnnotation, DesignAnnotation}
-import chiselTests.ChiselRunners
+import _root_.chiselTests.ChiselRunners
 import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest.matchers.should.Matchers
 
-trait Utils extends ChiselRunners with chiselTests.Utils with Matchers {
+trait Utils extends ChiselRunners with _root_.chiselTests.Utils with Matchers {
   import Annotations._
   // TODO promote to standard API (in FIRRTL) and perhaps even implement with a macro
   implicit class Str2RefTarget(str: String) {

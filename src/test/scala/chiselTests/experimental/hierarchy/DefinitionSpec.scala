@@ -559,7 +559,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       }
     }
     ignore("(7.b): should work on Aggregate Views that are mapped 1:1") {
-      import chiselTests.experimental.SimpleBundleDataView._
+      import _root_.chiselTests.experimental.SimpleBundleDataView._
       @instantiable
       class MyModule extends RawModule {
         private val a = IO(Input(new BundleA(8)))

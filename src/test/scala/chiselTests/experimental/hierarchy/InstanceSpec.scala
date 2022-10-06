@@ -1198,24 +1198,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(11) Implementation") {
-
-    //class Top extends Module {
-    //  val d = Definition(new Core())
-    //  val c0 = Instance(d)
-    //  c0.contextualCache.value = Definition(new PL2Cache(20))
-    //  val c1 = Instance(d)
-    //  c1.contextualCache.value = Definition(new PL2Cache(10))
-    //}
-
-    //class Core() extends Module {
-    //  val contextCache: Contextual[Definition[Cache]] = Contextual.empty[Definition[Cache]]
-    //}
-    //object CoreImp {
-    //  def implement(d: ResolvedDefinition[Core]): Unit = {
-    //    val cacheInstance = Instance(d.contextCache)
-
-    //  }
-    //}
+ 
 
 
   }
