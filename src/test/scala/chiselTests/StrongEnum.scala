@@ -164,6 +164,39 @@ class StrongEnumFSM extends Module {
   }
 }
 
+object Opcode extends ChiselEnum {
+  val load = Value(0x03.U)
+  val imm = Value(0x13.U)
+  val auipc = Value(0x17.U)
+  val store = Value(0x23.U)
+  val litValues = List(0x03.U, 0x13.U, 0x17.U, 0x23.U)
+}
+
+class PrintableExecutionTest extends BasicTester {
+  val (count, done) = Counter(true.B, 6)
+  val w = WireDefault(Opcode.load)
+  when(count === 0.U) {
+    w := Opcode.load
+  }
+  when(count === 1.U) {
+    w := Opcode.imm
+  }
+  when(count === 2.U) {
+    w := Opcode.auipc
+  }
+  when(count === 3.U) {
+    w := Opcode.store
+  }
+  when(count === 4.U) { // invalid state
+    val invalidWire = WireInit(UInt(6.W), 0.U)
+    w := Opcode.safe(invalidWire)._1
+  }
+  when(done) {
+    stop()
+  }
+  printf(cf"'$w'\n")
+}
+
 class CastToUIntTester extends BasicTester {
   for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastToUInt)
@@ -554,6 +587,15 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "correctly check if the enumeration is one of the values in a given sequence" in {
     assertTesterPasses(new IsOneOfTester)
+  }
+
+  it should "work with Printables" in {
+    val (log, _, _) = grabStdOutErr(assertTesterPasses { new PrintableExecutionTest })
+    log should include("load")
+    log should include("imm")
+    log should include("auipc")
+    log should include("store")
+    log should include("?????")
   }
 }
 
