@@ -337,16 +337,18 @@ private[chisel3] object DirectionalConnectionFunctions {
           if(op.assignToConsumer) leafConnect(c, p, co, op)
           if(op.assignToProducer) leafConnect(c, p, po, op)
         }
-      case (path, Some(LeafConnection(Some((c, FlippedWithRoot)), None))) => if(op.noDangles) errors += (s"dangling consumer field $c")
-      case (path, Some(LeafConnection(None, Some((p, AlignedWithRoot))))) => if(op.noDangles) errors += (s"dangling producer field $p")
+      case (path, Some(LeafConnection(Some((c, FlippedWithRoot)), None))) if(op.noDangles || op.mustMatch) => errors += (s"dangling consumer field $c")
+      case (path, Some(LeafConnection(None, Some((p, AlignedWithRoot))))) if(op.noDangles || op.mustMatch) => errors += (s"dangling producer field $p")
       // Defaulting case
       case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if c.hasDefault => leafConnect(c, c.default, AlignedWithRoot, op)
       case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if p.hasDefault => leafConnect(p.default, p, FlippedWithRoot, op)
 
       // Non-defaulting case
-      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) => if(op.noUnassigned && op.assignToConsumer) errors += (s"unassigned consumer field $c")
-      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) => if(op.noUnassigned && op.assignToProducer) errors += (s"unassigned producer field $p")
-      case (path, Some(other)) => throw new Exception("BAD!! Unreachable code is reached, something went wrong")
+      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if (op.noUnassigned && op.assignToConsumer) => errors += (s"unassigned consumer field $c")
+      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if (op.mustMatch) => errors += (s"unmatched consumer field $c")
+      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if (op.noUnassigned && op.assignToProducer) => errors += (s"unassigned producer field $p")
+      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if (op.mustMatch) => errors += (s"unmatched producer field $p")
+      case (path, Some(other)) => //throw new Exception("BAD!! Unreachable code is reached, something went wrong")
     }
     if(errors.nonEmpty) {
       Builder.error(errors.mkString("\n"))
@@ -382,6 +384,7 @@ private[chisel3] object DirectionalConnectionFunctions {
   sealed trait ConnectionOperator {
     val noDangles: Boolean
     val noUnassigned: Boolean
+    val mustMatch: Boolean
     val noWrongOrientations: Boolean
     val assignToConsumer: Boolean
     val assignToProducer: Boolean
@@ -390,6 +393,7 @@ private[chisel3] object DirectionalConnectionFunctions {
   case object ColonLessEq extends ConnectionOperator {
     val noDangles: Boolean = false
     val noUnassigned: Boolean = true
+    val mustMatch: Boolean = false
     val noWrongOrientations: Boolean = false
     val assignToConsumer: Boolean = true
     val assignToProducer: Boolean = false
@@ -398,6 +402,7 @@ private[chisel3] object DirectionalConnectionFunctions {
   case object ColonGreaterEq extends ConnectionOperator {
     val noDangles: Boolean = false
     val noUnassigned: Boolean = true
+    val mustMatch: Boolean = false
     val noWrongOrientations: Boolean = false
     val assignToConsumer: Boolean = false
     val assignToProducer: Boolean = true
@@ -406,6 +411,7 @@ private[chisel3] object DirectionalConnectionFunctions {
   case object ColonLessGreaterEq extends ConnectionOperator {
     val noDangles: Boolean = true
     val noUnassigned: Boolean = true
+    val mustMatch: Boolean = true
     val noWrongOrientations: Boolean = true
     val assignToConsumer: Boolean = true
     val assignToProducer: Boolean = true
@@ -414,6 +420,7 @@ private[chisel3] object DirectionalConnectionFunctions {
   case object ColonHashEq extends ConnectionOperator {
     val noDangles: Boolean = true
     val noUnassigned: Boolean = true
+    val mustMatch: Boolean = true
     val noWrongOrientations: Boolean = false
     val assignToConsumer: Boolean = true
     val assignToProducer: Boolean = false
