@@ -347,6 +347,23 @@ private[chisel3] object cloneSupertype {
 
 // Returns pairs of all fields, element-level and containers, in a Record and their path names
 private[chisel3] object getRecursiveFields {
+  def noPath(data: Data): Seq[Data] = data match {
+    case data: Record =>
+      data.elements.map {
+        case (_, fieldData) =>
+          getRecursiveFields.noPath(fieldData)
+      }.fold(Seq(data)) {
+        _ ++ _
+      }
+    case data: Vec[_] =>
+      data.getElements.zipWithIndex.map {
+        case (fieldData, fieldIndex) =>
+          getRecursiveFields.noPath(fieldData)
+      }.fold(Seq(data)) {
+        _ ++ _
+      }
+    case data: Element => Seq(data)
+  }
   def apply(data: Data, path: String): Seq[(Data, String)] = data match {
     case data: Record =>
       data.elements.map {
@@ -379,6 +396,21 @@ private[chisel3] object getRecursiveFields {
             getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
         }
     case data: Element => LazyList(data -> path)
+  }
+  def lazilyNoPath(data: Data): Seq[Data] = data match {
+    case data: Record =>
+      LazyList(data) ++
+        data.elements.view.flatMap {
+          case (fieldName, fieldData) =>
+            getRecursiveFields.lazilyNoPath(fieldData)
+        }
+    case data: Vec[_] =>
+      LazyList(data) ++
+        data.getElements.view.flatMap {
+          case (fieldData) =>
+            getRecursiveFields.lazilyNoPath(fieldData)
+        }
+    case data: Element => LazyList(data)
   }
 }
 
