@@ -218,6 +218,7 @@ class BufferedProcessLogger extends ProcessLogger {
   def out(s:       => String): Unit = buffer += s
   def err(s:       => String): Unit = buffer += s
   def buffer[T](f: => T):      T = f
+  def value: String = buffer.mkString
 }
 
 trait Utils {
@@ -377,5 +378,5 @@ trait Utils {
 
   }
 
-  def bufferedProcessLogger: ProcessLogger = new BufferedProcessLogger
+  def bufferedProcessLogger: BufferedProcessLogger = new BufferedProcessLogger
 }
