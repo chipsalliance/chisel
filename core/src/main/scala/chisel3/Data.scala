@@ -776,21 +776,17 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * Directionality data is still preserved.
     */
   private[chisel3] def cloneTypeFull: this.type = {
-    val clone = this.cloneType.asInstanceOf[this.type] // get a fresh object, without bindings
+    val clone = this.cloneTypeWithDefault // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
-    clone.defaultOrNull = defaultOrNull
     clone
   }
 
+  // Recursively copy over default values for nested types
   private[chisel3] def cloneTypeWithDefault: this.type = {
     val clone = this.cloneType.asInstanceOf[this.type] // get a fresh object, without bindings
-    import experimental.Defaulting._
-    val myTrie = buildTrie(this)
-    val clonedTrie = buildTrie(clone)
-    myTrie.collectDeep {
-      case (path, Some(x)) =>
-        clonedTrie.get(path).get.defaultOrNull = x.defaultOrNull
+    getMatchedFields(clone, this).foreach {
+      case (c, t) => c.defaultOrNull = t.defaultOrNull
     }
     clone
   }

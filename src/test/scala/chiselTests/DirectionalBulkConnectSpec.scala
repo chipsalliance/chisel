@@ -97,7 +97,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
 
 
   // (D)irectional Bulk Connect tests
-  describe("(0) :<>=") {
+  describe("(0): :<>=") {
     implicit val op: (Data, Data) => Unit = {_ :<>= _}
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
@@ -656,8 +656,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.monitor[1].bar <= io.in[1].bar",
         "io.monitor[2].bar <= io.in[2].bar",
       )
-      val x = test(vec(mixedBundle(Bool())), vecBundleMatches)
-      println(x)
+      test(vec(mixedBundle(Bool())), vecBundleMatches)
       test(vec(mixedBundle(UInt(16.W))), vecBundleMatches)
       test(vec(mixedBundle(SInt(16.W))), vecBundleMatches)
       test(vec(mixedBundle(Clock())), vecBundleMatches)
@@ -692,55 +691,41 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       testException(SInt(3.W), Clock(), "have different types")
     }
     it("(3.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
+      implicit val op: (Data, Data) => Unit = {_ :#= _}
+      implicit val monitorOp: Option[(Data, Data) => Unit] = None
       test(Analog(3.W), Seq("attach (io.out, io.in)"))
       test(mixedBundle(Analog(3.W)), Seq("attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar"))
       test(vec(Analog(3.W), 2), Seq("attach (io.out[0], io.in[0])", "attach (io.out[1], io.in[1]"))
     }
-    it("(3.h): Error on unassigned subfield/subindex from either side, but do not throw exception for dangling fields") {
+    it("(3.h): Error on unassigned or dangling subfield/subindex from either side") {
       // Missing flip bar
-      testDistinctTypes(mixedBundle(Bool()), alignedFooBundle(Bool()), Seq("io.out.foo <= io.in.foo"))
-      testDistinctTypes(alignedFooBundle(Bool()), mixedBundle(Bool()), Seq("io.out.foo <= io.in.foo"))
+      implicit val op: (Data, Data) => Unit = {_ :#= _}
+      implicit val monitorOp: Option[(Data, Data) => Unit] = None
+      testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "dangling consumer field")
+      testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unmatched producer field")
 
       // Missing foo
-      testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unassigned consumer field")
-      testDistinctTypes(flippedBarBundle(Bool()), mixedBundle(Bool()), Seq("skip"), Seq("<=")) // No connection should be emitted
+      testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "cannot be written from module")
+      testException(flippedBarBundle(Bool()), mixedBundle(Bool()), "cannot be written from module")
 
       // Vec sizes don't match
-      testDistinctTypes(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), Seq(
-        "io.out[0].foo <= io.in[0].foo",
-        "io.out[1].foo <= io.in[1].foo",
-        "io.out[2].foo <= io.in[2].foo"
-      ))
+      testException(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), "dangling producer field")
       testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
-      testDistinctTypes(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), Seq("skip"))
-      testDistinctTypes(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), Seq("skip"))
+      testException(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), "cannot be written from module")
+      testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "cannot be written from module")
 
       // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
-      testDistinctTypes(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), Seq(
-        "io.out[0].foo <= io.in[0].foo",
-        "io.out[1].foo <= io.in[1].foo",
-        "io.out[2].foo <= io.in[2].foo"
-      ))
+      testException(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), "unmatched producer field")
       testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
     }
-    it("(3.i): Use consumer orientation if different root-relative flippedness on leaf fields between right-hand-side or left-hand-side") {
-      testDistinctTypes(mixedBundle(Bool()), alignedBundle(Bool()), Seq("io.out.foo <= io.in.foo"), Seq("io.in.bar <= io.out.bar"))
+    it("(3.i): Always assign to consumer regardless of orientation") {
+      implicit val op: (Data, Data) => Unit = {_ :#= _}
+      implicit val monitorOp: Option[(Data, Data) => Unit] = None
+      testException(mixedBundle(Bool()), alignedBundle(Bool()), "cannot be written from module")
       testDistinctTypes(alignedBundle(Bool()), mixedBundle(Bool()), Seq(
         "io.out.foo <= io.in.foo",
         "io.out.bar <= io.in.bar"
       ))
-    }
-    it("(3.j): Emit defaultable assignments on type with default, instead of erroring with missing fields") {
-      testDistinctTypes(
-        alignedBundle(Bool().withDefault(true.B)),
-        alignedFooBundle(Bool()),
-        Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
-      )
-      testDistinctTypes(
-        alignedBundle(Bool()).withDefault{t => Seq(t.bar -> true.B)},
-        alignedFooBundle(Bool()),
-        Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
-      )
     }
   }
   //property("(D.a) SInt :<>= SInt should succeed") {
