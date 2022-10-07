@@ -13,9 +13,40 @@ import firrtl.options.{Dependency, Phase, PhaseManager, TargetDirAnnotation, Uns
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
-import scala.sys.process.ProcessLogger
+import scala.sys.process.{Process, ProcessLogger}
 
 object TesterDriver extends BackendCompilationUtilities {
+  // These private internal methods (executeExpectingFailure and
+  // executeExpectingSuccess) are duplicates of those in
+  // firrtl.BackendCompilationUtilities. The FIRRTL version of these
+  // methods use an inlined processLogger, which has caused issues
+  // with non-determinism of logs leading to spurious CI failures.
+  // The methods defined below take a process logger argument which
+  // gets around this limitation
+  private def executeExpectingFailure(
+    prefix:        String,
+    dir:           File,
+    processLogger: ProcessLogger,
+    assertionMsg:  String
+  ): Boolean = {
+    var triggered = false
+    val assertionMessageSupplied = assertionMsg != ""
+    val e = Process(s"./V$prefix", dir) !
+      ProcessLogger(
+        line => {
+          triggered = triggered || (assertionMessageSupplied && line.contains(assertionMsg))
+          processLogger.out(line)
+        },
+        processLogger.err(_)
+      )
+    // Fail if a line contained an assertion or if we get a non-zero exit code
+    //  or, we get a SIGABRT (assertion failure) and we didn't provide a specific assertion message
+    triggered || (e != 0 && (e != 134 || !assertionMessageSupplied))
+  }
+
+  private def executeExpectingSuccess(prefix: String, dir: File, processLogger: ProcessLogger): Boolean = {
+    !executeExpectingFailure(prefix, dir, processLogger, "")
+  }
 
   private[chisel3] trait Backend extends NoTargetAnnotation with Unserializable {
     def execute(
@@ -65,7 +96,7 @@ object TesterDriver extends BackendCompilationUtilities {
         (verilogToCpp(target, path, additionalVFiles, cppHarness) #&&
           cppToExe(target, path)).!(processLogger) == 0
       ) {
-        executeExpectingSuccess(target, path)
+        executeExpectingSuccess(target, path, processLogger)
       } else {
         false
       }
