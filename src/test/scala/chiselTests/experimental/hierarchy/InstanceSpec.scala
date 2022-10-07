@@ -407,6 +407,12 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val chirrtl = getFirrtlAndAnnos(new AddTwoNestedInstantiableData(4))._1.serialize
       exactly(3, chirrtl.split('\n')) should include("i1.in <= i0.out")
     }
+    it(
+      "(3.q): should make connectable IOs on nested IsInstantiables's Data when the Instance and Definition do not have the same parent"
+    ) {
+      val chirrtl = getFirrtlAndAnnos(new AddTwoNestedInstantiableDataWrapper(4))._1.serialize
+      exactly(3, chirrtl.split('\n')) should include("i1.in <= i0.out")
+    }
   }
   describe("(4) toInstance") {
     it("(4.a): should work on modules") {
