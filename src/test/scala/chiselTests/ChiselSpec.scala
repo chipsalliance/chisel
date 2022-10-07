@@ -213,6 +213,13 @@ abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaC
   } yield (w, i, j)
 }
 
+class BufferedProcessLogger extends ProcessLogger {
+  private val buffer = ArrayBuffer[String]()
+  def out(s:       => String): Unit = buffer += s
+  def err(s:       => String): Unit = buffer += s
+  def buffer[T](f: => T):      T = f
+}
+
 trait Utils {
 
   /** Run some Scala thunk and return STDOUT and STDERR as strings.
@@ -369,4 +376,6 @@ trait Utils {
     }
 
   }
+
+  def bufferedProcessLogger: ProcessLogger = new BufferedProcessLogger
 }
