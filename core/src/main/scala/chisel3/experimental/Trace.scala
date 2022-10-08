@@ -1,7 +1,7 @@
 package chisel3.experimental
 
 import chisel3.internal.HasId
-import chisel3.{Aggregate, Data, Element, Module}
+import chisel3.{Aggregate, Data, Element, RawModule}
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, CompleteTarget, SingleTargetAnnotation}
 import firrtl.transforms.DontTouchAllTargets
@@ -22,7 +22,7 @@ import firrtl.transforms.DontTouchAllTargets
 object Trace {
 
   /** Trace a Instance name. */
-  def traceName(x: Module): Unit = {
+  def traceName(x: RawModule): Unit = {
     annotate(new ChiselAnnotation {
       def toFirrtl: Annotation = TraceNameAnnotation(x.toAbsoluteTarget, x.toAbsoluteTarget)
     })
