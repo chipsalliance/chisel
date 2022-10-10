@@ -22,7 +22,7 @@ import firrtl.transforms.DontTouchAllTargets
 object Trace {
 
   /** Trace a Instance name. */
-  private[chisel3] def traceName(x: Module): Unit = {
+  private[chisel3] def traceName(x: Module): Unit = traceName(x: RawModule)
 
   /** Trace a Instance name. */
   def traceName(x: RawModule): Unit = {
