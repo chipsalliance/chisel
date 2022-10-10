@@ -22,6 +22,9 @@ import firrtl.transforms.DontTouchAllTargets
 object Trace {
 
   /** Trace a Instance name. */
+  private[chisel3] def traceName(x: Module): Unit = {
+
+  /** Trace a Instance name. */
   def traceName(x: RawModule): Unit = {
     annotate(new ChiselAnnotation {
       def toFirrtl: Annotation = TraceNameAnnotation(x.toAbsoluteTarget, x.toAbsoluteTarget)
