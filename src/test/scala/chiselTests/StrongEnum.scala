@@ -169,32 +169,20 @@ object Opcode extends ChiselEnum {
   val imm = Value(0x13.U)
   val auipc = Value(0x17.U)
   val store = Value(0x23.U)
-  val litValues = List(0x03.U, 0x13.U, 0x17.U, 0x23.U)
+  val reg = Value(0x33.U)
+  val lui = Value(0x37.U)
+  val br = Value(0x63.U)
+  val jalr = Value(0x67.U)
+  val jal = Value(0x6f.U)
 }
 
-class PrintableExecutionTest extends BasicTester {
-  val (count, done) = Counter(true.B, 6)
-  val w = WireDefault(Opcode.load)
-  when(count === 0.U) {
-    w := Opcode.load
-  }
-  when(count === 1.U) {
-    w := Opcode.imm
-  }
-  when(count === 2.U) {
-    w := Opcode.auipc
-  }
-  when(count === 3.U) {
-    w := Opcode.store
-  }
-  when(count === 4.U) { // invalid state
-    val invalidWire = WireInit(UInt(6.W), 0.U)
-    w := Opcode.safe(invalidWire)._1
-  }
-  when(done) {
-    stop()
-  }
-  printf(cf"'$w'\n")
+class LoadStoreExample extends Module {
+  val io = IO(new Bundle {
+    val opcode = Input(Opcode())
+    val load_or_store = Output(Bool())
+  })
+  io.load_or_store := io.opcode.isOneOf(Opcode.load, Opcode.store)
+  printf(p"${io.opcode}")
 }
 
 class CastToUIntTester extends BasicTester {
@@ -590,12 +578,9 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "work with Printables" in {
-    val (log, _, _) = grabStdOutErr(assertTesterPasses { new PrintableExecutionTest })
-    log should include("load")
-    log should include("imm")
-    log should include("auipc")
-    log should include("store")
-    log should include("?????")
+    ChiselStage.emitChirrtl(new LoadStoreExample) should include(
+      """printf(clock, UInt<1>("h1"), "%c%c%c%c%c", _chiselTestsOpcodePrintable[0], _chiselTestsOpcodePrintable[1], _chiselTestsOpcodePrintable[2], _chiselTestsOpcodePrintable[3], _chiselTestsOpcodePrintable[4])"""
+    )
   }
 }
 
