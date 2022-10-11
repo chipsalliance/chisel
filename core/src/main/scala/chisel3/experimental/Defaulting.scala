@@ -70,8 +70,13 @@ object Defaulting {
     }
     def withConnectableDefault(lit: T)(implicit sourceInfo: SourceInfo): T = {
       if(!lit.isLit) internal.Builder.error("Must provide a literal")
-      if(h.defaultOrNull != null) internal.Builder.error(s"Cannot set a type's default value twice; setting as $lit, but already set as ${lit.defaultOrNull}")
+      if(h.defaultOrNull != null) internal.Builder.error(s"Cannot set a type's default value twice; setting as $lit, but already set as ${h.defaultOrNull}")
       setConnectableDefault(h, lit)
+      h
+    }
+    def withConnectableDontCare(implicit sourceInfo: SourceInfo): T = {
+      if(h.defaultOrNull != null) internal.Builder.error(s"Cannot set a type's default value twice; setting as DontCare, but already set as ${h.defaultOrNull}")
+      setConnectableDefault(h, DontCare)
       h
     }
     def hasConnectableDefault: Boolean = h.defaultOrNull != null
