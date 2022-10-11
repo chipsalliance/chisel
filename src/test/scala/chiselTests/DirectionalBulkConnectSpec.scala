@@ -200,12 +200,12 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     it("(0.j): Emit defaultable assignments on type with default, instead of erroring with missing fields") {
       testDistinctTypes(
-        alignedBundle(Bool().withDefault(true.B)),
+        alignedBundle(Bool().withConnectableDefault(true.B)),
         alignedFooBundle(Bool()),
         Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
       )
       testDistinctTypes(
-        alignedBundle(Bool()).withDefault{t => Seq(t.bar -> true.B)},
+        alignedBundle(Bool()).withConnectableDefault{(_.bar -> true.B)},
         alignedFooBundle(Bool()),
         Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
       )
@@ -397,12 +397,12 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     it("(1.j): Emit defaultable assignments on type with default, instead of erroring with missing fields") {
       testDistinctTypes(
-        alignedBundle(Bool().withDefault(true.B)),
+        alignedBundle(Bool().withConnectableDefault(true.B)),
         alignedFooBundle(Bool()),
         Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
       )
       testDistinctTypes(
-        alignedBundle(Bool()).withDefault{t => Seq(t.bar -> true.B)},
+        alignedBundle(Bool()).withConnectableDefault{ (_.bar -> true.B)},
         alignedFooBundle(Bool()),
         Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
       )

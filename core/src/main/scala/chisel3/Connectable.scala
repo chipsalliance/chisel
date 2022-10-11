@@ -340,8 +340,8 @@ private[chisel3] object DirectionalConnectionFunctions {
       case (path, Some(LeafConnection(Some((c, FlippedWithRoot)), None))) if(op.noDangles || op.mustMatch) => errors += (s"dangling consumer field $c")
       case (path, Some(LeafConnection(None, Some((p, AlignedWithRoot))))) if(op.noDangles || op.mustMatch) => errors += (s"dangling producer field $p")
       // Defaulting case
-      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if c.hasDefault => leafConnect(c, c.default, AlignedWithRoot, op)
-      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if p.hasDefault => leafConnect(p.default, p, FlippedWithRoot, op)
+      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if c.hasConnectableDefault => leafConnect(c, c.connectableDefault, AlignedWithRoot, op)
+      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if p.hasConnectableDefault => leafConnect(p.connectableDefault, p, FlippedWithRoot, op)
 
       // Non-defaulting case
       case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if (op.noUnassigned && op.assignToConsumer) => errors += (s"unassigned consumer field $c")
