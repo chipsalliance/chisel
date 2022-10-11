@@ -64,19 +64,19 @@ object Defaulting {
     new Defaulting(chiselTypeOf(default), default)
 
   implicit class DefaultingTypeclass[T <: Data](h: T) {
-    def withDefault(f: T => Seq[(Data, Data)])(implicit sourceInfo: SourceInfo): T = {
-      f(h).map { case (h, l) => setDefault(h, l) }
+    def withConnectableDefault(fs: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo): T = {
+      fs.foreach { f => f(h) match { case (h, l) => setConnectableDefault(h, l) } }
       h
     }
-    def withDefault(lit: T)(implicit sourceInfo: SourceInfo): T = {
+    def withConnectableDefault(lit: T)(implicit sourceInfo: SourceInfo): T = {
       if(!lit.isLit) internal.Builder.error("Must provide a literal")
       if(h.defaultOrNull != null) internal.Builder.error(s"Cannot set a type's default value twice; setting as $lit, but already set as ${lit.defaultOrNull}")
-      setDefault(h, lit)
+      setConnectableDefault(h, lit)
       h
     }
-    def hasDefault: Boolean = h.defaultOrNull != null
-    def default: T = {
-      require(hasDefault)
+    def hasConnectableDefault: Boolean = h.defaultOrNull != null
+    def connectableDefault: T = {
+      require(hasConnectableDefault)
       h.defaultOrNull.asInstanceOf[T]
     }
   }
@@ -98,7 +98,7 @@ object Defaulting {
     trie
   }
 
-  private[chisel3] def setDefault(h: Data, lit: Data): Unit = {
+  private[chisel3] def setConnectableDefault(h: Data, lit: Data): Unit = {
     val hwTrie = buildTrie(h)
     val litTrie = buildTrie(lit)
     hwTrie.collectDeep {
@@ -106,7 +106,7 @@ object Defaulting {
         val inLit = litTrie.get(path)
         inLit.map { y => 
           require(x.defaultOrNull == null)
-          require(y.isLit)
+          require(y.isLit || y == DontCare)
           x.defaultOrNull = y
         }
     }
