@@ -49,8 +49,7 @@ object Trace {
     * @param chiselTarget original annotated target in Chisel, which should not be changed or renamed in FIRRTL.
     */
   private case class TraceNameAnnotation[T <: CompleteTarget](target: T, chiselTarget: T)
-      extends SingleTargetAnnotation[T]
-      with DontTouchAllTargets {
+      extends SingleTargetAnnotation[T] {
     def duplicate(n: T): Annotation = this.copy(target = n)
   }
 
