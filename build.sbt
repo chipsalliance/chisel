@@ -144,8 +144,8 @@ lazy val plugin = (project in file("plugin")).
   ).
   settings(
     mimaPreviousArtifacts := {
-      // There is not yet a 2.12.17 nor 2.13.9 artifact, so suppress until 3.5.5 is released
-      val skipVersions = Seq("2.12.17", "2.13.9")
+      // There are not yet artifacts for 2.12.17, 2.13.9, nor 2.13.10; suppress until 3.5.5 is released
+      val skipVersions = Seq("2.12.17", "2.13.9", "2.13.10")
       if (skipVersions.contains(scalaVersion.value)) {
         Set()
       } else {
