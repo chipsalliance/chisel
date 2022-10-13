@@ -390,4 +390,48 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Top(true))
     compile(new Top(false))
   }
+
+  "A undirectioned Chisel.Bundle used in a MixedVec " should "bulk connect in import chisel3._ code correctly" in {
+
+    object UndirectionedBundleWithVagueCompileOptions {
+      import chisel3.Bool
+
+      def bundle() = Bool()
+    }
+
+    object Compat {
+
+      import Chisel._
+      import chisel3.util.MixedVec
+
+      class ChiselModule[T <: Data](bundleGen: () => Seq[T]) extends Module {
+        val io = IO(new Bundle {
+          val out: MixedVec[T] = MixedVec(bundleGen())
+          val in:  MixedVec[T] = Flipped(MixedVec(bundleGen()))
+        })
+        io.out := RegNext(io.in)
+      }
+
+      class MyModule
+          extends ChiselModule(bundleGen = () => Seq.fill(3) { UndirectionedBundleWithVagueCompileOptions.bundle() })
+    }
+    object Chisel3 {
+      import chisel3._
+
+      class MyModule
+          extends Compat.ChiselModule(
+            bundleGen = () => Seq.fill(3) { UndirectionedBundleWithVagueCompileOptions.bundle() }
+          )
+
+      class Example extends Module {
+        val oldMod = Module(new Compat.MyModule)
+        val newMod = Module(new MyModule)
+
+        oldMod.io.in <> DontCare
+        newMod.io.in <> DontCare
+
+      }
+    }
+    compile(new Chisel3.Example)
+  }
 }
