@@ -62,5 +62,11 @@ class DefaultingSpec extends ChiselFunSpec with Utils {
       assert(firrtl.contains("io.in <= UInt<1>(\"h1\")"))
       assert(firrtl.contains("io.out <= UInt<1>(\"h0\")"))
     }
+    //TODO: Is it legal for a leaf field to dangle in :<>=, if it defines a default value?
+    // This is weird, because you'd normally not rely on that behavior.
+    // Maybe we make a trait like OkToDangle, and you mix it in?
+    // It probably can't be a trait because you want it to be a value
+    // Its effectively the inverse of the connectableValue. Perhaps it should be UnassignedValue ?
+    // And the inverse of withUnassignedValue() is withDanglingOk() ?
   }
 }

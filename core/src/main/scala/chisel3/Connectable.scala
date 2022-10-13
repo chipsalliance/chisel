@@ -6,11 +6,12 @@ import chisel3.internal.{prefix, BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
-import chisel3.experimental.{Analog, DataMirror}
+import chisel3.experimental.{Analog, DataMirror, Waivable}
 import chisel3.experimental.Defaulting._
 
 import scala.collection.mutable
 import chisel3.internal.ChildBinding
+import firrtl.ir.Orientation
 
 /** The default connection operators for Chisel hardware components */
 object Connectable {
@@ -328,6 +329,86 @@ private[chisel3] object DirectionalConnectionFunctions {
     }
   }
 
+
+  def doAssignment(consumer: Data, producer: Data, op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
+    val errors = mutable.ArrayBuffer[String]()
+    def doAssignment(c: Option[Data], co: RelativeOrientation, p: Option[Data], po: RelativeOrientation)(implicit sourceInfo: SourceInfo): Unit = {
+      ((c, co), (p, po)) match {
+        case ((None, _),                               (None, _))                                                                                           => ()
+        case ((Some(c: Waivable[_]), AlignedWithRoot), (None, EmptyOrientation))                if op.assignToConsumer && op.noUnassigned && c.okToUnassign => ()
+        case ((Some(c: Waivable[_]), FlippedWithRoot), (None, EmptyOrientation))                if op.assignToProducer && op.noDangles && c.okToDangle      => ()
+        case ((None, EmptyOrientation),                (Some(p: Waivable[_]), AlignedWithRoot)) if op.assignToConsumer && op.noDangles && p.okToDangle      => ()
+        case ((None, EmptyOrientation),                (Some(p: Waivable[_]), FlippedWithRoot)) if op.assignToProducer && op.noUnassigned && p.okToUnassign => ()
+
+        case ((Some(c), AlignedWithRoot),              (None, EmptyOrientation))                if op.assignToConsumer && op.noUnassigned                   => errors += (s"unassigned consumer field $c")
+        case ((Some(c: Aggregate), AlignedWithRoot),   (None, EmptyOrientation))                                                                            => c.getElements.foreach(e => doAssignment(Some(e), deriveOrientation(e, consumer, co), None, EmptyOrientation))
+        case ((Some(c), AlignedWithRoot),              (None, EmptyOrientation))                if !op.mustMatch                                            => () // Dangling/unassigned consumer field, but we don't care
+
+        case ((Some(c), FlippedWithRoot),              (None, EmptyOrientation))                if op.assignToProducer && op.noDangles                      => errors += (s"dangling consumer field $c")
+        case ((Some(c: Aggregate), FlippedWithRoot),   (None, EmptyOrientation))                                                                            => c.getElements.foreach(e => doAssignment(Some(e), deriveOrientation(e, consumer, co), None, EmptyOrientation))
+        case ((Some(c), FlippedWithRoot),              (None, EmptyOrientation))                if !op.mustMatch                                            => () // Dangling/unassigned consumer field, but we don't care
+
+        case ((None, EmptyOrientation),                (Some(p), AlignedWithRoot))              if op.assignToConsumer && op.noDangles                      => errors += (s"dangling producer field $p")
+        case ((None, EmptyOrientation),                (Some(p: Aggregate), AlignedWithRoot))                                                               => p.getElements.foreach(e => doAssignment(None, EmptyOrientation, Some(e), deriveOrientation(e, producer, po)))
+        case ((None, EmptyOrientation),                (Some(p), AlignedWithRoot))              if !op.mustMatch                                            => () // Dangling/unassigned producer field, but we don't care
+
+        case ((None, EmptyOrientation),                (Some(p), FlippedWithRoot))              if op.assignToProducer && op.noUnassigned                   => errors += (s"unassigned producer field $p")
+        case ((None, EmptyOrientation),                (Some(p: Aggregate), FlippedWithRoot))                                                               => p.getElements.foreach(e => doAssignment(None, EmptyOrientation, Some(e), deriveOrientation(e, producer, po)))
+        case ((None, EmptyOrientation),                (Some(p), FlippedWithRoot))              if !op.mustMatch                                            => () // Dangling/unassigned producer field, but we don't care
+
+        case ((Some(c), co),                           (None, po))                              if op.mustMatch                                             => errors += (s"unmatched consumer field $c")
+        case ((None, co),                              (Some(p), po))                           if op.mustMatch                                             => errors += (s"unmatched producer field $p")
+
+        case ((Some(c), co), (Some(p), po)) if (co != po) && (op.noWrongOrientations)                                                                       => errors += (s"inversely oriented fields $c and $p")
+        case ((Some(c), co), (Some(p), po)) => (c, p) match {
+          case (c: Record, p: Record) =>
+            val cElements = c.elements
+            val cKeys = cElements.keySet
+            val unusedPKeys = new mutable.LinkedHashSet[String]()
+            val pElements = p.elements
+            pElements.foreach {
+              case (k, _) => unusedPKeys += k
+            }
+            val pKeys = pElements.keySet
+            cElements.foreach { case (key, f) =>
+              val pFOpt = pElements.get(key)
+              val pFo = pFOpt.map { x =>
+                unusedPKeys -= key
+                deriveOrientation(x, producer, po)
+              }.getOrElse(EmptyOrientation)
+              doAssignment(Some(f), deriveOrientation(f, consumer, co), pFOpt, pFo)
+            }
+            unusedPKeys.foreach { pk =>
+              val f = pElements(pk)
+              doAssignment(None, EmptyOrientation, Some(f), deriveOrientation(f, producer, po))
+            }
+          case (c: Vec[Data @unchecked], p: Vec[Data @unchecked]) =>
+            c.zip(p).foreach { case (cs, ps) =>
+              doAssignment(Some(cs), co, Some(ps), po)
+            }
+            if(c.size > p.size) {
+              c.getElements.slice(p.size, c.size).foreach { cs =>
+                doAssignment(Some(cs), co, None, EmptyOrientation)
+              }
+            }
+            if(c.size < p.size) {
+              p.getElements.slice(c.size, p.size).foreach { ps =>
+                doAssignment(None, EmptyOrientation, Some(ps), po)
+              }
+            }
+          case (c, p) if co == po => leafConnect(c, p, co, op)
+          case (c, p) if co != po && op.assignToConsumer && !op.assignToProducer => leafConnect(c, p, co, op)
+          case (c, p) if co != po && !op.assignToConsumer && op.assignToProducer => leafConnect(c, p, po, op)
+        }
+        case other => throw new Exception(other.toString + " " + op)
+      }
+    }
+    doAssignment(Some(consumer), AlignedWithRoot, Some(producer), AlignedWithRoot)
+    if(errors.nonEmpty) {
+      Builder.error(errors.mkString("\n"))
+    }
+  }
+
   def doAssignment(trie: Trie[String, LeafConnection], op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
     val errors = mutable.ArrayBuffer[String]()
     trie.collectDeep {
@@ -370,8 +451,9 @@ private[chisel3] object DirectionalConnectionFunctions {
     * @param sourceInfo source info for where the assignment occurred
     */
   def assign(cRoot: Data, pRoot: Data, cOp: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
-    val trie = buildTrie(cRoot, pRoot)
-    doAssignment(trie, cOp)
+    //val trie = buildTrie(cRoot, pRoot)
+    //doAssignment(trie, cOp)
+    doAssignment(cRoot, pRoot, cOp)
   }
 
 
@@ -379,6 +461,7 @@ private[chisel3] object DirectionalConnectionFunctions {
   sealed trait RelativeOrientation { def invert: RelativeOrientation }
   case object AlignedWithRoot extends RelativeOrientation { def invert = FlippedWithRoot }
   case object FlippedWithRoot extends RelativeOrientation { def invert = AlignedWithRoot }
+  case object EmptyOrientation extends RelativeOrientation { def invert = EmptyOrientation }
 
 
   sealed trait ConnectionOperator {
