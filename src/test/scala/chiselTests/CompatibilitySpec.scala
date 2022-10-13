@@ -20,6 +20,82 @@ object CompatibilityCustomCompileOptions {
   }
 }
 
+class MegansSpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
+  object Interrupts {
+    import chisel3.{Bool, Output, Vec}
+
+    def bundle() = Vec(3, Bool())
+  }
+
+  object OldStuff {
+
+    import Chisel._
+    import chisel3.experimental.IO
+
+    import chisel3.util.MixedVec
+    import chisel3.experimental.hierarchy.{instantiable, public}
+
+    @instantiable
+    class LazyModuleImp[T <: Data](bundleGen: () => Seq[T]) extends Module {
+      @public val io = IO(new Bundle {
+        val out: MixedVec[T] = MixedVec(bundleGen())
+        val in:  MixedVec[T] = Flipped(MixedVec(bundleGen()))
+        val outSimple : T = bundleGen().head
+        val inSimple: T  = Flipped(bundleGen().head)
+      })
+      @public val headIn = io.in.head
+      @public val headOut = io.out.head
+
+      val inSimple = io.inSimple
+      val outSimple = io.outSimple
+
+      io.outSimple := RegNext(io.inSimple)
+
+      io.out := RegNext(io.in)
+    }
+
+    class OldInterrupts extends LazyModuleImp(bundleGen = () => Seq.fill(3) { Interrupts.bundle() })
+  }
+  object NewStuff {
+    import chisel3._
+    import chisel3.experimental.hierarchy.Instance
+
+    class NewInterrupts extends OldStuff.LazyModuleImp(bundleGen = () => Seq.fill(3) { Interrupts.bundle() })
+
+    class Example extends Module {
+      val oldMod = Module(new OldStuff.OldInterrupts)
+      val newMod = Module(new NewInterrupts)
+
+      /*oldMod.io.in <> newMod.io.out
+      oldMod.io.out <> newMod.io.in*/
+      //oldMod.io.inSimple <> DontCare
+
+      //newMod.inSimple <> DontCare
+
+      //oldMod.headIn <> DontCare
+      newMod.io.in <> DontCare
+      //newMod.headIn <> DontCare
+      //oldMod.headIn <> newMod.headOut
+      //newMod.headIn <> oldMod.headOut
+      /*
+      val oldInst = Instance(oldMod.toDefinition)
+      val newInst = Instance(newMod.toDefinition)
+
+      oldInst.io := DontCare
+      newInst.io := DontCare
+
+      oldInst.headIn <> newMod.headOut
+      newInst.headIn <> oldMod.headOut
+     */
+    }
+
+  }
+  "Megan's Test" should "work" in {
+    (new ChiselStage).emitVerilog(new NewStuff.Example, Array("--full-stacktrace"))
+  }
+
+}
+
 class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
   import Chisel._
 
@@ -198,60 +274,6 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
   }
   class BigBundle extends SmallBundle {
     val f3 = UInt(width = 6)
-  }
-
-  object Interrupts {
-    import chisel3.{Bool, Vec}
-
-    def bundle() = Vec(3, Bool())
-  }
-
-  object OldStuff {
-
-    import Chisel._
-    import chisel3.experimental.IO
-
-    import chisel3.util.MixedVec
-    import chisel3.experimental.hierarchy.{instantiable, public}
-
-    @instantiable
-    class OldModule[T <: Data](bundleGen: () => Seq[T]) extends Module {
-      val io = IO(new Bundle {
-        val out: MixedVec[T] = MixedVec(bundleGen())
-        val in:  MixedVec[T] = Flipped(MixedVec(bundleGen()))
-      })
-      @public val headIn = io.in.head
-      @public val headOut = io.out.head
-
-      io.out := io.in
-    }
-
-    class OldInterrupts extends OldModule(bundleGen = () => Seq.fill(3) { Interrupts.bundle() })
-  }
-  object NewStuff {
-    import chisel3._
-    import chisel3.experimental.hierarchy.Instance
-
-    class NewInterrupts extends OldStuff.OldModule(bundleGen = () => Seq.fill(3) { Interrupts.bundle() })
-
-    class Example extends Module {
-      val oldMod = Module(new OldStuff.OldInterrupts)
-      val newMod = Module(new NewInterrupts)
-
-      oldMod.headIn <> newMod.headOut
-      newMod.headIn <> oldMod.headOut
-
-      val oldInst = Instance(oldMod.toDefinition)
-      val newInst = Instance(newMod.toDefinition)
-
-      oldInst.headIn <> newMod.headOut
-      newInst.headIn <> oldMod.headOut
-
-    }
-
-  }
-  "Megan's Test" should "work" in {
-    (new ChiselStage).emitVerilog(new NewStuff.Example, Array("--full-stacktrace"))
   }
 
   "A Module with missing bundle fields when compiled with the Chisel compatibility package" should "not throw an exception" in {

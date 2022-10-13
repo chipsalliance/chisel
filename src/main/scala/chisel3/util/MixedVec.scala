@@ -23,7 +23,7 @@ object MixedVecInit {
   /**
     * Create a MixedVec wire from a Seq of values.
     */
-  def apply[T <: Data](vals: Seq[T]): MixedVec[T] = {
+  def apply[T <: Data](vals: Seq[T])(implicit compileOptions: CompileOptions): MixedVec[T] = {
     // Create a wire of this type.
     val hetVecWire = Wire(MixedVec(vals.map(_.cloneTypeFull)))
     // Assign the given vals to this new wire.
@@ -50,17 +50,17 @@ object MixedVec {
   /**
     * Create a MixedVec type from a Seq of Chisel types.
     */
-  def apply[T <: Data](eltsIn: Seq[T]): MixedVec[T] = new MixedVec(eltsIn)
+  def apply[T <: Data](eltsIn: Seq[T])(implicit compileOptions: CompileOptions): MixedVec[T] = new MixedVec(eltsIn)
 
   /**
     * Create a MixedVec type from a varargs list of Chisel types.
     */
-  def apply[T <: Data](val0: T, vals: T*): MixedVec[T] = new MixedVec(val0 +: vals.toSeq)
+  def apply[T <: Data](val0: T, vals: T*)(implicit compileOptions: CompileOptions): MixedVec[T] = new MixedVec(val0 +: vals.toSeq)
 
   /**
     * Create a new MixedVec type from an unbound MixedVec type.
     */
-  def apply[T <: Data](mixedVec: MixedVec[T]): MixedVec[T] = new MixedVec(mixedVec.elts)
+  def apply[T <: Data](mixedVec: MixedVec[T])(implicit compileOptions: CompileOptions): MixedVec[T] = new MixedVec(mixedVec.elts)
 
   /**
     * Create a MixedVec type from the type of the given Vec.
@@ -69,7 +69,7 @@ object MixedVec {
     * MixedVec(Vec(2, UInt(8.W))) = MixedVec(Seq.fill(2){UInt(8.W)})
     * }}}
     */
-  def apply[T <: Data](vec: Vec[T]): MixedVec[T] = {
+  def apply[T <: Data](vec: Vec[T])(implicit compileOptions: CompileOptions): MixedVec[T] = {
     MixedVec(Seq.fill(vec.length)(vec.sample_element))
   }
 }
@@ -87,7 +87,7 @@ object MixedVec {
   * v(2) := 101.U(32.W)
   * }}}
   */
-final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with collection.IndexedSeq[T] {
+final class MixedVec[T <: Data](private val eltsIn: Seq[T])(private[chisel3] implicit override val compileOptions: CompileOptions) extends Record with collection.IndexedSeq[T] {
   // We want to create MixedVec only with Chisel types.
   if (compileOptions.declaredTypeMustBeUnbound) {
     eltsIn.foreach(e => requireIsChiselType(e))
