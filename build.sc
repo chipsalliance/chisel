@@ -6,7 +6,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.9", "2.12.17")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.10", "2.12.17")
 
 object v {
   val firrtl = ivy"edu.berkeley.cs::firrtl:1.6-SNAPSHOT"
