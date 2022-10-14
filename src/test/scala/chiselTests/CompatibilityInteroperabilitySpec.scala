@@ -403,61 +403,57 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
       import Chisel._
       import chisel3.util.MixedVec
-      import chisel3.experimental.hierarchy.{public, instantiable}
+      import chisel3.experimental.hierarchy.{instantiable, public}
 
-/** [[AutoBundle]] will construct the [[Bundle]]s for a [[LazyModule]] in [[LazyModuleImpLike.instantiate]],
-  *
-  * @param elts is a sequence of data containing for each IO port  a tuple of (name, data, flipped), where
-  *             name: IO name
-  *             data: actual data for connection.
-  *             flipped: flip or not in [[makeElements]]
-  */
-final class AutoBundle(elts: (String, Data, Boolean)*) extends Record {
-  // We need to preserve the order of elts, despite grouping by name to disambiguate things.
-  val elements: ListMap[String, Data] = ListMap() ++ elts.zipWithIndex
-    .map(makeElements)
-    .groupBy(_._1)
-    .values
-    .flatMap {
-      // If name is unique, it will return a Seq[index -> (name -> data)].
-      case Seq((key, element, i)) => Seq(i -> (key -> element))
-      // If name is not unique, name will append with j, and return `Seq[index -> (s"${name}_${j}" -> data)]`.
-      case seq                    => seq.zipWithIndex.map { case ((key, element, i), j) => i -> (key + "_" + j -> element) }
-    }
-    .toList
-    .sortBy(_._1)
-    .map(_._2)
-  println(s"elements is ${elements.mkString(",")}")
-  require(elements.size == elts.size)
+      /** [[AutoBundle]] will construct the [[Bundle]]s for a [[LazyModule]] in [[LazyModuleImpLike.instantiate]],
+        *
+        * @param elts is a sequence of data containing for each IO port  a tuple of (name, data, flipped), where
+        *             name: IO name
+        *             data: actual data for connection.
+        *             flipped: flip or not in [[makeElements]]
+        */
+      final class AutoBundle(elts: (String, Data, Boolean)*) extends Record {
+        // We need to preserve the order of elts, despite grouping by name to disambiguate things.
+        val elements: ListMap[String, Data] = ListMap() ++ elts.zipWithIndex
+          .map(makeElements)
+          .groupBy(_._1)
+          .values
+          .flatMap {
+            // If name is unique, it will return a Seq[index -> (name -> data)].
+            case Seq((key, element, i)) => Seq(i -> (key -> element))
+            // If name is not unique, name will append with j, and return `Seq[index -> (s"${name}_${j}" -> data)]`.
+            case seq => seq.zipWithIndex.map { case ((key, element, i), j) => i -> (key + "_" + j -> element) }
+          }
+          .toList
+          .sortBy(_._1)
+          .map(_._2)
+        println(s"elements is ${elements.mkString(",")}")
+        require(elements.size == elts.size)
 
-  // Trim final "(_[0-9]+)*$" in the name, flip data with flipped.
-  private def makeElements(tuple: ((String, Data, Boolean), Int)) = {
-    val ((key, data, flip), i) = tuple
-    // Trim trailing _0_1_2 stuff so that when we append _# we don't create collisions.
-    // Translate from Chisel2-style "default is Output" to explicit chisel3 directions
-    val datax                  = data.cloneType match {
-      case elt: Element if flip   => Input(elt)
-      case elt: Element           => Output(elt)
-      case agg: Aggregate if flip => Flipped(agg)
-      case agg: Aggregate         => agg
-    }
-    
-    (key, datax, i)
-  }
+        // Trim final "(_[0-9]+)*$" in the name, flip data with flipped.
+        private def makeElements(tuple: ((String, Data, Boolean), Int)) = {
+          val ((key, data, flip), i) = tuple
+          // Trim trailing _0_1_2 stuff so that when we append _# we don't create collisions.
+          // Translate from Chisel2-style "default is Output" to explicit chisel3 directions
+          val datax = data.cloneType match {
+            case elt: Element if flip   => Input(elt)
+            case elt: Element           => Output(elt)
+            case agg: Aggregate if flip => Flipped(agg)
+            case agg: Aggregate         => agg
+          }
 
-  override def cloneType: this.type = new AutoBundle(elts: _*).asInstanceOf[this.type]
-}
+          (key, datax, i)
+        }
 
-
-
+        override def cloneType: this.type = new AutoBundle(elts: _*).asInstanceOf[this.type]
+      }
 
       @instantiable
       class LazyModuleImp[T <: Data](bundleGen: () => Seq[T]) extends chisel3.Module {
 
         val elts = Seq(("in", MixedVec(bundleGen()), true), ("out", MixedVec(bundleGen()), false))
 
-        val auto = IO(new AutoBundle(elts:_*))
-        
+        val auto = IO(new AutoBundle(elts: _*))
 
         val io = IO(new Bundle {
           val out: MixedVec[T] = MixedVec(bundleGen())
@@ -495,16 +491,14 @@ final class AutoBundle(elts: (String, Data, Boolean)*) extends Record {
         oldMod.inHead <> newMod.outHead
         newMod.inHead <> oldMod.outHead
 
-
         oldMod.autoInHead <> newMod.autoOutHead
-        newMod.autoInHead <> oldMod.autoOutHead 
+        newMod.autoInHead <> oldMod.autoOutHead
 
-        
         val oldInst = Instance(oldMod.toDefinition)
         val newInst = Instance(newMod.toDefinition)
         oldInst.inHead <> newInst.outHead
         newInst.inHead <> oldInst.outHead
-        
+
       }
     }
     (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))
