@@ -5,12 +5,13 @@ package chiselTests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.{Analog, FixedPoint}
+import chisel3.experimental.{Analog, FixedPoint, Waivable}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.Defaulting._
 import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import chisel3.experimental.DataMirror
 
 object DirectionalBulkConnectSpec {
   class ConnectionTest[T <: Data, S <: Data](outType: S, inType: T, inDrivesOut: Boolean, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit], nTmps: Int) extends Module {
@@ -726,6 +727,47 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.out.foo <= io.in.foo",
         "io.out.bar <= io.in.bar"
       ))
+    }
+  }
+
+  describe("(?): Use Cases") {
+    class MixedBundle extends Bundle {
+      val foo = UInt(3.W)
+      val bar = Flipped(UInt(3.W))
+    }
+    class Wider extends Narrow {
+      val optional = Waivable(new MixedBundle, true, true)
+    }
+    class Narrow extends Bundle {
+      val necessary = new MixedBundle
+    }
+    it("(?.a) Using :#= to initalize wires with default values and :<>= to connect wires of mixed directions") {
+      class MyModule extends Module {
+        val widerLit = new Wider().Lit(
+          _.necessary.foo            -> 0.U,
+          _.necessary.bar            -> 1.U,
+          _.optional.underlying.foo  -> 2.U,
+          _.optional.underlying.bar  -> 3.U
+        )
+        val w0 = Wire(new Wider)
+        w0 :#= widerLit
+        val w1 = Wire(new Narrow)
+        w1 :#= widerLit
+        w1 :<>= w0
+      }
+      val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
+      testCheck(out, Seq(
+        """wire w0 : { necessary : { foo : UInt<3>, flip bar : UInt<3>}, optional : { foo : UInt<3>, flip bar : UInt<3>}}""",
+        """w0.optional.bar <= UInt<2>("h3")""",
+        """w0.optional.foo <= UInt<2>("h2")""",
+        """w0.necessary.bar <= UInt<1>("h1")""",
+        """w0.necessary.foo <= UInt<1>("h0")""",
+        """wire w1 : { necessary : { foo : UInt<3>, flip bar : UInt<3>}}""",
+        """w1.necessary.bar <= UInt<1>("h1")""",
+        """w1.necessary.foo <= UInt<1>("h0")""",
+        """w0.necessary.bar <= w1.necessary.bar""",
+        """w1.necessary.foo <= w0.necessary.foo""",
+      ), Nil)
     }
   }
   //property("(D.a) SInt :<>= SInt should succeed") {
