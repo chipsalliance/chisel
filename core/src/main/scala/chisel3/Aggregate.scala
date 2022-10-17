@@ -8,7 +8,7 @@ import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewExcept
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, VecLiteralException}
+import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, OpaqueType, VecLiteralException}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
@@ -881,23 +881,15 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
-  /** Indicates if this Record represents an "Opaque Type"
-    *
-    * Opaque types provide a mechanism for user-defined types
-    * that do not impose any "boxing" overhead in the emitted FIRRTL and Verilog.
-    * You can think about an opaque type Record as a box around
-    * a single element that only exists at Chisel elaboration time.
-    * Put another way, if opaqueType is overridden to true,
-    * The Record may only contain a single element with an empty name
-    * and there will be no `_` in the name for that element in the emitted Verilog.
-    *
-    * @see RecordSpec in Chisel's tests for example usage and expected output
-    */
-  def opaqueType: Boolean = false
+  private[chisel3] def _isOpaqueType: Boolean = this match {
+    case maybe: OpaqueType => maybe.opaqueType
+    case _ => false
+  }
 
   // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
   // of hardware created when connecting to one of these elements
   private def setElementRefs(): Unit = {
+    val opaqueType = this._isOpaqueType
     // Since elements is a map, it is impossible for two elements to have the same
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
