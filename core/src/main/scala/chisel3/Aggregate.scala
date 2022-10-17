@@ -65,7 +65,7 @@ sealed abstract class Aggregate extends Data {
       case None =>
         val childWithDirections = getElements.zip(getElements.map(_.direction))
         throw MixedDirectionAggregateException(
-          s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections"
+          s"Aggregate $this can't have elements that are both directioned and undirectioned: $childWithDirections"
         )
     }
   }
@@ -955,6 +955,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     try {
+      println(s"trying to bind $target with $parentDirection")
       super.bind(target, parentDirection)
     } catch { // nasty compatibility mode shim, where anything flies
       case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
@@ -1116,7 +1117,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   def elements: SeqMap[String, Data]
 
   /** Name for Pretty Printing */
-  def className: String = this.getClass.getSimpleName
+  def className: String = try {
+    this.getClass.getSimpleName
+  } catch {
+    case e: java.lang.InternalError => this.getClass.toString
+  }
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>

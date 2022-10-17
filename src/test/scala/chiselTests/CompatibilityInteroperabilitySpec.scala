@@ -394,16 +394,25 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   "A undirectioned Chisel.Bundle used in a MixedVec " should "bulk connect in import chisel3._ code correctly" in {
 
     object UndirectionedBundleWithVagueCompileOptions {
-      import chisel3.{Bool, Vec}
+      import chisel3.{Output, Bool, Vec}
 
-      def bundle() = Vec(3, Bool())
+      def bundle() = Output(Vec(3, Bool()))
     }
 
     object Compat {
 
       import Chisel._
-      import chisel3.util.MixedVec
+      import chisel3.{WireInit, DontCare, RawModule}
+      import chisel3.util.{MixedVec}
       import chisel3.experimental.hierarchy.{instantiable, public}
+
+      class Node {
+        def dangleGen(bundleGen: () => Data): Seq[(String, Data, Boolean)] = 
+       {
+           Seq(("in", WireInit(bundleGen(), DontCare), true),
+           ("out", WireInit(bundleGen(), DontCare), false))
+        }
+      }
 
       /** [[AutoBundle]] will construct the [[Bundle]]s for a [[LazyModule]] in [[LazyModuleImpLike.instantiate]],
         *
@@ -427,8 +436,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
           .toList
           .sortBy(_._1)
           .map(_._2)
-        println(s"elements is ${elements.mkString(",")}")
-        require(elements.size == elts.size)
+         require(elements.size == elts.size)
 
         // Trim final "(_[0-9]+)*$" in the name, flip data with flipped.
         private def makeElements(tuple: ((String, Data, Boolean), Int)) = {
@@ -449,56 +457,56 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       }
 
       @instantiable
-      class LazyModuleImp[T <: Data](bundleGen: () => Seq[T]) extends chisel3.Module {
+      sealed trait LazyModuleImpLike extends RawModule {
 
-        val elts = Seq(("in", MixedVec(bundleGen()), true), ("out", MixedVec(bundleGen()), false))
+       def bundleGen: () => Data
 
-        val auto = IO(new AutoBundle(elts: _*))
+       val node = new Node()
+       val dangles = node.dangleGen(bundleGen)
 
-        val io = IO(new Bundle {
-          val out: MixedVec[T] = MixedVec(bundleGen())
-          val in:  MixedVec[T] = Flipped(MixedVec(bundleGen()))
-        })
-        io.out := RegNext(io.in)
-        @public val outHead = io.out.head
-        @public val inHead = io.in.head
-
-        auto.elements("out") <> RegNext(auto.elements("in"))
-
-        @public val autoOutHead = auto.elements("out").asInstanceOf[MixedVec[Vec[Bool]]].head.head
-        @public val autoInHead = auto.elements("in").asInstanceOf[MixedVec[Vec[Bool]]].head.head
+       @public val auto = IO(new AutoBundle(dangles:_*))
       }
 
-      class MyModule
-          extends LazyModuleImp(bundleGen = () => Seq.fill(3) { UndirectionedBundleWithVagueCompileOptions.bundle() })
-    }
+       class LazyModuleImp(val bundleGen: () => Data) extends chisel3.Module with LazyModuleImpLike
+
+       @instantiable
+      class MyModule() extends LazyModuleImp(bundleGen = () =>  UndirectionedBundleWithVagueCompileOptions.bundle()){
+        @public val in = auto.elements("in")
+        @public val out = auto.elements("out")
+      }
+      }
+
     object Chisel3 {
       import chisel3._
-      import chisel3.experimental.hierarchy.Instance
+      import chisel3.experimental.hierarchy.{public, instantiable, Instance}
 
+      @instantiable
       class MyModule
           extends Compat.LazyModuleImp(
-            bundleGen = () => Seq.fill(3) { UndirectionedBundleWithVagueCompileOptions.bundle() }
-          )
+            bundleGen = () => { UndirectionedBundleWithVagueCompileOptions.bundle() }
+          ) {
+                    @public val in = auto.elements("in")
+        @public val out = auto.elements("out")
+          }
 
       class Example extends Module {
         val oldMod = Module(new Compat.MyModule)
         val newMod = Module(new MyModule)
 
-        oldMod.io.in <> DontCare
-        newMod.io.in <> DontCare
+        oldMod.in <> DontCare
+        newMod.in <> DontCare
 
+        /*
         oldMod.inHead <> newMod.outHead
         newMod.inHead <> oldMod.outHead
 
         oldMod.autoInHead <> newMod.autoOutHead
         newMod.autoInHead <> oldMod.autoOutHead
-
+*/
         val oldInst = Instance(oldMod.toDefinition)
         val newInst = Instance(newMod.toDefinition)
-        oldInst.inHead <> newInst.outHead
-        newInst.inHead <> oldInst.outHead
-
+        oldInst.in <> DontCare
+        newInst.in <> DontCare
       }
     }
     (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))
