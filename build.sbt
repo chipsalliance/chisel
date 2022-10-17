@@ -143,6 +143,13 @@ lazy val plugin = (project in file("plugin")).
     }
   ).
   settings(
+    // Given that the plugin is 1) a compile-time only dependency and 2) package chisel3.internal,
+    // I'm not really sure why we both checking binary compatbility
+    mimaBinaryIssueFilters ++= Seq(
+      // MyTypingTransformer is private (https://github.com/lightbend/mima/issues/53)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.plugin.BundleComponent#MyTypingTransformer.isBundle"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.plugin.BundleComponent#MyTypingTransformer.getConstructorAndParams")
+    ),
     mimaPreviousArtifacts := {
       // There are not yet artifacts for 2.12.17, 2.13.9, nor 2.13.10; suppress until 3.5.5 is released
       val skipVersions = Seq("2.12.17", "2.13.9", "2.13.10")
