@@ -1229,10 +1229,13 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       "Please see https://github.com/chipsalliance/chisel3#build-your-own-chisel-projects."
   )
 
-  override def className: String = this.getClass.getSimpleName match {
+  override def className: String = try {
+    this.getClass.getSimpleName match {
     case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
     case ""                                => "AnonymousBundle" // ditto, but on other platforms
     case name                              => name
+  }} catch {
+    case e: java.lang.InternalError => this.getClass.toString
   }
 
   /** The collection of [[Data]]

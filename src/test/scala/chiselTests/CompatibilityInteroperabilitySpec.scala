@@ -406,11 +406,17 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       import chisel3.util.{MixedVec}
       import chisel3.experimental.hierarchy.{instantiable, public}
 
+      class Chisel3Bundle extends Bundle {
+        val foo = Input(Bool())
+        val bar = Output(Bool())
+      }
+
       class Node {
         def dangleGen(bundleGen: () => Data): Seq[(String, Data, Boolean)] = 
        {
            Seq(("in", WireInit(bundleGen(), DontCare), true),
-           ("out", WireInit(bundleGen(), DontCare), false))
+           ("out", WireInit(bundleGen(), DontCare), false), 
+           ("chisel3", WireInit(new Chisel3Bundle(), DontCare), false))
         }
       }
 
@@ -473,6 +479,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class MyModule() extends LazyModuleImp(bundleGen = () =>  UndirectionedBundleWithVagueCompileOptions.bundle()){
         @public val in = auto.elements("in")
         @public val out = auto.elements("out")
+        @public val legacy = auto.elements("chisel3")
       }
       }
 
@@ -485,8 +492,9 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
           extends Compat.LazyModuleImp(
             bundleGen = () => { UndirectionedBundleWithVagueCompileOptions.bundle() }
           ) {
-                    @public val in = auto.elements("in")
-        @public val out = auto.elements("out")
+              @public val in = auto.elements("in")
+              @public val out = auto.elements("out")
+              @public val legacy = auto.elements("chisel3")
           }
 
       class Example extends Module {
