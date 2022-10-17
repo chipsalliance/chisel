@@ -1236,15 +1236,9 @@ package experimental {
   *   }
   * }}}
   */
-<<<<<<< HEAD
-abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record with experimental.AutoCloneType {
   assert(
     _usingPlugin,
-=======
-abstract class Bundle(implicit compileOptions: CompileOptions) extends Record with experimental.AutoCloneType {
-
-  private def mustUsePluginMsg: String =
->>>>>>> a234fd48 (Add opt-in AutoCloneType for Records (#2781))
     "The Chisel compiler plugin is now required for compiling Chisel code. " +
       "Please see https://github.com/chipsalliance/chisel3#build-your-own-chisel-projects."
   )

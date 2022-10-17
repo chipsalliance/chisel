@@ -201,45 +201,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           }
         }
 
-<<<<<<< HEAD
-        // ==================== Generate val elements ====================
-
-        /* Test to see if the bundle found is amenable to having it's elements
-         * converted to an immediate form that will not require reflection
-         */
-        def isSupportedBundleType: Boolean = {
-          arguments.genBundleElements && !bundle.mods.hasFlag(Flag.ABSTRACT)
-        }
-
-        val elementsImplOpt = if (isSupportedBundleType) {
-          /* extract the true fields from the super classes a given bundle
-           * depth argument can be helpful for debugging
-           */
-          def getAllBundleFields(bundleSymbol: Symbol, depth: Int = 0): List[(String, Tree)] = {
-
-            def isBundleField(member: Symbol): Boolean = {
-              if (!member.isAccessor) {
-                false
-              } else if (isData(member.tpe.typeSymbol)) {
-                true
-              } else if (isOptionOfData(member)) {
-                true
-              } else if (isSeqOfData(member)) {
-                // This field is passed along, even though it is illegal
-                // An error for this will be generated in `Bundle.elements`
-                // It would be possible here to check for Seq[Data] and make a compiler error, but
-                // that would be a API error difference. See reference in docs/chisel-plugin.md
-                // If Bundle is subclass of IgnoreSeqInBundle then don't pass this field along
-
-                !isIgnoreSeqInBundle(bundleSymbol)
-              } else {
-                // none of the above
-                false
-              }
-            }
-=======
         val currentFields = bundleSymbol.info.members.flatMap {
->>>>>>> a234fd48 (Add opt-in AutoCloneType for Records (#2781))
 
           case member if member.isPublic =>
             if (isBundleField(member)) {
@@ -296,7 +258,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         val cloneTypeImplOpt = generateAutoCloneType(record, thiz, isBundle)
 
         // ==================== Generate val elements (Bundles only) ====================
-        val elementsImplOpt = if (isBundle) Some(generateElements(record, thiz)) else None
+        val elementsImplOpt =
+          if (isBundle && arguments.genBundleElements) Some(generateElements(record, thiz)) else None
 
         // ==================== Generate _usingPlugin ====================
         val usingPluginOpt = if (isBundle) {
