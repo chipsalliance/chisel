@@ -49,7 +49,7 @@ class FlatIOSpec extends ChiselFlatSpec {
     chirrtl should include("out[addr] <= in[addr]")
   }
 
-  it should "Analog members" in {
+  it should "support Analog members" in {
     class MyBundle extends Bundle {
       val foo = Output(UInt(8.W))
       val bar = Analog(8.W)
