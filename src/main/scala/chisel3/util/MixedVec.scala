@@ -3,6 +3,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.experimental.AutoCloneType
 import chisel3.internal.requireIsChiselType
 
 import scala.collection.immutable.ListMap
@@ -87,7 +88,10 @@ object MixedVec {
   * v(2) := 101.U(32.W)
   * }}}
   */
-final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with collection.IndexedSeq[T] {
+final class MixedVec[T <: Data](private val eltsIn: Seq[T])
+    extends Record
+    with collection.IndexedSeq[T]
+    with AutoCloneType {
   // We want to create MixedVec only with Chisel types.
   if (compileOptions.declaredTypeMustBeUnbound) {
     eltsIn.foreach(e => requireIsChiselType(e))
@@ -124,9 +128,6 @@ final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with 
   def length: Int = elts.length
 
   override val elements = ListMap(elts.zipWithIndex.map { case (element, index) => (index.toString, element) }: _*)
-
-  // Need to re-clone again since we could have been bound since object creation.
-  override def cloneType: this.type = MixedVec(elts.map(_.cloneTypeFull)).asInstanceOf[this.type]
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[Record].hashCode
