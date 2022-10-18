@@ -97,7 +97,7 @@ private[chisel3] object MonoConnect {
     sink:                  Data,
     source:                Data,
     context_mod:           RawModule
-  ): Unit =
+  ): Unit = {
     (sink, source) match {
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
@@ -224,6 +224,7 @@ private[chisel3] object MonoConnect {
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink, source)
     }
+  }
 
   /** Determine if a valid connection can be made between a source [[Data]] and sink
     * [[Data]] given their parent module and directionality context

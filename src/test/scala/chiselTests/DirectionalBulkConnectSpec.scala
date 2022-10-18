@@ -211,6 +211,16 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
       )
     }
+    it("(0.k): When connecting FROM DontCare, emit for aligned aggregate fields and error for flipped aggregate fields") {
+      implicit val op: (Data, Data) => Unit = {(x, y) => x :<>= DontCare}
+      test(UInt(3.W), Seq("io.out is invalid"))
+      test(SInt(3.W), Seq("io.out is invalid"))
+      test(Clock(), Seq("io.out is invalid"))
+      test(Analog(3.W), Seq("io.out is invalid"))
+      test(vec(Bool()), Seq("io.out[0] is invalid", "io.out[1] is invalid", "io.out[2] is invalid"))
+      test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
+      testException(mixedBundle(Bool()), mixedBundle(Bool()), "inversely oriented fields") // TODO - should this be a different error message?
+    }
   }
   describe("(1): :<= ") {
     implicit val op: (Data, Data) => Unit = {_ :<= _}
@@ -389,12 +399,9 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       ))
       testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
     }
-    it("(1.i): Use consumer orientation if different root-relative flippedness on leaf fields between right-hand-side or left-hand-side") {
-      testDistinctTypes(mixedBundle(Bool()), alignedBundle(Bool()), Seq("io.out.foo <= io.in.foo"), Seq("io.in.bar <= io.out.bar"))
-      testDistinctTypes(alignedBundle(Bool()), mixedBundle(Bool()), Seq(
-        "io.out.foo <= io.in.foo",
-        "io.out.bar <= io.in.bar"
-      ))
+    it("(1.i): Error if different root-relative flippedness on fields between right-hand-side or left-hand-side") {
+      testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
+      testException(alignedBundle(Bool()), mixedBundle(Bool()), "inversely oriented fields")
     }
     ignore("(1.j): Emit defaultable assignments on type with default, instead of erroring with missing fields") {
       testDistinctTypes(
@@ -548,9 +555,19 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.in[2].bar <= io.out[2].bar"
       ))
     }
-    it("(2.i): Use producer orientation if different root-relative flippedness on leaf fields between right-hand-side or left-hand-side") {
-      testDistinctTypes(mixedBundle(Bool()), alignedBundle(Bool()), Seq("skip"), Seq("<="))
-      testDistinctTypes(alignedBundle(Bool()), mixedBundle(Bool()), Seq("io.in.bar <= io.out.bar"), Seq("io.out.foo <= io.in.foo"))
+    it("(2.i): Error if different root-relative flippedness on fields between right-hand-side or left-hand-side") {
+      testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
+      testException(alignedBundle(Bool()), mixedBundle(Bool()), "inversely oriented fields")
+    }
+    it("(2.k): When connecting TO DontCare, error for aligned aggregate fields and error for flipped aggregate fields") {
+      implicit val op: (Data, Data) => Unit = {(x, y) => DontCare :>= y}
+      test(UInt(3.W), Seq("skip"))
+      test(SInt(3.W), Seq("skip"))
+      test(Clock(), Seq("skip"))
+      test(Analog(3.W), Seq("skip"))
+      test(vec(Bool()), Seq("skip"))
+      test(alignedBundle(Bool()), Seq("skip"))
+      test(mixedBundle(Bool()), Seq("skip", "io.in.bar is invalid"))
     }
   }
   describe("(3): :#= ") {
@@ -816,13 +833,12 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       class MyModule extends Module {
         val in  = IO(Flipped(new ReadyValid()))
         val out = IO(new Decoupled())
-        out :<= (new Decoupled()).Lit(_.data.underlying -> 0.U, _.valid -> false.B, _.ready -> false.B)
+        out :<= (new Decoupled()).Lit(_.data.underlying -> 0.U)
         (out: ReadyValid) :<>= in
       }
       val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
       testCheck(out, Seq(
         """out.data <= UInt<1>("h0")""",
-        """out.valid <= UInt<1>("h0")""",
         """in.ready <= out.ready""",
         """out.valid <= in.valid""",
       ), Nil)
@@ -926,6 +942,31 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     ignore("(?.i) (Example required) - not ok for non-waived unassigned bits in a :<= are ok, because :<= is strict for unassigns") { }
     ignore("(?.j) (Example required) -     ok for non-waived dangling bits in a :>=, because :>= is less strict for dangles") { }
     ignore("(?.k) (Example required) - not ok for non-waived unassigned bits in a :>= are ok, because :>= is strict for unassigns") { }
+
+    /*
+     1) c :<= p
+      a) [ERROR(waivable)]        unassigned aligned c field
+      b) [ERROR(mismatchedflips)] aligned c field and flipped p field
+      c) [ERROR(mismatchedflips)] flipped c field and aligned p field
+      d) [ERROR(waivable)]        dangling aligned p fields (no c field)
+      e) [Ok(prolly)]             dangling (and ignored due to :<= operator) flipped c fields (no p field)
+      f) [Ok(prolly)]             unassigned (and ignored due to :<= operator) flipped p fields (no c field)
+     2) c :#= w (composition breaks from 1.b and 1.c)
+       c :<= w
+       w :>= c
+     3) m :#= p (composition breaks from 1.b and 1.c)
+       m :<= p
+       p :>= m
+     4) c :<>= p (composition ok)
+       c :<= p
+       c :>= p
+     */ 
+  }
+  describe("TODO: Unit tests") {
+    ignore("(?.?) x :<>= DontCare") { }
+    ignore("(?.?) x :<= DontCare") { }
+    ignore("(?.?) x :>= DontCare") { }
+    ignore("(?.?) x :#= DontCare") { }
   }
   //property("(D.a) SInt :<>= SInt should succeed") {
   //  checkTest(buildTest(SInt(16.W), SInt(16.W), true, {_ :<>= _}, 0), "io.out <= io.in")

@@ -656,6 +656,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case _ => // fine
       }
     }
+    getRecursiveFields(this, "").collect { case (d, _) if d.direction != this.direction => 
+      Builder.error(s"$this cannot be used with := because submember $d has inverse orientation; use :#= instead")
+    }
+    getRecursiveFields(that, "").collect { case (d, _) if d.direction != that.direction =>
+      Builder.error(s"$that cannot be used with := because submember $d has inverse orientation; use :#= instead")
+    }
     if (connectCompileOptions.emitStrictConnects) {
 
       try {
@@ -696,6 +702,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
+      Builder.error(s"Cannot use <> to connect Chisel bundles; use :<>= instead")
       this.firrtlPartialConnect(that)
     }
   }
@@ -1222,4 +1229,6 @@ final case object DontCare extends Element {
   }
   // DontCare's only match themselves.
   private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
+
+  final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = this.asInstanceOf[Data] :>= producer
 }
