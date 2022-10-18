@@ -22,16 +22,22 @@ import firrtl.transforms.DontTouchAllTargets
 object Trace {
 
   /** Trace a Instance name. */
+  @deprecated("switch to traceNameV2 (until Chisel 3.6)", "3.5.5")
   def traceName(x: Module): Unit = traceName(x: RawModule)
 
   /** Trace a Instance name. */
+  @deprecated("switch to traceNameV2 (until Chisel 3.6)", "3.5.5")
   def traceName(x: RawModule): Unit = {
     annotate(new ChiselAnnotation {
       def toFirrtl: Annotation = TraceNameAnnotation(x.toAbsoluteTarget, x.toAbsoluteTarget)
     })
   }
 
-  /** Trace a Data name. */
+  /** Trace a Data name. This adds "don't touch" semantics to anything traced. */
+  @deprecated(
+    "switch to traceNameV2 (until Chisel 3.6) and add dontTouch if you want \"don't touch\" behavior",
+    "3.5.5"
+  )
   def traceName(x: Data): Unit = {
     x match {
       case aggregate: Aggregate =>
@@ -46,7 +52,29 @@ object Trace {
     }
   }
 
-  /** An Annotation that records the original target annotate from Chisel.
+  /** Trace an Instance name. */
+  def traceNameV2(x: RawModule): Unit = {
+    annotate(new ChiselAnnotation {
+      def toFirrtl: Annotation = TraceAnnotation(x.toAbsoluteTarget, x.toAbsoluteTarget)
+    })
+  }
+
+  /** Trace a Data name. This does NOT add "don't touch" semantics to the traced data. If you want this behavior, use an explicit [[chisel3.dontTouch]]. */
+  def traceNameV2(x: Data): Unit = {
+    x match {
+      case aggregate: Aggregate =>
+        annotate(new ChiselAnnotation {
+          def toFirrtl: Annotation = TraceAnnotation(aggregate.toAbsoluteTarget, aggregate.toAbsoluteTarget)
+        })
+        aggregate.getElements.foreach(traceNameV2)
+      case element: Element =>
+        annotate(new ChiselAnnotation {
+          def toFirrtl: Annotation = TraceAnnotation(element.toAbsoluteTarget, element.toAbsoluteTarget)
+        })
+    }
+  }
+
+  /** An Annotation that records the original target annotate from Chisel.  This adds don't touch behavior.
     *
     * @param target target that should be renamed by [[firrtl.RenameMap]] in the firrtl transforms.
     * @param chiselTarget original annotated target in Chisel, which should not be changed or renamed in FIRRTL.
@@ -54,6 +82,16 @@ object Trace {
   private case class TraceNameAnnotation[T <: CompleteTarget](target: T, chiselTarget: T)
       extends SingleTargetAnnotation[T]
       with DontTouchAllTargets {
+    def duplicate(n: T): Annotation = this.copy(target = n)
+  }
+
+  /** An Annotation that records the original target annotate from Chisel.  This does NOT add don't touch behavior.
+    *
+    * @param target target that should be renamed by [[firrtl.RenameMap]] in the firrtl transforms.
+    * @param chiselTarget original annotated target in Chisel, which should not be changed or renamed in FIRRTL.
+    */
+  private case class TraceAnnotation[T <: CompleteTarget](target: T, chiselTarget: T)
+      extends SingleTargetAnnotation[T] {
     def duplicate(n: T): Annotation = this.copy(target = n)
   }
 
@@ -68,5 +106,6 @@ object Trace {
     */
   def finalTargetMap(annos: AnnotationSeq): Map[CompleteTarget, Seq[CompleteTarget]] = annos.collect {
     case TraceNameAnnotation(t, chiselTarget) => chiselTarget -> t
+    case TraceAnnotation(t, chiselTarget)     => chiselTarget -> t
   }.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
 }
