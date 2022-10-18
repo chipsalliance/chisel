@@ -319,7 +319,7 @@ private[chisel3] object Converter {
       if (!d.opaqueType)
         fir.BundleType(d.elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
       else
-        extractType(d.elements.head._2, true, info)
+        extractType(d.elements.head._2, childClearDir, info)
     }
   }
 

@@ -400,4 +400,25 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       )
     )
   }
+  property("Bugfix: clearing all flips inside an opaque type") {
+    class Decoupled extends Bundle {
+      val bits = UInt(3.W)
+      val valid = Bool()
+      val ready = Flipped(Bool())
+    }
+    class DecoupledAndMonitor extends Bundle {
+      val driver = new Decoupled()
+    }
+    class MyModule extends RawModule {
+      val w = Wire(Waivable(new Decoupled(), true, true))
+    }
+
+    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+
+    assert(
+      emitted.contains(
+        "wire w : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"
+      )
+    )
+  }
 }
