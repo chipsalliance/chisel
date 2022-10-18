@@ -631,8 +631,8 @@ class StrongEnumAnnotator extends Module {
   io.other := OtherEnum.otherEnum
   io.local := LocalEnum.le0
   simple := e100
-  bund := DontCare
-  vec_of_bundles := DontCare
+  bund :#= DontCare
+  vec_of_bundles :#= DontCare
 
   // Make sure that dynamically indexing into a Vec of enums will not cause an elaboration error.
   // The components created here will not be annotated.
@@ -805,7 +805,7 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
 
   def test(strongEnumAnnotatorGen: () => Module) {
     val annos = (new ChiselStage).execute(
-      Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
+      Array("--target-dir", "test_run_dir", "--no-run-firrtl", "--full-stacktrace"),
       Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))
     )
 

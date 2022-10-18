@@ -143,6 +143,11 @@ object Connectable {
         DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq)
       }
     }
+    final def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq)
+      }
+    }
   }
 
   /** ConnectableVec Typeclass defines the following operators on between a (consumer: Vec) and (producer: Seq): :<=, :>=, :<>=, :#=
@@ -260,6 +265,16 @@ object Connectable {
         )
       for ((a, b) <- consumer.zip(producer)) { a :#= b }
     }
+    def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+      for (a <- consumer) { a :#= DontCare }
+    }
+  }
+  implicit class ConnectableDontCare(consumer: DontCare.type) {
+    final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq)
+      }
+    }
   }
 }
 
@@ -318,8 +333,9 @@ private[chisel3] object DirectionalConnectionFunctions {
     }
   }
   def leafConnect(c: Data, p: Data, o: RelativeOrientation, op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
-    require(!c.isInstanceOf[Aggregate] && !p.isInstanceOf[Aggregate])
     (c, p, o, op.assignToConsumer, op.assignToProducer, op.alwaysAssignToConsumer) match {
+      case (x: Aggregate, y, _, _, _, _) => Builder.error(s"Internal error! Unexpected Aggregate $x!")
+      case (x, y: Aggregate, _, _, _, _) => Builder.error(s"Internal error! Unexpected Aggregate $y!")
       case (x: Analog, y: Analog, _, _, _, _) => assignAnalog(x, y)
       case (x: Analog, DontCare, _, _, _, _) => assignAnalog(x, DontCare)
       case (x, y, AlignedWithRoot, true, _, _) => c := p
@@ -363,7 +379,6 @@ private[chisel3] object DirectionalConnectionFunctions {
         case ((Some(c), co), (Some(p), po)) => (c, p) match {
           case (c: Record, p: Record) =>
             val cElements = c.elements
-            val cKeys = cElements.keySet
             val unusedPKeys = new mutable.LinkedHashSet[String]()
             val pElements = p.elements
             pElements.foreach {
@@ -396,6 +411,8 @@ private[chisel3] object DirectionalConnectionFunctions {
                 doAssignment(None, EmptyOrientation, Some(ps), po)
               }
             }
+          case (c: Aggregate, DontCare) => c.getElements.foreach { case f => doAssignment(Some(f), deriveOrientation(f, consumer, co), Some(DontCare), po) }
+          case (DontCare, p: Aggregate) => p.getElements.foreach { case f => doAssignment(Some(DontCare), co, Some(f), deriveOrientation(f, producer, po)) }
           case (c, p) if co == po => leafConnect(c, p, co, op)
           case (c, p) if co != po && op.assignToConsumer && !op.assignToProducer => leafConnect(c, p, co, op)
           case (c, p) if co != po && !op.assignToConsumer && op.assignToProducer => leafConnect(c, p, po, op)
@@ -477,7 +494,7 @@ private[chisel3] object DirectionalConnectionFunctions {
     val noDangles: Boolean = false
     val noUnassigned: Boolean = true
     val mustMatch: Boolean = false
-    val noWrongOrientations: Boolean = false
+    val noWrongOrientations: Boolean = true
     val assignToConsumer: Boolean = true
     val assignToProducer: Boolean = false
     val alwaysAssignToConsumer: Boolean = false
@@ -486,7 +503,7 @@ private[chisel3] object DirectionalConnectionFunctions {
     val noDangles: Boolean = false
     val noUnassigned: Boolean = true
     val mustMatch: Boolean = false
-    val noWrongOrientations: Boolean = false
+    val noWrongOrientations: Boolean = true
     val assignToConsumer: Boolean = false
     val assignToProducer: Boolean = true
     val alwaysAssignToConsumer: Boolean = false
@@ -565,5 +582,8 @@ private[chisel3] object DirectionalConnectionFunctions {
         pushCommand(DefInvalid(sourceInfo, a.lref))
       }
     }
+  }
+  def isInvalid(d: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    pushCommand(DefInvalid(sourceInfo, d.lref))
   }
 }
