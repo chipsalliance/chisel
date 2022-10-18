@@ -269,13 +269,6 @@ object Connectable {
       for (a <- consumer) { a :#= DontCare }
     }
   }
-  implicit class ConnectableDontCare(consumer: DontCare.type) {
-    final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq)
-      }
-    }
-  }
 }
 
 private[chisel3] object DirectionalConnectionFunctions {
@@ -411,8 +404,9 @@ private[chisel3] object DirectionalConnectionFunctions {
                 doAssignment(None, EmptyOrientation, Some(ps), po)
               }
             }
-          case (c: Aggregate, DontCare) => c.getElements.foreach { case f => doAssignment(Some(f), deriveOrientation(f, consumer, co), Some(DontCare), po) }
-          case (DontCare, p: Aggregate) => p.getElements.foreach { case f => doAssignment(Some(DontCare), co, Some(f), deriveOrientation(f, producer, po)) }
+          // Am matching orientation of the non-DontCare, regardless
+          case (c: Aggregate, DontCare) => c.getElements.foreach { case f => doAssignment(Some(f), deriveOrientation(f, consumer, co), Some(DontCare), deriveOrientation(f, consumer, co)) }
+          case (DontCare, p: Aggregate) => p.getElements.foreach { case f => doAssignment(Some(DontCare), deriveOrientation(f, producer, po), Some(f), deriveOrientation(f, producer, po)) }
           case (c, p) if co == po => leafConnect(c, p, co, op)
           case (c, p) if co != po && op.assignToConsumer && !op.assignToProducer => leafConnect(c, p, co, op)
           case (c, p) if co != po && !op.assignToConsumer && op.assignToProducer => leafConnect(c, p, po, op)

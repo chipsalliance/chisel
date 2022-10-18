@@ -219,7 +219,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       test(Analog(3.W), Seq("io.out is invalid"))
       test(vec(Bool()), Seq("io.out[0] is invalid", "io.out[1] is invalid", "io.out[2] is invalid"))
       test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
-      testException(mixedBundle(Bool()), mixedBundle(Bool()), "inversely oriented fields") // TODO - should this be a different error message?
+      testException(mixedBundle(Bool()), mixedBundle(Bool()), "DontCare cannot be a connection sink")
     }
   }
   describe("(1): :<= ") {
@@ -415,6 +415,16 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
       )
     }
+    it("(1.k): When connecting FROM DontCare, emit for aligned aggregate fields and skip for flipped aggregate fields") {
+      implicit val op: (Data, Data) => Unit = {(x, y) => x :<= DontCare}
+      test(UInt(3.W), Seq("io.out is invalid"))
+      test(SInt(3.W), Seq("io.out is invalid"))
+      test(Clock(), Seq("io.out is invalid"))
+      test(Analog(3.W), Seq("io.out is invalid"))
+      test(vec(Bool()), Seq("io.out[0] is invalid", "io.out[1] is invalid", "io.out[2] is invalid"))
+      test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
+      test(mixedBundle(Bool()), Seq("io.out.foo is invalid"))
+    }
   }
   describe("(2): :>= ") {
     implicit val op: (Data, Data) => Unit = {_ :>= _}
@@ -567,7 +577,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       test(Analog(3.W), Seq("skip"))
       test(vec(Bool()), Seq("skip"))
       test(alignedBundle(Bool()), Seq("skip"))
-      test(mixedBundle(Bool()), Seq("skip", "io.in.bar is invalid"))
+      test(mixedBundle(Bool()), Seq("io.in.bar is invalid"))
     }
   }
   describe("(3): :#= ") {
@@ -744,6 +754,17 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.out.foo <= io.in.foo",
         "io.out.bar <= io.in.bar"
       ))
+    }
+    it("(3.k): When connecting FROM DontCare, emit for aligned aggregate fields and emit for flipped aggregate fields") {
+      implicit val op: (Data, Data) => Unit = {(x, y) => x :#= DontCare}
+      implicit val monitorOp: Option[(Data, Data) => Unit] = None
+      test(UInt(3.W), Seq("io.out is invalid"))
+      test(SInt(3.W), Seq("io.out is invalid"))
+      test(Clock(), Seq("io.out is invalid"))
+      test(Analog(3.W), Seq("io.out is invalid"))
+      test(vec(Bool()), Seq("io.out[0] is invalid", "io.out[1] is invalid", "io.out[2] is invalid"))
+      test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
+      test(mixedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
     }
   }
 

@@ -1155,7 +1155,7 @@ object WireDefault {
   ): T = {
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
-    x := init
+    x.asInstanceOf[Data] :#= init
     x
   }
 

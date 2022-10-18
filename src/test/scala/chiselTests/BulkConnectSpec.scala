@@ -21,7 +21,7 @@ class BulkConnectSpec extends ChiselPropSpec {
     chirrtl should include("io.outBi <= io.inBi")
   }
 
-  property("Chisel connects should not emit FIRRTL bulk connects for Stringly-typed connections") {
+  property("Chisel connects should error on using Chisel.<>") {
     object Foo {
       import Chisel._
       // Chisel._ bundle
@@ -41,20 +41,20 @@ class BulkConnectSpec extends ChiselPropSpec {
       val buzz = if (child) new BundleChild else new BundleParent
     }
 
-    val chirrtl = ChiselStage.emitChirrtl(new Module {
-      // Checking MonoConnect
-      val in = IO(Input(new MyBundle(true)))
-      val out = IO(Output(new MyBundle(false)))
-      out := in
+    val e = intercept[ChiselException] {
+      val chirrtl = ChiselStage.emitChirrtl(new Module {
+        // Checking MonoConnect
+        val in = IO(Input(new MyBundle(true)))
+        val out = IO(Output(new MyBundle(false)))
+        out := in
 
-      // Checking BulkConnect (with Decoupled)
-      val enq = IO(Flipped(Decoupled(new BundleChild)))
-      val deq = IO(Decoupled(new BundleParent))
-      deq <> enq
-    })
-
-    chirrtl should include("out.buzz.foo <= in.buzz.foo")
-    chirrtl shouldNot include("deq <= enq")
+        // Checking BulkConnect (with Decoupled)
+        val enq = IO(Flipped(Decoupled(new BundleChild)))
+        val deq = IO(Decoupled(new BundleParent))
+        deq <> enq
+      }, false, true)
+    }
+    e.getMessage() should include("Cannot use <> to connect")
   }
 
   property("Chisel connects should not emit FIRRTL bulk connects between differing FIRRTL types") {
