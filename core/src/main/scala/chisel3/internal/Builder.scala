@@ -170,9 +170,17 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def suggestName(seed: => String): this.type = {
+<<<<<<< HEAD
     if (suggested_seed.isEmpty) suggested_seedVar = seed
     naming_prefix = Builder.getPrefix
     for (hook <- suggest_postseed_hooks.reverse) { hook(seed) }
+=======
+    if (suggested_seed.isEmpty) {
+      suggested_seedVar = seed
+      // Only set the prefix if a seed hasn't been suggested
+      naming_prefix = Builder.getPrefix
+    }
+>>>>>>> b684506a (Only set the chisel3 Builder prefix during the first invocation of suggestName)
     this
   }
 
