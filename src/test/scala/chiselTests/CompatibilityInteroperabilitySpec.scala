@@ -444,12 +444,17 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
           .map(_._2)
          require(elements.size == elts.size)
 
+
         // Trim final "(_[0-9]+)*$" in the name, flip data with flipped.
-        private def makeElements(tuple: ((String, Data, Boolean), Int)) = {
+        private def makeElements(tuple: ((String, Data, Boolean), Int)): (String, Data, Int) = {
           val ((key, data, flip), i) = tuple
           // Trim trailing _0_1_2 stuff so that when we append _# we don't create collisions.
           // Translate from Chisel2-style "default is Output" to explicit chisel3 directions
-          val datax = data.cloneType match {
+          def chiselCloneType[T <: Data](target: T): T = {
+            chisel3.experimental.DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
+          }
+          val datax = chiselCloneType(data) match {
+          
             case elt: Element if flip   => Input(elt)
             case elt: Element           => Output(elt)
             case agg: Aggregate if flip => Flipped(agg)
@@ -503,6 +508,8 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
         oldMod.in <> DontCare
         newMod.in <> DontCare
+        oldMod.legacy <> DontCare
+        newMod.legacy <> DontCare
 
         /*
         oldMod.inHead <> newMod.outHead
@@ -515,6 +522,8 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         val newInst = Instance(newMod.toDefinition)
         oldInst.in <> DontCare
         newInst.in <> DontCare
+        oldInst.legacy <> DontCare
+        newInst.legacy <> DontCare
       }
     }
     (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))
