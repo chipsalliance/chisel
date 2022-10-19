@@ -7,6 +7,8 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 
+import scala.collection.immutable.SeqMap
+
 class DirectionedBundle extends Bundle {
   val in = Input(UInt(32.W))
   val out = Output(UInt(32.W))
@@ -401,16 +403,20 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     )
   }
   property("Bugfix: clearing all flips inside an opaque type") {
+
     class Decoupled extends Bundle {
       val bits = UInt(3.W)
       val valid = Bool()
       val ready = Flipped(Bool())
     }
-    class DecoupledAndMonitor extends Bundle {
-      val driver = new Decoupled()
+    class MyOpaqueType extends Record {
+      val k = new Decoupled()
+      val elements = SeqMap("" -> k)
+      override def opaqueType = elements.size == 1
+      override def cloneType: this.type = (new MyOpaqueType).asInstanceOf[this.type]
     }
     class MyModule extends RawModule {
-      val w = Wire(Waivable(new Decoupled(), true, true))
+      val w = Wire(new MyOpaqueType())
     }
 
     val emitted: String = ChiselStage.emitChirrtl(new MyModule)
