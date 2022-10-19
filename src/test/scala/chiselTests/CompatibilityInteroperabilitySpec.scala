@@ -425,4 +425,42 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Chisel3.Example)
   }
 
+  "A undirectioned Chisel.Bundle using chisel3.util.MixedVec" should "ignore the legacy compile options" in {
+
+    object Compat {
+
+      import Chisel._
+      import chisel3.util.MixedVec
+
+      class MixedVecBundle(gen: => Bool) extends Bundle {
+          val out = MixedVec(Seq.fill(3) { gen})
+          val in = Flipped(MixedVec(Seq.fill(3) { gen }))
+      }
+      class ChiselModule extends Module {
+
+        val reg = Reg(Bool())
+        // This should be an error even in compatibility mode, because MixedVec doesn't
+        // actually look at these options.
+        val io = IO(new MixedVecBundle(reg))
+        io.out := RegNext(io.in)
+      }
+
+    }
+    object Chisel3 {
+      import chisel3._
+
+      class Chisel3Module extends Compat.ChiselModule
+
+      class Example extends Module {
+        val oldMod = Module(new Compat.ChiselModule)
+        val newMod = Module(new Chisel3Module)
+
+        oldMod.io.in <> DontCare
+        newMod.io.in <> DontCare
+
+      }
+    }
+    
+    an [chisel3.ExpectedChiselTypeException] should be thrownBy compile(new Chisel3.Example)
+  }
 }
