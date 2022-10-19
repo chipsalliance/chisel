@@ -102,7 +102,7 @@ object Definition extends SourceInfoDoc {
   ): Definition[T] = {
     val dynamicContext = {
       val context = Builder.captureContext()
-      new DynamicContext(Nil, context.throwOnFirstError, context.warningsAsErrors)
+      new DynamicContext(Nil, context.throwOnFirstError, context.warningsAsErrors, context.omitSourceLocatorPaths)
     }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true

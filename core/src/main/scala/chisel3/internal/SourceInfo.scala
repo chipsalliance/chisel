@@ -16,6 +16,7 @@ package chisel3.internal.sourceinfo
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
+import scala.collection.mutable
 
 /** Abstract base class for generalized source information.
   */
@@ -43,8 +44,10 @@ case object DeprecatedSourceInfo extends NoSourceInfo
 
 /** For FIRRTL lines from a Scala source line.
   */
-case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo {
-  def makeMessage(f: String => String): String = f(s"@[$filename $line:$col]")
+case class SourceLine(fullPath: String, line: Int, col: Int) extends SourceInfo {
+  val omitSourceLocatorPaths = chisel3.internal.Builder.omitSourceLocatorPaths
+  val relativeFileName = if (omitSourceLocatorPaths) fullPath.split('/').last else fullPath
+  def makeMessage(f: String => String): String = f(s"@[$fullPath $line:$col]")
 }
 
 /** Provides a macro that returns the source information at the invocation point.
@@ -53,7 +56,9 @@ object SourceInfoMacro {
   def generate_source_info(c: Context): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
-    q"_root_.chisel3.internal.sourceinfo.SourceLine(${p.source.file.name}, ${p.line}, ${p.column})"
+    val root = sys.props.get("user.dir") // Figure out what to do if not provided
+    val path = root.map(r => p.source.file.canonicalPath.stripPrefix(r + "/")).getOrElse(p.source.file.name)
+    q"_root_.chisel3.internal.sourceinfo.SourceLine($path, ${p.line}, ${p.column})"
   }
 }
 

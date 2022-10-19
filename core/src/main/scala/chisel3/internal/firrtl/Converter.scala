@@ -46,7 +46,7 @@ private[chisel3] object Converter {
 
   def convert(info: SourceInfo): fir.Info = info match {
     case _: NoSourceInfo => fir.NoInfo
-    case SourceLine(fn, line, col) => fir.FileInfo(fir.StringLit(s"$fn $line:$col"))
+    case s @ SourceLine(path, line, col) => fir.FileInfo(fir.StringLit(s"${s.relativeFileName} $line:$col"))
   }
 
   def convert(op: PrimOp): fir.PrimOp = firrtl.PrimOps.fromString(op.name)
