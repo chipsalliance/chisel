@@ -393,10 +393,13 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A undirectioned Chisel.Bundle used in a MixedVec " should "bulk connect in import chisel3._ code correctly" in {
 
-    object UndirectionedBundleWithVagueCompileOptions {
+    object VagueCompileOptions {
       import chisel3.{Output, Bool, Vec}
 
-      def bundle() = Output(Vec(3, Bool()))
+      def outputVec() = Output(Vec(3, Bool()))
+      def vecOutput() = Vec(3, Output(Bool()))
+
+
     }
 
     object Compat {
@@ -449,8 +452,9 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         def dangleGen(bundleGen: () => Data): Seq[(String, Data, Boolean)] = 
        {
            Seq(("in", WireInit(bundleGen(), DontCare), true),
-           ("out", WireInit(bundleGen(), DontCare), false), 
-           ("legacy", WireInit(new LegacyUnspecifiedBiDirBundle(), DontCare), false),
+           ("out", WireInit(bundleGen(), DontCare), false),
+           //("specifiedOutput", WireInit(Chisel3.genNewOutputBundle(), DontCare), false ),
+           //("legacy", WireInit(new LegacyUnspecifiedBiDirBundle(), DontCare), false),
            //("legacySpecifiedOutput", WireInit(new LegacyOutputBundle(), DontCare), false)
            //("legacyPassive", WireInit(new LegacyPassiveBundle(), DontCare), false),
            )
@@ -520,7 +524,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
        class LazyModuleImp(val bundleGen: () => Data) extends chisel3.Module with LazyModuleImpLike
 
        @instantiable
-      class MyModule() extends LazyModuleImp(bundleGen = () =>  UndirectionedBundleWithVagueCompileOptions.bundle()){
+      class MyModule() extends LazyModuleImp(bundleGen = () =>  VagueCompileOptions.outputVec()){
         @public val in = auto.elements("in")
         @public val out = auto.elements("out")
        // @public val legacy = auto.elements("legacy")
@@ -531,10 +535,12 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       import chisel3._
       import chisel3.experimental.hierarchy.{public, instantiable, Instance}
 
+      def genNewOutputBundle() = Output(Bool())
+
       @instantiable
       class MyModule
           extends Compat.LazyModuleImp(
-            bundleGen = () => { UndirectionedBundleWithVagueCompileOptions.bundle() }
+            bundleGen = () => { VagueCompileOptions.outputVec() }
           ) {
               @public val in = auto.elements("in")
               @public val out = auto.elements("out")
@@ -557,10 +563,10 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         oldMod.autoInHead <> newMod.autoOutHead
         newMod.autoInHead <> oldMod.autoOutHead
 */
-        //val oldInst = Instance(oldMod.toDefinition)
+        val oldInst = Instance(oldMod.toDefinition)
         println("****INSTANCE CALL STARTS HERE****")
         val newInst = Instance(newMod.toDefinition)
-        //oldInst.in <> DontCare
+        oldInst.in <> DontCare
         newInst.in <> DontCare
         //oldInst.legacy <> DontCare
         //newInst.legacy <> DontCare

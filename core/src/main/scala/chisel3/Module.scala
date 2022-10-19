@@ -383,6 +383,7 @@ package internal {
         case _ => new ClonePorts(proto.getChiselPorts: _*)
       }
       println(s"proto.getChiselPorts is ${proto.getChiselPorts}")
+      AssignCompatDir.assignCompatDir(clonePorts, false)
       clonePorts.bind(PortBinding(cloneParent))
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
@@ -764,3 +765,31 @@ package experimental {
 
   }
 }
+
+object AssignCompatDir {
+      def assignCompatDir(data: Data, insideCompat: Boolean): Unit = {
+        data match {
+          case data: Element if insideCompat => {println(s"   element inside compat, assigning ${data}"); data._assignCompatibilityExplicitDirection}
+          case data: Element => {println(s"   element not compat, nothing to do ${data}")}// Not inside a compatibility Bundle, nothing to be done
+          case data: Aggregate =>
+            data.specifiedDirection match {
+              // Recurse into children to ensure explicit direction set somewhere
+              case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
+                data match {
+                  case record: Record => {
+                    val compatRecord = !record.compileOptions.dontAssumeDirectionality
+                    println(s"   Unspecified record, recursing with compat=$compatRecord, $this")
+
+                    record.getElements.foreach(assignCompatDir(_, compatRecord))
+                  }
+                  case vec: Vec[_] => {
+                    println(s"   Unspecified vec, recursing with compat=$insideCompat, $this")
+                    vec.getElements.foreach(assignCompatDir(_, insideCompat))
+                    (assignCompatDir(vec.sample_element, insideCompat))
+                  }
+                }
+              case SpecifiedDirection.Input | SpecifiedDirection.Output => {println ("   forced input/output nothing to do ${this}")} // forced assign, nothing to do
+            }
+        }
+      }
+    }

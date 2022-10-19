@@ -499,6 +499,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case (_, SpecifiedDirection.Flip)                              => _specifiedDirection = SpecifiedDirection.Input
       case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
     }
+    println(s"    $this now has _specifiedDirection of ${_specifiedDirection}")
   }
 
   // Binding stores information about this node's position in the hardware graph.
