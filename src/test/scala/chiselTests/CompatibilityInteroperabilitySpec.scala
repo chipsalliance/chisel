@@ -574,4 +574,98 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     }
     (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))
   }
+  
+  "A Chisel.Bundle with only unspecified directions" should "work with D/I" in {
+
+    object Compat {
+      import Chisel._
+      import chisel3.experimental.hierarchy.{instantiable, public}
+
+      
+      class CompatBiDirUnspecifiedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+      }
+
+      @instantiable
+      class CompatModule extends Module {
+        @public val io = IO(new CompatBiDirUnspecifiedBundle)
+      }
+    }
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.Instance
+      class Example extends Module {
+        val mod = Module(new Compat.CompatModule())
+        mod.io.in <> DontCare
+        val inst  = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))
+  }
+  "A Chisel.Bundle with mixed Specified and Unspecified directions" should "work with D/I" in {
+
+    object Compat {
+      import Chisel._
+            import chisel3.experimental.hierarchy.{instantiable, public}
+
+      class CompatBiDirMixedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+        val explicit = Output(Bool())
+      }
+
+      @instantiable
+      class CompatModule extends Module {
+        @public val io = IO(new CompatBiDirMixedBundle)
+      }
+    }
+
+    object Chisel3 {
+            import chisel3._
+      import chisel3.experimental.hierarchy.Instance
+      class Example extends Module {
+        val mod = Module(new Compat.CompatModule)
+        mod.io.in <> DontCare
+        val inst  = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))
+  }
+  "A Chisel.Bundle with only unspecified vec direction" should "work with D/I" in {
+
+    object Compat {
+      import Chisel._
+      import chisel3.experimental.hierarchy.{instantiable, public}
+
+      
+      class CompatBiDirUnspecifiedVecBundle extends Bundle {
+        val out = Vec(3, Bool())
+        val in = Flipped(Vec(3, Bool()))
+      }
+
+      @instantiable
+      class CompatModule extends Module {
+        @public val io = IO(new CompatBiDirUnspecifiedVecBundle)
+      }
+    }
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.Instance
+      class Example extends Module {
+        val mod = Module(new Compat.CompatModule())
+        mod.io.in <> DontCare
+        val inst  = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))
+  }
 }
