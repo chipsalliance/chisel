@@ -521,4 +521,30 @@ class PrefixSpec extends ChiselPropSpec with Utils {
       Select.wires(top).map(_.instanceName) should be(List("nonData_value", "value"))
     }
   }
+  property("Prefixing should not be affected by repeated calls of suggestName") {
+    class Test extends Module {
+      val in = IO(Input(UInt(3.W)))
+      val prefixed = {
+        val wire = Wire(UInt(3.W)).suggestName("wire") // "prefixed_wire"
+        wire := in
+
+        val thisShouldNotBeHere = {
+          // Second suggestName doesn't modify the instanceName since it was
+          // already suggested, but also should not modify the prefix either
+
+          // Incorrect behavior would rename the wire to
+          // "prefixed_thisShouldNotBeHere_wire"
+          wire.suggestName("wire")
+
+          val out = IO(Output(UInt(3.W)))
+          out := wire
+          out
+        }
+        thisShouldNotBeHere
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("prefixed_wire"))
+    }
+  }
 }
