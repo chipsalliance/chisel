@@ -382,6 +382,7 @@ package internal {
           new ClonePorts(proto.getChiselPorts :+ ("io" -> b._io.get): _*)
         case _ => new ClonePorts(proto.getChiselPorts: _*)
       }
+      println(s"proto.getChiselPorts is ${proto.getChiselPorts}")
       clonePorts.bind(PortBinding(cloneParent))
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts

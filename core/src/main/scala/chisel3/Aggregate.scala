@@ -24,10 +24,12 @@ class AliasedAggregateFieldException(message: String) extends ChiselException(me
   */
 sealed abstract class Aggregate extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    println("BINDING AGGREGATE A")
     _parent.foreach(_.addId(this))
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    println(s"From parentDirection ${parentDirection}, specifiedDirection ${specifiedDirection}, resolvedDirection is $resolvedDirection")
     val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
       this match {
@@ -59,6 +61,7 @@ sealed abstract class Aggregate extends Data {
     }
 
     // Check that children obey the directionality rules.
+    println(s"After: Elements are ${getElements}, with direction ${getElements.map(_.direction)}")
     val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
     direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
       case Some(dir) => dir
@@ -216,6 +219,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    println("BINDING AGGREGATE B")
     _parent.foreach(_.addId(this))
     binding = target
 
@@ -954,17 +958,21 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    println("BINDING AGGREGATE C")
     try {
-      println(s"trying to bind $target with $parentDirection")
+      println(" ... try")
       super.bind(target, parentDirection)
+      println(" ... success")
     } catch { // nasty compatibility mode shim, where anything flies
       case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
+        println(s"... catch: $e")
         val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
         direction = resolvedDirection match {
           case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
           case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
           case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
         }
+        println(s"    but that's OK, we decided the direction should be ${direction}")
     }
     setElementRefs()
   }

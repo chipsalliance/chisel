@@ -406,17 +406,54 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       import chisel3.util.{MixedVec}
       import chisel3.experimental.hierarchy.{instantiable, public}
 
-      class LegacyBundle extends Bundle {
-        val foo = Input(Bool())
-        val bar = Output(Bool())
+      class LegacyUnspecifiedBiDirBundle extends Bundle {
+        val foo = Flipped(Bool())
+        val bar = Bool()
       }
+
+      class LegacyUnspecifiedPassiveBundle extends Bundle {
+        val foo = Bool()
+      }
+
+      class LegacyOutputBundle extends Bundle {
+        val foo = Output(Bool())
+      }
+
+
+      // With no legacy:
+        /*
+        Elements are Vector(Example.?: IO[Clock], Example.?: IO[Bool], Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle]), with direction Vector(Input, Input, Unspecified)
+[info] - should bulk connect in import chisel3._ code correctly *** FAILED ***
+[info]   chisel3.package$MixedDirectionAggregateException: Aggregate Example.?: IO[ClonePorts] can't have elements that are both directioned and undirectioned: Vector((Example.?: IO[Clock],Input), (Example.?: IO[Bool],Input), (Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle],Unspecified))
+[info]   at chisel3.Aggregate.bind(Aggregate.scala:69)
+*/
+
+      // with legacypassive:
+
+      /* 
+      Elements are Vector(Example.?: IO[Clock], Example.?: IO[Bool], Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle]), with direction Vector(Input, Input, Unspecified)
+[info] - should bulk connect in import chisel3._ code correctly *** FAILED ***
+[info]   chisel3.package$MixedDirectionAggregateException: Aggregate Example.?: IO[ClonePorts] can't have elements that are both directioned and undirectioned: Vector((Example.?: IO[Clock],Input), (Example.?: IO[Bool],Input), (Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle],Unspecified))
+[info]   at chisel3.Aggregate.bind(Aggregate.scala:70)
+*/
+      // With legacy:
+      /*
+      Elements are Vector(Example.?: IO[Clock], Example.?: IO[Bool], Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle]), with direction Vector(Input, Input, Bidirectional(Default))
+[info] - should bulk connect in import chisel3._ code correctly *** FAILED ***
+[info]   java.lang.RuntimeException: Unexpected port element direction 'Unspecified'
+[info]   at chisel3.internal.BindingDirection$.from(Binding.scala:62)
+[info]   at chisel3.internal.BiConnect$.elemConnect(BiConnect.scala:357)
+*/  
 
       class Node {
         def dangleGen(bundleGen: () => Data): Seq[(String, Data, Boolean)] = 
        {
            Seq(("in", WireInit(bundleGen(), DontCare), true),
            ("out", WireInit(bundleGen(), DontCare), false), 
-           ("legacy", WireInit(new LegacyBundle(), DontCare), false))
+           ("legacy", WireInit(new LegacyUnspecifiedBiDirBundle(), DontCare), false),
+           //("legacySpecifiedOutput", WireInit(new LegacyOutputBundle(), DontCare), false)
+           //("legacyPassive", WireInit(new LegacyPassiveBundle(), DontCare), false),
+           )
         }
       }
 
@@ -450,10 +487,12 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
           val ((key, data, flip), i) = tuple
           // Trim trailing _0_1_2 stuff so that when we append _# we don't create collisions.
           // Translate from Chisel2-style "default is Output" to explicit chisel3 directions
-          def chiselCloneType[T <: Data](target: T): T = {
+          /*def chiselCloneType[T <: Data](target: T): T = {
             chisel3.experimental.DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
           }
           val datax = chiselCloneType(data) match {
+            */
+            def datax = data.cloneType match {
           
             case elt: Element if flip   => Input(elt)
             case elt: Element           => Output(elt)
@@ -484,7 +523,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class MyModule() extends LazyModuleImp(bundleGen = () =>  UndirectionedBundleWithVagueCompileOptions.bundle()){
         @public val in = auto.elements("in")
         @public val out = auto.elements("out")
-        @public val legacy = auto.elements("legacy")
+       // @public val legacy = auto.elements("legacy")
       }
       }
 
@@ -499,7 +538,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
           ) {
               @public val in = auto.elements("in")
               @public val out = auto.elements("out")
-              @public val legacy = auto.elements("legacy")
+              //@public val legacy = auto.elements("legacy")
           }
 
       class Example extends Module {
@@ -508,8 +547,8 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
         oldMod.in <> DontCare
         newMod.in <> DontCare
-        oldMod.legacy <> DontCare
-        newMod.legacy <> DontCare
+        //oldMod.legacy <> DontCare
+        //newMod.legacy <> DontCare
 
         /*
         oldMod.inHead <> newMod.outHead
@@ -518,12 +557,13 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         oldMod.autoInHead <> newMod.autoOutHead
         newMod.autoInHead <> oldMod.autoOutHead
 */
-        val oldInst = Instance(oldMod.toDefinition)
+        //val oldInst = Instance(oldMod.toDefinition)
+        println("****INSTANCE CALL STARTS HERE****")
         val newInst = Instance(newMod.toDefinition)
-        oldInst.in <> DontCare
+        //oldInst.in <> DontCare
         newInst.in <> DontCare
-        oldInst.legacy <> DontCare
-        newInst.legacy <> DontCare
+        //oldInst.legacy <> DontCare
+        //newInst.legacy <> DontCare
       }
     }
     (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))

@@ -113,7 +113,8 @@ object ActualDirection {
     childDirections:    Set[ActualDirection],
     containerDirection: SpecifiedDirection
   ): Option[ActualDirection] = {
-    if (childDirections == Set()) { // Sadly, Scala can't do set matching
+    println(s"Determining parent's Actual Direction from childDirections s${childDirections} and container specifiedDirection ${containerDirection}")
+    val result = if (childDirections == Set()) { // Sadly, Scala can't do set matching
       ActualDirection.fromSpecified(containerDirection) match {
         case ActualDirection.Unspecified => Some(ActualDirection.Empty) // empty direction if relative / no direction
         case dir                         => Some(dir) // use assigned direction if specified
@@ -142,6 +143,8 @@ object ActualDirection {
     } else {
       None
     }
+    println(s"   result is ${result}")
+    result
   }
 }
 

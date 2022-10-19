@@ -21,7 +21,13 @@ abstract class Element extends Data {
     _parent.foreach(_.addId(this))
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+
     direction = ActualDirection.fromSpecified(resolvedDirection)
+    println(s"BINDING AN ELEMENT $this with \n" +
+            s"                              parentDirection    = ${parentDirection},\n" +
+            s"                              specifiedDirection = ${specifiedDirection},\n" +
+            s"                              resolvedDirection  = ${resolvedDirection},\n" +
+            s"                              direction          = ${direction}")
   }
 
   private[chisel3] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
