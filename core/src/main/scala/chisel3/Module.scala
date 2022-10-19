@@ -383,7 +383,7 @@ package internal {
         case _ => new ClonePorts(proto.getChiselPorts: _*)
       }
       println(s"proto.getChiselPorts is ${proto.getChiselPorts}")
-      //AssignCompatDir.assignCompatDir(clonePorts, false)
+      AssignCompatDir.assignCompatDir(clonePorts, false)
       clonePorts.bind(PortBinding(cloneParent))
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
