@@ -678,10 +678,13 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       import chisel3.util.MixedVec
 
       class ChiselModule extends Module {
+        println("BUILDING THE IO STARTS HERE")
         val io = IO(new Bundle {
           val out = MixedVec(Seq.fill(3){Bool()})
           val in = Flipped(MixedVec(Seq.fill(3){Bool()}))
+          val outSpecified = Output(Bool())
         })
+        println("DONE BUILDING IO HERE")
         io.out := RegNext(io.in)
       }
 
@@ -692,10 +695,12 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class Chisel3Module extends Compat.ChiselModule
 
      class Example extends Module {
-        val oldMod = Module(new Compat.ChiselModule)
+        //val oldMod = Module(new Compat.ChiselModule)
+        
         val newMod = Module(new Chisel3Module)
+        println("DONE MAKING NEW MOD HERE")
 
-        oldMod.io.in <> DontCare
+        //oldMod.io.in <> DontCare
         newMod.io.in <> DontCare
 
       }

@@ -64,6 +64,10 @@ sealed abstract class Aggregate extends Data {
     println(s"After: Elements are ${getElements}, with direction ${getElements.map(_.direction)}")
     val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
     direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
+      case Some(dir) if dir == ActualDirection.Unspecified => {
+         val childWithDirections = getElements.zip(getElements.map(_.direction))
+         throw UnspecifiedDirectionException("Can't have an unspecified direction at this point, all directions should have been specified explicitly or through Compatibility Mode fixups.")
+    }
       case Some(dir) => dir
       case None =>
         val childWithDirections = getElements.zip(getElements.map(_.direction))
@@ -959,11 +963,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     println("BINDING AGGREGATE C")
-    try {
-      println(" ... try")
+    //try {
+    //  println(" ... try")
       super.bind(target, parentDirection)
-      println(" ... success")
-    } catch { // nasty compatibility mode shim, where anything flies
+    //  println(" ... success")
+    /*} catch { // nasty compatibility mode shim, where anything flies
       case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
         println(s"... catch: $e")
         val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -973,7 +977,9 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
         }
         println(s"    but that's OK, we decided the direction should be ${direction}")
+        
     }
+    */
     setElementRefs()
   }
 

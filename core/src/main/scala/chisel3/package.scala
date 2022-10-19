@@ -379,6 +379,10 @@ package object chisel3 {
     */
   case class MixedDirectionAggregateException(message: String) extends BindingException(message)
 
+  /** Even after all fixups were applied to assign direction, we still have some unspecified.
+    */
+  case class UnspecifiedDirectionException(message: String) extends BindingException(message)
+
   /** Attempted to re-bind an already bound (directionality or hardware) object
     */
   case class RebindingException(message: String) extends BindingException(message)
