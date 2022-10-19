@@ -3,6 +3,7 @@
 package chiselTests
 
 import scala.collection.immutable.ListMap
+import chisel3.MixedDirectionAggregateException
 
 // Keep Chisel._ separate from chisel3._ below
 object CompatibilityComponents {
@@ -669,7 +670,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))
   }
 
-  "A undirectioned Chisel.Bundle used in a MixedVec " should "bulk connect in import chisel3._ code correctly" in {
+  "A undirectioned Chisel.Bundle used in a MixedVec " should "give an exception in the IO call" in {
 
     
     object Compat {
@@ -682,7 +683,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         val io = IO(new Bundle {
           val out = MixedVec(Seq.fill(3){Bool()})
           val in = Flipped(MixedVec(Seq.fill(3){Bool()}))
-          val outSpecified = Output(Bool())
         })
         println("DONE BUILDING IO HERE")
         io.out := RegNext(io.in)
@@ -705,6 +705,43 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
       }
     }
-    compile(new Chisel3.Example)
+    an [chisel3.UnspecifiedDirectionException] should be thrownBy compile(new Chisel3.Example)
+  }
+
+   "A undirectioned Chisel.Bundle with Records with undirectioned and directioned fields " should "give an exception in the IO call" in {
+
+    
+    object Compat {
+
+      import Chisel._
+      import chisel3.util.MixedVec
+
+
+
+      class ChiselModule(gen: () => Data) extends Module {
+        println("BUILDING THE IO STARTS HERE")
+        val io = IO(new Bundle {
+          val mixed = new Chisel3.MyRecord(gen)
+        })
+        println("DONE BUILDING IO HERE")
+
+      }
+
+    }
+    object Chisel3 {
+      import chisel3._
+      import scala.collection.immutable.SeqMap
+
+      class MyRecord(gen: () => Data) extends Record {
+        val elements = SeqMap("genDirectioned" -> Output(gen()), "genUndirectioned" -> gen())
+        override def cloneType: this.type = (new MyRecord(gen)).asInstanceOf[this.type]
+      }
+
+     class Example extends Module {        
+        val newMod = Module(new Compat.ChiselModule(() => Bool()))
+        println("DONE MAKING NEW MOD HERE")
+      }
+    }
+    an [chisel3.MixedDirectionAggregateException] should be thrownBy compile(new Chisel3.Example)
   }
 }

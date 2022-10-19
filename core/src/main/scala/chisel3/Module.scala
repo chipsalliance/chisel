@@ -761,15 +761,18 @@ object AssignCompatDir {
                     val compatRecord = !record.compileOptions.dontAssumeDirectionality
                     println(s"   Unspecified record, recursing with compat=$compatRecord, $this")
 
-                    record.getElements.foreach(assignCompatDir(_, compatRecord))
-                  }
+                    record.elements.foreach{case (name, e) => {
+                      println(s"  element '$name'")
+                      assignCompatDir(e, compatRecord)
+                    }
+                  }}
                   case vec: Vec[_] => {
                     println(s"   Unspecified vec, recursing with compat=$insideCompat, $this")
                     vec.getElements.foreach(assignCompatDir(_, insideCompat))
                     (assignCompatDir(vec.sample_element, insideCompat))
                   }
                 }
-              case SpecifiedDirection.Input | SpecifiedDirection.Output => {println ("   forced input/output nothing to do ${this}")} // forced assign, nothing to do
+              case SpecifiedDirection.Input | SpecifiedDirection.Output => {println (s"   forced input/output nothing to do ${this}")} // forced assign, nothing to do
             }
         }
       }

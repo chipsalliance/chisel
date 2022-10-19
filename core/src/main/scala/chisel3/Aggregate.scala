@@ -66,7 +66,7 @@ sealed abstract class Aggregate extends Data {
     direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
       case Some(dir) if dir == ActualDirection.Unspecified => {
          val childWithDirections = getElements.zip(getElements.map(_.direction))
-         throw UnspecifiedDirectionException("Can't have an unspecified direction at this point, all directions should have been specified explicitly or through Compatibility Mode fixups.")
+         throw UnspecifiedDirectionException(s"It is not allowed to have an Unspecified direction at this point, all directions should have been specified explicitly (e.g. with `Input` or `Output`) or through Compatibility Mode fixups: $childWithDirections")
     }
       case Some(dir) => dir
       case None =>
@@ -963,23 +963,15 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     println("BINDING AGGREGATE C")
-    //try {
-    //  println(" ... try")
+    try {
       super.bind(target, parentDirection)
-    //  println(" ... success")
-    /*} catch { // nasty compatibility mode shim, where anything flies
+    } catch {
       case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
-        println(s"... catch: $e")
-        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-        direction = resolvedDirection match {
-          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
-        }
-        println(s"    but that's OK, we decided the direction should be ${direction}")
-        
+        val msg = s" Even in Chisel._ where `dontAssumeDirectionality` is false, it is not acceptable to have mixed specified and unspecified directions at this point. It will lead to inconsistencies in the view of the ports when need to connect to them. You probably are using a chisel3.Record subclass that does not pass an implicit compileOptions, within a Chisel.Record."
+        println(msg)
+        throw e
     }
-    */
+    
     setElementRefs()
   }
 
