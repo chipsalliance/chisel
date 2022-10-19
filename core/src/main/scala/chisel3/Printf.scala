@@ -101,6 +101,19 @@ object printf {
     q"$apply_impl_do(_root_.chisel3.Printable.pack($fmt, ..$data))($sourceInfo, $compileOptions)"
   }
 
+  // Private internal methods that serve to maintain binary
+  // compatibility after interpolator check updates
+  private[chisel3] def apply(fmt: String, sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
+    apply(fmt, Nil, sourceInfo, compileOptions)
+
+  private[chisel3] def apply(
+    fmt:            String,
+    data:           Seq[Bits],
+    sourceInfo:     SourceInfo,
+    compileOptions: CompileOptions
+  ): Printf =
+    apply(Printable.pack(fmt, data: _*))(sourceInfo, compileOptions)
+
   /** Prints a message in simulation
     *
     * Prints a message every cycle. If defined within the scope of a [[when]] block, the message
