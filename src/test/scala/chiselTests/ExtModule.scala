@@ -23,7 +23,7 @@ package extmoduletests {
   }
 }
 
-object Chisel3BlackBoxes {
+object Chisel3ExtModules {
 
   import chisel3._
   import chisel3.experimental._
@@ -131,10 +131,10 @@ class ExtModuleSpec extends ChiselFlatSpec {
   import chisel3.experimental._
 
   "A ExtModule inverter" should "work" in {
-    assertTesterPasses({ new Chisel3BlackBoxes.ExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new Chisel3ExtModules.ExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
   }
   "Multiple ExtModules" should "work" in {
-    assertTesterPasses({ new Chisel3BlackBoxes.MultiExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new Chisel3ExtModules.MultiExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
   }
   "DataMirror.modulePorts" should "work with ExtModule" in {
     ChiselStage.elaborate(new Module {
@@ -147,20 +147,20 @@ class ExtModuleSpec extends ChiselFlatSpec {
   behavior.of("ExtModule")
 
   it should "work with .suggestName (aka it should not require reflection for naming)" in {
-    val chirrtl = ChiselStage.emitChirrtl(new Chisel3BlackBoxes.ExtModuleWithSuggestNameTester)
+    val chirrtl = ChiselStage.emitChirrtl(new Chisel3ExtModules.ExtModuleWithSuggestNameTester)
     chirrtl should include("input foo : UInt<8>")
     chirrtl should include("inst.foo <= in")
   }
 
   it should "work with FlatIO" in {
-    val chirrtl = ChiselStage.emitChirrtl(new Chisel3BlackBoxes.ExtModuleWithFlatIOTester)
+    val chirrtl = ChiselStage.emitChirrtl(new Chisel3ExtModules.ExtModuleWithFlatIOTester)
     chirrtl should include("io.out <= inst.out")
     chirrtl should include("inst.in <= io.in")
     chirrtl shouldNot include("badIO")
   }
 
   it should "not have invalidated ports in a chisel3._ context" in {
-    val chirrtl = ChiselStage.emitChirrtl(new Chisel3BlackBoxes.ExtModuleChisel3Tester)
+    val chirrtl = ChiselStage.emitChirrtl(new Chisel3ExtModules.ExtModuleChisel3Tester)
     chirrtl shouldNot include("inst.in is invalid")
     chirrtl shouldNot include("inst.out is invalid")
   }
