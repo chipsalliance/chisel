@@ -131,10 +131,18 @@ class ExtModuleSpec extends ChiselFlatSpec {
   import chisel3.experimental._
 
   "A ExtModule inverter" should "work" in {
-    assertTesterPasses({ new Chisel3ExtModules.ExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses(
+      { new Chisel3ExtModules.ExtModuleTester },
+      Seq("/chisel3/BlackBoxTest.v"),
+      TesterDriver.verilatorOnly
+    )
   }
   "Multiple ExtModules" should "work" in {
-    assertTesterPasses({ new Chisel3ExtModules.MultiExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses(
+      { new Chisel3ExtModules.MultiExtModuleTester },
+      Seq("/chisel3/BlackBoxTest.v"),
+      TesterDriver.verilatorOnly
+    )
   }
   "DataMirror.modulePorts" should "work with ExtModule" in {
     ChiselStage.elaborate(new Module {
