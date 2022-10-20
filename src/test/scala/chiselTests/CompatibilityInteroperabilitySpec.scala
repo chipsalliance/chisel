@@ -744,4 +744,59 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     }
     an [chisel3.MixedDirectionAggregateException] should be thrownBy compile(new Chisel3.Example)
   }
+
+  "Deborah's Test" should "work" in {
+
+    object Compat {
+
+      import Chisel._
+
+    class LegacyChiselThingy extends Bundle {
+
+     val foo = Output(Bool())
+     val bar = Output(Bool())
+  }
+
+    }
+    object Chisel3{
+    import chisel3._
+    import chisel3.util.Valid
+    import chisel3.experimental.hierarchy.{Instance, instantiable, public}
+      class LSUModuleIO extends Bundle {
+
+       val ptwCSRs = Input(new PTWCSRIO_Mallard)
+       val  foo = Output(Bool())
+       val  bar = Input(Bool())
+}
+
+class PTWCSRIO_Mallard extends Bundle {
+  val sfence = Flipped(Valid(new Compat.LegacyChiselThingy))
+}
+
+@instantiable
+class LSUModule extends Module {
+
+  @public
+  val io = IO (new LSUModuleIO())
+}
+
+class LSUIOInterfaceBlackBox(lsu: Instance[LSUModule]) extends BlackBox {
+  val io = IO(new Bundle {
+    val lsu_io = Flipped(chiselTypeOf(lsu.io))
+  })
+}
+
+class Testbench() extends Module {
+
+  val lsu = Module(new LSUModule)
+
+  val lsuInst = Instance(lsu.toDefinition)
+  val bb = Module(new LSUIOInterfaceBlackBox(lsuInst))
+  
+  lsu.io <> bb.io.lsu_io
+
+}}
+    (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Testbench, Array("--full-stacktrace"))
+
+  }
 }
