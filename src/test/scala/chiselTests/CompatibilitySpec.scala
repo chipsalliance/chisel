@@ -614,4 +614,26 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
     ChiselStage.elaborate(new MyModule)
   }
 
+  behavior.of("BlackBox")
+
+  it should "have invalidated ports in a compatibility context" in {
+    class ExtModuleInvalidatedTester extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+      val inst = Module(new BlackBox {
+        val io = IO(new Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        })
+      })
+      inst.io.in := io.in
+      io.out := inst.io.out
+    }
+
+    val chirrtl = ChiselStage.emitChirrtl(new ExtModuleInvalidatedTester)
+    chirrtl should include("inst.in is invalid")
+    chirrtl should include("inst.out is invalid")
+  }
 }
