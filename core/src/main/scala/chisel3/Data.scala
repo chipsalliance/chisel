@@ -113,7 +113,9 @@ object ActualDirection {
     childDirections:    Set[ActualDirection],
     containerDirection: SpecifiedDirection
   ): Option[ActualDirection] = {
-    println(s"Determining parent's Actual Direction from childDirections s${childDirections} and container specifiedDirection ${containerDirection}")
+    println(
+      s"Determining parent's Actual Direction from childDirections s${childDirections} and container specifiedDirection ${containerDirection}"
+    )
     val result = if (childDirections == Set()) { // Sadly, Scala can't do set matching
       ActualDirection.fromSpecified(containerDirection) match {
         case ActualDirection.Unspecified => Some(ActualDirection.Empty) // empty direction if relative / no direction
@@ -979,6 +981,7 @@ trait WireFactory {
     val x = t.cloneTypeFull
 
     // Bind each element of x to being a Wire
+    AssignCompatDir.assignCompatDir(x, !compileOptions.dontAssumeDirectionality)
     x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
 
     pushCommand(DefWire(sourceInfo, x))

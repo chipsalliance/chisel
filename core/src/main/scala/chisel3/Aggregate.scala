@@ -24,12 +24,14 @@ class AliasedAggregateFieldException(message: String) extends ChiselException(me
   */
 sealed abstract class Aggregate extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    println("BINDING AGGREGATE A")
+    println(s"BINDING AGGREGATE A ${this}")
     _parent.foreach(_.addId(this))
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    println(s"From parentDirection ${parentDirection}, specifiedDirection ${specifiedDirection}, resolvedDirection is $resolvedDirection")
+    println(
+      s"From parentDirection ${parentDirection}, specifiedDirection ${specifiedDirection}, resolvedDirection is $resolvedDirection"
+    )
     val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
       this match {
@@ -65,9 +67,11 @@ sealed abstract class Aggregate extends Data {
     val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
     direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
       case Some(dir) if dir == ActualDirection.Unspecified => {
-         val childWithDirections = getElements.zip(getElements.map(_.direction))
-         throw UnspecifiedDirectionException(s"It is not allowed to have an Unspecified direction at this point, all directions should have been specified explicitly (e.g. with `Input` or `Output`) or through Compatibility Mode fixups: $childWithDirections")
-    }
+        val childWithDirections = getElements.zip(getElements.map(_.direction))
+        throw UnspecifiedDirectionException(
+          s"It is not allowed to have an Unspecified direction at this point, all directions should have been specified explicitly (e.g. with `Input` or `Output`) or through Compatibility Mode fixups: $childWithDirections"
+        )
+      }
       case Some(dir) => dir
       case None =>
         val childWithDirections = getElements.zip(getElements.map(_.direction))
@@ -223,7 +227,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    println("BINDING AGGREGATE B")
+    println(s"BINDING AGGREGATE B ${this}")
     _parent.foreach(_.addId(this))
     binding = target
 
@@ -962,16 +966,17 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    println("BINDING AGGREGATE C")
+    println(s"BINDING AGGREGATE C ${this}")
     try {
       super.bind(target, parentDirection)
     } catch {
       case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
-        val msg = s" Even in Chisel._ where `dontAssumeDirectionality` is false, it is not acceptable to have mixed specified and unspecified directions at this point. It will lead to inconsistencies in the view of the ports when need to connect to them. You probably are using a chisel3.Record subclass that does not pass an implicit compileOptions, within a Chisel.Record."
+        val msg =
+          s" Even in Chisel._ where `dontAssumeDirectionality` is false, it is not acceptable to have mixed specified and unspecified directions at this point. It will lead to inconsistencies in the view of the ports when need to connect to them. You probably are using a chisel3.Record subclass that does not pass an implicit compileOptions, within a Chisel.Record."
         println(msg)
         throw e
     }
-    
+
     setElementRefs()
   }
 
@@ -1237,10 +1242,11 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
   override def className: String = try {
     this.getClass.getSimpleName match {
-    case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
-    case ""                                => "AnonymousBundle" // ditto, but on other platforms
-    case name                              => name
-  }} catch {
+      case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
+      case ""                                => "AnonymousBundle" // ditto, but on other platforms
+      case name                              => name
+    }
+  } catch {
     case e: java.lang.InternalError => this.getClass.toString
   }
 

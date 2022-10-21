@@ -40,6 +40,7 @@ object Mem {
     }
     val mt = t.cloneTypeFull
     val mem = new Mem(mt, size)
+    AssignCompatDir.assignCompatDir(mt, !compileOptions.dontAssumeDirectionality)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
@@ -263,6 +264,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
       DefMemPort(sourceInfo, t.cloneTypeFull, Node(this), dir, i.ref, clock.ref)
     ).id
     // Bind each element of port to being a MemoryPort
+    AssignCompatDir.assignCompatDir(port, !compileOptions.dontAssumeDirectionality)
     port.bind(MemoryPortBinding(Builder.forcedUserModule, Builder.currentWhen))
     port
   }
@@ -322,6 +324,7 @@ object SyncReadMem {
     }
     val mt = t.cloneTypeFull
     val mem = new SyncReadMem(mt, size, ruw)
+    AssignCompatDir.assignCompatDir(mt, !compileOptions.dontAssumeDirectionality)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
     mem

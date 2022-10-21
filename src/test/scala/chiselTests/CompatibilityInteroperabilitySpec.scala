@@ -395,18 +395,17 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   "Rocket-Chip's LazyModule Code" should "work with D/I" in {
 
     object VagueCompileOptions {
-      import chisel3.{Output, Bool, Vec}
+      import chisel3.{Bool, Output, Vec}
 
       def outputVec() = Output(Vec(3, Bool()))
       def vecOutput() = Vec(3, Output(Bool()))
-
 
     }
 
     object Compat {
 
       import Chisel._
-      import chisel3.{WireInit, DontCare, RawModule}
+      import chisel3.{DontCare, RawModule, WireInit}
       import chisel3.util.{MixedVec}
       import chisel3.experimental.hierarchy.{instantiable, public}
 
@@ -423,23 +422,22 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         val foo = Output(Bool())
       }
 
-
       // With no legacy:
-        /*
+      /*
         Elements are Vector(Example.?: IO[Clock], Example.?: IO[Bool], Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle]), with direction Vector(Input, Input, Unspecified)
 [info] - should bulk connect in import chisel3._ code correctly *** FAILED ***
 [info]   chisel3.package$MixedDirectionAggregateException: Aggregate Example.?: IO[ClonePorts] can't have elements that are both directioned and undirectioned: Vector((Example.?: IO[Clock],Input), (Example.?: IO[Bool],Input), (Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle],Unspecified))
 [info]   at chisel3.Aggregate.bind(Aggregate.scala:69)
-*/
+       */
 
       // with legacypassive:
 
-      /* 
+      /*
       Elements are Vector(Example.?: IO[Clock], Example.?: IO[Bool], Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle]), with direction Vector(Input, Input, Unspecified)
 [info] - should bulk connect in import chisel3._ code correctly *** FAILED ***
 [info]   chisel3.package$MixedDirectionAggregateException: Aggregate Example.?: IO[ClonePorts] can't have elements that are both directioned and undirectioned: Vector((Example.?: IO[Clock],Input), (Example.?: IO[Bool],Input), (Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle],Unspecified))
 [info]   at chisel3.Aggregate.bind(Aggregate.scala:70)
-*/
+       */
       // With legacy:
       /*
       Elements are Vector(Example.?: IO[Clock], Example.?: IO[Bool], Example.?: IO[class chiselTests.CompatibilityInteroperabilitySpec$Compat$9$AutoBundle]), with direction Vector(Input, Input, Bidirectional(Default))
@@ -447,18 +445,18 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 [info]   java.lang.RuntimeException: Unexpected port element direction 'Unspecified'
 [info]   at chisel3.internal.BindingDirection$.from(Binding.scala:62)
 [info]   at chisel3.internal.BiConnect$.elemConnect(BiConnect.scala:357)
-*/  
+       */
 
       class Node {
-        def dangleGen(bundleGen: () => Data): Seq[(String, Data, Boolean)] = 
-       {
-           Seq(("in", WireInit(bundleGen(), DontCare), true),
-           ("out", WireInit(bundleGen(), DontCare), false),
-           //("specifiedOutput", WireInit(Chisel3.genNewOutputBundle(), DontCare), false ),
-           //("legacy", WireInit(new LegacyUnspecifiedBiDirBundle(), DontCare), false),
-           //("legacySpecifiedOutput", WireInit(new LegacyOutputBundle(), DontCare), false)
-           //("legacyPassive", WireInit(new LegacyPassiveBundle(), DontCare), false),
-           )
+        def dangleGen(bundleGen: () => Data): Seq[(String, Data, Boolean)] = {
+          Seq(
+            ("in", WireInit(bundleGen(), DontCare), true),
+            ("out", WireInit(bundleGen(), DontCare), false)
+            //("specifiedOutput", WireInit(Chisel3.genNewOutputBundle(), DontCare), false ),
+            //("legacy", WireInit(new LegacyUnspecifiedBiDirBundle(), DontCare), false),
+            //("legacySpecifiedOutput", WireInit(new LegacyOutputBundle(), DontCare), false)
+            //("legacyPassive", WireInit(new LegacyPassiveBundle(), DontCare), false),
+          )
         }
       }
 
@@ -484,8 +482,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
           .toList
           .sortBy(_._1)
           .map(_._2)
-         require(elements.size == elts.size)
-
+        require(elements.size == elts.size)
 
         // Trim final "(_[0-9]+)*$" in the name, flip data with flipped.
         private def makeElements(tuple: ((String, Data, Boolean), Int)): (String, Data, Int) = {
@@ -496,9 +493,9 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
             chisel3.experimental.DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
           }
           val datax = chiselCloneType(data) match {
-            */
-            def datax = data.cloneType match {
-          
+           */
+          def datax = data.cloneType match {
+
             case elt: Element if flip   => Input(elt)
             case elt: Element           => Output(elt)
             case agg: Aggregate if flip => Flipped(agg)
@@ -514,27 +511,27 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       @instantiable
       sealed trait LazyModuleImpLike extends RawModule {
 
-       def bundleGen: () => Data
+        def bundleGen: () => Data
 
-       val node = new Node()
-       val dangles = node.dangleGen(bundleGen)
+        val node = new Node()
+        val dangles = node.dangleGen(bundleGen)
 
-       @public val auto = IO(new AutoBundle(dangles:_*))
+        @public val auto = IO(new AutoBundle(dangles: _*))
       }
 
-       class LazyModuleImp(val bundleGen: () => Data) extends chisel3.Module with LazyModuleImpLike
+      class LazyModuleImp(val bundleGen: () => Data) extends chisel3.Module with LazyModuleImpLike
 
-       @instantiable
-      class MyModule() extends LazyModuleImp(bundleGen = () =>  VagueCompileOptions.outputVec()){
+      @instantiable
+      class MyModule() extends LazyModuleImp(bundleGen = () => VagueCompileOptions.outputVec()) {
         @public val in = auto.elements("in")
         @public val out = auto.elements("out")
-       // @public val legacy = auto.elements("legacy")
+        // @public val legacy = auto.elements("legacy")
       }
-      }
+    }
 
     object Chisel3 {
       import chisel3._
-      import chisel3.experimental.hierarchy.{public, instantiable, Instance}
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
 
       def genNewOutputBundle() = Output(Bool())
 
@@ -543,10 +540,10 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
           extends Compat.LazyModuleImp(
             bundleGen = () => { VagueCompileOptions.outputVec() }
           ) {
-              @public val in = auto.elements("in")
-              @public val out = auto.elements("out")
-              //@public val legacy = auto.elements("legacy")
-          }
+        @public val in = auto.elements("in")
+        @public val out = auto.elements("out")
+        //@public val legacy = auto.elements("legacy")
+      }
 
       class Example extends Module {
         val oldMod = Module(new Compat.MyModule)
@@ -563,7 +560,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
         oldMod.autoInHead <> newMod.autoOutHead
         newMod.autoInHead <> oldMod.autoOutHead
-*/
+         */
         val oldInst = Instance(oldMod.toDefinition)
         println("****INSTANCE CALL STARTS HERE****")
         val newInst = Instance(newMod.toDefinition)
@@ -575,14 +572,13 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     }
     (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Example, Array("--full-stacktrace"))
   }
-  
+
   "A Chisel.Bundle with only unspecified directions" should "work with D/I" in {
 
     object Compat {
       import Chisel._
       import chisel3.experimental.hierarchy.{instantiable, public}
 
-      
       class CompatBiDirUnspecifiedBundle extends Bundle {
         val out = Bool()
         val in = Flipped(Bool())
@@ -600,7 +596,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class Example extends Module {
         val mod = Module(new Compat.CompatModule())
         mod.io.in <> DontCare
-        val inst  = Instance(mod.toDefinition)
+        val inst = Instance(mod.toDefinition)
         inst.io.in <> mod.io.out
         mod.io.in <> inst.io.out
       }
@@ -611,7 +607,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
     object Compat {
       import Chisel._
-            import chisel3.experimental.hierarchy.{instantiable, public}
+      import chisel3.experimental.hierarchy.{instantiable, public}
 
       class CompatBiDirMixedBundle extends Bundle {
         val out = Bool()
@@ -626,12 +622,12 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     }
 
     object Chisel3 {
-            import chisel3._
+      import chisel3._
       import chisel3.experimental.hierarchy.Instance
       class Example extends Module {
         val mod = Module(new Compat.CompatModule)
         mod.io.in <> DontCare
-        val inst  = Instance(mod.toDefinition)
+        val inst = Instance(mod.toDefinition)
         inst.io.in <> mod.io.out
         mod.io.in <> inst.io.out
       }
@@ -644,7 +640,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       import Chisel._
       import chisel3.experimental.hierarchy.{instantiable, public}
 
-      
       class CompatBiDirUnspecifiedVecBundle extends Bundle {
         val out = Vec(3, Bool())
         val in = Flipped(Vec(3, Bool()))
@@ -662,7 +657,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class Example extends Module {
         val mod = Module(new Compat.CompatModule())
         mod.io.in <> DontCare
-        val inst  = Instance(mod.toDefinition)
+        val inst = Instance(mod.toDefinition)
         inst.io.in <> mod.io.out
         mod.io.in <> inst.io.out
       }
@@ -672,7 +667,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A undirectioned Chisel.Bundle used in a MixedVec " should "give an exception in the IO call" in {
 
-    
     object Compat {
 
       import Chisel._
@@ -681,8 +675,8 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class ChiselModule extends Module {
         println("BUILDING THE IO STARTS HERE")
         val io = IO(new Bundle {
-          val out = MixedVec(Seq.fill(3){Bool()})
-          val in = Flipped(MixedVec(Seq.fill(3){Bool()}))
+          val out = MixedVec(Seq.fill(3) { Bool() })
+          val in = Flipped(MixedVec(Seq.fill(3) { Bool() }))
         })
         println("DONE BUILDING IO HERE")
         io.out := RegNext(io.in)
@@ -694,9 +688,9 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
       class Chisel3Module extends Compat.ChiselModule
 
-     class Example extends Module {
+      class Example extends Module {
         //val oldMod = Module(new Compat.ChiselModule)
-        
+
         val newMod = Module(new Chisel3Module)
         println("DONE MAKING NEW MOD HERE")
 
@@ -705,18 +699,15 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
       }
     }
-    an [chisel3.UnspecifiedDirectionException] should be thrownBy compile(new Chisel3.Example)
+    an[chisel3.UnspecifiedDirectionException] should be thrownBy compile(new Chisel3.Example)
   }
 
-   "A undirectioned Chisel.Bundle with Records with undirectioned and directioned fields " should "give an exception in the IO call" in {
+  "A undirectioned Chisel.Bundle with Records with undirectioned and directioned fields " should "give an exception in the IO call" in {
 
-    
     object Compat {
 
       import Chisel._
       import chisel3.util.MixedVec
-
-
 
       class ChiselModule(gen: () => Data) extends Module {
         println("BUILDING THE IO STARTS HERE")
@@ -737,12 +728,12 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         override def cloneType: this.type = (new MyRecord(gen)).asInstanceOf[this.type]
       }
 
-     class Example extends Module {        
+      class Example extends Module {
         val newMod = Module(new Compat.ChiselModule(() => Bool()))
         println("DONE MAKING NEW MOD HERE")
       }
     }
-    an [chisel3.MixedDirectionAggregateException] should be thrownBy compile(new Chisel3.Example)
+    an[chisel3.MixedDirectionAggregateException] should be thrownBy compile(new Chisel3.Example)
   }
 
   "Deborah's Test" should "work" in {
@@ -751,51 +742,67 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
       import Chisel._
 
-    class LegacyChiselThingy extends Bundle {
+      class LegacyChiselThingy extends Bundle {
 
-     val foo = Output(Bool())
-     val bar = Output(Bool())
-  }
+        val foo = Output(Bool())
+        val bar = Output(Bool())
+      }
 
     }
-    object Chisel3{
-    import chisel3._
-    import chisel3.util.Valid
-    import chisel3.experimental.hierarchy.{Instance, instantiable, public}
+    object Chisel3 {
+      import chisel3._
+      import chisel3.util.Valid
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
       class LSUModuleIO extends Bundle {
 
-       val ptwCSRs = Input(new PTWCSRIO_Mallard)
-       val  foo = Output(Bool())
-       val  bar = Input(Bool())
-}
+        val ptwCSRs = Input(new PTWCSRIO_Mallard)
+        val foo = Output(Bool())
+        val bar = Input(Bool())
+      }
 
-class PTWCSRIO_Mallard extends Bundle {
-  val sfence = Flipped(Valid(new Compat.LegacyChiselThingy))
-}
+      class PTWCSRIO_Mallard extends Bundle {
+        val sfence = Flipped(Valid(new Compat.LegacyChiselThingy))
+      }
 
-@instantiable
-class LSUModule extends Module {
+      @instantiable
+      class LSUModule extends Module {
 
-  @public
-  val io = IO (new LSUModuleIO())
-}
+        @public
+        val io = IO(new LSUModuleIO())
+        io <> DontCare
+      }
 
-class LSUIOInterfaceBlackBox(lsu: Instance[LSUModule]) extends BlackBox {
-  val io = IO(new Bundle {
-    val lsu_io = Flipped(chiselTypeOf(lsu.io))
-  })
-}
+      class LSUMirror extends Module {
+        val io = IO(Flipped(new LSUModuleIO()))
+        io <> DontCare
+      }
 
-class Testbench() extends Module {
+      class LSUMirrorBlackBox extends BlackBox {
+        val io = IO(Flipped(new LSUModuleIO()))
+      }
 
-  val lsu = Module(new LSUModule)
+      class LSUIOInterfaceBlackBox(lsu: Instance[LSUModule]) extends BlackBox {
+        val io = IO(new Bundle {
+          val lsu_io = Flipped(chiselTypeOf(lsu.io))
+        })
+      }
 
+      class Testbench() extends Module {
+
+        val lsu = Module(new LSUModule)
+        //val mirror = Module(new LSUMirror)
+        val mirror = Module(new LSUMirrorBlackBox)
+        lsu.io <> mirror.io
+
+
+        /*
   val lsuInst = Instance(lsu.toDefinition)
   val bb = Module(new LSUIOInterfaceBlackBox(lsuInst))
-  
-  lsu.io <> bb.io.lsu_io
 
-}}
+  lsu.io <> bb.io.lsu_io
+         */
+      }
+    }
     (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Testbench, Array("--full-stacktrace"))
 
   }

@@ -324,15 +324,26 @@ private[chisel3] object MonoConnect {
 
   /** Trace flow from child Data to its parent. */
   @tailrec private[chisel3] def traceFlow(currentlyFlipped: Boolean, data: Data, context_mod: RawModule): Boolean = {
-    import SpecifiedDirection.{Input => SInput, Flip => SFlip}
-    val sdir = data.specifiedDirection
+    println(s"     tracing flow with currentlyFlipped $currentlyFlipped, data = $data, contextMod = ${context_mod}")
+    //import SpecifiedDirection.{Input => SInput, Flip => SFlip}
+    import ActualDirection.{Input => SInput, Flipped => SFlip}
+    //val sdir = data.specifiedDirection
+    val sdir = data.direction
     val flipped = sdir == SInput || sdir == SFlip
     data.binding.get match {
-      case ChildBinding(parent) => traceFlow(flipped ^ currentlyFlipped, parent, context_mod)
+      case ChildBinding(parent) => {
+        println(s"    ChildBinding($parent), recursing...")
+        traceFlow(flipped ^ currentlyFlipped, parent, context_mod)
+      }
       case PortBinding(enclosure) =>
         val childPort = enclosure != context_mod
+        println("    PortBinding: childPort ^ flipped ^ currentlyFlipped, sdir")
+        println(s"                 $childPort ^ $flipped ^ $currentlyFlipped, $sdir")
         childPort ^ flipped ^ currentlyFlipped
-      case _ => true
+      case other => {
+        println(s"something else ${other}!")
+        true
+      }
     }
   }
   def canBeSink(data:   Data, context_mod: RawModule): Boolean = traceFlow(true, data, context_mod)

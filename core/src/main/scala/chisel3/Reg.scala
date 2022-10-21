@@ -41,6 +41,7 @@ object Reg {
     val reg = t.cloneTypeFull
     val clock = Node(Builder.forcedClock)
 
+    AssignCompatDir.assignCompatDir(reg, false)
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
     pushCommand(DefReg(sourceInfo, reg, clock))
     reg
@@ -176,6 +177,7 @@ object RegInit {
     val clock = Builder.forcedClock
     val reset = Builder.forcedReset
 
+    AssignCompatDir.assignCompatDir(reg, false)
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
     requireIsHardware(init, "reg initializer")
     pushCommand(DefRegInit(sourceInfo, reg, clock.ref, reset.ref, init.ref))

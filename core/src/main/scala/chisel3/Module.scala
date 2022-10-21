@@ -700,7 +700,7 @@ package experimental {
       // This recursively walks the tree, and assigns directions if no explicit
       // direction given by upper-levels (override Input / Output) AND element is
       // directly inside a compatibility Bundle determined by compile options.
-      
+
       AssignCompatDir.assignCompatDir(iodef, false)
 
       iodef.bind(PortBinding(this))
@@ -748,32 +748,40 @@ package experimental {
 }
 
 object AssignCompatDir {
-      def assignCompatDir(data: Data, insideCompat: Boolean): Unit = {
-        data match {
-          case data: Element if insideCompat => {println(s"   element inside compat, assigning ${data}"); data._assignCompatibilityExplicitDirection}
-          case data: Element => {println(s"   element not compat, nothing to do ${data}")}// Not inside a compatibility Bundle, nothing to be done
-          case data: Aggregate =>
-            data.specifiedDirection match {
-              // Recurse into children to ensure explicit direction set somewhere
-              case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
-                data match {
-                  case record: Record => {
-                    val compatRecord = !record.compileOptions.dontAssumeDirectionality
-                    println(s"   Unspecified record, recursing with compat=$compatRecord, $this")
+  def assignCompatDir(data: Data, insideCompat: Boolean): Unit = {
+    data match {
+      case data: Element if insideCompat => {
+        println(s"   element inside compat, assigning ${data}"); data._assignCompatibilityExplicitDirection
+      }
+      case data: Element => {
+        println(s"   element not compat, nothing to do ${data}")
+      } // Not inside a compatibility Bundle, nothing to be done
+      case data: Aggregate =>
+        data.specifiedDirection match {
+          // Recurse into children to ensure explicit direction set somewhere
+          case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
+            data match {
+              case record: Record => {
+                val compatRecord = !record.compileOptions.dontAssumeDirectionality
+                println(s"   Unspecified record, recursing with compat=$compatRecord, $this")
 
-                    record.elements.foreach{case (name, e) => {
-                      println(s"  element '$name'")
-                      assignCompatDir(e, compatRecord)
-                    }
-                  }}
-                  case vec: Vec[_] => {
-                    println(s"   Unspecified vec, recursing with compat=$insideCompat, $this")
-                    vec.getElements.foreach(assignCompatDir(_, insideCompat))
-                    (assignCompatDir(vec.sample_element, insideCompat))
+                record.elements.foreach {
+                  case (name, e) => {
+                    println(s"  element '$name'")
+                    assignCompatDir(e, compatRecord)
                   }
                 }
-              case SpecifiedDirection.Input | SpecifiedDirection.Output => {println (s"   forced input/output nothing to do ${this}")} // forced assign, nothing to do
+              }
+              case vec: Vec[_] => {
+                println(s"   Unspecified vec, recursing with compat=$insideCompat, $this")
+                vec.getElements.foreach(assignCompatDir(_, insideCompat))
+                (assignCompatDir(vec.sample_element, insideCompat))
+              }
             }
+          case SpecifiedDirection.Input | SpecifiedDirection.Output => {
+            println(s"   forced input/output nothing to do ${this}")
+          } // forced assign, nothing to do
         }
-      }
     }
+  }
+}

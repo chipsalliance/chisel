@@ -158,14 +158,19 @@ private[chisel3] object BiConnect {
       // Handle Records defined in Chisel._ code by emitting a FIRRTL bulk
       // connect when possible and a partial connect otherwise
       case pair @ (left_r: Record, right_r: Record) =>
+        println(s"Record pair left_r, right_r: ${left_r}, ${right_r}")
         val emitStrictConnects: Boolean =
           left_r.compileOptions.emitStrictConnects && right_r.compileOptions.emitStrictConnects
 
         // chisel3 <> is commutative but FIRRTL <- is not
-        val flipConnection =
-          !MonoConnect.canBeSink(left_r, context_mod) || !MonoConnect.canBeSource(right_r, context_mod)
+        val leftCantBeSink =  !MonoConnect.canBeSink(left_r, context_mod) 
+        val rightCantBeSource = !MonoConnect.canBeSource(right_r, context_mod)
+        val flipConnection = leftCantBeSink || rightCantBeSource
+        println("    flipConnection = !MonoConnect.canBeSink(left_r, context_mod) || !MonoConnect.canBeSource(right_r, context_mod)")
+        println(s"   $flipConnection = $leftCantBeSink} || $rightCantBeSource")
+        
         val (newLeft, newRight) = if (flipConnection) (right_r, left_r) else (left_r, right_r)
-
+        println(s"    newLeft, newRight: $newLeft, $newRight")
         val leftReified:  Option[Aggregate] = if (isView(newLeft)) reifyToAggregate(newLeft) else Some(newLeft)
         val rightReified: Option[Aggregate] = if (isView(newRight)) reifyToAggregate(newRight) else Some(newRight)
 
@@ -306,6 +311,9 @@ private[chisel3] object BiConnect {
       case Some(_: BlackBox) => false
       case _ => true
     }
+
+    println("    typeCheck && contextCheck && bindingCheck && flow_check && sourceNotLiteralCheck && blackBoxCheck")
+    println(s"   $typeCheck && $contextCheck && $bindingCheck && $flow_check && $sourceNotLiteralCheck && $blackBoxCheck")
 
     typeCheck && contextCheck && bindingCheck && flow_check && sourceNotLiteralCheck && blackBoxCheck
   }
