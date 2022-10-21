@@ -444,7 +444,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Chisel3.Top)
   }
 
-  "A chisel3.Bundle connected to a Chisel bundle in either direction" should "error with mismatched fields" in {
+  "A chisel3.Bundle bulk connected to a Chisel Bundle in either direction" should "work even with mismatched fields" in {
     object Compat {
       import Chisel._
       // Chisel._ bundle
@@ -461,15 +461,20 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class MyModule(swap: Boolean) extends Module {
         val in = IO(Input(if (swap) new Compat.FooBundle else new BarBundle))
         val out = IO(Output(if (swap) new BarBundle else new Compat.FooBundle))
+        out <> DontCare
         out <> in
       }
     }
-    val thrown0 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(true)))
-    thrown0.getMessage should include("Left Record missing field (foo)")
-    val thrown1 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(false)))
-    thrown1.getMessage should include("Left Record missing field (bar)")
+    // No connections should happen but code should compile.
+    val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    (chirrtl0 should not).include("<=")
+    (chirrtl0 should not).include("<-")
+    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    (chirrtl1 should not).include("<=")
+    (chirrtl1 should not).include("<-")
+
   }
-  it should "error with missing fields in the Chisel._" in {
+  it should "work with missing fields in the Chisel._" in {
     object Compat {
       import Chisel._
       // Chisel._ bundle
@@ -487,40 +492,80 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class MyModule(swap: Boolean) extends Module {
         val in = IO(Input(if (swap) new Compat.FooBundle else new FooBarBundle))
         val out = IO(Output(if (swap) new FooBarBundle else new Compat.FooBundle))
+        out <> DontCare
         out <> in
       }
     }
-    val thrown0 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(true)))
-    thrown0.getMessage should include("Right Record missing field (bar)")
-    val thrown1 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(false)))
-    thrown1.getMessage should include("Left Record missing field (bar)")
+    val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl0 should include("out.foo <= in.foo")
+    (chirrtl0 should not).include("out <- in")
+    (chirrtl0 should not).include("out <= in")
+    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(false))
+    chirrtl0 should include("out.foo <= in.foo")
+    (chirrtl0 should not).include("out <- in")
+    (chirrtl0 should not).include("out <= in")
   }
-  it should "error with missing fields in the chisel3._" in {
+
+  it should "work with missing fields in the chisel3._" in {
     object Compat {
       import Chisel._
-
+      // Chisel._ bundle
+      class FooBundle extends Bundle {
+        val foo = UInt(width = 8)
+      }
+    }
+    object Chisel3 {
+      import chisel3._
       class FooBarBundle extends Bundle {
         val foo = UInt(8.W)
         val bar = UInt(8.W)
       }
 
-    }
-    object Chisel3 {
-      import chisel3._
-      class FooBundle extends Bundle {
-        val foo = UInt(8.W)
-      }
       class MyModule(swap: Boolean) extends Module {
-        val in = IO(Input(if (swap) new Compat.FooBarBundle else new FooBundle))
-        val out = IO(Output(if (swap) new FooBundle else new Compat.FooBarBundle))
+        val in = IO(Input(if (swap) new Compat.FooBundle else new FooBarBundle))
+        val out = IO(Output(if (swap) new FooBarBundle else new Compat.FooBundle))
+        out <> DontCare
         out <> in
       }
     }
-    val thrown0 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(true)))
-    thrown0.getMessage should include("Left Record missing field (bar)")
-    val thrown1 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(false)))
-    thrown1.getMessage should include("Right Record missing field (bar)")
+    val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl0 should include("out.foo <= in.foo")
+    (chirrtl0 should not).include("out <- in")
+    (chirrtl0 should not).include("out <= in")
+    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(false))
+    chirrtl0 should include("out.foo <= in.foo")
+    (chirrtl0 should not).include("out <- in")
+    (chirrtl0 should not).include("out <= in")
+  }
+  it should "emit FIRRTL connects if possible" in {
+    object Compat {
+      import Chisel._
 
+      class FooBarBundle extends Bundle {
+        val foo = UInt(8.W)
+        val bar = Flipped(UInt(8.W))
+      }
+
+    }
+    object Chisel3 {
+      import chisel3._
+      class FooBarBundle extends Bundle {
+        val foo = Output(UInt(8.W))
+        val bar = Input(UInt(8.W))
+      }
+      class MyModule(swap: Boolean) extends Module {
+        val in = IO(Flipped((if (swap) new Compat.FooBarBundle else new FooBarBundle)))
+        val out = IO(if (swap) new FooBarBundle else new Compat.FooBarBundle)
+        out <> DontCare
+        out <> in
+      }
+    }
+    val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl0 should include("out <= in")
+    (chirrtl0 should not).include("out <- in")
+    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl0 should include("out <= in")
+    (chirrtl0 should not).include("out <- in")
   }
 
 }
