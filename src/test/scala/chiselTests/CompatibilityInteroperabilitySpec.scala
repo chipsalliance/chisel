@@ -390,4 +390,67 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Top(true))
     compile(new Top(false))
   }
+
+  "A BlackBox with Chisel._ fields in its IO" should "bulk connect in import chisel3._ code correctly" in {
+
+    object Compat {
+
+      import Chisel._
+
+      class LegacyChiselIO extends Bundle {
+
+        val foo = Output(Bool())
+        val bar = Output(Bool())
+      }
+
+    }
+    object Chisel3 {
+      import chisel3._
+      import chisel3.util.Valid
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
+
+      class FooModuleIO extends Bundle {
+
+        val quz = Input(new QuzIO)
+        val foo = Output(Bool())
+        val bar = Input(Bool())
+      }
+
+      class QuzIO extends Bundle {
+        val q = Flipped(Valid(new Compat.LegacyChiselIO))
+      }
+
+      @instantiable
+      class FooModule extends Module {
+
+        @public
+        val io = IO(new FooModuleIO())
+        io <> DontCare
+      }
+
+      class FooMirrorModule extends Module {
+        val io = IO(Flipped(new FooModuleIO()))
+        io <> DontCare
+      }
+      class FooMirrorBlackBox extends BlackBox {
+        val io = IO(Flipped(new FooModuleIO()))
+      }
+
+      class Top() extends Module {
+
+        val foo = Module(new FooModule)
+        //val mirror = Module(new FooMirrorBlackBox)
+        val mirror = Module(new FooMirrorModule())
+        foo.io <> mirror.io
+        // foo.io <> mirror.io
+        // foo.io is 'aligned' and mirror is 'flipped' so this would be determined by BiConnect to be equivalent to:
+        // mirror.io :<>= foo.io
+        // mirror.io.quz is Input, so should be flipped again...
+        // but specified Direction of .quz is Input?? why is it not a ChildBinding?
+        foo.io <> DontCare
+      }
+    }
+
+    (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Top, Array("--full-stacktrace"))
+  }
 }
