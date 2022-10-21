@@ -428,10 +428,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         io <> DontCare
       }
 
-      class FooMirrorModule extends Module {
-        val io = IO(Flipped(new FooModuleIO()))
-        io <> DontCare
-      }
       class FooMirrorBlackBox extends BlackBox {
         val io = IO(Flipped(new FooModuleIO()))
       }
@@ -439,14 +435,8 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class Top() extends Module {
 
         val foo = Module(new FooModule)
-        //val mirror = Module(new FooMirrorBlackBox)
-        val mirror = Module(new FooMirrorModule())
+        val mirror = Module(new FooMirrorBlackBox())
         foo.io <> mirror.io
-        // foo.io <> mirror.io
-        // foo.io is 'aligned' and mirror is 'flipped' so this would be determined by BiConnect to be equivalent to:
-        // mirror.io :<>= foo.io
-        // mirror.io.quz is Input, so should be flipped again...
-        // but specified Direction of .quz is Input?? why is it not a ChildBinding?
         foo.io <> DontCare
       }
     }
