@@ -792,7 +792,7 @@ class Salt extends Module {
     val drink = Module(new Coffee)
     override def desiredName = "SodiumMonochloride"
 
-    drink.io <> DontCare
+    drink.io.I := 42.U
 }
 ```
 
