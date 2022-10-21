@@ -441,6 +441,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       }
     }
 
-    (new chisel3.stage.ChiselStage).emitVerilog(new Chisel3.Top, Array("--full-stacktrace"))
+    compile(new Chisel3.Top)
   }
 }
