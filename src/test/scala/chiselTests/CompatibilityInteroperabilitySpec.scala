@@ -443,4 +443,84 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
     compile(new Chisel3.Top)
   }
+
+  "A chisel3.Bundle connected to a Chisel bundle in either direction" should "error with mismatched fields" in {
+    object Compat {
+      import Chisel._
+      // Chisel._ bundle
+      class FooBundle extends Bundle {
+        val foo = UInt(width = 8)
+      }
+    }
+    object Chisel3 {
+      import chisel3._
+      class BarBundle extends Bundle {
+        val bar = UInt(8.W)
+      }
+
+      class MyModule(swap: Boolean) extends Module {
+        val in = IO(Input(if (swap) new Compat.FooBundle else new BarBundle))
+        val out = IO(Output(if (swap) new BarBundle else new Compat.FooBundle))
+        out <> in
+      }
+    }
+    val thrown0 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(true)))
+    thrown0.getMessage should include("Left Record missing field (foo)")
+    val thrown1 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(false)))
+    thrown1.getMessage should include("Left Record missing field (bar)")
+  }
+  it should "error with missing fields in the Chisel._" in {
+    object Compat {
+      import Chisel._
+      // Chisel._ bundle
+      class FooBundle extends Bundle {
+        val foo = UInt(width = 8)
+      }
+    }
+    object Chisel3 {
+      import chisel3._
+      class FooBarBundle extends Bundle {
+        val foo = UInt(8.W)
+        val bar = UInt(8.W)
+      }
+
+      class MyModule(swap: Boolean) extends Module {
+        val in = IO(Input(if (swap) new Compat.FooBundle else new FooBarBundle))
+        val out = IO(Output(if (swap) new FooBarBundle else new Compat.FooBundle))
+        out <> in
+      }
+    }
+    val thrown0 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(true)))
+    thrown0.getMessage should include("Right Record missing field (bar)")
+    val thrown1 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(false)))
+    thrown1.getMessage should include("Left Record missing field (bar)")
+  }
+  it should "error with missing fields in the chisel3._" in {
+    object Compat {
+      import Chisel._
+
+      class FooBarBundle extends Bundle {
+        val foo = UInt(8.W)
+        val bar = UInt(8.W)
+      }
+
+    }
+    object Chisel3 {
+      import chisel3._
+      class FooBundle extends Bundle {
+        val foo = UInt(8.W)
+      }
+      class MyModule(swap: Boolean) extends Module {
+        val in = IO(Input(if (swap) new Compat.FooBarBundle else new FooBundle))
+        val out = IO(Output(if (swap) new FooBundle else new Compat.FooBarBundle))
+        out <> in
+      }
+    }
+    val thrown0 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(true)))
+    thrown0.getMessage should include("Left Record missing field (bar)")
+    val thrown1 = the[chisel3.internal.ChiselException] thrownBy (compile(new Chisel3.MyModule(false)))
+    thrown1.getMessage should include("Right Record missing field (bar)")
+
+  }
+
 }

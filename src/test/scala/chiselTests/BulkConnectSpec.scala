@@ -22,7 +22,7 @@ class BulkConnectSpec extends ChiselPropSpec {
   }
 
   property(
-    "Chisel connects should blast out to FIRRTL bulk connects for mistmatched, Stringly-typed connections (ignoring the context of the <>)"
+    "Chisel connects should blast out to FIRRTL bulk connects for mismatched, Stringly-typed connections (ignoring the context of the <>)"
   ) {
     object Foo {
       import Chisel._
@@ -79,7 +79,10 @@ class BulkConnectSpec extends ChiselPropSpec {
       out <> in
     })
     // out <- in is illegal FIRRTL
-    chirrtl should include("out.foo.bar <= in.foo.bar")
+    exactly(2, chirrtl.split('\n')) should include("out.foo.bar <= in.foo.bar")
+    chirrtl shouldNot include("out <= in")
+    chirrtl shouldNot include("out <- in")
+
   }
 
   property("Chisel connects should not emit a FIRRTL bulk connect for a bidirectional MonoConnect") {
@@ -96,6 +99,9 @@ class BulkConnectSpec extends ChiselPropSpec {
     })
 
     chirrtl shouldNot include("wire <= enq")
+    chirrtl should include("wire.bits <= enq.bits")
+    chirrtl should include("wire.valid <= enq.valid")
+    chirrtl should include("wire.ready <= enq.ready")
     chirrtl should include("deq <= enq")
   }
 
