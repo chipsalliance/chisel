@@ -231,9 +231,10 @@ private[chisel3] object BiConnect {
     val recordConnectFieldsMustMatch =
       left_r.compileOptions.connectFieldsMustMatch || right_r.compileOptions.connectFieldsMustMatch
 
+    val connectFieldsMustMatch = /*connectCompileOptions.connectFieldsMustMatch &&*/ recordConnectFieldsMustMatch
     // For each field in left, descend with right.
     // Don't bother doing this check if we don't expect it to necessarily pass.
-    if (connectCompileOptions.connectFieldsMustMatch || recordConnectFieldsMustMatch) {
+    if (connectFieldsMustMatch) {
       for ((field, right_sub) <- right_r.elements) {
         if (!left_r.elements.isDefinedAt(field)) {
           throw MissingLeftFieldException(field)
@@ -246,7 +247,7 @@ private[chisel3] object BiConnect {
         right_r.elements.get(field) match {
           case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
           case None => {
-            if (connectCompileOptions.connectFieldsMustMatch || recordConnectFieldsMustMatch) {
+            if (connectFieldsMustMatch) {
               throw MissingRightFieldException(field)
             }
           }

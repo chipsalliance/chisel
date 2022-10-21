@@ -21,7 +21,9 @@ class BulkConnectSpec extends ChiselPropSpec {
     chirrtl should include("io.outBi <= io.inBi")
   }
 
-  property("Chisel connects should not emit FIRRTL bulk connects for Stringly-typed connections") {
+  property(
+    "Chisel connects should blast out to FIRRTL bulk connects for mistmatched, Stringly-typed connections (ignoring the context of the <>)"
+  ) {
     object Foo {
       import Chisel._
       // Chisel._ bundle
@@ -54,7 +56,10 @@ class BulkConnectSpec extends ChiselPropSpec {
     })
 
     chirrtl should include("out.buzz.foo <= in.buzz.foo")
-    chirrtl shouldNot include("deq <= enq")
+    chirrtl should include("deq.valid <= enq.valid")
+    chirrtl should include("enq.ready <= deq.ready")
+    chirrtl should include("deq.bits.foo <= enq.bits.foo")
+    chirrtl shouldNot include("deq.bits.bar")
   }
 
   property("Chisel connects should not emit FIRRTL bulk connects between differing FIRRTL types") {
