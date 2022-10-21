@@ -228,10 +228,14 @@ private[chisel3] object BiConnect {
     context_mod:           RawModule
   ): Unit = {
     // Verify right has no extra fields that left doesn't have
-    val recordConnectFieldsMustMatch =
-      left_r.compileOptions.connectFieldsMustMatch || right_r.compileOptions.connectFieldsMustMatch
+    // The semantic we allow here is the most relaxed -- ONLY if:
+    // - both sides of the connection are chisel3._
+    // - AND the <> operator itself is in chisel3._ code
+    // do we require that all the fields match.
+    val recordConnectFieldsCanMismatch =
+      !left_r.compileOptions.connectFieldsMustMatch || !right_r.compileOptions.connectFieldsMustMatch
+    val connectFieldsMustMatch = !(!connectCompileOptions.connectFieldsMustMatch || recordConnectFieldsCanMismatch)
 
-    val connectFieldsMustMatch = /*connectCompileOptions.connectFieldsMustMatch &&*/ recordConnectFieldsMustMatch
     // For each field in left, descend with right.
     // Don't bother doing this check if we don't expect it to necessarily pass.
     if (connectFieldsMustMatch) {
