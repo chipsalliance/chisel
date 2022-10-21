@@ -521,4 +521,17 @@ class PrefixSpec extends ChiselPropSpec with Utils {
       Select.wires(top).map(_.instanceName) should be(List("nonData_value", "value"))
     }
   }
+  property("Prefixing should not be affected by repeated calls of suggestName") {
+    class Test extends Module {
+      val bundle = new Bundle {
+        val wire = Wire(UInt(3.W)).suggestName("wire")
+      }
+      // Does not change the instanceName since it was already suggested, but also
+      // should not remove the "bundle_" prefix either
+      bundle.wire.suggestName("should_not_prefix")
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("bundle_wire")) // In contrast to "wire"
+    }
+  }
 }

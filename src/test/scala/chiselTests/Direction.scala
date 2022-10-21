@@ -381,7 +381,11 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     assert(emitted.contains("io.monitor.valid <= io.driver.valid"))
     assert(emitted.contains("io.monitor.ready <= io.driver.ready"))
   }
+<<<<<<< HEAD
   property("Bugfix: marking Vec fields with mixed directionality as Output/Input clears inner directions") {
+=======
+  property("Bugfix: marking Vec fields with mixed directionality as Output clears inner directions") {
+>>>>>>> fe09a6db72906b22f7694c3f5db03872b007fdbc
     class Decoupled extends Bundle {
       val bits = UInt(3.W)
       val valid = Bool()
