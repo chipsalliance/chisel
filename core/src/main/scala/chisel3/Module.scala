@@ -106,38 +106,6 @@ object Module extends SourceInfoDoc {
 
     module
   }
-
-  /**  Assign directionality on any IOs that are still Unspecified/Flipped
-    *
-    *  Chisel2 did not require explicit direction on nodes
-    *  (unspecified treated as output, and flip on nothing was input).
-    *  As of 3.6, chisel3 is now also using these semantics, so we need to make it work
-    *  even for chisel3 code.
-    *  This assigns the explicit directions required by both semantics on all Bundles.
-    * This recursively walks the tree, and assigns directions if no explicit
-    *   direction given by upper-levels (override Input / Output)
-    */
-  private[chisel3] def assignCompatDir(data: Data): Unit = {
-    data match {
-      case data: Element => data._assignCompatibilityExplicitDirection
-      case data: Aggregate =>
-        data.specifiedDirection match {
-          // Recurse into children to ensure explicit direction set somewhere
-          case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
-            data match {
-              case record: Record =>
-                record.getElements.foreach(assignCompatDir(_))
-              case vec: Vec[_] =>
-                vec.getElements.foreach(assignCompatDir(_))
-                assignCompatDir(vec.sample_element) // This is used in fromChildren computation
-            }
-          case SpecifiedDirection.Input | SpecifiedDirection.Output =>
-          // forced assign, nothing to do
-          // The .bind algorithm will automatically assign the direction here.
-          // Thus, no implicit assignment is necessary.
-        }
-    }
-  }
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -284,10 +252,6 @@ package internal {
           new ClonePorts(proto.getChiselPorts :+ ("io" -> b._io.get): _*)
         case _ => new ClonePorts(proto.getChiselPorts: _*)
       }
-      // getChiselPorts (nor cloneTypeFull in general)
-      // does not recursively copy the right specifiedDirection,
-      // still need to fix it up here.
-      Module.assignCompatDir(clonePorts)
       clonePorts.bind(PortBinding(cloneParent))
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
@@ -561,8 +525,6 @@ package experimental {
       */
     protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
 
-      // Assign any signals (Chisel or chisel3) with Unspecified/Flipped directions to Output/Input
-      Module.assignCompatDir(iodef)
 
       iodef.bind(PortBinding(this))
       _ports += iodef -> sourceInfo
