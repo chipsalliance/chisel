@@ -392,14 +392,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "A Chisel.Bundle with only unspecified directions" should "work with D/I" in {
-    /* Fails on the instance <>:
-    [info] A Chisel.Bundle with only unspecified directions
-    [info] - should work with D/I *** FAILED ***
-    [info]   java.lang.RuntimeException: Unexpected port element direction 'Unspecified'
-    [info]   at chisel3.internal.BindingDirection$.from(Binding.scala:62)
-    [info]   at chisel3.internal.BiConnect$.elemConnect(BiConnect.scala:357)
-    [info]   at chisel3.internal.BiConnect$.connect(BiConnect.scala:103)
-     */
 
     object Compat {
       import Chisel._
@@ -432,16 +424,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A Chisel.Bundle with mixed Specified and Unspecified directions" should "work with D/I" in {
 
-    /**
-      *       A Chisel.Bundle with mixed Specified and Unspecified directions
-      *       [info] - should work with D/I *** FAILED ***
-      *       [info]   java.lang.RuntimeException: Unexpected port element direction 'Unspecified'
-      *       [info]   at chisel3.internal.BindingDirection$.from(Binding.scala:62)
-      *       [info]   at chisel3.internal.BiConnect$.elemConnect(BiConnect.scala:357)
-      *       [info]   at chisel3.internal.BiConnect$.connect(BiConnect.scala:103)
-      *      [info]   at chisel3.Data.bulkConnect(Data.scala:658)
-      */
-
     object Compat {
       import Chisel._
       import chisel3.experimental.hierarchy.{instantiable, public}
@@ -473,24 +455,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   }
   "A Chisel.Bundle with only unspecified vec direction" should "work with D/I" in {
 
-    /**
-      * A Chisel.Bundle with only unspecified vec direction
-      * [info] - should work with D/I *** FAILED ***
-      * [info]   java.lang.RuntimeException: Unexpected port element direction 'Unspecified'
-      * [info]   at chisel3.internal.BindingDirection$.from(Binding.scala:62)
-      * [info]   at chisel3.internal.BiConnect$.elemConnect(BiConnect.scala:357)
-      * [info]   at chisel3.internal.BiConnect$.connect(BiConnect.scala:103)
-      * [info]   at chisel3.internal.BiConnect$.$anonfun$connect$1(BiConnect.scala:129)
-      * [info]   at scala.collection.immutable.Range.foreach$mVc$sp(Range.scala:158)
-      * [info]   at chisel3.internal.BiConnect$.connect(BiConnect.scala:126)
-      * [info]   at chisel3.Data.bulkConnect(Data.scala:658
-      */
-    /* After first fix, it worked, but I tightened the check now we get:
-[info] A chisel3.Bundle with only unspecified vec direction
-[info] - should work with D/I *** FAILED ***
-[info]   chisel3.package$UnspecifiedDirectionException: Chisel internal error: All children should have specified directions, there is no reason for this to be ambiguous. Vector((MyModule.io_in: IO[Bool[3]],Unspecified), (MyModule.io_out: IO[Bool[3]],Unspecified)). Please submit a bug report at https://github.com/chipsalliance/chisel3/issues
-[info]   at chisel3.Aggregate.bind(Aggregate.scala:66)
-     */
     object Compat {
       import Chisel._
       import chisel3.experimental.hierarchy.{instantiable, public}
@@ -522,14 +486,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A chisel3.Bundle with only unspecified directions" should "work with D/I" in {
 
-    /*
-    A chisel3.Bundle with only unspecified directions
-[info] - should work with D/I *** FAILED ***
-[info]   java.lang.RuntimeException: Unexpected port element direction 'Unspecified'
-[info]   at chisel3.internal.BindingDirection$.from(Binding.scala:62)
-[info]   at chisel3.internal.BiConnect$.elemConnect(BiConnect.scala:357)
-     */
-
     // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction.
 
     object Chisel3 {
@@ -560,15 +516,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A chisel3.Bundle with mixed Specified and Unspecified directions" should "work with D/I" in {
 
-    /*
-    A chisel3.Bundle with mixed Specified and Unspecified directions
-[info] - should work with D/I *** FAILED ***
-[info]   java.lang.RuntimeException: Unexpected port element direction 'Unspecified'
-[info]   at chisel3.internal.BindingDirection$.from(Binding.scala:62)
-[info]   at chisel3.internal.BiConnect$.elemConnect(BiConnect.scala:357)
-[info]   at chisel3.internal.BiConnect$.connect(BiConnect.scala:103)
-[info]   at chisel3.Data.bulkConnect(Data.scala:658)
-     */
     // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction.
 
     object Chisel3 {
@@ -598,19 +545,8 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "A chisel3.Bundle with only unspecified vec direction" should "work with D/I" in {
-    /*
-    [info] A chisel3.Bundle with only unspecified vec direction
-    [info] - should work with D/I *** FAILED ***
-    [info]   java.lang.RuntimeException: Unexpected port element direction 'Unspecified'
-     */
+
     // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction
-    /* Also fails after only first fix:
-      A chisel3.Bundle with only unspecified vec direction
-     [info] - should work with D/I *** FAILED ***
-     [info]   chisel3.package$UnspecifiedDirectionException: At this point all children should have specified directions, there is no reason for this to be ambiguous anymore
-     [info]   at chisel3.Aggregate.bind(Aggregate.scala:64)
-     [info]
-     */
 
     object Chisel3 {
       import chisel3._
@@ -640,20 +576,8 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A chisel3.Bundle with only unspecified vec direction within an unspecified direction parent Bundle" should "work with D/I" in {
 
-    /*
- A chisel3.Bundle with only unspecified vec direction within an unspecified direction parent Bundle
-[info] - should work with D/I *** FAILED ***
-[info]   chisel3.package$UnspecifiedDirectionException: At this point all children should have specified directions, there is no reason for this to be ambiguous anymore
-[info]   at chisel3.Aggregate.bind(Aggregate.scala:64)
-[info]
-     */
-// after first fix and adding tighter requirements:
+    // This test is NOT expected to work in 3.5.x, it should throw an error in the IO construction.
 
-    /*
-[info] A chisel3.Bundle with only unspecified vec direction within an unspecified direction parent Bundle
-[info] - should work with D/I *** FAILED ***
-[info]   chisel3.package$UnspecifiedDirectionException: Chisel internal error: All children should have specified directions, there is no reason for this to be ambiguous. Vector((MyModule.io_vec: IO[Bool[3]],Unspecified)). Please submit a bug report at https://github.com/chipsalliance/chisel3/issues
-     */
     object Chisel3 {
       import chisel3._
       import chisel3.experimental.hierarchy.{instantiable, public, Instance}
@@ -687,24 +611,8 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A undirectioned Chisel.Bundle used in a MixedVec " should "bulk connect in import chisel3._ code correctly" in {
 
-    /*
-    A undirectioned Chisel.Bundle used in a MixedVec
-[info] - should bulk connect in import chisel3._ code correctly *** FAILED ***
-[info]   chisel3.package$UnspecifiedDirectionException: At this point all children should have specified directions, there is no reason for this to be ambiguous anymore
-[info]   at ... ()
-[info]   at chiselTests.CompatibilityInteroperabilitySpec$Compat$15$ChiselModule.<init>(CompatibilityInteroperabilitySpec.scala:674)
-[info]   at chiselTests.CompatibilityInteroperabilitySpec$Chisel3$15$Example.$anonfun$oldMod$2(CompatibilityInteroperabilitySpec.scala:684)
-[info]
-     */
-
     // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction.
 
-    // After first fix and tightening the requirements:
-    /*
-[info] A undirectioned Chisel.Bundle used in a MixedVec
-[info] - should bulk connect in import chisel3._ code correctly *** FAILED ***
-[info]   chisel3.package$UnspecifiedDirectionException: Chisel internal error: All children should have specified directions, there is no reason for this to be ambiguous. Vector((ChiselModule.elts_0: Reg[Bool],Unspecified), (ChiselModule.elts_1: Reg[Bool],Unspecified), (ChiselModule.elts_2: Reg[Bool],Unspecified)). Please submit a bug report at https://github.com/chipsalliance/chisel3/issues
-     */
     object Compat {
 
       import Chisel._
@@ -743,7 +651,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     object Compat {
 
       import Chisel._
-      import chisel3.util.MixedVec
 
       class ChiselModule(gen: () => Data) extends Module {
         val io = IO(new Bundle {
@@ -756,9 +663,8 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       import chisel3._
       import scala.collection.immutable.SeqMap
 
-      class MyRecord(gen: () => Data) extends Record {
+      class MyRecord(gen: () => Data) extends Record with chisel3.experimental.AutoCloneType {
         val elements = SeqMap("genDirectioned" -> Output(gen()), "genUndirectioned" -> gen())
-        override def cloneType: this.type = (new MyRecord(gen)).asInstanceOf[this.type]
       }
 
       class Example extends Module {
