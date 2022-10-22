@@ -36,6 +36,9 @@ import scala.collection.mutable
   * @note This API is experimental and subject to change
   */
 final class Analog private (private[chisel3] val width: Width) extends Element {
+  // Element sets its default to Output, but we need to undo that for analog.
+  super.specifiedDirection = SpecifiedDirection.Unspecified
+
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
   override def toString: String = stringAccessor(s"Analog$width")

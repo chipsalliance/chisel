@@ -62,7 +62,7 @@ sealed abstract class Aggregate extends Data {
     val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
     direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
       case Some(dir) => dir
-      case None => throw new UnexpectedUnspecifiedException("this should never happen")
+      case None      => throw new UnexpectedUnspecifiedException("this should never happen")
     }
   }
 
@@ -586,7 +586,7 @@ object VecInit extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): (T, T) => Unit = proto.direction match {
-    case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
+    case ActualDirection.Input | ActualDirection.Output =>
       // When internal wires are involved, driver / sink must be specified explicitly, otherwise
       // the system is unable to infer which is driver / sink
       (x, y) => x := y
@@ -595,6 +595,8 @@ object VecInit extends SourceInfoDoc {
       // Bulk connecting two wires may not succeed because Chisel frontend does not infer
       // directions.
       (x, y) => x <> y
+    case ActualDirection.Unspecified =>
+      throw new UnexpectedUnspecifiedException("We don't expect unspecified Actual Directions")
   }
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]

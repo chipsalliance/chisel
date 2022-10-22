@@ -525,7 +525,6 @@ package experimental {
       */
     protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
 
-
       iodef.bind(PortBinding(this))
       _ports += iodef -> sourceInfo
     }
