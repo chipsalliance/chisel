@@ -13,6 +13,11 @@ import chisel3.internal._
   * @define coll element
   */
 abstract class Element extends Data {
+
+  // Instead of doing a fixup later, just make all Elements default their specified direction
+  // to "Output".
+  super.specifiedDirection = SpecifiedDirection.Output
+
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
   def widthKnown:                         Boolean = width.known
   def name:                               String = getRef.name
