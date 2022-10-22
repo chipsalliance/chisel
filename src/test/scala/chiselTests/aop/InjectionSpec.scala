@@ -87,6 +87,20 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     }
   )
 
+<<<<<<< HEAD
+=======
+  val addingExternalModules = InjectingAspect(
+    { dut: SubmoduleManipulationTester => Seq(dut) },
+    { _: SubmoduleManipulationTester =>
+      // By creating a second SubmoduleA, the module names would conflict unless they were uniquified
+      val moduleSubmoduleC = Module(new SubmoduleC)
+      moduleSubmoduleC.io <> DontCare
+      //if we're here then we've elaborated correctly
+      stop()
+    }
+  )
+
+>>>>>>> 8e24a281 (Don't invalidate ExtModule ports in an explicitInvalidate = true context (#2795))
   val multiModuleInjectionAspect = InjectingAspect(
     { top: MultiModuleInjectionTester =>
       Select.collectDeep(top) { case m: SubmoduleA => m }
