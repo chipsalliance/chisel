@@ -179,10 +179,9 @@ private[chisel3] object BiConnect {
           )
         ) {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
+        } else if (!emitStrictConnects) {
+          newLeft.legacyConnect(newRight)(sourceInfo)
         } else {
-          // May be connecting to a blackbox or have missing fields in compatibility mode, etc
-          // Emitting a legacyConnect here may do the wrong thing w.r.t directionality, so
-          // blast out the connection so we can perform the proper analysis.
           recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
         }
 
@@ -228,17 +227,10 @@ private[chisel3] object BiConnect {
     context_mod:           RawModule
   ): Unit = {
     // Verify right has no extra fields that left doesn't have
-    // The semantic we allow here is the most relaxed -- ONLY if:
-    // - both sides of the connection are chisel3._
-    // - AND the <> operator itself is in chisel3._ code
-    // do we require that all the fields match.
-    val recordConnectFieldsCanMismatch =
-      !left_r.compileOptions.connectFieldsMustMatch || !right_r.compileOptions.connectFieldsMustMatch
-    val connectFieldsMustMatch = !(!connectCompileOptions.connectFieldsMustMatch || recordConnectFieldsCanMismatch)
-
+ 
     // For each field in left, descend with right.
     // Don't bother doing this check if we don't expect it to necessarily pass.
-    if (connectFieldsMustMatch) {
+    if (connectCompileOptions.connectFieldsMustMatch) {
       for ((field, right_sub) <- right_r.elements) {
         if (!left_r.elements.isDefinedAt(field)) {
           throw MissingLeftFieldException(field)
@@ -251,7 +243,7 @@ private[chisel3] object BiConnect {
         right_r.elements.get(field) match {
           case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
           case None => {
-            if (connectFieldsMustMatch) {
+            if (connectCompileOptions.connectFieldsMustMatch) {
               throw MissingRightFieldException(field)
             }
           }
