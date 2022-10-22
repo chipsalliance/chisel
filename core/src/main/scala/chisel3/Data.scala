@@ -109,7 +109,7 @@ object ActualDirection {
   }
 
   /** Determine the actual binding of a container given directions of its children.
-    * Returns None in the case of mixed specified / unspecified directionality.
+    * Returns None if there are any Unspecified directions since this is not expected.
     */
   def fromChildren(
     childDirections:    Set[ActualDirection],
@@ -120,8 +120,6 @@ object ActualDirection {
         case ActualDirection.Unspecified => Some(ActualDirection.Empty) // empty direction if relative / no direction
         case dir                         => Some(dir) // use assigned direction if specified
       }
-    } else if (childDirections == Set(ActualDirection.Unspecified)) {
-      Some(ActualDirection.Unspecified)
     } else if (childDirections == Set(ActualDirection.Input)) {
       Some(ActualDirection.Input)
     } else if (childDirections == Set(ActualDirection.Output)) {
@@ -491,19 +489,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
   private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
     _specifiedDirection = direction
-  }
-
-  /** This overwrites a relative SpecifiedDirection with an explicit one, and is used to implement
-    * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
-    * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
-    */
-  private[chisel3] def _assignCompatibilityExplicitDirection: Unit = {
-    (this, _specifiedDirection) match {
-      case (_: Analog, _) => // nothing to do
-      case (_, SpecifiedDirection.Unspecified)                       => _specifiedDirection = SpecifiedDirection.Output
-      case (_, SpecifiedDirection.Flip)                              => _specifiedDirection = SpecifiedDirection.Input
-      case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
-    }
   }
 
   // Binding stores information about this node's position in the hardware graph.

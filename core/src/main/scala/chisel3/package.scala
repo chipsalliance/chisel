@@ -375,9 +375,9 @@ package object chisel3 {
     */
   case class ExpectedHardwareException(message: String) extends BindingException(message)
 
-  /** An aggregate had a mix of specified and unspecified directionality children
+  /** We dont expect direction to end up as Unspecified anymore
     */
-  case class MixedDirectionAggregateException(message: String) extends BindingException(message)
+  case class UnexpectedUnspecifiedException(message: String) extends BindingException(message)
 
   /** Attempted to re-bind an already bound (directionality or hardware) object
     */

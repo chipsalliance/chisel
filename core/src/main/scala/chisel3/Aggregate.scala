@@ -62,13 +62,7 @@ sealed abstract class Aggregate extends Data {
     val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
     direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
       case Some(dir) => dir
-      case None =>
-        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-        resolvedDirection match {
-          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
-        }
+      case None => throw new UnexpectedUnspecifiedException("this should never happen")
     }
   }
 

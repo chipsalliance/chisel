@@ -357,7 +357,7 @@ private[chisel3] object MonoConnect {
 
     // Check that the Aggregate can be driven (not bidirectional or an input) to match Chisel semantics
     def sinkCanBeDrivenCheck: Boolean =
-      sink.direction == ActualDirection.Output || sink.direction == ActualDirection.Unspecified
+      sink.direction == ActualDirection.Output
 
     biConnectCheck && sinkCanBeDrivenCheck
   }
