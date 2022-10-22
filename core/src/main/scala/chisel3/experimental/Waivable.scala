@@ -7,7 +7,6 @@ import chisel3.internal.sourceinfo.SourceInfo
 
 import scala.collection.immutable.SeqMap
 
-
 /** Data type for representing any type that is ok to either leave dangling or unassigned from :<>= (TODO: :<=? :>=? :#=?)
   *
   * Uses the underlying opaque type support.
