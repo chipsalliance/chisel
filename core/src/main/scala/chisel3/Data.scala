@@ -958,10 +958,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 object Data {
 
   // Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data
-  implicit class ConnectableData[T <: Data](consumer: T) extends Connectable.ConnectableData[T](consumer)
+  implicit class ConnectableDefaultData[T <: Data : Connectable.WaivableTypeclass](consumer: T) extends Connectable.ConnectableData[T](consumer)
 
   // Provides :<>=, :<=, :>=, and :#= between a (consumer: Vec) and (producer: Seq)
-  implicit class ConnectableVec[T <: Data](consumer: Vec[T]) extends Connectable.ConnectableVec[T](consumer)
+  implicit class ConnectableDefaultVec[T <: Data : Connectable.WaivableTypeclass](consumer: Vec[T]) extends Connectable.ConnectableVec[T](consumer)
+
+  implicit def dataWaivable[T <: Data]: Connectable.WaivableTypeclass[T] = new Connectable.WaivableTypeclass[T](_ => _ => false, _ => _ => false)
 
   /**
     * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the

@@ -803,7 +803,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       }
       class Parent(hasOptional: Boolean) extends Bundle {
         val necessary = new MixedBundle
-        val optional = if(hasOptional) Some(Waivable(new MixedBundle, true, true)) else None
+        val optional = if(hasOptional) Some(Waivable(new MixedBundle, okToDangle=true, okToUnassign=true)) else None
       }
       class MyModule extends Module {
         val lit = new Parent(true).Lit(
@@ -988,6 +988,90 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     ignore("(?.?) x :<= DontCare") { }
     ignore("(?.?) x :>= DontCare") { }
     ignore("(?.?) x :#= DontCare") { }
+  }
+  describe("(9) Using WaivableTypeClass examples") {
+    import scala.collection.immutable.SeqMap
+    class Decoupled(val hasData: Boolean) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = if(hasData) Some(UInt(32.W)) else None
+    }
+    object Decoupled {
+      def waivable[T <: Data](d: Decoupled)(field: T): Boolean = {
+        if(!d.hasData) false else d.data.get == field
+      }
+      implicit val tpeclzz = new Connectable.WaivableTypeclass(Decoupled.waivable, Decoupled.waivable)
+    }
+    class DecoupledHasWaiver(val hasData: Boolean) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = if(hasData) Some(Waivable(UInt(32.W), true, true)) else None
+    }
+    class DecoupledNoWaiver(val hasData: Boolean) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = if(hasData) Some(UInt(32.W)) else None
+    }
+    class BundleMap(fields: SeqMap[String, () => Data]) extends Record {
+      val elements = fields.map { case (name, gen) => name -> gen()}
+      override def cloneType = new BundleMap(fields).asInstanceOf[this.type]
+    }
+    it("(9.a) Using typeclass works if available on consumer") {
+      // Works for directly connecting decoupled
+      class MyModule extends Module {
+        val in  = IO(Flipped(new Decoupled(true)))
+        val out = IO(new Decoupled(false))
+        out :<>= in
+      }
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+    }
+    it("(9.b) Using typeclass does not work if not available on consumer, but on nested field") {
+      class NestedDecoupled(val hasData: Boolean) extends Bundle {
+        val foo = new Decoupled(hasData)
+      }
+      // Broken for nested connecting decoupled
+      class MyModule extends Module {
+        val in  = IO(Flipped(new NestedDecoupled(true)))
+        val out = IO(new NestedDecoupled(false))
+        out :<>= in
+      }
+      intercept[Exception] { println(ChiselStage.emitChirrtl({ new MyModule() }, true, true)) }
+    }
+    it("(9.c) Using opaque type does work for nested field") {
+      class NestedDecoupled(val hasData: Boolean) extends Bundle {
+        val foo = new DecoupledHasWaiver(hasData)
+      }
+      class MyModule extends Module {
+        val in  = IO(Flipped(new NestedDecoupled(true)))
+        val out = IO(new NestedDecoupled(false))
+        out :<>= in
+      }
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+    }
+    it("(9.d) BundleMap example must use opaque types") {
+      class MyModule extends Module {
+        val in  = IO(Flipped(new BundleMap(SeqMap(
+          "a" -> (() => Waivable(UInt(2.W), true, true)),
+          "b" -> (() => Waivable(UInt(2.W), true, true))
+        ))))
+        val out = IO(new BundleMap(SeqMap(
+          "b" -> (() => Waivable(UInt(2.W), true, true)),
+          "c" -> (() => Waivable(UInt(2.W), true, true))
+        )))
+        out :<>= in
+      }
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+    }
+    it("(9.e) Inline waiver things") {
+      class MyModule extends Module {
+        val in  = IO(Flipped(new DecoupledNoWaiver(true)))
+        val out = IO(new DecoupledNoWaiver(false))
+        Connectable.waive(in.data.get) {
+          out :<>= in
+        }
+      }
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+    }
   }
   //property("(D.a) SInt :<>= SInt should succeed") {
   //  checkTest(buildTest(SInt(16.W), SInt(16.W), true, {_ :<>= _}, 0), "io.out <= io.in")

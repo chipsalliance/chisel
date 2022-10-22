@@ -15,12 +15,29 @@ import firrtl.ir.Orientation
 
 /** The default connection operators for Chisel hardware components */
 object Connectable {
+  final class WaivableTypeclass[T <: Data](
+    val okToDangle: (T => Data => Boolean),
+    val okToUnassign: (T => Data => Boolean)
+  )
+
+  trait HasWaivable { this: Record =>
+    def okToDangle(field: Data): Boolean
+    def okToUnassign(field: Data): Boolean
+  }
+
+  final case class Waivers(fields: Set[Data])
+
+  def waive(waivers: Data*)(conn: => Unit): Unit = {
+    internal.Builder.add("waiver", waivers.toSet)
+    conn
+    internal.Builder.delete("waiver")
+  }
 
   /** ConnectableData Typeclass defines the following operators on all subclasses of Data: :<=, :>=, :<>=, :#=
     *
     * @param consumer the left-hand-side of the connection
     */
-  implicit class ConnectableData[T <: Data](consumer: T) {
+  implicit class ConnectableData[T <: Data : WaivableTypeclass](consumer: T) {
 
     /** The "aligned connection operator" between a producer and consumer.
       *
@@ -154,7 +171,7 @@ object Connectable {
     *
     * @param consumer the left-hand-side of the connection
     */
-  implicit class ConnectableVec[T <: Data](consumer: Vec[T]) {
+  implicit class ConnectableVec[T <: Data : WaivableTypeclass](consumer: Vec[T]) {
 
     /** The "aligned connection operator" between a producer and consumer.
       *
@@ -272,6 +289,7 @@ object Connectable {
 }
 
 private[chisel3] object DirectionalConnectionFunctions {
+  import Connectable.WaivableTypeclass
   // Consumed by the := operator, set to what chisel3 will eventually become.
   implicit val compileOptions = new CompileOptions {
 
@@ -339,15 +357,29 @@ private[chisel3] object DirectionalConnectionFunctions {
   }
 
 
-  def doAssignment(consumer: Data, producer: Data, op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
+  def doAssignment[T <: Data : WaivableTypeclass](consumer: T, producer: T, op: ConnectionOperator, waivers: Set[Data])(implicit sourceInfo: SourceInfo): Unit = {
     val errors = mutable.ArrayBuffer[String]()
+    val waiver = implicitly[WaivableTypeclass[T]]
     def doAssignment(c: Option[Data], co: RelativeOrientation, p: Option[Data], po: RelativeOrientation)(implicit sourceInfo: SourceInfo): Unit = {
       ((c, co), (p, po)) match {
         case ((None, _),                               (None, _))                                                                                           => ()
+        // Opaque Type Waivable
         case ((Some(c: Waivable[_]), AlignedWithRoot), (None, EmptyOrientation))                if op.assignToConsumer && op.noUnassigned && c.okToUnassign => ()
         case ((Some(c: Waivable[_]), FlippedWithRoot), (None, EmptyOrientation))                if op.assignToProducer && op.noDangles && c.okToDangle      => ()
         case ((None, EmptyOrientation),                (Some(p: Waivable[_]), AlignedWithRoot)) if op.assignToConsumer && op.noDangles && p.okToDangle      => ()
         case ((None, EmptyOrientation),                (Some(p: Waivable[_]), FlippedWithRoot)) if op.assignToProducer && op.noUnassigned && p.okToUnassign => ()
+
+        // Typeclass Waiver cases
+        case ((Some(c), AlignedWithRoot), (None, EmptyOrientation)) if op.assignToConsumer && op.noUnassigned && waiver.okToUnassign(consumer)(c) => ()
+        case ((Some(c), FlippedWithRoot), (None, EmptyOrientation)) if op.assignToProducer && op.noDangles && waiver.okToDangle(consumer)(c)      => ()
+        case ((None, EmptyOrientation), (Some(p), AlignedWithRoot)) if op.assignToConsumer && op.noDangles && waiver.okToDangle(producer)(p)      => ()
+        case ((None, EmptyOrientation), (Some(p), FlippedWithRoot)) if op.assignToProducer && op.noUnassigned && waiver.okToUnassign(producer)(p) => ()
+
+        // Operator waiver cases
+        case ((Some(c), AlignedWithRoot), (None, EmptyOrientation)) if op.assignToConsumer && op.noUnassigned && waivers.contains(c) => ()
+        case ((Some(c), FlippedWithRoot), (None, EmptyOrientation)) if op.assignToProducer && op.noDangles && waivers.contains(c)      => ()
+        case ((None, EmptyOrientation), (Some(p), AlignedWithRoot)) if op.assignToConsumer && op.noDangles && waivers.contains(p)      => ()
+        case ((None, EmptyOrientation), (Some(p), FlippedWithRoot)) if op.assignToProducer && op.noUnassigned && waivers.contains(p) => ()
 
         case ((Some(c), AlignedWithRoot),              (None, EmptyOrientation))                if op.assignToConsumer && op.noUnassigned                   => errors += (s"unassigned consumer field $c")
         case ((Some(c: Aggregate), AlignedWithRoot),   (None, EmptyOrientation))                                                                            => c.getElements.foreach(e => doAssignment(Some(e), deriveOrientation(e, consumer, co), None, EmptyOrientation))
@@ -461,10 +493,10 @@ private[chisel3] object DirectionalConnectionFunctions {
     * @param activeSide indicates if the connection was a :<= (consumer is active) or :>= (producer is active)
     * @param sourceInfo source info for where the assignment occurred
     */
-  def assign(cRoot: Data, pRoot: Data, cOp: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
+  def assign[T <: Data : WaivableTypeclass](cRoot: T, pRoot: T, cOp: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
     //val trie = buildTrie(cRoot, pRoot)
     //doAssignment(trie, cOp)
-    doAssignment(cRoot, pRoot, cOp)
+    doAssignment(cRoot, pRoot, cOp, internal.Builder.get("waiver").getOrElse(Set.empty[Data]))
   }
 
 
