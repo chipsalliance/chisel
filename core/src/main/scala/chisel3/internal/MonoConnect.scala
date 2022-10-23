@@ -322,11 +322,13 @@ private[chisel3] object MonoConnect {
     else false
   }
 
-  /** Trace flow from child Data to its parent. Returns true if,
-    * given the context,
+  /** Trace flow from child Data to its parent.
+    *
+    * Returns true if, given the context,
     * this signal can be a sink when currentlyFlipped = true,
     * or if it can be a source when currentlyFlipped = false.
-    * Always returns true if the Data does not actually correspond to a Port.
+    * Always returns true if the Data does not actually correspond
+    * to a Port.
     */
   @tailrec private[chisel3] def traceFlow(
     wantToBeSink:     Boolean,
@@ -334,36 +336,17 @@ private[chisel3] object MonoConnect {
     data:             Data,
     context_mod:      RawModule
   ): Boolean = {
-    println("Tracing flow of data, wantToBeSink, currentlyFlipped, context_mod) with specifiedDirection")
-    println(s"               $data, $wantToBeSink, $currentlyFlipped, $context_mod) with ${data.specifiedDirection}")
-
     val sdir = data.specifiedDirection
     val coercedFlip = sdir == SpecifiedDirection.Input
     val coercedAlign = sdir == SpecifiedDirection.Output
     val flipped = sdir == SpecifiedDirection.Flip
     val traceFlipped = ((flipped ^ currentlyFlipped) || coercedFlip) && (!coercedAlign)
-    println(s"        traceFlipped = ((flipped ^ !currentlyFlipped) || coercedFlip) && (!coercedAlign)")
-    println(s"        $traceFlipped    = (($flipped ^ !$currentlyFlipped) || $coercedFlip) && (!$coercedAlign)")
-
     data.binding.get match {
-      case ChildBinding(parent) => {
-        println(s"    ChildBinding, recurse... traceFlow(wantToBeSink, traceFlipped, parent, context_mod)")
-        println(s"                             traceFlow($wantToBeSink, $traceFlipped, $parent, $context_mod)")
-        traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
-      }
-      case PortBinding(enclosure) => {
+      case ChildBinding(parent) => traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
+      case PortBinding(enclosure) =>
         val childPort = enclosure != context_mod
-        println(s"     PortBinding: returning !(wantToBeSink ^ childPort ^ traceFlipped)}")
-        println(
-          s"     PortBinding: returning ${!(wantToBeSink ^ childPort ^ traceFlipped)} = !($wantToBeSink ^ $childPort ^ $traceFlipped) = "
-        )
-
-        (wantToBeSink ^ childPort ^ traceFlipped)
-      }
-      case other => {
-        println(s"    $other: returning true")
-        true
-      }
+        wantToBeSink ^ childPort ^ traceFlipped
+      case _ => true
     }
   }
   def canBeSink(data:   Data, context_mod: RawModule): Boolean = traceFlow(true, false, data, context_mod)

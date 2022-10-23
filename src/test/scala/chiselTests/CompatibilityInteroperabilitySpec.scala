@@ -310,20 +310,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         enq <> deq
         deq <> enq
       }
-      val chirrtl = (new chisel3.stage.ChiselStage).emitChirrtl(new RawModule {
-        val deq = IO(new Bar)
-        val enq = IO(Flipped(new Bar))
-        // Also important to check connections to child ports
-        val c1 = Module(new Child)
-        val c2 = Module(new Child)
-        c1.enq <> enq
-        enq <> c1.enq
-        c2.enq <> c1.deq
-        c1.deq <> c2.enq
-        deq <> c2.deq
-        c2.deq <> deq
-      })
-      println(s"chirrtl is ${chirrtl}")
       new RawModule {
         val deq = IO(new Bar)
         val enq = IO(Flipped(new Bar))
@@ -338,7 +324,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         c2.deq <> deq
       }
     }
-
   }
 
   "A unidirectional but flipped Bundle" should "bulk connect in import chisel3._ code correctly" in {
