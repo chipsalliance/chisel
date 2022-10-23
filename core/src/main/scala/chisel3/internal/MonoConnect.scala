@@ -329,14 +329,14 @@ private[chisel3] object MonoConnect {
    * Always returns true if the Data does not actually correspond to a Port.
   */
   @tailrec private[chisel3] def traceFlow(wantToBeSink: Boolean, currentlyFlipped: Boolean, data: Data, context_mod: RawModule): Boolean = {
-    println("Tracing flow of data, wantToBeSink, currentlyFlipped, context_mod)")
-    println(s"               $data, $wantToBeSink, $currentlyFlipped, $context_mod")
+    println("Tracing flow of data, wantToBeSink, currentlyFlipped, context_mod) with specifiedDirection")
+    println(s"               $data, $wantToBeSink, $currentlyFlipped, $context_mod) with ${data.specifiedDirection}")
 
     val sdir = data.specifiedDirection
     val coercedFlip = sdir == SpecifiedDirection.Input
     val coercedAlign = sdir == SpecifiedDirection.Output
     val flipped = sdir == SpecifiedDirection.Flip
-    val traceFlipped = ((flipped ^ !currentlyFlipped) || coercedFlip) && (!coercedAlign)
+    val traceFlipped = ((flipped ^ currentlyFlipped) || coercedFlip) && (!coercedAlign)
     println(s"        traceFlipped = ((flipped ^ !currentlyFlipped) || coercedFlip) && (!coercedAlign)")
     println(s"        $traceFlipped    = (($flipped ^ !$currentlyFlipped) || $coercedFlip) && (!$coercedAlign)")
 
@@ -352,7 +352,7 @@ private[chisel3] object MonoConnect {
         println(s"     PortBinding: returning !(wantToBeSink ^ childPort ^ traceFlipped)}")
         println(s"     PortBinding: returning ${!(wantToBeSink ^ childPort ^ traceFlipped)} = !($wantToBeSink ^ $childPort ^ $traceFlipped) = ")
 
-        !(wantToBeSink ^ childPort ^ traceFlipped)
+        (wantToBeSink ^ childPort ^ traceFlipped)
       }
       case other => {
         println(s"    $other: returning true")
