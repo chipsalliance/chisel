@@ -325,8 +325,8 @@ private[chisel3] object MonoConnect {
   /** Trace flow from child Data to its parent.
     *
     * Returns true if, given the context,
-    * this signal can be a sink when currentlyFlipped = true,
-    * or if it can be a source when currentlyFlipped = false.
+    * this signal can be a sink when wantsToBeSink = true,
+    * or if it can be a source when wantsToBeSink = false.
     * Always returns true if the Data does not actually correspond
     * to a Port.
     */
