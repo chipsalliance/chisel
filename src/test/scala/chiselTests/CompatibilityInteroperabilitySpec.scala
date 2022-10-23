@@ -3,6 +3,7 @@
 package chiselTests
 
 import scala.collection.immutable.ListMap
+import chisel3.stage.ChiselStage.emitChirrtl
 
 // Keep Chisel._ separate from chisel3._ below
 object CompatibilityComponents {
@@ -392,62 +393,45 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "A BlackBox with Chisel._ fields in its IO" should "bulk connect in import chisel3._ code correctly" in {
-
     object Compat {
-
       import Chisel._
-
       class LegacyChiselIO extends Bundle {
-
         val foo = Output(Bool())
         val bar = Output(Bool())
       }
-
     }
     object Chisel3 {
       import chisel3._
       import chisel3.util.Valid
-      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
 
       class FooModuleIO extends Bundle {
-
         val quz = Input(new QuzIO)
         val foo = Output(Bool())
         val bar = Input(Bool())
       }
-
       class QuzIO extends Bundle {
         val q = Flipped(Valid(new Compat.LegacyChiselIO))
       }
-
-      @instantiable
       class FooModule extends Module {
-
-        @public
         val io = IO(new FooModuleIO())
         io <> DontCare
       }
-
       class FooMirrorBlackBox extends BlackBox {
         val io = IO(Flipped(new FooModuleIO()))
       }
-
-      class Top() extends Module {
-
+      class Top extends Module {
         val foo = Module(new FooModule)
         val mirror = Module(new FooMirrorBlackBox())
         foo.io <> mirror.io
         foo.io <> DontCare
       }
     }
-
     compile(new Chisel3.Top)
   }
 
   "A chisel3.Bundle bulk connected to a Chisel Bundle in either direction" should "work even with mismatched fields" in {
     object Compat {
       import Chisel._
-      // Chisel._ bundle
       class FooBundle extends Bundle {
         val foo = UInt(width = 8)
       }
@@ -457,7 +441,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       class BarBundle extends Bundle {
         val bar = UInt(8.W)
       }
-
       class MyModule(swap: Boolean) extends Module {
         val in = IO(Input(if (swap) new Compat.FooBundle else new BarBundle))
         val out = IO(Output(if (swap) new BarBundle else new Compat.FooBundle))
@@ -465,18 +448,17 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         out <> in
       }
     }
-    val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
     chirrtl0 shouldNot include("<=")
     chirrtl0 should include("out <- in")
-    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
     chirrtl1 shouldNot include("<=")
     chirrtl1 should include("out <- in")
-
   }
+
   it should "work with missing fields in the Chisel._" in {
     object Compat {
       import Chisel._
-      // Chisel._ bundle
       class FooBundle extends Bundle {
         val foo = UInt(width = 8)
       }
@@ -495,10 +477,10 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         out <> in
       }
     }
-    val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
     chirrtl0 shouldNot include("<=")
     chirrtl0 should include("out <- in")
-    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
     chirrtl1 shouldNot include("<=")
     chirrtl1 should include("out <- in")
   }
@@ -506,7 +488,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   it should "work with missing fields in the chisel3._" in {
     object Compat {
       import Chisel._
-      // Chisel._ bundle
       class FooBundle extends Bundle {
         val foo = UInt(width = 8)
       }
@@ -525,22 +506,21 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         out <> in
       }
     }
-    val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
     chirrtl0 shouldNot include("<=")
     chirrtl0 should include("out <- in")
-    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
     chirrtl1 shouldNot include("<=")
     chirrtl1 should include("out <- in")
   }
+
   it should "emit FIRRTL connects if possible" in {
     object Compat {
       import Chisel._
-
       class FooBarBundle extends Bundle {
         val foo = UInt(8.W)
         val bar = Flipped(UInt(8.W))
       }
-
     }
     object Chisel3 {
       import chisel3._
@@ -555,12 +535,11 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         out <> in
       }
     }
-    val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
     chirrtl0 should include("out <= in")
     chirrtl0 shouldNot include("out <- in")
-    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
-    chirrtl0 should include("out <= in")
-    chirrtl0 shouldNot include("out <- in")
+    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl1 should include("out <= in")
+    chirrtl1 shouldNot include("out <- in")
   }
-
 }
