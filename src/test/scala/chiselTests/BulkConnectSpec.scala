@@ -54,7 +54,15 @@ class BulkConnectSpec extends ChiselPropSpec {
     })
 
     chirrtl should include("out.buzz.foo <= in.buzz.foo")
+    chirrtl should include("out.fizz <= in.fizz")
+    chirrtl should include("deq.bits <- enq.bits")
+    chirrtl should include("deq.valid <= enq.valid")
+    chirrtl should include("enq.ready <= deq.ready")
+
     chirrtl shouldNot include("deq <= enq")
+    chirrtl shouldNot include("deq.bits.foo <= enq.bits.foo")
+    chirrtl shouldNot include("deq.bits.foo <- enq.bits.foo")
+    chirrtl shouldNot include("deq.bits.bar")
   }
 
   property("Chisel connects should not emit FIRRTL bulk connects between differing FIRRTL types") {
@@ -74,7 +82,9 @@ class BulkConnectSpec extends ChiselPropSpec {
       out <> in
     })
     // out <- in is illegal FIRRTL
-    chirrtl should include("out.foo.bar <= in.foo.bar")
+    exactly(2, chirrtl.split('\n')) should include("out.foo.bar <= in.foo.bar")
+    chirrtl shouldNot include("out <= in")
+    chirrtl shouldNot include("out <- in")
   }
 
   property("Chisel connects should not emit a FIRRTL bulk connect for a bidirectional MonoConnect") {
@@ -91,6 +101,9 @@ class BulkConnectSpec extends ChiselPropSpec {
     })
 
     chirrtl shouldNot include("wire <= enq")
+    chirrtl should include("wire.bits <= enq.bits")
+    chirrtl should include("wire.valid <= enq.valid")
+    chirrtl should include("wire.ready <= enq.ready")
     chirrtl should include("deq <= enq")
   }
 
