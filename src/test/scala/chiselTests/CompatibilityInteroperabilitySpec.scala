@@ -413,20 +413,23 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         val q = Flipped(Valid(new Compat.LegacyChiselIO))
       }
       class FooModule extends Module {
-        val io = IO(new FooModuleIO())
+        val io = IO(new FooModuleIO)
         io <> DontCare
       }
       class FooMirrorBlackBox extends BlackBox {
-        val io = IO(Flipped(new FooModuleIO()))
+        val io = IO(Flipped(new FooModuleIO))
       }
       class Top extends Module {
         val foo = Module(new FooModule)
-        val mirror = Module(new FooMirrorBlackBox())
+        val mirror = Module(new FooMirrorBlackBox)
         foo.io <> mirror.io
-        foo.io <> DontCare
       }
     }
-    compile(new Chisel3.Top)
+    val chirrtl = emitChirrtl(new Chisel3.Top)
+    chirrtl should include("foo.io.bar <= mirror.bar")
+    chirrtl should include("mirror.foo <= foo.io.foo")
+    chirrtl should include("foo.io.quz.q.bits <- mirror.quz.q.bits")
+    chirrtl should include("foo.io.quz.q.valid <= mirror.quz.q.valid")
   }
 
   "A chisel3.Bundle bulk connected to a Chisel Bundle in either direction" should "work even with mismatched fields" in {
