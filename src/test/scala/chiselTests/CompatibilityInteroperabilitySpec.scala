@@ -465,13 +465,12 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         out <> in
       }
     }
-    // No connections should happen but code should compile.
     val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
-    (chirrtl0 should not).include("<=")
-    (chirrtl0 should not).include("<-")
+    chirrtl0 shouldNot include("<=")
+    chirrtl0 should include("out <- in")
     val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
-    (chirrtl1 should not).include("<=")
-    (chirrtl1 should not).include("<-")
+    chirrtl1 shouldNot include("<=")
+    chirrtl1 should include("out <- in")
 
   }
   it should "work with missing fields in the Chisel._" in {
@@ -497,13 +496,11 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       }
     }
     val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
-    chirrtl0 should include("out.foo <= in.foo")
-    (chirrtl0 should not).include("out <- in")
-    (chirrtl0 should not).include("out <= in")
-    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(false))
-    chirrtl0 should include("out.foo <= in.foo")
-    (chirrtl0 should not).include("out <- in")
-    (chirrtl0 should not).include("out <= in")
+    chirrtl0 shouldNot include("<=")
+    chirrtl0 should include("out <- in")
+    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl1 shouldNot include("<=")
+    chirrtl1 should include("out <- in")
   }
 
   it should "work with missing fields in the chisel3._" in {
@@ -529,13 +526,11 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       }
     }
     val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
-    chirrtl0 should include("out.foo <= in.foo")
-    (chirrtl0 should not).include("out <- in")
-    (chirrtl0 should not).include("out <= in")
-    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(false))
-    chirrtl0 should include("out.foo <= in.foo")
-    (chirrtl0 should not).include("out <- in")
-    (chirrtl0 should not).include("out <= in")
+    chirrtl0 shouldNot include("<=")
+    chirrtl0 should include("out <- in")
+    val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl1 shouldNot include("<=")
+    chirrtl1 should include("out <- in")
   }
   it should "emit FIRRTL connects if possible" in {
     object Compat {
@@ -562,10 +557,10 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     }
     val chirrtl0 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
     chirrtl0 should include("out <= in")
-    (chirrtl0 should not).include("out <- in")
+    chirrtl0 shouldNot include("out <- in")
     val chirrtl1 = chisel3.stage.ChiselStage.emitChirrtl(new Chisel3.MyModule(true))
     chirrtl0 should include("out <= in")
-    (chirrtl0 should not).include("out <- in")
+    chirrtl0 shouldNot include("out <- in")
   }
 
 }
