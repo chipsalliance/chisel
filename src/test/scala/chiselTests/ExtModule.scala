@@ -59,6 +59,17 @@ class MultiExtModuleTester extends BasicTester {
   stop()
 }
 
+class ExtModuleInvalidatedTester extends MultiIOModule {
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+  val inst = Module(new ExtModule {
+    val in = IO(Input(UInt(8.W)))
+    val out = IO(Output(UInt(8.W)))
+  })
+  inst.in := in
+  out := inst.out
+}
+
 class ExtModuleSpec extends ChiselFlatSpec {
   "A ExtModule inverter" should "work" in {
     assertTesterPasses({ new ExtModuleTester },
@@ -75,5 +86,13 @@ class ExtModuleSpec extends ChiselFlatSpec {
       assert(DataMirror.modulePorts(m) == Seq(
           "in" -> m.in, "out" -> m.out))
     })
+  }
+
+  behavior.of("ExtModule")
+
+  it should "not have invalidated ports in a chisel3._ context" in {
+    val chirrtl = ChiselStage.emitChirrtl(new ExtModuleInvalidatedTester)
+    chirrtl shouldNot include("inst.in is invalid")
+    chirrtl shouldNot include("inst.out is invalid")
   }
 }

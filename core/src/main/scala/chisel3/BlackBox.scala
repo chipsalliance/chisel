@@ -92,8 +92,10 @@ package experimental {
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
       implicit val sourceInfo = UnlocatableSourceInfo
 
-      for (x <- getModulePorts) {
-        pushCommand(DefInvalid(sourceInfo, x.ref))
+      if (!parentCompileOptions.explicitInvalidate) {
+        for (x <- getModulePorts) {
+          pushCommand(DefInvalid(sourceInfo, x.ref))
+        }
       }
     }
   }
@@ -186,8 +188,10 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
   }
 
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-    for ((_, port) <- _io.elements) {
-      pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
+    if (!parentCompileOptions.explicitInvalidate) {
+      for ((_, port) <- _io.elements) {
+        pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
+      }
     }
   }
 }
