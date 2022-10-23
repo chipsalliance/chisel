@@ -92,15 +92,10 @@ package experimental {
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
       implicit val sourceInfo = UnlocatableSourceInfo
 
-<<<<<<< HEAD
-      for (x <- getModulePorts) {
-        pushCommand(DefInvalid(sourceInfo, x.ref))
-=======
       if (!parentCompileOptions.explicitInvalidate) {
-        for ((port, _) <- getModulePorts) {
-          pushCommand(DefInvalid(sourceInfo, port.ref))
+        for (x <- getModulePorts) {
+          pushCommand(DefInvalid(sourceInfo, x.ref))
         }
->>>>>>> 8e24a281 (Don't invalidate ExtModule ports in an explicitInvalidate = true context (#2795))
       }
     }
   }
