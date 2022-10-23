@@ -229,7 +229,7 @@ private[chisel3] object BiConnect {
     context_mod:           RawModule
   ): Unit = {
     // Verify right has no extra fields that left doesn't have
- 
+
     // For each field in left, descend with right.
     // Don't bother doing this check if we don't expect it to necessarily pass.
     if (connectCompileOptions.connectFieldsMustMatch) {

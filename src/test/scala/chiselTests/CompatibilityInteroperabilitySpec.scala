@@ -338,7 +338,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         c2.deq <> deq
       }
     }
-    
+
   }
 
   "A unidirectional but flipped Bundle" should "bulk connect in import chisel3._ code correctly" in {
