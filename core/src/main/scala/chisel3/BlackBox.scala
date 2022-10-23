@@ -92,15 +92,10 @@ package experimental {
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
       implicit val sourceInfo = UnlocatableSourceInfo
 
-<<<<<<< HEAD
-      for (x <- getModulePorts) {
-        pushCommand(DefInvalid(sourceInfo, x.ref))
-=======
       if (!parentCompileOptions.explicitInvalidate) {
-        for ((port, _) <- getModulePorts) {
-          pushCommand(DefInvalid(sourceInfo, port.ref))
+        for (x <- getModulePorts) {
+          pushCommand(DefInvalid(sourceInfo, x.ref))
         }
->>>>>>> 8e24a281 (Don't invalidate ExtModule ports in an explicitInvalidate = true context (#2795))
       }
     }
   }
@@ -193,15 +188,10 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
   }
 
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-<<<<<<< HEAD
-    for ((_, port) <- _io.elements) {
-      pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
-=======
     if (!parentCompileOptions.explicitInvalidate) {
-      for ((_, port) <- _io.map(_.elements).getOrElse(Nil)) {
+      for ((_, port) <- _io.elements) {
         pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
       }
->>>>>>> 8e24a281 (Don't invalidate ExtModule ports in an explicitInvalidate = true context (#2795))
     }
   }
 }
