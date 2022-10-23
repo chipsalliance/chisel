@@ -162,8 +162,10 @@ private[chisel3] object BiConnect {
           left_r.compileOptions.emitStrictConnects && right_r.compileOptions.emitStrictConnects
 
         // chisel3 <> is commutative but FIRRTL <- is not
+        println(s"Determining flipConnection of ${left_r} <> ${right_r}")
         val flipConnection =
           !MonoConnect.canBeSink(left_r, context_mod) || !MonoConnect.canBeSource(right_r, context_mod)
+        println(s"DONE: flipConnection is ${flipConnection}")
         val (newLeft, newRight) = if (flipConnection) (right_r, left_r) else (left_r, right_r)
 
         val leftReified:  Option[Aggregate] = if (isView(newLeft)) reifyToAggregate(newLeft) else Some(newLeft)
@@ -296,7 +298,12 @@ private[chisel3] object BiConnect {
     }
 
     // check data can flow between provided aggregates
-    def flow_check = MonoConnect.canBeSink(sink, context_mod) && MonoConnect.canBeSource(source, context_mod)
+    def flow_check = {
+      println(s"Doing Flow Check... of ${sink} <= ${source}")
+      val result = MonoConnect.canBeSink(sink, context_mod) && MonoConnect.canBeSource(source, context_mod)
+      println(s"Done: flowcheck is $result")
+      result
+    }
 
     // do not bulk connect source literals (results in infinite recursion from calling .ref)
     def sourceNotLiteralCheck = source.topBinding match {

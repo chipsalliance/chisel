@@ -329,17 +329,35 @@ private[chisel3] object MonoConnect {
    * Always returns true if the Data does not actually correspond to a Port.
   */
   @tailrec private[chisel3] def traceFlow(wantToBeSink: Boolean, currentlyFlipped: Boolean, data: Data, context_mod: RawModule): Boolean = {
+    println("Tracing flow of data, wantToBeSink, currentlyFlipped, context_mod)")
+    println(s"               $data, $wantToBeSink, $currentlyFlipped, $context_mod")
+
     val sdir = data.specifiedDirection
     val coercedFlip = sdir == SpecifiedDirection.Input
     val coercedAlign = sdir == SpecifiedDirection.Output
     val flipped = sdir == SpecifiedDirection.Flip
     val traceFlipped = ((flipped ^ !currentlyFlipped) || coercedFlip) && (!coercedAlign)
+    println(s"        traceFlipped = ((flipped ^ !currentlyFlipped) || coercedFlip) && (!coercedAlign)")
+    println(s"        $traceFlipped    = (($flipped ^ !$currentlyFlipped) || $coercedFlip) && (!$coercedAlign)")
+
+
     data.binding.get match {
-      case ChildBinding(parent) => traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
-      case PortBinding(enclosure) =>
+      case ChildBinding(parent) => {
+        println(s"    ChildBinding, recurse... traceFlow(wantToBeSink, traceFlipped, parent, context_mod)")
+        println(s"                             traceFlow($wantToBeSink, $traceFlipped, $parent, $context_mod)")
+        traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
+      }
+      case PortBinding(enclosure) => {
         val childPort = enclosure != context_mod
+        println(s"     PortBinding: returning !(wantToBeSink ^ childPort ^ traceFlipped)}")
+        println(s"     PortBinding: returning ${!(wantToBeSink ^ childPort ^ traceFlipped)} = !($wantToBeSink ^ $childPort ^ $traceFlipped) = ")
+
         !(wantToBeSink ^ childPort ^ traceFlipped)
-      case _ => true
+      }
+      case other => {
+        println(s"    $other: returning true")
+        true
+      }
     }
   }
   def canBeSink(data:   Data, context_mod: RawModule): Boolean = traceFlow(true, false, data, context_mod)
