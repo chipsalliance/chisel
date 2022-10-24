@@ -44,7 +44,6 @@ spec and the Chisel APIs. Thus, the 3.6 release will:
   - EnumAnnotations
   - RunFirrtlTransformAnnotation
   - LoadMemoryFromFile
-  - Trace API
   - ChiselAnnotation/custom annotations
 - Publish Roadmap
 
