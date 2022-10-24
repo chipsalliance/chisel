@@ -1016,6 +1016,11 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val elements = fields.map { case (name, gen) => name -> gen()}
       override def cloneType = new BundleMap(fields).asInstanceOf[this.type]
     }
+    class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = gen()
+    }
     it("(9.a) Using typeclass works if available on consumer") {
       // Works for directly connecting decoupled
       class MyModule extends Module {
@@ -1067,6 +1072,55 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val in  = IO(Flipped(new DecoupledNoWaiver(true)))
         val out = IO(new DecoupledNoWaiver(false))
         Connectable.waive(in.data.get) {
+          out :<>= in
+        }
+      }
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+    }
+    it("(9.f) BundleMap example can use programmatic waiving") {
+      class MyModule extends Module {
+        def ab = new BundleMap(SeqMap(
+          "a" -> (() => UInt(2.W)),
+          "b" -> (() => UInt(2.W))
+        ))
+        def bc = new BundleMap(SeqMap(
+          "b" -> (() => UInt(2.W)),
+          "c" -> (() => UInt(2.W))
+        ))
+        val in  = IO(Flipped(new DecoupledGen(() => ab)))
+        val out = IO(new DecoupledGen(() => bc))
+        //Programmatic
+        val waivables = DataMirror.collectDeepOverMatches(in, out) {
+          case (l: BundleMap, r: BundleMap) => l.getElements ++ r.getElements
+        }.flatten
+        Connectable.waive(waivables:_*) {
+          out :<>= in
+        }
+      }
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+    }
+    it("(9.g) Somehow return the unused fields?") {
+      class MyModule extends Module {
+        def ab = new BundleMap(SeqMap(
+          "a" -> (() => UInt(2.W)),
+          "b" -> (() => UInt(2.W))
+        ))
+        def bc = new BundleMap(SeqMap(
+          "b" -> (() => UInt(2.W)),
+          "c" -> (() => UInt(2.W))
+        ))
+        val in  = IO(Flipped(new DecoupledGen(() => ab)))
+        val out = IO(new DecoupledGen(() => bc))
+        out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
+        //Programmatic
+        val waivables: Seq[Data] = DataMirror.collectDeepOverMatches(in, out) {
+          case (l: BundleMap, r: BundleMap) => l.getElements ++ r.getElements
+        }.flatten
+        val unmatched: Seq[Data] = DataMirror.collectDeepOverAll(in, out) {
+          case (Some(l), None) => l
+          case (None, Some(r)) => r
+        }
+        Connectable.waive(unmatched:_*) {
           out :<>= in
         }
       }

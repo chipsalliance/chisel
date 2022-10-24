@@ -276,7 +276,97 @@ package experimental {
         target.cloneTypeFull.asInstanceOf[T]
       }
     }
+
+
+    /** Return all expanded components, including intermediate aggregate nodes
+      *
+      * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
+      */
+    def getIntermediateAndLeafs(d: Data): Seq[Data] = d match {
+      case r: Record => r +: r.getElements.flatMap(getIntermediateAndLeafs)
+      case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
+      case other => Seq(other)
+    }
+
+    /** Collects all fields selected by collector within a data and all recursive children fields
+      * Accepts a collector partial function, rather than a collector function
+      *
+      * @param data Data to collect fields, as well as all children datas it directly and indirectly instantiates
+      * @param collector Collector partial function to pick which components to collect
+      * @tparam T Type of the component that will be collected
+      */
+    def collectDeep[T](d: Data)(collector: PartialFunction[Data, T]): Iterable[T] = {
+      val myItems = collector.lift(d)
+      val deepChildrenItems = d match {
+        case a: Aggregate => a.getElements.flatMap { x => collectDeep(x)(collector) }
+        case other => Nil
+      }
+      myItems ++ deepChildrenItems
+    }
+    def collectDeepOverMatches[T](left: Data, right: Data)(collector: PartialFunction[(Data, Data), T]): Seq[T] = {
+      def newCollector(lOpt: Option[Data], rOpt: Option[Data]): Option[(Option[T], Option[Unit])] = {
+        (lOpt, rOpt) match {
+          case (Some(l), Some(r)) => collector.lift((l, r)) match {
+            case Some(x: T) => Some((Some(x), None))
+            case None => None
+          }
+          case other => None
+        }
+      }
+      collectDeepOverAllForAny(Some(left), Some(right))(newCollector).collect {
+        case (Some(x: T), None) => (x)
+      }
+    }
+    def collectDeepOverAll[T](left: Data, right: Data)(collector: PartialFunction[(Option[Data], Option[Data]), T]): Seq[T] = {
+      def newCollector(lOpt: Option[Data], rOpt: Option[Data]): Option[(Option[T], Option[Unit])] = {
+        collector.lift((lOpt, rOpt)) match {
+          case Some(x: T) => Some((Some(x), None))
+          case None => None
+        }
+      }
+      collectDeepOverAllForAny(Some(left), Some(right))(newCollector).collect {
+        case (Some(x: T), None) => x
+      }
+    }
+
+    def collectDeepOverAllForAny[T, S](left: Option[Data], right: Option[Data])(collector: (Option[Data], Option[Data]) => Option[(Option[T], Option[S])]): Seq[(Option[T], Option[S])] = {
+      implicit class VecGet(v: Vec[Data]) { def get(i: Int): Option[Data] = if (i < v.length) Some(v(i)) else None }
+      implicit class VecOptOps(vOpt: Option[Vec[Data]]) {
+        // Like .get, but its already defined on Option
+        def grab(i: Int): Option[Data] = vOpt.flatMap { _.get(i) }
+        def size = vOpt.map(_.size).getOrElse(0)
+      }
+      implicit class RecordOptGet(rOpt: Option[Record]) {
+        // Like .get, but its already defined on Option
+        def grab(k: String): Option[Data] = rOpt.flatMap { _.elements.get(k) }
+        def keys: Iterable[String] = rOpt.map { r => r.elements.map(_._1) }.getOrElse(Seq.empty[String])
+      }
+      def isDifferent(l: Option[Data], r: Option[Data]): Boolean = l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
+      def isRecord   (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Record] }.getOrElse(false)
+      def isVec      (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Vec[_]] }.getOrElse(false)
+      def isElement  (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
+
+      val myItems = collector(left, right) match {
+        case None => Nil
+        case Some((None, None)) => Nil
+        case Some(other) => Seq(other)
+      }
+      val childItems = (left, right) match {
+        case (None, None)                            => Nil
+        case (lOpt, rOpt) if isDifferent(lOpt, rOpt) =>
+          collectDeepOverAllForAny(lOpt, None)(collector) ++ collectDeepOverAllForAny(None, rOpt)(collector)
+
+        case (lOpt: Option[Vec[Data]], rOpt: Option[Vec[Data]]) if isVec(lOpt, rOpt)       =>
+          (0 until (lOpt.size max rOpt.size)).flatMap { i => collectDeepOverAllForAny(lOpt.grab(i), rOpt.grab(i))(collector) }
+
+        case (lOpt: Option[Record], rOpt: Option[Record]) if isRecord(lOpt, rOpt) =>
+          (lOpt.keys ++ rOpt.keys).toList.distinct.flatMap { k => collectDeepOverAllForAny(lOpt.grab(k), rOpt.grab(k))(collector) }
+        case (lOpt, rOpt) if isElement(lOpt, rOpt) => Nil
+      }
+      myItems ++ childItems
+    }
   }
+
 }
 
 /** Creates a clone of the super-type of the input elements. Super-type is defined as:
