@@ -217,6 +217,7 @@ trait MinimizerSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
     val FN_SLTU = "1110"
     val FN_SGEU = "1111"
 
+    // format: off
     minimizerTest(TruthTable(
       Map(
         BNE -> Seq(Y, N, N, Y, N, N, Y, Y, N, A2_RS2, A1_RS1, IMM_SB, DW_X, FN_SNE, N, M_X, N, N, N, N, N, N, N, CSR_N, N, N, N, N),
@@ -271,6 +272,7 @@ trait MinimizerSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
       ).map { case (k, v) => BitPat(s"b$k") -> BitPat(s"b${v.reduce(_ + _)}") },
       BitPat(s"b${Seq(N, X, X, X, X, X, X, X, X, A2_X, A1_X, IMM_X, DW_X, FN_X, N, M_X, X, X, X, X, X, X, X, CSR_X, X, X, X, X).reduce(_ + _)}")
     ))
+    // format: on
   }
 
   "output is 0" should "pass" in {
