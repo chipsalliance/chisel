@@ -107,9 +107,19 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   object test extends Tests {
     override def scalacPluginClasspath = m.scalacPluginClasspath
 
+<<<<<<< HEAD
     override  def scalacOptions = T {
       super.scalacOptions() ++ Agg("-P:chiselplugin:genBundleElements")
     }
+=======
+    override def crossScalaVersion = m.crossScalaVersion
+
+    override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
+  }
+
+  object test extends Tests with TestModule.ScalaTest with ScalafmtModule {
+    override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
+>>>>>>> d881fd29 (Add Scalafmt for mill (#2805))
 
     override def ivyDeps = m.ivyDeps() ++ Agg(
       ivy"org.scalatest::scalatest:3.2.10",
@@ -118,9 +128,20 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
 
     override def moduleDeps = super.moduleDeps ++ treadleModule
 
+<<<<<<< HEAD
     def testFrameworks = T {
       Seq("org.scalatest.tools.Framework")
     }
+=======
+  object `integration-tests` extends Tests with TestModule.ScalaTest with ScalafmtModule {
+    override def sources = T.sources(millSourcePath / "integration-tests" / "src" / "test" / "scala")
+    override def ivyDeps = m.ivyDeps() ++ Agg(
+      v.scalatest,
+      v.scalacheck
+    ) ++ m.treadleIvyDeps ++ m.chiseltestIvyDeps
+
+    override def moduleDeps = super.moduleDeps ++ Seq(stdlib) ++ treadleModule ++ chiseltestModule
+>>>>>>> d881fd29 (Add Scalafmt for mill (#2805))
   }
 
   override def buildInfoPackageName = Some("chisel3")
