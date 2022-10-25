@@ -11,7 +11,7 @@ class ScanLeftOrTestModule(width: Int) extends Module {
   val input = IO(Input(UInt(width.W)))
 
   var lsb = false.B
-  val vec = for(b <- input.asBools) yield {
+  val vec = for (b <- input.asBools) yield {
     val cur = b || lsb
     lsb = cur
     cur
@@ -34,13 +34,13 @@ class ScanRightOrTestModule(width: Int) extends Module {
 
 class scanOrTest extends AnyFlatSpec with ChiselScalatestTester with Formal {
   "scanLeftOr" should "compute correctly" in {
-    for(i <- 1 to 16) {
+    for (i <- 1 to 16) {
       verify(new ScanLeftOrTestModule(i), Seq(BoundedCheck(1)))
     }
   }
 
   "scanRightOr" should "compute correctly" in {
-    for(i <- 1 to 16) {
+    for (i <- 1 to 16) {
       verify(new ScanRightOrTestModule(i), Seq(BoundedCheck(1)))
     }
   }
