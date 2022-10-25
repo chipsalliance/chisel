@@ -104,7 +104,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     )
   }
 
-  object test extends Tests {
+  object test extends Tests with ScalafmtModule {
     override def scalacPluginClasspath = m.scalacPluginClasspath
 
     override  def scalacOptions = T {
