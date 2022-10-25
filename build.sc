@@ -118,7 +118,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
   }
 
-  object test extends Tests with TestModule.ScalaTest {
+  object test extends Tests with TestModule.ScalaTest with ScalafmtModule {
     override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
 
     override def ivyDeps = m.ivyDeps() ++ Agg(
@@ -129,7 +129,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def moduleDeps = super.moduleDeps ++ treadleModule
   }
 
-  object `integration-tests` extends Tests with TestModule.ScalaTest {
+  object `integration-tests` extends Tests with TestModule.ScalaTest with ScalafmtModule {
     override def sources = T.sources(millSourcePath / "integration-tests" / "src" / "test" / "scala")
     override def ivyDeps = m.ivyDeps() ++ Agg(
       v.scalatest,

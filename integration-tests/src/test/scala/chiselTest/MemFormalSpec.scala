@@ -10,12 +10,12 @@ import firrtl.annotations.MemoryArrayInitAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class MemFormalSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
-  behavior of "SyncReadMem read enable"
+  behavior.of("SyncReadMem read enable")
 
   private def check(mod: Boolean => ReadEnTestModule, alwaysEnabeld: Boolean = false): Unit = {
     // we first check that the read is enabled when it should be
     verify(mod(true), Seq(BoundedCheck(4)))
-    if(!alwaysEnabeld) {
+    if (!alwaysEnabeld) {
       // now we check that it is disabled, when it should be
       // however, note that this check is not exhaustive/complete!
       assertThrows[FailedBoundedCheckException] {
@@ -65,9 +65,9 @@ abstract class ReadEnTestModule(testShouldRead: Boolean) extends Module {
   })
 
   // the first cycle after reset, the data will be arbitrary
-  val firstCycle = RegNext(false.B, init=true.B)
+  val firstCycle = RegNext(false.B, init = true.B)
 
-  if(testShouldRead) {
+  if (testShouldRead) {
     when(!firstCycle && RegNext(shouldRead)) {
       assert(out === RegNext(addr))
     }
