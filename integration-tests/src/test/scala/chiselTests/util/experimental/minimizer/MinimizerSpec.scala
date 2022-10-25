@@ -34,82 +34,92 @@ trait MinimizerSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
   // making optimization opportunities to decoder algorithms
 
   "case0" should "pass" in {
-    minimizerTest(TruthTable(
-      Map(
-        // BitPat("b000") -> BitPat("b0"),
-        BitPat("b001") -> BitPat("b?"),
-        BitPat("b010") -> BitPat("b?"),
-        // BitPat("b011") -> BitPat("b0"),
-        BitPat("b100") -> BitPat("b1"),
-        BitPat("b101") -> BitPat("b1"),
-        // BitPat("b110") -> BitPat("b0"),
-        BitPat("b111") -> BitPat("b1")
-      ),
-      BitPat("b0")
-    ))
+    minimizerTest(
+      TruthTable(
+        Map(
+          // BitPat("b000") -> BitPat("b0"),
+          BitPat("b001") -> BitPat("b?"),
+          BitPat("b010") -> BitPat("b?"),
+          // BitPat("b011") -> BitPat("b0"),
+          BitPat("b100") -> BitPat("b1"),
+          BitPat("b101") -> BitPat("b1"),
+          // BitPat("b110") -> BitPat("b0"),
+          BitPat("b111") -> BitPat("b1")
+        ),
+        BitPat("b0")
+      )
+    )
   }
 
   "case1" should "pass" in {
-    minimizerTest(TruthTable(
-      Map(
-        BitPat("b000") -> BitPat("b0"),
-        BitPat("b001") -> BitPat("b?"),
-        BitPat("b010") -> BitPat("b?"),
-        BitPat("b011") -> BitPat("b0"),
-        // BitPat("b100") -> BitPat("b1"),
-        // BitPat("b101") -> BitPat("b1"),
-        BitPat("b110") -> BitPat("b0"),
-        // BitPat("b111") -> BitPat("b1")
-      ),
-      BitPat("b1")
-    ))
+    minimizerTest(
+      TruthTable(
+        Map(
+          BitPat("b000") -> BitPat("b0"),
+          BitPat("b001") -> BitPat("b?"),
+          BitPat("b010") -> BitPat("b?"),
+          BitPat("b011") -> BitPat("b0"),
+          // BitPat("b100") -> BitPat("b1"),
+          // BitPat("b101") -> BitPat("b1"),
+          BitPat("b110") -> BitPat("b0")
+          // BitPat("b111") -> BitPat("b1")
+        ),
+        BitPat("b1")
+      )
+    )
   }
 
   "caseX" should "pass" in {
-    minimizerTest(TruthTable(
-      Map(
-        BitPat("b000") -> BitPat("b0"),
-        // BitPat("b001") -> BitPat("b?"),
-        // BitPat("b010") -> BitPat("b?"),
-        BitPat("b011") -> BitPat("b0"),
-        BitPat("b100") -> BitPat("b1"),
-        BitPat("b101") -> BitPat("b1"),
-        BitPat("b110") -> BitPat("b0"),
-        BitPat("b111") -> BitPat("b1")
-      ),
-      BitPat("b?")
-    ))
+    minimizerTest(
+      TruthTable(
+        Map(
+          BitPat("b000") -> BitPat("b0"),
+          // BitPat("b001") -> BitPat("b?"),
+          // BitPat("b010") -> BitPat("b?"),
+          BitPat("b011") -> BitPat("b0"),
+          BitPat("b100") -> BitPat("b1"),
+          BitPat("b101") -> BitPat("b1"),
+          BitPat("b110") -> BitPat("b0"),
+          BitPat("b111") -> BitPat("b1")
+        ),
+        BitPat("b?")
+      )
+    )
   }
 
   "caseMultiDefault" should "pass" in {
-    minimizerTest(TruthTable(
-      Map(
-        BitPat("b000") -> BitPat("b0100"),
-        BitPat("b001") -> BitPat("b?111"),
-        BitPat("b010") -> BitPat("b?000"),
-        BitPat("b011") -> BitPat("b0101"),
-        BitPat("b111") -> BitPat("b1101")
-      ),
-      BitPat("b?100")
-    ))
+    minimizerTest(
+      TruthTable(
+        Map(
+          BitPat("b000") -> BitPat("b0100"),
+          BitPat("b001") -> BitPat("b?111"),
+          BitPat("b010") -> BitPat("b?000"),
+          BitPat("b011") -> BitPat("b0101"),
+          BitPat("b111") -> BitPat("b1101")
+        ),
+        BitPat("b?100")
+      )
+    )
   }
 
   "case7SegDecoder" should "pass" in {
-    minimizerTest(TruthTable(
-      Map(
-        BitPat("b0000") -> BitPat("b111111001"),
-        BitPat("b0001") -> BitPat("b011000001"),
-        BitPat("b0010") -> BitPat("b110110101"),
-        BitPat("b0011") -> BitPat("b111100101"),
-        BitPat("b0100") -> BitPat("b011001101"),
-        BitPat("b0101") -> BitPat("b101101101"),
-        BitPat("b0110") -> BitPat("b101111101"),
-        BitPat("b0111") -> BitPat("b111000001"),
-        BitPat("b1000") -> BitPat("b111111101"),
-        BitPat("b1001") -> BitPat("b111101101"),
-      ),
-      BitPat("b???????10")
-    ))
+    minimizerTest(
+      TruthTable(
+        Map(
+          BitPat("b0000") -> BitPat("b111111001"),
+          BitPat("b0001") -> BitPat("b011000001"),
+          BitPat("b0010") -> BitPat("b110110101"),
+          BitPat("b0011") -> BitPat("b111100101"),
+          BitPat("b0100") -> BitPat("b011001101"),
+          BitPat("b0101") -> BitPat("b101101101"),
+          BitPat("b0110") -> BitPat("b101111101"),
+          BitPat("b0111") -> BitPat("b111000001"),
+          BitPat("b1000") -> BitPat("b111111101"),
+          BitPat("b1001") -> BitPat("b111101101")
+        ),
+        BitPat("b???????10")
+      )
+    )
   }
 
   // A simple RV32I decode table example
@@ -276,37 +286,40 @@ trait MinimizerSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
   }
 
   "output is 0" should "pass" in {
-    minimizerTest(TruthTable.fromString(
-      """00->0
-        |01->?
-        |10->0
-        |11->0
-        |    ?
-        |""".stripMargin
-
-    ))
+    minimizerTest(
+      TruthTable.fromString(
+        """00->0
+          |01->?
+          |10->0
+          |11->0
+          |    ?
+          |""".stripMargin
+      )
+    )
   }
   "output is 1" should "pass" in {
-    minimizerTest(TruthTable.fromString(
-      """00->1
-        |01->?
-        |10->1
-        |11->1
-        |    ?
-        |""".stripMargin
-
-    ))
+    minimizerTest(
+      TruthTable.fromString(
+        """00->1
+          |01->?
+          |10->1
+          |11->1
+          |    ?
+          |""".stripMargin
+      )
+    )
   }
   // I know this seems to be crazy, but if user is crazy as well...
   "output is dont care" should "pass" in {
-    minimizerTest(TruthTable.fromString(
-      """00->?
-        |01->?
-        |10->?
-        |11->?
-        |    ?
-        |""".stripMargin
-
-    ))
+    minimizerTest(
+      TruthTable.fromString(
+        """00->?
+          |01->?
+          |10->?
+          |11->?
+          |    ?
+          |""".stripMargin
+      )
+    )
   }
 }

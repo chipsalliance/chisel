@@ -22,10 +22,14 @@ class DecoderSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
 
   "decoder" should "fail with a incorrect DecodeTableAnnotation" in {
     val annos = Seq(
-      DecodeTableAnnotation(ReferenceTarget("", "", Nil, "", Nil), """10->1
-                                                                    |01->1
-                                                                    |    0""".stripMargin, """10->1
-                                                                                             |    0""".stripMargin)
+      DecodeTableAnnotation(
+        ReferenceTarget("", "", Nil, "", Nil),
+        """10->1
+          |01->1
+          |    0""".stripMargin,
+        """10->1
+          |    0""".stripMargin
+      )
     )
     assertThrows[FailedBoundedCheckException] {
       verify(new DecodeTestModule(minimizer, table = xor), BoundedCheck(1) +: annos)
