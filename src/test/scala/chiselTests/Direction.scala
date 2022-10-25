@@ -6,7 +6,6 @@ import org.scalatest._
 import chisel3._
 import chisel3.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
-import chisel3.experimental.Waivable
 
 class DirectionedBundle extends Bundle {
   val in = Input(UInt(32.W))
@@ -398,27 +397,6 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     assert(
       emitted.contains(
         "output io : { driver : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}[1]}"
-      )
-    )
-  }
-  property("Bugfix: clearing all flips inside an opaque type") {
-    class Decoupled extends Bundle {
-      val bits = UInt(3.W)
-      val valid = Bool()
-      val ready = Flipped(Bool())
-    }
-    class DecoupledAndMonitor extends Bundle {
-      val driver = new Decoupled()
-    }
-    class MyModule extends RawModule {
-      val w = Wire(Waivable(new Decoupled(), true, true))
-    }
-
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
-
-    assert(
-      emitted.contains(
-        "wire w : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"
       )
     )
   }
