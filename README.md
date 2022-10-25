@@ -48,6 +48,7 @@ Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](htt
   * [Chisel3 Architecture Overview](#chisel3-architecture-overview)
   * [Chisel Sub-Projects](#chisel-sub-projects)
   * [Which version should I use?](#which-version-should-i-use)
+  * [Chisel Roadmap](#roadmap)
 
 ---
 
@@ -388,3 +389,7 @@ If you're developing a Chisel library (or `chisel3` itself), you'll probably wan
 By default, the master branches of the chisel repositories are configured to build and publish their version of the code as `Z.Y-SNAPSHOT`.
 Updated SNAPSHOTs are publised on every push to master.
 You are encouraged to do your development against the latest SNAPSHOT, but note that neither API nor ABI compatibility is guaranteed so your code may break at any time.
+
+### Roadmap
+
+See [ROADMAP.md].
