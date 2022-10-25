@@ -29,6 +29,41 @@ For more information on the benefits of Chisel see: ["What benefits does Chisel 
 
 Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/chipsalliance/firrtl), a hardware compiler framework that performs optimizations of Chisel-generated circuits and supports custom user-defined circuit transformations.
 
+<<<<<<< HEAD
+=======
+* [What does Chisel code look like?](#what-does-chisel-code-look-like)
+  * [LED blink](#led-blink)
+  * [FIR Filter](#fir-filter)
+* [Getting Started](#getting-started)
+  * [Bootcamp Interactive Tutorial](#bootcamp-interactive-tutorial)
+  * [A Textbook on Chisel](#a-textbook-on-chisel)
+  * [Build Your Own Chisel Projects](#build-your-own-chisel-projects)
+  * [Guide For New Contributors](#guide-for-new-contributors)
+  * [Design Verification](#design-verification)
+* [Documentation](#documentation)
+  * [Useful Resources](#useful-resources)
+  * [Chisel Dev Meeting](#chisel-dev-meeting)
+  * [Data Types Overview](#data-types-overview)
+* [Contributor Documentation](#contributor-documentation)
+  * [Useful Resources for Contributors](#useful-resources-for-contributors)
+  * [Compiling and Testing Chisel](#compiling-and-testing-chisel)
+  * [Running Projects Against Local Chisel](#running-projects-against-local-chisel)
+  * [Building Chisel with FIRRTL in the same SBT Project](#building-chisel-with-firrtl-in-the-same-sbt-project)
+  * [Chisel3 Architecture Overview](#chisel3-architecture-overview)
+  * [Chisel Sub-Projects](#chisel-sub-projects)
+  * [Which version should I use?](#which-version-should-i-use)
+  * [Chisel Roadmap](#roadmap)
+
+---
+
+[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+![CI](https://github.com/chipsalliance/chisel3/actions/workflows/test.yml/badge.svg)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel3.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel3/releases/latest)
+[![Scala version support](https://index.scala-lang.org/chipsalliance/chisel3/chisel3/latest-by-scala-version.svg?color=blue)](https://index.scala-lang.org/chipsalliance/chisel3/chisel3)
+[![Sonatype Snapshots](https://img.shields.io/nexus/s/edu.berkeley.cs/chisel3_2.13?server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/content/repositories/snapshots/edu/berkeley/cs/)
+[![Scaladoc](https://www.javadoc.io/badge/edu.berkeley.cs/chisel3_2.13.svg?color=blue&label=Scaladoc)](https://javadoc.io/doc/edu.berkeley.cs/chisel3_2.13/latest)
+
+>>>>>>> 7f73d18e (Publish an Initial Roadmap (#2804))
 ## What does Chisel code look like?
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
@@ -270,6 +305,7 @@ Code that touches lots of APIs that are private to the `chisel3` package should 
 
 ### Which version should I use?
 
+<<<<<<< HEAD
 The chisel eco-system (`chisel3`, `firrtl`, `dsptools`, `firrtl-interpreter`, `treadle`, `diagrammer`) use a form of semantic versioning:
  major versions are identified by two leading numbers, separated by a dot (i.e., `3.2`), minor versions by a single number following the major version, separated by a dot.
  We maintain API compatibility within a major version (i.e., `3.2.12` should be API-compatible with `3.2.0`), but do not guarantee API compatibility between major versions
@@ -291,3 +327,21 @@ If you're developing a chisel library (or `chisel` itself), you'll probably want
 
 If you're developing a library (or another chisel tool), you should probably work with date-stamped SNAPSHOTs until your library or tool is ready to be published (to ensure a consistent API).
  Prior to publishing, you should verify your code against generic (no date-stamp) SNAPSHOTs, or locally published clones of the current master branches of chisel dependencies.
+=======
+We encourage Chisel users (as opposed to Chisel developers), to use the latest release version of Chisel.
+This [chisel-template](https://github.com/freechipsproject/chisel-template) repository is kept up-to-date, depending on the most recent version of Chisel.
+The recommended version is also captured near the top of this README, and in the [Github releases](https://github.com/chipsalliance/chisel3/releases) section of this repo.
+If you encounter an issue with a released version of Chisel, please file an issue on GitHub mentioning the Chisel version and provide a simple test case (if possible).
+Try to reproduce the issue with the associated latest minor release (to verify that the issue hasn't been addressed).
+
+For more information on our versioning policy and what versions of the various Chisel ecosystem projects work together, see [Chisel Project Versioning](https://www.chisel-lang.org/chisel3/docs/appendix/versioning.html).
+
+If you're developing a Chisel library (or `chisel3` itself), you'll probably want to work closer to the tip of the development trunk.
+By default, the master branches of the chisel repositories are configured to build and publish their version of the code as `Z.Y-SNAPSHOT`.
+Updated SNAPSHOTs are publised on every push to master.
+You are encouraged to do your development against the latest SNAPSHOT, but note that neither API nor ABI compatibility is guaranteed so your code may break at any time.
+
+### Roadmap
+
+See [ROADMAP.md].
+>>>>>>> 7f73d18e (Publish an Initial Roadmap (#2804))
