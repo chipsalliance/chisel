@@ -2,7 +2,7 @@
 
 layout: docs
 
-title:  "Deep Dive into Connection Operators"
+title:  "Deep Dive into (chisel3 and Chisel) Connection Operators"
 
 section: "chisel3"
 

@@ -1016,6 +1016,14 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val elements = fields.map { case (name, gen) => name -> gen()}
       override def cloneType = new BundleMap(fields).asInstanceOf[this.type]
     }
+    object BundleMap {
+      import Connectable._
+      def waive[T <: Data](d: T): WaivedData[T] = {
+        val bundleMapElements = DataMirror.collectDeep(d) { case b: BundleMap => b.getElements }
+        println(bundleMapElements)
+        WaivedData(d, bundleMapElements.flatten.toSet)
+      }
+    }
     class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
       val valid = Bool()
       val ready = Flipped(Bool())
@@ -1113,9 +1121,6 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val out = IO(new DecoupledGen(() => bc))
         out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
         //Programmatic
-        val waivables: Seq[Data] = DataMirror.collectDeepOverMatches(in, out) {
-          case (l: BundleMap, r: BundleMap) => l.getElements ++ r.getElements
-        }.flatten
         val unmatched: Seq[Data] = DataMirror.collectDeepOverAll(in, out) {
           case (Some(l), None) => l
           case (None, Some(r)) => r
@@ -1123,6 +1128,24 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         Connectable.waive(unmatched:_*) {
           out :<>= in
         }
+      }
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+    }
+    it("(9.h) Create WaivedData to connect to") {
+      class MyModule extends Module {
+        def ab = new BundleMap(SeqMap(
+          "a" -> (() => UInt(2.W)),
+          "b" -> (() => UInt(2.W))
+        ))
+        def bc = new BundleMap(SeqMap(
+          "b" -> (() => UInt(2.W)),
+          "c" -> (() => UInt(2.W))
+        ))
+        val in  = IO(Flipped(new DecoupledGen(() => ab)))
+        val out = IO(new DecoupledGen(() => bc))
+        out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
+        //Programmatic
+        BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
       println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
     }

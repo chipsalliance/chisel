@@ -33,11 +33,14 @@ object Connectable {
     internal.Builder.delete("waiver")
   }
 
-  /** ConnectableData Typeclass defines the following operators on all subclasses of Data: :<=, :>=, :<>=, :#=
-    *
-    * @param consumer the left-hand-side of the connection
-    */
-  implicit class ConnectableData[T <: Data : WaivableTypeclass](consumer: T) {
+  final case class WaivedData[T <: Data](d: T, waivers: Set[Data])
+  implicit class WaivableData[T <: Data](d: T) {
+    def waive(fields: Seq[T => Data]): WaivedData[T] = WaivedData(d, fields.map(f => f(d)).toSet)
+  }
+
+  implicit class ConnectableWaivableData[T <: Data](wd: WaivedData[T]) {
+    val consumer = wd.d
+    val cWaivers = wd.waivers
 
     /** The "aligned connection operator" between a producer and consumer.
       *
@@ -61,7 +64,12 @@ object Connectable {
       */
     final def :<=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessEq)
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessEq, cWaivers, Set.empty[Data])
+      }
+    }
+    final def :<=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonLessEq, cWaivers, pWaived.waivers)
       }
     }
 
@@ -87,7 +95,12 @@ object Connectable {
       */
     final def :>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq)
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq, cWaivers, Set.empty[Data])
+      }
+    }
+    final def :>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonGreaterEq, cWaivers, pWaived.waivers)
       }
     }
 
@@ -133,8 +146,13 @@ object Connectable {
           consumer.firrtlConnect(producer)
         } else {
           // cannot call :<= and :>= directly because otherwise prefix is called twice
-          DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessGreaterEq)
+          DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessGreaterEq, Set.empty[Data], Set.empty[Data])
         }
+      }
+    }
+    final def :<>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonLessGreaterEq, cWaivers, pWaived.waivers)
       }
     }
 
@@ -157,12 +175,167 @@ object Connectable {
       */
     final def :#=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq)
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq, cWaivers, Set.empty[Data])
+      }
+    }
+    final def :#=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonHashEq, cWaivers, pWaived.waivers)
+      }
+    }
+  }
+
+
+  /** ConnectableData Typeclass defines the following operators on all subclasses of Data: :<=, :>=, :<>=, :#=
+    *
+    * @param consumer the left-hand-side of the connection
+    */
+  implicit class ConnectableData[T <: Data : WaivableTypeclass](consumer: T) {
+
+    /** The "aligned connection operator" between a producer and consumer.
+      *
+      * For `consumer :<= producer`, each of consumer's leaf fields WHO ARE ALIGNED WITH RESPECT TO CONSUMER are driven from the corresponding producer leaf field
+      * All producer's leaf/branch alignments (with respect to producer) do not influence the connection.
+      *
+      * The following restrictions apply:
+      *  - The Chisel type of consumer and producer must be the "same shape" recursively:
+      *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
+      *    - All vector types are the same length
+      *    - All bundle types have the same field names, but the flips of fields can be different between producer and consumer
+      *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
+      *
+      * @note Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
+      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
+      *
+      * @param consumer the left-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connection ("aligned connection")
+      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
+      * @param sourceInfo
+      * @group connection
+      */
+    final def :<=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessEq, Set.empty[Data], Set.empty[Data])
+      }
+    }
+    final def :<=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonLessEq, Set.empty[Data], pWaived.waivers)
+      }
+    }
+
+    /** The "flipped connection operator" between a producer and consumer.
+      *
+      * For `consumer :>= producer`, each of producers's leaf fields WHO ARE FLIPPED WITH RESPECT TO PRODUCER are driven from the corresponding consumer leaf field
+      * All consumer's leaf/branch alignments (with respect to consumer) do not influence the connection.
+      *
+      * The following restrictions apply:
+      *  - The Chisel type of consumer and producer must be the "same shape":
+      *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
+      *    - All vector types are the same length
+      *    - All bundle types have the same field names, but the flips of fields can be different
+      *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
+      *
+      * @note Connecting two [[Decoupled]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
+      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
+      *
+      * @param consumer the left-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("flipped connection")
+      * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
+      * @param sourceInfo
+      * @group connection
+      */
+    final def :>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq, Set.empty[Data], Set.empty[Data])
+      }
+    }
+    final def :>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonGreaterEq, Set.empty[Data], pWaived.waivers)
+      }
+    }
+
+    /** The "bi-direction connection operator", aka the "tur-duck-en operator"
+      *
+      * For `consumer :<>= producer`, both producer and consumer leafs could be driving or be driven-to:
+      *   - consumer's fields aligned w.r.t. consumer will be driven by corresponding fields of producer
+      *   - producer's fields flipped w.r.t. producer will be driven by corresponding fields of consumer
+      *
+      * Identical to calling both :<= and :>= in sequence (order is irrelevant), e.g.:
+      *   consumer :<= producer
+      *   consumer :>= producer
+      *
+      * @note Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
+      * @note This may have surprising-to-new-users behavior if the flips of consumer and producer do not match. Save yourself the headache and internalize what
+      * :<= and :>= do, and then you'll be able to reason your way to understanding what's happening :)
+      * @note If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
+      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
+      * @note "turk-duck-en" is a meme where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
+      *
+      * @param consumer the left-hand-side of the connection (read above comment for more info)
+      * @param producer the right-hand-side of the connection (read above comment for more info)
+      * @param sourceInfo
+      * @group connection
+      */
+    final def :<>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        val canFirrtlConnect =
+          try {
+            BiConnect.canFirrtlConnectData(
+              consumer,
+              producer,
+              sourceInfo,
+              DirectionalConnectionFunctions.compileOptions,
+              Builder.referenceUserModule
+            )
+          } catch {
+            // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
+            //  when calling DirectionConnectionFunctions.assign. Hence, we can just default to false to take the non-optimized emission path
+            case e: Throwable => false
+          }
+        if (canFirrtlConnect) {
+          consumer.firrtlConnect(producer)
+        } else {
+          // cannot call :<= and :>= directly because otherwise prefix is called twice
+          DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessGreaterEq, Set.empty[Data], Set.empty[Data])
+        }
+      }
+    }
+    final def :<>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonLessGreaterEq, Set.empty[Data], pWaived.waivers)
+      }
+    }
+
+    /** The "mono-direction connection operator", aka the "coercion operator"
+      *
+      * For `consumer :#= producer`, all leaf fields of consumer (regardless of relative flip) are driven by the corresponding leaf fields of producer (regardless of relative flip)
+      *
+      * Identical to calling :<= and :>=, but swapping consumer/producer for :>=: (order is irrelevant), e.g.:
+      *   consumer :<= producer
+      *   producer :>= consumer
+      *
+      * @note Connecting two [[Decoupled]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
+      * @note Functionally equivalent to chisel3.:=, but different than Chisel.:=
+      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
+      *
+      * @param consumer the left-hand-side of the connection, all fields will be driven-to
+      * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
+      * @param sourceInfo
+      * @group connection
+      */
+    final def :#=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], Set.empty[Data])
       }
     }
     final def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq)
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], Set.empty[Data])
+      }
+    }
+    final def :#=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], pWaived.waivers)
       }
     }
   }
@@ -289,7 +462,7 @@ object Connectable {
   implicit class ConnectableDontCare(consumer: DontCare.type) {
     final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq)
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq, Set.empty[Data], Set.empty[Data])
       }
     }
   }
@@ -364,29 +537,16 @@ private[chisel3] object DirectionalConnectionFunctions {
   }
 
 
-  def doAssignment[T <: Data : WaivableTypeclass](consumer: T, producer: T, op: ConnectionOperator, waivers: Set[Data])(implicit sourceInfo: SourceInfo): Unit = {
+  def doAssignment[T <: Data : WaivableTypeclass](consumer: T, producer: T, op: ConnectionOperator, cWaivers: Set[Data], pWaivers: Set[Data])(implicit sourceInfo: SourceInfo): Unit = {
     val errors = mutable.ArrayBuffer[String]()
-    val waiver = implicitly[WaivableTypeclass[T]]
     def doAssignment(c: Option[Data], co: RelativeOrientation, p: Option[Data], po: RelativeOrientation)(implicit sourceInfo: SourceInfo): Unit = {
       ((c, co), (p, po)) match {
         case ((None, _),                               (None, _))                                                                                           => ()
-        // Opaque Type Waivable
-        case ((Some(c: Waivable[_]), AlignedWithRoot), (None, EmptyOrientation))                if op.assignToConsumer && op.noUnassigned && c.okToUnassign => ()
-        case ((Some(c: Waivable[_]), FlippedWithRoot), (None, EmptyOrientation))                if op.assignToProducer && op.noDangles && c.okToDangle      => ()
-        case ((None, EmptyOrientation),                (Some(p: Waivable[_]), AlignedWithRoot)) if op.assignToConsumer && op.noDangles && p.okToDangle      => ()
-        case ((None, EmptyOrientation),                (Some(p: Waivable[_]), FlippedWithRoot)) if op.assignToProducer && op.noUnassigned && p.okToUnassign => ()
-
-        // Typeclass Waiver cases
-        case ((Some(c), AlignedWithRoot), (None, EmptyOrientation)) if op.assignToConsumer && op.noUnassigned && waiver.okToUnassign(consumer)(c) => ()
-        case ((Some(c), FlippedWithRoot), (None, EmptyOrientation)) if op.assignToProducer && op.noDangles && waiver.okToDangle(consumer)(c)      => ()
-        case ((None, EmptyOrientation), (Some(p), AlignedWithRoot)) if op.assignToConsumer && op.noDangles && waiver.okToDangle(producer)(p)      => ()
-        case ((None, EmptyOrientation), (Some(p), FlippedWithRoot)) if op.assignToProducer && op.noUnassigned && waiver.okToUnassign(producer)(p) => ()
-
         // Operator waiver cases
-        case ((Some(c), AlignedWithRoot), (None, EmptyOrientation)) if op.assignToConsumer && op.noUnassigned && waivers.contains(c) => ()
-        case ((Some(c), FlippedWithRoot), (None, EmptyOrientation)) if op.assignToProducer && op.noDangles && waivers.contains(c)      => ()
-        case ((None, EmptyOrientation), (Some(p), AlignedWithRoot)) if op.assignToConsumer && op.noDangles && waivers.contains(p)      => ()
-        case ((None, EmptyOrientation), (Some(p), FlippedWithRoot)) if op.assignToProducer && op.noUnassigned && waivers.contains(p) => ()
+        case ((Some(c), AlignedWithRoot), (None, EmptyOrientation)) if op.assignToConsumer && op.noUnassigned && cWaivers.contains(c)                       => ()
+        case ((Some(c), FlippedWithRoot), (None, EmptyOrientation)) if op.assignToProducer && op.noDangles && cWaivers.contains(c)                          => ()
+        case ((None, EmptyOrientation), (Some(p), AlignedWithRoot)) if op.assignToConsumer && op.noDangles && pWaivers.contains(p)                          => ()
+        case ((None, EmptyOrientation), (Some(p), FlippedWithRoot)) if op.assignToProducer && op.noUnassigned && pWaivers.contains(p)                       => ()
 
         case ((Some(c), AlignedWithRoot),              (None, EmptyOrientation))                if op.assignToConsumer && op.noUnassigned                   => errors += (s"unassigned consumer field $c")
         case ((Some(c: Aggregate), AlignedWithRoot),   (None, EmptyOrientation))                                                                            => c.getElements.foreach(e => doAssignment(Some(e), deriveOrientation(e, consumer, co), None, EmptyOrientation))
@@ -459,33 +619,6 @@ private[chisel3] object DirectionalConnectionFunctions {
     }
   }
 
-  def doAssignment(trie: Trie[String, LeafConnection], op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
-    val errors = mutable.ArrayBuffer[String]()
-    trie.collectDeep {
-      case (path, Some(LeafConnection(Some((c, co)), Some((p, po))))) if co == po => leafConnect(c, p, co, op)
-      case (path, Some(LeafConnection(Some((c, co)), Some((p, po))))) if co != po =>
-        if(op.noWrongOrientations) errors += (s"inversely oriented fields $c and $p") else {
-          if(op.assignToConsumer) leafConnect(c, p, co, op)
-          if(op.assignToProducer) leafConnect(c, p, po, op)
-        }
-      case (path, Some(LeafConnection(Some((c, FlippedWithRoot)), None))) if(op.noDangles || op.mustMatch) => errors += (s"dangling consumer field $c")
-      case (path, Some(LeafConnection(None, Some((p, AlignedWithRoot))))) if(op.noDangles || op.mustMatch) => errors += (s"dangling producer field $p")
-      // Defaulting case
-      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if c.hasConnectableDefault => leafConnect(c, c.connectableDefault, AlignedWithRoot, op)
-      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if p.hasConnectableDefault => leafConnect(p.connectableDefault, p, FlippedWithRoot, op)
-
-      // Non-defaulting case
-      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if (op.noUnassigned && op.assignToConsumer) => errors += (s"unassigned consumer field $c")
-      case (path, Some(LeafConnection(Some((c, AlignedWithRoot)), None))) if (op.mustMatch) => errors += (s"unmatched consumer field $c")
-      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if (op.noUnassigned && op.assignToProducer) => errors += (s"unassigned producer field $p")
-      case (path, Some(LeafConnection(None, Some((p, FlippedWithRoot))))) if (op.mustMatch) => errors += (s"unmatched producer field $p")
-      case (path, Some(other)) => //throw new Exception("BAD!! Unreachable code is reached, something went wrong")
-    }
-    if(errors.nonEmpty) {
-      Builder.error(errors.mkString("\n"))
-    }
-  }
-
   /** Assignment function which implements both :<= and :>=
     *
     * For example, given a connection like so:
@@ -500,10 +633,8 @@ private[chisel3] object DirectionalConnectionFunctions {
     * @param activeSide indicates if the connection was a :<= (consumer is active) or :>= (producer is active)
     * @param sourceInfo source info for where the assignment occurred
     */
-  def assign[T <: Data : WaivableTypeclass](cRoot: T, pRoot: T, cOp: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
-    //val trie = buildTrie(cRoot, pRoot)
-    //doAssignment(trie, cOp)
-    doAssignment(cRoot, pRoot, cOp, internal.Builder.get("waiver").getOrElse(Set.empty[Data]))
+  def assign[T <: Data](cRoot: T, pRoot: T, cOp: ConnectionOperator, cWaivers: Set[Data], pWaivers: Set[Data])(implicit sourceInfo: SourceInfo): Unit = {
+    doAssignment(cRoot, pRoot, cOp, cWaivers, pWaivers)
   }
 
 
