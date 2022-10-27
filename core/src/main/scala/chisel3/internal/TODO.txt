@@ -1,0 +1,8 @@
+# Text
+chiselTests.ModuleExplicitResetSpec
+chiselTests.ConnectSpec
+chiselTests.CompatibilityInteroperabilitySpec
+//chiselTests.BulkConnectSpec
+//chiselTests.StrongEnumAnnotationSpec
+chiselTests.CompatibilitySpec
+chiselTests.VecSpec

@@ -454,6 +454,8 @@ private[chisel3] class DynamicContext(
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
+
+  val map = mutable.HashMap[Any, Any]()
 }
 
 private[chisel3] object Builder extends LazyLogging {
@@ -702,6 +704,10 @@ private[chisel3] object Builder extends LazyLogging {
   )
 
   def warnReflectiveNaming: Boolean = dynamicContext.warnReflectiveNaming
+  // For random things
+  def add[K, V](key: K, value: V): Unit = dynamicContext.map(key) = value
+  def delete[K, V](key: K): Unit = dynamicContext.map.remove(key)
+  def get[K, V](key: K): Option[V] = dynamicContext.map.get(key).asInstanceOf[Option[V]]
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.

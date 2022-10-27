@@ -97,7 +97,7 @@ private[chisel3] object MonoConnect {
     sink:                  Data,
     source:                Data,
     context_mod:           RawModule
-  ): Unit =
+  ): Unit = {
     (sink, source) match {
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
@@ -136,7 +136,7 @@ private[chisel3] object MonoConnect {
         val sourceReified: Option[Aggregate] = if (isView(source_v)) reifyToAggregate(source_v) else Some(source_v)
 
         if (
-          sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(
+          sinkReified.nonEmpty && sourceReified.nonEmpty && canFirrtlConnectData(
             sinkReified.get,
             sourceReified.get,
             sourceInfo,
@@ -172,7 +172,7 @@ private[chisel3] object MonoConnect {
         val sourceReified: Option[Aggregate] = if (isView(source_r)) reifyToAggregate(source_r) else Some(source_r)
 
         if (
-          sinkReified.nonEmpty && sourceReified.nonEmpty && canBulkConnectAggregates(
+          sinkReified.nonEmpty && sourceReified.nonEmpty && canFirrtlConnectData(
             sinkReified.get,
             sourceReified.get,
             sourceInfo,
@@ -224,17 +224,18 @@ private[chisel3] object MonoConnect {
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink, source)
     }
+  }
 
-  /** Determine if a valid connection can be made between a source [[Aggregate]] and sink
-    * [[Aggregate]] given their parent module and directionality context
+  /** Determine if a valid connection can be made between a source [[Data]] and sink
+    * [[Data]] given their parent module and directionality context
     *
     * @return whether the source and sink exist in an appropriate context to be connected
     */
-  private[chisel3] def aggregateConnectContextCheck(
+  private[chisel3] def dataConnectContextCheck(
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions,
-    sink:                  Aggregate,
-    source:                Aggregate,
+    sink:                  Data,
+    source:                Data,
     context_mod:           RawModule
   ): Boolean = {
     import ActualDirection.{Bidirectional, Input, Output}
@@ -338,24 +339,24 @@ private[chisel3] object MonoConnect {
   def canBeSink(data:   Data, context_mod: RawModule): Boolean = traceFlow(true, data, context_mod)
   def canBeSource(data: Data, context_mod: RawModule): Boolean = traceFlow(false, data, context_mod)
 
-  /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. (MonoConnect case)
+  /** Check whether two Data can be bulk connected (<=) in FIRRTL. (MonoConnect case)
     *
     * Mono-directional bulk connects only work if all signals of the sink are unidirectional
     * In the case of a sink aggregate with bidirectional signals, e.g. `Decoupled`,
-    * a `BiConnect` is necessary.
+    * a `BiConnect` (`chisel3.<>` or `chisel.:<>=`) is necessary.
     */
-  private[chisel3] def canBulkConnectAggregates(
-    sink:                  Aggregate,
-    source:                Aggregate,
+  private[chisel3] def canFirrtlConnectData(
+    sink:                  Data,
+    source:                Data,
     sourceInfo:            SourceInfo,
     connectCompileOptions: CompileOptions,
     context_mod:           RawModule
   ): Boolean = {
-    // Assuming we're using a <>, check if a bulk connect is valid in that case
+    // Assuming we're using a <>, check if a FIRRTL.<= connection operator is valid in that case
     def biConnectCheck =
-      BiConnect.canBulkConnectAggregates(sink, source, sourceInfo, connectCompileOptions, context_mod)
+      BiConnect.canFirrtlConnectData(sink, source, sourceInfo, connectCompileOptions, context_mod)
 
-    // Check that the Aggregate can be driven (not bidirectional or an input) to match Chisel semantics
+    // Check that the sink Data can be driven (not bidirectional or an input) to match Chisel semantics
     def sinkCanBeDrivenCheck: Boolean =
       sink.direction == ActualDirection.Output || sink.direction == ActualDirection.Unspecified
 
