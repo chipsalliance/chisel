@@ -12,6 +12,7 @@ import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.DataMirror
+import scala.collection.immutable.SeqMap
 
 object DirectionalBulkConnectSpec {
   class ConnectionTest[T <: Data, S <: Data](outType: S, inType: T, inDrivesOut: Boolean, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit], nTmps: Int) extends Module {
@@ -797,89 +798,89 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       ), Nil)
     }
     it("(?.a.b) Initialize wires with different optional fields with :#= and using :<>= to connect wires of mixed directions, waiving extra field for being unassigned or dangling") {
-      //class MixedBundle extends Bundle {
-      //  val foo = UInt(3.W)
-      //  val bar = Flipped(UInt(3.W))
-      //}
-      //class Parent(hasOptional: Boolean) extends Bundle {
-      //  val necessary = new MixedBundle
-      //  val optional = if(hasOptional) Some(Waivable(new MixedBundle, okToDangle=true, okToUnassign=true)) else None
-      //}
-      //class MyModule extends Module {
-      //  val lit = new Parent(true).Lit(
-      //    _.necessary.foo            -> 0.U,
-      //    _.necessary.bar            -> 1.U,
-      //    _.optional.get.underlying.foo  -> 2.U,
-      //    _.optional.get.underlying.bar  -> 3.U
-      //  )
-      //  val w0 = Wire(new Parent(true))
-      //  w0 :#= lit
-      //  val w1 = Wire(new Parent(false))
-      //  w1 :#= lit
-      //  w0 :<>= w1
-      //}
-      //val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      //testCheck(out, Seq(
-      //  """w1.necessary.bar <= w0.necessary.bar""",
-      //  """w0.necessary.foo <= w1.necessary.foo""",
-      //), Nil)
+      class MixedBundle extends Bundle {
+        val foo = UInt(3.W)
+        val bar = Flipped(UInt(3.W))
+      }
+      class Parent(hasOptional: Boolean) extends Bundle {
+        val necessary = new MixedBundle
+        val optional = if(hasOptional) Some(new MixedBundle) else None
+      }
+      class MyModule extends Module {
+        val lit = new Parent(true).Lit(
+          _.necessary.foo     -> 0.U,
+          _.necessary.bar     -> 1.U,
+          _.optional.get.foo  -> 2.U,
+          _.optional.get.bar  -> 3.U
+        )
+        val hasOptional = Wire(new Parent(true))
+        hasOptional :#= lit
+        val lacksOptional = Wire(new Parent(false))
+        lacksOptional :#= lit.waive(_.optional.get)
+        hasOptional.waive(_.optional.get) :<>= lacksOptional
+      }
+      val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
+      testCheck(out, Seq(
+        """lacksOptional.necessary.bar <= hasOptional.necessary.bar""",
+        """hasOptional.necessary.foo <= lacksOptional.necessary.foo""",
+      ), Nil)
     }
     it("(?.b) Waiving ok-to-dangle field connecting a wider bus to a narrower bus") {
-      //class ReadyValid extends Bundle {
-      //  val valid = Bool()
-      //  val ready = Flipped(Bool())
-      //}
-      //class Decoupled extends ReadyValid {
-      //  val data = Waivable(UInt(32.W), true, false)
-      //}
-      //class MyModule extends Module {
-      //  val in  = IO(Flipped(new Decoupled()))
-      //  val out = IO(new ReadyValid())
-      //  out :<>= in
-      //}
-      //val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      //testCheck(out, Seq(
-      //  """out.valid <= in.valid""",
-      //  """in.ready <= out.ready""",
-      //), Nil)
+      class ReadyValid extends Bundle {
+        val valid = Bool()
+        val ready = Flipped(Bool())
+      }
+      class Decoupled extends ReadyValid {
+        val data = UInt(32.W)
+      }
+      class MyModule extends Module {
+        val in  = IO(Flipped(new Decoupled()))
+        val out = IO(new ReadyValid())
+        out :<>= in.waiveAs[ReadyValid](_.data)
+      }
+      val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
+      testCheck(out, Seq(
+        """out.valid <= in.valid""",
+        """in.ready <= out.ready""",
+      ), Nil)
     }
     it("(?.c) Waiving ok-to-unassign field connecting a narrower bus to a wider bus, with defaults for unassigned fields set via last connect semantics") {
-      //class ReadyValid extends Bundle {
-      //  val valid = Bool()
-      //  val ready = Flipped(Bool())
-      //}
-      //class Decoupled extends ReadyValid {
-      //  val data = Waivable(UInt(32.W), false, true)
-      //}
-      //class MyModule extends Module {
-      //  val in  = IO(Flipped(new ReadyValid()))
-      //  val out = IO(new Decoupled())
-      //  out :<= (new Decoupled()).Lit(_.data.underlying -> 0.U)
-      //  (out: ReadyValid) :<>= in
-      //}
-      //val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      //testCheck(out, Seq(
-      //  """out.data <= UInt<1>("h0")""",
-      //  """in.ready <= out.ready""",
-      //  """out.valid <= in.valid""",
-      //), Nil)
+      class ReadyValid extends Bundle {
+        val valid = Bool()
+        val ready = Flipped(Bool())
+      }
+      class Decoupled extends ReadyValid {
+        val data = UInt(32.W)
+      }
+      class MyModule extends Module {
+        val in  = IO(Flipped(new ReadyValid()))
+        val out = IO(new Decoupled())
+        out :<= (new Decoupled()).Lit(_.data -> 0.U)
+        out.waiveAs[ReadyValid](_.data) :<>= in
+      }
+      val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
+      testCheck(out, Seq(
+        """out.data <= UInt<1>("h0")""",
+        """in.ready <= out.ready""",
+        """out.valid <= in.valid""",
+      ), Nil)
     }
     it("(?.d) Waiving ok-to-unassign field connecting a narrower bus to a wider bus will error if no default specified") {
-      //class ReadyValid extends Bundle {
-      //  val valid = Bool()
-      //  val ready = Flipped(Bool())
-      //}
-      //class Decoupled extends ReadyValid {
-      //  val data = Waivable(UInt(32.W), true, true)
-      //}
-      //class MyModule extends Module {
-      //  val in  = IO(Flipped(new ReadyValid()))
-      //  val out = IO(new Decoupled())
-      //  (out: ReadyValid) :<>= in
-      //}
-      //intercept[Exception] {
-      //  ChiselStage.emitVerilog({ new MyModule() }, true, true)
-      //}
+      class ReadyValid extends Bundle {
+        val valid = Bool()
+        val ready = Flipped(Bool())
+      }
+      class Decoupled extends ReadyValid {
+        val data = UInt(32.W)
+      }
+      class MyModule extends Module {
+        val in  = IO(Flipped(new ReadyValid()))
+        val out = IO(new Decoupled())
+        (out: ReadyValid) :<>= in
+      }
+      intercept[Exception] {
+        ChiselStage.emitVerilog({ new MyModule() }, true, true)
+      }
     }
     it("(?.d) A structurally identical but fully aligned monitor version of a bundle can easily be connected to") {
       class Decoupled extends Bundle {
@@ -902,46 +903,46 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       ), Nil)
     }
     it("(?.e) A structurally different and fully aligned monitor version of a bundle can easily be connected to, provided missing fields are ok-to-dangle") {
-      //class ReadyValid extends Bundle {
-      //  val valid = Bool()
-      //  val ready = Flipped(Bool())
-      //}
-      //class Decoupled extends ReadyValid {
-      //  val data = Waivable(UInt(32.W), true, false)
-      //}
-      //class MyModule extends Module {
-      //  val in  = IO(Flipped(new Decoupled()))
-      //  val out = IO(new Decoupled())
-      //  val monitor = IO(Output(new ReadyValid()))
-      //  out :<>= in
-      //  monitor :#= in
-      //}
-      //val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      //testCheck(out, Seq(
-      //  """monitor.ready <= in.ready""",
-      //  """monitor.valid <= in.valid""",
-      //), Nil)
+      class ReadyValid extends Bundle {
+        val valid = Bool()
+        val ready = Flipped(Bool())
+      }
+      class Decoupled extends ReadyValid {
+        val data = UInt(32.W)
+      }
+      class MyModule extends Module {
+        val in  = IO(Flipped(new Decoupled()))
+        val out = IO(new Decoupled())
+        val monitor = IO(Output(new ReadyValid()))
+        out :<>= in
+        monitor :#= in.waiveAs[ReadyValid](_.data)
+      }
+      val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
+      testCheck(out, Seq(
+        """monitor.ready <= in.ready""",
+        """monitor.valid <= in.valid""",
+      ), Nil)
     }
     it("(?.f) Discarding echo bits is ok if waived ok-to-dangle (waived dangles)") {
-      //class Decoupled extends Bundle {
-      //  val valid = Bool()
-      //  val ready = Flipped(Bool())
-      //  val data = UInt(32.W)
-      //}
-      //class DecoupledEcho extends Decoupled {
-      //  val echo = Flipped(Waivable(UInt(3.W), true, false))
-      //}
-      //class MyModule extends Module {
-      //  val in  = IO(Flipped(new Decoupled()))
-      //  val out = IO(new DecoupledEcho())
-      //  (out: Decoupled) :<>= in
-      //}
-      //val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      //testCheck(out, Seq(
-      //  """in.ready <= out.ready""",
-      //  """out.valid <= in.valid""",
-      //  """out.data <= in.data""",
-      //), Nil)
+      class Decoupled extends Bundle {
+        val valid = Bool()
+        val ready = Flipped(Bool())
+        val data = UInt(32.W)
+      }
+      class DecoupledEcho extends Decoupled {
+        val echo = Flipped(UInt(3.W))
+      }
+      class MyModule extends Module {
+        val in  = IO(Flipped(new Decoupled()))
+        val out = IO(new DecoupledEcho())
+        out.waiveAs[Decoupled](_.echo) :<>= in
+      }
+      val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
+      testCheck(out, Seq(
+        """in.ready <= out.ready""",
+        """out.valid <= in.valid""",
+        """out.data <= in.data""",
+      ), Nil)
     }
     it("(?.g) Discarding echo bits is an error if not waived (dangles default to errors)") {
       class Decoupled extends Bundle {
@@ -958,6 +959,18 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         (out: Decoupled) :<>= in
       }
       intercept[Exception] { ChiselStage.emitChirrtl({ new MyModule() }, true, true) }
+    }
+    it("(?.h) Partial connect on records") {
+      class BoolRecord(fields: String*) extends Record {
+        val elements = SeqMap(fields.map(f => f -> Bool()):_*)
+        override def cloneType = new BoolRecord(fields:_*).asInstanceOf[this.type]
+      }
+      class MyModule extends Module {
+        val in  = IO(Flipped(new BoolRecord("a", "b")))
+        val out = IO(new BoolRecord("b", "c"))
+        out :<!>= in
+      }
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
     }
     ignore("(?.h) (Example required) -     ok for non-waived dangling bits in a :<=, because :<= is less strict for dangles") { }
     ignore("(?.i) (Example required) - not ok for non-waived unassigned bits in a :<= are ok, because :<= is strict for unassigns") { }
@@ -989,19 +1002,9 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     ignore("(?.?) x :>= DontCare") { }
     ignore("(?.?) x :#= DontCare") { }
   }
-  describe("(9) Using WaivableTypeClass examples") {
+  describe("(9) Using WaivedData examples") {
     import scala.collection.immutable.SeqMap
     class Decoupled(val hasData: Boolean) extends Bundle {
-      val valid = Bool()
-      val ready = Flipped(Bool())
-      val data = if(hasData) Some(UInt(32.W)) else None
-    }
-    //class DecoupledHasWaiver(val hasData: Boolean) extends Bundle {
-    //  val valid = Bool()
-    //  val ready = Flipped(Bool())
-    //  val data = if(hasData) Some(Waivable(UInt(32.W), true, true)) else None
-    //}
-    class DecoupledNoWaiver(val hasData: Boolean) extends Bundle {
       val valid = Bool()
       val ready = Flipped(Bool())
       val data = if(hasData) Some(UInt(32.W)) else None
@@ -1023,37 +1026,16 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val ready = Flipped(Bool())
       val data = gen()
     }
-    it("(9.a) Using typeclass works if available on consumer") {
-      // Works for directly connecting decoupled
-      class MyModule extends Module {
-        val in  = IO(Flipped(new Decoupled(true)))
-        val out = IO(new Decoupled(false))
-        out :<>= in
-      }
-      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
-    }
-    it("(9.b) Using typeclass does not work if not available on consumer, but on nested field") {
+    it("(9.c) Using waive does work for nested field") {
       class NestedDecoupled(val hasData: Boolean) extends Bundle {
         val foo = new Decoupled(hasData)
       }
-      // Broken for nested connecting decoupled
       class MyModule extends Module {
         val in  = IO(Flipped(new NestedDecoupled(true)))
         val out = IO(new NestedDecoupled(false))
-        out :<>= in
+        out :<>= in.waiveAll { case d: Decoupled if d.data.nonEmpty => d.data.get }
       }
-      intercept[Exception] { println(ChiselStage.emitChirrtl({ new MyModule() }, true, true)) }
-    }
-    it("(9.c) Using opaque type does work for nested field") {
-      //class NestedDecoupled(val hasData: Boolean) extends Bundle {
-      //  val foo = new DecoupledHasWaiver(hasData)
-      //}
-      //class MyModule extends Module {
-      //  val in  = IO(Flipped(new NestedDecoupled(true)))
-      //  val out = IO(new NestedDecoupled(false))
-      //  out :<>= in
-      //}
-      //println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
     }
     it("(9.d) BundleMap example must use opaque types") {
       //class MyModule extends Module {
@@ -1071,8 +1053,8 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     it("(9.e) Inline waiver things") {
       class MyModule extends Module {
-        val in  = IO(Flipped(new DecoupledNoWaiver(true)))
-        val out = IO(new DecoupledNoWaiver(false))
+        val in  = IO(Flipped(new Decoupled(true)))
+        val out = IO(new Decoupled(false))
         out :<>= in.waive(_.data.get)
       }
       println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
@@ -1108,7 +1090,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val out = IO(new DecoupledGen(() => bc))
         out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
         //Programmatic
-        val (waivedOut, waivedIn) = WaivedData.waiveUnmatched(out, in)
+        val (waivedOut: WaivedData[DecoupledGen[BundleMap]], waivedIn: WaivedData[DecoupledGen[BundleMap]]) = WaivedData.waiveUnmatched(out, in)
         waivedOut :<>= waivedIn
       }
       println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))

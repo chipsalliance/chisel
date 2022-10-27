@@ -168,6 +168,14 @@ object Connectable {
         DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], pWaived.waivers)
       }
     }
+
+    // Original non-erroring partial connect.. Do we dare?!?
+    final def :<!>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+      prefix(consumer) {
+        val (cWaivers, pWaivers) = WaivedData.waiveUnmatched(consumer, producer)
+        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessGreaterEq, cWaivers.waivers, pWaivers.waivers)
+      }
+    }
   }
 
   /** ConnectableVec Typeclass defines the following operators on between a (consumer: Vec) and (producer: Seq): :<=, :>=, :<>=, :#=
@@ -317,13 +325,27 @@ private[chisel3] object DirectionalConnectionFunctions {
     (c, p, o, op.assignToConsumer, op.assignToProducer, op.alwaysAssignToConsumer) match {
       case (x: Analog, y: Analog, _, _, _, _) => assignAnalog(x, y)
       case (x: Analog, DontCare, _, _, _, _) => assignAnalog(x, DontCare)
-      case (x, y, AlignedWithRoot, true, _, _) => c := p
-      case (x, y, FlippedWithRoot, _, true, _) => p := c
+      case (x, y, AlignedWithRoot(_), true, _, _) => c := p
+      case (x, y, FlippedWithRoot(_), _, true, _) => p := c
       case (x, y, _, _, _, true) => c := p
       case other =>
     }
   }
-
+  def startCoercing(d: Data): Boolean = {
+    def recUp(x: Data): Boolean = x.binding match {
+      case _ if isCoercing(x)    => true
+      case Some(t: internal.TopBinding)   => false
+      case Some(ChildBinding(p)) => recUp(p)
+      case other => throw new Exception(s"Unexpected $other! $x, $d")
+    }
+    def isCoercing(d: Data): Boolean = {
+      val s = DataMirror.specifiedDirectionOf(d)
+      (s == SpecifiedDirection.Input) || (s == SpecifiedDirection.Output)
+    }
+    val ret = recUp(d)
+    //println(s"startCoercing: $d gives $ret")
+    ret
+  }
 
   def doAssignment[T <: Data](consumer: T, producer: T, op: ConnectionOperator, cWaivers: Set[Data], pWaivers: Set[Data])(implicit sourceInfo: SourceInfo): Unit = {
     val errors = mutable.ArrayBuffer[String]()
@@ -331,31 +353,31 @@ private[chisel3] object DirectionalConnectionFunctions {
       ((c, co), (p, po)) match {
         case ((None, _),                               (None, _))                                                                                           => ()
         // Operator waiver cases
-        case ((Some(c), AlignedWithRoot), (None, EmptyOrientation)) if op.assignToConsumer && op.noUnassigned && cWaivers.contains(c)                       => ()
-        case ((Some(c), FlippedWithRoot), (None, EmptyOrientation)) if op.assignToProducer && op.noDangles && cWaivers.contains(c)                          => ()
-        case ((None, EmptyOrientation), (Some(p), AlignedWithRoot)) if op.assignToConsumer && op.noDangles && pWaivers.contains(p)                          => ()
-        case ((None, EmptyOrientation), (Some(p), FlippedWithRoot)) if op.assignToProducer && op.noUnassigned && pWaivers.contains(p)                       => ()
+        case ((Some(c), AlignedWithRoot(_)), (None, EmptyOrientation)) if op.assignToConsumer && op.noUnassigned && cWaivers.contains(c)                       => ()
+        case ((Some(c), FlippedWithRoot(_)), (None, EmptyOrientation)) if op.assignToProducer && op.noDangles && cWaivers.contains(c)                          => ()
+        case ((None, EmptyOrientation), (Some(p), AlignedWithRoot(_))) if op.assignToConsumer && op.noDangles && pWaivers.contains(p)                          => ()
+        case ((None, EmptyOrientation), (Some(p), FlippedWithRoot(_))) if op.assignToProducer && op.noUnassigned && pWaivers.contains(p)                       => ()
 
-        case ((Some(c), AlignedWithRoot),              (None, EmptyOrientation))                if op.assignToConsumer && op.noUnassigned                   => errors += (s"unassigned consumer field $c")
-        case ((Some(c: Aggregate), AlignedWithRoot),   (None, EmptyOrientation))                                                                            => c.getElements.foreach(e => doAssignment(Some(e), deriveOrientation(e, consumer, co), None, EmptyOrientation))
-        case ((Some(c), AlignedWithRoot),              (None, EmptyOrientation))                if !op.mustMatch                                            => () // Dangling/unassigned consumer field, but we don't care
+        case ((Some(c), AlignedWithRoot(_)),              (None, EmptyOrientation))                if op.assignToConsumer && op.noUnassigned                   => errors += (s"unassigned consumer field $c")
+        case ((Some(c: Aggregate), AlignedWithRoot(_)),   (None, EmptyOrientation))                                                                            => c.getElements.foreach(e => doAssignment(Some(e), deriveOrientation(e, consumer, co), None, EmptyOrientation))
+        case ((Some(c), AlignedWithRoot(_)),              (None, EmptyOrientation))                if !op.mustMatch                                            => () // Dangling/unassigned consumer field, but we don't care
 
-        case ((Some(c), FlippedWithRoot),              (None, EmptyOrientation))                if op.assignToProducer && op.noDangles                      => errors += (s"dangling consumer field $c")
-        case ((Some(c: Aggregate), FlippedWithRoot),   (None, EmptyOrientation))                                                                            => c.getElements.foreach(e => doAssignment(Some(e), deriveOrientation(e, consumer, co), None, EmptyOrientation))
-        case ((Some(c), FlippedWithRoot),              (None, EmptyOrientation))                if !op.mustMatch                                            => () // Dangling/unassigned consumer field, but we don't care
+        case ((Some(c), FlippedWithRoot(_)),              (None, EmptyOrientation))                if op.assignToProducer && op.noDangles                      => errors += (s"dangling consumer field $c")
+        case ((Some(c: Aggregate), FlippedWithRoot(_)),   (None, EmptyOrientation))                                                                            => c.getElements.foreach(e => doAssignment(Some(e), deriveOrientation(e, consumer, co), None, EmptyOrientation))
+        case ((Some(c), FlippedWithRoot(_)),              (None, EmptyOrientation))                if !op.mustMatch                                            => () // Dangling/unassigned consumer field, but we don't care
 
-        case ((None, EmptyOrientation),                (Some(p), AlignedWithRoot))              if op.assignToConsumer && op.noDangles                      => errors += (s"dangling producer field $p")
-        case ((None, EmptyOrientation),                (Some(p: Aggregate), AlignedWithRoot))                                                               => p.getElements.foreach(e => doAssignment(None, EmptyOrientation, Some(e), deriveOrientation(e, producer, po)))
-        case ((None, EmptyOrientation),                (Some(p), AlignedWithRoot))              if !op.mustMatch                                            => () // Dangling/unassigned producer field, but we don't care
+        case ((None, EmptyOrientation),                (Some(p), AlignedWithRoot(_)))              if op.assignToConsumer && op.noDangles                      => errors += (s"dangling producer field $p")
+        case ((None, EmptyOrientation),                (Some(p: Aggregate), AlignedWithRoot(_)))                                                               => p.getElements.foreach(e => doAssignment(None, EmptyOrientation, Some(e), deriveOrientation(e, producer, po)))
+        case ((None, EmptyOrientation),                (Some(p), AlignedWithRoot(_)))              if !op.mustMatch                                            => () // Dangling/unassigned producer field, but we don't care
 
-        case ((None, EmptyOrientation),                (Some(p), FlippedWithRoot))              if op.assignToProducer && op.noUnassigned                   => errors += (s"unassigned producer field $p")
-        case ((None, EmptyOrientation),                (Some(p: Aggregate), FlippedWithRoot))                                                               => p.getElements.foreach(e => doAssignment(None, EmptyOrientation, Some(e), deriveOrientation(e, producer, po)))
-        case ((None, EmptyOrientation),                (Some(p), FlippedWithRoot))              if !op.mustMatch                                            => () // Dangling/unassigned producer field, but we don't care
+        case ((None, EmptyOrientation),                (Some(p), FlippedWithRoot(_)))              if op.assignToProducer && op.noUnassigned                   => errors += (s"unassigned producer field $p")
+        case ((None, EmptyOrientation),                (Some(p: Aggregate), FlippedWithRoot(_)))                                                               => p.getElements.foreach(e => doAssignment(None, EmptyOrientation, Some(e), deriveOrientation(e, producer, po)))
+        case ((None, EmptyOrientation),                (Some(p), FlippedWithRoot(_)))              if !op.mustMatch                                            => () // Dangling/unassigned producer field, but we don't care
 
         case ((Some(c), co),                           (None, po))                              if op.mustMatch                                             => errors += (s"unmatched consumer field $c")
         case ((None, co),                              (Some(p), po))                           if op.mustMatch                                             => errors += (s"unmatched producer field $p")
 
-        case ((Some(c), co), (Some(p), po)) if (co != po) && (op.noWrongOrientations)                                                                       => errors += (s"inversely oriented fields $c and $p")
+        case ((Some(c), co), (Some(p), po)) if (!co.alignsWith(po)) && (op.noWrongOrientations)                                                                       => errors += (s"inversely oriented fields $c and $p")
         case ((Some(c), co), (Some(p), po)) => (c, p) match {
           case (c: Record, p: Record) =>
             val cElements = c.elements
@@ -394,14 +416,14 @@ private[chisel3] object DirectionalConnectionFunctions {
           // Am matching orientation of the non-DontCare, regardless
           case (c: Aggregate, DontCare) => c.getElements.foreach { case f => doAssignment(Some(f), deriveOrientation(f, consumer, co), Some(DontCare), deriveOrientation(f, consumer, co)) }
           case (DontCare, p: Aggregate) => p.getElements.foreach { case f => doAssignment(Some(DontCare), deriveOrientation(f, producer, po), Some(f), deriveOrientation(f, producer, po)) }
-          case (c, p) if co == po => leafConnect(c, p, co, op)
-          case (c, p) if co != po && op.assignToConsumer && !op.assignToProducer => leafConnect(c, p, co, op)
-          case (c, p) if co != po && !op.assignToConsumer && op.assignToProducer => leafConnect(c, p, po, op)
+          case (c, p) if  co.alignsWith(po) => leafConnect(c, p, co, op)
+          case (c, p) if !co.alignsWith(po) && op.assignToConsumer && !op.assignToProducer => leafConnect(c, p, co, op)
+          case (c, p) if !co.alignsWith(po) && !op.assignToConsumer && op.assignToProducer => leafConnect(c, p, po, op)
         }
         case other => throw new Exception(other.toString + " " + op)
       }
     }
-    doAssignment(Some(consumer), AlignedWithRoot, Some(producer), AlignedWithRoot)
+    doAssignment(Some(consumer), AlignedWithRoot(startCoercing(consumer)), Some(producer), AlignedWithRoot(startCoercing(producer)))
     if(errors.nonEmpty) {
       Builder.error(errors.mkString("\n"))
     }
@@ -427,10 +449,25 @@ private[chisel3] object DirectionalConnectionFunctions {
 
 
   // Indicates whether the active side is aligned or flipped relative to the active side's root
-  sealed trait RelativeOrientation { def invert: RelativeOrientation }
-  case object AlignedWithRoot extends RelativeOrientation { def invert = FlippedWithRoot }
-  case object FlippedWithRoot extends RelativeOrientation { def invert = AlignedWithRoot }
-  case object EmptyOrientation extends RelativeOrientation { def invert = EmptyOrientation }
+  sealed trait RelativeOrientation { 
+    def invert: RelativeOrientation
+    def isCoercing: Boolean
+    def coerce: RelativeOrientation
+    def alignsWith(o: RelativeOrientation): Boolean = o.coerce == this.coerce // Clear out coerce in comparison
+  }
+  case class AlignedWithRoot(isCoercing: Boolean) extends RelativeOrientation {
+    def invert = if(isCoercing) this else FlippedWithRoot(isCoercing)
+    def coerce = this.copy(true)
+  }
+  case class FlippedWithRoot(isCoercing: Boolean) extends RelativeOrientation {
+    def invert = if(isCoercing) this else AlignedWithRoot(isCoercing)
+    def coerce = this.copy(true)
+  }
+  case object EmptyOrientation extends RelativeOrientation {
+    def invert = this
+    def isCoercing = false
+    def coerce = this
+  }
 
 
   sealed trait ConnectionOperator {
@@ -493,19 +530,75 @@ private[chisel3] object DirectionalConnectionFunctions {
     */
   def deriveOrientation(subMember: Data, root: Data, orientation: RelativeOrientation): RelativeOrientation = {
     //TODO(azidar): write exhaustive tests to demonstrate Chisel and chisel3 type/direction declarations compose
-    (root.direction, subMember.direction, DataMirror.specifiedDirectionOf(subMember)) match {
-      //case (ActualDirection.Output, ActualDirection.Output, _) => AlignedWithRoot
-      //case (ActualDirection.Input, ActualDirection.Input, _)   => AlignedWithRoot
-      //case (ActualDirection.Output, ActualDirection.Input, _)  => FlippedWithRoot
-      //case (ActualDirection.Input, ActualDirection.Output, _)  => FlippedWithRoot
-      case (_, _, SpecifiedDirection.Unspecified)              => orientation
-      case (_, _, SpecifiedDirection.Flip)                     => orientation.invert
-      case (_, _, SpecifiedDirection.Output)                   => orientation
-      case (_, _, SpecifiedDirection.Input)                    => orientation.invert
-      case other                                               => throw new Exception(s"Unexpected internal error! $other")
+    val x = (DataMirror.specifiedDirectionOf(subMember)) match {
+      case (SpecifiedDirection.Unspecified)              => orientation
+      case (SpecifiedDirection.Flip)                     => orientation.invert
+      case (SpecifiedDirection.Output)                   => orientation.coerce
+      case (SpecifiedDirection.Input)                    => orientation.invert.coerce
+      case other                                         => throw new Exception(s"Unexpected internal error! $other")
     }
+    //println(s"$subMember has $x")
+    x
   }
 
+  // Adam's Commandments
+  /*
+
+  The 'states' of a chiselType
+
+  1. A pure type
+  2. A child field of a Bundle type
+  3. A bound thing
+
+  Bool()                         // 0. "Pure type"
+  Aligned(Bool())                // 1. "Incomplete thing"
+  Aligned(Aligned(Bool()))       // 2. "Incomplete thing", same as above, Aligned can take 0 or 1
+  (new Decoupled().b)            // 3. "direction of me relative to my parent is now known"
+  Aligned((new Decoupled().b))   // 4. ERROR!
+
+  Wire(Aligned(new Decoupled())) // 5. ERROR!
+  Wire(Flipped(new Decoupled())) // 6. ERROR!
+
+class Decoupled(gen: () => T) {
+  val x = gen()
+  val ready = Flipped(Bool())
+  val valid = Aligned(Bool())
+
+}
+
+
+y 1. Only child bindings can have specified direction
+y 2. "incoming ports" are Incoming(chiselType) with IncomingPortBinding, "outgoing ports" are Outgoing(chiselType) with OutgoingPortBinding
+    'chiselType' does not have a specified direction
+y 3. Add a new function "stampSamePort" to create a new Incoming/Outgoing identical port because that info is not in the type, (it is in the binding)
+y 4. Add Aligned(x), Flipped(x) which are called when creating a field of a bundle/record
+    - sets isFlipped
+  5. Data has two set-once vars:
+    - isFlipped, and can have one of 2 values (indicated by the above), is known when it is child of a bundle
+    - coerceNoFlips, can can either be true or false, (indicates that the type actually ignores children isFlipped value when determining "resolve direction")
+    - we keeps these separate so our clonetype function is easier to implement (and we don't lose information)
+  6. "cloning a type"
+    - on Bundle will copy iAmAFieldAndIAmFlipped and childrenAreCoerced direction of each original element to each cloned element
+    - on Vec will copy isCoerced from original sample_element to cloned sample_element, with not copy isFlipped
+    - on Element will not copy isCoerced nor isFlipped
+  7. "binding a type"
+  7. "resolve direction" gives a "aligned/flipped" value for members of a Data that is bound (known purely from parent to child)
+    - 
+  8. "port direction" is only on Data bound as a port, and combines the "resolve direction" with binding (incoming/outgoing) to give incoming/outgoing of submember
+  9. stripsFlipsOf(x) creates a new ChiselType (like chiselTypeOf)
+    - is the same scala type
+    - "clones the type" and then recursively sets all coerceNoFlips fields to be true
+
+  class Bundle {
+    val r = Aligned(coerce(Decoupled))
+    val x = Flipped(coerce(Decoupled)) isFlipped = 1, isCoerced = 1
+  }
+  val o = originalChiselTypeOf(b.x)
+  
+  val r = (Decoupled)
+  val r = Reg(coerce(Decoupled))
+  r.
+  */
 
   def checkAnalog(as: Analog*)(implicit sourceInfo: SourceInfo): Unit = {
     val currentModule = Builder.currentModule.get.asInstanceOf[RawModule]
