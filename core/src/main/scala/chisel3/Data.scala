@@ -670,7 +670,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
       case Some(_: UnconstrainedBinding) =>
       case _ =>
-        throwException(s"operand '$this' is not visible from the current module")
+        throwException(
+          s"operand '$this' is not visible from the current module ${Builder.currentModule.get}")
     }
     if (!MonoConnect.checkWhenVisibility(this)) {
       throwException(s"operand has escaped the scope of the when in which it was constructed")
