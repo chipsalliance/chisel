@@ -11,6 +11,7 @@ import chisel3.experimental.{Analog, DataMirror, WaivedData}
 import scala.collection.mutable
 import chisel3.internal.ChildBinding
 import firrtl.ir.Orientation
+import chisel3.ActualDirection.Bidirectional
 
 /** The default connection operators for Chisel hardware components */
 object Connectable {
@@ -401,16 +402,17 @@ private[chisel3] object DirectionalConnectionFunctions {
             }
           case (c: Vec[Data @unchecked], p: Vec[Data @unchecked]) =>
             c.zip(p).foreach { case (cs, ps) =>
-              doAssignment(Some(cs), co, Some(ps), po)
+              // Because Chisel is awful, you can do Vec(Flipped(UInt))
+              doAssignment(Some(cs), deriveOrientation(cs, consumer, co), Some(ps), deriveOrientation(ps, producer, po))
             }
             if(c.size > p.size) {
               c.getElements.slice(p.size, c.size).foreach { cs =>
-                doAssignment(Some(cs), co, None, EmptyOrientation)
+                doAssignment(Some(cs), deriveOrientation(cs, consumer, co), None, EmptyOrientation)
               }
             }
             if(c.size < p.size) {
               p.getElements.slice(c.size, p.size).foreach { ps =>
-                doAssignment(None, EmptyOrientation, Some(ps), po)
+                doAssignment(None, EmptyOrientation, Some(ps), deriveOrientation(ps, producer, po))
               }
             }
           // Am matching orientation of the non-DontCare, regardless
@@ -531,11 +533,11 @@ private[chisel3] object DirectionalConnectionFunctions {
   def deriveOrientation(subMember: Data, root: Data, orientation: RelativeOrientation): RelativeOrientation = {
     //TODO(azidar): write exhaustive tests to demonstrate Chisel and chisel3 type/direction declarations compose
     val x = (DataMirror.specifiedDirectionOf(subMember)) match {
-      case (SpecifiedDirection.Unspecified)              => orientation
-      case (SpecifiedDirection.Flip)                     => orientation.invert
-      case (SpecifiedDirection.Output)                   => orientation.coerce
-      case (SpecifiedDirection.Input)                    => orientation.invert.coerce
-      case other                                         => throw new Exception(s"Unexpected internal error! $other")
+      case (SpecifiedDirection.Unspecified) => orientation
+      case (SpecifiedDirection.Flip)        => orientation.invert
+      case (SpecifiedDirection.Output)      => orientation.coerce
+      case (SpecifiedDirection.Input)       => orientation.invert.coerce
+      case other                            => throw new Exception(s"Unexpected internal error! $other")
     }
     //println(s"$subMember has $x")
     x

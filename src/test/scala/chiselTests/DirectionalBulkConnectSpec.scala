@@ -34,38 +34,76 @@ object DirectionalBulkConnectSpec {
     }
   }
 
-  def vec[T <: Data](tpe: T, n: Int = 3) = Vec(n, tpe)
-  def alignedBundle[T <: Data](fieldType: T) = new Bundle {
+  def vec[T <: Data](tpe: T, n: Int = 3)(implicit c: CompileOptions) = Vec(n, tpe)
+  def alignedBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(Flipped(fieldType))
   }
-  def mixedBundle[T <: Data](fieldType: T) = new Bundle {
+  def mixedBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(fieldType)
   }
-  def alignedFooBundle[T <: Data](fieldType: T) = new Bundle {
+  def alignedFooBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
   }
-  def flippedBarBundle[T <: Data](fieldType: T) = new Bundle {
+  def flippedBarBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
     val bar = Flipped(fieldType)
+  }
+
+  def allElementTypes(): Seq[() => Data] = Seq(() => UInt(3.W))
+  def allFieldModifiers(fieldType: () => Data): Seq[() => Data] = {
+    Seq(
+      fieldType,
+      () => Flipped(fieldType()),
+      () => Input(fieldType()),
+      () => Output(fieldType())
+    )
+  }
+  def mixedFieldModifiers(fieldType: () => Data): Seq[() => Data] = {
+    allFieldModifiers(fieldType).flatMap(x => allFieldModifiers(x))
+  }
+  object InCompatibility {
+    implicit val c = Chisel.defaultCompileOptions
+    class MyCompatibilityBundle(f: () => Data) extends Bundle {
+      val foo = f()
+    }
+  }
+  class MyBundle(f: () => Data) extends Bundle {
+    val baz = f()
+  }
+  def allBundles(fieldType: () => Data): Seq[() => Data] = {
+    mixedFieldModifiers(fieldType).flatMap { f =>
+      Seq(
+        () => new MyBundle(f),
+        () => new InCompatibility.MyCompatibilityBundle(f)
+      )
+    }
+  }
+  def allVecs(element: () => Data): Seq[() => Data] = {
+    mixedFieldModifiers(element).flatMap( x => 
+      Seq(() => Vec(1, x()))
+    )
+  }
+  // 2353 types, takes a few seconds to run all of them, but it's worth it
+  def allTypes(): Seq[() => Data] = {
+    val elements = allElementTypes()
+    val allAggs = elements.flatMap { e =>
+      allVecs(e) ++ allBundles(e)
+    }
+    val allNestedAgg = allAggs.flatMap { e =>
+      allVecs(e) ++ allBundles(e)
+    }
+    elements ++ allAggs ++ allNestedAgg
+  }
+  def getInfo(t: Data): Seq[Any] = {
+    val childInfos = t match {
+      case a: Aggregate => a.getElements.flatMap(getInfo)
+      case other => Nil
+    }
+    (t, DataMirror.specifiedDirectionOf(t)) +: childInfos
   }
 
 }
-
-
-//class CrossDirectionalMonoConnectsWithWires(inType: Data, outType: Data, nTmps: Int) extends Module {
-//  val io = IO(new Bundle {
-//    val in = Flipped(inType)
-//    val out = Output(outType) // no clonetype, no Aligned (yet)
-//  })
-//  require(nTmps > 0)
-//  val wiresIn = Seq.fill(nTmps)(Wire(inType))
-//  val wiresOut = Seq.fill(nTmps)(Wire(outType))
-//  (Seq(io.out) ++ wiresOut ++ wiresIn).zip(wiresOut ++ wiresIn :+ io.in).foreach {
-//    case (l, r) =>
-//      l :#= r
-//  }
-//}
 
 class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
   import DirectionalBulkConnectSpec._
@@ -221,6 +259,9 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       test(vec(Bool()), Seq("io.out[0] is invalid", "io.out[1] is invalid", "io.out[2] is invalid"))
       test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "DontCare cannot be a connection sink")
+    }
+    it("(0.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
+      allTypes().foreach { t => test(t(), Seq("<=")) }
     }
   }
   describe("(1): :<= ") {
@@ -426,6 +467,9 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
       test(mixedBundle(Bool()), Seq("io.out.foo is invalid"))
     }
+    it("(1.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
+      allTypes().foreach { t => test(t(), Nil) }
+    }
   }
   describe("(2): :>= ") {
     implicit val op: (Data, Data) => Unit = {_ :>= _}
@@ -579,6 +623,9 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       test(vec(Bool()), Seq("skip"))
       test(alignedBundle(Bool()), Seq("skip"))
       test(mixedBundle(Bool()), Seq("io.in.bar is invalid"))
+    }
+    it("(2.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
+      allTypes().foreach { t => test(t(), Nil) }
     }
   }
   describe("(3): :#= ") {
@@ -766,6 +813,9 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       test(vec(Bool()), Seq("io.out[0] is invalid", "io.out[1] is invalid", "io.out[2] is invalid"))
       test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
       test(mixedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
+    }
+    it("(3.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
+      allTypes().foreach { t => test(t(), Seq("<=")) }
     }
   }
 
