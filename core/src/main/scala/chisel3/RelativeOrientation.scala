@@ -6,18 +6,30 @@ import chisel3.experimental.DataMirror
 // Indicates whether the active side is aligned or flipped relative to the active side's root
 sealed trait RelativeOrientation { 
   def data: Data
+  def waivers: Set[Data]
   def invert: RelativeOrientation
   def coerced: Boolean
   def coerce: RelativeOrientation
-  def alignsWith(o: RelativeOrientation): Boolean = o.coerce.swap(DontCare) == this.coerce.swap(DontCare) // Clear out coerce and data in comparison
+  def alignsWith(o: RelativeOrientation): Boolean = o.alignment == this.alignment
   def childOrientations: Seq[RelativeOrientation] = data match {
     case a: Aggregate => a.getElements.map(e => RelativeOrientation.deriveOrientation(e, this))
     case o => Nil
   }
+  def alignment: String
   def swap(d: Data): RelativeOrientation
+  def isWaived: Boolean = waivers.contains(data)
+  def isAgg: Boolean = data.isInstanceOf[Aggregate]
+  def isConsumer: Boolean
+  def errorWord(op: DirectionalConnectionFunctions.ConnectionOperator): String = (isConsumer, op.assignToConsumer, op.assignToProducer, alignment) match {
+    case (true,  true,   _,    "aligned") => "unassigned"
+    case (false, _,      true, "flipped") => "unassigned"
+    case (true,  _,      true, "flipped") => "dangling"
+    case (false, true,   _,    "aligned") => "dangling"
+    case other => "unmatched"
+  }
 }
 object RelativeOrientation {
-  def apply(d: Data): RelativeOrientation = AlignedWithRoot(d, isCoercing(d))
+  def apply(d: Data, waivers: Set[Data], isConsumer: Boolean): RelativeOrientation = AlignedWithRoot(d, isCoercing(d), waivers, isConsumer)
   def isCoercing(d: Data): Boolean = {
     def recUp(x: Data): Boolean = x.binding match {
       case _ if isCoercing(x)           => true
@@ -35,20 +47,7 @@ object RelativeOrientation {
     ret
   }
 
-  /** Determines the aligned/flipped of subMember with respect to activeRoot
-    *
-    * Due to Chisel/chisel3 differences, its a little complicated to calculate the RelativeOrientation, as the information
-    *   is captured with both ActualDirection and SpecifiedDirection. Fortunately, all this complexity is captured in this
-    *   one function.
-    *
-    * References activeRoot, defined earlier in the function
-    *
-    * @param subMember a subfield/subindex of activeRoot (or sub-sub, or sub-sub-sub etc)
-    * @param orientation aligned/flipped of d's direct parent aggregate with respect to activeRoot
-    * @return orientation aligned/flipped of d with respect to activeRoot
-    */
   def deriveOrientation(subMember: Data, orientation: RelativeOrientation): RelativeOrientation = {
-    //TODO(azidar): write exhaustive tests to demonstrate Chisel and chisel3 type/direction declarations compose
     val x = (DataMirror.specifiedDirectionOf(subMember)) match {
       case (SpecifiedDirection.Unspecified) => orientation.swap(subMember)
       case (SpecifiedDirection.Flip)        => orientation.invert.swap(subMember)
@@ -59,21 +58,41 @@ object RelativeOrientation {
     //println(s"$subMember has $x")
     x
   }
+
+
+
+
+  implicit val RelativeOrientationMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[RelativeOrientation] {
+    def matchingZipOfChildren(left: Option[RelativeOrientation], right: Option[RelativeOrientation]): Seq[(Option[RelativeOrientation], Option[RelativeOrientation])] = {
+      Data.DataMatchingZipOfChildren.matchingZipOfChildren(left.map(_.data), right.map(_.data)).map {
+        case (Some(l), None)    => (Some(deriveOrientation(l, left.get)), None)
+        case (Some(l), Some(r)) => (Some(deriveOrientation(l, left.get)), Some(deriveOrientation(r, right.get)))
+        case (None, Some(r))    => (None, Some(deriveOrientation(r, right.get)))
+      }
+    }
+  }
 }
-case class AlignedWithRoot(data: Data, coerced: Boolean) extends RelativeOrientation {
-  def invert = if(coerced) this else FlippedWithRoot(data, coerced)
+
+sealed trait NonEmptyOrientation extends RelativeOrientation
+case class AlignedWithRoot(data: Data, coerced: Boolean, waivers: Set[Data], isConsumer: Boolean) extends NonEmptyOrientation {
+  def invert = if(coerced) this else FlippedWithRoot(data, coerced, waivers, isConsumer)
   def coerce = this.copy(data, true)
   def swap(d: Data): RelativeOrientation = this.copy(data = d)
+  def alignment: String = "aligned"
 }
-case class FlippedWithRoot(data: Data, coerced: Boolean) extends RelativeOrientation {
-  def invert = if(coerced) this else AlignedWithRoot(data, coerced)
+case class FlippedWithRoot(data: Data, coerced: Boolean, waivers: Set[Data], isConsumer: Boolean) extends NonEmptyOrientation {
+  def invert = if(coerced) this else AlignedWithRoot(data, coerced, waivers, isConsumer)
   def coerce = this.copy(data, true)
   def swap(d: Data): RelativeOrientation = this.copy(data = d)
+  def alignment: String = "flipped"
 }
 case object EmptyOrientation extends RelativeOrientation {
   def data = DontCare
+  def waivers = Set.empty
   def invert = this
   def coerced = false
   def coerce = this
   def swap(d: Data): RelativeOrientation = this
+  def alignment: String = "none"
+  def isConsumer = ??? // should never call this
 }

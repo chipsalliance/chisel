@@ -148,226 +148,12 @@ object ActualDirection {
   }
 }
 
-package experimental {
-  import chisel3.internal.requireIsHardware // Fix ambiguous import
-
-  /** Experimental hardware construction reflection API
-    */
-  object DataMirror {
-    def widthOf(target:              Data): Width = target.width
-    def specifiedDirectionOf(target: Data): SpecifiedDirection = target.specifiedDirection
-    def directionOf(target: Data): ActualDirection = {
-      requireIsHardware(target, "node requested directionality on")
-      target.direction
-    }
-
-    private def hasBinding[B <: ConstrainedBinding: ClassTag](target: Data) = {
-      target.topBindingOpt match {
-        case Some(b: B) => true
-        case _ => false
-      }
-    }
-
-    /** Check if a given `Data` is an IO port
-      * @param x the `Data` to check
-      * @return `true` if x is an IO port, `false` otherwise
-      */
-    def isIO(x: Data): Boolean = hasBinding[PortBinding](x)
-
-    /** Check if a given `Data` is a Wire
-      * @param x the `Data` to check
-      * @return `true` if x is a Wire, `false` otherwise
-      */
-    def isWire(x: Data): Boolean = hasBinding[WireBinding](x)
-
-    /** Check if a given `Data` is a Reg
-      * @param x the `Data` to check
-      * @return `true` if x is a Reg, `false` otherwise
-      */
-    def isReg(x: Data): Boolean = hasBinding[RegBinding](x)
-
-    /** Check if two Chisel types are the same type.
-      * Internally, this is dispatched to each Chisel type's
-      * `typeEquivalent` function for each type to determine
-      * if the types are intended to be equal.
-      *
-      * For most types, different parameters should ensure
-      * that the types are different.
-      * For example, `UInt(8.W)` and `UInt(16.W)` are different.
-      * Likewise, Records check that both Records have the same
-      * elements with the same types.
-      *
-      * @param x First Chisel type
-      * @param y Second Chisel type
-      * @return true if the two Chisel types are equal.
-      */
-    def checkTypeEquivalence(x: Data, y: Data): Boolean = x.typeEquivalent(y)
-
-    /** Returns the ports of a module
-      * {{{
-      * class MyModule extends Module {
-      *   val io = IO(new Bundle {
-      *     val in = Input(UInt(8.W))
-      *     val out = Output(Vec(2, UInt(8.W)))
-      *   })
-      *   val extra = IO(Input(UInt(8.W)))
-      *   val delay = RegNext(io.in)
-      *   io.out(0) := delay
-      *   io.out(1) := delay + extra
-      * }
-      * val mod = Module(new MyModule)
-      * DataMirror.modulePorts(mod)
-      * // returns: Seq(
-      * //   "clock" -> mod.clock,
-      * //   "reset" -> mod.reset,
-      * //   "io" -> mod.io,
-      * //   "extra" -> mod.extra
-      * // )
-      * }}}
-      */
-    def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
-
-    /** Returns a recursive representation of a module's ports with underscore-qualified names
-      * {{{
-      * class MyModule extends Module {
-      *   val io = IO(new Bundle {
-      *     val in = Input(UInt(8.W))
-      *     val out = Output(Vec(2, UInt(8.W)))
-      *   })
-      *   val extra = IO(Input(UInt(8.W)))
-      *   val delay = RegNext(io.in)
-      *   io.out(0) := delay
-      *   io.out(1) := delay + extra
-      * }
-      * val mod = Module(new MyModule)
-      * DataMirror.fullModulePorts(mod)
-      * // returns: Seq(
-      * //   "clock" -> mod.clock,
-      * //   "reset" -> mod.reset,
-      * //   "io" -> mod.io,
-      * //   "io_out" -> mod.io.out,
-      * //   "io_out_0" -> mod.io.out(0),
-      * //   "io_out_1" -> mod.io.out(1),
-      * //   "io_in" -> mod.io.in,
-      * //   "extra" -> mod.extra
-      * // )
-      * }}}
-      * @note The returned ports are redundant. An [[Aggregate]] port will be present along with all
-      *       of its children.
-      * @see [[DataMirror.modulePorts]] for a non-recursive representation of the ports.
-      */
-    def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
-      def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
-        case _: Element => Seq()
-        case r: Record  => r.elements.toSeq.flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
-        case v: Vec[_]  => v.zipWithIndex.flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
-      })
-      modulePorts(target).flatMap {
-        case (name, data) =>
-          getPortNames(name, data).toList
-      }
-    }
-
-    // Internal reflection-style APIs, subject to change and removal whenever.
-    object internal {
-      def isSynthesizable(target: Data): Boolean = target.isSynthesizable
-      // For those odd cases where you need to care about object reference and uniqueness
-      def chiselTypeClone[T <: Data](target: Data): T = {
-        target.cloneTypeFull.asInstanceOf[T]
-      }
-    }
-
-
-    /** Return all expanded components, including intermediate aggregate nodes
-      *
-      * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
-      */
-    def getIntermediateAndLeafs(d: Data): Seq[Data] = d match {
-      case r: Record => r +: r.getElements.flatMap(getIntermediateAndLeafs)
-      case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
-      case other => Seq(other)
-    }
-
-    /** Collects all fields selected by collector within a data and all recursive children fields
-      * Accepts a collector partial function, rather than a collector function
-      *
-      * @param data Data to collect fields, as well as all children datas it directly and indirectly instantiates
-      * @param collector Collector partial function to pick which components to collect
-      * @tparam T Type of the component that will be collected
-      */
-    def collectDeep[T](d: Data)(collector: PartialFunction[Data, T]): Iterable[T] = {
-      val myItems = collector.lift(d)
-      val deepChildrenItems = d match {
-        case a: Aggregate => a.getElements.flatMap { x => collectDeep(x)(collector) }
-        case other => Nil
-      }
-      myItems ++ deepChildrenItems
-    }
-    def collectDeepOverMatches[T](left: Data, right: Data)(collector: PartialFunction[(Data, Data), T]): Seq[T] = {
-      def newCollector(lOpt: Option[Data], rOpt: Option[Data]): Option[(Option[T], Option[Unit])] = {
-        (lOpt, rOpt) match {
-          case (Some(l), Some(r)) => collector.lift((l, r)) match {
-            case Some(x: T) => Some((Some(x), None))
-            case None => None
-          }
-          case other => None
-        }
-      }
-      collectDeepOverAllForAny(Some(left), Some(right))(newCollector).collect {
-        case (Some(x: T), None) => (x)
-      }
-    }
-    def collectDeepOverAll[T](left: Data, right: Data)(collector: PartialFunction[(Option[Data], Option[Data]), T]): Seq[T] = {
-      def newCollector(lOpt: Option[Data], rOpt: Option[Data]): Option[(Option[T], Option[Unit])] = {
-        collector.lift((lOpt, rOpt)) match {
-          case Some(x: T) => Some((Some(x), None))
-          case None => None
-        }
-      }
-      collectDeepOverAllForAny(Some(left), Some(right))(newCollector).collect {
-        case (Some(x: T), None) => x
-      }
-    }
-
-    def collectDeepOverAllForAny[T, S](left: Option[Data], right: Option[Data])(collector: (Option[Data], Option[Data]) => Option[(Option[T], Option[S])]): Seq[(Option[T], Option[S])] = {
-      implicit class VecGet(v: Vec[Data]) { def get(i: Int): Option[Data] = if (i < v.length) Some(v(i)) else None }
-      implicit class VecOptOps(vOpt: Option[Vec[Data]]) {
-        // Like .get, but its already defined on Option
-        def grab(i: Int): Option[Data] = vOpt.flatMap { _.get(i) }
-        def size = vOpt.map(_.size).getOrElse(0)
-      }
-      implicit class RecordOptGet(rOpt: Option[Record]) {
-        // Like .get, but its already defined on Option
-        def grab(k: String): Option[Data] = rOpt.flatMap { _.elements.get(k) }
-        def keys: Iterable[String] = rOpt.map { r => r.elements.map(_._1) }.getOrElse(Seq.empty[String])
-      }
-      def isDifferent(l: Option[Data], r: Option[Data]): Boolean = l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
-      def isRecord   (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Record] }.getOrElse(false)
-      def isVec      (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Vec[_]] }.getOrElse(false)
-      def isElement  (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
-
-      val myItems = collector(left, right) match {
-        case None => Nil
-        case Some((None, None)) => Nil
-        case Some(other) => Seq(other)
-      }
-      val childItems = (left, right) match {
-        case (None, None)                            => Nil
-        case (lOpt, rOpt) if isDifferent(lOpt, rOpt) =>
-          collectDeepOverAllForAny(lOpt, None)(collector) ++ collectDeepOverAllForAny(None, rOpt)(collector)
-
-        case (lOpt: Option[Vec[Data]], rOpt: Option[Vec[Data]]) if isVec(lOpt, rOpt)       =>
-          (0 until (lOpt.size max rOpt.size)).flatMap { i => collectDeepOverAllForAny(lOpt.grab(i), rOpt.grab(i))(collector) }
-
-        case (lOpt: Option[Record], rOpt: Option[Record]) if isRecord(lOpt, rOpt) =>
-          (lOpt.keys ++ rOpt.keys).toList.distinct.flatMap { k => collectDeepOverAllForAny(lOpt.grab(k), rOpt.grab(k))(collector) }
-        case (lOpt, rOpt) if isElement(lOpt, rOpt) => Nil
-      }
-      myItems ++ childItems
-    }
-  }
-
-}
+//package object experimental {
+//  import chisel3.internal.requireIsHardware // Fix ambiguous import
+//
+//  /** Experimental hardware construction reflection API
+//    */
+//}
 
 /** Creates a clone of the super-type of the input elements. Super-type is defined as:
   * - for Bits type of the same class: the cloned type of the largest width
@@ -1047,6 +833,37 @@ object Data {
   implicit class ConnectableDefaultVec[T <: Data](consumer: Vec[T]) extends Connectable.ConnectableVec[T](consumer)
 
   implicit class WaivableDefaultData[T <: Data](d: T) extends experimental.WaivedData.WaivableData[T](d)
+
+  implicit val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
+
+    implicit class VecGet(v: Vec[Data]) { def get(i: Int): Option[Data] = if (i < v.length) Some(v(i)) else None }
+    implicit class VecOptOps(vOpt: Option[Vec[Data]]) {
+      // Like .get, but its already defined on Option
+      def grab(i: Int): Option[Data] = vOpt.flatMap { _.get(i) }
+      def size = vOpt.map(_.size).getOrElse(0)
+    }
+    implicit class RecordOptGet(rOpt: Option[Record]) {
+      // Like .get, but its already defined on Option
+      def grab(k: String): Option[Data] = rOpt.flatMap { _.elements.get(k) }
+      def keys: Iterable[String] = rOpt.map { r => r.elements.map(_._1) }.getOrElse(Seq.empty[String])
+    }
+    private def isDifferent(l: Option[Data], r: Option[Data]): Boolean = l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
+    private def isRecord   (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Record] }.getOrElse(false)
+    private def isVec      (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Vec[_]] }.getOrElse(false)
+    private def isElement  (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
+
+    def matchingZipOfChildren(left: Option[Data], right: Option[Data]): Seq[(Option[Data], Option[Data])] = (left, right) match {
+      case (None, None)                            => Nil
+      case (lOpt, rOpt) if isDifferent(lOpt, rOpt) => Nil
+      case (lOpt: Option[Vec[Data]], rOpt: Option[Vec[Data]]) if isVec(lOpt, rOpt)       =>
+        (0 until (lOpt.size max rOpt.size)).map { i => (lOpt.grab(i), rOpt.grab(i)) }
+      case (lOpt: Option[Record], rOpt: Option[Record]) if isRecord(lOpt, rOpt) =>
+        (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
+      case (lOpt, rOpt) if isElement(lOpt, rOpt) => Nil
+    }
+  }
+
+
   /**
     * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
     * need to use workarounds such as `bundle1.asUInt === bundle2.asUInt` by allowing users

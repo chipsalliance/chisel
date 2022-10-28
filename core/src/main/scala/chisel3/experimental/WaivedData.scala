@@ -11,12 +11,11 @@ final case class WaivedData[T <: Data](d: T, waivers: Set[Data])
 object WaivedData {
 
   def waiveUnmatched[T <: Data](consumer: T, producer: T): (WaivedData[T], WaivedData[T]) = {
-    def apply(l: Option[Data], r: Option[Data]): Option[(Option[Data], Option[Data])] = (l, r) match {
-      case x@(Some(c), None) => Some(x)
-      case x@(None, Some(p)) => Some(x)
-      case other => None
+    val result = DataMirror.collectDeepOverAllForAny(Some((consumer: Data)), Some((producer: Data))) {
+      case x@(Some(c), None) => x
+      case x@(None, Some(p)) => x
     }
-    val result = DataMirror.collectDeepOverAllForAny(Some(consumer), Some(producer))(apply _)
+    println(result)
     val cWaived = result.map(_._1).flatten
     val pWaived = result.map(_._2).flatten
     (WaivedData(consumer, cWaived.toSet), WaivedData(producer, pWaived.toSet))

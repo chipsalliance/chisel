@@ -532,4 +532,5 @@ package object experimental {
       "_10" -> _10
     )
   }
+  val DataMirror = chisel3.DataMirror
 }

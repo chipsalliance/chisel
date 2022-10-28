@@ -231,8 +231,8 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unassigned consumer field")
 
       // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
-      testException(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), "dangling producer field", "unassigned producer field")
-      testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "dangling consumer field", "unassigned consumer field")
+      testException(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), "dangling producer field")
+      testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
     }
     it("(0.i): Error if different root-relative flippedness on leaf fields between right-hand-side or left-hand-side") {
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
@@ -416,29 +416,21 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     it("(1.h): Error on unassigned subfield/subindex from either side, but do not throw exception for dangling fields") {
       // Missing flip bar
-      testDistinctTypes(mixedBundle(Bool()), alignedFooBundle(Bool()), Seq("io.out.foo <= io.in.foo"))
-      testDistinctTypes(alignedFooBundle(Bool()), mixedBundle(Bool()), Seq("io.out.foo <= io.in.foo"))
+      testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "unmatched consumer field")
+      testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unmatched producer field")
 
       // Missing foo
       testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unassigned consumer field")
-      testDistinctTypes(flippedBarBundle(Bool()), mixedBundle(Bool()), Seq("skip"), Seq("<=")) // No connection should be emitted
+      testException(flippedBarBundle(Bool()), mixedBundle(Bool()), "dangling producer field")
 
       // Vec sizes don't match
-      testDistinctTypes(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), Seq(
-        "io.out[0].foo <= io.in[0].foo",
-        "io.out[1].foo <= io.in[1].foo",
-        "io.out[2].foo <= io.in[2].foo"
-      ))
+      testException(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), "dangling producer field")
       testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
-      testDistinctTypes(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), Seq("skip"))
+      testException(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), "dangling producer field")
       testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unassigned consumer field")
 
       // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
-      testDistinctTypes(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), Seq(
-        "io.out[0].foo <= io.in[0].foo",
-        "io.out[1].foo <= io.in[1].foo",
-        "io.out[2].foo <= io.in[2].foo"
-      ))
+      testException(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), "dangling producer field")
       testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
     }
     it("(1.i): Error if different root-relative flippedness on fields between right-hand-side or left-hand-side") {
@@ -583,32 +575,24 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(Analog(3.W)), Seq("attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar"))
       test(vec(Analog(3.W), 2), Seq("attach (io.out[0], io.in[0])", "attach (io.out[1], io.in[1]"))
     }
-    it("(2.h): Error on unassigned subfield/subindex from either side, but do not throw exception for dangling fields") {
+    it("(2.h): Error on unassigned subfield/subindex from either side, and throw exception for dangling fields") {
       // Missing flip bar
-      testDistinctTypes(mixedBundle(Bool()), alignedFooBundle(Bool()), Seq("skip"), Seq("<="))
+      testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "dangling consumer field")
       testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unassigned producer field")
 
       // Missing foo
-      testDistinctTypes(mixedBundle(Bool()), flippedBarBundle(Bool()), Seq("io.in.bar <= io.out.bar"))
-      testDistinctTypes(flippedBarBundle(Bool()), mixedBundle(Bool()), Seq("io.in.bar <= io.out.bar"))
+      testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unmatched consumer field")
+      testException(flippedBarBundle(Bool()), mixedBundle(Bool()), "unmatched producer field")
 
       // Vec sizes don't match
-      testDistinctTypes(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), Seq("skip"), Seq("<="))
-      testDistinctTypes(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), Seq("skip"), Seq("<="))
-      testException(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), "unassigned producer field")
-      testDistinctTypes(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), Seq(
-        "io.in[0].bar <= io.out[0].bar",
-        "io.in[1].bar <= io.out[1].bar",
-        "io.in[2].bar <= io.out[2].bar"
-      ))
+      testException(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), "unmatched producer field")
+      testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unmatched consumer field")
+      testException(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), "unmatched producer field")
+      testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unmatched consumer field")
 
       // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
-      testException(vec(flippedBarBundle(Bool())), vec(mixedBundle(Bool()), 4), "unassigned producer field")
-      testDistinctTypes(vec(mixedBundle(Bool()), 4), vec(flippedBarBundle(Bool())), Seq(
-        "io.in[0].bar <= io.out[0].bar",
-        "io.in[1].bar <= io.out[1].bar",
-        "io.in[2].bar <= io.out[2].bar"
-      ))
+      testException(vec(flippedBarBundle(Bool())), vec(mixedBundle(Bool()), 4), "unmatched producer field")
+      testException(vec(mixedBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unmatched consumer field")
     }
     it("(2.i): Error if different root-relative flippedness on fields between right-hand-side or left-hand-side") {
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
