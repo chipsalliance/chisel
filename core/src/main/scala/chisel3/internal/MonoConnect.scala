@@ -322,21 +322,35 @@ private[chisel3] object MonoConnect {
     else false
   }
 
-  /** Trace flow from child Data to its parent. */
-  @tailrec private[chisel3] def traceFlow(currentlyFlipped: Boolean, data: Data, context_mod: RawModule): Boolean = {
-    import SpecifiedDirection.{Input => SInput, Flip => SFlip}
+  /** Trace flow from child Data to its parent.
+    *
+    * Returns true if, given the context,
+    * this signal can be a sink when wantsToBeSink = true,
+    * or if it can be a source when wantsToBeSink = false.
+    * Always returns true if the Data does not actually correspond
+    * to a Port.
+    */
+  @tailrec private[chisel3] def traceFlow(
+    wantToBeSink:     Boolean,
+    currentlyFlipped: Boolean,
+    data:             Data,
+    context_mod:      RawModule
+  ): Boolean = {
     val sdir = data.specifiedDirection
-    val flipped = sdir == SInput || sdir == SFlip
+    val coercedFlip = sdir == SpecifiedDirection.Input
+    val coercedAlign = sdir == SpecifiedDirection.Output
+    val flipped = sdir == SpecifiedDirection.Flip
+    val traceFlipped = ((flipped ^ currentlyFlipped) || coercedFlip) && (!coercedAlign)
     data.binding.get match {
-      case ChildBinding(parent) => traceFlow(flipped ^ currentlyFlipped, parent, context_mod)
+      case ChildBinding(parent) => traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
       case PortBinding(enclosure) =>
         val childPort = enclosure != context_mod
-        childPort ^ flipped ^ currentlyFlipped
+        wantToBeSink ^ childPort ^ traceFlipped
       case _ => true
     }
   }
-  def canBeSink(data:   Data, context_mod: RawModule): Boolean = traceFlow(true, data, context_mod)
-  def canBeSource(data: Data, context_mod: RawModule): Boolean = traceFlow(false, data, context_mod)
+  def canBeSink(data:   Data, context_mod: RawModule): Boolean = traceFlow(true, false, data, context_mod)
+  def canBeSource(data: Data, context_mod: RawModule): Boolean = traceFlow(false, false, data, context_mod)
 
   /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. (MonoConnect case)
     *

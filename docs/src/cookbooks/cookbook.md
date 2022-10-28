@@ -791,6 +791,8 @@ class Salt extends Module {
     val io = IO(new Bundle {})
     val drink = Module(new Coffee)
     override def desiredName = "SodiumMonochloride"
+
+    drink.io.I := 42.U
 }
 ```
 
