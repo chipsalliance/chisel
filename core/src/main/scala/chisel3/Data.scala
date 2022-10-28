@@ -746,11 +746,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case _ => // fine
       }
     }
-    getRecursiveFields(this, "").collect { case (d, _) if d.direction != this.direction => 
-      Builder.error(s"$this cannot be used with := because submember $d has inverse orientation; use :#= instead")
-    }
-    getRecursiveFields(that, "").collect { case (d, _) if d.direction != that.direction =>
-      Builder.error(s"$that cannot be used with := because submember $d has inverse orientation; use :#= instead")
+    if(connectCompileOptions.migrateConnections) {
+      getRecursiveFields(this, "").collect { case (d, _) if d.direction != this.direction => 
+        Builder.error(s"$this cannot be used with := because submember $d has inverse orientation; use :#= instead")
+      }
+      getRecursiveFields(that, "").collect { case (d, _) if d.direction != that.direction =>
+        Builder.error(s"$that cannot be used with := because submember $d has inverse orientation; use :#= instead")
+      }
     }
     if (connectCompileOptions.emitStrictConnects) {
 
@@ -792,7 +794,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
-      Builder.error(s"Cannot use <> to connect Chisel bundles; use :<>= instead")
+      if(connectCompileOptions.migrateConnections) Builder.error(s"Cannot use <> to connect Chisel bundles; use :<>= instead")
       this.firrtlPartialConnect(that)
     }
   }
