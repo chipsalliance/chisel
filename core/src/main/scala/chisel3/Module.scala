@@ -340,9 +340,15 @@ package experimental {
     private val _ports = new ArrayBuffer[(Data, SourceInfo)]()
 
     // getPorts unfortunately already used for tester compatibility
-    protected[chisel3] def getModulePorts = {
+    protected[chisel3] def getModulePorts: ArrayBuffer[Data] = {
       require(_closed, "Can't get ports before module close")
-      _ports.toSeq
+      _ports.map(_._1)
+    }
+
+    // gets Ports along with there source locators
+    protected[chisel3] def getModulePortsAndLocators: ArrayBuffer[(Data, SourceInfo)] = {
+      require(_closed, "Can't get ports before module close")
+      _ports
     }
 
     // These methods allow checking some properties of ports before the module is closed,
@@ -369,20 +375,20 @@ package experimental {
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit
 
     private[chisel3] def namePorts(): Unit = {
-      for ((port, _) <- getModulePorts) {
+      for ((port, source) <- getModulePortsAndLocators) {
         port._computeName(None) match {
           case Some(name) =>
             if (_namespace.contains(name)) {
               Builder.error(
                 s"""Unable to name port $port to "$name" in $this,""" +
-                  " name is already taken by another port!"
+                  s" name is already taken by another port! ${source}"
               )
             }
             port.setRef(ModuleIO(this, _namespace.name(name)))
           case None =>
             Builder.error(
               s"Unable to name port $port in $this, " +
-                "try making it a public field of the Module"
+                s"try making it a public field of the Module $source"
             )
             port.setRef(ModuleIO(this, "<UNNAMED>"))
         }
