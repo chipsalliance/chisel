@@ -385,4 +385,7 @@ package object chisel3 {
   // Connection exceptions.
   case class BiConnectException(message: String) extends ChiselException(message)
   case class MonoConnectException(message: String) extends ChiselException(message)
+
+  final val deprecatedMFCMessage =
+    "this feature will not be supported as part of the migration to the MLIR-based FIRRTL Compiler (MFC). For more information about this migration, please see the Chisel ROADMAP.md."
 }
