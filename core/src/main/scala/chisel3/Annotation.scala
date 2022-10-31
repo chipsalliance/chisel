@@ -4,7 +4,7 @@ package chisel3.experimental
 
 import scala.language.existentials
 import chisel3.internal.{Builder, InstanceId, LegacyModule}
-import chisel3.{CompileOptions, Data, RawModule}
+import chisel3.{deprecatedMFCMessage, CompileOptions, Data, RawModule}
 import firrtl.Transform
 import firrtl.annotations._
 import firrtl.options.Unserializable
@@ -14,6 +14,7 @@ import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
   *
   * Defines a conversion to a corresponding FIRRTL Annotation
   */
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 trait ChiselAnnotation {
 
   /** Conversion to FIRRTL Annotation */
@@ -24,6 +25,7 @@ trait ChiselAnnotation {
   *
   *  Defines a conversion to corresponding FIRRTL Annotation(s)
   */
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 trait ChiselMultiAnnotation {
   def toFirrtl: Seq[Annotation]
 }
@@ -34,14 +36,18 @@ trait ChiselMultiAnnotation {
   * Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
   * FIRRTL.
   */
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 trait RunFirrtlTransform extends ChiselAnnotation {
   def transformClass: Class[_ <: Transform]
 }
 
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 object annotate {
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(anno: ChiselAnnotation): Unit = {
     Builder.annotations += anno
   }
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(annos: ChiselMultiAnnotation): Unit = {
     Builder.newAnnotations += annos
   }
