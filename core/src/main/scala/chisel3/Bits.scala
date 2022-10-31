@@ -1920,6 +1920,12 @@ package experimental {
     @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     final def unary_- : Interval = macro SourceInfoTransform.noArg
 
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
+    final def unary_-(dummy: Int*): Interval = macro SourceInfoTransform.noArgDummy
+
     @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     final def unary_-% : Interval = macro SourceInfoTransform.noArg
 
