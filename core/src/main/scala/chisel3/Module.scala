@@ -340,15 +340,15 @@ package experimental {
     private val _ports = new ArrayBuffer[(Data, SourceInfo)]()
 
     // getPorts unfortunately already used for tester compatibility
-    protected[chisel3] def getModulePorts: ArrayBuffer[Data] = {
+    protected[chisel3] def getModulePorts: Seq[Data] = {
       require(_closed, "Can't get ports before module close")
-      _ports.map(_._1)
+      _ports.map(_._1).toSeq
     }
 
     // gets Ports along with there source locators
-    protected[chisel3] def getModulePortsAndLocators: ArrayBuffer[(Data, SourceInfo)] = {
+    protected[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo)] = {
       require(_closed, "Can't get ports before module close")
-      _ports
+      _ports.toSeq
     }
 
     // These methods allow checking some properties of ports before the module is closed,
