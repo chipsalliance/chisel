@@ -1310,12 +1310,15 @@ package experimental {
   /** Chisel types that have binary points support retrieving
     * literal values as `Double` or `BigDecimal`
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   trait HasBinaryPoint { self: Bits =>
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def binaryPoint: BinaryPoint
 
     /** Return the [[Double]] value of this instance if it is a Literal
       * @note this method may throw an exception if the literal value won't fit in a Double
       */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def litToDoubleOption: Option[Double] = {
       litOption match {
         case Some(bigInt: BigInt) =>
@@ -1326,11 +1329,13 @@ package experimental {
 
     /** Return the double value of this instance assuming it is a literal (convenience method)
       */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def litToDouble: Double = litToDoubleOption.get
 
     /** Return the [[BigDecimal]] value of this instance if it is a Literal
       * @note this method may throw an exception if the literal value won't fit in a BigDecimal
       */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def litToBigDecimalOption: Option[BigDecimal] = {
       litOption match {
         case Some(bigInt: BigInt) =>
@@ -1342,6 +1347,7 @@ package experimental {
     /** Return the [[BigDecimal]] value of this instance assuming it is a literal (convenience method)
       * @return
       */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def litToBigDecimal: BigDecimal = litToBigDecimalOption.get
   }
 
@@ -1359,6 +1365,7 @@ package experimental {
     * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
     * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
       extends Bits(width)
       with Num[FixedPoint]
@@ -1724,19 +1731,23 @@ package experimental {
     * Factory and convenience methods for the FixedPoint class
     * IMPORTANT: The API provided here is experimental and may change in the future.
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   object FixedPoint extends NumObject {
 
     import FixedPoint.Implicits._
 
     /** Create an FixedPoint type with inferred width. */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def apply(): FixedPoint = apply(Width(), BinaryPoint())
 
     /** Create an FixedPoint type or port with fixed width. */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def apply(width: Width, binaryPoint: BinaryPoint): FixedPoint = new FixedPoint(width, binaryPoint)
 
     /** Create an FixedPoint literal with inferred width from BigInt.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def fromBigInt(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
       apply(value, width, binaryPoint)
     }
@@ -1744,6 +1755,7 @@ package experimental {
     /** Create an FixedPoint literal with inferred width from BigInt.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def fromBigInt(value: BigInt, binaryPoint: BinaryPoint = 0.BP): FixedPoint = {
       apply(value, Width(), binaryPoint)
     }
@@ -1751,6 +1763,7 @@ package experimental {
     /** Create an FixedPoint literal with inferred width from BigInt.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def fromBigInt(value: BigInt, width: Int, binaryPoint: Int): FixedPoint =
       if (width == -1) {
         apply(value, Width(), BinaryPoint(binaryPoint))
@@ -1761,6 +1774,7 @@ package experimental {
     /** Create an FixedPoint literal with inferred width from Double.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def fromDouble(value: Double, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
       fromBigInt(
         toBigInt(value, binaryPoint.get),
@@ -1772,6 +1786,7 @@ package experimental {
     /** Create an FixedPoint literal with inferred width from BigDecimal.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def fromBigDecimal(value: BigDecimal, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
       fromBigInt(
         toBigInt(value, binaryPoint.get),
@@ -1781,6 +1796,7 @@ package experimental {
     }
 
     /** Create an FixedPoint port with specified width and binary position. */
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
       val lit = FPLit(value, width, binaryPoint)
       val newLiteral = new FixedPoint(lit.width, lit.binaryPoint)
@@ -1788,23 +1804,30 @@ package experimental {
       lit.bindLitArg(newLiteral)
     }
 
+    @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     object Implicits {
 
+      @deprecated(deprecatedMFCMessage, "Chisel 3.6")
       implicit class fromDoubleToLiteral(double: Double) {
+        @deprecated(deprecatedMFCMessage, "Chisel 3.6")
         def F(binaryPoint: BinaryPoint): FixedPoint = {
           FixedPoint.fromDouble(double, Width(), binaryPoint)
         }
 
+        @deprecated(deprecatedMFCMessage, "Chisel 3.6")
         def F(width: Width, binaryPoint: BinaryPoint): FixedPoint = {
           FixedPoint.fromDouble(double, width, binaryPoint)
         }
       }
 
+      @deprecated(deprecatedMFCMessage, "Chisel 3.6")
       implicit class fromBigDecimalToLiteral(bigDecimal: BigDecimal) {
+        @deprecated(deprecatedMFCMessage, "Chisel 3.6")
         def F(binaryPoint: BinaryPoint): FixedPoint = {
           FixedPoint.fromBigDecimal(bigDecimal, Width(), binaryPoint)
         }
 
+        @deprecated(deprecatedMFCMessage, "Chisel 3.6")
         def F(width: Width, binaryPoint: BinaryPoint): FixedPoint = {
           FixedPoint.fromBigDecimal(bigDecimal, width, binaryPoint)
         }
