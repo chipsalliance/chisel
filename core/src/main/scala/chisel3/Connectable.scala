@@ -13,34 +13,86 @@ import chisel3.internal.ChildBinding
 import firrtl.ir.Orientation
 import chisel3.ActualDirection.Bidirectional
 
-/** The default connection operators for Chisel hardware components */
 object Connectable {
+
+  /** The default connection operators for Chisel hardware components
+   * 
+   * @define colonHashEq The "mono-direction connection operator", aka the "coercion operator".
+   * 
+   * For `consumer :#= producer`, all leaf fields of consumer (regardless of relative flip) are driven by the corresponding leaf fields of producer (regardless of relative flip)
+   * 
+   * Identical to calling :<= and :>=, but swapping consumer/producer for :>= (order is irrelevant), e.g.:
+   *   consumer :<= producer
+   *   producer :>= consumer
+   * 
+   * $chiselTypeRestrictions
+   * 
+   * Additional notes:
+   * - Connecting two [[Decoupled]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
+   * - Functionally equivalent to chisel3.:=, but different than Chisel.:=
+   *
+   * @group connection
+   * 
+   * @define colonLessEq The "aligned connection operator" between a producer and consumer.
+   *
+   * For `consumer :<= producer`, each of `consumer`'s leaf fields which are aligned with respect to `consumer` are driven from the corresponding `producer` leaf field.
+   * Only `consumer`'s leaf/branch alignments influence the connection.
+   * 
+   * $chiselTypeRestrictions
+   * 
+   * Additional notes:
+   *  - Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
+   *
+   * @group connection
+   * 
+   * @define colonGreaterEq The "flipped connection operator", or the "backpressure connection operator" between a producer and consumer.
+   *
+   * For `consumer :>= producer`, each of `producer`'s leaf fields which are flipped with respect to `producer` are driven from the corresponding consumer leaf field
+   * Only `producer`'s leaf/branch alignments influence the connection.
+   * 
+   * $chiselTypeRestrictions
+   *
+   * Additional notes:
+   *  - Connecting two [[Decoupled]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
+   *
+   * @group connection
+   *
+   * @define colonLessGreaterEq The "bi-direction connection operator", aka the "tur-duck-en operator"
+   *
+   * For `consumer :<>= producer`, both producer and consumer leafs could be driving or be driven-to.
+   * The `consumer`'s fields aligned w.r.t. `consumer` will be driven by corresponding fields of `producer`;
+   * the `producer`'s fields flipped w.r.t. `producer` will be driven by corresponding fields of `consumer`
+   *
+   * Identical to calling `:<=` and `:>=` in sequence (order is irrelevant), e.g. `consumer :<= producer; consumer :>= producer`
+   * 
+   * $chiselTypeRestrictions
+   * - An additional type restriction is that all relative orientations of `consumer` and `producer` must match exactly.
+   * 
+   * Additional notes:
+   *  - Connecting two wires of [[Decoupled]] chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
+   *  - If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
+   *  - "turk-duck-en" is a dish where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
+   *
+   * @group connection
+   *
+   * @define chiselTypeRestrictions The following restrictions apply:
+   *  - The Chisel type of consumer and producer must be the "same shape" recursively:
+   *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different (implicit trunction/padding occurs)
+   *    - All vector types are the same length
+   *    - All bundle types have the same field names, but the flips of fields can be different between producer and consumer
+   *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
+   */
+  trait ConnectableDocs
 
   /** ConnectableData Typeclass defines the following operators on all subclasses of Data: :<=, :>=, :<>=, :#=
     *
     * @param consumer the left-hand-side of the connection
     */
-  implicit class ConnectableData[T <: Data](consumer: T) {
+  implicit class ConnectableData[T <: Data](consumer: T) extends ConnectableDocs {
 
-    /** The "aligned connection operator" between a producer and consumer.
-      *
-      * For `consumer :<= producer`, each of consumer's leaf fields WHO ARE ALIGNED WITH RESPECT TO CONSUMER are driven from the corresponding producer leaf field
-      * All producer's leaf/branch alignments (with respect to producer) do not influence the connection.
-      *
-      * The following restrictions apply:
-      *  - The Chisel type of consumer and producer must be the "same shape" recursively:
-      *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
-      *    - All vector types are the same length
-      *    - All bundle types have the same field names, but the flips of fields can be different between producer and consumer
-      *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
-      *
-      * @note Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
-      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
-      *
-      * @param consumer the left-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connection ("aligned connection")
+    /** $colonLessEq
+      * 
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
-      * @param sourceInfo
-      * @group connection
       */
     final def :<=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
@@ -48,25 +100,9 @@ object Connectable {
       }
     }
 
-    /** The "flipped connection operator" between a producer and consumer.
+    /** $colonGreaterEq
       *
-      * For `consumer :>= producer`, each of producers's leaf fields WHO ARE FLIPPED WITH RESPECT TO PRODUCER are driven from the corresponding consumer leaf field
-      * All consumer's leaf/branch alignments (with respect to consumer) do not influence the connection.
-      *
-      * The following restrictions apply:
-      *  - The Chisel type of consumer and producer must be the "same shape":
-      *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
-      *    - All vector types are the same length
-      *    - All bundle types have the same field names, but the flips of fields can be different
-      *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
-      *
-      * @note Connecting two [[Decoupled]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
-      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
-      *
-      * @param consumer the left-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("flipped connection")
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
-      * @param sourceInfo
-      * @group connection
       */
     final def :>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
@@ -74,27 +110,9 @@ object Connectable {
       }
     }
 
-    /** The "bi-direction connection operator", aka the "tur-duck-en operator"
+    /** $colonLessGreaterEq
       *
-      * For `consumer :<>= producer`, both producer and consumer leafs could be driving or be driven-to:
-      *   - consumer's fields aligned w.r.t. consumer will be driven by corresponding fields of producer
-      *   - producer's fields flipped w.r.t. producer will be driven by corresponding fields of consumer
-      *
-      * Identical to calling both :<= and :>= in sequence (order is irrelevant), e.g.:
-      *   consumer :<= producer
-      *   consumer :>= producer
-      *
-      * @note Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
-      * @note This may have surprising-to-new-users behavior if the flips of consumer and producer do not match. Save yourself the headache and internalize what
-      * :<= and :>= do, and then you'll be able to reason your way to understanding what's happening :)
-      * @note If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
-      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
-      * @note "turk-duck-en" is a meme where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
-      *
-      * @param consumer the left-hand-side of the connection (read above comment for more info)
-      * @param producer the right-hand-side of the connection (read above comment for more info)
-      * @param sourceInfo
-      * @group connection
+      * @param producer the right-hand-side of the connection
       */
     final def :<>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
@@ -121,62 +139,78 @@ object Connectable {
       }
     }
 
-    /** The "mono-direction connection operator", aka the "coercion operator"
+    /** $colonHashEq
       *
-      * For `consumer :#= producer`, all leaf fields of consumer (regardless of relative flip) are driven by the corresponding leaf fields of producer (regardless of relative flip)
-      *
-      * Identical to calling :<= and :>=, but swapping consumer/producer for :>=: (order is irrelevant), e.g.:
-      *   consumer :<= producer
-      *   producer :>= consumer
-      *
-      * @note Connecting two [[Decoupled]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
-      * @note Functionally equivalent to chisel3.:=, but different than Chisel.:=
-      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
-      *
-      * @param consumer the left-hand-side of the connection, all fields will be driven-to
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
-      * @param sourceInfo
-      * @group connection
       */
     final def :#=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], Set.empty[Data])
       }
     }
+
+    /** $colonHashEq
+      *
+      * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
+      */
     final def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], Set.empty[Data])
       }
     }
-    // Waivables
+
+    /** $colonLessEq
+      *
+      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
+      */
     final def :<=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonLessEq, Set.empty[Data], pWaived.waivers)
       }
     }
+
+    /** $colonGreaterEq
+      *
+      * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
+      */
     final def :>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonGreaterEq, Set.empty[Data], pWaived.waivers)
       }
     }
+
+    /** $colonLessGreaterEq
+      * 
+      * @param producer the right-hand-side of the connection
+      */
     final def :<>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonLessGreaterEq, Set.empty[Data], pWaived.waivers)
       }
     }
+
+    /** $colonHashEq
+      * 
+      * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
+      */
     final def :#=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], pWaived.waivers)
       }
     }
 
-    // Original non-erroring partial connect.. Do we dare?!?
-    final def :<!>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        val (cWaivers, pWaivers) = WaivedData.waiveUnmatched(consumer, producer)
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessGreaterEq, cWaivers.waivers, pWaivers.waivers)
-      }
-    }
+    ///** $colonLessBangGreaterEq
+    //  * 
+    //  * @param producer the right-hand-side of the connection
+    //  */
+    //final def :<!>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+    //  prefix(consumer) {
+    //    //val (cWaivers, pWaivers) = WaivedData.waiveUnmatched(consumer, producer)
+    //    val cWaivers = consumer.waiveAll
+    //    val pWaivers = producer.waiveAll
+    //    DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessGreaterEq, cWaivers.waivers, pWaivers.waivers)
+    //  }
+    //}
   }
 
   /** ConnectableVec Typeclass defines the following operators on between a (consumer: Vec) and (producer: Seq): :<=, :>=, :<>=, :#=
@@ -185,25 +219,9 @@ object Connectable {
     */
   implicit class ConnectableVec[T <: Data](consumer: Vec[T]) {
 
-    /** The "aligned connection operator" between a producer and consumer.
-      *
-      * For `consumer :<= producer`, each of consumer's leaf fields WHO ARE ALIGNED WITH RESPECT TO CONSUMER are driven from the corresponding producer leaf field
-      * All producer's leaf/branch alignments (with respect to producer) do not influence the connection.
-      *
-      * The following restrictions apply:
-      *  - The Chisel type of consumer and producer must be the "same shape" recursively:
-      *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
-      *    - All vector types are the same length
-      *    - All bundle types have the same field names, but the flips of fields can be different between producer and consumer
-      *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
-      *
-      * @note Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
-      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
-      *
-      * @param consumer the left-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connection ("aligned connection")
+    /** $colonLessEq
+      * 
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
-      * @param sourceInfo
-      * @group connection
       */
     def :<=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
@@ -213,25 +231,9 @@ object Connectable {
       for ((a, b) <- consumer.zip(producer)) { a :<= b }
     }
 
-    /** The "flipped connection operator" between a producer and consumer.
-      *
-      * For `consumer :>= producer`, each of producers's leaf fields WHO ARE FLIPPED WITH RESPECT TO PRODUCER are driven from the corresponding consumer leaf field
-      * All consumer's leaf/branch alignments (with respect to consumer) do not influence the connection.
-      *
-      * The following restrictions apply:
-      *  - The Chisel type of consumer and producer must be the "same shape":
-      *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different
-      *    - All vector types are the same length
-      *    - All bundle types have the same field names, but the flips of fields can be different
-      *  - The leaf fields that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
-      *
-      * @note Connecting two [[Decoupled]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
-      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
-      *
-      * @param consumer the left-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("flipped connection")
+    /** $colonGreaterEq
+      * 
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
-      * @param sourceInfo
-      * @group connection
       */
     def :>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
@@ -241,26 +243,9 @@ object Connectable {
       for ((a, b) <- consumer.zip(producer)) { a :>= b }
     }
 
-    /** The "bi-direction connection operator", aka the "tur-duck-en operator"
-      *
-      * For `consumer :<>= producer`, both producer and consumer leafs could be driving or be driven-to:
-      *   - consumer's fields aligned w.r.t. consumer will be driven by corresponding fields of producer
-      *   - producer's fields flipped w.r.t. producer will be driven by corresponding fields of consumer
-      *
-      * Identical to calling both :<= and :>= in sequence (order is irrelevant), e.g.:
-      *   consumer :<= producer
-      *   consumer :>= producer
-      *
-      * @note Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
-      * @note This may have surprising-to-new-users behavior if the flips of consumer and producer do not match. Save yourself the headache and internalize what
-      * :<= and :>= do, and then you'll be able to reason your way to understanding what's happening :)
-      * @note If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
-      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
-      *
-      * @param consumer the left-hand-side of the connection (read above comment for more info)
-      * @param producer the right-hand-side of the connection (read above comment for more info)
-      * @param sourceInfo
-      * @group connection
+    /** $colonLessGreaterEq
+      * 
+      * @param producer the right-hand-side of the connection
       */
     def :<>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
@@ -270,22 +255,9 @@ object Connectable {
       for ((a, b) <- consumer.zip(producer)) { a :<>= b }
     }
 
-    /** The "mono-direction connection operator", aka the "coercion operator"
-      *
-      * For `consumer :#= producer`, all leaf fields of consumer (regardless of relative flip) are driven by the corresponding leaf fields of producer (regardless of relative flip)
-      *
-      * Identical to calling :<= and :>=, but swapping consumer/producer for :>=: (order is irrelevant), e.g.:
-      *   consumer :<= producer
-      *   producer :>= consumer
-      *
-      * @note Connecting two [[Decoupled]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
-      * @note Functionally equivalent to chisel3.:=, but different than Chisel.:=
-      * @note If the widths differ between consumer/producer, the assignment will still occur and truncation, if necessary, is implicit
-      *
-      * @param consumer the left-hand-side of the connection, all fields will be driven-to
+    /** $colonHashEq
+      * 
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
-      * @param sourceInfo
-      * @group connection
       */
     def :#=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
@@ -294,12 +266,21 @@ object Connectable {
         )
       for ((a, b) <- consumer.zip(producer)) { a :#= b }
     }
+
+    /** $colonHashEq
+      * 
+      * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
+      */
     def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
       for (a <- consumer) { a :#= DontCare }
     }
-
   }
+
   implicit class ConnectableDontCare(consumer: DontCare.type) {
+    /** $colonGreaterEq
+      *
+      * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
+      */
     final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq, Set.empty[Data], Set.empty[Data])
