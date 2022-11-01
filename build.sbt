@@ -238,6 +238,12 @@ lazy val chisel = (project in file("."))
       // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
       // See https://github.com/sbt/sbt-unidoc/issues/107
       (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
+      ++ {
+           CrossVersion.partialVersion(scalaVersion.value) match {
+             case Some((2, n)) if n >= 13 => "-implicits" :: Nil
+             case _                       => Nil
+           }
+         }
   )
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest

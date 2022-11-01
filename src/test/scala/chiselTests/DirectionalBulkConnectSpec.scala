@@ -1071,20 +1071,6 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       }
       println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
     }
-    it("(9.d) BundleMap example must use opaque types") {
-      //class MyModule extends Module {
-      //  val in  = IO(Flipped(new BundleMap(SeqMap(
-      //    "a" -> (() => Waivable(UInt(2.W), true, true)),
-      //    "b" -> (() => Waivable(UInt(2.W), true, true))
-      //  ))))
-      //  val out = IO(new BundleMap(SeqMap(
-      //    "b" -> (() => Waivable(UInt(2.W), true, true)),
-      //    "c" -> (() => Waivable(UInt(2.W), true, true))
-      //  )))
-      //  out :<>= in
-      //}
-      //println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
-    }
     it("(9.e) Inline waiver things") {
       class MyModule extends Module {
         val in  = IO(Flipped(new Decoupled(true)))
@@ -1144,6 +1130,29 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
         //Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in)
+      }
+      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+    }
+    it("(9.i) (Good or bad?) Mismatched aggregate containing backpressure must be waived for :<=") {
+      // My concern with this use-case is if you have an unmatched aggregate field, but it only contains fields that your operator would ignore anyways, should you error?
+      //  - For the simplicity of reasoning about the operator semantics, I think the answer is yes because erroring is now a local decision (does not depend on the child field type)
+      //  - I just want to make sure, so this example kind of demonstrates that I think the behavior is sensible
+      //  - In addition, with the 'waive' feature, it's very straightforward to make the operator do what you want it to do, in this case, and the explicitness is good.
+      class OnlyBackPressure extends Bundle {
+        val ready = Flipped(UInt(3.W))
+      }
+      class MyModule extends Module {
+        // Have to nest in bundle because it calls the connecting-to-seq version
+        val in3  = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure) } ))
+        val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure) } )
+        val in2  = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure) } ))
+        val out2 = IO(new Bundle { val v = Vec(2, new OnlyBackPressure) } )
+        // Should do nothing, but also doesn't error, which is good
+        out3 :<= in3
+        // Should error, unless waived
+        out3.waive(_.v(2)) :>= in2
+        // Should error, unless waived
+        out2 :<= in3.waive(_.v(2))
       }
       println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
     }

@@ -28,7 +28,7 @@ object Connectable {
    * $chiselTypeRestrictions
    * 
    * Additional notes:
-   * - Connecting two [[Decoupled]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
+   * - Connecting two [[util.DecoupledIO]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
    * - Functionally equivalent to chisel3.:=, but different than Chisel.:=
    *
    * @group connection
@@ -41,7 +41,7 @@ object Connectable {
    * $chiselTypeRestrictions
    * 
    * Additional notes:
-   *  - Connecting two [[Decoupled]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
+   *  - Connecting two [[util.DecoupledIO]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
    *
    * @group connection
    * 
@@ -53,7 +53,7 @@ object Connectable {
    * $chiselTypeRestrictions
    *
    * Additional notes:
-   *  - Connecting two [[Decoupled]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
+   *  - Connecting two [[util.DecoupledIO]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
    *
    * @group connection
    *
@@ -69,11 +69,9 @@ object Connectable {
    * - An additional type restriction is that all relative orientations of `consumer` and `producer` must match exactly.
    * 
    * Additional notes:
-   *  - Connecting two wires of [[Decoupled]] chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
+   *  - Connecting two wires of [[util.DecoupledIO]] chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
    *  - If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
    *  - "turk-duck-en" is a dish where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
-   *
-   * @group connection
    *
    * @define chiselTypeRestrictions The following restrictions apply:
    *  - The Chisel type of consumer and producer must be the "same shape" recursively:
@@ -92,6 +90,7 @@ object Connectable {
 
     /** $colonLessEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
     final def :<=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
@@ -102,6 +101,7 @@ object Connectable {
 
     /** $colonGreaterEq
       *
+      * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
     final def :>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
@@ -112,6 +112,7 @@ object Connectable {
 
     /** $colonLessGreaterEq
       *
+      * @group connection
       * @param producer the right-hand-side of the connection
       */
     final def :<>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
@@ -141,6 +142,7 @@ object Connectable {
 
     /** $colonHashEq
       *
+      * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
     final def :#=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
@@ -151,6 +153,7 @@ object Connectable {
 
     /** $colonHashEq
       *
+      * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
     final def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
@@ -161,6 +164,7 @@ object Connectable {
 
     /** $colonLessEq
       *
+      * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
     final def :<=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -171,6 +175,7 @@ object Connectable {
 
     /** $colonGreaterEq
       *
+      * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
     final def :>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -181,6 +186,7 @@ object Connectable {
 
     /** $colonLessGreaterEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection
       */
     final def :<>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -191,6 +197,7 @@ object Connectable {
 
     /** $colonHashEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
     final def :#=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -221,6 +228,7 @@ object Connectable {
 
     /** $colonLessEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
     def :<=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -233,6 +241,7 @@ object Connectable {
 
     /** $colonGreaterEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
     def :>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -245,6 +254,7 @@ object Connectable {
 
     /** $colonLessGreaterEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection
       */
     def :<>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -257,6 +267,7 @@ object Connectable {
 
     /** $colonHashEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
     def :#=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -269,6 +280,7 @@ object Connectable {
 
     /** $colonHashEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
     def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
@@ -279,6 +291,7 @@ object Connectable {
   implicit class ConnectableDontCare(consumer: DontCare.type) {
     /** $colonGreaterEq
       *
+      * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
     final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = {

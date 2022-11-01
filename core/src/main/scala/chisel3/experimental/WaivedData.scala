@@ -38,6 +38,7 @@ object WaivedData {
 
     /** $colonLessEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
     final def :<=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
@@ -48,6 +49,7 @@ object WaivedData {
 
     /** $colonLessEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
     final def :<=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -58,6 +60,7 @@ object WaivedData {
 
     /** $colonGreaterEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
     final def :>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
@@ -68,6 +71,7 @@ object WaivedData {
 
     /** $colonGreaterEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
     final def :>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -78,6 +82,7 @@ object WaivedData {
 
     /** $colonLessGreaterEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection
       */
     final def :<>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
@@ -89,6 +94,7 @@ object WaivedData {
 
     /** $colonLessGreaterEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection
       */
     final def :<>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
@@ -99,6 +105,7 @@ object WaivedData {
 
     /** $colonHashEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
     final def :#=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
@@ -109,6 +116,7 @@ object WaivedData {
 
     /** $colonHashEq
       * 
+      * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
     final def :#=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
