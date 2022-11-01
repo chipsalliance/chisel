@@ -330,7 +330,11 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       }
     }
   }
+<<<<<<< HEAD
   property("Bugfix: marking Vec fields with mixed directionality as Output/Input clears inner directions") {
+=======
+  property("Can now describe a Decoupled bundle using Flipped, not Input/Output in chisel3") {
+>>>>>>> 21425fa0... All turkducken changes v2
     class Decoupled extends Bundle {
       val bits = UInt(3.W)
       val valid = Bool()

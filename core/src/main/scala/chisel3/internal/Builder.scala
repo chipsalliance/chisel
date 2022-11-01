@@ -457,6 +457,8 @@ private[chisel3] class DynamicContext(
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
+
+  val map = mutable.HashMap[Any, Any]()
 }
 
 private[chisel3] object Builder extends LazyLogging {

@@ -12,6 +12,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
+
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -352,6 +353,23 @@ private[chisel3] object cloneSupertype {
 
 // Returns pairs of all fields, element-level and containers, in a Record and their path names
 private[chisel3] object getRecursiveFields {
+  def noPath(data: Data): Seq[Data] = data match {
+    case data: Record =>
+      data.elements.map {
+        case (_, fieldData) =>
+          getRecursiveFields.noPath(fieldData)
+      }.fold(Seq(data)) {
+        _ ++ _
+      }
+    case data: Vec[_] =>
+      data.getElements.zipWithIndex.map {
+        case (fieldData, fieldIndex) =>
+          getRecursiveFields.noPath(fieldData)
+      }.fold(Seq(data)) {
+        _ ++ _
+      }
+    case data: Element => Seq(data)
+  }
   def apply(data: Data, path: String): Seq[(Data, String)] = data match {
     case data: Record =>
       data.elements.map {
@@ -385,6 +403,21 @@ private[chisel3] object getRecursiveFields {
         }
     case data: Element => LazyList(data -> path)
   }
+  def lazilyNoPath(data: Data): Seq[Data] = data match {
+    case data: Record =>
+      LazyList(data) ++
+        data.elements.view.flatMap {
+          case (fieldName, fieldData) =>
+            getRecursiveFields.lazilyNoPath(fieldData)
+        }
+    case data: Vec[_] =>
+      LazyList(data) ++
+        data.getElements.view.flatMap {
+          case (fieldData) =>
+            getRecursiveFields.lazilyNoPath(fieldData)
+        }
+    case data: Element => LazyList(data)
+  }
 }
 
 // Returns pairs of corresponding fields between two Records of the same type
@@ -399,7 +432,7 @@ private[chisel3] object getMatchedFields {
         .zip(y.elements))
         .map {
           case ((xName, xElt), (yName, yElt)) =>
-            require(xName == yName) // assume fields returned in same, deterministic order
+            require(xName == yName, s"$xName != $yName, ${x.elements}, ${y.elements}, $x, $y") // assume fields returned in same, deterministic order
             getMatchedFields(xElt, yElt)
         }
         .fold(Seq(x -> y)) {
@@ -621,6 +654,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case _ => // fine
       }
     }
+    if(connectCompileOptions.migrateConnections) {
+      getRecursiveFields(this, "").collect { case (d, _) if d.direction != this.direction => 
+        Builder.error(s"$this cannot be used with := because submember $d has inverse orientation; use :#= instead")
+      }
+      getRecursiveFields(that, "").collect { case (d, _) if d.direction != that.direction =>
+        Builder.error(s"$that cannot be used with := because submember $d has inverse orientation; use :#= instead")
+      }
+    }
     if (connectCompileOptions.emitStrictConnects) {
 
       try {
@@ -632,7 +673,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
-      this.legacyConnect(that)
+      this.firrtlPartialConnect(that)
     }
   }
   private[chisel3] def bulkConnect(
@@ -661,7 +702,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
-      this.legacyConnect(that)
+      if(connectCompileOptions.migrateConnections) Builder.error(s"Cannot use <> to connect Chisel bundles; use :<>= instead")
+      this.firrtlPartialConnect(that)
     }
   }
 
@@ -756,7 +798,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[chisel3] def width: Width
-  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def firrtlConnect(that:        Data)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
@@ -773,18 +816,22 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * Directionality data is still preserved.
     */
   private[chisel3] def cloneTypeFull: this.type = {
-    val clone = this.cloneType.asInstanceOf[this.type] // get a fresh object, without bindings
+    val clone = this.cloneType// get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
     clone
   }
 
-  /** Connect this $coll to that $coll mono-directionally and element-wise.
+  /** The "strong connect" operator.
     *
-    * This uses the [[MonoConnect]] algorithm.
+    * For chisel3._, this operator is mono-directioned; all sub-elements of `this` will be driven by sub-elements of `that`.
+    *  - Equivalent to `this :#= that`
     *
-    * @param that the $coll to connect to
-    * @group Connect
+    * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
+    *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
+    *
+    * @param that the Data to connect from
+    * @group connection
     */
   final def :=(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
     prefix(this) {
@@ -792,12 +839,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  /** Connect this $coll to that $coll bi-directionally and element-wise.
+  /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
     *
-    * This uses the [[BiConnect]] algorithm.
+    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    *  - Complicated semantics, hard to write quickly, will likely be deprecated in the future
     *
-    * @param that the $coll to connect to
-    * @group Connect
+    * For Chisel._, emits the FIRRTL.<- operator
+    *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match
+    *
+    * @param that the Data to connect from
+    * @group connection
     */
   final def <>(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
     prefix(this) {
@@ -892,9 +943,49 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Default pretty printing */
   def toPrintable: Printable
+
+  private[chisel3] var defaultOrNull: Data = null
 }
 
 object Data {
+
+  // Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data
+  implicit class ConnectableDefaultData[T <: Data](consumer: T) extends Connectable.ConnectableData[T](consumer)
+
+  // Provides :<>=, :<=, :>=, and :#= between a (consumer: Vec) and (producer: Seq)
+  implicit class ConnectableDefaultVec[T <: Data](consumer: Vec[T]) extends Connectable.ConnectableVec[T](consumer)
+
+  implicit class WaivableDefaultData[T <: Data](d: T) extends experimental.WaivedData.WaivableData[T](d)
+
+  implicit val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
+
+    implicit class VecGet(v: Vec[Data]) { def get(i: Int): Option[Data] = if (i < v.length) Some(v(i)) else None }
+    implicit class VecOptOps(vOpt: Option[Vec[Data]]) {
+      // Like .get, but its already defined on Option
+      def grab(i: Int): Option[Data] = vOpt.flatMap { _.get(i) }
+      def size = vOpt.map(_.size).getOrElse(0)
+    }
+    implicit class RecordOptGet(rOpt: Option[Record]) {
+      // Like .get, but its already defined on Option
+      def grab(k: String): Option[Data] = rOpt.flatMap { _.elements.get(k) }
+      def keys: Iterable[String] = rOpt.map { r => r.elements.map(_._1) }.getOrElse(Seq.empty[String])
+    }
+    private def isDifferent(l: Option[Data], r: Option[Data]): Boolean = l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
+    private def isRecord   (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Record] }.getOrElse(false)
+    private def isVec      (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Vec[_]] }.getOrElse(false)
+    private def isElement  (l: Option[Data], r: Option[Data]): Boolean = l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
+
+    def matchingZipOfChildren(left: Option[Data], right: Option[Data]): Seq[(Option[Data], Option[Data])] = (left, right) match {
+      case (None, None)                            => Nil
+      case (lOpt, rOpt) if isDifferent(lOpt, rOpt) => Nil
+      case (lOpt: Option[Vec[Data]], rOpt: Option[Vec[Data]]) if isVec(lOpt, rOpt)       =>
+        (0 until (lOpt.size max rOpt.size)).map { i => (lOpt.grab(i), rOpt.grab(i)) }
+      case (lOpt: Option[Record], rOpt: Option[Record]) if isRecord(lOpt, rOpt) =>
+        (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
+      case (lOpt, rOpt) if isElement(lOpt, rOpt) => Nil
+    }
+  }
+
 
   /**
     * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
@@ -1086,7 +1177,7 @@ object WireDefault {
   ): T = {
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
-    x := init
+    x.asInstanceOf[Data] :#= init
     x
   }
 
@@ -1160,4 +1251,6 @@ final case object DontCare extends Element {
   }
   // DontCare's only match themselves.
   private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
+
+  final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = this.asInstanceOf[Data] :>= producer
 }

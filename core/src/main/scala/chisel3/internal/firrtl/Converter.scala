@@ -162,7 +162,7 @@ private[chisel3] object Converter {
       )
     case Connect(info, loc, exp) =>
       Some(fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
-    case BulkConnect(info, loc, exp) =>
+    case PartialConnect(info, loc, exp) =>
       Some(fir.PartialConnect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
     case Attach(info, locs) =>
       Some(fir.Attach(convert(info), locs.map(l => convert(l, ctx, info))))
@@ -301,7 +301,7 @@ private[chisel3] object Converter {
     case d: SInt       => fir.SIntType(convert(d.width))
     case d: FixedPoint => fir.FixedType(convert(d.width), convert(d.binaryPoint))
     case d: Interval   => fir.IntervalType(d.range.lowerBound, d.range.upperBound, d.range.firrtlBinaryPoint)
-    case d: Analog => fir.AnalogType(convert(d.width))
+    case d: Analog     => fir.AnalogType(convert(d.width))
     case d: Vec[_] =>
       val childClearDir = clearDir ||
         d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output

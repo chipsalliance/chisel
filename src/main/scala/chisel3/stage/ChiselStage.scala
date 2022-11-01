@@ -135,13 +135,16 @@ object ChiselStage {
   /** Return a Chisel circuit for a Chisel module
     * @param gen a call-by-name Chisel module
     */
-  def elaborate(gen: => RawModule): cir.Circuit = {
+  def elaborate(gen: => RawModule, printFullStackTrace: Boolean = false, throwOnFirstError: Boolean = false): cir.Circuit = {
     val phase = new ChiselPhase {
       override val targets = Seq(Dependency[chisel3.stage.phases.Checks], Dependency[chisel3.stage.phases.Elaborate])
     }
 
+    val pfst = if(printFullStackTrace) Seq(PrintFullStackTraceAnnotation) else Nil
+    val tofe = if(throwOnFirstError) Seq(ThrowOnFirstErrorAnnotation) else Nil
+
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), NoRunFirrtlCompilerAnnotation))
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen), NoRunFirrtlCompilerAnnotation) ++ pfst ++ tofe)
       .collectFirst {
         case ChiselCircuitAnnotation(a) => a
       }
@@ -151,7 +154,7 @@ object ChiselStage {
   /** Return a CHIRRTL circuit for a Chisel module
     * @param gen a call-by-name Chisel module
     */
-  def convert(gen: => RawModule): fir.Circuit = {
+  def convert(gen: => RawModule, printFullStackTrace: Boolean = false, throwOnFirstError: Boolean = false): fir.Circuit = {
     val phase = new ChiselPhase {
       override val targets = Seq(
         Dependency[chisel3.stage.phases.Checks],
@@ -163,8 +166,11 @@ object ChiselStage {
       )
     }
 
+    val pfst = if(printFullStackTrace) Seq(PrintFullStackTraceAnnotation) else Nil
+    val tofe = if(throwOnFirstError) Seq(ThrowOnFirstErrorAnnotation) else Nil
+
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen)))
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen)) ++ pfst ++ tofe)
       .collectFirst {
         case FirrtlCircuitAnnotation(a) => a
       }
@@ -195,12 +201,12 @@ object ChiselStage {
   /** Return a CHIRRTL string for a Chisel module
     * @param gen a call-by-name Chisel module
     */
-  def emitChirrtl(gen: => RawModule): String = convert(gen).serialize
+  def emitChirrtl(gen: => RawModule, printFullStackTrace: Boolean = false, throwOnFirstError: Boolean = false): String = convert(gen, printFullStackTrace, throwOnFirstError).serialize
 
   /** Return a FIRRTL string for a Chisel module
     * @param gen a call-by-name Chisel module
     */
-  def emitFirrtl(gen: => RawModule): String = {
+  def emitFirrtl(gen: => RawModule, printFullStackTrace: Boolean = false, throwOnFirstError: Boolean = false): String = {
     val phase = new PhaseManager(
       Seq(
         Dependency[chisel3.stage.phases.Checks],
@@ -213,8 +219,16 @@ object ChiselStage {
       )
     )
 
+    val pfst = if(printFullStackTrace) Seq(PrintFullStackTraceAnnotation) else Nil
+    val tofe = if(throwOnFirstError) Seq(ThrowOnFirstErrorAnnotation) else Nil
+
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new HighFirrtlEmitter)))
+      .transform(
+        Seq(
+          ChiselGeneratorAnnotation(() => gen),
+          RunFirrtlTransformAnnotation(new HighFirrtlEmitter)
+        ) ++ pfst ++ tofe
+      )
       .collectFirst {
         case EmittedFirrtlCircuitAnnotation(a) => a
       }
@@ -226,7 +240,7 @@ object ChiselStage {
   /** Return a Verilog string for a Chisel module
     * @param gen a call-by-name Chisel module
     */
-  def emitVerilog(gen: => RawModule): String = {
+  def emitVerilog(gen: => RawModule, printFullStackTrace: Boolean = false, throwOnFirstError: Boolean = false): String = {
     val phase = new PhaseManager(
       Seq(
         Dependency[chisel3.stage.phases.Checks],
@@ -239,8 +253,11 @@ object ChiselStage {
       )
     )
 
+    val pfst = if(printFullStackTrace) Seq(PrintFullStackTraceAnnotation) else Nil
+    val tofe = if(throwOnFirstError) Seq(ThrowOnFirstErrorAnnotation) else Nil
+
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new VerilogEmitter)))
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new VerilogEmitter)) ++ pfst ++ tofe)
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a
       }
@@ -251,7 +268,7 @@ object ChiselStage {
   /** Return a SystemVerilog string for a Chisel module
     * @param gen a call-by-name Chisel module
     */
-  def emitSystemVerilog(gen: => RawModule): String = {
+  def emitSystemVerilog(gen: => RawModule, printFullStackTrace: Boolean = false, throwOnFirstError: Boolean = false): String = {
     val phase = new PhaseManager(
       Seq(
         Dependency[chisel3.stage.phases.Checks],
@@ -264,8 +281,11 @@ object ChiselStage {
       )
     )
 
+    val pfst = if(printFullStackTrace) Seq(PrintFullStackTraceAnnotation) else Nil
+    val tofe = if(throwOnFirstError) Seq(ThrowOnFirstErrorAnnotation) else Nil
+
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new SystemVerilogEmitter)))
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new SystemVerilogEmitter)) ++ pfst ++ tofe)
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a
       }
