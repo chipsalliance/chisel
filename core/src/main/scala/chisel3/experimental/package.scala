@@ -523,4 +523,5 @@ package object experimental {
       chiselTypeClone(_10)
     )
   }
+  val DataMirror = chisel3.DataMirror
 }
