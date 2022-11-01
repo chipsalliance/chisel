@@ -6,7 +6,7 @@ package experimental
 import chisel3.internal.prefix 
 import chisel3.internal.sourceinfo.SourceInfo
 
-final case class WaivedData[T <: Data](d: T, waivers: Set[Data])
+final case class WaivedData[+T <: Data](d: T, waivers: Set[Data])
 
 object WaivedData {
 
@@ -26,8 +26,13 @@ object WaivedData {
 
     def waiveAs[S <: Data](fields: (T => Data)*): WaivedData[S] = WaivedData(d, fields.map(f => f(d)).toSet).asInstanceOf[WaivedData[S]]
 
-    def waiveAll[S <: Data](pf: PartialFunction[Data, Data]): WaivedData[T] = {
+    def waiveEach[S <: Data](pf: PartialFunction[Data, Data]): WaivedData[T] = {
       val waivedMembers = DataMirror.collectDeep(d)(pf)
+      WaivedData(d, waivedMembers.toSet)
+    }
+
+    def waiveAll: WaivedData[T] = {
+      val waivedMembers = DataMirror.collectDeep(d) { case x => x }
       WaivedData(d, waivedMembers.toSet)
     }
   }
