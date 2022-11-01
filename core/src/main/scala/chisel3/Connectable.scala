@@ -63,7 +63,7 @@ object Connectable {
    * The `consumer`'s fields aligned w.r.t. `consumer` will be driven by corresponding fields of `producer`;
    * the `producer`'s fields flipped w.r.t. `producer` will be driven by corresponding fields of `consumer`
    *
-   * Identical to calling `:<=` and `:>=` in sequence (order is irrelevant), e.g. `consumer :<= producer; consumer :>= producer`
+   * Identical to calling `:<=` and `:>=` in sequence (order is irrelevant), e.g. `consumer :<= producer` then `consumer :>= producer`
    * 
    * $chiselTypeRestrictions
    * - An additional type restriction is that all relative orientations of `consumer` and `producer` must match exactly.
