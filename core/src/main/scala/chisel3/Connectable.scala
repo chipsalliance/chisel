@@ -117,11 +117,12 @@ object Connectable {
       */
     final def :<>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
+        val evaluatedProducer = producer
         val canFirrtlConnect =
           try {
             BiConnect.canFirrtlConnectData(
               consumer,
-              producer,
+              evaluatedProducer,
               sourceInfo,
               DirectionalConnectionFunctions.compileOptions,
               Builder.referenceUserModule
@@ -132,10 +133,10 @@ object Connectable {
             case e: Throwable => false
           }
         if (canFirrtlConnect) {
-          consumer.firrtlConnect(producer)
+          consumer.firrtlConnect(evaluatedProducer)
         } else {
           // cannot call :<= and :>= directly because otherwise prefix is called twice
-          DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessGreaterEq, Set.empty[Data], Set.empty[Data])
+          DirectionalConnectionFunctions.assign(consumer, evaluatedProducer, DirectionalConnectionFunctions.ColonLessGreaterEq, Set.empty[Data], Set.empty[Data])
         }
       }
     }
