@@ -161,6 +161,19 @@ private[chisel3] object DataMirror {
     }
     myItems ++ deepChildrenItems
   }
+
+  def collectAlignedDeep[T](d: Data)(pf: PartialFunction[Data, T]): Seq[T] = {
+    collectDeepOverAllForAny(Some(RelativeOrientation(d, Set.empty, true)), None) {
+      case (Some(x: AlignedWithRoot), _) => (pf.lift(x.data), None)
+    }.map(_._1).flatten
+  }
+
+  def collectFlippedDeep[T](d: Data)(pf: PartialFunction[Data, T]): Seq[T] = {
+    collectDeepOverAllForAny(Some(RelativeOrientation(d, Set.empty, true)), None) {
+      case (Some(x: FlippedWithRoot), _) => (pf.lift(x.data), None)
+    }.map(_._1).flatten
+  }
+
   def collectDeepOverMatches[D : HasMatchingZipOfChildren, T](left: D, right: D)(collector: PartialFunction[(D, D), T]): Seq[T] = {
     def newCollector(lOpt: Option[D], rOpt: Option[D]): Option[(Option[T], Option[Unit])] = {
       (lOpt, rOpt) match {
