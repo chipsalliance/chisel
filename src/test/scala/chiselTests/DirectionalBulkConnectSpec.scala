@@ -1067,7 +1067,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       class MyModule extends Module {
         val in  = IO(Flipped(new NestedDecoupled(true)))
         val out = IO(new NestedDecoupled(false))
-        out :<>= in.waiveAll { case d: Decoupled if d.data.nonEmpty => d.data.get }
+        out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.get }
       }
       println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
     }
@@ -1153,8 +1153,10 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         out3.waive(_.v(2)) :>= in2
         // Should error, unless waived
         out2 :<= in3.waive(_.v(2))
+        println(DataMirror.collectAlignedDeep(in3){case x => x})
+        println(DataMirror.collectFlippedDeep(in3){case x => x})
       }
-      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
+      ChiselStage.emitChirrtl({ new MyModule() }, true, true)
     }
   }
   //property("(D.a) SInt :<>= SInt should succeed") {
