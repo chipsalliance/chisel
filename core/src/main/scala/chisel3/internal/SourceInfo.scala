@@ -53,7 +53,12 @@ object SourceInfoMacro {
   def generate_source_info(c: Context): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
-    q"_root_.chisel3.internal.sourceinfo.SourceLine(${p.source.file.name}, ${p.line}, ${p.column})"
+    val userDir = sys.props.get("user.dir")
+
+    val path = userDir.map(r => p.source.file.canonicalPath.stripPrefix(r)).getOrElse(p.source.file.name)
+    val pathNoStartingSlash = if (path(0) == '/') path.tail else path
+
+    q"_root_.chisel3.internal.sourceinfo.SourceLine($pathNoStartingSlash, ${p.line}, ${p.column})"
   }
 }
 

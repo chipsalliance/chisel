@@ -1002,7 +1002,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       class MyModule extends Module {
         val in  = IO(Flipped(new BoolRecord("a", "b")))
         val out = IO(new BoolRecord("b", "c"))
-        out :<!>= in
+        //out :<!>= in
       }
       println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
     }
