@@ -11,11 +11,16 @@ section: "chisel3"
 ## Terminology
 
 - "Chisel type" - a `Data` that is not bound to hardware
+  - E.g. `UInt(3.W)`, `new Bundle {..}`, `Vec(3, SInt(2.W))` are all Chisel types
+- `Aggregate` - a Chisel type or component that contains other Chisel types or components (i.e. Vec, Record, Bundle)
+- `Element` - a Chisel type or component that does not contain other Chisel types or components (e.g. UInt, SInt, Clock, Bool etc.)
 - "component" - a `Data` that is bound to hardware (`IO`, `Reg`, `Wire`, etc.)
-- "member" - a child Chisel type/component of a parent Chisel type or component
-- "field" - a named member of a `Record` or `Bundle` Chisel type or component
+  - E.g. `Wire(UInt(3.W))` is a component, whose type is `UInt(3.W)`
+- "member" - a child Chisel type or component of a parent Chisel type or component (could be an `Aggregate` or an `Element`)
+  - E.g. `Vec(3, UInt(2.W))(0)` is a member of the parent `Vec` Chisel type
+  - E.g. `Wire(Vec(3, UInt(2.W)))(0)` is a member of the parent `Wire` component
 
-For more details about these concepts, please read (TODO link to Scala types vs Chisel types)
+For more details about these Scala types vs Chisel types, please read [this document](chisel-type-vs-scala-type).
 
 ## Overview
 
@@ -23,7 +28,7 @@ The `Connectable` operators are the standard way to connect Chisel hardware comp
 
 Note: For descriptions of the semantics for the previous operators, see `connection-operators.md`.
 
-All connection operators require the two hardware components (consumer and producer) to be Chisel type-equivalent (matching bundle field names and types (Record vs Vector vs Element), vector sizes, ground types (UInt/SInt/Bool/Clock etc)). Use `DataMirror.checkTypeEquivalence` to check this property.
+All connection operators require the two hardware components (consumer and producer) to be Chisel type-equivalent (matching bundle field names and types (`Record` vs `Vector` vs `Element`), vector sizes, `Element` types (UInt/SInt/Bool/Clock etc)). Use `DataMirror.checkTypeEquivalence` to check this property.
 
 The one exception to the type-equivalence rule is using the `WaivedData` mechanism, detailed at [section](#waived-data) at the end of this document.
 
@@ -36,7 +41,7 @@ Aggregate (`Record`, `Vec`, `Bundle`) Chisel types can include data members whic
 
 ## Alignment: Flipped vs Aligned
 
-A member's alignment is a relative property; a member is aligned/flipped relative to another member. Hence, one must always say whether a member is flipped/aligned *with respect to (w.r.t)* another member of that type (parent, sibling, child etc.).
+A member's alignment is a relative property: a member is aligned/flipped relative to another member of the same component or Chisel type. Hence, one must always say whether a member is flipped/aligned *with respect to (w.r.t)* another member of that type (parent, sibling, child etc.).
 
 We use the following example of a non-nested bundle `Parent` to let us state all of the alignment relationships between members of `p`.
 
@@ -106,8 +111,8 @@ Because `alignedChild` and `flippedChild` are non-aggregates, `Input` is basical
 ```scala mdoc:silent
 import chisel3._
 class ParentWithOutputInput extends Bundle {
-  val outputChild = Output(UInt(32.W)) // Equivalent to just UInt(32.W)
-  val inputChild = Input(UInt(32.W))  // Equivalent to Flipped(UInt(32.W))
+  val alignedCoerced = Output(UInt(32.W)) // Equivalent to just UInt(32.W)
+  val flippedCoerced = Input(UInt(32.W))  // Equivalent to Flipped(UInt(32.W))
 }
 class MyModule2 extends Module {
   val p = Wire(new ParentWithOutputInput)
@@ -116,11 +121,11 @@ class MyModule2 extends Module {
 
 The aligments are the same as the previous `Parent` example:
  - `p` is aligned w.r.t `p`
- - `p.outputChild` is aligned w.r.t `p.outputChild`
- - `p.inputChild` is aligned w.r.t `p.inputChild`
- - `p` is aligned w.r.t `p.outputChild`
- - `p` is flipped w.r.t `p.inputChild`
- - `p.outputChild` is flipped w.r.t `p.inputChild`
+ - `p.alignedCoerced` is aligned w.r.t `p.alignedCoerced`
+ - `p.flippedCoerced` is aligned w.r.t `p.flippedCoerced`
+ - `p` is aligned w.r.t `p.alignedCoerced`
+ - `p` is flipped w.r.t `p.flippedCoerced`
+ - `p.alignedCoerced` is flipped w.r.t `p.flippedCoerced`
 
 The next example has a nested bundle `GrandParent` who instantiates an `Output` `ParentWithOutputInput` field and an `Input` `ParentWithOutputInput` field.
 
@@ -135,20 +140,20 @@ class MyModule1 extends Module {
 }
 ```
 
-Remember that `Output(gen)/Input(gen)` recursively strip the `Flipped` of any recursive children.
+Remember that `Output(gen)/Input(gen)` recursively strips the `Flipped` of any recursive children.
 This makes every member of `gen` aligned with every other member of `gen`.
 
-Consider the following alignments between grandparent and grandchildren. Because `o` and `i` have recursively stripped the flips of children, they are fully aligned. Thus, only their alignment to `g` influences grandchildren alignment:
- - `g` is aligned w.r.t `g.o.outputChild`
- - `g` is aligned w.r.t `g.o.inputChild`
- - `g` is flipped w.r.t `g.i.inputChild`
- - `g` is flipped w.r.t `g.i.outputChild`
+Consider the following alignments between grandparent and grandchildren. Because `alignedCoerced` and `flippedCoerced` are aligned with all their recursive members, they are fully aligned. Thus, only their alignment to `g` influences grandchildren alignment:
+ - `g` is aligned w.r.t `g.alignedCoerced.alignedChild`
+ - `g` is aligned w.r.t `g.alignedCoerced.flippedChild`
+ - `g` is flipped w.r.t `g.flippedCoerced.alignedChild`
+ - `g` is flipped w.r.t `g.flippedCoerced.flippedChild`
 
-Consider the following alignment relationships starting from `g.o` and `g.i`. *Note that whether `g.o` is aligned/flipped relative to `g` has no effect on the aligned/flipped relationship between `g.o` and `g.o.outputChild` because alignment is only relative to the two members in question! Because alignment is forced, everything is aligned between `g.o`/`g.i` and their children*:
- - `g.o` is aligned w.r.t. `g.o.outputChild`
- - `g.i` is aligned w.r.t. `g.i.outputChild`
- - `g.o` is aligned w.r.t. `g.o.inputChild`
- - `g.i` is aligned w.r.t. `g.i.inputChild`
+Consider the following alignment relationships starting from `g.alignedCoerced` and `g.flippedCoerced`. *Note that whether `g.alignedCoerced` is aligned/flipped relative to `g` has no effect on the aligned/flipped relationship between `g.alignedCoerced` and `g.alignedCoerced.alignedChild` or `g.alignedCoerced.flippedChild` because alignment is only relative to the two members in question! However, because alignment is coerced, everything is aligned between `g.alignedCoerced`/`g.flippedAligned` and their children*:
+ - `g.o` is aligned w.r.t. `g.alignedCoerced.alignedChild`
+ - `g.i` is aligned w.r.t. `g.alignedCoerced.flippedChild`
+ - `g.o` is aligned w.r.t. `g.flippedCoerced.alignedChild`
+ - `g.i` is aligned w.r.t. `g.flippedCoerced.flippedChild`
 
 In summary, `Input(gen)` and `Output(gen)` recursively coerce children alignment, as well as dictate `gen`'s alignment to its parent bundle (if it exists).
 
@@ -164,13 +169,13 @@ class FullyAlignedBundle extends Bundle {
   val b = Bool()
 }
 class Example0 extends RawModule {
-  val foo = IO(Flipped(new FullyAlignedBundle))
-  val bar = IO(new FullyAlignedBundle)
-  bar := foo
+  val incoming = IO(Flipped(new FullyAlignedBundle))
+  val outgoing = IO(new FullyAlignedBundle)
+  outgoing := incoming
 }
 ```
 
-This generates the following Verilog, where each member of `foo` drives every member of `bar`:
+This generates the following Verilog, where each member of `incoming` drives every member of `outgoing`:
 
 ```scala mdoc:verilog
 import chisel3.stage.ChiselStage
@@ -178,15 +183,17 @@ import chisel3.stage.ChiselStage
 ChiselStage.emitVerilog(new Example0())
 ```
 
+> You may be thinking "Wait, I'm confused! Isn't foo flipped and bar is aligned?" -- Noo! Remember that the alignment of members is computed relative to the component the operator is connecting! Because components are always aligned to themselves, `bar` is aligned to `bar`, and `foo` is aligned to `foo`, there is no problem. Their relative flippedness to anything else is irrelevant (whether foo is aligned with bar makes no sense - you only evaluate alignment to members of the same component or Chisel type).
+
 ## Connections for components with members of mixed-alignment
 
-Chisel types can include data members which are flipped relative to one another; in the example below, `a` and `b` are aligned/flipped relative to `MixedAlignmentBundle`.
+Aggregate Chisel types can include data members which are flipped relative to one another; in the example below, `alignedChild` and `flippedChild` are aligned/flipped relative to `MixedAlignmentBundle`.
 
 ```scala mdoc:silent
 import chisel3._
 class MixedAlignmentBundle extends Bundle {
-  val a = Bool()
-  val b = Flipped(Bool())
+  val alignedChild = Bool()
+  val flippedChild = Flipped(Bool())
 }
 ```
 
@@ -196,13 +203,13 @@ Due to this, there are many desired connection behaviors between two Chisel comp
 
 A common question is if you use a mixed-alignment connection (such as `:<>=`) to connect submembers of parent components, does the alignment of the submember to their parent affect anything? The answer is no, because *alignment is always computed relative to what is being connected to, and members are always aligned with themselves.*
 
-In the following example connecting `foo.a` to `bar.a`, whether `foo.a` is aligned with `foo` is irrelevant because the `:<>=` only computes alignment relative to the thing being connected to, and `foo.a` is aligned with `foo.a`.
+In the following example connecting `incoming.alignedChild` to `outgoing.alignedChild`, whether `incoming.alignedChild` is aligned with `incoming` is irrelevant because the `:<>=` only computes alignment relative to the thing being connected to, and `incoming.alignedChild` is aligned with `incoming.alignedChild`.
 
 ```scala mdoc:silent
 class Example1a extends RawModule {
-  val foo = IO(Flipped(new MixedAlignmentBundle))
-  val bar = IO(new MixedAlignmentBundle)
-  bar.a :<>= foo.a // whether foo.a is aligned/flipped to foo is IRRELEVANT to what gets connected with :<>=
+  val incoming = IO(Flipped(new MixedAlignmentBundle))
+  val outgoing = IO(new MixedAlignmentBundle)
+  outgoing.alignedChild :<>= incoming.alignedChild // whether incoming.alignedChild is aligned/flipped to incoming is IRRELEVANT to what gets connected with :<>=
 }
 ```
 
@@ -212,15 +219,15 @@ import chisel3.stage.ChiselStage
 ChiselStage.emitVerilog(new Example1a())
 ```
 
-While `foo.b`'s alignment with `foo` does not affect our operators, it does influence whether `foo.b` is an output or input port of my module.
-A common source of confusion is to mistake the process for determining whether `foo.b` is an output/input (the port-direction computation) with the process for determing how `:<>=` connects who to who (the connection-direction computation).
+While `incoming.flippedChild`'s alignment with `incoming` does not affect our operators, it does influence whether `incoming.flippedChild` is an output or input port of my module.
+A common source of confusion is to mistake the process for determining whether `incoming.flippedChild` is an output/input (the port-direction computation) with the process for determing how `:<>=` connects who to who (the connection-direction computation).
 While both processes consider relative alignment, they are distinct.
 
 The port-direction computation always computes alignment relative to the component marked with `IO`. An `IO(Flipped(gen))` is an input port, and any member of `gen` that is aligned/flipped with `gen` is an input/output port. An `IO(gen)` is an output port, and any member of `gen` that is aligned/flipped with `gen` is an output/input port.
 
-The connection-direction computation always computes alignment based on explicit consumer/producer referenced for the connection. If one connects `foo :<>= bar`, alignments are computed based on `foo` and `bar`. If I connect `foo.a :<>= bar.a`, then alignments are computed based on `foo.a` and `bar.a` (and the alignment of `foo` to `foo.a` is irrelevant).
+The connection-direction computation always computes alignment based on explicit consumer/producer referenced for the connection. If one connects `incoming :<>= outgoing`, alignments are computed based on `incoming` and `outgoing`. If I connect `incoming.alignedChild :<>= outgoing.alignedChild`, then alignments are computed based on `incoming.alignedChild` and `outgoing.alignedChild` (and the alignment of `incoming` to `incoming.a` is irrelevant).
 
-This means that users can try to assign to input ports of their module! If I write `x :<>= y`, and `x` is an input to my module, then that is what the connection is trying to do. However, because input ports are not assignable from within my module, Chisel will throw an error. This is the same error a user would get using a mono-directioned operator: `x := y` will throw the same error if `x` is an input module. *Whether a component is assignable is irrelevant to the semantics of any connection operator assigning to it.*
+This means that users can try to assign to input ports of their module! If I write `x :<>= y`, and `x` is an input to the current module, then that is what the connection is trying to do. However, because input ports are not assignable from within the current module, Chisel will throw an error. This is the same error a user would get using a mono-directioned operator: `x := y` will throw the same error if `x` is an input module. *Whether a component is assignable is irrelevant to the semantics of any connection operator assigning to it.*
 
 In summary, the port-direction computation is relative to the root marked `IO`, but connection-direction computation is relative to the consumer/producer that the connection is doing. This has the positive property that connection semantics are solely based on the Chisel types of the consumer/producer (nothing more, nothing less).
 
@@ -230,13 +237,13 @@ For connections where you want 'bulk-connect-like-semantics' where the aligned m
 
 ```scala mdoc:silent
 class Example1 extends RawModule {
-  val foo = IO(Flipped(new MixedAlignmentBundle))
-  val bar = IO(new MixedAlignmentBundle)
-  bar :<>= foo
+  val incoming = IO(Flipped(new MixedAlignmentBundle))
+  val outgoing = IO(new MixedAlignmentBundle)
+  outgoing :<>= incoming
 }
 ```
 
-This generates the following Verilog, where the aligned members are driven `foo` to `bar` and flipped members are driven `bar` to `foo`:
+This generates the following Verilog, where the aligned members are driven `incoming` to `outgoing` and flipped members are driven `outgoing` to `incoming`:
 
 ```scala mdoc:verilog
 import chisel3.stage.ChiselStage
@@ -250,14 +257,14 @@ For connections where you want the aligned-half of 'bulk-connect-like-semantics'
 
 ```scala mdoc:silent
 class Example2 extends RawModule {
-  val foo = IO(Flipped(new MixedAlignmentBundle))
-  val bar = IO(new MixedAlignmentBundle)
-  foo.b := DontCare // Otherwise FIRRTL throws an uninitialization error
-  bar :<= foo
+  val incoming = IO(Flipped(new MixedAlignmentBundle))
+  val outgoing = IO(new MixedAlignmentBundle)
+  incoming.flippedChild := DontCare // Otherwise FIRRTL throws an uninitialization error
+  outgoing :<= incoming
 }
 ```
 
-This generates the following Verilog, where the aligned members are driven `foo` to `bar` and flipped members are ignored:
+This generates the following Verilog, where the aligned members are driven `incoming` to `outgoing` and flipped members are ignored:
 
 ```scala mdoc:verilog
 import chisel3.stage.ChiselStage
@@ -271,20 +278,22 @@ For connections where you want the flipped-half of 'bulk-connect-like-semantics'
 
 ```scala mdoc:silent
 class Example3 extends RawModule {
-  val foo = IO(Flipped(new MixedAlignmentBundle))
-  val bar = IO(new MixedAlignmentBundle)
-  bar.a := DontCare // Otherwise FIRRTL throws an uninitialization error
-  bar :>= foo
+  val incoming = IO(Flipped(new MixedAlignmentBundle))
+  val outgoing = IO(new MixedAlignmentBundle)
+  outgoing.alignedChild := DontCare // Otherwise FIRRTL throws an uninitialization error
+  outgoing :>= incoming
 }
 ```
 
-This generates the following Verilog, where the aligned members are ignore and the flipped members are driven `bar` to `foo`:
+This generates the following Verilog, where the aligned members are ignore and the flipped members are driven `outgoing` to `incoming`:
 
 ```scala mdoc:verilog
 import chisel3.stage.ChiselStage
 
 ChiselStage.emitVerilog(new Example3())
 ```
+
+> Note: Astute observers will realize that semantically `c :<>= p` is exactly equivalent to `c :<= p` followed by `c :>= p`.
 
 ### Coercing mono-direction connection operator (:#=)
 
@@ -293,19 +302,21 @@ For connections where you want to every producer member to always drive every co
 ```scala mdoc:silent
 import chisel3.experimental.BundleLiterals._
 class Example4 extends RawModule {
-  val bar = Wire(new MixedAlignmentBundle)
-  dontTouch(bar) // So we see it in the output verilog
-  bar :#= (new MixedAlignmentBundle).Lit(_.a -> true.B, _.b -> true.B)
+  val w = Wire(new MixedAlignmentBundle)
+  dontTouch(w) // So we see it in the output verilog
+  w :#= (new MixedAlignmentBundle).Lit(_.alignedChild -> true.B, _.flippedChild -> true.B)
 }
 ```
 
-This generates the following Verilog, where all members are driven `foo` to `bar`, regardless of alignment:
+This generates the following Verilog, where all members are driven from the literal to `w`, regardless of alignment:
 
 ```scala mdoc:verilog
 import chisel3.stage.ChiselStage
 
 ChiselStage.emitVerilog(new Example4())
 ```
+
+> Note: Astute observers will realize that semantically `c :#= p` is exactly equivalent to `c :<= p` followed by `p :>= c` (note `p` and `c` switched places in the second connection).
 
 ## Waived Data
 
