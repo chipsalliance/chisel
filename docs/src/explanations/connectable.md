@@ -12,13 +12,13 @@ The `Connectable` operators are the standard way to connect Chisel hardware comp
 
 Note: For descriptions of the semantics for the previous operators, see `connection-operators.md`
 
-All connection operators require the two hardware components (consumer and producer) to be Chisel type-equivalent (matching bundle field names and types, vector sizes, ground types (UInt/SInt)). Use `DataMirror.checkTypeEquivalence` to check this property.
+All connection operators require the two hardware components (consumer and producer) to be Chisel type-equivalent (matching bundle field names and types (Record vs Vector vs Element), vector sizes, ground types (UInt/SInt/Bool/Clock etc)). Use `DataMirror.checkTypeEquivalence` to check this property.
 
 The one exception to the type-equivalence rule is using the `WaivedData` mechansim, detailed at the end of this document.
 
-Chisel types can include data members which are flipped relative to one another. Due to this, there are many desired connection behaviors between two Chisel components. The following are the Chisel connection operators:
- - `c := p` (mono-direction): assigns all p fields to c; requires c & p to not have flips
- - `c :#= p` (coercing mono-direction): assigns all p fields to c; ignores all flips
+Aggregate (Record, Vec, Bundle) Chisel types can include data members which are flipped relative to one another. Due to this, there are many desired connection behaviors between two Chisel components. The following are the Chisel connection operators:
+ - `c := p` (mono-direction): assigns all p fields to c; requires c & p to not have any flipped fields
+ - `c :#= p` (coercing mono-direction): assigns all p fields to c; regardless of alignment
  - `c :<= p` (aligned-direction); assigns all aligned (non-flipped) c fields from p
  - `c :>= p` (flipped-direction); assigns all flipped p fields from c
  - `c :<>= p` (bi-direction operator); assigns all aligned c fields from p; all flipped p fields from c
