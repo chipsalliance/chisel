@@ -267,6 +267,14 @@ package experimental {
       }
     }
 
+    /** Returns the parent module within which a module instance is instantiated
+      *
+      * @note Top-level modules in any given elaboration do not have a parent
+      * @param target a module instance
+      * @return the parent of the `target`, if one exists
+      */
+    def getParent(target: BaseModule): Option[BaseModule] = target._parent
+
     // Internal reflection-style APIs, subject to change and removal whenever.
     object internal {
       def isSynthesizable(target: Data): Boolean = target.isSynthesizable
