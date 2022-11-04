@@ -440,7 +440,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   protected final def validateShiftAmount(x: Int): Int = {
     if (x < 0)
-      Builder.error(s"Negative shift amounts are illegal (got $x)")
+      Builder.errorMissingSourceInfo(s"Negative shift amounts are illegal (got $x)")
     x
   }
 }

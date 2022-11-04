@@ -145,7 +145,7 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
       this match {
         case _: RequireSyncReset => // Good! It's been migrated.
         case _ => // Bad! It hasn't been migrated.
-          Builder.error(
+          Builder.errorMissingSourceInfo(
             s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
           )
       }
@@ -500,14 +500,14 @@ package experimental {
         port._computeName(None).orElse(names.get(port)) match {
           case Some(name) =>
             if (_namespace.contains(name)) {
-              Builder.error(
+              Builder.errorMissingSourceInfo(
                 s"""Unable to name port $port to "$name" in $this,""" +
                   " name is already taken by another port!"
               )
             }
             port.setRef(ModuleIO(this, _namespace.name(name)))
           case None =>
-            Builder.error(
+            Builder.errorMissingSourceInfo(
               s"Unable to name port $port in $this, " +
                 "try making it a public field of the Module"
             )
