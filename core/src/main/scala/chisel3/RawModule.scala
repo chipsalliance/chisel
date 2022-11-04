@@ -81,7 +81,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
               val newName = buildName(name, Nil)
               val msg = s"[module ${this.name}] '$prevName' is renamed by reflection to '$newName'. " +
                 s"Chisel 3.6 removes reflective naming so the name will remain '$prevName'."
-              Builder.warningNoLoc(msg)
+              Builder.warningNoLocMissingSourceInfo(msg)
           }
         // Note that unnamable things end up here (eg. literals), this is supporting backwards
         // compatibility

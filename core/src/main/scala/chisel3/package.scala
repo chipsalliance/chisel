@@ -38,7 +38,7 @@ package object chisel3 {
     def B: Bool = bigint match {
       case bigint if bigint == 0 => Bool.Lit(false)
       case bigint if bigint == 1 => Bool.Lit(true)
-      case bigint                => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
+      case bigint                => Builder.errorMissingSourceInfo(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
     }
 
     /** Int to UInt conversion, recommended style for constants. */
@@ -121,7 +121,7 @@ package object chisel3 {
         case "d"       => 10
         case "o"       => 8
         case "b"       => 2
-        case _         => Builder.error(s"Invalid base $base"); 2
+        case _         => Builder.errorMissingSourceInfo(s"Invalid base $base"); 2
       }
       BigInt(num.filterNot(_ == '_'), radix)
     }

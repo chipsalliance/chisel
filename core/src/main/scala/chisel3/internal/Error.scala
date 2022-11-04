@@ -7,6 +7,8 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 import scala.util.control.NoStackTrace
 import _root_.logger.Logger
 
+import chisel3.internal.sourceinfo.{SourceInfo, SourceLine}
+
 object ExceptionHelpers {
 
   /** Root packages that are not typically relevant to Chisel user code. */
@@ -185,25 +187,25 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
   }
 
   /** Log an error message */
-  def error(m: => String): Unit = {
+  def error(m: => String, si: Option[SourceInfo]): Unit = {
     val loc = getUserLineNumber
-    errors += (((m, getLoc(loc)), new Error(m, loc)))
+    errors += (((m, getLoc(loc)), new Error(m, loc, si)))
   }
 
-  private def warn(m: => String, loc: Option[StackTraceElement]): LogEntry =
-    if (warningsAsErrors) new Error(m, loc) else new Warning(m, loc)
+  private def warn(m: => String, loc: Option[StackTraceElement], sourceInfo: Option[SourceInfo]): LogEntry =
+    if (warningsAsErrors) new Error(m, loc, sourceInfo) else new Warning(m, loc, sourceInfo)
 
   /** Log a warning message */
-  def warning(m: => String): Unit = {
+  def warning(m: => String, si: Option[SourceInfo]): Unit = {
     val loc = getUserLineNumber
-    errors += (((m, getLoc(loc)), warn(m, loc)))
+    errors += (((m, getLoc(loc)), warn(m, loc, si)))
   }
 
   /** Log a warning message without a source locator. This is used when the
     * locator wouldn't be helpful (e.g., due to lazy values).
     */
-  def warningNoLoc(m: => String): Unit =
-    errors += (((m, ""), warn(m, None)))
+  def warningNoLoc(m: => String, si: Option[SourceInfo]): Unit =
+    errors += (((m, ""), warn(m, None, si)))
 
   /** Emit an informational message */
   @deprecated("This method will be removed in 3.5", "3.4")
@@ -306,28 +308,30 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
   private def elapsedTime: Long = System.currentTimeMillis - startTime
 }
 
-private abstract class LogEntry(msg: => String, line: Option[StackTraceElement]) {
+private abstract class LogEntry(msg: => String, line: Option[StackTraceElement], sourceInfo: Option[SourceInfo]) {
   def isFatal: Boolean = false
   def format: String
 
-  override def toString: String = line match {
-    case Some(l) => s"${format} ${l.getFileName}:${l.getLineNumber}: ${msg} in class ${l.getClassName}"
-    case None    => s"${format} ${msg}"
+  override def toString: String = (line, sourceInfo) match {
+    case (Some(l), Some(sl: SourceLine)) => s"${format} ${sl.filename}:${sl.line}:${sl.col}: ${msg} in class ${l.getClassName}"
+    case (None,    Some(sl: SourceLine)) => s"${format} ${sl.filename}:${sl.line}:${sl.col}: ${msg}"
+    case (Some(l), _)                 => s"${format} ${l.getFileName}:${l.getLineNumber}: ${msg} in class ${l.getClassName}"
+    case (None,    _)                 => s"${format} ${msg}"
   }
 
   protected def tag(name: String, color: String): String =
     s"[${color}${name}${Console.RESET}]"
 }
 
-private class Error(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
+private class Error(msg: => String, line: Option[StackTraceElement], sourceInfo: Option[SourceInfo]) extends LogEntry(msg, line, sourceInfo) {
   override def isFatal: Boolean = true
   def format:           String = tag("error", Console.RED)
 }
 
-private class Warning(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
+private class Warning(msg: => String, line: Option[StackTraceElement], sourceInfo: Option[SourceInfo]) extends LogEntry(msg, line, sourceInfo) {
   def format: String = tag("warn", Console.YELLOW)
 }
 
-private class Info(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
+private class Info(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line, None) {
   def format: String = tag("info", Console.MAGENTA)
 }

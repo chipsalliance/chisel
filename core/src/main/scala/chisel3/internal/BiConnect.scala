@@ -180,7 +180,7 @@ private[chisel3] object BiConnect {
         ) {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
         } else if (!emitStrictConnects) {
-          if(connectCompileOptions.migrateConnections) Builder.error(s"Cannot use <> to connect 'import Chisel._' bundles, even in a nested 'import chisel3._' Bundle; refactor code to use :<>= instead")
+          if(connectCompileOptions.migrateConnections) Builder.error(s"Cannot use <> to connect 'import Chisel._' bundles, even in a nested 'import chisel3._' Bundle; refactor code to use :<>= instead", Some(sourceInfo))
           newLeft.firrtlPartialConnect(newRight)(sourceInfo)
         } else {
           recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)

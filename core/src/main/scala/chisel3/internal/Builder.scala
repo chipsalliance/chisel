@@ -15,6 +15,7 @@ import _root_.firrtl.{AnnotationSeq, RenameMap}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
+import chisel3.internal.sourceinfo.SourceInfo
 
 import scala.collection.mutable
 
@@ -741,16 +742,26 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def errors: ErrorLog = dynamicContext.errors
-  def error(m: => String): Unit = {
+
+  def errorMissingSourceInfo(m: => String): Unit = error(m, None)
+  def error(m: => String)(implicit si: SourceInfo): Unit = error(m, Some(si))
+  def error(m: => String, si: Option[SourceInfo]): Unit = {
     // If --throw-on-first-error is requested, throw an exception instead of aggregating errors
     if (dynamicContextVar.value.isDefined && !dynamicContextVar.value.get.throwOnFirstError) {
-      errors.error(m)
+      errors.error(m, si)
     } else {
       throwException(m)
     }
   }
-  def warning(m:      => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
-  def warningNoLoc(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warningNoLoc(m)
+
+  def warningMissingSourceInfo(m:      => String): Unit = warning(m, None)
+  def warning(m:      => String)(implicit si: SourceInfo): Unit = warning(m, Some(si))
+  def warning(m:      => String, si: Option[SourceInfo]): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m, si)
+
+  def warningNoLocMissingSourceInfo(m: => String): Unit = warningNoLoc(m, None)
+  def warningNoLoc(m: => String)(implicit si: SourceInfo): Unit = warningNoLoc(m, Some(si))
+  def warningNoLoc(m: => String, si: Option[SourceInfo]): Unit = if (dynamicContextVar.value.isDefined) errors.warningNoLoc(m, si)
+
   def deprecated(m:   => String, location: Option[String] = None): Unit =
     if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
 
@@ -760,7 +771,7 @@ private[chisel3] object Builder extends LazyLogging {
     */
   @throws(classOf[ChiselException])
   def exception(m: => String): Nothing = {
-    error(m)
+    errorMissingSourceInfo(m)
     throwException(m)
   }
 
