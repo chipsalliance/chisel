@@ -177,6 +177,28 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("fooOut.foo <= barIn.foo")
   }
 
+  it should "be easy to make a PartialDataView viewing a Bundle as a Parent Bundle type" in {
+    class Foo(x: Int) extends Bundle {
+      val foo = UInt(x.W)
+    }
+    class Bar(val x: Int) extends Foo(x) {
+      val bar = UInt(x.W)
+    }
+    implicit val view = PartialDataView.supertype[Bar, Foo](b => new Foo(b.x))
+    class MyModule extends Module {
+      val fooIn = IO(Input(new Foo(8)))
+      val barOut = IO(Output(new Bar(8)))
+      barOut.viewAs[Foo] := fooIn
+
+      val barIn = IO(Input(new Bar(8)))
+      val fooOut = IO(Output(new Foo(8)))
+      fooOut := barIn.viewAs[Foo]
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("barOut.foo <= fooIn.foo")
+    chirrtl should include("fooOut.foo <= barIn.foo")
+  }
+
   it should "support viewing structural supertypes" in {
     class A extends Bundle {
       val x = UInt(3.W)
