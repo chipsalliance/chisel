@@ -26,11 +26,12 @@ sealed trait SourceInfo {
     *
     * Make a useful message if SourceInfo is available, nothing otherwise
     */
-  def makeMessage(f: String => String): String
+  def makeMessage(f: String => String, omitPath: Boolean): String
+  def makeMessage(f: String => String): String = makeMessage(f, chisel3.internal.Builder.omitSourceLocatorPaths)
 }
 
 sealed trait NoSourceInfo extends SourceInfo {
-  def makeMessage(f: String => String): String = ""
+  def makeMessage(f: String => String, omitPath: Boolean): String = ""
 }
 
 /** For when source info can't be generated because of a technical limitation, like for Reg because
@@ -45,9 +46,8 @@ case object DeprecatedSourceInfo extends NoSourceInfo
 /** For FIRRTL lines from a Scala source line.
   */
 case class SourceLine(fullPath: String, line: Int, col: Int) extends SourceInfo {
-  val omitSourceLocatorPaths = chisel3.internal.Builder.omitSourceLocatorPaths
-  val relativeFileName = if (omitSourceLocatorPaths) fullPath.split('/').last else fullPath
-  def makeMessage(f: String => String): String = f(s"@[$fullPath $line:$col]")
+  def filename = fullPath.takeRight(fullPath.size - fullPath.lastIndexWhere(_ == '/') - 1)
+  def makeMessage(f: String => String, omitPath: Boolean): String = f(s"@[${if (omitPath) filename else fullPath} $line:$col]")
 }
 
 /** Provides a macro that returns the source information at the invocation point.
@@ -58,7 +58,7 @@ object SourceInfoMacro {
     val p = c.enclosingPosition
 
     val userDir = sys.props.get("user.dir") // Figure out what to do if not provided
-    val projectRoot = sys.props.get("chisel_project_root")
+    val projectRoot = sys.props.get("chisel.project.root")
     val root = projectRoot.orElse(userDir)
 
     val path = root.map(r => p.source.file.canonicalPath.stripPrefix(r)).getOrElse(p.source.file.name)
