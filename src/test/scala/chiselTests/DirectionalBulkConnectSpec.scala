@@ -263,6 +263,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     it("(0.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
       allTypes().foreach { t => test(t(), Seq("<=")) }
     }
+    // TODO Write test that demonstrates multiple evaluation of producer: => T
   }
   describe("(1): :<= ") {
     implicit val op: (Data, Data) => Unit = {_ :<= _}

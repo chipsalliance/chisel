@@ -131,12 +131,12 @@ The next example has a nested bundle `GrandParent` who instantiates an `Output` 
 
 ```scala mdoc:silent
 import chisel3._
-class GrandParent extends Bundle {
+class GrandParentWithOutputInput extends Bundle {
   val o = Output(new ParentWithOutputInput())
   val i = Input(new ParentWithOutputInput())
 }
-class MyModule1 extends Module {
-  val g = Wire(new GrandParent)
+class MyModule3 extends Module {
+  val g = Wire(new GrandParentWithOutputInput)
 }
 ```
 
@@ -183,7 +183,7 @@ import chisel3.stage.ChiselStage
 ChiselStage.emitVerilog(new Example0())
 ```
 
-> You may be thinking "Wait, I'm confused! Isn't foo flipped and bar is aligned?" -- Noo! Remember that the alignment of members is computed relative to the component the operator is connecting! Because components are always aligned to themselves, `bar` is aligned to `bar`, and `foo` is aligned to `foo`, there is no problem. Their relative flippedness to anything else is irrelevant (whether foo is aligned with bar makes no sense - you only evaluate alignment to members of the same component or Chisel type).
+> You may be thinking "Wait, I'm confused! Isn't foo flipped and bar is aligned?" -- Noo! Whether foo is aligned with bar makes no sense; remember, you only evaluate alignment between members of the same component or Chisel type. Because components are always aligned to themselves, `bar` is aligned to `bar`, and `foo` is aligned to `foo`, there is no problem. Their relative flippedness to anything else is irrelevant.
 
 ## Connections for components with members of mixed-alignment
 
@@ -211,12 +211,6 @@ class Example1a extends RawModule {
   val outgoing = IO(new MixedAlignmentBundle)
   outgoing.alignedChild :<>= incoming.alignedChild // whether incoming.alignedChild is aligned/flipped to incoming is IRRELEVANT to what gets connected with :<>=
 }
-```
-
-```scala mdoc:verilog
-import chisel3.stage.ChiselStage
-
-ChiselStage.emitVerilog(new Example1a())
 ```
 
 While `incoming.flippedChild`'s alignment with `incoming` does not affect our operators, it does influence whether `incoming.flippedChild` is an output or input port of my module.
@@ -414,17 +408,24 @@ A not uncommon usecase is to try to connect two Records; for matching members, t
 ```scala mdoc:silent
 import scala.collection.immutable.SeqMap
 import chisel3.experimental.AutoCloneType
+class MyRecord(elems: () => SeqMap[String, Data]) extends Record with AutoCloneType {
+  def elements = elems()
+}
 class Example8 extends RawModule {
-  val abType = new Record with AutoCloneType { def elements = SeqMap("a" -> Bool(), "b" -> Flipped(Bool())) }
-  val bcType = new Record with AutoCloneType { def elements = SeqMap("b" -> Flipped(Bool()), "c" -> Bool()) }
+  val abType = new MyRecord(() => SeqMap("a" -> Bool(), "b" -> Flipped(Bool())))
+  val bcType = new MyRecord(() => SeqMap("b" -> Flipped(Bool()), "c" -> Bool()))
 
   val p = Wire(abType)
   val c = Wire(bcType)
 
-  //p :#= abType.Lit(_.elements("a") -> true.B, _.elements("b") -> true.B)
+  dontTouch(p) // So it doesn't get constant-propped away for the example
+  dontTouch(c) // So it doesn't get constant-propped away for the example
+
+  val lAB = abType.Lit(_.elements("a") -> true.B, _.elements("b") -> true.B)
+  //p :#= lAB
   //c :#= bcType.Lit(_.elements("b") -> true.B, _.elements("c") -> true.B)
 
-  //c.waiveAll :<>= p.waiveAll
+  c.waiveAll :<>= p.waiveAll
 }
 ```
 
