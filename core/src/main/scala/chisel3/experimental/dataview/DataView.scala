@@ -592,4 +592,27 @@ object PartialDataView {
     implicit sourceInfo: SourceInfo
   ): DataView[T, V] =
     new DataView[T, V](mkView, mapping, _total = false)
+
+  /** Constructs a non-total [[DataView]] mapping from a [[Bundle]] type to a parent [[Bundle]] type
+    *
+    * @param mkView a function constructing an instance `V` from an instance of `T`
+    * @return the [[DataView]] that enables viewing instances of a [[Bundle]] as instances of a parent type
+    */
+  def supertype[T <: Bundle, V <: Bundle](
+    mkView: T => V
+  )(
+    implicit ev: SubTypeOf[T, V],
+    sourceInfo:  SourceInfo
+  ): DataView[T, V] =
+    mapping[T, V](
+      mkView,
+      {
+        case (a, b) =>
+          val aElts = a.elements
+          val bElts = b.elements
+          val bKeys = bElts.keySet
+          val keys = aElts.keysIterator.filter(bKeys.contains)
+          keys.map(k => aElts(k) -> bElts(k)).toSeq
+      }
+    )
 }
