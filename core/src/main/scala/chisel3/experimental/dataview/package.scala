@@ -43,29 +43,14 @@ package object dataview {
     "${A} is not a subtype of ${B}! Did you mean .viewAs[${B}]? " +
       "Please see https://www.chisel-lang.org/chisel3/docs/cookbooks/dataview"
   )
-  private type SubTypeOf[A, B] = A <:< B
+  private[dataview] type SubTypeOf[A, B] = A <:< B
 
   /** Provides `viewAsSupertype` for subclasses of [[Bundle]] */
   implicit class BundleUpcastable[T <: Bundle](target: T) {
 
     /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
-<<<<<<< HEAD
     def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: SubTypeOf[T, V], sourceInfo: SourceInfo): V = {
-      implicit val dataView = PartialDataView.mapping[T, V](
-        _ => proto,
-        {
-          case (a, b) =>
-            val aElts = a.elements
-            val bElts = b.elements
-            val bKeys = bElts.keySet
-            val keys = aElts.keysIterator.filter(bKeys.contains)
-            keys.map(k => aElts(k) -> bElts(k)).toSeq
-        }
-      )
-=======
-    def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
       implicit val dataView = PartialDataView.supertype[T, V](_ => proto)
->>>>>>> 251d454a (Add PartialDataView.supertype (#2826))
       target.viewAs[V]
     }
   }
