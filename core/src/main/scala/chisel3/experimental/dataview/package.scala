@@ -49,6 +49,7 @@ package object dataview {
   implicit class BundleUpcastable[T <: Bundle](target: T) {
 
     /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
+<<<<<<< HEAD
     def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: SubTypeOf[T, V], sourceInfo: SourceInfo): V = {
       implicit val dataView = PartialDataView.mapping[T, V](
         _ => proto,
@@ -61,6 +62,10 @@ package object dataview {
             keys.map(k => aElts(k) -> bElts(k)).toSeq
         }
       )
+=======
+    def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
+      implicit val dataView = PartialDataView.supertype[T, V](_ => proto)
+>>>>>>> 251d454a (Add PartialDataView.supertype (#2826))
       target.viewAs[V]
     }
   }
