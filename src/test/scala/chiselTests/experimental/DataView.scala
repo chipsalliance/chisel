@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.experimental.dataview._
 import chisel3.experimental.conversions._
 import chisel3.experimental.DataMirror.internal.chiselTypeClone
-import chisel3.experimental.HWTuple2
+import chisel3.experimental.{Analog, HWTuple2}
 import chisel3.stage.ChiselStage
 import chisel3.util.{Decoupled, DecoupledIO}
 
@@ -89,6 +89,16 @@ class DataViewSpec extends ChiselFlatSpec {
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     chirrtl should include("foo <= in")
     chirrtl should include("bar <= in")
+  }
+
+  it should "handle viewing Analogs as Analogs" in {
+    class MyModule extends Module {
+      val foo = IO(Analog(8.W))
+      val bar = IO(Analog(8.W))
+      foo <> bar.viewAs[Analog]
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("attach (foo, bar)")
   }
 
   it should "handle viewing Bundles as their same concrete type" in {
