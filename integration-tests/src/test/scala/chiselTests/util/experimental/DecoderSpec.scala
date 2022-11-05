@@ -9,11 +9,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chiseltest._
 import chiseltest.formal._
 
-class DecoderSpec extends AnyFlatSpec with ChiselScalatestTester with Formal  {
-  val xor = TruthTable.fromString(
-    """10->1
-      |01->1
-      |    0""".stripMargin)
+class DecoderSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
+  val xor = TruthTable.fromString("""10->1
+                                    |01->1
+                                    |    0""".stripMargin)
 
   def minimizer: Minimizer = QMCMinimizer
 
@@ -23,7 +22,8 @@ class DecoderSpec extends AnyFlatSpec with ChiselScalatestTester with Formal  {
 
   "decoder" should "fail with a incorrect DecodeTableAnnotation" in {
     val annos = Seq(
-      DecodeTableAnnotation(ReferenceTarget("", "", Nil, "", Nil),
+      DecodeTableAnnotation(
+        ReferenceTarget("", "", Nil, "", Nil),
         """10->1
           |01->1
           |    0""".stripMargin,
@@ -38,14 +38,16 @@ class DecoderSpec extends AnyFlatSpec with ChiselScalatestTester with Formal  {
 
   "decoder" should "success with a correct DecodeTableAnnotation" in {
     val annos = Seq(
-      DecodeTableAnnotation(ReferenceTarget("", "", Nil, "", Nil),
+      DecodeTableAnnotation(
+        ReferenceTarget("", "", Nil, "", Nil),
         """10->1
           |01->1
           |    0""".stripMargin,
-        QMCMinimizer.minimize(TruthTable.fromString(
-          """10->1
-            |01->1
-            |    0""".stripMargin)).toString
+        QMCMinimizer
+          .minimize(TruthTable.fromString("""10->1
+                                            |01->1
+                                            |    0""".stripMargin))
+          .toString
       )
     )
     verify(new DecodeTestModule(minimizer, table = xor), BoundedCheck(1) +: annos)

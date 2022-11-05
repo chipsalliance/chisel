@@ -1108,7 +1108,12 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   def elements: SeqMap[String, Data]
 
   /** Name for Pretty Printing */
-  def className: String = this.getClass.getSimpleName
+  def className: String = try {
+    this.getClass.getSimpleName
+  } catch {
+    // This happens if your class is defined in an object and is anonymous
+    case e: java.lang.InternalError if e.getMessage == "Malformed class name" => this.getClass.toString
+  }
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>
@@ -1143,6 +1148,16 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     * Results in "`\$className(elt0.name -> elt0.value, ...)`"
     */
   def toPrintable: Printable = toPrintableHelper(elements.toList)
+
+  /** Implementation of cloneType that is [optionally for Record] overridden by the compiler plugin
+    *
+    * @note This should _never_ be overridden or called in user-code
+    */
+  protected def _cloneTypeImpl: Record = {
+    throwException(
+      s"Internal Error! This should have been implemented by the chisel3-plugin. Please file an issue against chisel3"
+    )
+  }
 }
 
 /**
@@ -1167,6 +1182,15 @@ package experimental {
   class BundleLiteralException(message: String) extends ChiselException(message)
   class VecLiteralException(message: String) extends ChiselException(message)
 
+  /** Indicates that the compiler plugin should generate [[cloneType]] for this type
+    *
+    * All user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
+    */
+  trait AutoCloneType { self: Record =>
+
+    override def cloneType: this.type = _cloneTypeImpl.asInstanceOf[this.type]
+
+  }
 }
 
 /** Base class for data types defined as a bundle of other data types.
@@ -1202,17 +1226,22 @@ package experimental {
   *   }
   * }}}
   */
-abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record with experimental.AutoCloneType {
 
   private def mustUsePluginMsg: String =
     "The Chisel compiler plugin is now required for compiling Chisel code. " +
       "Please see https://github.com/chipsalliance/chisel3#build-your-own-chisel-projects."
   assert(_usingPlugin, mustUsePluginMsg)
 
-  override def className: String = this.getClass.getSimpleName match {
-    case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
-    case ""                                => "AnonymousBundle" // ditto, but on other platforms
-    case name                              => name
+  override def className: String = try {
+    this.getClass.getSimpleName match {
+      case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
+      case ""                                => "AnonymousBundle" // ditto, but on other platforms
+      case name                              => name
+    }
+  } catch {
+    // This happens if you have nested objects which your class is defined in
+    case e: java.lang.InternalError if e.getMessage == "Malformed class name" => this.getClass.toString
   }
 
   /** The collection of [[Data]]
@@ -1324,15 +1353,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     clone
   }
 
-  /** Implementation of cloneType using runtime reflection. This should _never_ be overridden or called in user-code
-    *
-    * @note This is overridden by the compiler plugin (this implementation is never called)
-    */
-  protected def _cloneTypeImpl: Bundle = {
-    throwException(
-      s"Internal Error! This should have been implemented by the chisel3-plugin. Please file an issue against chisel3"
-    )
-  }
+  // This is overriden for binary compatibility reasons in 3.5
+  override protected def _cloneTypeImpl: Bundle = super._cloneTypeImpl.asInstanceOf[Bundle]
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
