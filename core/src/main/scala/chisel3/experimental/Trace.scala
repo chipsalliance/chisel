@@ -66,7 +66,11 @@ object Trace {
         annotate(new ChiselAnnotation {
           def toFirrtl: Annotation = TraceAnnotation(aggregate.toAbsoluteTarget, aggregate.toAbsoluteTarget)
         })
+<<<<<<< HEAD
         aggregate.getElements.foreach(traceNameV2)
+=======
+        aggregate.elementsIterator.foreach(traceName)
+>>>>>>> defa440b (Add Aggregate.elementsIterator and micro-optimize)
       case element: Element =>
         annotate(new ChiselAnnotation {
           def toFirrtl: Annotation = TraceAnnotation(element.toAbsoluteTarget, element.toAbsoluteTarget)

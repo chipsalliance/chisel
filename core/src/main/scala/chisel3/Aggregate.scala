@@ -28,7 +28,8 @@ sealed abstract class Aggregate extends Data {
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
+    // TODO micro-optimize this, there's no reason to construct the Seq and resulting Map and Seqs
+    val duplicates = elementsIterator.toSeq.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
       this match {
         case b: Record =>
@@ -54,12 +55,12 @@ sealed abstract class Aggregate extends Data {
           )
       }
     }
-    for (child <- getElements) {
+    for (child <- elementsIterator) {
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
     // Check that children obey the directionality rules.
-    val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
+    val childDirections = elementsIterator.map(_.direction).toSet - ActualDirection.Empty
     direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
       case Some(dir) => dir
       case None =>
@@ -100,7 +101,10 @@ sealed abstract class Aggregate extends Data {
     */
   def getElements: Seq[Data]
 
-  private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
+  /** Similar to [[getElements]] but allows for more optimized use */
+  private[chisel3] def elementsIterator: Iterator[Data]
+
+  private[chisel3] def width: Width = elementsIterator.map(_.width).foldLeft(0.W)(_ + _)
 
   private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
@@ -221,7 +225,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     sample_element.bind(SampleElementBinding(this), resolvedDirection)
-    for (child <- getElements) { // assume that all children are the same
+    for (child <- elementsIterator) { // assume that all children are the same
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
@@ -342,8 +346,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     new Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
   }
 
-  override def getElements: Seq[Data] =
-    (0 until length).map(apply(_))
+  override def getElements: Seq[Data] = self
+
+  override def elementsIterator: Iterator[Data] = self.iterator
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Seq
@@ -1135,6 +1140,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
+<<<<<<< HEAD
   private[chisel3] override def _onModuleClose: Unit = {
     // This is usually done during binding, but these must still be set for unbound Records
     if (this.binding.isEmpty) {
@@ -1143,8 +1149,13 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
+=======
+  private[chisel3] final def allElements: Seq[Element] = elementsIterator.flatMap(_.allElements).toIndexedSeq
 
-  override def getElements: Seq[Data] = elements.toIndexedSeq.map(_._2)
+  override def getElements: Seq[Data] = elementsIterator.toIndexedSeq
+>>>>>>> defa440b (Add Aggregate.elementsIterator and micro-optimize)
+
+  override def elementsIterator: Iterator[Data] = elements.iterator.map(_._2)
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
