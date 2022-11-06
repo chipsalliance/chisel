@@ -951,7 +951,12 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
     checkForAndReportDuplicates()
 
-    for (child <- elementsIterator) {
+    for ((child, sameChild) <- this.elementsIterator.zip(this.elementsIterator)) {
+      if (child != sameChild) {
+        throwException(
+          s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
+        )
+      }
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
