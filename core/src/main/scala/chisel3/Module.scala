@@ -540,9 +540,9 @@ package experimental {
               case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
                 data match {
                   case record: Record =>
-                    record.getElements.foreach(assignCompatDir(_))
+                    record.elementsIterator.foreach(assignCompatDir(_))
                   case vec: Vec[_] =>
-                    vec.getElements.foreach(assignCompatDir(_))
+                    vec.elementsIterator.foreach(assignCompatDir(_))
                 }
               case SpecifiedDirection.Input | SpecifiedDirection.Output =>
               // forced assign, nothing to do

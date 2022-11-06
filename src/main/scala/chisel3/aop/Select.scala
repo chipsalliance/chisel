@@ -25,7 +25,7 @@ object Select {
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies are not included
     */
   def getLeafs(d: Data): Seq[Data] = d match {
-    case r: Record => r.getElements.flatMap(getLeafs)
+    case r: Record => r.elementsIterator.flatMap(getLeafs).toSeq
     case v: Vec[_] => v.getElements.flatMap(getLeafs)
     case other => Seq(other)
   }
@@ -35,7 +35,7 @@ object Select {
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
     */
   def getIntermediateAndLeafs(d: Data): Seq[Data] = d match {
-    case r: Record => r +: r.getElements.flatMap(getIntermediateAndLeafs)
+    case r: Record => r +: r.elementsIterator.flatMap(getIntermediateAndLeafs).toSeq
     case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
     case other => Seq(other)
   }
