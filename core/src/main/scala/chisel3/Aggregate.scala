@@ -961,6 +961,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     }
   }
 
+<<<<<<< HEAD
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
 <<<<<<< HEAD
     try {
@@ -976,6 +977,20 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     // TODO micro-optimize this, there's no reason to construct the Seq and resulting Map and Seqs
     val duplicates = elementsIterator.toSeq.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
+=======
+  /** Checks that there are no duplicate elements (aka aliased fields) in the Record */
+  private def checkForAndReportDuplicates(): Unit = {
+    // Using List to avoid allocation in the common case of no duplicates
+    var duplicates: List[Data] = Nil
+    // Is there a more optimized datastructure we could use with the Int identities? BitSet? Requires benchmarking.
+    val seen = mutable.HashSet.empty[Data]
+    this.elementsIterator.foreach { e =>
+      if (seen(e)) {
+        duplicates = e :: duplicates
+      }
+      seen += e
+    }
+>>>>>>> 832ea52b (Extract and optimize duplicate checking Record.bind)
     if (!duplicates.isEmpty) {
       // show groups of names of fields with duplicate id's
       // The sorts make the displayed order of fields deterministic and matching the order of occurrence in the Bundle.
@@ -994,6 +1009,16 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
         s"${this.className} contains aliased fields named ${dupNames}"
       )
     }
+  }
+
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    _parent.foreach(_.addId(this))
+    binding = target
+
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+
+    checkForAndReportDuplicates()
+
     for (child <- elementsIterator) {
       child.bind(ChildBinding(this), resolvedDirection)
     }
