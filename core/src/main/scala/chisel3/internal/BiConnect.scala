@@ -227,9 +227,12 @@ private[chisel3] object BiConnect {
     context_mod:           RawModule
   ): Unit = {
     // Verify right has no extra fields that left doesn't have
-    for ((field, right_sub) <- right_r.elements) {
-      if (!left_r.elements.isDefinedAt(field)) {
-        if (connectCompileOptions.connectFieldsMustMatch) {
+
+    // For each field in left, descend with right.
+    // Don't bother doing this check if we don't expect it to necessarily pass.
+    if (connectCompileOptions.connectFieldsMustMatch) {
+      for ((field, right_sub) <- right_r.elements) {
+        if (!left_r.elements.isDefinedAt(field)) {
           throw MissingLeftFieldException(field)
         }
       }

@@ -5,7 +5,7 @@ package chiselTests.experimental
 import chisel3._
 import chisel3.util.Valid
 import chisel3.stage.ChiselStage.emitChirrtl
-import chisel3.experimental.FlatIO
+import chisel3.experimental.{Analog, FlatIO}
 import chiselTests.ChiselFlatSpec
 
 class FlatIOSpec extends ChiselFlatSpec {
@@ -47,5 +47,20 @@ class FlatIOSpec extends ChiselFlatSpec {
     }
     val chirrtl = emitChirrtl(new MyModule)
     chirrtl should include("out[addr] <= in[addr]")
+  }
+
+  it should "support Analog members" in {
+    class MyBundle extends Bundle {
+      val foo = Output(UInt(8.W))
+      val bar = Analog(8.W)
+    }
+    class MyModule extends RawModule {
+      val in = IO(Flipped(new MyBundle))
+      val out = IO(new MyBundle)
+      out <> in
+    }
+    val chirrtl = emitChirrtl(new MyModule)
+    chirrtl should include("out.foo <= in.foo")
+    chirrtl should include("attach (out.bar, in.bar)")
   }
 }
