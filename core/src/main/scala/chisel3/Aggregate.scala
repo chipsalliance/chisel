@@ -23,54 +23,6 @@ class AliasedAggregateFieldException(message: String) extends ChiselException(me
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    _parent.foreach(_.addId(this))
-    binding = target
-
-    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
-    if (!duplicates.isEmpty) {
-      this match {
-        case b: Record =>
-          // show groups of names of fields with duplicate id's
-          // The sorts make the displayed order of fields deterministic and matching the order of occurrence in the Bundle.
-          // It's a bit convoluted but happens rarely and makes the error message easier to understand
-          val dupNames = duplicates.toSeq
-            .sortBy(_._id)
-            .map { duplicate =>
-              b.elements.collect { case x if x._2._id == duplicate._id => x }.toSeq
-                .sortBy(_._2._id)
-                .map(_._1)
-                .reverse
-                .mkString("(", ",", ")")
-            }
-            .mkString(",")
-          throw new AliasedAggregateFieldException(
-            s"${b.className} contains aliased fields named ${dupNames}"
-          )
-        case _ =>
-          throw new AliasedAggregateFieldException(
-            s"Aggregate ${this.getClass} contains aliased fields $duplicates ${duplicates.mkString(",")}"
-          )
-      }
-    }
-    for (child <- getElements) {
-      child.bind(ChildBinding(this), resolvedDirection)
-    }
-
-    // Check that children obey the directionality rules.
-    val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
-    direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
-      case Some(dir) => dir
-      case None =>
-        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-        resolvedDirection match {
-          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
-        }
-    }
-  }
 
   /** Return an Aggregate's literal value if it is a literal, None otherwise.
     * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
@@ -102,7 +54,10 @@ sealed abstract class Aggregate extends Data {
     */
   def getElements: Seq[Data]
 
-  private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
+  /** Similar to [[getElements]] but allows for more optimized use */
+  private[chisel3] def elementsIterator: Iterator[Data]
+
+  private[chisel3] def width: Width = elementsIterator.map(_.width).foldLeft(0.W)(_ + _)
 
   private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
@@ -223,7 +178,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     sample_element.bind(SampleElementBinding(this), resolvedDirection)
-    for (child <- getElements) { // assume that all children are the same
+    for (child <- elementsIterator) { // assume that all children are the same
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
@@ -344,8 +299,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     new Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
   }
 
-  override def getElements: Seq[Data] =
-    (0 until length).map(apply(_))
+  override def getElements: Seq[Data] = self
+
+  override def elementsIterator: Iterator[Data] = self.iterator
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Seq
@@ -955,8 +911,67 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     }
   }
 
+  /** Checks that there are no duplicate elements (aka aliased fields) in the Record */
+  private def checkForAndReportDuplicates(): Unit = {
+    // Using List to avoid allocation in the common case of no duplicates
+    var duplicates: List[Data] = Nil
+    // Is there a more optimized datastructure we could use with the Int identities? BitSet? Requires benchmarking.
+    val seen = mutable.HashSet.empty[Data]
+    this.elementsIterator.foreach { e =>
+      if (seen(e)) {
+        duplicates = e :: duplicates
+      }
+      seen += e
+    }
+    if (!duplicates.isEmpty) {
+      // show groups of names of fields with duplicate id's
+      // The sorts make the displayed order of fields deterministic and matching the order of occurrence in the Bundle.
+      // It's a bit convoluted but happens rarely and makes the error message easier to understand
+      val dupNames = duplicates.toSeq
+        .sortBy(_._id)
+        .map { duplicate =>
+          this.elements.collect { case x if x._2._id == duplicate._id => x }.toSeq
+            .sortBy(_._2._id)
+            .map(_._1)
+            .reverse
+            .mkString("(", ",", ")")
+        }
+        .mkString(",")
+      throw new AliasedAggregateFieldException(
+        s"${this.className} contains aliased fields named ${dupNames}"
+      )
+    }
+  }
+
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    super.bind(target, parentDirection)
+    _parent.foreach(_.addId(this))
+    binding = target
+
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+
+    checkForAndReportDuplicates()
+
+    for ((child, sameChild) <- this.elementsIterator.zip(this.elementsIterator)) {
+      if (child != sameChild) {
+        throwException(
+          s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
+        )
+      }
+      child.bind(ChildBinding(this), resolvedDirection)
+    }
+
+    // Check that children obey the directionality rules.
+    val childDirections = elementsIterator.map(_.direction).toSet - ActualDirection.Empty
+    direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
+      case Some(dir) => dir
+      case None =>
+        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+        resolvedDirection match {
+          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
+        }
+    }
     setElementRefs()
   }
 
@@ -1127,9 +1142,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
-  private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
+  private[chisel3] final def allElements: Seq[Element] = elementsIterator.flatMap(_.allElements).toIndexedSeq
 
-  override def getElements: Seq[Data] = elements.toIndexedSeq.map(_._2)
+  override def getElements: Seq[Data] = elementsIterator.toIndexedSeq
+
+  override def elementsIterator: Iterator[Data] = elements.iterator.map(_._2)
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
