@@ -33,8 +33,7 @@ class Elaborate extends Phase {
           new DynamicContext(
             annotations,
             chiselOptions.throwOnFirstError,
-            chiselOptions.warningsAsErrors,
-            chiselOptions.omitSourceLocatorPaths
+            chiselOptions.warningsAsErrors
           )
         val (circuit, dut) =
           Builder.build(Module(gen()), context)

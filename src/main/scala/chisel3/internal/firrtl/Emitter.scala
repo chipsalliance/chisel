@@ -14,7 +14,7 @@ private[chisel3] object Emitter {
   def emitLazily(circuit: Circuit): Iterable[String] = new Iterable[String] {
     def iterator = {
       val prelude = Iterator(s"circuit ${circuit.name} :\n")
-      val modules = circuit.components.iterator.map(x => Converter.convert(x)(chisel3.internal.Builder.omitSourceLocatorPaths))
+      val modules = circuit.components.iterator.map(x => Converter.convert(x))
       val moduleStrings = modules.flatMap { m =>
         Serializer.lazily(m, 1) ++ Seq("\n\n")
       }

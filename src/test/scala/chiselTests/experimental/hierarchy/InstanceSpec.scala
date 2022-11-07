@@ -1204,12 +1204,4 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
     }
   }
-  describe("?") {
-    it("?") {
-      class MyModule extends Module {
-        val w = Wire(UInt(3.W))
-      }
-      println(stage.ChiselStage.emitChirrtl(new MyModule))
-    }
-  }
 }

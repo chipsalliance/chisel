@@ -232,7 +232,7 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
     // TODO Use lazy Iterables so that we don't have to materialize full intermediate data structures
     case ProtoBufFileFormat =>
       val ostream = new java.io.ByteArrayOutputStream
-      val modules = circuit.components.map(m => () => chisel3.internal.firrtl.Converter.convert(m)(chisel3.internal.Builder.omitSourceLocatorPaths))
+      val modules = circuit.components.map(m => () => chisel3.internal.firrtl.Converter.convert(m))
       firrtl.proto.ToProto.writeToStreamFast(ostream, firrtl.ir.NoInfo, modules, circuit.name)
       List(ostream.toByteArray)
   }

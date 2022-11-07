@@ -7,7 +7,6 @@ import chisel3.internal.firrtl.Circuit
 class ChiselOptions private[stage] (
   val runFirrtlCompiler:      Boolean = true,
   val printFullStackTrace:    Boolean = false,
-  val omitSourceLocatorPaths: Boolean = false,
   val throwOnFirstError:      Boolean = false,
   val warningsAsErrors:       Boolean = false,
   val outputFile:             Option[String] = None,
@@ -16,7 +15,6 @@ class ChiselOptions private[stage] (
   private[stage] def copy(
     runFirrtlCompiler:      Boolean = runFirrtlCompiler,
     printFullStackTrace:    Boolean = printFullStackTrace,
-    omitSourceLocatorPaths: Boolean = omitSourceLocatorPaths,
     throwOnFirstError:      Boolean = throwOnFirstError,
     warningsAsErrors:       Boolean = warningsAsErrors,
     outputFile:             Option[String] = outputFile,
@@ -26,7 +24,6 @@ class ChiselOptions private[stage] (
     new ChiselOptions(
       runFirrtlCompiler = runFirrtlCompiler,
       printFullStackTrace = printFullStackTrace,
-      omitSourceLocatorPaths = omitSourceLocatorPaths,
       throwOnFirstError = throwOnFirstError,
       warningsAsErrors = warningsAsErrors,
       outputFile = outputFile,

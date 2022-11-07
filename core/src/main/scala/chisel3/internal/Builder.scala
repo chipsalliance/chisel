@@ -359,8 +359,7 @@ private[chisel3] class ChiselContext() {
 private[chisel3] class DynamicContext(
   val annotationSeq:          AnnotationSeq,
   val throwOnFirstError:      Boolean,
-  val warningsAsErrors:       Boolean,
-  val omitSourceLocatorPaths: Boolean) {
+  val warningsAsErrors:       Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map holding the actual names of extModules
@@ -669,9 +668,6 @@ private[chisel3] object Builder extends LazyLogging {
   def forcedReset: Reset = currentReset.getOrElse(
     throwException("Error: No implicit reset.")
   )
-
-  // SourcePath computor
-  def omitSourceLocatorPaths: Boolean = dynamicContextVar.value.map(_.omitSourceLocatorPaths).getOrElse(false)
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.

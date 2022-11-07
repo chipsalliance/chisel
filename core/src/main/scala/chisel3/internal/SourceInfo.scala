@@ -26,12 +26,11 @@ sealed trait SourceInfo {
     *
     * Make a useful message if SourceInfo is available, nothing otherwise
     */
-  def makeMessage(f: String => String, omitPath: Boolean): String
-  def makeMessage(f: String => String): String = makeMessage(f, chisel3.internal.Builder.omitSourceLocatorPaths)
+  def makeMessage(f: String => String): String
 }
 
 sealed trait NoSourceInfo extends SourceInfo {
-  def makeMessage(f: String => String, omitPath: Boolean): String = ""
+  def makeMessage(f: String => String): String = ""
 }
 
 /** For when source info can't be generated because of a technical limitation, like for Reg because
@@ -46,8 +45,7 @@ case object DeprecatedSourceInfo extends NoSourceInfo
 /** For FIRRTL lines from a Scala source line.
   */
 case class SourceLine(fullPath: String, line: Int, col: Int) extends SourceInfo {
-  def filename = fullPath.takeRight(fullPath.size - fullPath.lastIndexWhere(_ == '/') - 1)
-  def makeMessage(f: String => String, omitPath: Boolean): String = f(s"@[${if (omitPath) filename else fullPath} $line:$col]")
+  def makeMessage(f: String => String): String = f(s"@[$fullPath $line:$col]")
 }
 
 /** Provides a macro that returns the source information at the invocation point.

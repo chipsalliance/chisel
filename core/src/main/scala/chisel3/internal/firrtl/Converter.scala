@@ -44,9 +44,9 @@ private[chisel3] object Converter {
     reportInternalError(s"Trying to convert a cloned IO of $mod inside of $mod itself$loc!")
   }
 
-  def convert(info: SourceInfo)(implicit omitPath: Boolean): fir.Info = info match {
+  def convert(info: SourceInfo): fir.Info = info match {
     case _: NoSourceInfo => fir.NoInfo
-    case s @ SourceLine(_, line, col) => fir.FileInfo(fir.StringLit(s"${if (omitPath) s.filename else s.fullPath} $line:$col"))
+    case s @ SourceLine(path, line, col) => fir.FileInfo(fir.StringLit(s"$path $line:$col"))
   }
 
   def convert(op: PrimOp): fir.PrimOp = firrtl.PrimOps.fromString(op.name)
@@ -105,7 +105,7 @@ private[chisel3] object Converter {
   }
 
   /** Convert Commands that map 1:1 to Statements */
-  def convertSimpleCommand(cmd: Command, ctx: Component)(implicit omitPath: Boolean): Option[fir.Statement] = cmd match {
+  def convertSimpleCommand(cmd: Command, ctx: Component): Option[fir.Statement] = cmd match {
     case e: DefPrim[_] =>
       val consts = e.args.collect { case ILit(i) => i }
       val args = e.args.flatMap {
@@ -225,7 +225,7 @@ private[chisel3] object Converter {
     * @param ctx Component (Module) context within which we are translating
     * @return FIRRTL Statement that is equivalent to the input cmds
     */
-  def convert(cmds: Seq[Command], ctx: Component)(implicit omitPath: Boolean): fir.Statement = {
+  def convert(cmds: Seq[Command], ctx: Component): fir.Statement = {
     @tailrec
     def rec(acc: Queue[fir.Statement], scope: List[WhenFrame])(cmds: Seq[Command]): Seq[fir.Statement] = {
       if (cmds.isEmpty) {
@@ -327,7 +327,7 @@ private[chisel3] object Converter {
     case RawParam(value)    => fir.RawStringParam(name, value)
   }
 
-  def convert(port: Port, topDir: SpecifiedDirection = SpecifiedDirection.Unspecified)(implicit omitPath: Boolean): fir.Port = {
+  def convert(port: Port, topDir: SpecifiedDirection = SpecifiedDirection.Unspecified): fir.Port = {
     val resolvedDir = SpecifiedDirection.fromParent(topDir, port.dir)
     val dir = resolvedDir match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => fir.Output
@@ -341,7 +341,7 @@ private[chisel3] object Converter {
     fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe)
   }
 
-  def convert(component: Component)(implicit omitPath: Boolean): fir.DefModule = component match {
+  def convert(component: Component): fir.DefModule = component match {
     case ctx @ DefModule(_, name, ports, cmds) =>
       fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx))
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
@@ -355,11 +355,11 @@ private[chisel3] object Converter {
   }
 
   def convert(circuit: Circuit): fir.Circuit =
-    fir.Circuit(fir.NoInfo, circuit.components.map(x => convert(x)(internal.Builder.omitSourceLocatorPaths)), circuit.name)
+    fir.Circuit(fir.NoInfo, circuit.components.map(x => convert(x)), circuit.name)
 
   // TODO Unclear if this should just be the default
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
-    fir.Circuit(fir.NoInfo, lazyModules.map(x => convert(x)(internal.Builder.omitSourceLocatorPaths)), circuit.name)
+    fir.Circuit(fir.NoInfo, lazyModules.map(x => convert(x)), circuit.name)
   }
 }
