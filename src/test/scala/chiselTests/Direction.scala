@@ -7,6 +7,8 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 
+import scala.collection.immutable.SeqMap
+
 class DirectionedBundle extends Bundle {
   val in = Input(UInt(32.W))
   val out = Output(UInt(32.W))
@@ -327,4 +329,118 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       }
     }
   }
+<<<<<<< HEAD
+=======
+  property("Can now describe a Decoupled bundle using Flipped, not Input/Output in chisel3") {
+    class Decoupled extends Bundle {
+      val bits = UInt(3.W)
+      val valid = Bool()
+      val ready = Flipped(Bool())
+    }
+    class MyModule extends RawModule {
+      val incoming = IO(Flipped(new Decoupled))
+      val outgoing = IO(new Decoupled)
+
+      outgoing <> incoming
+    }
+
+    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+
+    // Check that emitted directions are correct.
+    assert(emitted.contains("input incoming : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
+    assert(emitted.contains("output outgoing : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
+    assert(emitted.contains("outgoing <= incoming"))
+  }
+  property("Can now mix Input/Output and Flipped within the same bundle") {
+    class Decoupled extends Bundle {
+      val bits = UInt(3.W)
+      val valid = Bool()
+      val ready = Flipped(Bool())
+    }
+    class DecoupledAndMonitor extends Bundle {
+      val producer = new Decoupled()
+      val consumer = Flipped(new Decoupled())
+      val monitor = Input(new Decoupled()) // Same as Flipped(stripFlipsIn(..))
+      val driver = Output(new Decoupled()) // Same as stripFlipsIn(..)
+    }
+    class MyModule extends RawModule {
+      val io = IO(Flipped(new DecoupledAndMonitor()))
+      io.consumer <> io.producer
+      io.monitor.bits := io.driver.bits
+      io.monitor.valid := io.driver.valid
+      io.monitor.ready := io.driver.ready
+    }
+
+    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+
+    assert(
+      emitted.contains(
+        "input io : { producer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip consumer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip monitor : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}, driver : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}}"
+      )
+    )
+    assert(emitted.contains("io.consumer <= io.producer"))
+    assert(emitted.contains("io.monitor.bits <= io.driver.bits"))
+    assert(emitted.contains("io.monitor.valid <= io.driver.valid"))
+    assert(emitted.contains("io.monitor.ready <= io.driver.ready"))
+  }
+  property("Bugfix: marking Vec fields with mixed directionality as Output/Input clears inner directions") {
+    class Decoupled extends Bundle {
+      val bits = UInt(3.W)
+      val valid = Bool()
+      val ready = Flipped(Bool())
+    }
+    class Coercing extends Bundle {
+      val source = Output(Vec(1, new Decoupled()))
+      val sink = Input(Vec(1, new Decoupled()))
+    }
+    class MyModule extends RawModule {
+      val io = IO(new Coercing())
+      val source = IO(Output(Vec(1, new Decoupled())))
+      val sink = IO(Input(Vec(1, new Decoupled())))
+    }
+
+    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+
+    assert(
+      emitted.contains(
+        "output io : { source : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}[1], flip sink : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}[1]}"
+      )
+    )
+    assert(
+      emitted.contains(
+        "output source : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}[1]"
+      )
+    )
+    assert(
+      emitted.contains(
+        "input sink : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}[1]"
+      )
+    )
+  }
+  property("Bugfix: clearing all flips inside an opaque type") {
+
+    class Decoupled extends Bundle {
+      val bits = UInt(3.W)
+      val valid = Bool()
+      val ready = Flipped(Bool())
+    }
+    class MyOpaqueType extends Record {
+      val k = new Decoupled()
+      val elements = SeqMap("" -> k)
+      override def opaqueType = elements.size == 1
+      override def cloneType: this.type = (new MyOpaqueType).asInstanceOf[this.type]
+    }
+    class MyModule extends RawModule {
+      val w = Wire(new MyOpaqueType())
+    }
+
+    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+
+    assert(
+      emitted.contains(
+        "wire w : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"
+      )
+    )
+  }
+>>>>>>> f05bff1a (Bugfix converter clearing flips (#2788))
 }
