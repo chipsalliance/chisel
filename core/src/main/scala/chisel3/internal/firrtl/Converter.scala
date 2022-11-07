@@ -301,8 +301,11 @@ private[chisel3] object Converter {
     case d: SInt       => fir.SIntType(convert(d.width))
     case d: FixedPoint => fir.FixedType(convert(d.width), convert(d.binaryPoint))
     case d: Interval   => fir.IntervalType(d.range.lowerBound, d.range.upperBound, d.range.firrtlBinaryPoint)
-    case d: Analog     => fir.AnalogType(convert(d.width))
-    case d: Vec[_] => fir.VectorType(extractType(d.sample_element, clearDir, info), d.length)
+    case d: Analog => fir.AnalogType(convert(d.width))
+    case d: Vec[_] =>
+      val childClearDir = clearDir ||
+        d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
+      fir.VectorType(extractType(d.sample_element, childClearDir, info), d.length)
     case d: Record => {
       val childClearDir = clearDir ||
         d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
@@ -316,7 +319,7 @@ private[chisel3] object Converter {
       if (!d.opaqueType)
         fir.BundleType(d.elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
       else
-        extractType(d.elements.head._2, true, info)
+        extractType(d.elements.head._2, childClearDir, info)
     }
   }
 
