@@ -39,6 +39,19 @@ Aggregate (`Record`, `Vec`, `Bundle`) Chisel types can include data members whic
  - `c :>= p` (flipped-direction); assigns all flipped p members from c
  - `c :<>= p` (bi-direction operator); assigns all aligned c members from p; all flipped p members from c
 
+You may be seeing these random symbols in the operator and going "what the heck are these?!?". Well, it turns out that the characters are consistent between operators and self-describe the semantics of each operator:
+ - `:` always indicates the consumer, or left-hand-side, of the operator.
+ - `=` always indicates the producer, or right-hand-side, of the operator.
+   - Hence, `c := p` connects a consumer (`c`) and a producer (`p`).
+ - `<` always indicates that some members will be driven producer-to-consumer, or right-to-left.
+   - Hence, `c :<= p` drives members in producer (`p`) to members consumer (`c`).
+ - `>` always indicates that some signals will be driven consumer-to-producer, or left-to-right.
+   - Hence, `c :>= p` drives members in consumer (`c`) to members producer (`p`).
+   - Hence, `c :<>= p` both drives members from `p` to `c` and from `c` to `p`.
+ - `#` always indicates to ignore member alignment and to drive producer-to-consumer.
+   - Hence, `c :#= p` always drives members from `p` to `c` ignoring direction.
+
+
 ## Alignment: Flipped vs Aligned
 
 A member's alignment is a relative property: a member is aligned/flipped relative to another member of the same component or Chisel type. Hence, one must always say whether a member is flipped/aligned *with respect to (w.r.t)* another member of that type (parent, sibling, child etc.).
