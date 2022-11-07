@@ -8,7 +8,26 @@ import chisel3.stage.ChiselStage
 import chisel3.experimental.DataMirror
 import chiselTests.ChiselFlatSpec
 
+object DataMirrorSpec {
+  import org.scalatest.matchers.should.Matchers._
+  class GrandChild(parent: RawModule) extends Module {
+    DataMirror.getParent(this) should be(Some(parent))
+  }
+  class Child(parent: RawModule) extends Module {
+    val inst = Module(new GrandChild(this))
+    DataMirror.getParent(inst) should be(Some(this))
+    DataMirror.getParent(this) should be(Some(parent))
+  }
+  class Parent extends Module {
+    val inst = Module(new Child(this))
+    DataMirror.getParent(inst) should be(Some(this))
+    DataMirror.getParent(this) should be(None)
+  }
+}
+
 class DataMirrorSpec extends ChiselFlatSpec {
+  import DataMirrorSpec._
+
   behavior.of("DataMirror")
 
   def assertBinding(x: Data, io: Boolean, wire: Boolean, reg: Boolean) = {
@@ -54,5 +73,19 @@ class DataMirrorSpec extends ChiselFlatSpec {
       assertNone(vectyp)
     }
     ChiselStage.elaborate(new MyModule)
+  }
+
+  it should "support getParent for normal modules" in {
+    ChiselStage.elaborate(new Parent)
+  }
+
+  it should "support getParent for normal modules even when used in a D/I context" in {
+    import chisel3.experimental.hierarchy._
+    class Top extends Module {
+      val defn = Definition(new Parent)
+      val inst = Instance(defn)
+      DataMirror.getParent(this) should be(None)
+    }
+    ChiselStage.elaborate(new Top)
   }
 }
