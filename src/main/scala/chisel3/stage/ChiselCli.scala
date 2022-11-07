@@ -11,7 +11,6 @@ trait ChiselCli { this: Shell =>
   Seq(
     NoRunFirrtlCompilerAnnotation,
     PrintFullStackTraceAnnotation,
-    OmitSourceLocatorPathsAnnotation,
     ThrowOnFirstErrorAnnotation,
     WarningsAsErrorsAnnotation,
     WarnReflectiveNamingAnnotation,

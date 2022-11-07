@@ -16,7 +16,6 @@ package chisel3.internal.sourceinfo
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
-import scala.collection.mutable
 
 /** Abstract base class for generalized source information.
   */
@@ -44,8 +43,8 @@ case object DeprecatedSourceInfo extends NoSourceInfo
 
 /** For FIRRTL lines from a Scala source line.
   */
-case class SourceLine(fullPath: String, line: Int, col: Int) extends SourceInfo {
-  def makeMessage(f: String => String): String = f(s"@[$fullPath $line:$col]")
+case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo {
+  def makeMessage(f: String => String): String = f(s"@[$filename $line:$col]")
 }
 
 /** Provides a macro that returns the source information at the invocation point.

@@ -2,7 +2,7 @@
 
 package chisel3.stage.phases
 
-import chisel3.stage.{ChiselOutputFileAnnotation, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation, OmitSourceLocatorPathsAnnotation}
+import chisel3.stage.{ChiselOutputFileAnnotation, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
@@ -19,12 +19,11 @@ class Checks extends Phase {
   override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val noF, st, outF, om = collection.mutable.ListBuffer[Annotation]()
+    val noF, st, outF = collection.mutable.ListBuffer[Annotation]()
     annotations.foreach {
-      case a: NoRunFirrtlCompilerAnnotation.type    => a +=: noF
-      case a: PrintFullStackTraceAnnotation.type    => a +=: st
-      case a: OmitSourceLocatorPathsAnnotation.type => a +=: om
-      case a: ChiselOutputFileAnnotation            => a +=: outF
+      case a: NoRunFirrtlCompilerAnnotation.type => a +=: noF
+      case a: PrintFullStackTraceAnnotation.type => a +=: st
+      case a: ChiselOutputFileAnnotation         => a +=: outF
       case _ =>
     }
 
@@ -40,14 +39,6 @@ class Checks extends Phase {
       throw new OptionsException(
         s"""|At most one PrintFullStackTraceAnnotation can be specified, but found '${noF.size}'. Did you duplicate:
             |    - option or annotation: --full-stacktrace, PrintFullStackTraceAnnotation
-            |""".stripMargin
-      )
-    }
-
-    if (om.size > 1) {
-      throw new OptionsException(
-        s"""|At most one OmitSourceLocatorPathsAnnotation can be specified, but found '${om.size}'. Did you duplicate:
-            |    - option or annotation: --omit-source-locator-paths, OmitSourceLocatorPathsAnnotation
             |""".stripMargin
       )
     }

@@ -61,24 +61,6 @@ case object PrintFullStackTraceAnnotation
 
 }
 
-/** Omit path for source locator file names
-  */
-case object OmitSourceLocatorPathsAnnotation
-    extends NoTargetAnnotation
-    with ChiselOption
-    with HasShellOptions
-    with Unserializable {
-
-  val options = Seq(
-    new ShellOption[Unit](
-      longOption = "omit-source-locator-paths",
-      toAnnotationSeq = _ => Seq(OmitSourceLocatorPathsAnnotation),
-      helpText = "Omit paths from source locator file names"
-    )
-  )
-
-}
-
 /** On recoverable errors, this will cause Chisel to throw an exception instead of continuing.
   */
 case object ThrowOnFirstErrorAnnotation

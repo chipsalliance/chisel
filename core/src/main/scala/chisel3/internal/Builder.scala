@@ -357,9 +357,9 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(
-  val annotationSeq:          AnnotationSeq,
-  val throwOnFirstError:      Boolean,
-  val warningsAsErrors:       Boolean) {
+  val annotationSeq:     AnnotationSeq,
+  val throwOnFirstError: Boolean,
+  val warningsAsErrors:  Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map holding the actual names of extModules

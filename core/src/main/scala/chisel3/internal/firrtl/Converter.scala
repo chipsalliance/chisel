@@ -46,7 +46,7 @@ private[chisel3] object Converter {
 
   def convert(info: SourceInfo): fir.Info = info match {
     case _: NoSourceInfo => fir.NoInfo
-    case s @ SourceLine(path, line, col) => fir.FileInfo(fir.StringLit(s"$path $line:$col"))
+    case SourceLine(fn, line, col) => fir.FileInfo(fir.StringLit(s"$fn $line:$col"))
   }
 
   def convert(op: PrimOp): fir.PrimOp = firrtl.PrimOps.fromString(op.name)
@@ -355,11 +355,11 @@ private[chisel3] object Converter {
   }
 
   def convert(circuit: Circuit): fir.Circuit =
-    fir.Circuit(fir.NoInfo, circuit.components.map(x => convert(x)), circuit.name)
+    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name)
 
   // TODO Unclear if this should just be the default
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
-    fir.Circuit(fir.NoInfo, lazyModules.map(x => convert(x)), circuit.name)
+    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name)
   }
 }
