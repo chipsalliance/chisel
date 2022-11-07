@@ -324,4 +324,17 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   "CustomBundle" should "check the types" in {
     ChiselStage.elaborate { new RecordTypeTester }
   }
+
+  "Record with unstable elements" should "error" in {
+    class MyRecord extends Record {
+      def elements = SeqMap("a" -> UInt(8.W))
+      override def cloneType: this.type = (new MyRecord).asInstanceOf[this.type]
+    }
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.elaborate(new Module {
+        val io = IO(Input(new MyRecord))
+      })
+    }
+    e.getMessage should include("does not return the same objects when calling .elements multiple times")
+  }
 }
