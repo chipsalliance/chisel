@@ -301,7 +301,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
   override def getElements: Seq[Data] = self
 
-  override def elementsIterator: Iterator[Data] = self.iterator
+  final override private[chisel3] def elementsIterator: Iterator[Data] = self.iterator
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Seq
@@ -1138,7 +1138,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   override def getElements: Seq[Data] = elementsIterator.toIndexedSeq
 
-  override def elementsIterator: Iterator[Data] = elements.iterator.map(_._2)
+  final override private[chisel3] def elementsIterator: Iterator[Data] = elements.iterator.map(_._2)
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
