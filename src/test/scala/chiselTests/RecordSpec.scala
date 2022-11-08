@@ -224,7 +224,7 @@ trait RecordSpecUtils {
     def boxed = false
     lazy val elements = SeqMap("" -> gen.cloneType)
     def underlying = elements.head._2
-    override def cloneType: this.type = (new Boxed(gen)).asInstanceOf[this.type]
+    override def cloneType: this.type = (new Unboxed(gen)).asInstanceOf[this.type]
   }
 }
 
