@@ -736,7 +736,7 @@ package experimental {
   *   }
   * }}}
   */
-<<<<<<< HEAD
+
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
   override def className: String = try {
