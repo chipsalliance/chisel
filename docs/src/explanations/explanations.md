@@ -40,3 +40,4 @@ read these documents in the following order:
 * [Annotations](annotations)
 * [Deep Dive into Connection Operators](connection-operators)
 * [Chisel Type vs Scala Type](chisel-type-vs-scala-type)
+* [Connectable Operators](connectable)

@@ -326,6 +326,26 @@ ChiselStage.emitVerilog(new Example4())
 
 > Note: Astute observers will realize that semantically `c :#= p` is exactly equivalent to `c :<= p` followed by `p :>= c` (note `p` and `c` switched places in the second connection).
 
+Another use case for `:#=` is for connecting a mixed-directional bundle to a fully-aligned monitor.
+
+```scala mdoc:silent
+import chisel3.experimental.BundleLiterals._
+class Example4b extends RawModule {
+  val monitor = IO(Output(new MixedAlignmentBundle))
+  val w = Wire(new MixedAlignmentBundle)
+  dontTouch(w) // So we see it in the output verilog
+  w :#= DontCare
+  monitor :#= w
+}
+```
+
+This generates the following Verilog, where all members are driven from the literal to `w`, regardless of alignment:
+
+```scala mdoc:verilog
+import chisel3.stage.ChiselStage
+
+ChiselStage.emitVerilog(new Example4b())
+```
 ## Waived Data
 
 It is not uncommon for a user to want to connect Chisel components which are not type equivalent. For example, a user may want to cook up the `ready`/`valid` members of a `ReadyValidIO` to a `DecoupledIO`, but
@@ -421,37 +441,51 @@ A not uncommon usecase is to try to connect two Records; for matching members, t
 
 ```scala mdoc:silent
 // TODO: Fix this example - AutoCloneType is broken??
-//import scala.collection.immutable.SeqMap
-//import chisel3.experimental.AutoCloneType
-//class MyRecord(elems: () => SeqMap[String, Data]) extends Record {
-//  def elements = elems()
-//  def cloneType = new MyRecord(elems).asInstanceOf[this.type]
-//}
-//class Example8 extends RawModule {
-//  val abType = new MyRecord(() => SeqMap("a" -> Bool(), "b" -> Flipped(Bool())))
-//  val bcType = new MyRecord(() => SeqMap("b" -> Flipped(Bool()), "c" -> Bool()))
-//
-//  val p = Wire(abType)
-//  val c = Wire(bcType)
-//
-//  dontTouch(p) // So it doesn't get constant-propped away for the example
-//  dontTouch(c) // So it doesn't get constant-propped away for the example
-//
-//  val lAB = abType.Lit(_.elements("a") -> true.B, _.elements("b") -> true.B)
-//  //p :#= lAB
-//  //c :#= bcType.Lit(_.elements("b") -> true.B, _.elements("c") -> true.B)
-//
-//  c.waiveAll :<>= p.waiveAll
-//}
+import scala.collection.immutable.SeqMap
+import chisel3.experimental.AutoCloneType
+class MyRecord(elems: () => SeqMap[String, Data]) extends Record with AutoCloneType {
+  val elements = elems()
+}
+class Example8 extends RawModule {
+  val abType = new MyRecord(() => SeqMap("a" -> Bool(), "b" -> Flipped(Bool())))
+  val bcType = new MyRecord(() => SeqMap("b" -> Flipped(Bool()), "c" -> Bool()))
+
+  val p = Wire(abType)
+  val c = Wire(bcType)
+
+  dontTouch(p) // So it doesn't get constant-propped away for the example
+  dontTouch(c) // So it doesn't get constant-propped away for the example
+
+  p :#= abType.Lit(_.elements("a") -> true.B, _.elements("b") -> true.B)
+  c :#= bcType.Lit(_.elements("b") -> true.B, _.elements("c") -> true.B)
+
+  c.waiveAll :<>= p.waiveAll
+}
 ```
 
 This generates the following Verilog, where the `b` member is driven from `c` to `p`, and `a` and `c` members are initialized to default values:
 
-```scala mdoc:silent
-//import chisel3.stage.ChiselStage
-//
-//ChiselStage.emitVerilog(new Example8())
+```scala mdoc:verilog
+import chisel3.stage.ChiselStage
+
+ChiselStage.emitVerilog(new Example8())
 ```
 
 
 ### Always ignore extra members (partial connection operator)
+
+
+## Comparison to Chisel.<>, chisel3.<>, chisel3.:=
+
+## WaivedData vs Dataview
+
+TODO: Perhaps this is better served in a cookbook mdoc?
+
+Options available to user:
+
+ - manually bursting out individual fields
+ - Waived data
+ - .viewAsSuperType
+ - static cast to supertype (fields still have to match, but importantly different than viewAsSuperType in the output)
+ - dataview to get it to be the right type
+ - something else?
