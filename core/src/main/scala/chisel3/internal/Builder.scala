@@ -421,7 +421,6 @@ private[chisel3] class DynamicContext(
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
-
 }
 
 private[chisel3] object Builder extends LazyLogging {

@@ -21,4 +21,8 @@ In a Verilog file, it looks like this:
 wire [2:0] w; // @[src/main/scala/MyProject/MyFile.scala 1210:21]
 ```
 
-By default, the file's relative path to where the JVM is invoked is included. To change where the relative path is computed, set the Java system property `-Dchisel.project.root=/absolute/path/to/root`. This option can be directly passed to sbt (`sbt -Dchisel.project.root=/absolute/path/to/root`). Setting the value in the `build.sbt` file won't work because it needs to be passed to the JVM that invokes sbt (not the other way around). We expect this only relevant for publishing versions which may want more customization.
+By default, the file's relative path to where the JVM is invoked is included.
+To change where the relative path is computed, set the Java system property `-Dchisel.project.root=/absolute/path/to/root`.
+This option can be directly passed to sbt (`sbt -Dchisel.project.root=/absolute/path/to/root`).
+Setting the value in the `build.sbt` file won't work because it needs to be passed to the JVM that invokes sbt (not the other way around).
+We expect this only relevant for publishing versions which may want more customization.
