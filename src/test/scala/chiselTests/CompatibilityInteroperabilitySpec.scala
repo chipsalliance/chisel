@@ -392,6 +392,290 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Top(false))
   }
 
+  "A Chisel.Bundle with only unspecified directions" should "work with D/I" in {
+
+    object Compat {
+      import Chisel._
+      import chisel3.experimental.hierarchy.{instantiable, public}
+
+      class CompatBiDirUnspecifiedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+      }
+
+      @instantiable
+      class CompatModule extends Module {
+        @public val io = IO(new CompatBiDirUnspecifiedBundle)
+      }
+    }
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.Instance
+      class Example extends Module {
+        val mod = Module(new Compat.CompatModule())
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A Chisel.Bundle with mixed Specified and Unspecified directions" should "work with D/I" in {
+
+    object Compat {
+      import Chisel._
+      import chisel3.experimental.hierarchy.{instantiable, public}
+
+      class CompatBiDirMixedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+        val explicit = Output(Bool())
+      }
+
+      @instantiable
+      class CompatModule extends Module {
+        @public val io = IO(new CompatBiDirMixedBundle)
+      }
+    }
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.Instance
+      class Example extends Module {
+        val mod = Module(new Compat.CompatModule)
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A Chisel.Bundle with only unspecified vec direction" should "work with D/I" in {
+
+    object Compat {
+      import Chisel._
+      import chisel3.experimental.hierarchy.{instantiable, public}
+
+      class CompatBiDirUnspecifiedVecBundle extends Bundle {
+        val out = Vec(3, Bool())
+        val in = Flipped(Vec(3, Bool()))
+      }
+
+      @instantiable
+      class CompatModule extends Module {
+        @public val io = IO(new CompatBiDirUnspecifiedVecBundle)
+      }
+    }
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.Instance
+      class Example extends Module {
+        val mod = Module(new Compat.CompatModule())
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A chisel3.Bundle with only unspecified directions" should "work with D/I" in {
+
+    // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction.
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
+
+      class BiDirUnspecifiedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+      }
+
+      @instantiable
+      class MyModule extends Module {
+        @public val io = IO(new BiDirUnspecifiedBundle)
+        io <> DontCare
+      }
+
+      class Example extends Module {
+        val mod = Module(new MyModule())
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A chisel3.Bundle with mixed Specified and Unspecified directions" should "work with D/I" in {
+
+    // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction.
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
+
+      class BiDirMixedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+        val explicit = Output(Bool())
+      }
+
+      @instantiable
+      class MyModule extends Module {
+        @public val io = IO(new BiDirMixedBundle)
+        io <> DontCare
+      }
+      class Example extends Module {
+        val mod = Module(new MyModule)
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A chisel3.Bundle with only unspecified vec direction" should "work with D/I" in {
+
+    // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
+
+      class BiDirUnspecifiedVecBundle extends Bundle {
+        val out = Vec(3, Bool())
+        val in = Flipped(Vec(3, Bool()))
+      }
+
+      @instantiable
+      class MyModule extends Module {
+        @public val io = IO(new BiDirUnspecifiedVecBundle)
+        io <> DontCare
+      }
+
+      class Example extends Module {
+        val mod = Module(new MyModule())
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A chisel3.Bundle with only unspecified vec direction within an unspecified direction parent Bundle" should "work with D/I" in {
+
+    // This test is NOT expected to work in 3.5.x, it should throw an error in the IO construction.
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
+
+      class UnspecifiedVecBundle extends Bundle {
+        val vec = Vec(3, Bool())
+      }
+
+      class UnspecifiedParentBundle extends Bundle {
+        val out = new UnspecifiedVecBundle
+      }
+
+      @instantiable
+      class MyModule extends Module {
+        @public val io = IO(new UnspecifiedParentBundle)
+        io <> DontCare
+      }
+
+      class Example extends Module {
+        val mod = Module(new MyModule())
+
+        val wire = Wire(new UnspecifiedParentBundle)
+        wire.out.vec <> mod.io.out.vec
+        val inst = Instance(mod.toDefinition)
+        wire.out.vec <> inst.io.out.vec
+
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A undirectioned Chisel.Bundle used in a MixedVec " should "bulk connect in import chisel3._ code correctly" in {
+
+    // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction.
+
+    object Compat {
+
+      import Chisel._
+      import chisel3.util.MixedVec
+
+      class ChiselModule extends Module {
+        val io = IO(new Bundle {
+          val out = MixedVec(Seq.fill(3) { Bool() })
+          val in = Flipped(MixedVec(Seq.fill(3) { Bool() }))
+        })
+        io.out := RegNext(io.in)
+      }
+
+    }
+    object Chisel3 {
+      import chisel3._
+
+      class Chisel3Module extends Compat.ChiselModule
+
+      class Example extends Module {
+        val oldMod = Module(new Compat.ChiselModule)
+        val newMod = Module(new Chisel3Module)
+
+        oldMod.io.in <> DontCare
+        newMod.io.in <> DontCare
+
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A undirectioned Chisel.Bundle with Records with undirectioned and directioned fields " should "work" in {
+
+    // This test should fail on 3.5.x
+
+    object Compat {
+
+      import Chisel._
+
+      class ChiselModule(gen: () => Data) extends Module {
+        val io = IO(new Bundle {
+          val mixed = new Chisel3.MyRecord(gen)
+        })
+      }
+
+    }
+    object Chisel3 {
+      import chisel3._
+      import scala.collection.immutable.SeqMap
+
+      class MyRecord(gen: () => Data) extends Record with chisel3.experimental.AutoCloneType {
+        val elements = SeqMap("genDirectioned" -> Output(gen()), "genUndirectioned" -> gen())
+      }
+
+      class Example extends Module {
+        val newMod = Module(new Compat.ChiselModule(() => Bool()))
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
   "A BlackBox with Chisel._ fields in its IO" should "bulk connect in import chisel3._ code correctly" in {
     object Compat {
       import Chisel._
