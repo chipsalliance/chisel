@@ -15,10 +15,12 @@ section: "chisel3"
 - `Aggregate` - a Chisel type or component that contains other Chisel types or components (i.e. `Vec`, `Record`, or `Bundle`)
 - `Element` - a Chisel type or component that does not contain other Chisel types or components (e.g. `UInt`, `SInt`, `Clock`, `Bool` etc.)
 - "component" - a `Data` that is bound to hardware (`IO`, `Reg`, `Wire`, etc.)
-  - E.g. `Wire(UInt(3.W))` is a component, whose type is `UInt(3.W)`
-- "member" - a Chisel type or component or any of its children (could be an `Aggregate` or an `Element`)
+  - E.g. `Wire(UInt(3.W))` is a component, whose Chisel type is `UInt(3.W)`
+- "member" - a Chisel type or component, or any of its children (could be an `Aggregate` or an `Element`)
   - E.g. `Vec(3, UInt(2.W))(0)` is a member of the parent `Vec` Chisel type
   - E.g. `Wire(Vec(3, UInt(2.W)))(0)` is a member of the parent `Wire` component
+  - E.g. `IO(Decoupled(Bool)).ready` is a member of the parent `IO` component
+  
 
 For more details about these Scala types vs Chisel types, please read 
 
@@ -172,7 +174,7 @@ In summary, `Input(gen)` and `Output(gen)` recursively coerce children alignment
 
 ## Connecting components with fully aligned members
 
-For simple connections where all members of aligned (non-flipped) with one another, use `:=`:
+For simple connections where all members are aligned (non-flipped) w.r.t. one another, use `:=`:
 
 
 ```scala mdoc:silent
@@ -196,7 +198,7 @@ import chisel3.stage.ChiselStage
 ChiselStage.emitVerilog(new Example0())
 ```
 
-> You may be thinking "Wait, I'm confused! Isn't foo flipped and bar is aligned?" -- Noo! Whether foo is aligned with bar makes no sense; remember, you only evaluate alignment between members of the same component or Chisel type. Because components are always aligned to themselves, `bar` is aligned to `bar`, and `foo` is aligned to `foo`, there is no problem. Their relative flippedness to anything else is irrelevant.
+> You may be thinking "Wait, I'm confused! Isn't foo flipped and bar aligned?" -- Noo! Whether foo is aligned with bar makes no sense; remember, you only evaluate alignment between members of the same component or Chisel type. Because components are always aligned to themselves, `bar` is aligned to `bar`, and `foo` is aligned to `foo`, there is no problem. Their relative flippedness to anything else is irrelevant.
 
 ## Connections for components with members of mixed-alignment
 
@@ -210,7 +212,7 @@ class MixedAlignmentBundle extends Bundle {
 }
 ```
 
-Due to this, there are many desired connection behaviors between two Chisel components. First we will investigate a common source of confusion between port-direction and connection-direction. Then, we will dive in to the Chisel connection operators useful for connecting components with members of mixed-alignments.
+Due to this, there are many desired connection behaviors between two Chisel components. First we will introduce the most common Chisel connection operator, `:<>=`, useful for connecting components with members of mixed-alignments, then take a moment to investigate a common source of confusion between port-direction and connection-direction. Then, we will explore the remainder of the the Chisel connection operators.
 
 
 ### Bi-direction connection operator (:<>=)
@@ -248,14 +250,14 @@ class Example1a extends RawModule {
 ```
 
 While `incoming.flippedChild`'s alignment with `incoming` does not affect our operators, it does influence whether `incoming.flippedChild` is an output or input port of my module.
-A common source of confusion is to mistake the process for determining whether `incoming.flippedChild` is an output/input (the port-direction computation) with the process for determing how `:<>=` connects who to who (the connection-direction computation).
+A common source of confusion is to mistake the process for determining whether `incoming.flippedChild` will resolve to a verilog `output`/`input` (the port-direction computation) with the process for determining how `:<>=` drives what with what (the connection-direction computation).
 While both processes consider relative alignment, they are distinct.
 
 The port-direction computation always computes alignment relative to the component marked with `IO`. An `IO(Flipped(gen))` is an input port, and any member of `gen` that is aligned/flipped with `gen` is an input/output port. An `IO(gen)` is an output port, and any member of `gen` that is aligned/flipped with `gen` is an output/input port.
 
-The connection-direction computation always computes alignment based on explicit consumer/producer referenced for the connection. If one connects `incoming :<>= outgoing`, alignments are computed based on `incoming` and `outgoing`. If I connect `incoming.alignedChild :<>= outgoing.alignedChild`, then alignments are computed based on `incoming.alignedChild` and `outgoing.alignedChild` (and the alignment of `incoming` to `incoming.a` is irrelevant).
+The connection-direction computation always computes alignment based on the explicit consumer/producer referenced for the connection. If one connects `incoming :<>= outgoing`, alignments are computed based on `incoming` and `outgoing`. If one connects `incoming.alignedChild :<>= outgoing.alignedChild`, then alignments are computed based on `incoming.alignedChild` and `outgoing.alignedChild` (and the alignment of `incoming` to `incoming.alignedChild` is irrelevant).
 
-This means that users can try to assign to input ports of their module! If I write `x :<>= y`, and `x` is an input to the current module, then that is what the connection is trying to do. However, because input ports are not assignable from within the current module, Chisel will throw an error. This is the same error a user would get using a mono-directioned operator: `x := y` will throw the same error if `x` is an input module. *Whether a component is assignable is irrelevant to the semantics of any connection operator assigning to it.*
+This means that users can try to assign to input ports of their module! If I write `x :<>= y`, and `x` is an input to the current module, then that is what the connection is trying to do. However, because input ports are not assignable from within the current module, Chisel will throw an error. This is the same error a user would get using a mono-directioned operator: `x := y` will throw the same error if `x` is an input to the current module. *Whether a component is assignable is irrelevant to the semantics of any connection operator assigning to it.*
 
 In summary, the port-direction computation is relative to the root marked `IO`, but connection-direction computation is relative to the consumer/producer that the connection is doing. This has the positive property that connection semantics are solely based on the Chisel types of the consumer/producer (nothing more, nothing less).
 
@@ -348,7 +350,7 @@ ChiselStage.emitVerilog(new Example4b())
 ```
 ## Waived Data
 
-It is not uncommon for a user to want to connect Chisel components which are not type equivalent. For example, a user may want to cook up the `ready`/`valid` members of a `ReadyValidIO` to a `DecoupledIO`, but
+It is not uncommon for a user to want to connect Chisel components which are not type equivalent. For example, a user may want to hook up the `ready`/`valid` members of a `ReadyValidIO` to a `DecoupledIO`, but
 because the `bits` member is not present in both, our operators would reject a connection.
 
 `WaivedData` is the mechanism to specialize connection operator behavior in these scenarios. For any addition member which is not present in the other component being connected to, they can be explicitly waived from the operator to be ignored, rather than trigger an error.
