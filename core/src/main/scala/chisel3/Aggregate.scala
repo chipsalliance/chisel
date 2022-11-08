@@ -738,17 +738,6 @@ package experimental {
   */
 <<<<<<< HEAD
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
-  override def className: String = this.getClass.getSimpleName match {
-    case name if name.startsWith("$anon$") => "AnonymousBundle"  // fallback for anonymous Bundle case
-    case "" => "AnonymousBundle"  // ditto, but on other platforms
-    case name => name
-=======
-abstract class Bundle(implicit compileOptions: CompileOptions) extends Record with experimental.AutoCloneType {
-
-  private def mustUsePluginMsg: String =
-    "The Chisel compiler plugin is now required for compiling Chisel code. " +
-      "Please see https://github.com/chipsalliance/chisel3#build-your-own-chisel-projects."
-  assert(_usingPlugin, mustUsePluginMsg)
 
   override def className: String = try {
     this.getClass.getSimpleName match {
@@ -759,8 +748,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record wi
   } catch {
     // This happens if you have nested objects which your class is defined in
     case e: java.lang.InternalError if e.getMessage == "Malformed class name" => this.getClass.toString
->>>>>>> 3aba755b (Fix for <> to BlackBox.IO with Compatibility Bundles (#2801))
   }
+
   /** The collection of [[Data]]
     *
     * Elements defined earlier in the Bundle are higher order upon
