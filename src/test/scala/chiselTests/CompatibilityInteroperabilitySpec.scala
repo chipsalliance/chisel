@@ -362,47 +362,6 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     compile(new Top(true))
     compile(new Top(false))
   }
-<<<<<<< HEAD
-=======
-
-  "A unidirectional but flipped Bundle with something close to NotStrict compileOptions, but not exactly" should "bulk connect in import chisel3._ code correctly" in {
-    object Compat {
-      import Chisel.{defaultCompileOptions => _, _}
-      // arbitrary thing to make this *not* exactly NotStrict
-      implicit val defaultCompileOptions = new chisel3.ExplicitCompileOptions.CompileOptionsClass(
-        connectFieldsMustMatch = false,
-        declaredTypeMustBeUnbound = false,
-        dontTryConnectionsSwapped = false,
-        dontAssumeDirectionality = false,
-        checkSynthesizable = false,
-        explicitInvalidate = false,
-        inferModuleReset = true // different from NotStrict, to ensure case class equivalence to NotStrict is false
-      ) {
-        override def emitStrictConnects = false
-      }
-
-      class MyBundle(extraFlip: Boolean) extends Bundle {
-        private def maybeFlip[T <: Data](t: T): T = if (extraFlip) t.flip else t
-        val foo = maybeFlip(new Bundle {
-          val bar = UInt(INPUT, width = 8)
-        })
-      }
-    }
-    import chisel3._
-    import Compat.{defaultCompileOptions => _, _}
-    class Top(extraFlip: Boolean) extends RawModule {
-      val port = IO(new MyBundle(extraFlip))
-      val wire = Wire(new MyBundle(extraFlip))
-      port <> DontCare
-      wire <> DontCare
-      port <> wire
-      wire <> port
-      port.foo <> wire.foo
-      wire.foo <> port.foo
-    }
-    compile(new Top(true))
-    compile(new Top(false))
-  }
 
   "A BlackBox with Chisel._ fields in its IO" should "bulk connect in import chisel3._ code correctly" in {
     object Compat {
@@ -557,6 +516,5 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     chirrtl1 should include("out <= in")
     chirrtl1 shouldNot include("out <- in")
   }
->>>>>>> 3aba755b (Fix for <> to BlackBox.IO with Compatibility Bundles (#2801))
 }
 
