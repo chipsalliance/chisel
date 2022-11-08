@@ -152,15 +152,40 @@ object Connectable {
       }
     }
 
+    /** $colonLessEq
+      * 
+      * @group connection
+      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
+      */
+    final def :<=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+      DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessEq, Set.empty[Data], Set.empty[Data])
+    }
+
+    /** $colonGreaterEq
+      *
+      * @group connection
+      * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
+      */
+    final def :>=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+      DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq, Set.empty[Data], Set.empty[Data])
+    }
+
+    /** $colonLessGreaterEq
+      *
+      * @group connection
+      * @param producer the right-hand-side of the connection
+      */
+    final def :<>=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+      DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessGreaterEq, Set.empty[Data], Set.empty[Data])
+    }
+
     /** $colonHashEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
     final def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], Set.empty[Data])
-      }
+      DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], Set.empty[Data])
     }
 
     /** $colonLessEq
