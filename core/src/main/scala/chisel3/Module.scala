@@ -709,9 +709,9 @@ package experimental {
                 data match {
                   case record: Record =>
                     val compatRecord = !record.compileOptions.dontAssumeDirectionality
-                    record.getElements.foreach(assignCompatDir(_, compatRecord))
+                    record.elementsIterator.foreach(assignCompatDir(_, compatRecord))
                   case vec: Vec[_] =>
-                    vec.getElements.foreach(assignCompatDir(_, insideCompat))
+                    vec.elementsIterator.foreach(assignCompatDir(_, insideCompat))
                 }
               case SpecifiedDirection.Input | SpecifiedDirection.Output => // forced assign, nothing to do
             }
