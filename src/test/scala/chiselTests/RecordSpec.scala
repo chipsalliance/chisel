@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
-import chisel3.experimental.DataMirror
+import chisel3.experimental.{DataMirror, OpaqueType}
 
 import scala.collection.immutable.SeqMap
 
@@ -109,10 +109,9 @@ trait RecordSpecUtils {
     require(!DataMirror.checkTypeEquivalence(wire1, wire2))
   }
 
-  class SingleElementRecord extends Record {
+  class SingleElementRecord extends Record with OpaqueType {
     private val underlying = UInt(8.W)
     val elements = SeqMap("" -> underlying)
-    override def opaqueType = elements.size == 1
     override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
 
     def +(that: SingleElementRecord): SingleElementRecord = {
@@ -132,17 +131,15 @@ trait RecordSpecUtils {
     out := in1 + in2
   }
 
-  class InnerRecord extends Record {
+  class InnerRecord extends Record with OpaqueType {
     val k = new InnerInnerRecord
     val elements = SeqMap("" -> k)
-    override def opaqueType = elements.size == 1
     override def cloneType: this.type = (new InnerRecord).asInstanceOf[this.type]
   }
 
-  class InnerInnerRecord extends Record {
+  class InnerInnerRecord extends Record with OpaqueType {
     val k = new SingleElementRecord
     val elements = SeqMap("" -> k)
-    override def opaqueType = elements.size == 1
     override def cloneType: this.type = (new InnerInnerRecord).asInstanceOf[this.type]
   }
 
@@ -164,11 +161,10 @@ trait RecordSpecUtils {
     io.bar.elements.head._2 := io.foo.elements.head._2
   }
 
-  class NamedSingleElementRecord extends Record {
+  class NamedSingleElementRecord extends Record with OpaqueType {
     private val underlying = UInt(8.W)
     val elements = SeqMap("unused" -> underlying)
 
-    override def opaqueType = elements.size == 1
     override def cloneType: this.type = (new NamedSingleElementRecord).asInstanceOf[this.type]
   }
 
@@ -178,7 +174,7 @@ trait RecordSpecUtils {
     out := in
   }
 
-  class ErroneousOverride extends Record {
+  class ErroneousOverride extends Record with OpaqueType {
     private val underlyingA = UInt(8.W)
     private val underlyingB = UInt(8.W)
     val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
@@ -191,6 +187,44 @@ trait RecordSpecUtils {
     val in = IO(Input(new ErroneousOverride))
     val out = IO(Output(new ErroneousOverride))
     out := in
+  }
+
+  class NotActuallyOpaqueType extends Record with OpaqueType {
+    private val underlyingA = UInt(8.W)
+    private val underlyingB = UInt(8.W)
+    val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
+
+    override def opaqueType = false
+    override def cloneType: this.type = (new NotActuallyOpaqueType).asInstanceOf[this.type]
+  }
+
+  class NotActuallyOpaqueTypeModule extends Module {
+    val in = IO(Input(new NotActuallyOpaqueType))
+    val out = IO(Output(new NotActuallyOpaqueType))
+    out := in
+  }
+
+  // Illustrate how to dyanmically decide between OpaqueType or not
+  sealed trait MaybeBoxed[T <: Data] extends Record {
+    def underlying: T
+    def boxed:      Boolean
+  }
+  object MaybeBoxed {
+    def apply[T <: Data](gen: T, boxed: Boolean): MaybeBoxed[T] = {
+      if (boxed) new Boxed(gen) else new Unboxed(gen)
+    }
+  }
+  class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] {
+    def boxed = true
+    lazy val elements = SeqMap("underlying" -> gen.cloneType)
+    def underlying = elements.head._2
+    override def cloneType: this.type = (new Boxed(gen)).asInstanceOf[this.type]
+  }
+  class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType {
+    def boxed = false
+    lazy val elements = SeqMap("" -> gen.cloneType)
+    def underlying = elements.head._2
+    override def cloneType: this.type = (new Boxed(gen)).asInstanceOf[this.type]
   }
 }
 
@@ -230,14 +264,14 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     e.getMessage should include("contains aliased fields named (bar,foo)")
   }
 
-  they should "be OpaqueType for maps with single unnamed elements" in {
+  they should "support OpaqueType for maps with single unnamed elements" in {
     val singleElementChirrtl = ChiselStage.emitChirrtl { new SingleElementRecordModule }
     singleElementChirrtl should include("input in1 : UInt<8>")
     singleElementChirrtl should include("input in2 : UInt<8>")
     singleElementChirrtl should include("add(in1, in2)")
   }
 
-  they should "work correctly for toTarget in nested opaque type Records" in {
+  they should "work correctly for toTarget in nested OpaqueType Records" in {
     var mod: NestedRecordModule = null
     ChiselStage.elaborate { mod = new NestedRecordModule; mod }
     val testStrings = Seq(
@@ -251,7 +285,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     testStrings.foreach(x => assert(x == "~NestedRecordModule|InnerModule>io.foo"))
   }
 
-  they should "work correctly when connecting nested opaque type elements" in {
+  they should "work correctly when connecting nested OpaqueType elements" in {
     val nestedRecordChirrtl = ChiselStage.emitChirrtl { new NestedRecordModule }
     nestedRecordChirrtl should include("input in : UInt<8>")
     nestedRecordChirrtl should include("output out : UInt<8>")
@@ -261,16 +295,37 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     nestedRecordChirrtl should include("io.bar <= io.foo")
   }
 
-  they should "throw an error when map contains a named element and opaqueType is overriden to true" in {
+  they should "throw an error when map contains a named element and OpaqueType is mixed in" in {
     (the[Exception] thrownBy extractCause[Exception] {
       ChiselStage.elaborate { new NamedSingleElementModule }
     }).getMessage should include("Opaque types must have exactly one element with an empty name")
   }
 
-  they should "throw an error when map contains more than one element and opaqueType is overriden to true" in {
+  they should "throw an error when map contains more than one element and OpaqueType is mixed in" in {
     (the[Exception] thrownBy extractCause[Exception] {
       ChiselStage.elaborate { new ErroneousOverrideModule }
     }).getMessage should include("Opaque types must have exactly one element with an empty name")
+  }
+
+  they should "work correctly when an OpaqueType overrides the def as false" in {
+    val chirrtl = ChiselStage.emitChirrtl(new NotActuallyOpaqueTypeModule)
+    chirrtl should include("input in : { y : UInt<8>, x : UInt<8>}")
+    chirrtl should include("output out : { y : UInt<8>, x : UInt<8>}")
+    chirrtl should include("out <= in")
+  }
+
+  they should "support conditional OpaqueTypes via traits and factory methods" in {
+    class MyModule extends Module {
+      val in0 = IO(Input(MaybeBoxed(UInt(8.W), true)))
+      val out0 = IO(Output(MaybeBoxed(UInt(8.W), true)))
+      val in1 = IO(Input(MaybeBoxed(UInt(8.W), false)))
+      val out1 = IO(Output(MaybeBoxed(UInt(8.W), false)))
+      out0 := in0
+      out1 := in1
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("input in0 : { underlying : UInt<8>}")
+    chirrtl should include("input in1 : UInt<8>")
   }
 
   they should "work with .toTarget" in {
