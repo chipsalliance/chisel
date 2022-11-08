@@ -726,42 +726,9 @@ package experimental {
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
-<<<<<<< HEAD
     protected def _bindIoInPlace(iodef: Data): Unit = {
-      // Compatibility code: Chisel2 did not require explicit direction on nodes
-      // (unspecified treated as output, and flip on nothing was input).
-      // This sets assigns the explicit directions required by newer semantics on
-      // Bundles defined in compatibility mode.
-      // This recursively walks the tree, and assigns directions if no explicit
-      // direction given by upper-levels (override Input / Output) AND element is
-      // directly inside a compatibility Bundle determined by compile options.
-      def assignCompatDir(data: Data, insideCompat: Boolean): Unit = {
-        data match {
-          case data: Element if insideCompat => data._assignCompatibilityExplicitDirection
-          case data: Element => // Not inside a compatibility Bundle, nothing to be done
-          case data: Aggregate =>
-            data.specifiedDirection match {
-              // Recurse into children to ensure explicit direction set somewhere
-              case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
-                data match {
-                  case record: Record =>
-                    val compatRecord = !record.compileOptions.dontAssumeDirectionality
-                    record.getElements.foreach(assignCompatDir(_, compatRecord))
-                  case vec: Vec[_] =>
-                    vec.getElements.foreach(assignCompatDir(_, insideCompat))
-                }
-              case SpecifiedDirection.Input | SpecifiedDirection.Output => // forced assign, nothing to do
-            }
-        }
-      }
-
-      assignCompatDir(iodef, false)
-=======
-    protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
-
       // Assign any signals (Chisel or chisel3) with Unspecified/Flipped directions to Output/Input
       Module.assignCompatDir(iodef)
->>>>>>> f24a6248 (Fixup and unit tests for D/I of IOs without explicit Input/Output (#2792))
 
       iodef.bind(PortBinding(this))
       _ports += iodef
