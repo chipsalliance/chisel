@@ -93,7 +93,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    final def :<=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+    final def :<=[S <: Data](producer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonLessEq, Set.empty[Data], Set.empty[Data])
       }
@@ -104,7 +104,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+    final def :>=[S <: Data](producer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonGreaterEq, Set.empty[Data], Set.empty[Data])
       }
@@ -115,7 +115,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    final def :<>=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+    final def :<>=[S <: Data](producer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         val evaluatedProducer = producer
         val canFirrtlConnect =
@@ -146,7 +146,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
-    final def :#=(producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+    final def :#=[S <: Data](producer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, producer, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], Set.empty[Data])
       }
@@ -168,7 +168,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    final def :<=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+    final def :<=[S <: Data](pWaived: WaivedData[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonLessEq, Set.empty[Data], pWaived.waivers)
       }
@@ -179,7 +179,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+    final def :>=[S <: Data](pWaived: WaivedData[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonGreaterEq, Set.empty[Data], pWaived.waivers)
       }
@@ -190,7 +190,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    final def :<>=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+    final def :<>=[S <: Data](pWaived: WaivedData[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonLessGreaterEq, Set.empty[Data], pWaived.waivers)
       }
@@ -201,7 +201,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all fields will be driving, none will be driven-to
       */
-    final def :#=(pWaived: WaivedData[T])(implicit sourceInfo: SourceInfo): Unit = {
+    final def :#=[S <: Data](pWaived: WaivedData[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         DirectionalConnectionFunctions.assign(consumer, pWaived.d, DirectionalConnectionFunctions.ColonHashEq, Set.empty[Data], pWaived.waivers)
       }

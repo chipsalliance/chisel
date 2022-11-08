@@ -1131,5 +1131,5 @@ final case object DontCare extends Element {
   // DontCare's only match themselves.
   private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
 
-  final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = this.asInstanceOf[Data] :>= producer
+  final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = this.asInstanceOf[Data] :>= producer.asInstanceOf[Data]
 }

@@ -251,7 +251,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       //)
     }
     it("(0.k): When connecting FROM DontCare, emit for aligned aggregate fields and error for flipped aggregate fields") {
-      implicit val op: (Data, Data) => Unit = {(x, y) => x :<>= DontCare}
+      implicit val op: (Data, Data) => Unit = {(x, y) => x :<>= DontCare.asInstanceOf[Data]}
       test(UInt(3.W), Seq("io.out is invalid"))
       test(SInt(3.W), Seq("io.out is invalid"))
       test(Clock(), Seq("io.out is invalid"))
@@ -451,7 +451,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       //)
     }
     it("(1.k): When connecting FROM DontCare, emit for aligned aggregate fields and skip for flipped aggregate fields") {
-      implicit val op: (Data, Data) => Unit = {(x, y) => x :<= DontCare}
+      implicit val op: (Data, Data) => Unit = {(x, y) => x :<= DontCare.asInstanceOf[Data]}
       test(UInt(3.W), Seq("io.out is invalid"))
       test(SInt(3.W), Seq("io.out is invalid"))
       test(Clock(), Seq("io.out is invalid"))

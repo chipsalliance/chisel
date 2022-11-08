@@ -20,9 +20,10 @@ section: "chisel3"
   - E.g. `Vec(3, UInt(2.W))(0)` is a member of the parent `Vec` Chisel type
   - E.g. `Wire(Vec(3, UInt(2.W)))(0)` is a member of the parent `Wire` component
   - E.g. `IO(Decoupled(Bool)).ready` is a member of the parent `IO` component
-  
-
-For more details about these Scala types vs Chisel types, please read 
+- "structural type check" - Chisel type A is structurally equivalent to Chisel type B if A and B have matching bundle field names and types (`Record` vs `Vector` vs `Element`), vector sizes, `Element` types (UInt/SInt/Bool/Clock etc))
+  - ignores relative alignment
+  - use `DataMirror.checkTypeEquivalence` to check this property
+- "alignment type check" - a Chisel type `A` matches alignment with another Chisel type `B` if every member of `A`'s relative alignment to `A` is the same as the structurally corresponding member of `B`'s relative alignment to `B`.
 
 ## Overview
 
@@ -30,9 +31,9 @@ The `Connectable` operators are the standard way to connect Chisel hardware comp
 
 > Note: For descriptions of the semantics for the previous operators, see [`Connection Operators`](connection-operators).
 
-All connection operators require the two hardware components (consumer and producer) to be Chisel type-equivalent (matching bundle field names and types (`Record` vs `Vector` vs `Element`), vector sizes, `Element` types (UInt/SInt/Bool/Clock etc)). Use `DataMirror.checkTypeEquivalence` to check this property.
+All connection operators require the two hardware components (consumer and producer) to be structurally type equivalent.
 
-The one exception to the type-equivalence rule is using the `WaivedData` mechanism, detailed at [section](#waived-data) at the end of this document.
+The one exception to the structural type-equivalence rule is using the `WaivedData` mechanism, detailed at [section](#waived-data) at the end of this document.
 
 Aggregate (`Record`, `Vec`, `Bundle`) Chisel types can include data members which are flipped relative to one another. Due to this, there are many desired connection behaviors between two Chisel components. The following are the Chisel connection operators:
  - `c := p` (mono-direction): assigns all p members to c; requires c & p to not have any flipped members
@@ -112,7 +113,7 @@ In summary, a member is aligned or flipped w.r.t. another member of the hardware
 
 ## Input/Output
 
-`Input(gen)`/`Output(gen)` are coercing operators. They perform two functions: (1) create a new Chisel type that has all flips removed from all recursive children members but structurally equivalent to `gen`, and (2) apply `Flipped` if `Input`, keep aligned (do nothing) if `Output`. E.g. if we imagine a function called `cloneChiselTypeButStripAllFlips`, then `Input(gen)` is equivalent to `Flipped(cloneChiselTypeButStripAllFlips(gen))`.
+`Input(gen)`/`Output(gen)` are coercing operators. They perform two functions: (1) create a new Chisel type that has all flips removed from all recursive children members (still structurally equivalent to `gen` but no longer alignment type equivalent), and (2) apply `Flipped` if `Input`, keep aligned (do nothing) if `Output`. E.g. if we imagine a function called `cloneChiselTypeButStripAllFlips`, then `Input(gen)` is structurally and alignment type equivalent to `Flipped(cloneChiselTypeButStripAllFlips(gen))`.
 
 Note that if `gen` is a non-aggregate, then `Input(nonAggregateGen)` is equivalent to `Flipped(nonAggregateGen)`.
 
@@ -166,8 +167,8 @@ Consider the following alignments between grandparent and grandchildren. Because
 
 Consider the following alignment relationships starting from `g.alignedCoerced` and `g.flippedCoerced`. *Note that whether `g.alignedCoerced` is aligned/flipped relative to `g` has no effect on the aligned/flipped relationship between `g.alignedCoerced` and `g.alignedCoerced.alignedChild` or `g.alignedCoerced.flippedChild` because alignment is only relative to the two members in question! However, because alignment is coerced, everything is aligned between `g.alignedCoerced`/`g.flippedAligned` and their children*:
  - `g.alignedCoerced` is aligned w.r.t. `g.alignedCoerced.alignedChild`
- - `g.flippedCoerced` is aligned w.r.t. `g.alignedCoerced.flippedChild`
- - `g.alignedCoerced` is aligned w.r.t. `g.flippedCoerced.alignedChild`
+ - `g.alignedCoerced` is aligned w.r.t. `g.alignedCoerced.flippedChild`
+ - `g.flippedCoerced` is aligned w.r.t. `g.flippedCoerced.alignedChild`
  - `g.flippedCoerced` is aligned w.r.t. `g.flippedCoerced.flippedChild`
 
 In summary, `Input(gen)` and `Output(gen)` recursively coerce children alignment, as well as dictate `gen`'s alignment to its parent bundle (if it exists).
@@ -253,7 +254,7 @@ While `incoming.flippedChild`'s alignment with `incoming` does not affect our op
 A common source of confusion is to mistake the process for determining whether `incoming.flippedChild` will resolve to a verilog `output`/`input` (the port-direction computation) with the process for determining how `:<>=` drives what with what (the connection-direction computation).
 While both processes consider relative alignment, they are distinct.
 
-The port-direction computation always computes alignment relative to the component marked with `IO`. An `IO(Flipped(gen))` is an input port, and any member of `gen` that is aligned/flipped with `gen` is an input/output port. An `IO(gen)` is an output port, and any member of `gen` that is aligned/flipped with `gen` is an output/input port.
+The port-direction computation always computes alignment relative to the component marked with `IO`. An `IO(Flipped(gen))` is an incoming port, and any member of `gen` that is aligned/flipped with `gen` is an incoming/outgoing port. An `IO(gen)` is an outgoing port, and any member of `gen` that is aligned/flipped with `gen` is an outgoing/incoming port.
 
 The connection-direction computation always computes alignment based on the explicit consumer/producer referenced for the connection. If one connects `incoming :<>= outgoing`, alignments are computed based on `incoming` and `outgoing`. If one connects `incoming.alignedChild :<>= outgoing.alignedChild`, then alignments are computed based on `incoming.alignedChild` and `outgoing.alignedChild` (and the alignment of `incoming` to `incoming.alignedChild` is irrelevant).
 
@@ -370,7 +371,7 @@ class MyDecoupled extends MyReadyValid {
 class Example5 extends RawModule {
   val in  = IO(Flipped(new MyDecoupled()))
   val out = IO(new MyReadyValid())
-  out :<>= in.waive(_.bits)
+  out :<>= in.waiveAs[MyReadyValid](_.bits)
 }
 ```
 
@@ -465,7 +466,7 @@ class Example8 extends RawModule {
 }
 ```
 
-This generates the following Verilog, where the `b` member is driven from `c` to `p`, and `a` and `c` members are initialized to default values:
+This generates the following Verilog, where `p.b` is driven from `c.b`, and `p.a`, `c.b`, and `c.c` are initialized to default values:
 
 ```scala mdoc:verilog
 import chisel3.stage.ChiselStage
