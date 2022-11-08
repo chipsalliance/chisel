@@ -176,105 +176,6 @@ private[chisel3] object MonoConnect {
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
     }
 
-<<<<<<< HEAD
-=======
-  /** Determine if a valid connection can be made between a source [[Aggregate]] and sink
-    * [[Aggregate]] given their parent module and directionality context
-    *
-    * @return whether the source and sink exist in an appropriate context to be connected
-    */
-  private[chisel3] def aggregateConnectContextCheck(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions,
-    sink:                  Aggregate,
-    source:                Aggregate,
-    context_mod:           RawModule
-  ): Boolean = {
-    import ActualDirection.{Bidirectional, Input, Output}
-    // If source has no location, assume in context module
-    // This can occur if is a literal, unbound will error previously
-    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
-    val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
-
-    val sink_parent = Builder.retrieveParent(sink_mod, context_mod).getOrElse(None)
-    val source_parent = Builder.retrieveParent(source_mod, context_mod).getOrElse(None)
-
-    val sink_is_port = sink.topBinding match {
-      case PortBinding(_) => true
-      case _              => false
-    }
-    val source_is_port = source.topBinding match {
-      case PortBinding(_) => true
-      case _              => false
-    }
-
-    if (!checkWhenVisibility(sink)) {
-      throw SinkEscapedWhenScopeException(sink)
-    }
-
-    if (!checkWhenVisibility(source)) {
-      throw SourceEscapedWhenScopeException(source)
-    }
-
-    // CASE: Context is same module that both sink node and source node are in
-    if ((context_mod == sink_mod) && (context_mod == source_mod)) {
-      sink.direction != Input
-    }
-
-    // CASE: Context is same module as sink node and source node is in a child module
-    else if ((sink_mod == context_mod) && (source_parent == context_mod)) {
-      // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
-      // See: https://github.com/freechipsproject/firrtl/issues/1703
-      // Original behavior should just check if the sink direction is an Input
-      val sinkCanBeInput = sink.direction match {
-        case Input            => true
-        case Bidirectional(_) => true
-        case _                => false
-      }
-      // Thus, right node better be a port node and thus have a direction
-      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
-      else if (sinkCanBeInput) {
-        if (source.direction == Output) {
-          !connectCompileOptions.dontTryConnectionsSwapped
-        } else { false }
-      } else { true }
-    }
-
-    // CASE: Context is same module as source node and sink node is in child module
-    else if ((source_mod == context_mod) && (sink_parent == context_mod)) {
-      // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
-      // See: https://github.com/freechipsproject/firrtl/issues/1703
-      // Original behavior should just check if the sink direction is an Input
-      sink.direction match {
-        case Input            => true
-        case Bidirectional(_) => true
-        case _                => false
-      }
-    }
-
-    // CASE: Context is the parent module of both the module containing sink node
-    //                                        and the module containing source node
-    //   Note: This includes case when sink and source in same module but in parent
-    else if ((sink_parent == context_mod) && (source_parent == context_mod)) {
-      // Thus both nodes must be ports and have a direction
-      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
-      else if (sink_is_port) {
-        // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
-        // See: https://github.com/freechipsproject/firrtl/issues/1703
-        // Original behavior should just check if the sink direction is an Input
-        sink.direction match {
-          case Input            => true
-          case Bidirectional(_) => true // NOTE: Workaround for non-agnostified ports
-          case _                => false
-        }
-      } else { false }
-    }
-
-    // Not quite sure where left and right are compared to current module
-    // so just error out
-    else false
-  }
-
   /** Trace flow from child Data to its parent.
     *
     * Returns true if, given the context,
@@ -305,31 +206,6 @@ private[chisel3] object MonoConnect {
   def canBeSink(data:   Data, context_mod: RawModule): Boolean = traceFlow(true, false, data, context_mod)
   def canBeSource(data: Data, context_mod: RawModule): Boolean = traceFlow(false, false, data, context_mod)
 
-  /** Check whether two aggregates can be bulk connected (<=) in FIRRTL. (MonoConnect case)
-    *
-    * Mono-directional bulk connects only work if all signals of the sink are unidirectional
-    * In the case of a sink aggregate with bidirectional signals, e.g. `Decoupled`,
-    * a `BiConnect` is necessary.
-    */
-  private[chisel3] def canBulkConnectAggregates(
-    sink:                  Aggregate,
-    source:                Aggregate,
-    sourceInfo:            SourceInfo,
-    connectCompileOptions: CompileOptions,
-    context_mod:           RawModule
-  ): Boolean = {
-    // Assuming we're using a <>, check if a bulk connect is valid in that case
-    def biConnectCheck =
-      BiConnect.canBulkConnectAggregates(sink, source, sourceInfo, connectCompileOptions, context_mod)
-
-    // Check that the Aggregate can be driven (not bidirectional or an input) to match Chisel semantics
-    def sinkCanBeDrivenCheck: Boolean =
-      sink.direction == ActualDirection.Output || sink.direction == ActualDirection.Unspecified
-
-    biConnectCheck && sinkCanBeDrivenCheck
-  }
-
->>>>>>> 3aba755b (Fix for <> to BlackBox.IO with Compatibility Bundles (#2801))
   // This function (finally) issues the connection operation
   private def issueConnect(sink: Element, source: Element)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
