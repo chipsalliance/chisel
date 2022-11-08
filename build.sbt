@@ -193,6 +193,8 @@ lazy val core = (project in file("core")).
   settings(
     mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.4"),
     mimaBinaryIssueFilters ++= Seq(
+      // This is not a problem because the relevant method is implemented (and final) in Vec and Record
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.Aggregate.elementsIterator"),
       // Modified package private methods (https://github.com/lightbend/mima/issues/53)
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data._computeName"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data.forceName"),
