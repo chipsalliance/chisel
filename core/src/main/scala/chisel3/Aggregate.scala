@@ -294,7 +294,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
     *
     * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
-    *  - Complicated semantics, hard to write quickly, will likely be deprecated in the future
+    *  - See docs/src/explanations/connection-operators.md for details
     *
     * For Chisel._, emits the FIRRTL.<- operator
     *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match

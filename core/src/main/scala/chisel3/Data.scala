@@ -12,7 +12,6 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
-
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -533,10 +532,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       }
     }
     if(connectCompileOptions.migrateConnections) {
-      getRecursiveFields(this, "").collect { case (d, _) if d.direction != this.direction => 
+      getRecursiveFields.noPath(this).collect { case d if d.direction != this.direction => 
         Builder.error(s"$this cannot be used with := because submember $d has inverse orientation; use :#= instead")
       }
-      getRecursiveFields(that, "").collect { case (d, _) if d.direction != that.direction =>
+      getRecursiveFields.noPath(that).collect { case d if d.direction != that.direction =>
         Builder.error(s"$that cannot be used with := because submember $d has inverse orientation; use :#= instead")
       }
     }
@@ -705,7 +704,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     *  - Equivalent to `this :#= that`
     *
     * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
-    *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
+    *  - Equivalent to `this :<>= that`
     *
     * @param that the Data to connect from
     * @group connection
@@ -827,12 +826,17 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 object Data {
 
   // Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data
-  implicit class ConnectableDefaultData[T <: Data](consumer: T) extends Connectable.ConnectableData[T](consumer)
+  implicit class ConnectableDataDefault[T <: Data](consumer: T) extends connectable.ConnectableData[T](consumer)
 
   // Provides :<>=, :<=, :>=, and :#= between a (consumer: Vec) and (producer: Seq)
-  implicit class ConnectableDefaultVec[T <: Data](consumer: Vec[T]) extends Connectable.ConnectableVec[T](consumer)
+  implicit class ConnectableVecDefault[T <: Data](consumer: Vec[T]) extends connectable.ConnectableVec[T](consumer)
 
-  implicit class WaivableDefaultData[T <: Data](d: T) extends experimental.WaivedData.WaivableData[T](d)
+  // Can implicitly convert a Data to a WaivedData
+  // Originally this was done with an implicit class, but all functions we want to
+  //  add to Data we also want on WaivedData, so an implicit conversion makes the most sense
+  //  so the ScalaDoc can be shared.
+  import scala.language.implicitConversions
+  implicit def toWaivedDataDefault[T <: Data](d: T): WaivedData[T] = WaivedData.apply(d)
 
   implicit val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
 
@@ -1056,7 +1060,7 @@ object WireDefault {
   ): T = {
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
-    x.asInstanceOf[Data] :#= init
+    x := init
     x
   }
 

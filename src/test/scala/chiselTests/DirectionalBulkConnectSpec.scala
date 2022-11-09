@@ -5,13 +5,12 @@ package chiselTests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.{Analog, FixedPoint, WaivedData}
+import chisel3.experimental.{Analog, FixedPoint}
 import chisel3.experimental.BundleLiterals._
-import chisel3.experimental.WaivedData._
 import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
-import chisel3.experimental.DataMirror
+import chisel3.experimental.{DataMirror, AutoCloneType}
 import scala.collection.immutable.SeqMap
 
 object DirectionalBulkConnectSpec {
@@ -1044,15 +1043,12 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val ready = Flipped(Bool())
       val data = if(hasData) Some(UInt(32.W)) else None
     }
-    class BundleMap(fields: SeqMap[String, () => Data]) extends Record {
+    class BundleMap(fields: SeqMap[String, () => Data]) extends Record with AutoCloneType {
       val elements = fields.map { case (name, gen) => name -> gen()}
-      override def cloneType = new BundleMap(fields).asInstanceOf[this.type]
     }
     object BundleMap {
-      import Connectable._
       def waive[T <: Data](d: T): WaivedData[T] = {
         val bundleMapElements = DataMirror.collectDeep(d) { case b: BundleMap => b.getElements }
-        println(bundleMapElements)
         WaivedData(d, bundleMapElements.flatten.toSet)
       }
     }

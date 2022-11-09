@@ -351,6 +351,10 @@ package object chisel3 {
     }
   }
 
+  type WaivedData[T <: Data] = connectable.WaivedData[T]
+
+  val WaivedData = connectable.WaivedData
+
   implicit def string2Printable(str: String): Printable = PString(str)
 
   type ChiselException = internal.ChiselException
