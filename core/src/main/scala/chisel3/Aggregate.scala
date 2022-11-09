@@ -23,8 +23,6 @@ class AliasedAggregateFieldException(message: String) extends ChiselException(me
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-<<<<<<< HEAD
-=======
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     _parent.foreach(_.addId(this))
     binding = target
@@ -73,7 +71,6 @@ sealed abstract class Aggregate extends Data {
         }
     }
   }
->>>>>>> 1aea4ef9 (Unify Chisel2 and chisel3 directionality (#2634))
 
   /** Return an Aggregate's literal value if it is a literal, None otherwise.
     * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
@@ -995,46 +992,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-<<<<<<< HEAD
-    try {
-      _parent.foreach(_.addId(this))
-      binding = target
-
-      val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-
-      checkForAndReportDuplicates()
-
-      for ((child, sameChild) <- this.elementsIterator.zip(this.elementsIterator)) {
-        if (child != sameChild) {
-          throwException(
-            s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
-          )
-        }
-        child.bind(ChildBinding(this), resolvedDirection)
-      }
-
-      // Check that children obey the directionality rules.
-      val childDirections = elementsIterator.map(_.direction).toSet - ActualDirection.Empty
-      direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
-        case Some(dir) => dir
-        case None =>
-          val childWithDirections = getElements.zip(getElements.map(_.direction))
-          throw MixedDirectionAggregateException(
-            s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections"
-          )
-      }
-    } catch { // nasty compatibility mode shim, where anything flies
-      case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
-        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-        direction = resolvedDirection match {
-          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
-        }
-    }
-=======
     super.bind(target, parentDirection)
->>>>>>> 1aea4ef9 (Unify Chisel2 and chisel3 directionality (#2634))
     setElementRefs()
   }
 

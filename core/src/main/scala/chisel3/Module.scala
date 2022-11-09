@@ -707,16 +707,9 @@ package experimental {
               case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
                 data match {
                   case record: Record =>
-<<<<<<< HEAD
-                    val compatRecord = !record.compileOptions.dontAssumeDirectionality
-                    record.elementsIterator.foreach(assignCompatDir(_, compatRecord))
+                    record.elementsIterator.foreach(assignCompatDir(_))
                   case vec: Vec[_] =>
-                    vec.elementsIterator.foreach(assignCompatDir(_, insideCompat))
-=======
-                    record.getElements.foreach(assignCompatDir(_))
-                  case vec: Vec[_] =>
-                    vec.getElements.foreach(assignCompatDir(_))
->>>>>>> 1aea4ef9 (Unify Chisel2 and chisel3 directionality (#2634))
+                    vec.elementsIterator.foreach(assignCompatDir(_))
                 }
               case SpecifiedDirection.Input | SpecifiedDirection.Output =>
               // forced assign, nothing to do
