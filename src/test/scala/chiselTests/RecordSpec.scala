@@ -243,8 +243,8 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     val chirrtl = (new ChiselStage).emitChirrtl(
       gen = new ConnectionTestModule(fooBarType, fooBarType)
     )
-    chirrtl should include("io.outMono <= io.inMono @[RecordSpec.scala")
-    chirrtl should include("io.outBi <= io.inBi @[RecordSpec.scala")
+    chirrtl should include("io.outMono <= io.inMono @[src/test/scala/chiselTests/RecordSpec.scala")
+    chirrtl should include("io.outBi <= io.inBi @[src/test/scala/chiselTests/RecordSpec.scala")
   }
 
   they should "not allow aliased fields" in {

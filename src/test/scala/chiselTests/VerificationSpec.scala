@@ -54,13 +54,13 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     val lines = fir.split("\n").map(_.trim)
 
     // reset guard around the verification statement
-    assertContains(lines, "when _T_2 : @[VerificationSpec.scala")
+    assertContains(lines, "when _T_2 : @[src/test/scala/chiselTests/VerificationSpec.scala")
     assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\")")
 
-    assertContains(lines, "when _T_6 : @[VerificationSpec.scala")
+    assertContains(lines, "when _T_6 : @[src/test/scala/chiselTests/VerificationSpec.scala")
     assertContains(lines, "assume(clock, _T_4, UInt<1>(\"h1\"), \"\")")
 
-    assertContains(lines, "when _T_10 : @[VerificationSpec.scala")
+    assertContains(lines, "when _T_10 : @[src/test/scala/chiselTests/VerificationSpec.scala")
     assertContains(lines, "assert(clock, _T_8, UInt<1>(\"h1\"), \"\")")
   }
 

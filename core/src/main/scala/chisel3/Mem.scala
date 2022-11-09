@@ -62,7 +62,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
 
   protected def clockWarning(sourceInfo: Option[SourceInfo], dir: MemPortDirection): Unit = {
     // Turn into pretty String if possible, if not, Builder.deprecated will find one via stack trace
-    val infoStr = sourceInfo.collect { case SourceLine(file, line, col) => s"$file:$line:$col" }
+    val infoStr = sourceInfo.collect { case s => s.makeMessage(x => x) }
     Builder.deprecated(
       "The clock used to initialize the memory is different than the one used to initialize the port. " +
         "If this is intentional, please pass the clock explicitly when creating the port. This behavior will be an error in 3.6.0",

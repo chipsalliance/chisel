@@ -30,7 +30,7 @@ class WireSpec extends ChiselFlatSpec {
     }
 
     val chirrtl = ChiselStage.emitChirrtl(new Dummy)
-    chirrtl should include("wire wire : UInt<1> @[WireSpec.scala")
-    chirrtl should include("wire wire2 : UInt<1> @[WireSpec.scala")
+    chirrtl should include("wire wire : UInt<1> @[src/test/scala/chiselTests/WireSpec.scala")
+    chirrtl should include("wire wire2 : UInt<1> @[src/test/scala/chiselTests/WireSpec.scala")
   }
 }
