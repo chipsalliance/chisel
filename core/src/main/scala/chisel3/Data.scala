@@ -147,13 +147,6 @@ object ActualDirection {
   }
 }
 
-//package object experimental {
-//  import chisel3.internal.requireIsHardware // Fix ambiguous import
-//
-//  /** Experimental hardware construction reflection API
-//    */
-//}
-
 /** Creates a clone of the super-type of the input elements. Super-type is defined as:
   * - for Bits type of the same class: the cloned type of the largest width
   * - Bools are treated as UInts
@@ -579,7 +572,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
-      if(connectCompileOptions.migrateConnections) Builder.error(s"Cannot use <> to connect Chisel bundles; use :<>= instead")
+      if(connectCompileOptions.migrateConnections) Builder.error(s"Cannot use <> in an `import Chisel._` file; use :<>= instead")
       this.firrtlPartialConnect(that)
     }
   }

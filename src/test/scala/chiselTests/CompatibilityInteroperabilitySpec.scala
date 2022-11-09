@@ -353,11 +353,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "A unidirectional but flipped Bundle with something close to NotStrict compileOptions, but not exactly" should "bulk connect in import chisel3._ code correctly" in {
-    def checkException(thunk: => Unit): Unit = {
-      val e = intercept[Exception] { thunk }
-      println(e.getMessage)
-      e.getMessage() should include ("Cannot use <>")
-    }
     object Compat {
       import Chisel.{defaultCompileOptions => _, _}
       // arbitrary thing to make this *not* exactly NotStrict
@@ -392,22 +387,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       port.foo <> wire.foo
       wire.foo <> port.foo
     }
-    class CorrectedTop(extraFlip: Boolean) extends RawModule {
-      val port = IO(new MyBundle(extraFlip))
-      val wire = Wire(new MyBundle(extraFlip))
-      port :#= DontCare
-      wire :#= DontCare
-      port :<>= wire
-      if(extraFlip) {
-        port.foo :<>= wire.foo
-      } else {
-        wire.foo :<>= port.foo
-      }
-    }
-    val e = intercept[Exception] { stage.ChiselStage.emitChirrtl(new Top(true), false, true) }
-    println(e)
-    //checkException(stage.ChiselStage.emitChirrtl(new Top(false), false, true))
-    //compile(new CorrectedTop(true))
-    //compile(new CorrectedTop(false))
+    compile(new Top(true))
+    compile(new Top(false))
   }
 }
