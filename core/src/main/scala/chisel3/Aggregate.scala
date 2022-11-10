@@ -8,7 +8,7 @@ import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewExcept
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, VecLiteralException}
+import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, OpaqueType, VecLiteralException}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
@@ -881,23 +881,15 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
-  /** Indicates if this Record represents an "Opaque Type"
-    *
-    * Opaque types provide a mechanism for user-defined types
-    * that do not impose any "boxing" overhead in the emitted FIRRTL and Verilog.
-    * You can think about an opaque type Record as a box around
-    * a single element that only exists at Chisel elaboration time.
-    * Put another way, if opaqueType is overridden to true,
-    * The Record may only contain a single element with an empty name
-    * and there will be no `_` in the name for that element in the emitted Verilog.
-    *
-    * @see RecordSpec in Chisel's tests for example usage and expected output
-    */
-  def opaqueType: Boolean = false
+  private[chisel3] def _isOpaqueType: Boolean = this match {
+    case maybe: OpaqueType => maybe.opaqueType
+    case _ => false
+  }
 
   // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
   // of hardware created when connecting to one of these elements
   private def setElementRefs(): Unit = {
+    val opaqueType = this._isOpaqueType
     // Since elements is a map, it is impossible for two elements to have the same
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
@@ -944,37 +936,29 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    try {
-      _parent.foreach(_.addId(this))
-      binding = target
+    _parent.foreach(_.addId(this))
+    binding = target
 
-      val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
 
-      checkForAndReportDuplicates()
+    checkForAndReportDuplicates()
 
-      for ((child, sameChild) <- this.elementsIterator.zip(this.elementsIterator)) {
-        if (child != sameChild) {
-          throwException(
-            s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
-          )
-        }
-        child.bind(ChildBinding(this), resolvedDirection)
+    for ((child, sameChild) <- this.elementsIterator.zip(this.elementsIterator)) {
+      if (child != sameChild) {
+        throwException(
+          s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
+        )
       }
+      child.bind(ChildBinding(this), resolvedDirection)
+    }
 
-      // Check that children obey the directionality rules.
-      val childDirections = elementsIterator.map(_.direction).toSet - ActualDirection.Empty
-      direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
-        case Some(dir) => dir
-        case None =>
-          val childWithDirections = getElements.zip(getElements.map(_.direction))
-          throw MixedDirectionAggregateException(
-            s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections"
-          )
-      }
-    } catch { // nasty compatibility mode shim, where anything flies
-      case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
+    // Check that children obey the directionality rules.
+    val childDirections = elementsIterator.map(_.direction).toSet - ActualDirection.Empty
+    direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
+      case Some(dir) => dir
+      case None =>
         val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-        direction = resolvedDirection match {
+        resolvedDirection match {
           case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
           case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
           case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
