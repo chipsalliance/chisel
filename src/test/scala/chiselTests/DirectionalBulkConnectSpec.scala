@@ -10,11 +10,18 @@ import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
-import chisel3.experimental.{DataMirror, AutoCloneType}
+import chisel3.experimental.{AutoCloneType, DataMirror}
 import scala.collection.immutable.SeqMap
 
 object DirectionalBulkConnectSpec {
-  class ConnectionTest[T <: Data, S <: Data](outType: S, inType: T, inDrivesOut: Boolean, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit], nTmps: Int) extends Module {
+  class ConnectionTest[T <: Data, S <: Data](
+    outType:     S,
+    inType:      T,
+    inDrivesOut: Boolean,
+    op:          (Data, Data) => Unit,
+    monitorOp:   Option[(Data, Data) => Unit],
+    nTmps:       Int)
+      extends Module {
     val io = IO(new Bundle {
       val in = Flipped(inType)
       val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
@@ -25,7 +32,7 @@ object DirectionalBulkConnectSpec {
     monitorOp.map(mop => {
       mop(io.monitor.get, io.in)
     })
-  
+
     val wiresIn = Seq.fill(nTmps)(Wire(inType))
     val wiresOut = Seq.fill(nTmps)(Wire(outType))
     (Seq(io.out) ++ wiresOut ++ wiresIn).zip(wiresOut ++ wiresIn :+ io.in).foreach {
@@ -33,7 +40,7 @@ object DirectionalBulkConnectSpec {
     }
   }
 
-  def vec[T <: Data](tpe: T, n: Int = 3)(implicit c: CompileOptions) = Vec(n, tpe)
+  def vec[T <: Data](tpe:                 T, n:          Int = 3)(implicit c: CompileOptions) = Vec(n, tpe)
   def alignedBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(Flipped(fieldType))
@@ -79,9 +86,7 @@ object DirectionalBulkConnectSpec {
     }
   }
   def allVecs(element: () => Data): Seq[() => Data] = {
-    mixedFieldModifiers(element).flatMap( x => 
-      Seq(() => Vec(1, x()))
-    )
+    mixedFieldModifiers(element).flatMap(x => Seq(() => Vec(1, x())))
   }
   // 2353 types, takes a few seconds to run all of them, but it's worth it
   def allTypes(): Seq[() => Data] = {
@@ -108,7 +113,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
   import DirectionalBulkConnectSpec._
 
   def testCheck(firrtl: String, matches: Seq[String], nonMatches: Seq[String]): String = {
-    val unmatched = matches.collect { 
+    val unmatched = matches.collect {
       case m if !firrtl.contains(m) => m
     }.toList
     val badMatches = nonMatches.collect {
@@ -118,10 +123,27 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     assert(badMatches.isEmpty, s"Matched in output when shouldn't:\n$firrtl")
     firrtl
   }
-  def testBuild[T <: Data, S <: Data](outType: S, inType: T)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit]): String = {
+  def testBuild[T <: Data, S <: Data](
+    outType: S,
+    inType:  T
+  )(
+    implicit inDrivesOut: Boolean,
+    nTmps:                Int,
+    op:                   (Data, Data) => Unit,
+    monitorOp:            Option[(Data, Data) => Unit]
+  ): String = {
     ChiselStage.emitChirrtl({ new ConnectionTest(outType, inType, inDrivesOut, op, monitorOp, nTmps) }, true, true)
   }
-  def testException[T <: Data, S <: Data](outType: S, inType: T, messageMatches: String*)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit]): String = {
+  def testException[T <: Data, S <: Data](
+    outType:        S,
+    inType:         T,
+    messageMatches: String*
+  )(
+    implicit inDrivesOut: Boolean,
+    nTmps:                Int,
+    op:                   (Data, Data) => Unit,
+    monitorOp:            Option[(Data, Data) => Unit]
+  ): String = {
     val x = intercept[ChiselException] {
       testBuild(outType, inType)
     }
@@ -131,13 +153,31 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     message
   }
-  def testDistinctTypes(tpeOut: Data, tpeIn: Data, matches: Seq[String] = Seq("io.out <= io.in"), nonMatches: Seq[String] = Nil)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit]): String = testCheck(testBuild(tpeOut, tpeIn), matches, nonMatches)
-  def test(tpeIn: Data, matches: Seq[String] = Seq("io.out <= io.in"), nonMatches: Seq[String] = Nil)(implicit inDrivesOut: Boolean, nTmps: Int, op: (Data, Data) => Unit, monitorOp: Option[(Data, Data) => Unit]): String = testDistinctTypes(tpeIn, tpeIn, matches, nonMatches)
-
+  def testDistinctTypes(
+    tpeOut:     Data,
+    tpeIn:      Data,
+    matches:    Seq[String] = Seq("io.out <= io.in"),
+    nonMatches: Seq[String] = Nil
+  )(
+    implicit inDrivesOut: Boolean,
+    nTmps:                Int,
+    op:                   (Data, Data) => Unit,
+    monitorOp:            Option[(Data, Data) => Unit]
+  ): String = testCheck(testBuild(tpeOut, tpeIn), matches, nonMatches)
+  def test(
+    tpeIn:      Data,
+    matches:    Seq[String] = Seq("io.out <= io.in"),
+    nonMatches: Seq[String] = Nil
+  )(
+    implicit inDrivesOut: Boolean,
+    nTmps:                Int,
+    op:                   (Data, Data) => Unit,
+    monitorOp:            Option[(Data, Data) => Unit]
+  ): String = testDistinctTypes(tpeIn, tpeIn, matches, nonMatches)
 
   // (D)irectional Bulk Connect tests
   describe("(0): :<>=") {
-    implicit val op: (Data, Data) => Unit = {_ :<>= _}
+    implicit val op: (Data, Data) => Unit = { _ :<>= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
     implicit val nTmps = 0
@@ -224,9 +264,9 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       testException(flippedBarBundle(Bool()), mixedBundle(Bool()), "dangling producer field")
 
       // Vec sizes don't match
-      testException(vec(alignedFooBundle(Bool())),    vec(alignedFooBundle(Bool()), 4), "dangling producer field")
+      testException(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), "dangling producer field")
       testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
-      testException(vec(flippedBarBundle(Bool())),    vec(flippedBarBundle(Bool()), 4), "dangling producer field")
+      testException(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), "dangling producer field")
       testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unassigned consumer field")
 
       // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
@@ -249,8 +289,10 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       //  Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
       //)
     }
-    it("(0.k): When connecting FROM DontCare, emit for aligned aggregate fields and error for flipped aggregate fields") {
-      implicit val op: (Data, Data) => Unit = {(x, y) => x :<>= DontCare}
+    it(
+      "(0.k): When connecting FROM DontCare, emit for aligned aggregate fields and error for flipped aggregate fields"
+    ) {
+      implicit val op: (Data, Data) => Unit = { (x, y) => x :<>= DontCare }
       test(UInt(3.W), Seq("io.out is invalid"))
       test(SInt(3.W), Seq("io.out is invalid"))
       test(Clock(), Seq("io.out is invalid"))
@@ -265,7 +307,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     // TODO Write test that demonstrates multiple evaluation of producer: => T
   }
   describe("(1): :<= ") {
-    implicit val op: (Data, Data) => Unit = {_ :<= _}
+    implicit val op: (Data, Data) => Unit = { _ :<= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
     implicit val nTmps = 0
@@ -282,7 +324,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val vecMatches = Seq(
         "io.out[0] <= io.in[0]",
         "io.out[1] <= io.in[1]",
-        "io.out[2] <= io.in[2]",
+        "io.out[2] <= io.in[2]"
       )
       test(vec(Bool()), vecMatches)
       test(vec(UInt(16.W)), vecMatches)
@@ -291,7 +333,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
 
       val bundleMatches = Seq(
         "io.out.bar <= io.in.bar",
-        "io.out.foo <= io.in.foo",
+        "io.out.foo <= io.in.foo"
       )
       test(alignedBundle(Bool()), bundleMatches)
       test(alignedBundle(UInt(16.W)), bundleMatches)
@@ -308,7 +350,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.out[1][2] <= io.in[1][2]",
         "io.out[2][0] <= io.in[2][0]",
         "io.out[2][1] <= io.in[2][1]",
-        "io.out[2][2] <= io.in[2][2]",
+        "io.out[2][2] <= io.in[2][2]"
       )
       test(vec(vec(Bool())), vecVecMatches)
       test(vec(vec(UInt(16.W))), vecVecMatches)
@@ -321,7 +363,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.out[1].bar <= io.in[1].bar",
         "io.out[1].foo <= io.in[1].foo",
         "io.out[2].bar <= io.in[2].bar",
-        "io.out[2].foo <= io.in[2].foo",
+        "io.out[2].foo <= io.in[2].foo"
       )
       test(vec(alignedBundle(Bool())), vecBundleMatches)
       test(vec(alignedBundle(UInt(16.W))), vecBundleMatches)
@@ -334,7 +376,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.out.bar[2] <= io.in.bar[2]",
         "io.out.foo[0] <= io.in.foo[0]",
         "io.out.foo[1] <= io.in.foo[1]",
-        "io.out.foo[2] <= io.in.foo[2]",
+        "io.out.foo[2] <= io.in.foo[2]"
       )
       test(alignedBundle(vec(Bool())), bundleVecMatches)
       test(alignedBundle(vec(UInt(16.W))), bundleVecMatches)
@@ -345,7 +387,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.out.bar.bar <= io.in.bar.bar",
         "io.out.bar.foo <= io.in.bar.foo",
         "io.out.foo.bar <= io.in.foo.bar",
-        "io.out.foo.foo <= io.in.foo.foo",
+        "io.out.foo.foo <= io.in.foo.foo"
       )
       test(alignedBundle(alignedBundle(Bool())), bundleBundleMatches)
       test(alignedBundle(alignedBundle(UInt(16.W))), bundleBundleMatches)
@@ -364,12 +406,12 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val vecBundleMatches = Seq(
         "io.out[0].foo <= io.in[0].foo",
         "io.out[1].foo <= io.in[1].foo",
-        "io.out[2].foo <= io.in[2].foo",
+        "io.out[2].foo <= io.in[2].foo"
       )
       val nonVecBundleMatches = Seq(
         "io.in[0].bar <= io.out[0].bar",
         "io.in[1].bar <= io.out[1].bar",
-        "io.in[2].bar <= io.out[2].bar",
+        "io.in[2].bar <= io.out[2].bar"
       )
       test(vec(mixedBundle(Bool())), vecBundleMatches, nonVecBundleMatches)
       test(vec(mixedBundle(UInt(16.W))), vecBundleMatches, nonVecBundleMatches)
@@ -379,12 +421,12 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val bundleVecMatches = Seq(
         "io.out.foo[0] <= io.in.foo[0]",
         "io.out.foo[1] <= io.in.foo[1]",
-        "io.out.foo[2] <= io.in.foo[2]",
+        "io.out.foo[2] <= io.in.foo[2]"
       )
       val nonBundleVecMatches = Seq(
         "io.in.bar[0] <= io.out.bar[0]",
         "io.in.bar[1] <= io.out.bar[1]",
-        "io.in.bar[2] <= io.out.bar[2]",
+        "io.in.bar[2] <= io.out.bar[2]"
       )
       test(mixedBundle(vec(Bool())), bundleVecMatches, nonBundleVecMatches)
       test(mixedBundle(vec(UInt(16.W))), bundleVecMatches, nonBundleVecMatches)
@@ -393,11 +435,11 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
 
       val bundleBundleMatches = Seq(
         "io.out.bar.bar <= io.in.bar.bar",
-        "io.out.foo.foo <= io.in.foo.foo",
+        "io.out.foo.foo <= io.in.foo.foo"
       )
       val nonBundleBundleMatches = Seq(
         "io.in.bar.foo <= io.out.bar.foo",
-        "io.in.foo.bar <= io.out.foo.bar",
+        "io.in.foo.bar <= io.out.foo.bar"
       )
       test(mixedBundle(mixedBundle(Bool())), bundleBundleMatches, nonBundleBundleMatches)
       test(mixedBundle(mixedBundle(UInt(16.W))), bundleBundleMatches, nonBundleBundleMatches)
@@ -414,7 +456,9 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(Analog(3.W)), Seq("attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar"))
       test(vec(Analog(3.W), 2), Seq("attach (io.out[0], io.in[0])", "attach (io.out[1], io.in[1]"))
     }
-    it("(1.h): Error on unassigned subfield/subindex from either side, but do not throw exception for dangling fields") {
+    it(
+      "(1.h): Error on unassigned subfield/subindex from either side, but do not throw exception for dangling fields"
+    ) {
       // Missing flip bar
       testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "unmatched consumer field")
       testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unmatched producer field")
@@ -449,8 +493,10 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       //  Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
       //)
     }
-    it("(1.k): When connecting FROM DontCare, emit for aligned aggregate fields and skip for flipped aggregate fields") {
-      implicit val op: (Data, Data) => Unit = {(x, y) => x :<= DontCare}
+    it(
+      "(1.k): When connecting FROM DontCare, emit for aligned aggregate fields and skip for flipped aggregate fields"
+    ) {
+      implicit val op: (Data, Data) => Unit = { (x, y) => x :<= DontCare }
       test(UInt(3.W), Seq("io.out is invalid"))
       test(SInt(3.W), Seq("io.out is invalid"))
       test(Clock(), Seq("io.out is invalid"))
@@ -464,7 +510,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(2): :>= ") {
-    implicit val op: (Data, Data) => Unit = {_ :>= _}
+    implicit val op: (Data, Data) => Unit = { _ :>= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
     implicit val nTmps = 0
@@ -525,12 +571,12 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val vecBundleMatches = Seq(
         "io.in[0].bar <= io.out[0].bar",
         "io.in[1].bar <= io.out[1].bar",
-        "io.in[2].bar <= io.out[2].bar",
+        "io.in[2].bar <= io.out[2].bar"
       )
       val nonVecBundleMatches = Seq(
         "io.out[0].foo <= io.in[0].foo",
         "io.out[1].foo <= io.in[1].foo",
-        "io.out[2].foo <= io.in[2].foo",
+        "io.out[2].foo <= io.in[2].foo"
       )
       test(vec(mixedBundle(Bool())), vecBundleMatches, nonVecBundleMatches)
       test(vec(mixedBundle(UInt(16.W))), vecBundleMatches, nonVecBundleMatches)
@@ -540,12 +586,12 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val bundleVecMatches = Seq(
         "io.in.bar[0] <= io.out.bar[0]",
         "io.in.bar[1] <= io.out.bar[1]",
-        "io.in.bar[2] <= io.out.bar[2]",
+        "io.in.bar[2] <= io.out.bar[2]"
       )
       val nonBundleVecMatches = Seq(
         "io.out.foo[0] <= io.in.foo[0]",
         "io.out.foo[1] <= io.in.foo[1]",
-        "io.out.foo[2] <= io.in.foo[2]",
+        "io.out.foo[2] <= io.in.foo[2]"
       )
       test(mixedBundle(vec(Bool())), bundleVecMatches, nonBundleVecMatches)
       test(mixedBundle(vec(UInt(16.W))), bundleVecMatches, nonBundleVecMatches)
@@ -554,11 +600,11 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
 
       val bundleBundleMatches = Seq(
         "io.in.bar.foo <= io.out.bar.foo",
-        "io.in.foo.bar <= io.out.foo.bar",
+        "io.in.foo.bar <= io.out.foo.bar"
       )
       val nonBundleBundleMatches = Seq(
         "io.out.bar.bar <= io.in.bar.bar",
-        "io.out.foo.foo <= io.in.foo.foo",
+        "io.out.foo.foo <= io.in.foo.foo"
       )
       test(mixedBundle(mixedBundle(Bool())), bundleBundleMatches, nonBundleBundleMatches)
       test(mixedBundle(mixedBundle(UInt(16.W))), bundleBundleMatches, nonBundleBundleMatches)
@@ -598,8 +644,10 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
       testException(alignedBundle(Bool()), mixedBundle(Bool()), "inversely oriented fields")
     }
-    it("(2.k): When connecting TO DontCare, error for aligned aggregate fields and error for flipped aggregate fields") {
-      implicit val op: (Data, Data) => Unit = {(x, y) => DontCare :>= y}
+    it(
+      "(2.k): When connecting TO DontCare, error for aligned aggregate fields and error for flipped aggregate fields"
+    ) {
+      implicit val op: (Data, Data) => Unit = { (x, y) => DontCare :>= y }
       test(UInt(3.W), Seq("skip"))
       test(SInt(3.W), Seq("skip"))
       test(Clock(), Seq("skip"))
@@ -613,8 +661,8 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(3): :#= ") {
-    implicit val op: (Data, Data) => Unit = {_ :<>= _}
-    implicit val monitorOp: Option[(Data, Data) => Unit] = Some({_ :#= _})
+    implicit val op: (Data, Data) => Unit = { _ :<>= _ }
+    implicit val monitorOp: Option[(Data, Data) => Unit] = Some({ _ :#= _ })
     implicit val inDrivesOut = true
     implicit val nTmps = 0
 
@@ -630,7 +678,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       val vecMatches = Seq(
         "io.monitor[0] <= io.in[0]",
         "io.monitor[1] <= io.in[1]",
-        "io.monitor[2] <= io.in[2]",
+        "io.monitor[2] <= io.in[2]"
       )
       test(vec(Bool()), vecMatches)
       test(vec(UInt(16.W)), vecMatches)
@@ -639,7 +687,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
 
       val bundleMatches = Seq(
         "io.monitor.bar <= io.in.bar",
-        "io.monitor.foo <= io.in.foo",
+        "io.monitor.foo <= io.in.foo"
       )
       test(alignedBundle(Bool()), bundleMatches)
       test(alignedBundle(UInt(16.W)), bundleMatches)
@@ -656,7 +704,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.monitor[1][2] <= io.in[1][2]",
         "io.monitor[2][0] <= io.in[2][0]",
         "io.monitor[2][1] <= io.in[2][1]",
-        "io.monitor[2][2] <= io.in[2][2]",
+        "io.monitor[2][2] <= io.in[2][2]"
       )
       test(vec(vec(Bool())), vecVecMatches)
       test(vec(vec(UInt(16.W))), vecVecMatches)
@@ -669,7 +717,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.monitor[1].bar <= io.in[1].bar",
         "io.monitor[1].foo <= io.in[1].foo",
         "io.monitor[2].bar <= io.in[2].bar",
-        "io.monitor[2].foo <= io.in[2].foo",
+        "io.monitor[2].foo <= io.in[2].foo"
       )
       test(vec(alignedBundle(Bool())), vecBundleMatches)
       test(vec(alignedBundle(UInt(16.W))), vecBundleMatches)
@@ -682,7 +730,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.monitor.bar[2] <= io.in.bar[2]",
         "io.monitor.foo[0] <= io.in.foo[0]",
         "io.monitor.foo[1] <= io.in.foo[1]",
-        "io.monitor.foo[2] <= io.in.foo[2]",
+        "io.monitor.foo[2] <= io.in.foo[2]"
       )
       test(alignedBundle(vec(Bool())), bundleVecMatches)
       test(alignedBundle(vec(UInt(16.W))), bundleVecMatches)
@@ -693,7 +741,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.monitor.bar.bar <= io.in.bar.bar",
         "io.monitor.bar.foo <= io.in.bar.foo",
         "io.monitor.foo.bar <= io.in.foo.bar",
-        "io.monitor.foo.foo <= io.in.foo.foo",
+        "io.monitor.foo.foo <= io.in.foo.foo"
       )
       test(alignedBundle(alignedBundle(Bool())), bundleBundleMatches)
       test(alignedBundle(alignedBundle(UInt(16.W))), bundleBundleMatches)
@@ -714,7 +762,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.monitor[2].foo <= io.in[2].foo",
         "io.monitor[0].bar <= io.in[0].bar",
         "io.monitor[1].bar <= io.in[1].bar",
-        "io.monitor[2].bar <= io.in[2].bar",
+        "io.monitor[2].bar <= io.in[2].bar"
       )
       test(vec(mixedBundle(Bool())), vecBundleMatches)
       test(vec(mixedBundle(UInt(16.W))), vecBundleMatches)
@@ -727,7 +775,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.monitor.foo[2] <= io.in.foo[2]",
         "io.monitor.bar[0] <= io.in.bar[0]",
         "io.monitor.bar[1] <= io.in.bar[1]",
-        "io.monitor.bar[2] <= io.in.bar[2]",
+        "io.monitor.bar[2] <= io.in.bar[2]"
       )
       test(mixedBundle(vec(Bool())), bundleVecMatches)
       test(mixedBundle(vec(UInt(16.W))), bundleVecMatches)
@@ -738,7 +786,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         "io.monitor.bar.bar <= io.in.bar.bar",
         "io.monitor.foo.foo <= io.in.foo.foo",
         "io.monitor.bar.foo <= io.in.bar.foo",
-        "io.monitor.foo.bar <= io.in.foo.bar",
+        "io.monitor.foo.bar <= io.in.foo.bar"
       )
       test(mixedBundle(mixedBundle(Bool())), bundleBundleMatches)
       test(mixedBundle(mixedBundle(UInt(16.W))), bundleBundleMatches)
@@ -751,7 +799,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       testException(SInt(3.W), Clock(), "have different types")
     }
     it("(3.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
-      implicit val op: (Data, Data) => Unit = {_ :#= _}
+      implicit val op: (Data, Data) => Unit = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       test(Analog(3.W), Seq("attach (io.out, io.in)"))
       test(mixedBundle(Analog(3.W)), Seq("attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar"))
@@ -759,7 +807,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     it("(3.h): Error on unassigned or dangling subfield/subindex from either side") {
       // Missing flip bar
-      implicit val op: (Data, Data) => Unit = {_ :#= _}
+      implicit val op: (Data, Data) => Unit = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "unmatched consumer field")
       testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unmatched producer field")
@@ -775,20 +823,36 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "cannot be written from module")
 
       // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
-      testException(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), "unmatched producer field", "dangling producer field")
-      testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unmatched consumer field", "unassigned consumer field")
+      testException(
+        vec(alignedFooBundle(Bool())),
+        vec(mixedBundle(Bool()), 4),
+        "unmatched producer field",
+        "dangling producer field"
+      )
+      testException(
+        vec(mixedBundle(Bool()), 4),
+        vec(alignedFooBundle(Bool())),
+        "unmatched consumer field",
+        "unassigned consumer field"
+      )
     }
     it("(3.i): Always assign to consumer regardless of orientation") {
-      implicit val op: (Data, Data) => Unit = {_ :#= _}
+      implicit val op: (Data, Data) => Unit = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "cannot be written from module")
-      testDistinctTypes(alignedBundle(Bool()), mixedBundle(Bool()), Seq(
-        "io.out.foo <= io.in.foo",
-        "io.out.bar <= io.in.bar"
-      ))
+      testDistinctTypes(
+        alignedBundle(Bool()),
+        mixedBundle(Bool()),
+        Seq(
+          "io.out.foo <= io.in.foo",
+          "io.out.bar <= io.in.bar"
+        )
+      )
     }
-    it("(3.k): When connecting FROM DontCare, emit for aligned aggregate fields and emit for flipped aggregate fields") {
-      implicit val op: (Data, Data) => Unit = {(x, y) => x :#= DontCare}
+    it(
+      "(3.k): When connecting FROM DontCare, emit for aligned aggregate fields and emit for flipped aggregate fields"
+    ) {
+      implicit val op: (Data, Data) => Unit = { (x, y) => x :#= DontCare }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       test(UInt(3.W), Seq("io.out is invalid"))
       test(SInt(3.W), Seq("io.out is invalid"))
@@ -811,8 +875,8 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       }
       class MyModule extends Module {
         val lit = new MixedBundle().Lit(
-          _.foo            -> 0.U,
-          _.bar            -> 1.U,
+          _.foo -> 0.U,
+          _.bar -> 1.U
         )
         val w0 = Wire(new MixedBundle)
         w0 :#= lit
@@ -821,31 +885,37 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         w1 :<>= w0
       }
       val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      testCheck(out, Seq(
-        """wire w0 : { foo : UInt<3>, flip bar : UInt<3>}""",
-        """w0.bar <= UInt<1>("h1")""",
-        """w0.foo <= UInt<1>("h0")""",
-        """wire w1 : { foo : UInt<3>, flip bar : UInt<3>}""",
-        """w1.bar <= UInt<1>("h1")""",
-        """w1.foo <= UInt<1>("h0")""",
-        """w1 <= w0""",
-      ), Nil)
+      testCheck(
+        out,
+        Seq(
+          """wire w0 : { foo : UInt<3>, flip bar : UInt<3>}""",
+          """w0.bar <= UInt<1>("h1")""",
+          """w0.foo <= UInt<1>("h0")""",
+          """wire w1 : { foo : UInt<3>, flip bar : UInt<3>}""",
+          """w1.bar <= UInt<1>("h1")""",
+          """w1.foo <= UInt<1>("h0")""",
+          """w1 <= w0"""
+        ),
+        Nil
+      )
     }
-    it("(?.a.b) Initialize wires with different optional fields with :#= and using :<>= to connect wires of mixed directions, waiving extra field for being unassigned or dangling") {
+    it(
+      "(?.a.b) Initialize wires with different optional fields with :#= and using :<>= to connect wires of mixed directions, waiving extra field for being unassigned or dangling"
+    ) {
       class MixedBundle extends Bundle {
         val foo = UInt(3.W)
         val bar = Flipped(UInt(3.W))
       }
       class Parent(hasOptional: Boolean) extends Bundle {
         val necessary = new MixedBundle
-        val optional = if(hasOptional) Some(new MixedBundle) else None
+        val optional = if (hasOptional) Some(new MixedBundle) else None
       }
       class MyModule extends Module {
         val lit = new Parent(true).Lit(
-          _.necessary.foo     -> 0.U,
-          _.necessary.bar     -> 1.U,
-          _.optional.get.foo  -> 2.U,
-          _.optional.get.bar  -> 3.U
+          _.necessary.foo -> 0.U,
+          _.necessary.bar -> 1.U,
+          _.optional.get.foo -> 2.U,
+          _.optional.get.bar -> 3.U
         )
         val hasOptional = Wire(new Parent(true))
         hasOptional :#= lit
@@ -854,10 +924,14 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         hasOptional.waive(_.optional.get) :<>= lacksOptional
       }
       val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      testCheck(out, Seq(
-        """lacksOptional.necessary.bar <= hasOptional.necessary.bar""",
-        """hasOptional.necessary.foo <= lacksOptional.necessary.foo""",
-      ), Nil)
+      testCheck(
+        out,
+        Seq(
+          """lacksOptional.necessary.bar <= hasOptional.necessary.bar""",
+          """hasOptional.necessary.foo <= lacksOptional.necessary.foo"""
+        ),
+        Nil
+      )
     }
     it("(?.b) Waiving ok-to-dangle field connecting a wider bus to a narrower bus") {
       class ReadyValid extends Bundle {
@@ -868,17 +942,23 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val data = UInt(32.W)
       }
       class MyModule extends Module {
-        val in  = IO(Flipped(new Decoupled()))
+        val in = IO(Flipped(new Decoupled()))
         val out = IO(new ReadyValid())
         out :<>= in.waiveAs[ReadyValid](_.data)
       }
       val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      testCheck(out, Seq(
-        """out.valid <= in.valid""",
-        """in.ready <= out.ready""",
-      ), Nil)
+      testCheck(
+        out,
+        Seq(
+          """out.valid <= in.valid""",
+          """in.ready <= out.ready"""
+        ),
+        Nil
+      )
     }
-    it("(?.c) Waiving ok-to-unassign field connecting a narrower bus to a wider bus, with defaults for unassigned fields set via last connect semantics") {
+    it(
+      "(?.c) Waiving ok-to-unassign field connecting a narrower bus to a wider bus, with defaults for unassigned fields set via last connect semantics"
+    ) {
       class ReadyValid extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -887,19 +967,25 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val data = UInt(32.W)
       }
       class MyModule extends Module {
-        val in  = IO(Flipped(new ReadyValid()))
+        val in = IO(Flipped(new ReadyValid()))
         val out = IO(new Decoupled())
         out :<= (new Decoupled()).Lit(_.data -> 0.U)
         out.waiveAs[ReadyValid](_.data) :<>= in
       }
       val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      testCheck(out, Seq(
-        """out.data <= UInt<1>("h0")""",
-        """in.ready <= out.ready""",
-        """out.valid <= in.valid""",
-      ), Nil)
+      testCheck(
+        out,
+        Seq(
+          """out.data <= UInt<1>("h0")""",
+          """in.ready <= out.ready""",
+          """out.valid <= in.valid"""
+        ),
+        Nil
+      )
     }
-    it("(?.d) Waiving ok-to-unassign field connecting a narrower bus to a wider bus will error if no default specified") {
+    it(
+      "(?.d) Waiving ok-to-unassign field connecting a narrower bus to a wider bus will error if no default specified"
+    ) {
       class ReadyValid extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -908,7 +994,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val data = UInt(32.W)
       }
       class MyModule extends Module {
-        val in  = IO(Flipped(new ReadyValid()))
+        val in = IO(Flipped(new ReadyValid()))
         val out = IO(new Decoupled())
         (out: ReadyValid) :<>= in
       }
@@ -923,20 +1009,26 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val data = UInt(32.W)
       }
       class MyModule extends Module {
-        val in  = IO(Flipped(new Decoupled()))
+        val in = IO(Flipped(new Decoupled()))
         val out = IO(new Decoupled())
         val monitor = IO(Output(new Decoupled()))
         out :<>= in
         monitor :#= in
       }
       val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      testCheck(out, Seq(
-        """monitor.data <= in.data""",
-        """monitor.ready <= in.ready""",
-        """monitor.valid <= in.valid""",
-      ), Nil)
+      testCheck(
+        out,
+        Seq(
+          """monitor.data <= in.data""",
+          """monitor.ready <= in.ready""",
+          """monitor.valid <= in.valid"""
+        ),
+        Nil
+      )
     }
-    it("(?.e) A structurally different and fully aligned monitor version of a bundle can easily be connected to, provided missing fields are ok-to-dangle") {
+    it(
+      "(?.e) A structurally different and fully aligned monitor version of a bundle can easily be connected to, provided missing fields are ok-to-dangle"
+    ) {
       class ReadyValid extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -945,17 +1037,21 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val data = UInt(32.W)
       }
       class MyModule extends Module {
-        val in  = IO(Flipped(new Decoupled()))
+        val in = IO(Flipped(new Decoupled()))
         val out = IO(new Decoupled())
         val monitor = IO(Output(new ReadyValid()))
         out :<>= in
         monitor :#= in.waiveAs[ReadyValid](_.data)
       }
       val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      testCheck(out, Seq(
-        """monitor.ready <= in.ready""",
-        """monitor.valid <= in.valid""",
-      ), Nil)
+      testCheck(
+        out,
+        Seq(
+          """monitor.ready <= in.ready""",
+          """monitor.valid <= in.valid"""
+        ),
+        Nil
+      )
     }
     it("(?.f) Discarding echo bits is ok if waived ok-to-dangle (waived dangles)") {
       class Decoupled extends Bundle {
@@ -967,16 +1063,20 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val echo = Flipped(UInt(3.W))
       }
       class MyModule extends Module {
-        val in  = IO(Flipped(new Decoupled()))
+        val in = IO(Flipped(new Decoupled()))
         val out = IO(new DecoupledEcho())
         out.waiveAs[Decoupled](_.echo) :<>= in
       }
       val out = ChiselStage.emitChirrtl({ new MyModule() }, true, true)
-      testCheck(out, Seq(
-        """in.ready <= out.ready""",
-        """out.valid <= in.valid""",
-        """out.data <= in.data""",
-      ), Nil)
+      testCheck(
+        out,
+        Seq(
+          """in.ready <= out.ready""",
+          """out.valid <= in.valid""",
+          """out.data <= in.data"""
+        ),
+        Nil
+      )
     }
     it("(?.g) Discarding echo bits is an error if not waived (dangles default to errors)") {
       class Decoupled extends Bundle {
@@ -988,7 +1088,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val echo = Flipped(UInt(3.W))
       }
       class MyModule extends Module {
-        val in  = IO(Flipped(new Decoupled()))
+        val in = IO(Flipped(new Decoupled()))
         val out = IO(new DecoupledEcho())
         (out: Decoupled) :<>= in
       }
@@ -996,20 +1096,28 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     it("(?.h) Partial connect on records") {
       class BoolRecord(fields: String*) extends Record {
-        val elements = SeqMap(fields.map(f => f -> Bool()):_*)
-        override def cloneType = new BoolRecord(fields:_*).asInstanceOf[this.type]
+        val elements = SeqMap(fields.map(f => f -> Bool()): _*)
+        override def cloneType = new BoolRecord(fields: _*).asInstanceOf[this.type]
       }
       class MyModule extends Module {
-        val in  = IO(Flipped(new BoolRecord("a", "b")))
+        val in = IO(Flipped(new BoolRecord("a", "b")))
         val out = IO(new BoolRecord("b", "c"))
         //out :<!>= in
       }
       println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
     }
-    ignore("(?.h) (Example required) -     ok for non-waived dangling bits in a :<=, because :<= is less strict for dangles") { }
-    ignore("(?.i) (Example required) - not ok for non-waived unassigned bits in a :<= are ok, because :<= is strict for unassigns") { }
-    ignore("(?.j) (Example required) -     ok for non-waived dangling bits in a :>=, because :>= is less strict for dangles") { }
-    ignore("(?.k) (Example required) - not ok for non-waived unassigned bits in a :>= are ok, because :>= is strict for unassigns") { }
+    ignore(
+      "(?.h) (Example required) -     ok for non-waived dangling bits in a :<=, because :<= is less strict for dangles"
+    ) {}
+    ignore(
+      "(?.i) (Example required) - not ok for non-waived unassigned bits in a :<= are ok, because :<= is strict for unassigns"
+    ) {}
+    ignore(
+      "(?.j) (Example required) -     ok for non-waived dangling bits in a :>=, because :>= is less strict for dangles"
+    ) {}
+    ignore(
+      "(?.k) (Example required) - not ok for non-waived unassigned bits in a :>= are ok, because :>= is strict for unassigns"
+    ) {}
 
     /*
      1) c :<= p
@@ -1028,23 +1136,23 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
      4) c :<>= p (composition ok)
        c :<= p
        c :>= p
-     */ 
+     */
   }
   describe("TODO: Unit tests") {
-    ignore("(?.?) x :<>= DontCare") { }
-    ignore("(?.?) x :<= DontCare") { }
-    ignore("(?.?) x :>= DontCare") { }
-    ignore("(?.?) x :#= DontCare") { }
+    ignore("(?.?) x :<>= DontCare") {}
+    ignore("(?.?) x :<= DontCare") {}
+    ignore("(?.?) x :>= DontCare") {}
+    ignore("(?.?) x :#= DontCare") {}
   }
   describe("(9) Using WaivedData examples") {
     import scala.collection.immutable.SeqMap
     class Decoupled(val hasData: Boolean) extends Bundle {
       val valid = Bool()
       val ready = Flipped(Bool())
-      val data = if(hasData) Some(UInt(32.W)) else None
+      val data = if (hasData) Some(UInt(32.W)) else None
     }
     class BundleMap(fields: SeqMap[String, () => Data]) extends Record with AutoCloneType {
-      val elements = fields.map { case (name, gen) => name -> gen()}
+      val elements = fields.map { case (name, gen) => name -> gen() }
     }
     object BundleMap {
       def waive[T <: Data](d: T): WaivedData[T] = {
@@ -1062,7 +1170,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
         val foo = new Decoupled(hasData)
       }
       class MyModule extends Module {
-        val in  = IO(Flipped(new NestedDecoupled(true)))
+        val in = IO(Flipped(new NestedDecoupled(true)))
         val out = IO(new NestedDecoupled(false))
         out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.get }
       }
@@ -1070,7 +1178,7 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     it("(9.e) Inline waiver things") {
       class MyModule extends Module {
-        val in  = IO(Flipped(new Decoupled(true)))
+        val in = IO(Flipped(new Decoupled(true)))
         val out = IO(new Decoupled(false))
         out :<>= in.waive(_.data.get)
       }
@@ -1078,15 +1186,19 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     it("(9.f) BundleMap example can use programmatic waiving") {
       class MyModule extends Module {
-        def ab = new BundleMap(SeqMap(
-          "a" -> (() => UInt(2.W)),
-          "b" -> (() => UInt(2.W))
-        ))
-        def bc = new BundleMap(SeqMap(
-          "b" -> (() => UInt(2.W)),
-          "c" -> (() => UInt(2.W))
-        ))
-        val in  = IO(Flipped(new DecoupledGen(() => ab)))
+        def ab = new BundleMap(
+          SeqMap(
+            "a" -> (() => UInt(2.W)),
+            "b" -> (() => UInt(2.W))
+          )
+        )
+        def bc = new BundleMap(
+          SeqMap(
+            "b" -> (() => UInt(2.W)),
+            "c" -> (() => UInt(2.W))
+          )
+        )
+        val in = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
         //Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in)
@@ -1095,34 +1207,43 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     }
     it("(9.g) Somehow return the unused fields?") {
       class MyModule extends Module {
-        def ab = new BundleMap(SeqMap(
-          "a" -> (() => UInt(2.W)),
-          "b" -> (() => UInt(2.W))
-        ))
-        def bc = new BundleMap(SeqMap(
-          "b" -> (() => UInt(2.W)),
-          "c" -> (() => UInt(2.W))
-        ))
-        val in  = IO(Flipped(new DecoupledGen(() => ab)))
+        def ab = new BundleMap(
+          SeqMap(
+            "a" -> (() => UInt(2.W)),
+            "b" -> (() => UInt(2.W))
+          )
+        )
+        def bc = new BundleMap(
+          SeqMap(
+            "b" -> (() => UInt(2.W)),
+            "c" -> (() => UInt(2.W))
+          )
+        )
+        val in = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
         out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
         //Programmatic
-        val (waivedOut: WaivedData[DecoupledGen[BundleMap]], waivedIn: WaivedData[DecoupledGen[BundleMap]]) = WaivedData.waiveUnmatched(out, in)
+        val (waivedOut: WaivedData[DecoupledGen[BundleMap]], waivedIn: WaivedData[DecoupledGen[BundleMap]]) =
+          WaivedData.waiveUnmatched(out, in)
         waivedOut :<>= waivedIn
       }
       println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
     }
     it("(9.h) Create WaivedData to connect to") {
       class MyModule extends Module {
-        def ab = new BundleMap(SeqMap(
-          "a" -> (() => UInt(2.W)),
-          "b" -> (() => UInt(2.W))
-        ))
-        def bc = new BundleMap(SeqMap(
-          "b" -> (() => UInt(2.W)),
-          "c" -> (() => UInt(2.W))
-        ))
-        val in  = IO(Flipped(new DecoupledGen(() => ab)))
+        def ab = new BundleMap(
+          SeqMap(
+            "a" -> (() => UInt(2.W)),
+            "b" -> (() => UInt(2.W))
+          )
+        )
+        def bc = new BundleMap(
+          SeqMap(
+            "b" -> (() => UInt(2.W)),
+            "c" -> (() => UInt(2.W))
+          )
+        )
+        val in = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
         out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
         //Programmatic
@@ -1140,18 +1261,18 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
       }
       class MyModule extends Module {
         // Have to nest in bundle because it calls the connecting-to-seq version
-        val in3  = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure) } ))
-        val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure) } )
-        val in2  = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure) } ))
-        val out2 = IO(new Bundle { val v = Vec(2, new OnlyBackPressure) } )
+        val in3 = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure) }))
+        val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure) })
+        val in2 = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure) }))
+        val out2 = IO(new Bundle { val v = Vec(2, new OnlyBackPressure) })
         // Should do nothing, but also doesn't error, which is good
         out3 :<= in3
         // Should error, unless waived
         out3.waive(_.v(2)) :>= in2
         // Should error, unless waived
         out2 :<= in3.waive(_.v(2))
-        println(DataMirror.collectAlignedDeep(in3){case x => x})
-        println(DataMirror.collectFlippedDeep(in3){case x => x})
+        println(DataMirror.collectAlignedDeep(in3) { case x => x })
+        println(DataMirror.collectFlippedDeep(in3) { case x => x })
       }
       ChiselStage.emitChirrtl({ new MyModule() }, true, true)
     }

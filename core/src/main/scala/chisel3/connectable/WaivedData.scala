@@ -8,7 +8,7 @@ import experimental.{prefix, requireIsHardware}
 
 /** A data for whom members if left dangling or unassigned with not trigger an error
   * A waived member will still be connected to if present in both producer and consumer
-  * 
+  *
   * @param base The component being connected to
   * @param waivers members of base who will not trigger an error if left dangling or unassigned
   */
@@ -16,19 +16,20 @@ final case class WaivedData[+T <: Data](base: T, waivers: Set[Data]) {
   requireIsHardware(base, s"Can only created WaivedData of components, not unbound Chisel types")
 
   /** Select members of base to waive
-    * 
+    *
     * @param members functions given the base return a member to waive
     */
   def waive(members: (T => Data)*): WaivedData[T] = this.copy(waivers = waivers ++ members.map(f => f(base)).toSet)
 
   /** Select members of base to waive and static cast to a new type
-    * 
+    *
     * @param members functions given the base return a member to waive
     */
-  def waiveAs[S <: Data](members: (T => Data)*): WaivedData[S] = this.copy(waivers = waivers ++ members.map(f => f(base)).toSet).asInstanceOf[WaivedData[S]]
+  def waiveAs[S <: Data](members: (T => Data)*): WaivedData[S] =
+    this.copy(waivers = waivers ++ members.map(f => f(base)).toSet).asInstanceOf[WaivedData[S]]
 
   /** Programmatically select members of base to waive
-    * 
+    *
     * @param members partial function applied to all recursive members of base, if match, can return a member to waive
     */
   def waiveEach[S <: Data](pf: PartialFunction[Data, Data]): WaivedData[T] = {
@@ -53,8 +54,8 @@ object WaivedData {
     */
   def waiveUnmatched[T <: Data](consumer: T, producer: T): (WaivedData[T], WaivedData[T]) = {
     val result = DataMirror.collectDeepOverAllForAny(Some((consumer: Data)), Some((producer: Data))) {
-      case x@(Some(c), None) => x
-      case x@(None, Some(p)) => x
+      case x @ (Some(c), None) => x
+      case x @ (None, Some(p)) => x
     }
     val cWaived = result.map(_._1).flatten
     val pWaived = result.map(_._2).flatten
@@ -68,7 +69,7 @@ object WaivedData {
     val cWaivers = wd.waivers
 
     /** $colonLessEq
-      * 
+      *
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
@@ -79,7 +80,7 @@ object WaivedData {
     }
 
     /** $colonLessEq
-      * 
+      *
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
@@ -90,7 +91,7 @@ object WaivedData {
     }
 
     /** $colonGreaterEq
-      * 
+      *
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
@@ -101,7 +102,7 @@ object WaivedData {
     }
 
     /** $colonGreaterEq
-      * 
+      *
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
@@ -112,7 +113,7 @@ object WaivedData {
     }
 
     /** $colonLessGreaterEq
-      * 
+      *
       * @group connection
       * @param producer the right-hand-side of the connection
       */
@@ -124,7 +125,7 @@ object WaivedData {
     }
 
     /** $colonLessGreaterEq
-      * 
+      *
       * @group connection
       * @param producer the right-hand-side of the connection
       */
@@ -135,7 +136,7 @@ object WaivedData {
     }
 
     /** $colonHashEq
-      * 
+      *
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
@@ -146,7 +147,7 @@ object WaivedData {
     }
 
     /** $colonHashEq
-      * 
+      *
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */

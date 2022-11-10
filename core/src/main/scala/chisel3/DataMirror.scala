@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3
 
 import chisel3.internal.firrtl._
 import chisel3.internal._
 import chisel3.experimental.BaseModule
 import scala.reflect.ClassTag
-
 
 private[chisel3] object DataMirror {
   def widthOf(target:              Data): Width = target.width
@@ -130,7 +131,6 @@ private[chisel3] object DataMirror {
     }
   }
 
-
   /** Return all expanded components, including intermediate aggregate nodes
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
@@ -153,12 +153,14 @@ private[chisel3] object DataMirror {
     myItems ++ deepChildrenItems
   }
 
-
   // Alignment-aware collections
-  import connectable.{Alignment, AlignedWithRoot, FlippedWithRoot}
+  import connectable.{AlignedWithRoot, Alignment, FlippedWithRoot}
   // Implement typeclass to enable collecting over Alignment
   implicit val AlignmentMatchingZipOfChildren = new HasMatchingZipOfChildren[Alignment] {
-    def matchingZipOfChildren(left: Option[Alignment], right: Option[Alignment]): Seq[(Option[Alignment], Option[Alignment])] =
+    def matchingZipOfChildren(
+      left:  Option[Alignment],
+      right: Option[Alignment]
+    ): Seq[(Option[Alignment], Option[Alignment])] =
       Alignment.matchingZipOfChildren(left, right)
   }
 
@@ -201,21 +203,27 @@ private[chisel3] object DataMirror {
     * @param collector Collector partial function to pick which components from left and right to collect
     * @tparam T Type of the thing being collected
     */
-  def collectDeepOverMatches[D : HasMatchingZipOfChildren, T](left: D, right: D)(collector: PartialFunction[(D, D), T]): Seq[T] = {
+  def collectDeepOverMatches[D: HasMatchingZipOfChildren, T](
+    left:      D,
+    right:     D
+  )(collector: PartialFunction[(D, D), T]
+  ): Seq[T] = {
     def newCollector(lOpt: Option[D], rOpt: Option[D]): Option[(Option[T], Option[Unit])] = {
       (lOpt, rOpt) match {
-        case (Some(l), Some(r)) => collector.lift((l, r)) match {
-          case Some(x: T) => Some((Some(x), None))
-          case None => None
-        }
+        case (Some(l), Some(r)) =>
+          collector.lift((l, r)) match {
+            case Some(x: T) => Some((Some(x), None))
+            case None => None
+          }
         case other => None
       }
     }
-    collectDeepOverAllForAnyFunction(Some(left), Some(right)){
-      case (Some(l), Some(r)) => collector.lift((l, r)) match {
-        case Some(x: T) => Some((Some(x), None))
-        case None => None
-      }
+    collectDeepOverAllForAnyFunction(Some(left), Some(right)) {
+      case (Some(l), Some(r)) =>
+        collector.lift((l, r)) match {
+          case Some(x: T) => Some((Some(x), None))
+          case None => None
+        }
       case other => None
     }.collect {
       case (Some(x: T), None) => (x)
@@ -230,12 +238,17 @@ private[chisel3] object DataMirror {
     * @param collector Collector partial function to pick which components from left, right, or both to collect
     * @tparam T Type of the thing being collected
     */
-  def collectDeepOverAll[D : HasMatchingZipOfChildren, T](left: D, right: D)(collector: PartialFunction[(Option[D], Option[D]), T]): Seq[T] = {
-    collectDeepOverAllForAnyFunction(Some(left), Some(right)){
-      case (lOpt: Option[D], rOpt: Option[D]) => collector.lift((lOpt, rOpt)) match {
-        case Some(x: T) => Some((Some(x), None))
-        case None => None
-      }
+  def collectDeepOverAll[D: HasMatchingZipOfChildren, T](
+    left:      D,
+    right:     D
+  )(collector: PartialFunction[(Option[D], Option[D]), T]
+  ): Seq[T] = {
+    collectDeepOverAllForAnyFunction(Some(left), Some(right)) {
+      case (lOpt: Option[D], rOpt: Option[D]) =>
+        collector.lift((lOpt, rOpt)) match {
+          case Some(x: T) => Some((Some(x), None))
+          case None => None
+        }
     }.collect {
       case (Some(x: T), None) => x
     }
@@ -251,7 +264,11 @@ private[chisel3] object DataMirror {
     * @tparam L Type of the thing being collected from the left
     * @tparam R Type of the thing being collected from the right
     */
-  def collectDeepOverAllForAny[D : HasMatchingZipOfChildren, L, R](left: Option[D], right: Option[D])(pcollector: PartialFunction[(Option[D], Option[D]), (Option[L], Option[R])]): Seq[(Option[L], Option[R])] = {
+  def collectDeepOverAllForAny[D: HasMatchingZipOfChildren, L, R](
+    left:       Option[D],
+    right:      Option[D]
+  )(pcollector: PartialFunction[(Option[D], Option[D]), (Option[L], Option[R])]
+  ): Seq[(Option[L], Option[R])] = {
     collectDeepOverAllForAnyFunction(left, right)(pcollector.lift)
   }
 
@@ -265,14 +282,20 @@ private[chisel3] object DataMirror {
     * @tparam L Type of the thing being collected from the left
     * @tparam R Type of the thing being collected from the right
     */
-  def collectDeepOverAllForAnyFunction[D : HasMatchingZipOfChildren, L, R](left: Option[D], right: Option[D])(collector: ((Option[D], Option[D])) => Option[(Option[L], Option[R])]): Seq[(Option[L], Option[R])] = {
+  def collectDeepOverAllForAnyFunction[D: HasMatchingZipOfChildren, L, R](
+    left:      Option[D],
+    right:     Option[D]
+  )(collector: ((Option[D], Option[D])) => Option[(Option[L], Option[R])]
+  ): Seq[(Option[L], Option[R])] = {
     val myItems = collector((left, right)) match {
-      case None => Nil
+      case None               => Nil
       case Some((None, None)) => Nil
-      case Some(other) => Seq(other)
+      case Some(other)        => Seq(other)
     }
     val matcher = implicitly[HasMatchingZipOfChildren[D]]
-    val childItems = matcher.matchingZipOfChildren(left, right).flatMap { case (l, r) => collectDeepOverAllForAnyFunction(l, r)(collector)}
+    val childItems = matcher.matchingZipOfChildren(left, right).flatMap {
+      case (l, r) => collectDeepOverAllForAnyFunction(l, r)(collector)
+    }
     myItems ++ childItems
   }
 }

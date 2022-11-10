@@ -2,18 +2,18 @@
 
 package chisel3.connectable
 
-import chisel3.{Data, DontCare, RawModule, BiConnectException, Aggregate}
+import chisel3.{Aggregate, BiConnectException, Data, DontCare, RawModule}
 import chisel3.internal.{prefix, BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.DefInvalid
 import chisel3.internal.sourceinfo.SourceInfo
-import chisel3.experimental.{Analog, attach}
+import chisel3.experimental.{attach, Analog}
 import Alignment.matchingZipOfChildren
 
 import scala.collection.mutable
 
-
 private[chisel3] object ConnectionFunctions {
+
   /** Assignment function which implements both :<= and :>=
     *
     * For example, given a connection like so:
@@ -28,7 +28,15 @@ private[chisel3] object ConnectionFunctions {
     * @param activeSide indicates if the connection was a :<= (consumer is active) or :>= (producer is active)
     * @param sourceInfo source info for where the assignment occurred
     */
-  def assign[T <: Data](cRoot: T, pRoot: T, cOp: ConnectionOperator, cWaivers: Set[Data], pWaivers: Set[Data])(implicit sourceInfo: SourceInfo): Unit = {
+  def assign[T <: Data](
+    cRoot:    T,
+    pRoot:    T,
+    cOp:      ConnectionOperator,
+    cWaivers: Set[Data],
+    pWaivers: Set[Data]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
     doAssignment(cRoot, pRoot, cOp, cWaivers, pWaivers)
   }
 
@@ -44,18 +52,33 @@ private[chisel3] object ConnectionFunctions {
     override def emitStrictConnects: Boolean = true
   }
 
-  private def leafConnect(c: Data, p: Data, o: Alignment, op: ConnectionOperator)(implicit sourceInfo: SourceInfo): Unit = {
+  private def leafConnect(
+    c:  Data,
+    p:  Data,
+    o:  Alignment,
+    op: ConnectionOperator
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
     (c, p, o, op.assignToConsumer, op.assignToProducer, op.alwaysAssignToConsumer) match {
-      case (x: Analog, y: Analog, _, _, _, _)     => assignAnalog(x, y)
-      case (x: Analog, DontCare, _, _, _, _)      => assignAnalog(x, DontCare)
+      case (x: Analog, y: Analog, _, _, _, _) => assignAnalog(x, y)
+      case (x: Analog, DontCare, _, _, _, _) => assignAnalog(x, DontCare)
       case (x, y, _: AlignedWithRoot, true, _, _) => c := p
       case (x, y, _: FlippedWithRoot, _, true, _) => p := c
-      case (x, y, _, _, _, true)                  => c := p
-      case other =>
+      case (x, y, _, _, _, true) => c := p
+      case other                 =>
     }
   }
 
-  private def doAssignment[T <: Data](consumer: T, producer: T, op: ConnectionOperator, cWaivers: Set[Data], pWaivers: Set[Data])(implicit sourceInfo: SourceInfo): Unit = {
+  private def doAssignment[T <: Data](
+    consumer: T,
+    producer: T,
+    op:       ConnectionOperator,
+    cWaivers: Set[Data],
+    pWaivers: Set[Data]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
 
     val errors = mutable.ArrayBuffer[String]()
     import Alignment.deriveChildAlignment
@@ -70,35 +93,45 @@ private[chisel3] object ConnectionFunctions {
         case (EmptyAlignment, po: NonEmptyAlignment) if po.isWaived => ()
 
         // Base Case 2: early exit if operator requires matching orientations, but they don't align
-        case (co: NonEmptyAlignment, po: NonEmptyAlignment) if (!co.alignsWith(po)) && (op.noWrongOrientations) => errors += (s"inversely oriented fields ${co.member} and ${po.member}")
+        case (co: NonEmptyAlignment, po: NonEmptyAlignment) if (!co.alignsWith(po)) && (op.noWrongOrientations) =>
+          errors += (s"inversely oriented fields ${co.member} and ${po.member}")
 
         // Base Case 3: operator error on dangling/unassigned fields
         case (c: NonEmptyAlignment, EmptyAlignment) => errors += (s"${c.errorWord(op)} consumer field ${co.member}")
         case (EmptyAlignment, p: NonEmptyAlignment) => errors += (s"${p.errorWord(op)} producer field ${po.member}")
 
         // Recursive Case 4: non-empty orientations
-        case (co: NonEmptyAlignment, po: NonEmptyAlignment) => (co.member, po.member) match {
-          case (c: Aggregate, p: Aggregate) =>
-            matchingZipOfChildren(Some(co), Some(po)).foreach {
-              case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
-            }
-          // TODO: check that above aggregate works for all tests
-          //case (c: Record, p: Record) =>
-          //  matchingZipOfChildren(Some(co), Some(po)).foreach {
-          //    case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
-          //  }
-          //case (c: Vec[Data @unchecked], p: Vec[Data @unchecked]) =>
-          //  matchingZipOfChildren(Some(co), Some(po)).foreach {
-          //    case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
-          //  }
-          // Am matching orientation of the non-DontCare, regardless
-          case (c: Aggregate, DontCare) => c.getElements.foreach { case f => doAssignment(deriveChildAlignment(f, co), deriveChildAlignment(f, co).swap(DontCare)) }
-          case (DontCare, p: Aggregate) => p.getElements.foreach { case f => doAssignment(deriveChildAlignment(f, po).swap(DontCare), deriveChildAlignment(f, po)) }
+        case (co: NonEmptyAlignment, po: NonEmptyAlignment) =>
+          (co.member, po.member) match {
+            case (c: Aggregate, p: Aggregate) =>
+              matchingZipOfChildren(Some(co), Some(po)).foreach {
+                case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
+              }
+            // TODO: check that above aggregate works for all tests
+            //case (c: Record, p: Record) =>
+            //  matchingZipOfChildren(Some(co), Some(po)).foreach {
+            //    case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
+            //  }
+            //case (c: Vec[Data @unchecked], p: Vec[Data @unchecked]) =>
+            //  matchingZipOfChildren(Some(co), Some(po)).foreach {
+            //    case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
+            //  }
+            // Am matching orientation of the non-DontCare, regardless
+            case (c: Aggregate, DontCare) =>
+              c.getElements.foreach {
+                case f => doAssignment(deriveChildAlignment(f, co), deriveChildAlignment(f, co).swap(DontCare))
+              }
+            case (DontCare, p: Aggregate) =>
+              p.getElements.foreach {
+                case f => doAssignment(deriveChildAlignment(f, po).swap(DontCare), deriveChildAlignment(f, po))
+              }
 
-          case (c, p) if  co.alignsWith(po)                                                => leafConnect(c, p, co, op)
-          case (c, p) if !co.alignsWith(po) && op.assignToConsumer && !op.assignToProducer => leafConnect(c, p, co, op)
-          case (c, p) if !co.alignsWith(po) && !op.assignToConsumer && op.assignToProducer => leafConnect(c, p, po, op)
-        }
+            case (c, p) if co.alignsWith(po) => leafConnect(c, p, co, op)
+            case (c, p) if !co.alignsWith(po) && op.assignToConsumer && !op.assignToProducer =>
+              leafConnect(c, p, co, op)
+            case (c, p) if !co.alignsWith(po) && !op.assignToConsumer && op.assignToProducer =>
+              leafConnect(c, p, po, op)
+          }
         case other => throw new Exception(other.toString + " " + op)
       }
     }
@@ -107,7 +140,7 @@ private[chisel3] object ConnectionFunctions {
     doAssignment(Alignment(consumer, cWaivers, true), Alignment(producer, pWaivers, false))
 
     // If any errors are collected, error.
-    if(errors.nonEmpty) {
+    if (errors.nonEmpty) {
       Builder.error(errors.mkString("\n"))
     }
   }
@@ -123,7 +156,7 @@ private[chisel3] object ConnectionFunctions {
       }
     } catch { // convert Exceptions to Builder.error's so compilation can continue
       case attach.AttachException(message) => Builder.error(message)
-      case BiConnectException(message) => Builder.error(message)
+      case BiConnectException(message)     => Builder.error(message)
     }
   }
 

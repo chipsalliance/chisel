@@ -2,12 +2,12 @@
 
 package chisel3.connectable
 
-import chisel3.{DataMirror, Data, SpecifiedDirection, DontCare, Aggregate}
+import chisel3.{Aggregate, Data, DataMirror, DontCare, SpecifiedDirection}
 import chisel3.internal.{ChildBinding, TopBinding}
 
 // Indicates whether the active side is aligned or flipped relative to the active side's root
 // Internal datastructure used to compute connectable operator assignments
-private[chisel3] sealed trait Alignment { 
+private[chisel3] sealed trait Alignment {
   // The member for whom this alignment is for
   def member: Data
 
@@ -44,13 +44,14 @@ private[chisel3] sealed trait Alignment {
   final def isAgg: Boolean = member.isInstanceOf[Aggregate]
 
   // If erroring, determine the correct word to use
-  final def errorWord(op: ConnectionOperator): String = (isConsumer, op.assignToConsumer, op.assignToProducer, alignment) match {
-    case (true,  true,   _,    "aligned") => "unassigned"
-    case (false, _,      true, "flipped") => "unassigned"
-    case (true,  _,      true, "flipped") => "dangling"
-    case (false, true,   _,    "aligned") => "dangling"
-    case other => "unmatched"
-  }
+  final def errorWord(op: ConnectionOperator): String =
+    (isConsumer, op.assignToConsumer, op.assignToProducer, alignment) match {
+      case (true, true, _, "aligned")  => "unassigned"
+      case (false, _, true, "flipped") => "unassigned"
+      case (true, _, true, "flipped")  => "dangling"
+      case (false, true, _, "aligned") => "dangling"
+      case other                       => "unmatched"
+    }
 }
 
 // The alignment datastructure for a missing field
@@ -67,15 +68,17 @@ private[chisel3] case object EmptyAlignment extends Alignment {
 
 private[chisel3] sealed trait NonEmptyAlignment extends Alignment
 
-private[chisel3] case class AlignedWithRoot(member: Data, coerced: Boolean, waivers: Set[Data], isConsumer: Boolean) extends NonEmptyAlignment {
-  def invert = if(coerced) this else FlippedWithRoot(member, coerced, waivers, isConsumer)
+private[chisel3] case class AlignedWithRoot(member: Data, coerced: Boolean, waivers: Set[Data], isConsumer: Boolean)
+    extends NonEmptyAlignment {
+  def invert = if (coerced) this else FlippedWithRoot(member, coerced, waivers, isConsumer)
   def coerce = this.copy(member, true)
   def swap(d: Data): Alignment = this.copy(member = d)
   def alignment: String = "aligned"
 }
 
-private[chisel3] case class FlippedWithRoot(member: Data, coerced: Boolean, waivers: Set[Data], isConsumer: Boolean) extends NonEmptyAlignment {
-  def invert = if(coerced) this else AlignedWithRoot(member, coerced, waivers, isConsumer)
+private[chisel3] case class FlippedWithRoot(member: Data, coerced: Boolean, waivers: Set[Data], isConsumer: Boolean)
+    extends NonEmptyAlignment {
+  def invert = if (coerced) this else AlignedWithRoot(member, coerced, waivers, isConsumer)
   def coerce = this.copy(member, true)
   def swap(d: Data): Alignment = this.copy(member = d)
   def alignment: String = "flipped"
@@ -83,7 +86,8 @@ private[chisel3] case class FlippedWithRoot(member: Data, coerced: Boolean, waiv
 
 object Alignment {
 
-  private[chisel3] def apply(base: Data, waivers: Set[Data], isConsumer: Boolean): Alignment = AlignedWithRoot(base, isCoercing(base), waivers, isConsumer)
+  private[chisel3] def apply(base: Data, waivers: Set[Data], isConsumer: Boolean): Alignment =
+    AlignedWithRoot(base, isCoercing(base), waivers, isConsumer)
 
   /** Indicates whether a member of a component or type is coercing
     * This occurs if the member or a parent of member is declared with an `Input` or `Output`
@@ -92,11 +96,11 @@ object Alignment {
     */
   def isCoercing(member: Data): Boolean = {
     def recUp(x: Data): Boolean = x.binding match {
-      case _ if isLocallyCoercing(x)      => true
-      case None                           => false
-      case Some(t: TopBinding)   => false
+      case _ if isLocallyCoercing(x) => true
+      case None                      => false
+      case Some(t: TopBinding) => false
       case Some(ChildBinding(p)) => recUp(p)
-      case other                          => throw new Exception(s"Unexpected $other! $x, $member")
+      case other                 => throw new Exception(s"Unexpected $other! $x, $member")
     }
     def isLocallyCoercing(d: Data): Boolean = {
       val s = DataMirror.specifiedDirectionOf(d)
@@ -116,7 +120,10 @@ object Alignment {
     }
   }
 
-  private[chisel3] def matchingZipOfChildren(left: Option[Alignment], right: Option[Alignment]): Seq[(Option[Alignment], Option[Alignment])] = {
+  private[chisel3] def matchingZipOfChildren(
+    left:  Option[Alignment],
+    right: Option[Alignment]
+  ): Seq[(Option[Alignment], Option[Alignment])] = {
     Data.DataMatchingZipOfChildren.matchingZipOfChildren(left.map(_.member), right.map(_.member)).map {
       case (Some(l), None)    => (Some(deriveChildAlignment(l, left.get)), None)
       case (Some(l), Some(r)) => (Some(deriveChildAlignment(l, left.get)), Some(deriveChildAlignment(r, right.get)))

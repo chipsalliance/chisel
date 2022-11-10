@@ -45,8 +45,17 @@ private[chisel3] object BiConnect {
     BiConnectException(s": Right Record missing field ($field).")
   def MismatchedException(left: String, right: String) =
     BiConnectException(s": Left ($left) and Right ($right) have different types.")
-  def AttachAlreadyBulkConnectedException(analog: String, prevConnection: String, newConnection: String, sourceInfo: SourceInfo) =
-    BiConnectException(sourceInfo.makeMessage(s": Analog $analog previously bulk to $prevConnection is connected to $newConnection at " + _))
+  def AttachAlreadyBulkConnectedException(
+    analog:         String,
+    prevConnection: String,
+    newConnection:  String,
+    sourceInfo:     SourceInfo
+  ) =
+    BiConnectException(
+      sourceInfo.makeMessage(
+        s": Analog $analog previously bulk to $prevConnection is connected to $newConnection at " + _
+      )
+    )
   def DontCareCantBeSink =
     BiConnectException(": DontCare cannot be a connection sink (LHS)")
 
@@ -180,7 +189,8 @@ private[chisel3] object BiConnect {
         ) {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
         } else if (!emitStrictConnects) {
-          if(connectCompileOptions.migrateConnections) Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")
+          if (connectCompileOptions.migrateConnections)
+            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")
           newLeft.firrtlPartialConnect(newRight)(sourceInfo)
         } else {
           recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
@@ -189,7 +199,8 @@ private[chisel3] object BiConnect {
       // Handle Records connected to DontCare
       case (left_r: Record, DontCare) =>
         if (!left_r.compileOptions.emitStrictConnects) {
-          if(connectCompileOptions.migrateConnections) Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")
+          if (connectCompileOptions.migrateConnections)
+            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")
           left.firrtlPartialConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
@@ -203,7 +214,8 @@ private[chisel3] object BiConnect {
         }
       case (DontCare, right_r: Record) =>
         if (!right_r.compileOptions.emitStrictConnects) {
-          if(connectCompileOptions.migrateConnections) Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")
+          if (connectCompileOptions.migrateConnections)
+            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")
           left.firrtlPartialConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
@@ -461,8 +473,9 @@ private[chisel3] object BiConnect {
   // This function checks if analog element-level attaching is allowed, then marks the Analog as connected
   def markAnalogConnected(sourceInfo: SourceInfo, analog: Analog, otherAnalog: Data, contextModule: RawModule): Unit = {
     analog.biConnectLocs.get(contextModule) match {
-      case Some((si, data)) if data != otherAnalog => throw AttachAlreadyBulkConnectedException(analog.toString, data.toString, otherAnalog.toString, si)
-      case _     => // Do nothing
+      case Some((si, data)) if data != otherAnalog =>
+        throw AttachAlreadyBulkConnectedException(analog.toString, data.toString, otherAnalog.toString, si)
+      case _ => // Do nothing
     }
     // Mark bulk connected
     analog.biConnectLocs(contextModule) = (sourceInfo, otherAnalog)
