@@ -387,12 +387,9 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
       override def cloneType: this.type = (new MyRecord).asInstanceOf[this.type]
     }
     val e = the[ChiselException] thrownBy {
-      (new chisel3.stage.ChiselStage).emitChirrtl(
-        new Module {
-          val io = IO(Input(new MyRecord))
-        },
-        args = Array("--full-stacktrace")
-      )
+      ChiselStage.elaborate(new Module {
+        val io = IO(Input(new MyRecord))
+      })
     }
     e.getMessage should include("does not return the same objects when calling .elements multiple times")
   }

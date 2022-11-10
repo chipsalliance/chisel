@@ -388,6 +388,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Bugfix: clearing all flips inside an opaque type") {
+
     class Decoupled extends Bundle {
       val bits = UInt(3.W)
       val valid = Bool()
