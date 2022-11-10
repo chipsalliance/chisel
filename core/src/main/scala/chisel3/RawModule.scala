@@ -48,11 +48,11 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   val compileOptions = moduleCompileOptions
 
   private[chisel3] def checkPorts(): Unit = {
-    for ((port, _) <- getModulePorts) {
+    for ((port, source) <- getModulePortsAndLocators) {
       if (port._computeName(None).isEmpty) {
         Builder.error(
           s"Unable to name port $port in $this, " +
-            "try making it a public field of the Module"
+            s"try making it a public field of the Module $source"
         )
       }
     }
@@ -96,7 +96,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       }
     }
 
-    val firrtlPorts = getModulePorts.map {
+    val firrtlPorts = getModulePortsAndLocators.map {
       case (port, sourceInfo) =>
         // Special case Vec to make FIRRTL emit the direction of its
         // element.
@@ -122,7 +122,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     //  unless the client wants explicit control over their generation.
     val invalidateCommands = {
       if (!compileOptions.explicitInvalidate || this.isInstanceOf[ImplicitInvalidate]) {
-        getModulePorts.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
+        getModulePortsAndLocators.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
       } else {
         Seq()
       }
@@ -136,7 +136,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     implicit val sourceInfo = UnlocatableSourceInfo
 
     if (!parentCompileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      for ((port, sourceInfo) <- getModulePorts) {
+      for ((port, sourceInfo) <- getModulePortsAndLocators) {
         pushCommand(DefInvalid(sourceInfo, port.ref))
       }
     }
