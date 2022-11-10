@@ -378,7 +378,7 @@ package experimental {
     // getPorts unfortunately already used for tester compatibility
     protected[chisel3] def getModulePorts: Seq[Data] = {
       require(_closed, "Can't get ports before module close")
-      _ports.map(_._1).toSeq
+      _ports.iterator.map(_._1).toSeq
     }
 
     // gets Ports along with there source locators
