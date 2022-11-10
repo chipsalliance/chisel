@@ -297,7 +297,6 @@ lazy val docs = project       // new documentation project
   .settings(commonSettings)
   .settings(
     scalacOptions ++= Seq(
-      "-Xfatal-warnings",
       "-language:reflectiveCalls",
       "-language:implicitConversions"
     ),

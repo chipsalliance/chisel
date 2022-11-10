@@ -103,10 +103,12 @@ object printf {
 
   // Private internal methods that serve to maintain binary
   // compatibility after interpolator check updates
-  private[chisel3] def apply(fmt: String, sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
+  @deprecated("This Printf.apply method has been deprecated and will be removed in Chisel 3.6")
+  def apply(fmt: String, sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
     apply(fmt, Nil, sourceInfo, compileOptions)
 
-  private[chisel3] def apply(
+  @deprecated("This Printf.apply method has been deprecated and will be removed in Chisel 3.6")
+  def apply(
     fmt:            String,
     data:           Seq[Bits],
     sourceInfo:     SourceInfo,
