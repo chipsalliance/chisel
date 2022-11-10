@@ -2,7 +2,7 @@
 
 package chisel3
 
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 import scala.language.experimental.macros
 import scala.annotation.nowarn
@@ -23,7 +23,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   //
   // RTL construction internals
   //
-  private var _commands = ArrayBuffer[Command]()
+  private var _commands = ListBuffer[Command]()
   private[chisel3] def addCommand(c: Command): Unit = {
     require(!_closed, "Can't write to module after module close")
     _commands += c
@@ -126,8 +126,6 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       }
     }
     val component = DefModule(this, name, firrtlPorts, invalidateCommands ++: _commands.toList)
-    // Free the ArrayBuffer, .clear() does not actually free the memory
-    _commands = null
     _component = Some(component)
     _component
   }
