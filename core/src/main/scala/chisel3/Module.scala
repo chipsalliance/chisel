@@ -382,7 +382,7 @@ package experimental {
     }
 
     // gets Ports along with there source locators
-    protected[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo)] = {
+    private[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo)] = {
       require(_closed, "Can't get ports before module close")
       _ports.toSeq
     }
