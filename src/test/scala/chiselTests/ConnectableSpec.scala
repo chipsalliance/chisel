@@ -49,6 +49,7 @@ object ConnectableSpec {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(fieldType)
   }
+
   def alignedFooBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
   }
@@ -292,6 +293,21 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(0.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
       allTypes().foreach { t => test(t(), Seq("<=")) }
     }
+    it("(0.m): Error if different non-aggregate types") {
+      testException(UInt(), SInt(), "Sink (UInt) and Source (SInt) have different types")
+    }
+    it("(0.n): Emit '<=' between wires") {
+      implicit val nTmps = 1
+      test(Bool(), Seq("wiresOut_0 <= wiresIn_0"))
+      test(UInt(16.W), Seq("wiresOut_0 <= wiresIn_0"))
+      test(SInt(16.W), Seq("wiresOut_0 <= wiresIn_0"))
+      test(Clock(), Seq("wiresOut_0 <= wiresIn_0"))
+    }
+    it("(0.o): Error with 'cannot be written' if driving module input") {
+      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => {  y :<= x }
+      testException(Bool(), Bool(), "cannot be written")
+      testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
+    }
     // TODO Write test that demonstrates multiple evaluation of producer: => T
   }
   describe("(1): :<= ") {
@@ -484,6 +500,21 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(1.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
       allTypes().foreach { t => test(t(), Nil) }
     }
+    it("(1.m): Error if different non-aggregate types") {
+      testException(UInt(), SInt(), "Sink (UInt) and Source (SInt) have different types")
+    }
+    it("(1.n): Emit '<=' between wires") {
+      implicit val nTmps = 1
+      test(Bool(), Seq("wiresOut_0 <= wiresIn_0"))
+      test(UInt(16.W), Seq("wiresOut_0 <= wiresIn_0"))
+      test(SInt(16.W), Seq("wiresOut_0 <= wiresIn_0"))
+      test(Clock(), Seq("wiresOut_0 <= wiresIn_0"))
+    }
+    it("(1.o): Error with 'cannot be written' if driving module input") {
+      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => {  y :<= x }
+      testException(Bool(), Bool(), "cannot be written")
+      testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
+    }
   }
   describe("(2): :>= ") {
     implicit val op: (Data, Data) => Unit = { _ :>= _ }
@@ -634,6 +665,17 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(2.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
       allTypes().foreach { t => test(t(), Nil) }
+    }
+    it("(2.m): Error if different non-aggregate types") {
+      testException(mixedBundle(UInt()), mixedBundle(SInt()), "Sink (SInt) and Source (UInt) have different types")
+    }
+    it("(2.n): Emit '<=' between wires") {
+      implicit val nTmps = 1
+      test(mixedBundle(Bool()), Seq("wiresIn_0.bar <= wiresOut_0.bar"))
+    }
+    it("(2.o): Error with 'cannot be written' if driving module input") {
+      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => {  y :<= x }
+      testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
   }
   describe("(3): :#= ") {
@@ -841,10 +883,249 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(3.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
       allTypes().foreach { t => test(t(), Seq("<=")) }
     }
+    it("(3.m): Error if different non-aggregate types") {
+      testException(UInt(), SInt(), "Sink (UInt) and Source (SInt) have different types")
+    }
+    it("(3.n): Emit '<=' between wires") {
+      implicit val monitorOp: Option[(Data, Data) => Unit] = Some(
+        (x: Data, y: Data) => {
+          val temp0 = Wire(chiselTypeOf(y))
+          temp0 :#= y
+          val temp1 = Wire(chiselTypeOf(y))
+          temp1 :#= temp0
+          x :#= temp1
+        }
+      )
+      test(mixedBundle(Bool()), Seq(
+        "temp1.bar <= temp0.bar",
+        "temp1.foo <= temp0.foo"
+      ))
+    }
+    it("(3.o): Error with 'cannot be written' if driving module input") {
+      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => {  y :#= x }
+      testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
+    }
   }
 
-  describe("(?): Use Cases") {
-    it("(?.a.a) Initalize wires with default values and :<>= to connect wires of mixed directions") {
+  describe("(4): WaivedData") {
+    import scala.collection.immutable.SeqMap
+    class Decoupled(val hasData: Boolean) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = if (hasData) Some(UInt(32.W)) else None
+    }
+    class BundleMap(fields: SeqMap[String, () => Data]) extends Record with AutoCloneType {
+      val elements = fields.map { case (name, gen) => name -> gen() }
+    }
+    object BundleMap {
+      def waive[T <: Data](d: T): WaivedData[T] = {
+        val bundleMapElements = DataMirror.collectDeep(d) { case b: BundleMap => b.getElements }
+        WaivedData(d, bundleMapElements.flatten.toSet)
+      }
+    }
+    class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = gen()
+    }
+    it("(4.a) Using waive works for nested field") {
+      class NestedDecoupled(val hasData: Boolean) extends Bundle {
+        val foo = new Decoupled(hasData)
+      }
+      class MyModule extends Module {
+        val in = IO(Flipped(new NestedDecoupled(true)))
+        val out = IO(new NestedDecoupled(false))
+        out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.get }
+      }
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
+        "out.foo.valid <= in.foo.valid",
+        "in.foo.ready <= out.foo.ready"
+      ), Seq("out.foo.bits <= in.foo.bits"))
+    }
+    it("(4.b) Inline waiver things") {
+      class MyModule extends Module {
+        val in = IO(Flipped(new Decoupled(true)))
+        val out = IO(new Decoupled(false))
+        out :<>= in.waive(_.data.get)
+      }
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
+        "out.valid <= in.valid",
+        "in.ready <= out.ready"
+      ), Seq("out.bits <= in.bits"))
+    }
+    it("(4.c) BundleMap example can use programmatic waiving") {
+      class MyModule extends Module {
+        def ab = new BundleMap(
+          SeqMap(
+            "a" -> (() => UInt(2.W)),
+            "b" -> (() => UInt(2.W))
+          )
+        )
+        def bc = new BundleMap(
+          SeqMap(
+            "b" -> (() => UInt(2.W)),
+            "c" -> (() => UInt(2.W))
+          )
+        )
+        val in = IO(Flipped(new DecoupledGen(() => ab)))
+        val out = IO(new DecoupledGen(() => bc))
+        //Programmatic
+        BundleMap.waive(out) :<>= BundleMap.waive(in)
+      }
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
+        "out.valid <= in.valid",
+        "in.ready <= out.ready",
+        "out.data.b <= in.data.b"
+      ), Nil)
+    }
+    it("(4.d) Assign defaults, then create WaivedData to connect to") {
+      class MyModule extends Module {
+        def ab = new BundleMap(
+          SeqMap(
+            "a" -> (() => UInt(2.W)),
+            "b" -> (() => UInt(2.W))
+          )
+        )
+        def bc = new BundleMap(
+          SeqMap(
+            "b" -> (() => UInt(2.W)),
+            "c" -> (() => UInt(2.W))
+          )
+        )
+        val in = IO(Flipped(new DecoupledGen(() => ab)))
+        val out = IO(new DecoupledGen(() => bc))
+        out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
+        //Programmatic
+        BundleMap.waive(out) :<>= BundleMap.waive(in)
+      }
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
+        "out.valid <= in.valid",
+        "in.ready <= out.ready",
+        "out.data.b <= in.data.b",
+        "out.data.c <= UInt<1>(\"h1\")"
+      ), Nil)
+    }
+    it("(4.e) (Good or bad?) Mismatched aggregate containing backpressure must be waived for :<=") {
+      // My concern with this use-case is if you have an unmatched aggregate field, but it only contains fields that your operator would ignore anyways, should you error?
+      //  - For the simplicity of reasoning about the operator semantics, I think the answer is yes because erroring is now a local decision during recursion (does not depend on the child field type)
+      //  - I just want to make sure, so this example kind of demonstrates that I think the behavior is sensible
+      //  - In addition, with the 'waive' feature, it's very straightforward to make the operator do what you want it to do, in this case, and the explicitness is good.
+      class OnlyBackPressure extends Bundle {
+        val ready = Flipped(UInt(3.W))
+      }
+      class MyModule extends Module {
+        // Have to nest in bundle because it calls the connecting-to-seq version
+        val in3 = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure) }))
+        val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure) })
+        val in2 = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure) }))
+        val out2 = IO(new Bundle { val v = Vec(2, new OnlyBackPressure) })
+        // Should do nothing, but also doesn't error, which is good
+        out3 :<= in3
+        // Should error, unless waived
+        out3.waive(_.v(2)) :>= in2
+        // Should error, unless waived
+        out2 :<= in3.waive(_.v(2))
+        DataMirror.collectAlignedDeep(in3) { case x => x }.toSet should be (Set(in3, in3.v, in3.v(0), in3.v(1), in3.v(2)))
+        DataMirror.collectFlippedDeep(in3) { case x => x }.toSet should be (Set(in3.v(0).ready, in3.v(1).ready, in3.v(2).ready))
+      }
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
+        "in2.v[0].ready <= out3.v[0].ready",
+        "in2.v[1].ready <= out3.v[1].ready",
+      ), Nil)
+    }
+  }
+  describe("(5): Connectable and DataView") {
+    it("(5.o) :<>= works with DataView to connect a bundle that is a subtype") {
+      import chisel3.experimental.dataview._
+
+      class SmallBundle extends Bundle {
+        val f1 = UInt(4.W)
+        val f2 = UInt(5.W)
+      }
+      class BigBundle extends SmallBundle {
+        val f3 = UInt(6.W)
+      }
+
+      class ConnectSupertype extends Module {
+        val io = IO(new Bundle {
+          val in = Input((new SmallBundle))
+          val out = Output((new BigBundle))
+
+          val foo = Input((new BigBundle))
+          val bar = Output(new SmallBundle)
+        })
+        io.out := DontCare
+        io.out.viewAsSupertype(Output(new SmallBundle)) :<>= io.in
+
+        io.bar := DontCare
+        io.bar :<>= io.foo.viewAsSupertype(Input((new SmallBundle)))
+      }
+      val out = (new ChiselStage).emitChirrtl(gen = new ConnectSupertype(), args = Array("--full-stacktrace"))
+      assert(out.contains("io.out.f1 <= io.in.f1"))
+      assert(out.contains("io.out.f2 <= io.in.f2"))
+      assert(!out.contains("io.out.f3 <= io.in.f3"))
+      assert(!out.contains("io.out <= io.in"))
+      assert(!out.contains("io.out <- io.in"))
+
+      assert(out.contains("io.bar.f1 <= io.foo.f1"))
+      assert(out.contains("io.bar.f2 <= io.foo.f2"))
+      assert(!out.contains("io.bar.f3 <= io.foo.f3"))
+      assert(!out.contains("io.bar <= io.foo"))
+      assert(!out.contains("io.bar <- io.foo"))
+    }
+    it("(5.p) :<>= works with DataView to connect a two Bundles with a common trait") {
+      import chisel3.experimental.dataview._
+
+      class SmallBundle extends Bundle {
+        val common = Output(UInt(4.W))
+        val commonFlipped = Input(UInt(4.W))
+      }
+      class BigA extends SmallBundle {
+        val a = Input(UInt(6.W))
+      }
+      class BigB extends SmallBundle {
+        val b = Output(UInt(6.W))
+      }
+
+      class ConnectCommonTrait extends Module {
+        val io = IO(new Bundle {
+          val in = Flipped(new BigA)
+          val out = (new BigB)
+        })
+        io.in := DontCare
+        io.out := DontCare
+        io.out.viewAsSupertype(new SmallBundle) :<>= io.in.viewAsSupertype(Flipped(new SmallBundle))
+      }
+      val out = ChiselStage.emitChirrtl { new ConnectCommonTrait() }
+      assert(!out.contains("io.out <= io.in"))
+      assert(!out.contains("io.out <- io.in"))
+      assert(out.contains("io.out.common <= io.in.common"))
+      assert(out.contains("io.in.commonFlipped <= io.out.commonFlipped"))
+      assert(!out.contains("io.out.b <= io.in.b"))
+      assert(!out.contains("io.in.a  <= io.out.a"))
+    }
+  }
+
+  describe("(6): Connectable between Vec and Seq") {
+    it("(6.a) :<>= works between Vec and Seq, as well as Vec and Vec") {
+      class ConnectVecSeqAndVecVec extends Module {
+        val a = IO(Vec(3, UInt(3.W)))
+        val b = IO(Vec(3, UInt(3.W)))
+        a :<>= Seq(0.U, 1.U, 2.U)
+        b :<>= VecInit(0.U, 1.U, 2.U)
+      }
+      val out = ChiselStage.emitChirrtl { new ConnectVecSeqAndVecVec() }
+      assert(out.contains("""a[0] <= UInt<1>("h0")"""))
+      assert(out.contains("""a[1] <= UInt<1>("h1")"""))
+      assert(out.contains("""a[2] <= UInt<2>("h2")"""))
+      assert(out.contains("""b[0] <= _WIRE[0]"""))
+      assert(out.contains("""b[1] <= _WIRE[1]"""))
+      assert(out.contains("""b[2] <= _WIRE[2]"""))
+    }
+  }
+
+  describe("(7): Use Cases") {
+    it("(7.a.a) Initalize wires with default values and :<>= to connect wires of mixed directions") {
       class MixedBundle extends Bundle {
         val foo = UInt(3.W)
         val bar = Flipped(UInt(3.W))
@@ -876,7 +1157,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it(
-      "(?.a.b) Initialize wires with different optional fields with :#= and using :<>= to connect wires of mixed directions, waiving extra field for being unassigned or dangling"
+      "(7.a.b) Initialize wires with different optional fields with :#= and using :<>= to connect wires of mixed directions, waiving extra field for being unassigned or dangling"
     ) {
       class MixedBundle extends Bundle {
         val foo = UInt(3.W)
@@ -909,7 +1190,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
-    it("(?.b) Waiving ok-to-dangle field connecting a wider bus to a narrower bus") {
+    it("(7.b) Waiving ok-to-dangle field connecting a wider bus to a narrower bus") {
       class ReadyValid extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -933,7 +1214,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it(
-      "(?.c) Waiving ok-to-unassign field connecting a narrower bus to a wider bus, with defaults for unassigned fields set via last connect semantics"
+      "(7.c) Waiving ok-to-unassign field connecting a narrower bus to a wider bus, with defaults for unassigned fields set via last connect semantics"
     ) {
       class ReadyValid extends Bundle {
         val valid = Bool()
@@ -960,7 +1241,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it(
-      "(?.d) Waiving ok-to-unassign field connecting a narrower bus to a wider bus will error if no default specified"
+      "(7.d) Waiving ok-to-unassign field connecting a narrower bus to a wider bus will error if no default specified"
     ) {
       class ReadyValid extends Bundle {
         val valid = Bool()
@@ -978,7 +1259,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         ChiselStage.emitVerilog({ new MyModule() }, true, true)
       }
     }
-    it("(?.d) A structurally identical but fully aligned monitor version of a bundle can easily be connected to") {
+    it("(7.e) A structurally identical but fully aligned monitor version of a bundle can easily be connected to") {
       class Decoupled extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -1003,7 +1284,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it(
-      "(?.e) A structurally different and fully aligned monitor version of a bundle can easily be connected to, provided missing fields are ok-to-dangle"
+      "(7.f) A structurally different and fully aligned monitor version of a bundle can easily be connected to, provided missing fields are ok-to-dangle"
     ) {
       class ReadyValid extends Bundle {
         val valid = Bool()
@@ -1029,7 +1310,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
-    it("(?.f) Discarding echo bits is ok if waived ok-to-dangle (waived dangles)") {
+    it("(7.g) Discarding echo bits is ok if waived ok-to-dangle (waived dangles)") {
       class Decoupled extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -1054,7 +1335,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
-    it("(?.g) Discarding echo bits is an error if not waived (dangles default to errors)") {
+    it("(7.h) Discarding echo bits is an error if not waived (dangles default to errors)") {
       class Decoupled extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -1070,7 +1351,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       }
       intercept[Exception] { ChiselStage.emitChirrtl({ new MyModule() }, true, true) }
     }
-    it("(?.h) Partial connect on records") {
+    it("(7.i) Partial connect on records") {
       class BoolRecord(fields: String*) extends Record {
         val elements = SeqMap(fields.map(f => f -> Bool()): _*)
         override def cloneType = new BoolRecord(fields: _*).asInstanceOf[this.type]
@@ -1078,425 +1359,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       class MyModule extends Module {
         val in = IO(Flipped(new BoolRecord("a", "b")))
         val out = IO(new BoolRecord("b", "c"))
-        //out :<!>= in
+        out.waiveAll :<>= in.waiveAll
       }
-      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
-    }
-    ignore(
-      "(?.h) (Example required) -     ok for non-waived dangling bits in a :<=, because :<= is less strict for dangles"
-    ) {}
-    ignore(
-      "(?.i) (Example required) - not ok for non-waived unassigned bits in a :<= are ok, because :<= is strict for unassigns"
-    ) {}
-    ignore(
-      "(?.j) (Example required) -     ok for non-waived dangling bits in a :>=, because :>= is less strict for dangles"
-    ) {}
-    ignore(
-      "(?.k) (Example required) - not ok for non-waived unassigned bits in a :>= are ok, because :>= is strict for unassigns"
-    ) {}
-  }
-  describe("TODO: Unit tests") {
-    ignore("(?.?) x :<>= DontCare") {}
-    ignore("(?.?) x :<= DontCare") {}
-    ignore("(?.?) x :>= DontCare") {}
-    ignore("(?.?) x :#= DontCare") {}
-  }
-  describe("(9) Using WaivedData examples") {
-    import scala.collection.immutable.SeqMap
-    class Decoupled(val hasData: Boolean) extends Bundle {
-      val valid = Bool()
-      val ready = Flipped(Bool())
-      val data = if (hasData) Some(UInt(32.W)) else None
-    }
-    class BundleMap(fields: SeqMap[String, () => Data]) extends Record with AutoCloneType {
-      val elements = fields.map { case (name, gen) => name -> gen() }
-    }
-    object BundleMap {
-      def waive[T <: Data](d: T): WaivedData[T] = {
-        val bundleMapElements = DataMirror.collectDeep(d) { case b: BundleMap => b.getElements }
-        WaivedData(d, bundleMapElements.flatten.toSet)
-      }
-    }
-    class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
-      val valid = Bool()
-      val ready = Flipped(Bool())
-      val data = gen()
-    }
-    it("(9.c) Using waive does work for nested field") {
-      class NestedDecoupled(val hasData: Boolean) extends Bundle {
-        val foo = new Decoupled(hasData)
-      }
-      class MyModule extends Module {
-        val in = IO(Flipped(new NestedDecoupled(true)))
-        val out = IO(new NestedDecoupled(false))
-        out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.get }
-      }
-      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
-    }
-    it("(9.e) Inline waiver things") {
-      class MyModule extends Module {
-        val in = IO(Flipped(new Decoupled(true)))
-        val out = IO(new Decoupled(false))
-        out :<>= in.waive(_.data.get)
-      }
-      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
-    }
-    it("(9.f) BundleMap example can use programmatic waiving") {
-      class MyModule extends Module {
-        def ab = new BundleMap(
-          SeqMap(
-            "a" -> (() => UInt(2.W)),
-            "b" -> (() => UInt(2.W))
-          )
-        )
-        def bc = new BundleMap(
-          SeqMap(
-            "b" -> (() => UInt(2.W)),
-            "c" -> (() => UInt(2.W))
-          )
-        )
-        val in = IO(Flipped(new DecoupledGen(() => ab)))
-        val out = IO(new DecoupledGen(() => bc))
-        //Programmatic
-        BundleMap.waive(out) :<>= BundleMap.waive(in)
-      }
-      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
-    }
-    it("(9.g) Somehow return the unused fields?") {
-      class MyModule extends Module {
-        def ab = new BundleMap(
-          SeqMap(
-            "a" -> (() => UInt(2.W)),
-            "b" -> (() => UInt(2.W))
-          )
-        )
-        def bc = new BundleMap(
-          SeqMap(
-            "b" -> (() => UInt(2.W)),
-            "c" -> (() => UInt(2.W))
-          )
-        )
-        val in = IO(Flipped(new DecoupledGen(() => ab)))
-        val out = IO(new DecoupledGen(() => bc))
-        out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
-        //Programmatic
-        val (waivedOut: WaivedData[DecoupledGen[BundleMap]], waivedIn: WaivedData[DecoupledGen[BundleMap]]) =
-          WaivedData.waiveUnmatched(out, in)
-        waivedOut :<>= waivedIn
-      }
-      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
-    }
-    it("(9.h) Create WaivedData to connect to") {
-      class MyModule extends Module {
-        def ab = new BundleMap(
-          SeqMap(
-            "a" -> (() => UInt(2.W)),
-            "b" -> (() => UInt(2.W))
-          )
-        )
-        def bc = new BundleMap(
-          SeqMap(
-            "b" -> (() => UInt(2.W)),
-            "c" -> (() => UInt(2.W))
-          )
-        )
-        val in = IO(Flipped(new DecoupledGen(() => ab)))
-        val out = IO(new DecoupledGen(() => bc))
-        out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
-        //Programmatic
-        BundleMap.waive(out) :<>= BundleMap.waive(in)
-      }
-      println(ChiselStage.emitChirrtl({ new MyModule() }, true, true))
-    }
-    it("(9.i) (Good or bad?) Mismatched aggregate containing backpressure must be waived for :<=") {
-      // My concern with this use-case is if you have an unmatched aggregate field, but it only contains fields that your operator would ignore anyways, should you error?
-      //  - For the simplicity of reasoning about the operator semantics, I think the answer is yes because erroring is now a local decision (does not depend on the child field type)
-      //  - I just want to make sure, so this example kind of demonstrates that I think the behavior is sensible
-      //  - In addition, with the 'waive' feature, it's very straightforward to make the operator do what you want it to do, in this case, and the explicitness is good.
-      class OnlyBackPressure extends Bundle {
-        val ready = Flipped(UInt(3.W))
-      }
-      class MyModule extends Module {
-        // Have to nest in bundle because it calls the connecting-to-seq version
-        val in3 = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure) }))
-        val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure) })
-        val in2 = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure) }))
-        val out2 = IO(new Bundle { val v = Vec(2, new OnlyBackPressure) })
-        // Should do nothing, but also doesn't error, which is good
-        out3 :<= in3
-        // Should error, unless waived
-        out3.waive(_.v(2)) :>= in2
-        // Should error, unless waived
-        out2 :<= in3.waive(_.v(2))
-        println(DataMirror.collectAlignedDeep(in3) { case x => x })
-        println(DataMirror.collectFlippedDeep(in3) { case x => x })
-      }
-      ChiselStage.emitChirrtl({ new MyModule() }, true, true)
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq("out.b <= in.b"), Nil)
     }
   }
-  //property("(D.a) SInt :<>= SInt should succeed") {
-  //  checkTest(buildTest(SInt(16.W), SInt(16.W), true, {_ :<>= _}, 0), "io.out <= io.in")
-  //}
-  //property("(D.b) UInt :<>= UInt should succeed") {
-  //  ChiselStage.elaborate { new CrossDirectionalBulkConnects(UInt(16.W), UInt(16.W)) }
-  //}
-  //property("(D.c) SInt :<>= UInt should fail") {
-  //  intercept[ChiselException] { ChiselStage.elaborate { new CrossDirectionalBulkConnects(UInt(16.W), SInt(16.W)) } }
-  //}
-  //property("(D.d) Decoupled :<>= Decoupled should succeed") {
-  //  class Decoupled extends Bundle {
-  //    val bits = UInt(3.W)
-  //    val valid = Bool()
-  //    val ready = Flipped(Bool())
-  //  }
-  //  val out = ChiselStage.emitChirrtl { new CrossDirectionalBulkConnects(new Decoupled, new Decoupled) }
-  //  assert(out.contains("io.out <= io.in"))
-  //}
-  //property("(D.d) Aggregates with same-named fields should succeed") {
-  //  class Foo extends Bundle {
-  //    val foo = Bool()
-  //    val bar = Flipped(Bool())
-  //  }
-  //  class FooLike extends Bundle {
-  //    val foo = Bool()
-  //    val bar = Flipped(Bool())
-  //  }
-  //  val out = ChiselStage.emitChirrtl { new CrossDirectionalBulkConnects(new Foo, new FooLike) }
-  //  assert(out.contains("io.out <= io.in"))
-  //}
-  //property("(D.d) Decoupled[Foo] :<>= Decoupled[Foo-Like] should succeed") {
-  //  class Foo extends Bundle {
-  //    val foo = Bool()
-  //    val bar = Flipped(Bool())
-  //  }
-  //  class FooLike extends Bundle {
-  //    val foo = Bool()
-  //    val bar = Flipped(Bool())
-  //  }
-  //  class Decoupled[T <: Data](gen: => T) extends Bundle {
-  //    val bits = gen
-  //    val valid = Bool()
-  //    val ready = Flipped(Bool())
-  //  }
-  //  val out = ChiselStage.emitChirrtl {
-  //    new CrossDirectionalBulkConnects(new Decoupled(new Foo()), new Decoupled(new FooLike()))
-  //  }
-  //  assert(out.contains("io.out <= io.in"))
-  //}
-  //property("(D.e) different relative flips, but same absolute flippage is an error") {
-  //  class X(yflip: Boolean, zflip: Boolean) extends Bundle {
-  //    val y = if (yflip) Flipped(new Y(zflip)) else new Y(zflip)
-  //  }
-  //  class Y(flip: Boolean) extends Bundle {
-  //    val z = if (flip) Flipped(Bool()) else Bool()
-  //  }
-  //  intercept[ChiselException] {
-  //    ChiselStage.emitVerilog { new CrossDirectionalBulkConnects(new X(true, false), new X(false, true)) }
-  //  }
-  //}
-  //property("(D.f) :<>= is not commutative.") {
-  //  intercept[ChiselException] {
-  //    ChiselStage.elaborate { new NotCommutativeCrossDirectionalBulkConnects(UInt(16.W), UInt(16.W)) }
-  //  }
-  //}
-  //property("(D.g) UInt :<>= UInt should succeed with intermediate Wires") {
-  //  ChiselStage.elaborate { new CrossDirectionalBulkConnectsWithWires(UInt(16.W), UInt(16.W), 1) }
-  //}
-  //property("(D.h) Decoupled :<>= Decoupled should succeed with intermediate Wires") {
-  //  class Decoupled extends Bundle {
-  //    val bits = UInt(3.W)
-  //    val valid = Bool()
-  //    val ready = Flipped(Bool())
-  //  }
-  //  val out = ChiselStage.emitChirrtl { new CrossDirectionalBulkConnectsWithWires(new Decoupled, new Decoupled, 2) }
-  //  assert(out.contains("io.out <= wiresOut_0"))
-  //  assert(out.contains("wiresOut_1 <= wiresIn_0"))
-  //  assert(out.contains("wiresIn_1 <= io.in"))
-  //}
-  //property("(D.i) Aggregates :<>= with missing fields should not succeed, no matter the direction.") {
-  //  class Foo extends Bundle {
-  //    val foo = Bool()
-  //  }
-  //  class FooBar extends Bundle {
-  //    val foo = Bool()
-  //    val bar = Bool()
-  //  }
-  //  intercept[ChiselException] {
-  //    ChiselStage.emitChirrtl { new CrossDirectionalBulkConnects(new Foo(), new FooBar()) }
-  //  }
-  //  intercept[ChiselException] {
-  //    ChiselStage.emitChirrtl { new CrossDirectionalBulkConnects(new FooBar(), new Foo()) }
-  //  }
-  //}
-  //property("(D.j) Cannot :<>= to something that is not writable.") {
-
-  //  intercept[ChiselException] {
-  //    ChiselStage.emitChirrtl { new NotWritableCrossDirectionalBulkConnects(UInt(16.W)) }
-  //  }
-  //}
-  //property("(D.k) Can :<>= to Vecs of the same length") {
-  //  val out = (new ChiselStage).emitChirrtl { new CrossDirectionalBulkConnects(Vec(3, UInt(16.W)), Vec(3, UInt(16.W))) }
-  //  assert(out.contains("io.out <= io.in"))
-  //}
-  //property("(D.l) :<>= between Vecs of different length should not succeed, no matter the direction") {
-  //  intercept[ChiselException] {
-  //    ChiselStage.emitChirrtl { new CrossDirectionalBulkConnects(Vec(2, UInt(16.W)), Vec(3, UInt(16.W))) }
-  //  }
-  //  intercept[ChiselException] {
-  //    ChiselStage.emitChirrtl { new CrossDirectionalBulkConnects(Vec(3, UInt(16.W)), Vec(2, UInt(16.W))) }
-  //  }
-
-  //}
-  //property(
-  //  "(D.m) :<>= is NOT equivalent to Chisel.:= in that  `A Module with missing bundle fields when compiled with the Chisel compatibility package` *should* `throw an exception` "
-  //) {
-  //  // This is copied from CompatibilitySpec but the := is replaced with :<>=
-  //  class SmallBundle extends Bundle {
-  //    val f1 = UInt(4.W)
-  //    val f2 = UInt(5.W)
-  //  }
-  //  class BigBundle extends SmallBundle {
-  //    val f3 = UInt(6.W)
-  //  }
-
-  //  class ConnectFieldMismatchModule extends Module {
-  //    val io = IO(new Bundle {
-  //      val in = Input((new SmallBundle))
-  //      val out = Output((new BigBundle))
-  //    })
-  //    (io.out: Data) :<>= (io.in: Data)
-  //  }
-  //  intercept[ChiselException] {
-  //    ChiselStage.elaborate { new ConnectFieldMismatchModule() }
-  //  }
-  //}
-
-  //property(
-  //  "(D.n) :#= is the same as chisel3.:=, in that fields must match and all consumer fields are written to, regardless of flippedness"
-  //) {
-  //  // This is copied from CompatibilitySpec but the := is replaced with :<>=
-  //  class Decoupled extends Bundle {
-  //    val bits = UInt(3.W)
-  //    val valid = Bool()
-  //    val ready = Flipped(Bool())
-  //  }
-  //  val out = ChiselStage.emitChirrtl { new CrossDirectionalMonoConnectsWithWires(new Decoupled, new Decoupled, 1) }
-  //  assert(out.contains("wiresIn_0.bits <= io.in.bits"))
-  //  assert(out.contains("wiresIn_0.valid <= io.in.valid"))
-  //  assert(out.contains("wiresIn_0.ready <= io.in.ready"))
-  //}
-
-  //property("(D.o) :<>= works with DataView to connect a bundle that is a subtype") {
-  //  import chisel3.experimental.dataview._
-
-  //  class SmallBundle extends Bundle {
-  //    val f1 = UInt(4.W)
-  //    val f2 = UInt(5.W)
-  //  }
-  //  class BigBundle extends SmallBundle {
-  //    val f3 = UInt(6.W)
-  //  }
-
-  //  class ConnectSupertype extends Module {
-  //    val io = IO(new Bundle {
-  //      val in = Input((new SmallBundle))
-  //      val out = Output((new BigBundle))
-
-  //      val foo = Input((new BigBundle))
-  //      val bar = Output(new SmallBundle)
-  //    })
-  //    io.out := DontCare
-  //    io.out.viewAsSupertype(Output(new SmallBundle)) :<>= io.in
-
-  //    io.bar := DontCare
-  //    io.bar :<>= io.foo.viewAsSupertype(Input((new SmallBundle)))
-  //  }
-  //  val out = (new ChiselStage).emitChirrtl(gen = new ConnectSupertype(), args = Array("--full-stacktrace"))
-  //  assert(out.contains("io.out.f1 <= io.in.f1"))
-  //  assert(out.contains("io.out.f2 <= io.in.f2"))
-  //  assert(!out.contains("io.out.f3 <= io.in.f3"))
-  //  assert(!out.contains("io.out <= io.in"))
-  //  assert(!out.contains("io.out <- io.in"))
-
-  //  assert(out.contains("io.bar.f1 <= io.foo.f1"))
-  //  assert(out.contains("io.bar.f2 <= io.foo.f2"))
-  //  assert(!out.contains("io.bar.f3 <= io.foo.f3"))
-  //  assert(!out.contains("io.bar <= io.foo"))
-  //  assert(!out.contains("io.bar <- io.foo"))
-
-  //}
-  //property("(D.p) :<>= works with DataView to connect a two Bundles with a common trait") {
-  //  import chisel3.experimental.dataview._
-
-  //  class SmallBundle extends Bundle {
-  //    val common = Output(UInt(4.W))
-  //    val commonFlipped = Input(UInt(4.W))
-  //  }
-  //  class BigA extends SmallBundle {
-  //    val a = Input(UInt(6.W))
-  //  }
-  //  class BigB extends SmallBundle {
-  //    val b = Output(UInt(6.W))
-  //  }
-
-  //  class ConnectCommonTrait extends Module {
-  //    val io = IO(new Bundle {
-  //      val in = Flipped(new BigA)
-  //      val out = (new BigB)
-  //    })
-  //    io.in := DontCare
-  //    io.out := DontCare
-  //    io.out.viewAsSupertype(new SmallBundle) :<>= io.in.viewAsSupertype(Flipped(new SmallBundle))
-  //  }
-  //  val out = ChiselStage.emitChirrtl { new ConnectCommonTrait() }
-  //  assert(!out.contains("io.out <= io.in"))
-  //  assert(!out.contains("io.out <- io.in"))
-  //  assert(out.contains("io.out.common <= io.in.common"))
-  //  assert(out.contains("io.in.commonFlipped <= io.out.commonFlipped"))
-  //  assert(!out.contains("io.out.b <= io.in.b"))
-  //  assert(!out.contains("io.in.a  <= io.out.a"))
-  //}
-
-  //property("(D.q) :<>= works between Vec and Seq, as well as Vec and Vec") {
-  //  class ConnectVecSeqAndVecVec extends Module {
-  //    val a = IO(Vec(3, UInt(3.W)))
-  //    val b = IO(Vec(3, UInt(3.W)))
-  //    a :<>= Seq(0.U, 1.U, 2.U)
-  //    b :<>= VecInit(0.U, 1.U, 2.U)
-  //  }
-  //  val out = ChiselStage.emitChirrtl { new ConnectVecSeqAndVecVec() }
-  //  assert(out.contains("""a[0] <= UInt<1>("h0")"""))
-  //  assert(out.contains("""a[1] <= UInt<1>("h1")"""))
-  //  assert(out.contains("""a[2] <= UInt<2>("h2")"""))
-  //  assert(out.contains("""b[0] <= _WIRE[0]"""))
-  //  assert(out.contains("""b[1] <= _WIRE[1]"""))
-  //  assert(out.contains("""b[2] <= _WIRE[2]"""))
-  //}
-
-  //property("(D.r) :<>= works for different missing Defaulting subfields") {
-  //  trait Info extends Bundle {
-  //    val info = UInt(32.W)
-  //  }
-  //  class InfoECC extends Info {
-  //    val ecc = Defaulting(false.B)
-  //  }
-  //  class InfoControl extends Info {
-  //    val control = Defaulting(false.B)
-  //  }
-  //  val firrtl = ChiselStage.emitChirrtl {
-  //    new CrossDirectionalBulkConnectsWithWires(new InfoECC(): Info, new InfoControl(): Info, 1)
-  //  }
-  //  println(firrtl)
-  //  assert(firrtl.contains("wiresOut_0.control <= UInt<1>(\"h0\")"))
-  //  assert(firrtl.contains("wiresOut_0.info <= wiresIn_0.info"))
-  //}
-  //property("(D.s) :<>= works for different missing Defaulting subindexes") {
-  //  def vecType(size: Int) = Vec(size, Defaulting(UInt(3.W), 0.U))
-  //  val firrtl = ChiselStage.emitChirrtl { new CrossDirectionalBulkConnectsWithWires(vecType(2), vecType(3), 1) }
-  //  println(firrtl)
-  //  assert(firrtl.contains("wiresOut_0[2] <= UInt<1>(\"h0\")"))
-  //  assert(firrtl.contains("wiresOut_0[1] <= wiresIn_0[1]"))
-  //  assert(firrtl.contains("wiresOut_0[0] <= wiresIn_0[0]"))
-
-  //}
 }
