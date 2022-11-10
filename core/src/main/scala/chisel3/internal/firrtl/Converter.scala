@@ -8,7 +8,7 @@ import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
 
 import scala.annotation.{nowarn, tailrec}
-import scala.collection.immutable.Queue
+import scala.collection.immutable.{Queue, VectorBuilder}
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 @nowarn("msg=class Port") // delete when Port becomes private
@@ -215,7 +215,7 @@ private[chisel3] object Converter {
     * @param alt Indicates if currently processing commands in the alternate (else) of the when scope
     */
   // TODO we should probably have a different structure in the IR to close elses
-  private case class WhenFrame(when: fir.Conditionally, outer: Queue[fir.Statement], alt: Boolean)
+  private case class WhenFrame(when: fir.Conditionally, outer: VectorBuilder[fir.Statement], alt: Boolean)
 
   /** Convert Chisel IR Commands into FIRRTL Statements
     *
@@ -226,52 +226,72 @@ private[chisel3] object Converter {
     * @return FIRRTL Statement that is equivalent to the input cmds
     */
   def convert(cmds: Seq[Command], ctx: Component): fir.Statement = {
-    @tailrec
-    def rec(acc: Queue[fir.Statement], scope: List[WhenFrame])(cmds: Seq[Command]): Seq[fir.Statement] = {
-      if (cmds.isEmpty) {
-        assert(scope.isEmpty)
-        acc
-      } else
-        convertSimpleCommand(cmds.head, ctx) match {
-          // Most Commands map 1:1
-          case Some(stmt) =>
-            rec(acc :+ stmt, scope)(cmds.tail)
-          // When scoping logic does not map 1:1 and requires pushing/popping WhenFrames
-          // Please see WhenFrame for more details
-          case None =>
-            cmds.head match {
-              case WhenBegin(info, pred) =>
-                val when = fir.Conditionally(convert(info), convert(pred, ctx, info), fir.EmptyStmt, fir.EmptyStmt)
-                val frame = WhenFrame(when, acc, false)
-                rec(Queue.empty, frame +: scope)(cmds.tail)
-              case WhenEnd(info, depth, _) =>
-                val frame = scope.head
-                val when =
-                  if (frame.alt) frame.when.copy(alt = fir.Block(acc))
-                  else frame.when.copy(conseq = fir.Block(acc))
-                // Check if this when has an else
-                cmds.tail.headOption match {
-                  case Some(AltBegin(_)) =>
-                    assert(!frame.alt, "Internal Error! Unexpected when structure!") // Only 1 else per when
-                    rec(Queue.empty, frame.copy(when = when, alt = true) +: scope.tail)(cmds.drop(2))
-                  case _ => // Not followed by otherwise
-                    // If depth > 0 then we need to close multiple When scopes so we add a new WhenEnd
-                    // If we're nested we need to add more WhenEnds to ensure each When scope gets
-                    // properly closed
-                    val cmdsx = if (depth > 0) WhenEnd(info, depth - 1, false) +: cmds.tail else cmds.tail
-                    rec(frame.outer :+ when, scope.tail)(cmdsx)
-                }
-              case OtherwiseEnd(info, depth) =>
-                val frame = scope.head
-                val when = frame.when.copy(alt = fir.Block(acc))
-                // TODO For some reason depth == 1 indicates the last closing otherwise whereas
-                //  depth == 0 indicates last closing when
-                val cmdsx = if (depth > 1) OtherwiseEnd(info, depth - 1) +: cmds.tail else cmds.tail
-                rec(scope.head.outer :+ when, scope.tail)(cmdsx)
-            }
-        }
+    var stmts = new VectorBuilder[fir.Statement]()
+    var scope: List[WhenFrame] = Nil
+    var cmdsIt = cmds.iterator.buffered
+    // Extra var because sometimes we want to push a Command to the head of cmdsIt
+    // This is more efficient than changing the iterator
+    var nextCmd: Command = null
+    while (nextCmd != null || cmdsIt.hasNext) {
+      val cmd = if (nextCmd != null) {
+        val _nextCmd = nextCmd
+        nextCmd = null
+        _nextCmd
+      } else {
+        cmdsIt.next()
+      }
+      convertSimpleCommand(cmd, ctx) match {
+        // Most Commands map 1:1
+        case Some(stmt) =>
+          stmts += stmt
+        // When scoping logic does not map 1:1 and requires pushing/popping WhenFrames
+        // Please see WhenFrame for more details
+        case None =>
+          cmd match {
+            case WhenBegin(info, pred) =>
+              val when = fir.Conditionally(convert(info), convert(pred, ctx, info), fir.EmptyStmt, fir.EmptyStmt)
+              val frame = WhenFrame(when, stmts, false)
+              stmts = new VectorBuilder[fir.Statement]
+              scope = frame :: scope
+            case WhenEnd(info, depth, _) =>
+              val frame = scope.head
+              val when =
+                if (frame.alt) frame.when.copy(alt = fir.Block(stmts.result()))
+                else frame.when.copy(conseq = fir.Block(stmts.result()))
+              // Check if this when has an else
+              cmdsIt.headOption match {
+                case Some(AltBegin(_)) =>
+                  assert(!frame.alt, "Internal Error! Unexpected when structure!") // Only 1 else per when
+                  scope = frame.copy(when = when, alt = true) :: scope.tail
+                  cmdsIt.next() // Consume the AltBegin
+                  stmts = new VectorBuilder[fir.Statement]
+                case _ => // Not followed by otherwise
+                  // If depth > 0 then we need to close multiple When scopes so we add a new WhenEnd
+                  // If we're nested we need to add more WhenEnds to ensure each When scope gets
+                  // properly closed
+                  if (depth > 0) {
+                    nextCmd = WhenEnd(info, depth - 1, false)
+                  }
+                  stmts = frame.outer
+                  stmts += when
+                  scope = scope.tail
+              }
+            case OtherwiseEnd(info, depth) =>
+              val frame = scope.head
+              val when = frame.when.copy(alt = fir.Block(stmts.result()))
+              // TODO For some reason depth == 1 indicates the last closing otherwise whereas
+              //  depth == 0 indicates last closing when
+              if (depth > 1) {
+                nextCmd = OtherwiseEnd(info, depth - 1)
+              }
+              stmts = frame.outer
+              stmts += when
+              scope = scope.tail
+          }
+      }
     }
-    fir.Block(rec(Queue.empty, List.empty)(cmds))
+    assert(scope.isEmpty)
+    fir.Block(stmts.result())
   }
 
   def convert(width: Width): fir.Width = width match {
@@ -346,7 +366,7 @@ private[chisel3] object Converter {
 
   def convert(component: Component): fir.DefModule = component match {
     case ctx @ DefModule(_, name, ports, cmds) =>
-      fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx))
+      fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds, ctx))
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(
         fir.NoInfo,
