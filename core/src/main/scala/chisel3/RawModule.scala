@@ -23,14 +23,16 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   //
   // RTL construction internals
   //
-  private val _commands = ArrayBuffer[Command]()
-  private[chisel3] def addCommand(c: Command) {
+  private var _commands = ArrayBuffer[Command]()
+  private[chisel3] def addCommand(c: Command): Unit = {
     require(!_closed, "Can't write to module after module close")
     _commands += c
   }
-  protected def getCommands = {
+  protected def getCommands: Seq[Command] = {
     require(_closed, "Can't get commands before module close")
-    _commands.toSeq
+    // Unsafe cast but we know that any RawModule uses a DefModule
+    // _component is defined as a var on BaseModule and we cannot override mutable vars
+    _component.get.asInstanceOf[DefModule].commands
   }
 
   //
@@ -123,7 +125,9 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
         Seq()
       }
     }
-    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
+    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++: _commands.toList)
+    // Free the ArrayBuffer, .clear() does not actually free the memory
+    _commands = null
     _component = Some(component)
     _component
   }
