@@ -211,7 +211,7 @@ class ClipSqueezeWrapDemo(
   val wrapped = counter.wrap(0.U.asInterval(targetRange))
 
   when(counter === startValue) {
-    printf(s"Target range is $range\n")
+    printf(cf"Target range is $range\n")
     printf("value     clip      squeeze      wrap\n")
   }
 
@@ -245,10 +245,7 @@ class SqueezeFunctionalityTester(range: IntervalRange, startNum: BigDecimal, end
   squeezeTemplate := toSqueeze.squeeze(squeezeInterval)
 
   printf(
-    s"SqueezeTest %d    %d.squeeze($range) => %d\n",
-    counter,
-    toSqueeze.asSInt(),
-    squeezeTemplate.asSInt()
+    cf"SqueezeTest $counter%d ${toSqueeze.asSInt()}%d.squeeze($range) => ${squeezeTemplate.asSInt()}%d\n"
   )
 }
 
