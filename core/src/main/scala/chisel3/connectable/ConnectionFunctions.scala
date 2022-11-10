@@ -107,16 +107,6 @@ private[chisel3] object ConnectionFunctions {
               matchingZipOfChildren(Some(co), Some(po)).foreach {
                 case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
               }
-            // TODO: check that above aggregate works for all tests
-            //case (c: Record, p: Record) =>
-            //  matchingZipOfChildren(Some(co), Some(po)).foreach {
-            //    case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
-            //  }
-            //case (c: Vec[Data @unchecked], p: Vec[Data @unchecked]) =>
-            //  matchingZipOfChildren(Some(co), Some(po)).foreach {
-            //    case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
-            //  }
-            // Am matching orientation of the non-DontCare, regardless
             case (c: Aggregate, DontCare) =>
               c.getElements.foreach {
                 case f => doAssignment(deriveChildAlignment(f, co), deriveChildAlignment(f, co).swap(DontCare))
