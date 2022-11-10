@@ -20,11 +20,12 @@ section: "chisel3"
   - E.g. `Vec(3, UInt(2.W))(0)` is a member of the parent `Vec` Chisel type
   - E.g. `Wire(Vec(3, UInt(2.W)))(0)` is a member of the parent `Wire` component
   - E.g. `IO(Decoupled(Bool)).ready` is a member of the parent `IO` component
+- "relative alignment" - whether two members of the same component or Chisel type are aligned/flipped, relative to one another
+  - see section [below](#alignment-flipped-vs-aligned) for a detailed definition
 - "structural type check" - Chisel type `A` is structurally equivalent to Chisel type `B` if `A` and `B` have matching bundle field names and types (`Record` vs `Vector` vs `Element`), vector sizes, `Element` types (UInt/SInt/Bool/Clock etc))
   - ignores relative alignment (flippedness)
   - use `DataMirror.checkTypeEquivalence` to check this property
 - "alignment type check" - a Chisel type `A` matches alignment with another Chisel type `B` if every member of `A`'s relative alignment to `A` is the same as the structurally corresponding member of `B`'s relative alignment to `B`.
-  - see section [below](#alignment-flipped-vs-aligned) for a detailed definition
 
 ## Overview
 

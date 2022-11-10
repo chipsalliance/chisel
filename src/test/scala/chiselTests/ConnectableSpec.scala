@@ -13,7 +13,7 @@ import chisel3.testers.BasicTester
 import chisel3.experimental.{AutoCloneType, DataMirror}
 import scala.collection.immutable.SeqMap
 
-object DirectionalBulkConnectSpec {
+object ConnectableSpec {
   class ConnectionTest[T <: Data, S <: Data](
     outType:     S,
     inType:      T,
@@ -109,8 +109,8 @@ object DirectionalBulkConnectSpec {
 
 }
 
-class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
-  import DirectionalBulkConnectSpec._
+class ConnectableSpec extends ChiselFunSpec with Utils {
+  import ConnectableSpec._
 
   def testCheck(firrtl: String, matches: Seq[String], nonMatches: Seq[String]): String = {
     val unmatched = matches.collect {
@@ -276,18 +276,6 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     it("(0.i): Error if different root-relative flippedness on leaf fields between right-hand-side or left-hand-side") {
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
       testException(alignedBundle(Bool()), mixedBundle(Bool()), "inversely oriented fields")
-    }
-    ignore("(0.j): Emit defaultable assignments on type with default, instead of erroring with missing fields") {
-      //testDistinctTypes(
-      //  alignedBundle(Bool().withConnectableDefault(true.B)),
-      //  alignedFooBundle(Bool()),
-      //  Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
-      //)
-      //testDistinctTypes(
-      //  alignedBundle(Bool()).withConnectableDefault{(_.bar -> true.B)},
-      //  alignedFooBundle(Bool()),
-      //  Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
-      //)
     }
     it(
       "(0.k): When connecting FROM DontCare, emit for aligned aggregate fields and error for flipped aggregate fields"
@@ -480,18 +468,6 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     it("(1.i): Error if different root-relative flippedness on fields between right-hand-side or left-hand-side") {
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
       testException(alignedBundle(Bool()), mixedBundle(Bool()), "inversely oriented fields")
-    }
-    ignore("(1.j): Emit defaultable assignments on type with default, instead of erroring with missing fields") {
-      //testDistinctTypes(
-      //  alignedBundle(Bool().withConnectableDefault(true.B)),
-      //  alignedFooBundle(Bool()),
-      //  Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
-      //)
-      //testDistinctTypes(
-      //  alignedBundle(Bool()).withConnectableDefault{ (_.bar -> true.B)},
-      //  alignedFooBundle(Bool()),
-      //  Seq("io.out.foo <= io.in.foo", "io.out.bar <= UInt<1>(\"h1\")")
-      //)
     }
     it(
       "(1.k): When connecting FROM DontCare, emit for aligned aggregate fields and skip for flipped aggregate fields"
@@ -1118,25 +1094,6 @@ class DirectionalBulkConnectSpec extends ChiselFunSpec with Utils {
     ignore(
       "(?.k) (Example required) - not ok for non-waived unassigned bits in a :>= are ok, because :>= is strict for unassigns"
     ) {}
-
-    /*
-     1) c :<= p
-      a) [ERROR(waivable)]        unassigned aligned c field
-      b) [ERROR(mismatchedflips)] aligned c field and flipped p field
-      c) [ERROR(mismatchedflips)] flipped c field and aligned p field
-      d) [ERROR(waivable)]        dangling aligned p fields (no c field)
-      e) [Ok(prolly)]             dangling (and ignored due to :<= operator) flipped c fields (no p field)
-      f) [Ok(prolly)]             unassigned (and ignored due to :<= operator) flipped p fields (no c field)
-     2) c :#= w (composition breaks from 1.b and 1.c)
-       c :<= w
-       w :>= c
-     3) m :#= p (composition breaks from 1.b and 1.c)
-       m :<= p
-       p :>= m
-     4) c :<>= p (composition ok)
-       c :<= p
-       c :>= p
-     */
   }
   describe("TODO: Unit tests") {
     ignore("(?.?) x :<>= DontCare") {}

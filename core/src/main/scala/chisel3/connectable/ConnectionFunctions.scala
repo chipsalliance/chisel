@@ -115,7 +115,6 @@ private[chisel3] object ConnectionFunctions {
               p.getElements.foreach {
                 case f => doAssignment(deriveChildAlignment(f, po).swap(DontCare), deriveChildAlignment(f, po))
               }
-
             case (c, p) if co.alignsWith(po) => leafConnect(c, p, co, op)
             case (c, p) if !co.alignsWith(po) && op.assignToConsumer && !op.assignToProducer =>
               leafConnect(c, p, co, op)

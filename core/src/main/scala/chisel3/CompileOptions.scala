@@ -35,8 +35,11 @@ trait CompileOptions {
   /** If marked true, then any Module which consumes `inferModuleReset=false` must also mix in [[RequireSyncReset]] */
   def migrateInferModuleReset: Boolean = false
 
-  /** If marked true, then any <> or := operation using legacy connection semantics will error and suggest using [[Connectable]] ops */
-  def migrateConnections: Boolean = false
+  /** If marked true, then any <> operation using legacy connection semantics will error and suggest using [[Connectable]] ops */
+  def migrateBulkConnections: Boolean = false
+
+  /** If marked true, then any := operation on mixed alignment bundles will error and suggest using [[Connectable]] ops */
+  def migrateMonoConnections: Boolean = false
 
   /** Should connects emit as firrtl <= instead of <- */
   def emitStrictConnects: Boolean = true

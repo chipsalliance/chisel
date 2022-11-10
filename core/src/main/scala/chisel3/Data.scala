@@ -527,7 +527,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case _ => // fine
       }
     }
-    if (connectCompileOptions.migrateConnections) {
+    if (connectCompileOptions.migrateMonoConnections) {
       getRecursiveFields.noPath(this).collect {
         case d if d.direction != this.direction =>
           Builder.error(s"$this cannot be used with := because submember $d has inverse orientation; use :#= instead")
@@ -577,7 +577,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           )
       }
     } else {
-      if (connectCompileOptions.migrateConnections)
+      if (connectCompileOptions.migrateBulkConnections)
         Builder.error(s"Cannot use <> in an `import Chisel._` file; use :<>= instead")
       this.firrtlPartialConnect(that)
     }

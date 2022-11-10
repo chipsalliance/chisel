@@ -690,8 +690,8 @@ class StrongEnumAnnotatorWithChiselName extends Module {
   io.other := OtherEnum.otherEnum
   io.local := LocalEnum.le0
   simple := e100
-  bund :#= DontCare
-  vec_of_bundles :#= DontCare
+  bund := DontCare
+  vec_of_bundles := DontCare
 
   // Make sure that dynamically indexing into a Vec of enums will not cause an elaboration error.
   // The components created here will not be annotated.
