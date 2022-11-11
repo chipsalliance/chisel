@@ -50,12 +50,72 @@ private[chisel3] object DataMirror {
     * For example, `UInt(8.W)` and `UInt(16.W)` are different.
     * Likewise, Records check that both Records have the same
     * elements with the same types.
+    * 
+    * Equivalent to being structural, alignment, and width type equivalent
     *
     * @param x First Chisel type
     * @param y Second Chisel type
     * @return true if the two Chisel types are equal.
     */
   def checkTypeEquivalence(x: Data, y: Data): Boolean = x.typeEquivalent(y)
+
+  /** Check if two Chisel types have the same type structure.
+    *
+    * This means that Aggregates must have matching members (vector sizes or field names)
+    *   and the member types must also have structural type equivalence.
+    * For non-aggregates, they must be the same type, but widths can be different.
+    * For example, `UInt(8.W)` and `UInt(16.W)` are structurally type equivalent.
+    * Likewise, Records check that both Records have the same
+    * elements with the same types.
+    *
+    * @param x First Chisel type
+    * @param y Second Chisel type
+    * @return true if the two Chisel types have structural type equivalence.
+    */
+  //def checkStructuralTypeEquivalence(x: Data, y: Data): Boolean = {
+  //  collectDeepOverAllForAny(Some(x), Some(y)) {
+  //    case (None,    Some(_)) => (Some(false), None)
+  //    case (Some(_), None)    => (Some(false), None)
+  //    case (Some(a), Some(b)) => (a, b) match {
+  //      case (_: UInt, _: UInt) =>
+  //      case (_: SInt, _: SInt) =>
+  //      case (_: Clock, _: Clock) =>
+  //      case (_: AsyncResetType, _: AsyncResetType) =>
+  //    }(Some(true), None)
+  //  }.map(_._1.get).forall(r => r)
+  //}
+
+  /** Check if two Chisel types have the same alignments for all matching members
+    *
+    * This means that for matching members in Aggregates, they must have matching member alignments relative to the parent type
+    * For matching non-aggregates, they must be the same alignment to their parent type.
+    *
+    * @param x First Chisel type
+    * @param y Second Chisel type
+    * @return true if the two Chisel types have alignment type equivalence.
+    */
+  def checkAlignmentTypeEquivalence(x: Data, y: Data): Boolean = {
+    collectDeepOverMatches(connectable.Alignment(x, true), connectable.Alignment(y, true)) {
+      case (a, b) => a.alignment == b.alignment
+    }(AlignmentMatchingZipOfChildren).forall(r => r)
+  }
+
+  /** Check if two Chisel types have the same widths for all matching members
+    *
+    * This means that for matching non-Aggregate members, they must have equivalent widths
+    *  - Unknown widths are equivalent
+    *  - Known widths must be the same size
+    *
+    * @param x First Chisel type
+    * @param y Second Chisel type
+    * @return true if the two Chisel types have width type equivalence.
+    */
+  def checkWidthTypeEquivalence(x: Data, y: Data): Boolean = {
+    collectDeepOverMatches(x, y) {
+      case (_: Aggregate, _: Aggregate) => true
+      case (a, b) => a.widthOption == b.widthOption
+    }.forall(r => r)
+  }
 
   /** Returns the ports of a module
     * {{{
@@ -172,7 +232,7 @@ private[chisel3] object DataMirror {
     * @tparam T Type of the component that will be collected
     */
   def collectAlignedDeep[T](base: Data)(pf: PartialFunction[Data, T]): Seq[T] = {
-    collectDeepOverAllForAny(Some(Alignment(base, Set.empty, true)), None) {
+    collectDeepOverAllForAny(Some(Alignment(base, true)), None) {
       case (Some(x: AlignedWithRoot), _) => (pf.lift(x.member), None)
     }.map(_._1).flatten
   }
@@ -185,7 +245,7 @@ private[chisel3] object DataMirror {
     * @tparam T Type of the component that will be collected
     */
   def collectFlippedDeep[T](base: Data)(pf: PartialFunction[Data, T]): Seq[T] = {
-    collectDeepOverAllForAny(Some(Alignment(base, Set.empty, true)), None) {
+    collectDeepOverAllForAny(Some(Alignment(base, true)), None) {
       case (Some(x: FlippedWithRoot), _) => (pf.lift(x.member), None)
     }.map(_._1).flatten
   }

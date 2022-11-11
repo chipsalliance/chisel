@@ -35,7 +35,7 @@ The `Connectable` operators are the standard way to connect Chisel hardware comp
 
 All connection operators require the two hardware components (consumer and producer) to be structurally type equivalent.
 
-The one exception to the structural type-equivalence rule is using the `WaivedData` mechanism, detailed at this [section](#waived-data) towards the end of this document.
+The one exception to the structural type-equivalence rule is using the `ConnectableData` mechanism, detailed at this [section](#waived-data) towards the end of this document.
 
 Aggregate (`Record`, `Vec`, `Bundle`) Chisel types can include data members which are flipped relative to one another. Due to this, there are many desired connection behaviors between two Chisel components. The following are the Chisel connection operators:
  - `c := p` (mono-direction): assigns all p members to c; requires c & p to not have any flipped members
@@ -355,12 +355,12 @@ ChiselStage.emitVerilog(new Example4b())
 
 It is not uncommon for a user to want to connect Chisel components which are not type equivalent. For example, a user may want to hook up anonymous `Record` components who may have an intersection of their fields being equivalent, but cannot because they are not structurally equivalent.
 
-`WaivedData` is the mechanism to specialize connection operator behavior in these scenarios. For any additional member which is not present in the other component being connected to, they can be explicitly waived from the operator to be ignored, rather than trigger an error.
+`ConnectableData` is the mechanism to specialize connection operator behavior in these scenarios. For any additional member which is not present in the other component being connected to, they can be explicitly waived from the operator to be ignored, rather than trigger an error.
 
 In addition, there are other techniques that can be used to address similar use cases including `.viewAsSuperType`, a static cast to a supertype (e.g. `(x: T)`), or creating a custom dataview.
 For a discussion about when to use each technique, please continue [here](#techniques-for-connecting-structurally-inequivalent-chisel-types).
 
-This section demonstrates how `WaivedData` specifically can be used in a multitude of scenarios.
+This section demonstrates how `ConnectableData` specifically can be used in a multitude of scenarios.
 
 ### Connecting Records
 
@@ -485,18 +485,18 @@ ChiselStage.emitVerilog(new Example11())
 
 ## Techniques for connecting structurally inequivalent Chisel types
 
-`DataView` and `viewAsSupertype` creates a view of the component that has a different Chisel type. This means that a user can first create a `DataView` of the consumer or producer (or both) so that the Chisel types are structurally equivalent. This is useful when the difference between the consumer and producers aren't super nested, and also if they have rich Scala types which encode their structure. In general, `DataView` is the preferred mechanism to use (if you can) because it maintains the most about of Chisel information in the Scala type, but there are many instances where it doesn't work and thus one must fall back on `WaivedData`.
+`DataView` and `viewAsSupertype` creates a view of the component that has a different Chisel type. This means that a user can first create a `DataView` of the consumer or producer (or both) so that the Chisel types are structurally equivalent. This is useful when the difference between the consumer and producers aren't super nested, and also if they have rich Scala types which encode their structure. In general, `DataView` is the preferred mechanism to use (if you can) because it maintains the most about of Chisel information in the Scala type, but there are many instances where it doesn't work and thus one must fall back on `ConnectableData`.
 
-`WaivedData` does not change the Chisel type, but instead changes the semantics of the operator to not error on the waived members if they are dangling or unassigned. This is useful for when differences between the consumer and producer do not show up in the Scala type system (e.g. present/missing fields of type `Option[Data]`, or anonymous `Record`s) or are deeply nested in a bundle that is especially onerous to create a `DataView`.
+`ConnectableData` does not change the Chisel type, but instead changes the semantics of the operator to not error on the waived members if they are dangling or unassigned. This is useful for when differences between the consumer and producer do not show up in the Scala type system (e.g. present/missing fields of type `Option[Data]`, or anonymous `Record`s) or are deeply nested in a bundle that is especially onerous to create a `DataView`.
 
 Static casts (e.g. `(x: T)`) allows connecting components that have different Scala types, but leaves the Chisel type unchanged. Use this to force a connection to occur, even if the Scala types are different. One may wonder why the operators require identical Scala types in the first place, if they can easily be bypassed. The reason is to encourage users to use the Scala type system to encode Chisel information as it can make their code more robust; however, we don't want to be draconian about it because there are times when we want to enable the user to "just connect the darn thing".
 
 When all else fails one can always manually expand the connection to do what they want to happen. The down-side to this approach is its verbosity and that adding new fields to a bundle will require updating the manual connections.
 
-Things to remember about `WaivedData` vs `viewAsSupertype`/`DataView` vs static cast (e.g. `(x: T)`)
+Things to remember about `ConnectableData` vs `viewAsSupertype`/`DataView` vs static cast (e.g. `(x: T)`)
 
 - Dataview and viewAsSupertype will preemptively remove members that are not present in the new view which has a different Chisel type, thus **DataView does affect what is connected**
-- Waived Data is used to waive the error on members who end up being dangling or unassigned. Importantly, **WaivedData does not affect what is connected**
+- Waived Data is used to waive the error on members who end up being dangling or unassigned. Importantly, **ConnectableData does not affect what is connected**
 - Static cast does not remove extra members, thus a **static cast does not affect what is connected**
 
 ### Connecting different subtypes of the same super-type, with colliding names

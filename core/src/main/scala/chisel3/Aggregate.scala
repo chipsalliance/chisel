@@ -275,7 +275,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     *  - Complicated semantics, will likely be deprecated in the future
     *
     * For Chisel._, emits the FIRRTL.<- operator
-    *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match
+    *  - Equivalent to `this :<>= that` but bundle field names and vector sizes do not have to match
     *
     * @note the length of this Vec and that Seq must match
     * @param that the Seq to connect from
@@ -313,7 +313,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     *  - Equivalent to `this :#= that`
     *
     * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
-    *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
+    *  - Equivalent to `this :<>= that`
     *
     * @note the length of this Vec must match the length of the input Seq
     * @group connection

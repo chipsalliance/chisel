@@ -188,8 +188,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(UInt(16.W))
       test(SInt(16.W))
       test(Clock())
-      testDistinctTypes(UInt(16.W), Bool()) // Bool inherits UInt, so this should work
-      testDistinctTypes(Bool(), UInt(16.W)) // Bool inherits UInt, so this should work
+      testDistinctTypes(UInt(16.W), Bool())
+      testException(Bool(), UInt(16.W), "mismatched widths")
     }
     it("(0.b): Emit '<=' between identical aligned aggregate types") {
       test(vec(Bool()))
@@ -246,9 +246,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(mixedBundle(Clock())))
     }
     it("(0.f): Throw exception between differing ground types") {
-      testException(UInt(3.W), SInt(3.W), "have different types")
-      testException(UInt(3.W), Clock(), "have different types")
-      testException(SInt(3.W), Clock(), "have different types")
+      testException(UInt(1.W), SInt(1.W), "have different types")
+      testException(UInt(1.W), Clock(), "have different types")
+      testException(SInt(1.W), Clock(), "have different types")
     }
     it("(0.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
       test(Analog(3.W), Seq("attach (io.out, io.in)"))
@@ -321,8 +321,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(UInt(16.W))
       test(SInt(16.W))
       test(Clock())
-      testDistinctTypes(UInt(16.W), Bool()) // Bool inherits UInt, so this should work
-      testDistinctTypes(Bool(), UInt(16.W)) // Bool inherits UInt, so this should work
+      testDistinctTypes(UInt(16.W), Bool())
+      testException(Bool(), UInt(16.W), "mismatched widths")
     }
     it("(1.b): Emit multiple '<=' between identical aligned aggregate types") {
       val vecMatches = Seq(
@@ -451,9 +451,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(mixedBundle(Clock())), bundleBundleMatches, nonBundleBundleMatches)
     }
     it("(1.f): Throw exception between differing ground types") {
-      testException(UInt(3.W), SInt(3.W), "have different types")
-      testException(UInt(3.W), Clock(), "have different types")
-      testException(SInt(3.W), Clock(), "have different types")
+      testException(UInt(1.W), SInt(1.W), "have different types")
+      testException(UInt(1.W), Clock(), "have different types")
+      testException(SInt(1.W), Clock(), "have different types")
     }
     it("(1.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
       test(Analog(3.W), Seq("attach (io.out, io.in)"))
@@ -528,8 +528,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(UInt(16.W), skip)
       test(SInt(16.W), skip)
       test(Clock(), skip)
-      testDistinctTypes(UInt(16.W), Bool(), skip) // Bool inherits UInt, so this should work
-      testDistinctTypes(Bool(), UInt(16.W), skip) // Bool inherits UInt, so this should work
+      testDistinctTypes(UInt(16.W), Bool(), skip)
+      testDistinctTypes(Bool(), UInt(16.W), skip)
     }
     it("(2.b): Emit 'skip' between identical aligned aggregate types") {
       val skip = Seq("skip")
@@ -689,8 +689,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(UInt(16.W))
       test(SInt(16.W))
       test(Clock())
-      testDistinctTypes(UInt(16.W), Bool()) // Bool inherits UInt, so this should work
-      testDistinctTypes(Bool(), UInt(16.W)) // Bool inherits UInt, so this should work
+      testDistinctTypes(UInt(16.W), Bool())
+      testException(Bool(), UInt(16.W), "mismatched widths")
     }
     it("(3.b): Emit multiple '<=' between identical aligned aggregate types") {
       val vecMatches = Seq(
@@ -812,9 +812,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(mixedBundle(Clock())), bundleBundleMatches)
     }
     it("(3.f): Throw exception between differing ground types") {
-      testException(UInt(3.W), SInt(3.W), "have different types")
-      testException(UInt(3.W), Clock(), "have different types")
-      testException(SInt(3.W), Clock(), "have different types")
+      testException(UInt(1.W), SInt(1.W), "have different types")
+      testException(UInt(1.W), Clock(), "have different types")
+      testException(SInt(1.W), Clock(), "have different types")
     }
     it("(3.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
       implicit val op: (Data, Data) => Unit = { _ :#= _ }
@@ -907,7 +907,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
   }
 
-  describe("(4): WaivedData") {
+  describe("(4): ConnectableData") {
     import scala.collection.immutable.SeqMap
     class Decoupled(val hasData: Boolean) extends Bundle {
       val valid = Bool()
@@ -918,9 +918,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       val elements = fields.map { case (name, gen) => name -> gen() }
     }
     object BundleMap {
-      def waive[T <: Data](d: T): WaivedData[T] = {
+      def waive[T <: Data](d: T): ConnectableData[T] = {
         val bundleMapElements = DataMirror.collectDeep(d) { case b: BundleMap => b.getElements }
-        WaivedData(d, bundleMapElements.flatten.toSet)
+        ConnectableData(d, bundleMapElements.flatten.toSet, Set.empty)
       }
     }
     class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
@@ -978,7 +978,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         "out.data.b <= in.data.b"
       ), Nil)
     }
-    it("(4.d) Assign defaults, then create WaivedData to connect to") {
+    it("(4.d) Assign defaults, then create ConnectableData to connect to") {
       class MyModule extends Module {
         def ab = new BundleMap(
           SeqMap(
@@ -1352,9 +1352,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       intercept[Exception] { ChiselStage.emitChirrtl({ new MyModule() }, true, true) }
     }
     it("(7.i) Partial connect on records") {
-      class BoolRecord(fields: String*) extends Record {
+      class BoolRecord(fields: String*) extends Record with AutoCloneType {
         val elements = SeqMap(fields.map(f => f -> Bool()): _*)
-        override def cloneType = new BoolRecord(fields: _*).asInstanceOf[this.type]
       }
       class MyModule extends Module {
         val in = IO(Flipped(new BoolRecord("a", "b")))

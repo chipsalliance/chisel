@@ -825,17 +825,17 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 object Data {
 
   // Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data
-  implicit class ConnectableDataDefault[T <: Data](consumer: T) extends connectable.ConnectableData[T](consumer)
+  implicit class ConnectableDataDefault[T <: Data](consumer: T) extends connectable.ConnectableDataOperators[T](consumer)
 
   // Provides :<>=, :<=, :>=, and :#= between a (consumer: Vec) and (producer: Seq)
-  implicit class ConnectableVecDefault[T <: Data](consumer: Vec[T]) extends connectable.ConnectableVec[T](consumer)
+  implicit class ConnectableVecDefault[T <: Data](consumer: Vec[T]) extends connectable.ConnectableVecOperators[T](consumer)
 
-  // Can implicitly convert a Data to a WaivedData
+  // Can implicitly convert a Data to a ConnectableData
   // Originally this was done with an implicit class, but all functions we want to
-  //  add to Data we also want on WaivedData, so an implicit conversion makes the most sense
+  //  add to Data we also want on ConnectableData, so an implicit conversion makes the most sense
   //  so the ScalaDoc can be shared.
   import scala.language.implicitConversions
-  implicit def toWaivedDataDefault[T <: Data](d: T): WaivedData[T] = WaivedData.apply(d)
+  implicit def toConnectableDataDefault[T <: Data](d: T): ConnectableData[T] = ConnectableData.apply(d)
 
   implicit val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
 

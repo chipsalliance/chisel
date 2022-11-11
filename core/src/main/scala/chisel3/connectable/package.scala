@@ -80,158 +80,13 @@ package object connectable {
     *
     * @param consumer the left-hand-side of the connection
     */
-  implicit class ConnectableData[T <: Data](consumer: T) extends ConnectableDocs {
-
-    /** $colonLessEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
-      */
-    final def :<=[S <: Data](producer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        assign(consumer, producer, ColonLessEq, Set.empty[Data], Set.empty[Data])
-      }
-    }
-
-    /** $colonGreaterEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
-      */
-    final def :>=[S <: Data](producer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        assign(consumer, producer, ColonGreaterEq, Set.empty[Data], Set.empty[Data])
-      }
-    }
-
-    /** $colonLessGreaterEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection
-      */
-    final def :<>=[S <: Data](producer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        val evaluatedProducer = producer
-        val canFirrtlConnect =
-          try {
-            BiConnect.canFirrtlConnectData(
-              consumer,
-              evaluatedProducer,
-              sourceInfo,
-              ConnectionFunctions.chisel5CompileOptions,
-              Builder.referenceUserModule
-            )
-          } catch {
-            // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
-            //  when calling DirectionConnectionFunctions.assign. Hence, we can just default to false to take the non-optimized emission path
-            case e: Throwable => false
-          }
-        if (canFirrtlConnect) {
-          consumer.firrtlConnect(evaluatedProducer)
-        } else {
-          // cannot call :<= and :>= directly because otherwise prefix is called twice
-          assign(consumer, evaluatedProducer, ColonLessGreaterEq, Set.empty[Data], Set.empty[Data])
-        }
-      }
-    }
-
-    /** $colonHashEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
-      */
-    final def :#=[S <: Data](producer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        assign(consumer, producer, ColonHashEq, Set.empty[Data], Set.empty[Data])
-      }
-    }
-
-    /** $colonLessEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
-      */
-    final def :<=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
-      assign(consumer, producer, ColonLessEq, Set.empty[Data], Set.empty[Data])
-    }
-
-    /** $colonGreaterEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
-      */
-    final def :>=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
-      assign(consumer, producer, ColonGreaterEq, Set.empty[Data], Set.empty[Data])
-    }
-
-    /** $colonLessGreaterEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection
-      */
-    final def :<>=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
-      assign(consumer, producer, ColonLessGreaterEq, Set.empty[Data], Set.empty[Data])
-    }
-
-    /** $colonHashEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
-      */
-    final def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
-      assign(consumer, producer, ColonHashEq, Set.empty[Data], Set.empty[Data])
-    }
-
-    /** $colonLessEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
-      */
-    final def :<=[S <: Data](pWaived: WaivedData[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        assign(consumer, pWaived.base, ColonLessEq, Set.empty[Data], pWaived.waivers)
-      }
-    }
-
-    /** $colonGreaterEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
-      */
-    final def :>=[S <: Data](pWaived: WaivedData[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        assign(consumer, pWaived.base, ColonGreaterEq, Set.empty[Data], pWaived.waivers)
-      }
-    }
-
-    /** $colonLessGreaterEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection
-      */
-    final def :<>=[S <: Data](pWaived: WaivedData[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        assign(consumer, pWaived.base, ColonLessGreaterEq, Set.empty[Data], pWaived.waivers)
-      }
-    }
-
-    /** $colonHashEq
-      *
-      * @group connection
-      * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
-      */
-    final def :#=[S <: Data](pWaived: WaivedData[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
-      prefix(consumer) {
-        assign(consumer, pWaived.base, ColonHashEq, Set.empty[Data], pWaived.waivers)
-      }
-    }
-  }
+  implicit class ConnectableDataOperators[T <: Data](consumer: T) extends ConnectableData.ConnectableForConnectableData(ConnectableData(consumer))
 
   /** ConnectableVec Typeclass defines the following operators on between a (consumer: Vec) and (producer: Seq): :<=, :>=, :<>=, :#=
     *
     * @param consumer the left-hand-side of the connection
     */
-  implicit class ConnectableVec[T <: Data](consumer: Vec[T]) {
+  implicit class ConnectableVecOperators[T <: Data](consumer: Vec[T]) {
 
     /** $colonLessEq
       *
@@ -304,7 +159,7 @@ package object connectable {
       */
     final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
-        assign(consumer, producer, ColonGreaterEq, Set.empty[Data], Set.empty[Data])
+        assign(consumer, producer, ColonGreaterEq)
       }
     }
   }

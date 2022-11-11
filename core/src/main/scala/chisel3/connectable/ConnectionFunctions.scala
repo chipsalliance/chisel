@@ -29,15 +29,13 @@ private[chisel3] object ConnectionFunctions {
     * @param sourceInfo source info for where the assignment occurred
     */
   def assign[T <: Data](
-    cRoot:    T,
-    pRoot:    T,
-    cOp:      ConnectionOperator,
-    cWaivers: Set[Data],
-    pWaivers: Set[Data]
+    cRoot:    ConnectableData[T],
+    pRoot:    ConnectableData[T],
+    cOp:      ConnectionOperator
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    doAssignment(cRoot, pRoot, cOp, cWaivers, pWaivers)
+    doAssignment(cRoot, pRoot, cOp)
   }
 
   // Consumed by the := operator, set to what chisel3 will eventually become.
@@ -70,12 +68,24 @@ private[chisel3] object ConnectionFunctions {
     }
   }
 
+  private def connect(
+    l:  Data,
+    r:  Data,
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    (l, r) match {
+      case (x: Analog, y: Analog) => assignAnalog(x, y)
+      case (x: Analog, DontCare) => assignAnalog(x, DontCare)
+      case (_, _) => l := r
+    }
+  }
+
+
   private def doAssignment[T <: Data](
-    consumer: T,
-    producer: T,
-    op:       ConnectionOperator,
-    cWaivers: Set[Data],
-    pWaivers: Set[Data]
+    consumer: ConnectableData[T],
+    producer: ConnectableData[T],
+    op:       ConnectionOperator
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -86,26 +96,30 @@ private[chisel3] object ConnectionFunctions {
     def doAssignment(co: Alignment, po: Alignment)(implicit sourceInfo: SourceInfo): Unit = {
       (co, po) match {
         // Base Case 0: should probably never happen
-        case (EmptyAlignment, EmptyAlignment) => ()
+        case (_: EmptyAlignment, _: EmptyAlignment) => ()
 
         // Base Case 1: early exit if dangling/unassigned is wavied
-        case (co: NonEmptyAlignment, EmptyAlignment) if co.isWaived => ()
-        case (EmptyAlignment, po: NonEmptyAlignment) if po.isWaived => ()
+        case (co: NonEmptyAlignment, _: EmptyAlignment) if co.isWaived => ()
+        case (_: EmptyAlignment, po: NonEmptyAlignment) if po.isWaived => ()
 
         // Base Case 2: early exit if operator requires matching orientations, but they don't align
         case (co: NonEmptyAlignment, po: NonEmptyAlignment) if (!co.alignsWith(po)) && (op.noWrongOrientations) =>
           errors += (s"inversely oriented fields ${co.member} and ${po.member}")
 
+        // Base Case 3: early exit if operator requires matching widths, but they aren't the same
+        case (co: NonEmptyAlignment, po: NonEmptyAlignment) if (co.truncates(po, op)) && (op.noMismatchedWidths) =>
+          errors += (s"mismatched widths of ${co.member} and ${po.member}")
+
         // Base Case 3: operator error on dangling/unassigned fields
-        case (c: NonEmptyAlignment, EmptyAlignment) => errors += (s"${c.errorWord(op)} consumer field ${co.member}")
-        case (EmptyAlignment, p: NonEmptyAlignment) => errors += (s"${p.errorWord(op)} producer field ${po.member}")
+        case (c: NonEmptyAlignment, _: EmptyAlignment) => errors += (s"${c.errorWord(op)} consumer field ${co.member}")
+        case (_: EmptyAlignment, p: NonEmptyAlignment) => errors += (s"${p.errorWord(op)} producer field ${po.member}")
 
         // Recursive Case 4: non-empty orientations
         case (co: NonEmptyAlignment, po: NonEmptyAlignment) =>
           (co.member, po.member) match {
             case (c: Aggregate, p: Aggregate) =>
               matchingZipOfChildren(Some(co), Some(po)).foreach {
-                case (ceo, peo) => doAssignment(ceo.getOrElse(EmptyAlignment), peo.getOrElse(EmptyAlignment))
+                case (ceo, peo) => doAssignment(ceo.getOrElse(co.empty), peo.getOrElse(po.empty))
               }
             case (c: Aggregate, DontCare) =>
               c.getElements.foreach {
@@ -115,18 +129,21 @@ private[chisel3] object ConnectionFunctions {
               p.getElements.foreach {
                 case f => doAssignment(deriveChildAlignment(f, po).swap(DontCare), deriveChildAlignment(f, po))
               }
-            case (c, p) if co.alignsWith(po) => leafConnect(c, p, co, op)
-            case (c, p) if !co.alignsWith(po) && op.assignToConsumer && !op.assignToProducer =>
-              leafConnect(c, p, co, op)
-            case (c, p) if !co.alignsWith(po) && !op.assignToConsumer && op.assignToProducer =>
-              leafConnect(c, p, po, op)
+            case (c, p) =>
+              val o = (co.alignsWith(po), (!co.alignsWith(po) && op.assignToConsumer && !op.assignToProducer), (!co.alignsWith(po) && !op.assignToConsumer && op.assignToProducer)) match {
+                case (true, _, _) => co
+                case (_, true, _) => co
+                case (_, _, true) => po
+              }
+              val lAndROpt = o.computeLandR(c, p, op)
+              lAndROpt.map { case (l, r) => connect(l, r) }
           }
         case other => throw new Exception(other.toString + " " + op)
       }
     }
 
     // Start recursive assignment
-    doAssignment(Alignment(consumer, cWaivers, true), Alignment(producer, pWaivers, false))
+    doAssignment(Alignment(consumer, true), Alignment(producer, false))
 
     // If any errors are collected, error.
     if (errors.nonEmpty) {
