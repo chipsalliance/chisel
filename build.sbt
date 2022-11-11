@@ -65,7 +65,8 @@ lazy val mimaSettings = Seq(
 )
 
 lazy val protobufSettings = Seq(
-  ProtobufConfig / version := "3.18.2", // CVE-2021-22569
+  // The parentheses around the version help avoid version ambiguity in release scripts
+  ProtobufConfig / version := ("3.18.2"), // CVE-2021-22569
   ProtobufConfig / sourceDirectory := baseDirectory.value / "src" / "main" / "proto",
   ProtobufConfig / protobufRunProtoc := (args => com.github.os72.protocjar.Protoc.runProtoc("-v351" +: args.toArray))
 )
