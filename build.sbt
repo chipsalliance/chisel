@@ -209,6 +209,12 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.MemBase.setRef"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.setRef"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.setRef"),
+      // Methods in inner class defined within package private object
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.outer"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.copy"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.copy$default$2"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.this"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.apply"),
     )
   ).
   settings(
