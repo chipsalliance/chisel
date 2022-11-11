@@ -488,8 +488,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A chisel3.Bundle with only unspecified directions" should "work with D/I" in {
 
-    // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction.
-
     object Chisel3 {
       import chisel3._
       import chisel3.experimental.hierarchy.{instantiable, public, Instance}
@@ -517,8 +515,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "A chisel3.Bundle with mixed Specified and Unspecified directions" should "work with D/I" in {
-
-    // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction.
 
     object Chisel3 {
       import chisel3._
@@ -548,8 +544,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A chisel3.Bundle with only unspecified vec direction" should "work with D/I" in {
 
-    // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction
-
     object Chisel3 {
       import chisel3._
       import chisel3.experimental.hierarchy.{instantiable, public, Instance}
@@ -577,8 +571,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "A chisel3.Bundle with only unspecified vec direction within an unspecified direction parent Bundle" should "work with D/I" in {
-
-    // This test is NOT expected to work in 3.5.x, it should throw an error in the IO construction.
 
     object Chisel3 {
       import chisel3._
@@ -613,8 +605,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "A undirectioned Chisel.Bundle used in a MixedVec " should "bulk connect in import chisel3._ code correctly" in {
 
-    // This test is NOT expected to work on 3.5.x, it should throw an error in the IO construction.
-
     object Compat {
 
       import Chisel._
@@ -647,8 +637,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "A undirectioned Chisel.Bundle with Records with undirectioned and directioned fields " should "work" in {
-
-    // This test should fail on 3.5.x
 
     object Compat {
 
