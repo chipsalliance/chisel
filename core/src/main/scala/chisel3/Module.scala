@@ -50,7 +50,8 @@ object Module extends SourceInfoDoc {
     //   - unset readyForModuleConstr
     //   - reset whenStack to be empty
     //   - set currentClockAndReset
-    val module: T = bc // bc is actually evaluated here
+    val module: T = bc  // bc is actually evaluated here
+    module.finishInstantiate()
 
     if (Builder.whenDepth != 0) {
       throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
@@ -322,6 +323,12 @@ package experimental {
   // TODO: seal this?
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
+
+    /** Code blocks which will be executed at the end of Module. */
+    private[chisel3] val finishActions: collection.mutable.ListBuffer[() => Unit] = collection.mutable.ListBuffer.empty
+
+    /** execute code blocks in [[finishActions]]. */
+    private[chisel3] def finishInstantiate(): Unit = finishActions.foreach(_())
 
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.

@@ -532,4 +532,11 @@ package object experimental {
       "_10" -> _10
     )
   }
+
+  /** Append code block to the last of this Module instantiate. */
+  def registerFinishAction(block: () => Unit, module: BaseModule = Module.currentModule.get): Unit = {
+    require(!module.isClosed, "cannot insert code block to a closed Module.")
+    module.finishActions.append(block)
+  }
+
 }
