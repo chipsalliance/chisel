@@ -335,11 +335,20 @@ object Lookupable {
       }
       def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
         val ret = that(instance.proto)
-        val ioMap: Option[Map[Data, Data]] = instance.underlying match {
-          case Clone(x: ModuleClone[_]) => Some(x.ioMap)
-          case Proto(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
-          case _ => None
+
+        def getIoMap(hierarchy: Hierarchy[_]): Option[Map[Data, Data]] = {
+          hierarchy.underlying match {
+            case Clone(x: ModuleClone[_]) => Some(x.ioMap)
+            case Proto(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
+            case Clone(x: InstantiableClone[_]) => getIoMap(x._innerContext)
+            case Clone(x: InstanceClone[_]) => None
+            case other => {
+              Builder.exception(s"Internal Error! Unexpected case where we can't get IO Map: $other")
+            }
+          }
         }
+        val ioMap = getIoMap(instance)
+
         if (isView(ret)) {
           cloneViewToContext(ret, instance.cache, ioMap, instance.getInnerDataContext)
         } else {

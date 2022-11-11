@@ -7,6 +7,7 @@ import chisel3.stage.ChiselStage
 import chisel3.aop.Select
 import chisel3.experimental.{dump, noPrefix, prefix, treedump}
 import chiselTests.{ChiselPropSpec, Utils}
+import chisel3.experimental.AffectsChiselPrefix
 
 class PrefixSpec extends ChiselPropSpec with Utils {
   implicit val minimumMajorVersion: Int = 12
@@ -495,6 +496,55 @@ class PrefixSpec extends ChiselPropSpec with Utils {
     }
     aspectTest(() => new Test) { top: Test =>
       Select.wires(top).map(_.instanceName) should be(List("a_b_c_d"))
+    }
+  }
+
+  property("Prefixing of AffectsChiselPrefix objects should work") {
+    class NotAData extends AffectsChiselPrefix {
+      val value = Wire(UInt(3.W))
+    }
+    class NotADataUnprefixed {
+      val value = Wire(UInt(3.W))
+    }
+    class Test extends Module {
+      {
+        val nonData = new NotAData
+        // Instance name of nonData.value should be nonData_value
+        nonData.value := RegNext(3.U)
+
+        val nonData2 = new NotADataUnprefixed
+        // Instance name of nonData2.value should be value
+        nonData2.value := RegNext(3.U)
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("nonData_value", "value"))
+    }
+  }
+  property("Prefixing should not be affected by repeated calls of suggestName") {
+    class Test extends Module {
+      val in = IO(Input(UInt(3.W)))
+      val prefixed = {
+        val wire = Wire(UInt(3.W)).suggestName("wire") // "prefixed_wire"
+        wire := in
+
+        val thisShouldNotBeHere = {
+          // Second suggestName doesn't modify the instanceName since it was
+          // already suggested, but also should not modify the prefix either
+
+          // Incorrect behavior would rename the wire to
+          // "prefixed_thisShouldNotBeHere_wire"
+          wire.suggestName("wire")
+
+          val out = IO(Output(UInt(3.W)))
+          out := wire
+          out
+        }
+        thisShouldNotBeHere
+      }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("prefixed_wire"))
     }
   }
 }

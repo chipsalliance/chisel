@@ -60,7 +60,10 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   // ensure memory ports are created with the same clock unless explicitly specified to use a different clock
   private val clockInst: Option[Clock] = Builder.currentClock
 
-  protected def clockWarning(sourceInfo: Option[SourceInfo]): Unit = {
+  // Only kept for binary compatibility reasons, impossible for users to call
+  protected def clockWarning(sourceInfo: Option[SourceInfo]): Unit = clockWarning(sourceInfo, MemPortDirection.INFER)
+
+  protected def clockWarning(sourceInfo: Option[SourceInfo], dir: MemPortDirection): Unit = {
     // Turn into pretty String if possible, if not, Builder.deprecated will find one via stack trace
     val infoStr = sourceInfo.collect { case SourceLine(file, line, col) => s"$file:$line:$col" }
     Builder.deprecated(
@@ -135,7 +138,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     compileOptions:      CompileOptions
   ): T = {
     if (warn && clockInst.isDefined && clock != clockInst.get) {
-      clockWarning(Some(sourceInfo))
+      clockWarning(Some(sourceInfo), dir)
     }
     makePort(sourceInfo, idx, dir, clock)
   }
@@ -167,7 +170,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     implicit compileOptions: CompileOptions
   ): Unit = {
     if (warn && clockInst.isDefined && clock != clockInst.get) {
-      clockWarning(None)
+      clockWarning(None, MemPortDirection.WRITE)
     }
     implicit val sourceInfo = UnlocatableSourceInfo
     makePort(UnlocatableSourceInfo, idx, MemPortDirection.WRITE, clock) := data
@@ -226,7 +229,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   ): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
     if (warn && clockInst.isDefined && clock != clockInst.get) {
-      clockWarning(None)
+      clockWarning(None, MemPortDirection.WRITE)
     }
     val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE, clock).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
@@ -274,7 +277,13 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt) extends MemBase(t, length)
+sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt) extends MemBase(t, length) {
+  override protected def clockWarning(sourceInfo: Option[SourceInfo], dir: MemPortDirection): Unit = {
+    // Do not issue clock warnings on reads, since they are not clocked
+    if (dir != MemPortDirection.READ)
+      super.clockWarning(sourceInfo, dir)
+  }
+}
 
 object SyncReadMem {
 

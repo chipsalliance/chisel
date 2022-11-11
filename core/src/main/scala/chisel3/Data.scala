@@ -5,11 +5,11 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
+import chisel3.experimental.{Analog, BaseModule, DataMirror, EnumType, FixedPoint, Interval}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 import scala.reflect.ClassTag
@@ -265,6 +265,14 @@ package experimental {
       }
     }
 
+    /** Returns the parent module within which a module instance is instantiated
+      *
+      * @note Top-level modules in any given elaboration do not have a parent
+      * @param target a module instance
+      * @return the parent of the `target`, if one exists
+      */
+    def getParent(target: BaseModule): Option[BaseModule] = target._parent
+
     // Internal reflection-style APIs, subject to change and removal whenever.
     object internal {
       def isSynthesizable(target: Data): Boolean = target.isSynthesizable
@@ -353,7 +361,7 @@ private[chisel3] object getRecursiveFields {
         _ ++ _
       }
     case data: Vec[_] =>
-      data.getElements.zipWithIndex.map {
+      data.elementsIterator.zipWithIndex.map {
         case (fieldData, fieldIndex) =>
           getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
       }.fold(Seq(data -> path)) {
@@ -371,7 +379,7 @@ private[chisel3] object getRecursiveFields {
         }
     case data: Vec[_] =>
       LazyList(data -> path) ++
-        data.getElements.view.zipWithIndex.flatMap {
+        data.elementsIterator.zipWithIndex.flatMap {
           case (fieldData, fieldIndex) =>
             getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
         }
@@ -398,8 +406,8 @@ private[chisel3] object getMatchedFields {
           _ ++ _
         }
     case (x: Vec[_], y: Vec[_]) =>
-      (x.getElements
-        .zip(y.getElements))
+      (x.elementsIterator
+        .zip(y.elementsIterator))
         .map {
           case (xElt, yElt) =>
             getMatchedFields(xElt, yElt)
@@ -456,7 +464,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {
-      case elt: Aggregate => elt.getElements.toIndexedSeq.flatMap { _.flatten }
+      case elt: Aggregate => elt.elementsIterator.toIndexedSeq.flatMap { _.flatten }
       case elt: Element   => IndexedSeq(elt)
       case elt => throwException(s"Cannot flatten type ${elt.getClass}")
     }
@@ -501,14 +509,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Binding stores information about this node's position in the hardware graph.
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
-  private var _binding: Option[Binding] = None
+  private var _bindingVar: Binding = null // using nullable var for better memory usage
+  private def _binding:    Option[Binding] = Option(_bindingVar)
   // Only valid after node is bound (synthesizable), crashes otherwise
   protected[chisel3] def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
       throw RebindingException(s"Attempted reassignment of binding to $this, from: ${target}")
     }
-    _binding = Some(target)
+    _bindingVar = target
   }
 
   // Similar to topBindingOpt except it explicitly excludes SampleElements which are bound but not
@@ -540,14 +549,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Both are only valid after binding is set.
 
   // Direction of this node, accounting for parents (force Input / Output) and children.
-  private var _direction: Option[ActualDirection] = None
+  private var _directionVar: ActualDirection = null // using nullable var for better memory usage
+  private def _direction:    Option[ActualDirection] = Option(_directionVar)
 
   private[chisel3] def direction: ActualDirection = _direction.get
   private[chisel3] def direction_=(actualDirection: ActualDirection) {
     if (_direction.isDefined) {
       throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
-    _direction = Some(actualDirection)
+    _directionVar = actualDirection
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
@@ -660,7 +670,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   private[chisel3] def typeEquivalent(that: Data): Boolean
 
-  private def requireVisible(): Unit = {
+  private[chisel3] def requireVisible(): Unit = {
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
@@ -682,6 +692,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     topBindingOpt match {
       case Some(binding: ReadOnlyBinding) =>
         throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
+      case Some(ViewBinding(target)) => reify(target).lref
       case Some(binding: TopBinding) => Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
@@ -738,7 +749,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       data match {
         case _:   Element =>
         case agg: Aggregate =>
-          agg.getElements.foreach(rec)
+          agg.elementsIterator.foreach(rec)
       }
     }
     rec(this)
@@ -883,6 +894,84 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   def toPrintable: Printable
 }
 
+object Data {
+
+  /**
+    * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
+    * need to use workarounds such as `bundle1.asUInt === bundle2.asUInt` by allowing users
+    * to instead write `bundle1 === bundle2`.
+    *
+    * Static type safety of this comparison is guaranteed at compile time as the extension
+    * method requires the same parameterized type for both the left-hand and right-hand
+    * sides. It is, however, possible to get around this type safety using `Bundle` subtypes
+    * that can differ during runtime (e.g. through a generator). These cases are
+    * subsequently raised as elaboration errors.
+    *
+    * @param lhs The [[Data]] hardware on the left-hand side of the equality
+    */
+  implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+
+    /** Dynamic recursive equality operator for generic [[Data]]
+      *
+      * @param rhs a hardware [[Data]] to compare `lhs` to
+      * @return a hardware [[Bool]] asserted if `lhs` is equal to `rhs`
+      * @throws ChiselException when `lhs` and `rhs` are different types during elaboration time
+      */
+    def ===(rhs: T): Bool = {
+      (lhs, rhs) match {
+        case (thiz: UInt, that: UInt) => thiz === that
+        case (thiz: SInt, that: SInt) => thiz === that
+        case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
+        case (thiz: Reset, that: Reset) => thiz === that
+        case (thiz: Interval, that: Interval) => thiz === that
+        case (thiz: FixedPoint, that: FixedPoint) => thiz === that
+        case (thiz: EnumType, that: EnumType) => thiz === that
+        case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
+        case (thiz: Vec[_], that: Vec[_]) =>
+          if (thiz.length != that.length) {
+            throwException(s"Cannot compare Vecs $thiz and $that: Vec sizes differ")
+          } else {
+            thiz.elementsIterator
+              .zip(that.elementsIterator)
+              .map { case (thisData, thatData) => thisData === thatData }
+              .reduce(_ && _)
+          }
+        case (thiz: Record, that: Record) =>
+          if (thiz.elements.size != that.elements.size) {
+            throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
+          } else {
+            thiz.elements.map {
+              case (thisName, thisData) =>
+                if (!that.elements.contains(thisName))
+                  throwException(
+                    s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
+                  )
+
+                val thatData = that.elements(thisName)
+
+                try {
+                  thisData === thatData
+                } catch {
+                  case e: ChiselException =>
+                    throwException(
+                      s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
+                    )
+                }
+            }
+              .reduce(_ && _)
+          }
+        // This should be matching to (DontCare, DontCare) but the compiler wasn't happy with that
+        case (_: DontCare.type, _: DontCare.type) => true.B
+
+        case (thiz: Analog, that: Analog) =>
+          throwException(s"Cannot compare Analog values $thiz and $that: Equality isn't defined for Analog values")
+        // Runtime types are different
+        case (thiz, that) => throwException(s"Cannot compare $thiz and $that: Runtime types differ")
+      }
+    }
+  }
+}
+
 trait WireFactory {
 
   /** Construct a [[Wire]] from a type template
@@ -995,7 +1084,6 @@ object WireDefault {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): T = {
-    implicit val noSourceInfo = UnlocatableSourceInfo
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
     x := init

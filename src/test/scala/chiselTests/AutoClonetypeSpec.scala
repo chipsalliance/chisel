@@ -6,6 +6,8 @@ import chisel3._
 import chisel3.testers.TestUtils
 import chisel3.util.QueueIO
 import chisel3.stage.ChiselStage.elaborate
+import chisel3.experimental.AutoCloneType
+import scala.collection.immutable.ListMap
 
 class BundleWithIntArg(val i: Int) extends Bundle {
   val out = UInt(i.W)
@@ -70,6 +72,25 @@ class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle
 // Needs to be top-level so that reflective autoclonetype works
 class InheritingBundle extends QueueIO(UInt(8.W), 8) {
   val error = Output(Bool())
+}
+
+class RecordAutoCloneType[T <: Data](gen: T) extends Record with AutoCloneType {
+  lazy val elements = ListMap("value" -> gen)
+  // This is a weird thing to do, but as only Bundles have these methods, it should be legal
+  protected def _elementsImpl: Iterable[(String, Any)] = elements
+  protected def _usingPlugin = false
+}
+
+// Records that don't mixin AutoCloneType should still be able to implement the related methods
+// NOTE: This is a very weird thing to do, don't do it.
+class RecordWithVerbotenMethods(w: Int) extends Record {
+  lazy val elements = ListMap("value" -> UInt(w.W))
+  override def cloneType: this.type = (new RecordWithVerbotenMethods(w)).asInstanceOf[this.type]
+  // Verboten methods
+  protected def _usingPlugin = false
+  protected override def _cloneTypeImpl = this.cloneType
+
+  protected def _elementsImpl: Iterable[(String, Any)] = Nil
 }
 
 class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
@@ -396,6 +417,26 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     class MyModule extends Module {
       val in = IO(Input(new VarArgsBundle(1)(2, 3, 4)))
       val out = IO(Output(new VarArgsBundle(1)(2, 3, 4)))
+      out := in
+    }
+    elaborate(new MyModule)
+  }
+
+  it should "support Records that mixin AutoCloneType" in {
+    class MyModule extends Module {
+      val gen = new RecordAutoCloneType(UInt(8.W))
+      val in = IO(Input(gen))
+      val out = IO(Output(gen))
+      out := in
+    }
+    elaborate(new MyModule)
+  }
+
+  it should "support Records that don't mixin AutoCloneType and use forbidden methods" in {
+    class MyModule extends Module {
+      val gen = new RecordWithVerbotenMethods(8)
+      val in = IO(Input(gen))
+      val out = IO(Output(gen))
       out := in
     }
     elaborate(new MyModule)

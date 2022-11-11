@@ -6,7 +6,7 @@ import org.scalacheck._
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import org.scalacheck.Shrink
 import scala.annotation.tailrec
@@ -111,7 +111,7 @@ class FillTester(n: Int, value: Int) extends BasicTester {
   val x = VecInit(Array.fill(n)(value.U))
   val u = VecInit.fill(n)(value.U)
 
-  assert(x.asUInt() === u.asUInt(), s"Expected Vec to be filled like $x, instead VecInit.fill created $u")
+  assert(x.asUInt() === u.asUInt(), cf"Expected Vec to be filled like $x, instead VecInit.fill created $u")
   stop()
 }
 
@@ -235,7 +235,7 @@ class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
   val testVec = VecInit.iterate(start.U, len)(f)
   assert(
     controlVec.asUInt() === testVec.asUInt(),
-    s"Expected Vec to be filled like $controlVec, instead creaeted $testVec\n"
+    cf"Expected Vec to be filled like $controlVec, instead created $testVec\n"
   )
   stop()
 }
@@ -456,7 +456,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Infering widths on huge Vecs should not cause a stack overflow") {
-    assertTesterPasses { new HugeVecTester(10000) }
+    assertTesterPasses(new HugeVecTester(10000), annotations = TesterDriver.verilatorOnly)
   }
 
   property("A Reg of a Vec of a single 1 bit element should compile and work") {

@@ -18,8 +18,8 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.5.5",
   autoAPIMappings := true,
-  scalaVersion := "2.12.16",
-  crossScalaVersions := Seq("2.13.6", "2.12.16"),
+  scalaVersion := "2.12.17",
+  crossScalaVersions := Seq("2.13.10", "2.12.17"),
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
@@ -110,6 +110,7 @@ lazy val pluginScalaVersions = Seq(
   "2.12.14",
   "2.12.15",
   "2.12.16",
+  "2.12.17",
   "2.13.0",
   "2.13.1",
   "2.13.2",
@@ -118,7 +119,9 @@ lazy val pluginScalaVersions = Seq(
   "2.13.5",
   "2.13.6",
   "2.13.7",
-  "2.13.8"
+  "2.13.8",
+  "2.13.9",
+  "2.13.10",
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -137,12 +140,20 @@ lazy val plugin = (project in file("plugin")).
     }
   ).
   settings(
+    // Given that the plugin is 1) a compile-time only dependency and 2) package chisel3.internal,
+    // I'm not really sure why we both checking binary compatbility
+    mimaBinaryIssueFilters ++= Seq(
+      // MyTypingTransformer is private (https://github.com/lightbend/mima/issues/53)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.plugin.BundleComponent#MyTypingTransformer.isBundle"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.plugin.BundleComponent#MyTypingTransformer.getConstructorAndParams")
+    ),
     mimaPreviousArtifacts := {
-      // There is not yet a 2.12.16 artifact, so suppress until 3.5.4 is released
-      if (scalaVersion.value == "2.12.16") {
+      // There are not yet artifacts for 2.12.17, 2.13.9, nor 2.13.10; suppress until 3.5.5 is released
+      val skipVersions = Seq("2.12.17", "2.13.9", "2.13.10")
+      if (skipVersions.contains(scalaVersion.value)) {
         Set()
       } else {
-        Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.3" cross CrossVersion.full)
+        Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.4" cross CrossVersion.full)
       }
     }
   )
@@ -162,7 +173,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.5.3"))
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.5.4"))
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -177,8 +188,10 @@ lazy val core = (project in file("core")).
   ).
   settings(publishSettings: _*).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.3"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.5.4"),
     mimaBinaryIssueFilters ++= Seq(
+      // This is not a problem because the relevant method is implemented (and final) in Vec and Record
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.Aggregate.elementsIterator"),
       // Modified package private methods (https://github.com/lightbend/mima/issues/53)
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data._computeName"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data.forceName"),
@@ -188,6 +201,17 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.forceName"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule._computeName"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.forceName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.failureMessage"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.Data.setRef"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.MemBase.setRef"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.setRef"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.setRef"),
+      // Methods in inner class defined within package private object
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.outer"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.copy"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.copy$default$2"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.this"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.apply"),
     )
   ).
   settings(
@@ -218,7 +242,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.5.3"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.5.4"),
     mimaBinaryIssueFilters ++= Seq(
       // Modified package private methods (https://github.com/lightbend/mima/issues/53)
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this"),
@@ -276,7 +300,6 @@ lazy val docs = project       // new documentation project
   .settings(commonSettings)
   .settings(
     scalacOptions ++= Seq(
-      "-Xfatal-warnings",
       "-language:reflectiveCalls",
       "-language:implicitConversions"
     ),

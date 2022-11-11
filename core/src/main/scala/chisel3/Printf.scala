@@ -2,10 +2,11 @@
 
 package chisel3
 
-import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.sourceinfo.SourceInfo
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox
 
 /** Prints a message in simulation
   *
@@ -76,7 +77,44 @@ object printf {
     * @param data format string varargs containing data to print
     */
   def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
-    apply(Printable.pack(fmt, data: _*))
+    macro _applyMacroWithInterpolatorCheck
+
+  def _applyMacroWithInterpolatorCheck(
+    c:              blackbox.Context
+  )(fmt:            c.Tree,
+    data:           c.Tree*
+  )(sourceInfo:     c.Tree,
+    compileOptions: c.Tree
+  ): c.Tree = {
+    import c.universe._
+    fmt match {
+      case q"scala.StringContext.apply(..$_).s(..$_)" =>
+        c.warning(
+          c.enclosingPosition,
+          "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
+            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+            "an elaboration time print, use println."
+        )
+      case _ =>
+    }
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("printfWithReset"))
+    q"$apply_impl_do(_root_.chisel3.Printable.pack($fmt, ..$data))($sourceInfo, $compileOptions)"
+  }
+
+  // Private internal methods that serve to maintain binary
+  // compatibility after interpolator check updates
+  @deprecated("This Printf.apply method has been deprecated and will be removed in Chisel 3.6")
+  def apply(fmt: String, sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
+    apply(fmt, Nil, sourceInfo, compileOptions)
+
+  @deprecated("This Printf.apply method has been deprecated and will be removed in Chisel 3.6")
+  def apply(
+    fmt:            String,
+    data:           Seq[Bits],
+    sourceInfo:     SourceInfo,
+    compileOptions: CompileOptions
+  ): Printf =
+    apply(Printable.pack(fmt, data: _*))(sourceInfo, compileOptions)
 
   /** Prints a message in simulation
     *
@@ -92,7 +130,15 @@ object printf {
     * @see [[Printable]] documentation
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf = {
+  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
+    printfWithReset(pable)(sourceInfo, compileOptions)
+
+  private[chisel3] def printfWithReset(
+    pable: Printable
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): Printf = {
     var printfId: Printf = null
     when(!Module.reset.asBool) {
       printfId = printfWithoutReset(pable)
@@ -108,6 +154,9 @@ object printf {
   ): Printf = {
     val clock = Builder.forcedClock
     val printfId = new Printf(pable)
+
+    Printable.checkScope(pable)
+
     pushCommand(chisel3.internal.firrtl.Printf(printfId, sourceInfo, clock.ref, pable))
     printfId
   }

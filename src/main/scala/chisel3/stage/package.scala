@@ -19,6 +19,7 @@ package object stage {
           case PrintFullStackTraceAnnotation  => c.copy(printFullStackTrace = true)
           case ThrowOnFirstErrorAnnotation    => c.copy(throwOnFirstError = true)
           case WarnReflectiveNamingAnnotation => c.copy(warnReflectiveNaming = true)
+          case WarningsAsErrorsAnnotation     => c.copy(warningsAsErrors = true)
           case ChiselOutputFileAnnotation(f)  => c.copy(outputFile = Some(f))
           case ChiselCircuitAnnotation(a)     => c.copy(chiselCircuit = Some(a))
         }

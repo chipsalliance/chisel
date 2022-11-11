@@ -271,4 +271,70 @@ object Examples {
     @public val mem = Mem(8, UInt(32.W))
     @public val syncReadMem = SyncReadMem(8, UInt(32.W))
   }
+
+  @instantiable
+  class LeafInstantiable(val bundle: Data) {
+    @public val bundle = bundle
+  }
+
+  @instantiable
+  class NestedInstantiable(val in: LeafInstantiable, val out: LeafInstantiable) {
+    @public val in = in
+    @public val out = out
+  }
+
+  @instantiable
+  class AddOneNestedInstantiableData(width: Int) extends Module {
+    @public val in = IO(Input(UInt(width.W)))
+    @public val out = IO(Output(UInt(width.W)))
+    out := in + 1.U
+
+    @public val leafOut = new LeafInstantiable(out)
+    @public val leafIn = new LeafInstantiable(in)
+    @public val nested = new NestedInstantiable(in = leafIn, out = leafOut)
+
+  }
+
+  class AddTwoNestedInstantiableData(width: Int) extends Module {
+    val in = IO(Input(UInt(width.W)))
+    val out = IO(Output(UInt(width.W)))
+    val addOneDef = Definition(new AddOneNestedInstantiableData(width))
+    val i0 = Instance(addOneDef)
+    val i1 = Instance(addOneDef)
+    i0.in := in
+    i1.in := i0.out
+    out := i1.out
+
+    // both are equivalent to the above
+    i1.leafIn.bundle := i0.leafOut.bundle
+    i1.nested.in.bundle := i0.nested.out.bundle
+  }
+
+  class AddTwoNestedInstantiableDataSubmodule(addOneDef: Definition[AddOneNestedInstantiableData]) extends Module {
+    val in = IO(Input(UInt(addOneDef.in.getWidth.W)))
+    val out = IO(Output(UInt(addOneDef.out.getWidth.W)))
+    val i0 = Instance(addOneDef)
+    val i1 = Instance(addOneDef)
+    i0.in := in
+    i1.in := i0.out
+    out := i1.out
+
+    // both are equivalent to the above
+    i1.leafIn.bundle := i0.leafOut.bundle
+    i1.nested.in.bundle := i0.nested.out.bundle
+  }
+
+  class AddTwoNestedInstantiableDataWrapper(width: Int) extends Module {
+    val in = IO(Input(UInt(width.W)))
+    val out = IO(Output(UInt(width.W)))
+
+    val original = Module(new AddOneNestedInstantiableData(width))
+    val copy = Module(new AddTwoNestedInstantiableDataSubmodule(original.toDefinition))
+
+    original.in := in
+    copy.in := original.out
+    out := copy.out
+
+  }
+
 }
