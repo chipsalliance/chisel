@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [chisel3, firrtl, chisel-testers, chiseltest, treadle, diagrammer]
+        project: [chisel3]
 
     steps:
       - name: Checkout
