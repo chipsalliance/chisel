@@ -69,7 +69,8 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     }
 
     targetTopBinding match {
-      case _: WireBinding | _: PortBinding => direction = ActualDirection.Bidirectional(ActualDirection.Default)
+      case _: WireBinding | _: PortBinding | _: ViewBinding | _: AggregateViewBinding =>
+        direction = ActualDirection.Bidirectional(ActualDirection.Default)
       case x => throwException(s"Analog can only be Ports and Wires, not '$x'")
     }
     binding = target

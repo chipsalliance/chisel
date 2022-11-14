@@ -267,6 +267,14 @@ package experimental {
       }
     }
 
+    /** Returns the parent module within which a module instance is instantiated
+      *
+      * @note Top-level modules in any given elaboration do not have a parent
+      * @param target a module instance
+      * @return the parent of the `target`, if one exists
+      */
+    def getParent(target: BaseModule): Option[BaseModule] = target._parent
+
     // Internal reflection-style APIs, subject to change and removal whenever.
     object internal {
       def isSynthesizable(target: Data): Boolean = target.isSynthesizable
@@ -355,7 +363,7 @@ private[chisel3] object getRecursiveFields {
         _ ++ _
       }
     case data: Vec[_] =>
-      data.getElements.zipWithIndex.map {
+      data.elementsIterator.zipWithIndex.map {
         case (fieldData, fieldIndex) =>
           getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
       }.fold(Seq(data -> path)) {
@@ -373,7 +381,7 @@ private[chisel3] object getRecursiveFields {
         }
     case data: Vec[_] =>
       LazyList(data -> path) ++
-        data.getElements.view.zipWithIndex.flatMap {
+        data.elementsIterator.zipWithIndex.flatMap {
           case (fieldData, fieldIndex) =>
             getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
         }
@@ -400,8 +408,8 @@ private[chisel3] object getMatchedFields {
           _ ++ _
         }
     case (x: Vec[_], y: Vec[_]) =>
-      (x.getElements
-        .zip(y.getElements))
+      (x.elementsIterator
+        .zip(y.elementsIterator))
         .map {
           case (xElt, yElt) =>
             getMatchedFields(xElt, yElt)
@@ -458,7 +466,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {
-      case elt: Aggregate => elt.getElements.toIndexedSeq.flatMap { _.flatten }
+      case elt: Aggregate => elt.elementsIterator.toIndexedSeq.flatMap { _.flatten }
       case elt: Element   => IndexedSeq(elt)
       case elt => throwException(s"Cannot flatten type ${elt.getClass}")
     }
@@ -694,6 +702,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     topBindingOpt match {
       case Some(binding: ReadOnlyBinding) =>
         throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
+      case Some(ViewBinding(target)) => reify(target).lref
       case Some(binding: TopBinding) => Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
@@ -750,7 +759,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       data match {
         case _:   Element =>
         case agg: Aggregate =>
-          agg.getElements.foreach(rec)
+          agg.elementsIterator.foreach(rec)
       }
     }
     rec(this)
@@ -932,8 +941,8 @@ object Data {
           if (thiz.length != that.length) {
             throwException(s"Cannot compare Vecs $thiz and $that: Vec sizes differ")
           } else {
-            thiz.getElements
-              .zip(that.getElements)
+            thiz.elementsIterator
+              .zip(that.elementsIterator)
               .map { case (thisData, thatData) => thisData === thatData }
               .reduce(_ && _)
           }
