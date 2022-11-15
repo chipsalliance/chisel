@@ -351,9 +351,9 @@ package object chisel3 {
     }
   }
 
-  type ConnectableData[T <: Data] = connectable.ConnectableData[T]
+  type Connectable[T <: Data] = connectable.Connectable[T]
 
-  val ConnectableData = connectable.ConnectableData
+  val Connectable = connectable.Connectable
 
   implicit def string2Printable(str: String): Printable = PString(str)
 

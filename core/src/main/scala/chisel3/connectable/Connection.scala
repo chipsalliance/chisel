@@ -6,15 +6,87 @@ import chisel3.{Aggregate, BiConnectException, Data, DontCare, RawModule}
 import chisel3.internal.{prefix, BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.DefInvalid
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
 import Alignment.matchingZipOfChildren
 
 import scala.collection.mutable
 
-private[chisel3] object ConnectionFunctions {
+// Datastructure capturing the semantics of each connectable operator
+private[chisel3] sealed trait Connection {
+  val noDangles:              Boolean
+  val noUnconnected:           Boolean
+  val mustMatch:              Boolean
+  val noWrongOrientations:    Boolean
+  val noMismatchedWidths:     Boolean
+  val connectToConsumer:       Boolean
+  val connectToProducer:       Boolean
+  val alwaysConnectToConsumer: Boolean
+}
 
-  /** Assignment function which implements both :<= and :>=
+private[chisel3] case object ColonLessEq extends Connection {
+  val noDangles:              Boolean = true
+  val noUnconnected:           Boolean = true
+  val mustMatch:              Boolean = true
+  val noWrongOrientations:    Boolean = true
+  val noMismatchedWidths:     Boolean = true
+  val connectToConsumer:       Boolean = true
+  val connectToProducer:       Boolean = false
+  val alwaysConnectToConsumer: Boolean = false
+}
+
+private[chisel3] case object ColonGreaterEq extends Connection {
+  val noDangles:              Boolean = true
+  val noUnconnected:           Boolean = true
+  val mustMatch:              Boolean = true
+  val noWrongOrientations:    Boolean = true
+  val noMismatchedWidths:     Boolean = true
+  val connectToConsumer:       Boolean = false
+  val connectToProducer:       Boolean = true
+  val alwaysConnectToConsumer: Boolean = false
+}
+
+private[chisel3] case object ColonLessGreaterEq extends Connection {
+  val noDangles:              Boolean = true
+  val noUnconnected:           Boolean = true
+  val mustMatch:              Boolean = true
+  val noWrongOrientations:    Boolean = true
+  val noMismatchedWidths:     Boolean = true
+  val connectToConsumer:       Boolean = true
+  val connectToProducer:       Boolean = true
+  val alwaysConnectToConsumer: Boolean = false
+  def canFirrtlConnect(consumer: Connectable[Data], producer: Connectable[Data]) = {
+    val typeEquivalent = try {
+      BiConnect.canFirrtlConnectData(
+        consumer.base,
+        producer.base,
+        UnlocatableSourceInfo,
+        Connection.chisel5CompileOptions,
+        Builder.referenceUserModule
+      ) && consumer.base.typeEquivalent(producer.base)
+    } catch {
+      // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
+      //  when calling DirectionConnection.connect. Hence, we can just default to false to take the non-optimized emission path
+      case e: Throwable => false
+    }
+    (typeEquivalent && consumer.notSpecial && producer.notSpecial)
+  }
+}
+
+private[chisel3] case object ColonHashEq extends Connection {
+  val noDangles:              Boolean = true
+  val noUnconnected:           Boolean = true
+  val mustMatch:              Boolean = true
+  val noWrongOrientations:    Boolean = false
+  val noMismatchedWidths:     Boolean = true
+  val connectToConsumer:       Boolean = true
+  val connectToProducer:       Boolean = false
+  val alwaysConnectToConsumer: Boolean = true
+}
+
+private[chisel3] object Connection {
+
+  /** Connection function which implements both :<= and :>=
     *
     * For example, given a connection like so:
     *  c :<= p
@@ -26,16 +98,16 @@ private[chisel3] object ConnectionFunctions {
     * @param consumerRoot the original expression on the left-hand-side of the connection operator
     * @param producerRoot the original expression on the right-hand-side of the connection operator
     * @param activeSide indicates if the connection was a :<= (consumer is active) or :>= (producer is active)
-    * @param sourceInfo source info for where the assignment occurred
+    * @param sourceInfo source info for where the connection occurred
     */
-  def assign[T <: Data](
-    cRoot:    ConnectableData[T],
-    pRoot:    ConnectableData[T],
-    cOp:      ConnectionOperator
+  def connect[T <: Data](
+    cRoot:    Connectable[T],
+    pRoot:    Connectable[T],
+    cOp:      Connection
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    doAssignment(cRoot, pRoot, cOp)
+    doConnection(cRoot, pRoot, cOp)
   }
 
   // Consumed by the := operator, set to what chisel3 will eventually become.
@@ -54,13 +126,13 @@ private[chisel3] object ConnectionFunctions {
     c:  Data,
     p:  Data,
     o:  Alignment,
-    op: ConnectionOperator
+    op: Connection
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    (c, p, o, op.assignToConsumer, op.assignToProducer, op.alwaysAssignToConsumer) match {
-      case (x: Analog, y: Analog, _, _, _, _) => assignAnalog(x, y)
-      case (x: Analog, DontCare, _, _, _, _) => assignAnalog(x, DontCare)
+    (c, p, o, op.connectToConsumer, op.connectToProducer, op.alwaysConnectToConsumer) match {
+      case (x: Analog, y: Analog, _, _, _, _) => connectAnalog(x, y)
+      case (x: Analog, DontCare, _, _, _, _) => connectAnalog(x, DontCare)
       case (x, y, _: AlignedWithRoot, true, _, _) => c := p
       case (x, y, _: FlippedWithRoot, _, true, _) => p := c
       case (x, y, _, _, _, true) => c := p
@@ -75,17 +147,17 @@ private[chisel3] object ConnectionFunctions {
     implicit sourceInfo: SourceInfo
   ): Unit = {
     (l, r) match {
-      case (x: Analog, y: Analog) => assignAnalog(x, y)
-      case (x: Analog, DontCare) => assignAnalog(x, DontCare)
+      case (x: Analog, y: Analog) => connectAnalog(x, y)
+      case (x: Analog, DontCare) => connectAnalog(x, DontCare)
       case (_, _) => l := r
     }
   }
 
 
-  private def doAssignment[T <: Data](
-    consumer: ConnectableData[T],
-    producer: ConnectableData[T],
-    op:       ConnectionOperator
+  private def doConnection[T <: Data](
+    consumer: Connectable[T],
+    producer: Connectable[T],
+    op:       Connection
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -93,12 +165,12 @@ private[chisel3] object ConnectionFunctions {
     val errors = mutable.ArrayBuffer[String]()
     import Alignment.deriveChildAlignment
 
-    def doAssignment(co: Alignment, po: Alignment)(implicit sourceInfo: SourceInfo): Unit = {
+    def doConnection(co: Alignment, po: Alignment)(implicit sourceInfo: SourceInfo): Unit = {
       (co, po) match {
         // Base Case 0: should probably never happen
         case (_: EmptyAlignment, _: EmptyAlignment) => ()
 
-        // Base Case 1: early exit if dangling/unassigned is wavied
+        // Base Case 1: early exit if dangling/unconnected is wavied
         case (co: NonEmptyAlignment, _: EmptyAlignment) if co.isWaived => ()
         case (_: EmptyAlignment, po: NonEmptyAlignment) if po.isWaived => ()
 
@@ -107,10 +179,10 @@ private[chisel3] object ConnectionFunctions {
           errors += (s"inversely oriented fields ${co.member} and ${po.member}")
 
         // Base Case 3: early exit if operator requires matching widths, but they aren't the same
-        case (co: NonEmptyAlignment, po: NonEmptyAlignment) if (co.truncates(po, op)) && (op.noMismatchedWidths) =>
+        case (co: NonEmptyAlignment, po: NonEmptyAlignment) if (co.mismatchedWidths(po, op)) && (op.noMismatchedWidths) =>
           errors += (s"mismatched widths of ${co.member} and ${po.member}")
 
-        // Base Case 3: operator error on dangling/unassigned fields
+        // Base Case 3: operator error on dangling/unconnected fields
         case (c: NonEmptyAlignment, _: EmptyAlignment) => errors += (s"${c.errorWord(op)} consumer field ${co.member}")
         case (_: EmptyAlignment, p: NonEmptyAlignment) => errors += (s"${p.errorWord(op)} producer field ${po.member}")
 
@@ -119,18 +191,18 @@ private[chisel3] object ConnectionFunctions {
           (co.member, po.member) match {
             case (c: Aggregate, p: Aggregate) =>
               matchingZipOfChildren(Some(co), Some(po)).foreach {
-                case (ceo, peo) => doAssignment(ceo.getOrElse(co.empty), peo.getOrElse(po.empty))
+                case (ceo, peo) => doConnection(ceo.getOrElse(co.empty), peo.getOrElse(po.empty))
               }
             case (c: Aggregate, DontCare) =>
               c.getElements.foreach {
-                case f => doAssignment(deriveChildAlignment(f, co), deriveChildAlignment(f, co).swap(DontCare))
+                case f => doConnection(deriveChildAlignment(f, co), deriveChildAlignment(f, co).swap(DontCare))
               }
             case (DontCare, p: Aggregate) =>
               p.getElements.foreach {
-                case f => doAssignment(deriveChildAlignment(f, po).swap(DontCare), deriveChildAlignment(f, po))
+                case f => doConnection(deriveChildAlignment(f, po).swap(DontCare), deriveChildAlignment(f, po))
               }
             case (c, p) =>
-              val o = (co.alignsWith(po), (!co.alignsWith(po) && op.assignToConsumer && !op.assignToProducer), (!co.alignsWith(po) && !op.assignToConsumer && op.assignToProducer)) match {
+              val o = (co.alignsWith(po), (!co.alignsWith(po) && op.connectToConsumer && !op.connectToProducer), (!co.alignsWith(po) && !op.connectToConsumer && op.connectToProducer)) match {
                 case (true, _, _) => co
                 case (_, true, _) => co
                 case (_, _, true) => po
@@ -142,8 +214,8 @@ private[chisel3] object ConnectionFunctions {
       }
     }
 
-    // Start recursive assignment
-    doAssignment(Alignment(consumer, true), Alignment(producer, false))
+    // Start recursive connection
+    doConnection(Alignment(consumer, true), Alignment(producer, false))
 
     // If any errors are collected, error.
     if (errors.nonEmpty) {
@@ -166,7 +238,7 @@ private[chisel3] object ConnectionFunctions {
     }
   }
 
-  private def assignAnalog(a: Analog, b: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private def connectAnalog(a: Analog, b: Data)(implicit sourceInfo: SourceInfo): Unit = {
     b match {
       case (ba: Analog) => {
         checkAnalog(a, ba)

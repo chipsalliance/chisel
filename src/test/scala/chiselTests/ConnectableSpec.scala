@@ -189,7 +189,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(SInt(16.W))
       test(Clock())
       testDistinctTypes(UInt(16.W), Bool())
-      testException(Bool(), UInt(16.W), "mismatched widths")
+      test(UInt())
+      testDistinctTypes(UInt(), UInt(16.W))
+      testException(UInt(16.W), UInt(), "mismatched widths")
+      testException(UInt(1.W), UInt(16.W), "mismatched widths")
     }
     it("(0.b): Emit '<=' between identical aligned aggregate types") {
       test(vec(Bool()))
@@ -258,21 +261,21 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(0.h): Error on missing subfield/subindex from either right-hand-side or left-hand-side") {
       // Missing flip bar
       testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "dangling consumer field")
-      testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unassigned producer field")
+      testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unconnected producer field")
 
       // Missing foo
-      testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unassigned consumer field")
+      testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unconnected consumer field")
       testException(flippedBarBundle(Bool()), mixedBundle(Bool()), "dangling producer field")
 
       // Vec sizes don't match
       testException(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), "dangling producer field")
-      testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
+      testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unconnected consumer field")
       testException(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), "dangling producer field")
-      testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unassigned consumer field")
+      testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unconnected consumer field")
 
-      // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
+      // Correct dangling/unconnected consumer/producer if vec has a bundle who has a flip field
       testException(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), "dangling producer field")
-      testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
+      testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unconnected consumer field")
     }
     it("(0.i): Error if different root-relative flippedness on leaf fields between right-hand-side or left-hand-side") {
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
@@ -322,7 +325,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(SInt(16.W))
       test(Clock())
       testDistinctTypes(UInt(16.W), Bool())
-      testException(Bool(), UInt(16.W), "mismatched widths")
+      test(UInt())
+      testDistinctTypes(UInt(), UInt(16.W))
+      testException(UInt(16.W), UInt(), "mismatched widths")
+      testException(UInt(1.W), UInt(16.W), "mismatched widths")
     }
     it("(1.b): Emit multiple '<=' between identical aligned aggregate types") {
       val vecMatches = Seq(
@@ -461,25 +467,25 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(Analog(3.W), 2), Seq("attach (io.out[0], io.in[0])", "attach (io.out[1], io.in[1]"))
     }
     it(
-      "(1.h): Error on unassigned subfield/subindex from either side, but do not throw exception for dangling fields"
+      "(1.h): Error on unconnected subfield/subindex from either side, but do not throw exception for dangling fields"
     ) {
       // Missing flip bar
       testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "unmatched consumer field")
       testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unmatched producer field")
 
       // Missing foo
-      testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unassigned consumer field")
+      testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unconnected consumer field")
       testException(flippedBarBundle(Bool()), mixedBundle(Bool()), "dangling producer field")
 
       // Vec sizes don't match
       testException(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), "dangling producer field")
-      testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
+      testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unconnected consumer field")
       testException(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), "dangling producer field")
-      testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unassigned consumer field")
+      testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unconnected consumer field")
 
-      // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
+      // Correct dangling/unconnected consumer/producer if vec has a bundle who has a flip field
       testException(vec(alignedFooBundle(Bool())), vec(mixedBundle(Bool()), 4), "dangling producer field")
-      testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
+      testException(vec(mixedBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unconnected consumer field")
     }
     it("(1.i): Error if different root-relative flippedness on fields between right-hand-side or left-hand-side") {
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "inversely oriented fields")
@@ -529,7 +535,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(SInt(16.W), skip)
       test(Clock(), skip)
       testDistinctTypes(UInt(16.W), Bool(), skip)
-      testDistinctTypes(Bool(), UInt(16.W), skip)
+      test(UInt(), skip)
+      testDistinctTypes(UInt(), UInt(16.W), skip)
+      testDistinctTypes(UInt(16.W), UInt(), skip)
+      testDistinctTypes(UInt(1.W), UInt(16.W), skip)
     }
     it("(2.b): Emit 'skip' between identical aligned aggregate types") {
       val skip = Seq("skip")
@@ -628,10 +637,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(Analog(3.W)), Seq("attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar"))
       test(vec(Analog(3.W), 2), Seq("attach (io.out[0], io.in[0])", "attach (io.out[1], io.in[1]"))
     }
-    it("(2.h): Error on unassigned subfield/subindex from either side, and throw exception for dangling fields") {
+    it("(2.h): Error on unconnected subfield/subindex from either side, and throw exception for dangling fields") {
       // Missing flip bar
       testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "dangling consumer field")
-      testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unassigned producer field")
+      testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unconnected producer field")
 
       // Missing foo
       testException(mixedBundle(Bool()), flippedBarBundle(Bool()), "unmatched consumer field")
@@ -643,7 +652,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), "unmatched producer field")
       testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unmatched consumer field")
 
-      // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
+      // Correct dangling/unconnected consumer/producer if vec has a bundle who has a flip field
       testException(vec(flippedBarBundle(Bool())), vec(mixedBundle(Bool()), 4), "unmatched producer field")
       testException(vec(mixedBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "unmatched consumer field")
     }
@@ -691,6 +700,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(Clock())
       testDistinctTypes(UInt(16.W), Bool())
       testException(Bool(), UInt(16.W), "mismatched widths")
+      test(UInt())
+      testDistinctTypes(UInt(), UInt(16.W))
+      testException(UInt(16.W), UInt(), "mismatched widths")
+      testException(UInt(1.W), UInt(16.W), "mismatched widths")
     }
     it("(3.b): Emit multiple '<=' between identical aligned aggregate types") {
       val vecMatches = Seq(
@@ -823,7 +836,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(Analog(3.W)), Seq("attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar"))
       test(vec(Analog(3.W), 2), Seq("attach (io.out[0], io.in[0])", "attach (io.out[1], io.in[1]"))
     }
-    it("(3.h): Error on unassigned or dangling subfield/subindex from either side") {
+    it("(3.h): Error on unconnected or dangling subfield/subindex from either side") {
       // Missing flip bar
       implicit val op: (Data, Data) => Unit = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
@@ -836,11 +849,11 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
 
       // Vec sizes don't match
       testException(vec(alignedFooBundle(Bool())), vec(alignedFooBundle(Bool()), 4), "dangling producer field")
-      testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unassigned consumer field")
+      testException(vec(alignedFooBundle(Bool()), 4), vec(alignedFooBundle(Bool())), "unconnected consumer field")
       testException(vec(flippedBarBundle(Bool())), vec(flippedBarBundle(Bool()), 4), "cannot be written from module")
       testException(vec(flippedBarBundle(Bool()), 4), vec(flippedBarBundle(Bool())), "cannot be written from module")
 
-      // Correct dangling/unassigned consumer/producer if vec has a bundle who has a flip field
+      // Correct dangling/unconnected consumer/producer if vec has a bundle who has a flip field
       testException(
         vec(alignedFooBundle(Bool())),
         vec(mixedBundle(Bool()), 4),
@@ -851,10 +864,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         vec(mixedBundle(Bool()), 4),
         vec(alignedFooBundle(Bool())),
         "unmatched consumer field",
-        "unassigned consumer field"
+        "unconnected consumer field"
       )
     }
-    it("(3.i): Always assign to consumer regardless of orientation") {
+    it("(3.i): Always connect to consumer regardless of orientation") {
       implicit val op: (Data, Data) => Unit = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "cannot be written from module")
@@ -907,7 +920,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
   }
 
-  describe("(4): ConnectableData") {
+  describe("(4): Connectable waived") {
     import scala.collection.immutable.SeqMap
     class Decoupled(val hasData: Boolean) extends Bundle {
       val valid = Bool()
@@ -918,9 +931,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       val elements = fields.map { case (name, gen) => name -> gen() }
     }
     object BundleMap {
-      def waive[T <: Data](d: T): ConnectableData[T] = {
+      def waive[T <: Data](d: T): Connectable[T] = {
         val bundleMapElements = DataMirror.collectMembers(d) { case b: BundleMap => b.getElements }
-        ConnectableData(d, bundleMapElements.flatten.toSet, Set.empty)
+        Connectable(d, bundleMapElements.flatten.toSet, Set.empty)
       }
     }
     class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
@@ -935,12 +948,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       class MyModule extends Module {
         val in = IO(Flipped(new NestedDecoupled(true)))
         val out = IO(new NestedDecoupled(false))
-        out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.get }
+        out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.toSeq }
       }
       testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
         "out.foo.valid <= in.foo.valid",
         "in.foo.ready <= out.foo.ready"
-      ), Seq("out.foo.bits <= in.foo.bits"))
+      ), Seq("out.foo.data <= in.foo.data"))
     }
     it("(4.b) Inline waiver things") {
       class MyModule extends Module {
@@ -951,7 +964,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
         "out.valid <= in.valid",
         "in.ready <= out.ready"
-      ), Seq("out.bits <= in.bits"))
+      ), Seq("out.data <= in.data"))
     }
     it("(4.c) BundleMap example can use programmatic waiving") {
       class MyModule extends Module {
@@ -978,7 +991,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         "out.data.b <= in.data.b"
       ), Nil)
     }
-    it("(4.d) Assign defaults, then create ConnectableData to connect to") {
+    it("(4.d) Connect defaults, then create Connectable to connect to") {
       class MyModule extends Module {
         def ab = new BundleMap(
           SeqMap(
@@ -1034,8 +1047,101 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       ), Nil)
     }
   }
-  describe("(5): Connectable and DataView") {
-    it("(5.o) :<>= works with DataView to connect a bundle that is a subtype") {
+  describe("(5): Connectable squeezing") {
+    import scala.collection.immutable.SeqMap
+    class Decoupled(val hasBigData: Boolean) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = if (hasBigData) UInt(32.W) else UInt(8.W)
+    }
+    class BundleMap(fields: SeqMap[String, () => Data]) extends Record with AutoCloneType {
+      val elements = fields.map { case (name, gen) => name -> gen() }
+    }
+    object BundleMap {
+      def waive[T <: Data](d: T): Connectable[T] = {
+        val bundleMapElements = DataMirror.collectMembers(d) { case b: BundleMap => b.getElements }
+        Connectable(d, bundleMapElements.flatten.toSet, Set.empty)
+      }
+    }
+    class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = gen()
+    }
+    it("(5.a) Using squeeze works for nested field") {
+      class NestedDecoupled(val hasBigData: Boolean) extends Bundle {
+        val foo = new Decoupled(hasBigData)
+      }
+      class MyModule extends Module {
+        val in = IO(Flipped(new NestedDecoupled(true)))
+        val out = IO(new NestedDecoupled(false))
+        out :<>= in.squeezeEach { case d: Decoupled => Seq(d.data) }
+      }
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
+        "out.foo.valid <= in.foo.valid",
+        "in.foo.ready <= out.foo.ready",
+        "out.foo.data <= in.foo.data"
+      ), Nil)
+    }
+    it("(5.b) Squeeze works on UInt") {
+      class MyModule extends Module {
+        val in = IO(Flipped(UInt(3.W)))
+        val out = IO(UInt(1.W))
+        out :<>= in.squeeze
+      }
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
+        "out <= in"
+      ), Nil)
+    }
+    it("(5.c) BundleMap example can use programmatic squeezing") {
+      class MyModule extends Module {
+        def ab = new BundleMap(
+          SeqMap(
+            "a" -> (() => UInt(2.W)),
+            "b" -> (() => UInt(3.W))
+          )
+        )
+        def bc = new BundleMap(
+          SeqMap(
+            "b" -> (() => UInt(2.W)),
+            "c" -> (() => UInt(2.W))
+          )
+        )
+        val in = IO(Flipped(new DecoupledGen(() => ab)))
+        val out = IO(new DecoupledGen(() => bc))
+        //Programmatic
+        BundleMap.waive(out) :<>= BundleMap.waive(in).squeezeAll
+      }
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
+        "out.valid <= in.valid",
+        "in.ready <= out.ready",
+        "out.data.b <= in.data.b"
+      ), Nil)
+    }
+    it("(5.e) Mismatched aggregate containing backpressure must be squeezed only if actually connecting and requiring implicit truncation") {
+      class OnlyBackPressure(width: Int) extends Bundle {
+        val ready = Flipped(UInt(width.W))
+      }
+      class MyModule extends Module {
+        // Have to nest in bundle because it calls the connecting-to-seq version
+        val in3 = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure(1)) }))
+        val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure(2)) })
+        val in2 = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure(1)) }))
+        val out2 = IO(new Bundle { val v = Vec(2, new OnlyBackPressure(2)) })
+        // Should do nothing, but also doesn't error, which is good
+        out3 :<= in3
+        // Should error, unless waived
+        out3.squeezeAll :>= in3
+      }
+      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
+        "in3.v[0].ready <= out3.v[0].ready",
+        "in3.v[1].ready <= out3.v[1].ready",
+        "in3.v[2].ready <= out3.v[2].ready"
+      ), Nil)
+    }
+  }
+  describe("(6): Connectable and DataView") {
+    it("(6.o) :<>= works with DataView to connect a bundle that is a subtype") {
       import chisel3.experimental.dataview._
 
       class SmallBundle extends Bundle {
@@ -1073,7 +1179,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       assert(!out.contains("io.bar <= io.foo"))
       assert(!out.contains("io.bar <- io.foo"))
     }
-    it("(5.p) :<>= works with DataView to connect a two Bundles with a common trait") {
+    it("(6.p) :<>= works with DataView to connect a two Bundles with a common trait") {
       import chisel3.experimental.dataview._
 
       class SmallBundle extends Bundle {
@@ -1106,8 +1212,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
   }
 
-  describe("(6): Connectable between Vec and Seq") {
-    it("(6.a) :<>= works between Vec and Seq, as well as Vec and Vec") {
+  describe("(7): Connectable between Vec and Seq") {
+    it("(7.a) :<>= works between Vec and Seq, as well as Vec and Vec") {
       class ConnectVecSeqAndVecVec extends Module {
         val a = IO(Vec(3, UInt(3.W)))
         val b = IO(Vec(3, UInt(3.W)))
@@ -1124,8 +1230,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
   }
 
-  describe("(7): Use Cases") {
-    it("(7.a.a) Initalize wires with default values and :<>= to connect wires of mixed directions") {
+  describe("(8): Use Cases") {
+    it("(8.a.a) Initalize wires with default values and :<>= to connect wires of mixed directions") {
       class MixedBundle extends Bundle {
         val foo = UInt(3.W)
         val bar = Flipped(UInt(3.W))
@@ -1157,7 +1263,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it(
-      "(7.a.b) Initialize wires with different optional fields with :#= and using :<>= to connect wires of mixed directions, waiving extra field for being unassigned or dangling"
+      "(8.a.b) Initialize wires with different optional fields with :#= and using :<>= to connect wires of mixed directions, waiving extra field for being unconnected or dangling"
     ) {
       class MixedBundle extends Bundle {
         val foo = UInt(3.W)
@@ -1190,7 +1296,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
-    it("(7.b) Waiving ok-to-dangle field connecting a wider bus to a narrower bus") {
+    it("(8.b) Waiving ok-to-dangle field connecting a wider bus to a narrower bus") {
       class ReadyValid extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -1214,7 +1320,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it(
-      "(7.c) Waiving ok-to-unassign field connecting a narrower bus to a wider bus, with defaults for unassigned fields set via last connect semantics"
+      "(8.c) Waiving ok-to-not-connect field connecting a narrower bus to a wider bus, with defaults for unconnected fields set via last connect semantics"
     ) {
       class ReadyValid extends Bundle {
         val valid = Bool()
@@ -1241,7 +1347,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it(
-      "(7.d) Waiving ok-to-unassign field connecting a narrower bus to a wider bus will error if no default specified"
+      "(8.d) Waiving ok-to-not-connect field connecting a narrower bus to a wider bus will error if no default specified"
     ) {
       class ReadyValid extends Bundle {
         val valid = Bool()
@@ -1259,7 +1365,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         ChiselStage.emitVerilog({ new MyModule() }, true, true)
       }
     }
-    it("(7.e) A structurally identical but fully aligned monitor version of a bundle can easily be connected to") {
+    it("(8.e) A structurally identical but fully aligned monitor version of a bundle can easily be connected to") {
       class Decoupled extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -1284,7 +1390,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it(
-      "(7.f) A structurally different and fully aligned monitor version of a bundle can easily be connected to, provided missing fields are ok-to-dangle"
+      "(8.f) A structurally different and fully aligned monitor version of a bundle can easily be connected to, provided missing fields are ok-to-dangle"
     ) {
       class ReadyValid extends Bundle {
         val valid = Bool()
@@ -1310,7 +1416,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
-    it("(7.g) Discarding echo bits is ok if waived ok-to-dangle (waived dangles)") {
+    it("(8.g) Discarding echo bits is ok if waived ok-to-dangle (waived dangles)") {
       class Decoupled extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -1335,7 +1441,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
-    it("(7.h) Discarding echo bits is an error if not waived (dangles default to errors)") {
+    it("(8.h) Discarding echo bits is an error if not waived (dangles default to errors)") {
       class Decoupled extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
@@ -1351,7 +1457,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       }
       intercept[Exception] { ChiselStage.emitChirrtl({ new MyModule() }, true, true) }
     }
-    it("(7.i) Partial connect on records") {
+    it("(8.i) Partial connect on records") {
       class BoolRecord(fields: String*) extends Record with AutoCloneType {
         val elements = SeqMap(fields.map(f => f -> Bool()): _*)
       }
