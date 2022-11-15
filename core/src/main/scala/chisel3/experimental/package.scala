@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.ExplicitCompileOptions.Strict
-import chisel3.experimental.DataMirror.internal.chiselTypeClone
+import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.internal.sourceinfo.SourceInfo
 
 /** Package for experimental features, which may have their API changed, be removed, etc.
@@ -532,5 +532,5 @@ package object experimental {
       "_10" -> _10
     )
   }
-  val DataMirror = chisel3.DataMirror
+  val DataMirror = chisel3.reflect.DataMirror
 }

@@ -5,7 +5,7 @@ package chiselTests.experimental
 import chisel3._
 import chisel3.util.Valid
 import chisel3.stage.ChiselStage
-import chisel3.experimental.DataMirror
+import chisel3.reflect.DataMirror
 import chiselTests.ChiselFlatSpec
 
 class DataMirrorSpec extends ChiselFlatSpec {

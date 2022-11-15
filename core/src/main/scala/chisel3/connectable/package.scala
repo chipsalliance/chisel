@@ -18,6 +18,11 @@ package object connectable {
     * Identical to calling :<= and :>=, but swapping consumer/producer for :>= (order is irrelevant), e.g.:
     *   consumer :<= producer
     *   producer :>= consumer
+    * 
+    * Symbol reference:
+    *  - ':' is the consumer side
+    *  - '=' is the producer side
+    *  - '#' means to ignore flips, always drive from producer to consumer
     *
     * $chiselTypeRestrictions
     *
@@ -31,6 +36,11 @@ package object connectable {
     *
     * For `consumer :<= producer`, each of `consumer`'s leaf members which are aligned with respect to `consumer` are driven from the corresponding `producer` leaf member.
     * Only `consumer`'s leaf/branch alignments influence the connection.
+    * 
+    * Symbol reference:
+    *  - ':' is the consumer side
+    *  - '=' is the producer side
+    *  - '<' means to assign from producer to consumer
     *
     * $chiselTypeRestrictions
     *
@@ -43,6 +53,11 @@ package object connectable {
     *
     * For `consumer :>= producer`, each of `producer`'s leaf members which are flipped with respect to `producer` are driven from the corresponding consumer leaf member
     * Only `producer`'s leaf/branch alignments influence the connection.
+    * 
+    * Symbol reference:
+    *  - ':' is the consumer side
+    *  - '=' is the producer side
+    *  - '>' means to assign from consumer to producer
     *
     * $chiselTypeRestrictions
     *
@@ -58,6 +73,12 @@ package object connectable {
     * the `producer`'s members flipped w.r.t. `producer` will be driven by corresponding members of `consumer`
     *
     * Identical to calling `:<=` and `:>=` in sequence (order is irrelevant), e.g. `consumer :<= producer` then `consumer :>= producer`
+    *
+    * Symbol reference:
+    *  - ':' is the consumer side
+    *  - '=' is the producer side
+    *  - '<' means to assign from producer to consumer
+    *  - '>' means to assign from consumer to producer
     *
     * $chiselTypeRestrictions
     * - An additional type restriction is that all relative orientations of `consumer` and `producer` must match exactly.

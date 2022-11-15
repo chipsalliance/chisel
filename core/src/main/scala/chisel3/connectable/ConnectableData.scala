@@ -4,6 +4,7 @@ package chisel3
 package connectable
 
 import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.reflect.DataMirror
 import experimental.{prefix, requireIsHardware}
 
 /** A data for whom members if left dangling or unassigned with not trigger an error
@@ -36,13 +37,13 @@ final case class ConnectableData[+T <: Data](base: T, waived: Set[Data], squeeze
     * @param members partial function applied to all recursive members of base, if match, can return a member to waive
     */
   def waiveEach[S <: Data](pf: PartialFunction[Data, Data]): ConnectableData[T] = {
-    val waivedMembers = DataMirror.collectDeep(base)(pf)
+    val waivedMembers = DataMirror.collectMembers(base)(pf)
     this.copy(waived = waived ++ waivedMembers.toSet)
   }
 
   /** Waive all members of base */
   def waiveAll: ConnectableData[T] = {
-    val waivedMembers = DataMirror.collectDeep(base) { case x => x }
+    val waivedMembers = DataMirror.collectMembers(base) { case x => x }
     this.copy(waived = waivedMembers.toSet) // not appending waived because we are collecting all members
   }
 
@@ -57,13 +58,13 @@ final case class ConnectableData[+T <: Data](base: T, waived: Set[Data], squeeze
     * @param members partial function applied to all recursive members of base, if match, can return a member to squeeze
     */
   def squeezeEach[S <: Data](pf: PartialFunction[Data, Data]): ConnectableData[T] = {
-    val squeezedMembers = DataMirror.collectDeep(base)(pf)
+    val squeezedMembers = DataMirror.collectMembers(base)(pf)
     this.copy(squeezed = squeezed ++ squeezedMembers.toSet)
   }
 
   /** Squeeze all members of base */
   def squeezeAll: ConnectableData[T] = {
-    val squeezedMembers = DataMirror.collectDeep(base) { case x => x }
+    val squeezedMembers = DataMirror.collectMembers(base) { case x => x }
     this.copy(squeezed = squeezedMembers.toSet) // not appending squeezed because we are collecting all members
   }
 }
@@ -77,7 +78,7 @@ object ConnectableData {
     * @param producer the producer from whom to waive unmatched members
     */
   def waiveUnmatched[T <: Data](consumer: ConnectableData[T], producer: ConnectableData[T]): (ConnectableData[T], ConnectableData[T]) = {
-    val result = DataMirror.collectDeepOverAllForAny(Some((consumer.base: Data)), Some((producer.base: Data))) {
+    val result = DataMirror.collectMembersOverAllForAny(Some((consumer.base: Data)), Some((producer.base: Data))) {
       case x @ (Some(c), None) => x
       case x @ (None, Some(p)) => x
     }

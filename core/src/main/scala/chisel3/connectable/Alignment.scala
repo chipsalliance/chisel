@@ -2,8 +2,9 @@
 
 package chisel3.connectable
 
-import chisel3.{Aggregate, Data, DataMirror, DontCare, SpecifiedDirection}
+import chisel3.{Aggregate, Data, DontCare, SpecifiedDirection}
 import chisel3.experimental.Analog
+import chisel3.reflect.DataMirror
 import chisel3.internal.{ChildBinding, TopBinding}
 
 // Indicates whether the active side is aligned or flipped relative to the active side's root

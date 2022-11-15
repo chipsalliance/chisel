@@ -8,6 +8,29 @@ section: "chisel3"
 
 ---
 
+## Table of Contents
+ - [Terminology](#terminology)
+ - [Overview](#overview)
+ - [Alignment: Flipped vs Aligned](#alignment-flipped-vs-aligned)
+ - [Input/Output](#inputoutput)
+ - [Connecting components with fully aligned members](#connecting-components-with-fully-aligned-members)
+   - [Mono-direction connection operator (:=)](#mono-direction-connection-operator)
+ - [Connecting components with mixed alignment members](#connecting-components-with-mixed-alignment-members)
+   - [Bi-direction connection operator (:<>=)](#bi-direction-connection-operator)
+   - [Port-Direction Computation versus Connection-Direction Computation](#port-direction-computation-versus-connection-direction-computation)
+   - [Aligned connection operator (:<=)](#aligned-connection-operator)
+   - [Flipped connection operator (:>=)](#flipped-connection-operator)
+   - [Coercing mono-direction connection operator (:#=)](#coercing-mono-direction-connection-operator)
+ - [ConnectableData](#connectabledata)
+   - [Connecting Records](#connecting-records)
+   - [Defaults with waived connections](#defaults-with-waived-connections)
+   - [Connecting types with optional members](#connecting-types-with-optional-members)
+   - [Always ignore extra members (partial connection operator)](#always-ignore-extra-members-partial-connection-operator)
+ - [Techniques for connecting structurally inequivalent Chisel types](#techniques-for-connecting-structurally-inequivalent-chisel-types)
+   - [Connecting different sub-types of the same super-type, with colliding names](#connecting-different-sub-types-of-the-same-super-type-with-colliding-names)
+   - [Connecting sub-types to super-types by waiving extra members](#connecting-sub-types-to-super-types-by-waiving-extra-members)
+   - [Connecting different sub-types](#connecting-different-sub-types)
+
 ## Terminology
 
 - "Chisel type" - a `Data` that is not bound to hardware, i.e. not a component. (more details [here](chisel-type-vs-scala-type)).
@@ -24,7 +47,6 @@ section: "chisel3"
   - see section [below](#alignment-flipped-vs-aligned) for a detailed definition
 - "structural type check" - Chisel type `A` is structurally equivalent to Chisel type `B` if `A` and `B` have matching bundle field names and types (`Record` vs `Vector` vs `Element`), vector sizes, `Element` types (UInt/SInt/Bool/Clock etc))
   - ignores relative alignment (flippedness)
-  - use `DataMirror.checkTypeEquivalence` to check this property
 - "alignment type check" - a Chisel type `A` matches alignment with another Chisel type `B` if every member of `A`'s relative alignment to `A` is the same as the structurally corresponding member of `B`'s relative alignment to `B`.
 
 ## Overview
@@ -49,7 +71,7 @@ You may be seeing these random symbols in the operator and going "what the heck 
  - `=` always indicates the producer, or right-hand-side, of the operator.
    - Hence, `c := p` connects a consumer (`c`) and a producer (`p`).
  - `<` always indicates that some members will be driven producer-to-consumer, or right-to-left.
-   - Hence, `c :<= p` drives members in producer (`p`) to members consumer (`c`).
+   - Hence, `c :<= p` drives members in producer (`p`) to members in consumer (`c`).
  - `>` always indicates that some signals will be driven consumer-to-producer, or left-to-right.
    - Hence, `c :>= p` drives members in consumer (`c`) to members producer (`p`).
    - Hence, `c :<>= p` both drives members from `p` to `c` and from `c` to `p`.
@@ -177,6 +199,8 @@ In summary, `Input(gen)` and `Output(gen)` recursively coerce children alignment
 
 ## Connecting components with fully aligned members
 
+### Mono-direction connection operator (:=)
+
 For simple connections where all members are aligned (non-flipped) w.r.t. one another, use `:=`:
 
 
@@ -203,7 +227,7 @@ ChiselStage.emitVerilog(new Example0())
 
 > You may be thinking "Wait, I'm confused! Isn't foo flipped and bar aligned?" -- Noo! Whether foo is aligned with bar makes no sense; remember, you only evaluate alignment between members of the same component or Chisel type. Because components are always aligned to themselves, `bar` is aligned to `bar`, and `foo` is aligned to `foo`, there is no problem. Their relative flippedness to anything else is irrelevant.
 
-## Connections for components with members of mixed-alignment
+## Connecting components with mixed alignment members
 
 Aggregate Chisel types can include data members which are flipped relative to one another; in the example below, `alignedChild` and `flippedChild` are aligned/flipped relative to `MixedAlignmentBundle`.
 
@@ -262,7 +286,7 @@ The connection-direction computation always computes alignment based on the expl
 
 This means that users can try to assign to input ports of their module! If I write `x :<>= y`, and `x` is an input to the current module, then that is what the connection is trying to do. However, because input ports are not assignable from within the current module, Chisel will throw an error. This is the same error a user would get using a mono-directioned operator: `x := y` will throw the same error if `x` is an input to the current module. *Whether a component is assignable is irrelevant to the semantics of any connection operator assigning to it.*
 
-In summary, the port-direction computation is relative to the root marked `IO`, but connection-direction computation is relative to the consumer/producer that the connection is doing. This has the positive property that connection semantics are solely based on the Chisel types of the consumer/producer (nothing more, nothing less).
+In summary, the port-direction computation is relative to the root marked `IO`, but connection-direction computation is relative to the consumer/producer that the connection is doing. This has the positive property that connection semantics are solely based on the Chisel structural type and its relative alignments of the consumer/producer (nothing more, nothing less).
 
 ### Aligned connection operator (:<=)
 
@@ -351,7 +375,7 @@ import chisel3.stage.ChiselStage
 
 ChiselStage.emitVerilog(new Example4b())
 ```
-## Waived Data
+## ConnectableData
 
 It is not uncommon for a user to want to connect Chisel components which are not type equivalent. For example, a user may want to hook up anonymous `Record` components who may have an intersection of their fields being equivalent, but cannot because they are not structurally equivalent.
 
@@ -366,7 +390,7 @@ This section demonstrates how `ConnectableData` specifically can be used in a mu
 
 A not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, they should be ignored. To accomplish this,  use the other operators to initialize all Record members, then use `:<>=` with `waiveAll` to connect only the matching members.
 
-> Note that `.viewAsSuperType`, static casts, nor a custom dataview helps this case because the types are still `Record`.
+> Note that none of `.viewAsSuperType`, static casts, nor a custom DataView helps this case because the Scala types are still `Record`.
 
 ```scala mdoc:silent
 import scala.collection.immutable.SeqMap
@@ -396,7 +420,7 @@ ChiselStage.emitVerilog(new Example9())
 
 ### Defaults with waived connections
 
-A not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, *they should be assigned a default value*. To accomplish this, use the other operators to initialize all Record members, then use `:<>=` with `waiveAll` to connect only the matching members.
+Another not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, *they should be assigned a default value*. To accomplish this, use the other operators to initialize all Record members, then use `:<>=` with `waiveAll` to connect only the matching members.
 
 
 ```scala mdoc:silent
@@ -485,21 +509,23 @@ ChiselStage.emitVerilog(new Example11())
 
 ## Techniques for connecting structurally inequivalent Chisel types
 
-`DataView` and `viewAsSupertype` creates a view of the component that has a different Chisel type. This means that a user can first create a `DataView` of the consumer or producer (or both) so that the Chisel types are structurally equivalent. This is useful when the difference between the consumer and producers aren't super nested, and also if they have rich Scala types which encode their structure. In general, `DataView` is the preferred mechanism to use (if you can) because it maintains the most about of Chisel information in the Scala type, but there are many instances where it doesn't work and thus one must fall back on `ConnectableData`.
+`DataView` and `viewAsSupertype` create a view of the component that has a different Chisel type. This means that a user can first create a `DataView` of the consumer or producer (or both) so that the Chisel types are structurally equivalent. This is useful when the difference between the consumer and producers aren't super nested, and also if they have rich Scala types which encode their structure. In general, `DataView` is the preferred mechanism to use (if you can) because it maintains the most about of Chisel information in the Scala type, but there are many instances where it doesn't work and thus one must fall back on `ConnectableData`.
 
 `ConnectableData` does not change the Chisel type, but instead changes the semantics of the operator to not error on the waived members if they are dangling or unassigned. This is useful for when differences between the consumer and producer do not show up in the Scala type system (e.g. present/missing fields of type `Option[Data]`, or anonymous `Record`s) or are deeply nested in a bundle that is especially onerous to create a `DataView`.
 
-Static casts (e.g. `(x: T)`) allows connecting components that have different Scala types, but leaves the Chisel type unchanged. Use this to force a connection to occur, even if the Scala types are different. One may wonder why the operators require identical Scala types in the first place, if they can easily be bypassed. The reason is to encourage users to use the Scala type system to encode Chisel information as it can make their code more robust; however, we don't want to be draconian about it because there are times when we want to enable the user to "just connect the darn thing".
+Static casts (e.g. `(x: T)`) allows connecting components that have different Scala types, but leaves the Chisel type unchanged. Use this to force a connection to occur, even if the Scala types are different.
 
-When all else fails one can always manually expand the connection to do what they want to happen. The down-side to this approach is its verbosity and that adding new fields to a bundle will require updating the manual connections.
+> One may wonder why the operators require identical Scala types in the first place, if they can easily be bypassed. The reason is to encourage users to use the Scala type system to encode Chisel information as it can make their code more robust; however, we don't want to be draconian about it because there are times when we want to enable the user to "just connect the darn thing".
 
-Things to remember about `ConnectableData` vs `viewAsSupertype`/`DataView` vs static cast (e.g. `(x: T)`)
+When all else fails one can always manually expand the connection to do what they want to happen, member by member. The down-side to this approach is its verbosity and that adding new members to a component will require updating the manual connections.
 
-- Dataview and viewAsSupertype will preemptively remove members that are not present in the new view which has a different Chisel type, thus **DataView does affect what is connected**
-- Waived Data is used to waive the error on members who end up being dangling or unassigned. Importantly, **ConnectableData does not affect what is connected**
-- Static cast does not remove extra members, thus a **static cast does not affect what is connected**
+Things to remember about `ConnectableData` vs `viewAsSupertype`/`DataView` vs static cast (e.g. `(x: T)`):
 
-### Connecting different subtypes of the same super-type, with colliding names
+- `DataView` and `viewAsSupertype` will preemptively remove members that are not present in the new view which has a different Chisel type, thus `DataView` *does* affect what is connected
+- `ConnectableData` can be used to waive the error on members who end up being dangling or unassigned. Importantly, `ConnectableData` *does not* affect what is connected
+- Static cast does not remove extra members, thus a static cast *does not* affect what is connected
+
+### Connecting different sub-types of the same super-type, with colliding names
 
 In these examples, we are connecting `MyDecoupled` with `MyDecoupledOtherBits`. Both are subtypes of `MyReadyValid`, and both have a `bits` field of `UInt(32.W)`.
 

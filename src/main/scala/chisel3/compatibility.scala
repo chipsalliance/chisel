@@ -43,7 +43,7 @@ package object Chisel {
 
   implicit class AddDirMethodToData[T <: Data](target: T) {
     import chisel3.ActualDirection
-    import chisel3.experimental.DataMirror
+    import chisel3.reflect.DataMirror
     import chisel3.internal.requireIsHardware
 
     def dir: Direction = {
@@ -60,7 +60,7 @@ package object Chisel {
     }
   }
   implicit class cloneTypeable[T <: Data](target: T) {
-    import chisel3.experimental.DataMirror
+    import chisel3.reflect.DataMirror
     def chiselCloneType: T = {
       DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
     }

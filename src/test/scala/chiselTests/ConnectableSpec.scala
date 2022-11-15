@@ -919,7 +919,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     object BundleMap {
       def waive[T <: Data](d: T): ConnectableData[T] = {
-        val bundleMapElements = DataMirror.collectDeep(d) { case b: BundleMap => b.getElements }
+        val bundleMapElements = DataMirror.collectMembers(d) { case b: BundleMap => b.getElements }
         ConnectableData(d, bundleMapElements.flatten.toSet, Set.empty)
       }
     }

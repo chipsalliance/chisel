@@ -818,25 +818,34 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Default pretty printing */
   def toPrintable: Printable
-
-  private[chisel3] var defaultOrNull: Data = null
 }
 
 object Data {
+  // Needed for the `implicit def toConnectableDataDefault`
+  import scala.language.implicitConversions
 
-  // Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data
+  /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDataDefault[T <: Data](consumer: T) extends connectable.ConnectableDataOperators[T](consumer)
 
-  // Provides :<>=, :<=, :>=, and :#= between a (consumer: Vec) and (producer: Seq)
+  /** Provides :<>=, :<=, :>=, and :#= between a (consumer: Vec) and (producer: Seq) */
   implicit class ConnectableVecDefault[T <: Data](consumer: Vec[T]) extends connectable.ConnectableVecOperators[T](consumer)
 
-  // Can implicitly convert a Data to a ConnectableData
-  // Originally this was done with an implicit class, but all functions we want to
-  //  add to Data we also want on ConnectableData, so an implicit conversion makes the most sense
-  //  so the ScalaDoc can be shared.
-  import scala.language.implicitConversions
+  /** Can implicitly convert a Data to a ConnectableData
+    * 
+    * Originally this was done with an implicit class, but all functions we want to
+    *  add to Data we also want on ConnectableData, so an implicit conversion makes the most sense
+    *  so the ScalaDoc can be shared.
+    */
   implicit def toConnectableDataDefault[T <: Data](d: T): ConnectableData[T] = ConnectableData.apply(d)
 
+  /** Typeclass implementation of HasMatchingZipOfChildren for Data
+    * 
+    * The canonical API to iterate through two Chisel types or components, where
+    *   matching children are provided together, while non-matching members are provided
+    *   separately
+    * 
+    * Only zips immediate children (vs members, which are all children/grandchildren etc.)
+    */
   implicit val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
 
     implicit class VecGet(v: Vec[Data]) { def get(i: Int): Option[Data] = if (i < v.length) Some(v(i)) else None }
@@ -859,13 +868,23 @@ object Data {
     private def isElement(l: Option[Data], r: Option[Data]): Boolean =
       l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
 
+    /** Zips matching children of `left` and `right`; returns Nil if both are empty
+      * 
+      * The canonical API to iterate through two Chisel types or components, where
+      * matching children are provided together, while non-matching members are provided
+      * separately
+      * 
+      * Only zips immediate children (vs members, which are all children/grandchildren etc.)
+      * 
+      * Returns Nil if both are different types
+      */
     def matchingZipOfChildren(left: Option[Data], right: Option[Data]): Seq[(Option[Data], Option[Data])] =
       (left, right) match {
         case (None, None)                            => Nil
         case (lOpt, rOpt) if isDifferent(lOpt, rOpt) => Nil
-        case (lOpt: Option[Vec[Data]], rOpt: Option[Vec[Data]]) if isVec(lOpt, rOpt) =>
+        case (lOpt: Option[Vec[Data] @unchecked], rOpt: Option[Vec[Data] @unchecked]) if isVec(lOpt, rOpt) =>
           (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
-        case (lOpt: Option[Record], rOpt: Option[Record]) if isRecord(lOpt, rOpt) =>
+        case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
           (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
         case (lOpt, rOpt) if isElement(lOpt, rOpt) => Nil
       }
@@ -1106,7 +1125,7 @@ object WireDefault {
 /** RHS (source) for Invalidate API.
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
   */
-final case object DontCare extends Element {
+final case object DontCare extends Element with connectable.ConnectableDocs {
   // This object should be initialized before we execute any user code that refers to it,
   //  otherwise this "Chisel" object will end up on the UserModule's id list.
   // We make it private to chisel3 so it has to be accessed through the package object.
@@ -1138,6 +1157,11 @@ final case object DontCare extends Element {
   // DontCare's only match themselves.
   private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
 
+  /** $colonGreaterEq
+    *
+    * @group connection
+    * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
+    */
   final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit =
     this.asInstanceOf[Data] :>= producer.asInstanceOf[Data]
 }
