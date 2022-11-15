@@ -14,11 +14,14 @@ import experimental.{prefix, requireIsHardware}
   * @param waived members of base who will not trigger an error if left dangling or unassigned
   * @param squeezed members of base who will not trigger an error if would end up being truncated
   */
-final case class Connectable[+T <: Data](base: T, waived: Set[Data], squeezed: Set[Data]) {
+final class Connectable[+T <: Data] private (val base: T, val waived: Set[Data], val squeezed: Set[Data]) {
   requireIsHardware(base, s"Can only created Connectable of components, not unbound Chisel types")
 
   /** True if no members are waived or squeezed */
   def notSpecial = waived.isEmpty && squeezed.isEmpty
+
+  private[chisel3] def copy(waived: Set[Data] = this.waived, squeezed: Set[Data] = this.squeezed): Connectable[T] =
+    new Connectable(base, waived, squeezed)
 
   /** Select members of base to waive
     *
@@ -79,7 +82,11 @@ final case class Connectable[+T <: Data](base: T, waived: Set[Data], squeezed: S
 object Connectable {
 
   /** Create a Connectable from a Data */
-  def apply[T <: Data](base: T): Connectable[T] = Connectable(base, Set.empty[Data], Set.empty[Data])
+  def apply[T <: Data](
+    base:     T,
+    waived:   Set[Data] = Set.empty[Data],
+    squeezed: Set[Data] = Set.empty[Data]
+  ): Connectable[T] = new Connectable(base, waived, squeezed)
 
   /** The default connection operators for Chisel hardware components
     *
