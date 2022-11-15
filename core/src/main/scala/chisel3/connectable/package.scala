@@ -15,7 +15,8 @@ package object connectable {
     *
     * @param consumer the left-hand-side of the connection
     */
-  implicit class ConnectableOperators[T <: Data](consumer: T) extends Connectable.ConnectableOpExtension(Connectable(consumer))
+  implicit class ConnectableOperators[T <: Data](consumer: T)
+      extends Connectable.ConnectableOpExtension(Connectable(consumer))
 
   /** ConnectableVec Typeclass defines the following operators on between a (consumer: Vec) and (producer: Seq): :<=, :>=, :<>=, :#=
     *

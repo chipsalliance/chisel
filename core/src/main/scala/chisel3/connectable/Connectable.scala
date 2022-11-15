@@ -90,7 +90,7 @@ object Connectable {
     * Identical to calling :<= and :>=, but swapping consumer/producer for :>= (order is irrelevant), e.g.:
     *   consumer :<= producer
     *   producer :>= consumer
-    * 
+    *
     * Symbol reference:
     *  - ':' is the consumer side
     *  - '=' is the producer side
@@ -108,7 +108,7 @@ object Connectable {
     *
     * For `consumer :<= producer`, each of `consumer`'s leaf members which are aligned with respect to `consumer` are driven from the corresponding `producer` leaf member.
     * Only `consumer`'s leaf/branch alignments influence the connection.
-    * 
+    *
     * Symbol reference:
     *  - ':' is the consumer side
     *  - '=' is the producer side
@@ -125,7 +125,7 @@ object Connectable {
     *
     * For `consumer :>= producer`, each of `producer`'s leaf members which are flipped with respect to `producer` are driven from the corresponding consumer leaf member
     * Only `producer`'s leaf/branch alignments influence the connection.
-    * 
+    *
     * Symbol reference:
     *  - ':' is the consumer side
     *  - '=' is the producer side
@@ -174,7 +174,10 @@ object Connectable {
     * @param consumer the consumer from whom to waive unmatched members
     * @param producer the producer from whom to waive unmatched members
     */
-  def waiveUnmatched[T <: Data](consumer: Connectable[T], producer: Connectable[T]): (Connectable[T], Connectable[T]) = {
+  def waiveUnmatched[T <: Data](
+    consumer: Connectable[T],
+    producer: Connectable[T]
+  ): (Connectable[T], Connectable[T]) = {
     val result = DataMirror.collectMembersOverAllForAny(Some((consumer.base: Data)), Some((producer.base: Data))) {
       case x @ (Some(c), None) => x
       case x @ (None, Some(p)) => x

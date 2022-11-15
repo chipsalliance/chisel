@@ -45,20 +45,21 @@ private[chisel3] sealed trait Alignment {
     case (x, y) =>
       val lAndROpt = computeLandR(this.member, o.member, op)
       lAndROpt.map {
-        case (l, r) if !(base.squeezed.contains(r) || o.base.squeezed.contains(r)) => (l.widthOption, r.widthOption) match {
-          case (None, _)            => false // l will infer a large enough width
-          case (Some(x), None)      => true // r could infer a larger width than l's width
-          case (Some(lw), Some(rw)) => lw < rw
-        }
+        case (l, r) if !(base.squeezed.contains(r) || o.base.squeezed.contains(r)) =>
+          (l.widthOption, r.widthOption) match {
+            case (None, _)            => false // l will infer a large enough width
+            case (Some(x), None)      => true // r could infer a larger width than l's width
+            case (Some(lw), Some(rw)) => lw < rw
+          }
         case (l, r) => false
       }.getOrElse(false)
   }
 
   // Returns loc and roc
-  final def computeLandR(c:  Data, p:  Data, op: Connection): Option[(Data, Data)] = {
+  final def computeLandR(c: Data, p: Data, op: Connection): Option[(Data, Data)] = {
     (c, p, this, op.connectToConsumer, op.connectToProducer, op.alwaysConnectToConsumer) match {
       case (x: Analog, y: Analog, _, _, _, _) => Some((x, y))
-      case (x: Analog, DontCare, _, _, _, _)  => Some((x, DontCare))
+      case (x: Analog, DontCare, _, _, _, _) => Some((x, DontCare))
       case (x, y, _: AlignedWithRoot, true, _, _) => Some((c, p))
       case (x, y, _: FlippedWithRoot, _, true, _) => Some((p, c))
       case (x, y, _, _, _, true) => Some((c, p))
@@ -83,7 +84,7 @@ private[chisel3] sealed trait Alignment {
       case (false, true, _, "aligned") => "dangling"
       case other                       => "unmatched"
     }
-  
+
   final def empty = EmptyAlignment(base, isConsumer)
 }
 
@@ -101,7 +102,11 @@ private[chisel3] case class EmptyAlignment(base: Connectable[Data], isConsumer: 
 
 private[chisel3] sealed trait NonEmptyAlignment extends Alignment
 
-private[chisel3] case class AlignedWithRoot(base: Connectable[Data], member: Data, coerced: Boolean, isConsumer: Boolean)
+private[chisel3] case class AlignedWithRoot(
+  base:       Connectable[Data],
+  member:     Data,
+  coerced:    Boolean,
+  isConsumer: Boolean)
     extends NonEmptyAlignment {
   def invert = if (coerced) this else FlippedWithRoot(base, member, coerced, isConsumer)
   def coerce = this.copy(base, member, true)
@@ -109,7 +114,11 @@ private[chisel3] case class AlignedWithRoot(base: Connectable[Data], member: Dat
   def alignment: String = "aligned"
 }
 
-private[chisel3] case class FlippedWithRoot(base: Connectable[Data], member: Data, coerced: Boolean, isConsumer: Boolean)
+private[chisel3] case class FlippedWithRoot(
+  base:       Connectable[Data],
+  member:     Data,
+  coerced:    Boolean,
+  isConsumer: Boolean)
     extends NonEmptyAlignment {
   def invert = if (coerced) this else AlignedWithRoot(base, member, coerced, isConsumer)
   def coerce = this.copy(base, member, true)

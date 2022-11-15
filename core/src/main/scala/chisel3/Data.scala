@@ -828,10 +828,11 @@ object Data {
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)
 
   /** Provides :<>=, :<=, :>=, and :#= between a (consumer: Vec) and (producer: Seq) */
-  implicit class ConnectableVecDefault[T <: Data](consumer: Vec[T]) extends connectable.ConnectableVecOperators[T](consumer)
+  implicit class ConnectableVecDefault[T <: Data](consumer: Vec[T])
+      extends connectable.ConnectableVecOperators[T](consumer)
 
   /** Can implicitly convert a Data to a Connectable
-    * 
+    *
     * Originally this was done with an implicit class, but all functions we want to
     *  add to Data we also want on Connectable, so an implicit conversion makes the most sense
     *  so the ScalaDoc can be shared.
@@ -839,11 +840,11 @@ object Data {
   implicit def toConnectableDefault[T <: Data](d: T): Connectable[T] = Connectable.apply(d)
 
   /** Typeclass implementation of HasMatchingZipOfChildren for Data
-    * 
+    *
     * The canonical API to iterate through two Chisel types or components, where
     *   matching children are provided together, while non-matching members are provided
     *   separately
-    * 
+    *
     * Only zips immediate children (vs members, which are all children/grandchildren etc.)
     */
   implicit val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
@@ -869,13 +870,13 @@ object Data {
       l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
 
     /** Zips matching children of `left` and `right`; returns Nil if both are empty
-      * 
+      *
       * The canonical API to iterate through two Chisel types or components, where
       * matching children are provided together, while non-matching members are provided
       * separately
-      * 
+      *
       * Only zips immediate children (vs members, which are all children/grandchildren etc.)
-      * 
+      *
       * Returns Nil if both are different types
       */
     def matchingZipOfChildren(left: Option[Data], right: Option[Data]): Seq[(Option[Data], Option[Data])] =

@@ -51,7 +51,7 @@ object DataMirror {
     * For example, `UInt(8.W)` and `UInt(16.W)` are different.
     * Likewise, Records check that both Records have the same
     * elements with the same types.
-    * 
+    *
     * Equivalent to being structural, alignment, and width type equivalent
     *
     * @param x First Chisel type

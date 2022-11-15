@@ -14,71 +14,72 @@ import scala.collection.mutable
 
 // Datastructure capturing the semantics of each connectable operator
 private[chisel3] sealed trait Connection {
-  val noDangles:              Boolean
+  val noDangles:               Boolean
   val noUnconnected:           Boolean
-  val mustMatch:              Boolean
-  val noWrongOrientations:    Boolean
-  val noMismatchedWidths:     Boolean
+  val mustMatch:               Boolean
+  val noWrongOrientations:     Boolean
+  val noMismatchedWidths:      Boolean
   val connectToConsumer:       Boolean
   val connectToProducer:       Boolean
   val alwaysConnectToConsumer: Boolean
 }
 
 private[chisel3] case object ColonLessEq extends Connection {
-  val noDangles:              Boolean = true
+  val noDangles:               Boolean = true
   val noUnconnected:           Boolean = true
-  val mustMatch:              Boolean = true
-  val noWrongOrientations:    Boolean = true
-  val noMismatchedWidths:     Boolean = true
+  val mustMatch:               Boolean = true
+  val noWrongOrientations:     Boolean = true
+  val noMismatchedWidths:      Boolean = true
   val connectToConsumer:       Boolean = true
   val connectToProducer:       Boolean = false
   val alwaysConnectToConsumer: Boolean = false
 }
 
 private[chisel3] case object ColonGreaterEq extends Connection {
-  val noDangles:              Boolean = true
+  val noDangles:               Boolean = true
   val noUnconnected:           Boolean = true
-  val mustMatch:              Boolean = true
-  val noWrongOrientations:    Boolean = true
-  val noMismatchedWidths:     Boolean = true
+  val mustMatch:               Boolean = true
+  val noWrongOrientations:     Boolean = true
+  val noMismatchedWidths:      Boolean = true
   val connectToConsumer:       Boolean = false
   val connectToProducer:       Boolean = true
   val alwaysConnectToConsumer: Boolean = false
 }
 
 private[chisel3] case object ColonLessGreaterEq extends Connection {
-  val noDangles:              Boolean = true
+  val noDangles:               Boolean = true
   val noUnconnected:           Boolean = true
-  val mustMatch:              Boolean = true
-  val noWrongOrientations:    Boolean = true
-  val noMismatchedWidths:     Boolean = true
+  val mustMatch:               Boolean = true
+  val noWrongOrientations:     Boolean = true
+  val noMismatchedWidths:      Boolean = true
   val connectToConsumer:       Boolean = true
   val connectToProducer:       Boolean = true
   val alwaysConnectToConsumer: Boolean = false
   def canFirrtlConnect(consumer: Connectable[Data], producer: Connectable[Data]) = {
-    val typeEquivalent = try {
-      BiConnect.canFirrtlConnectData(
-        consumer.base,
-        producer.base,
-        UnlocatableSourceInfo,
-        Connection.chisel5CompileOptions,
-        Builder.referenceUserModule
-      ) && consumer.base.typeEquivalent(producer.base)
-    } catch {
-      // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
-      //  when calling DirectionConnection.connect. Hence, we can just default to false to take the non-optimized emission path
-      case e: Throwable => false
-    }
+    val typeEquivalent =
+      try {
+        BiConnect.canFirrtlConnectData(
+          consumer.base,
+          producer.base,
+          UnlocatableSourceInfo,
+          Connection.chisel5CompileOptions,
+          Builder.referenceUserModule
+        ) && consumer.base.typeEquivalent(producer.base)
+      } catch {
+        // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
+        //  when calling DirectionConnection.connect. Hence, we can just default to false to take the non-optimized emission path
+        case e: Throwable => false
+      }
     (typeEquivalent && consumer.notSpecial && producer.notSpecial)
   }
 }
 
 private[chisel3] case object ColonHashEq extends Connection {
-  val noDangles:              Boolean = true
+  val noDangles:               Boolean = true
   val noUnconnected:           Boolean = true
-  val mustMatch:              Boolean = true
-  val noWrongOrientations:    Boolean = false
-  val noMismatchedWidths:     Boolean = true
+  val mustMatch:               Boolean = true
+  val noWrongOrientations:     Boolean = false
+  val noMismatchedWidths:      Boolean = true
   val connectToConsumer:       Boolean = true
   val connectToProducer:       Boolean = false
   val alwaysConnectToConsumer: Boolean = true
@@ -101,9 +102,9 @@ private[chisel3] object Connection {
     * @param sourceInfo source info for where the connection occurred
     */
   def connect[T <: Data](
-    cRoot:    Connectable[T],
-    pRoot:    Connectable[T],
-    cOp:      Connection
+    cRoot: Connectable[T],
+    pRoot: Connectable[T],
+    cOp:   Connection
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -141,8 +142,8 @@ private[chisel3] object Connection {
   }
 
   private def connect(
-    l:  Data,
-    r:  Data,
+    l: Data,
+    r: Data
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -152,7 +153,6 @@ private[chisel3] object Connection {
       case (_, _) => l := r
     }
   }
-
 
   private def doConnection[T <: Data](
     consumer: Connectable[T],
@@ -179,7 +179,8 @@ private[chisel3] object Connection {
           errors += (s"inversely oriented fields ${co.member} and ${po.member}")
 
         // Base Case 3: early exit if operator requires matching widths, but they aren't the same
-        case (co: NonEmptyAlignment, po: NonEmptyAlignment) if (co.mismatchedWidths(po, op)) && (op.noMismatchedWidths) =>
+        case (co: NonEmptyAlignment, po: NonEmptyAlignment)
+            if (co.mismatchedWidths(po, op)) && (op.noMismatchedWidths) =>
           errors += (s"mismatched widths of ${co.member} and ${po.member}")
 
         // Base Case 3: operator error on dangling/unconnected fields
@@ -202,7 +203,11 @@ private[chisel3] object Connection {
                 case f => doConnection(deriveChildAlignment(f, po).swap(DontCare), deriveChildAlignment(f, po))
               }
             case (c, p) =>
-              val o = (co.alignsWith(po), (!co.alignsWith(po) && op.connectToConsumer && !op.connectToProducer), (!co.alignsWith(po) && !op.connectToConsumer && op.connectToProducer)) match {
+              val o = (
+                co.alignsWith(po),
+                (!co.alignsWith(po) && op.connectToConsumer && !op.connectToProducer),
+                (!co.alignsWith(po) && !op.connectToConsumer && op.connectToProducer)
+              ) match {
                 case (true, _, _) => co
                 case (_, true, _) => co
                 case (_, _, true) => po

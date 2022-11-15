@@ -307,7 +307,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(Clock(), Seq("wiresOut_0 <= wiresIn_0"))
     }
     it("(0.o): Error with 'cannot be written' if driving module input") {
-      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => {  y :<= x }
+      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<= x }
       testException(Bool(), Bool(), "cannot be written")
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
@@ -517,7 +517,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(Clock(), Seq("wiresOut_0 <= wiresIn_0"))
     }
     it("(1.o): Error with 'cannot be written' if driving module input") {
-      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => {  y :<= x }
+      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<= x }
       testException(Bool(), Bool(), "cannot be written")
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
@@ -683,7 +683,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(Bool()), Seq("wiresIn_0.bar <= wiresOut_0.bar"))
     }
     it("(2.o): Error with 'cannot be written' if driving module input") {
-      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => {  y :<= x }
+      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<= x }
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
   }
@@ -900,22 +900,23 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(UInt(), SInt(), "Sink (UInt) and Source (SInt) have different types")
     }
     it("(3.n): Emit '<=' between wires") {
-      implicit val monitorOp: Option[(Data, Data) => Unit] = Some(
-        (x: Data, y: Data) => {
-          val temp0 = Wire(chiselTypeOf(y))
-          temp0 :#= y
-          val temp1 = Wire(chiselTypeOf(y))
-          temp1 :#= temp0
-          x :#= temp1
-        }
+      implicit val monitorOp: Option[(Data, Data) => Unit] = Some((x: Data, y: Data) => {
+        val temp0 = Wire(chiselTypeOf(y))
+        temp0 :#= y
+        val temp1 = Wire(chiselTypeOf(y))
+        temp1 :#= temp0
+        x :#= temp1
+      })
+      test(
+        mixedBundle(Bool()),
+        Seq(
+          "temp1.bar <= temp0.bar",
+          "temp1.foo <= temp0.foo"
+        )
       )
-      test(mixedBundle(Bool()), Seq(
-        "temp1.bar <= temp0.bar",
-        "temp1.foo <= temp0.foo"
-      ))
     }
     it("(3.o): Error with 'cannot be written' if driving module input") {
-      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => {  y :#= x }
+      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :#= x }
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
   }
@@ -950,10 +951,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         val out = IO(new NestedDecoupled(false))
         out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.toSeq }
       }
-      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
-        "out.foo.valid <= in.foo.valid",
-        "in.foo.ready <= out.foo.ready"
-      ), Seq("out.foo.data <= in.foo.data"))
+      testCheck(
+        ChiselStage.emitChirrtl({ new MyModule() }, true, true),
+        Seq(
+          "out.foo.valid <= in.foo.valid",
+          "in.foo.ready <= out.foo.ready"
+        ),
+        Seq("out.foo.data <= in.foo.data")
+      )
     }
     it("(4.b) Inline waiver things") {
       class MyModule extends Module {
@@ -961,10 +966,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         val out = IO(new Decoupled(false))
         out :<>= in.waive(_.data.get)
       }
-      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
-        "out.valid <= in.valid",
-        "in.ready <= out.ready"
-      ), Seq("out.data <= in.data"))
+      testCheck(
+        ChiselStage.emitChirrtl({ new MyModule() }, true, true),
+        Seq(
+          "out.valid <= in.valid",
+          "in.ready <= out.ready"
+        ),
+        Seq("out.data <= in.data")
+      )
     }
     it("(4.c) BundleMap example can use programmatic waiving") {
       class MyModule extends Module {
@@ -985,11 +994,15 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         //Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
-      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
-        "out.valid <= in.valid",
-        "in.ready <= out.ready",
-        "out.data.b <= in.data.b"
-      ), Nil)
+      testCheck(
+        ChiselStage.emitChirrtl({ new MyModule() }, true, true),
+        Seq(
+          "out.valid <= in.valid",
+          "in.ready <= out.ready",
+          "out.data.b <= in.data.b"
+        ),
+        Nil
+      )
     }
     it("(4.d) Connect defaults, then create Connectable to connect to") {
       class MyModule extends Module {
@@ -1011,12 +1024,16 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         //Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
-      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
-        "out.valid <= in.valid",
-        "in.ready <= out.ready",
-        "out.data.b <= in.data.b",
-        "out.data.c <= UInt<1>(\"h1\")"
-      ), Nil)
+      testCheck(
+        ChiselStage.emitChirrtl({ new MyModule() }, true, true),
+        Seq(
+          "out.valid <= in.valid",
+          "in.ready <= out.ready",
+          "out.data.b <= in.data.b",
+          "out.data.c <= UInt<1>(\"h1\")"
+        ),
+        Nil
+      )
     }
     it("(4.e) (Good or bad?) Mismatched aggregate containing backpressure must be waived for :<=") {
       // My concern with this use-case is if you have an unmatched aggregate field, but it only contains fields that your operator would ignore anyways, should you error?
@@ -1038,13 +1055,21 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out3.waive(_.v(2)) :>= in2
         // Should error, unless waived
         out2 :<= in3.waive(_.v(2))
-        DataMirror.collectAlignedDeep(in3) { case x => x }.toSet should be (Set(in3, in3.v, in3.v(0), in3.v(1), in3.v(2)))
-        DataMirror.collectFlippedDeep(in3) { case x => x }.toSet should be (Set(in3.v(0).ready, in3.v(1).ready, in3.v(2).ready))
+        DataMirror.collectAlignedDeep(in3) { case x => x }.toSet should be(
+          Set(in3, in3.v, in3.v(0), in3.v(1), in3.v(2))
+        )
+        DataMirror.collectFlippedDeep(in3) { case x => x }.toSet should be(
+          Set(in3.v(0).ready, in3.v(1).ready, in3.v(2).ready)
+        )
       }
-      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
-        "in2.v[0].ready <= out3.v[0].ready",
-        "in2.v[1].ready <= out3.v[1].ready",
-      ), Nil)
+      testCheck(
+        ChiselStage.emitChirrtl({ new MyModule() }, true, true),
+        Seq(
+          "in2.v[0].ready <= out3.v[0].ready",
+          "in2.v[1].ready <= out3.v[1].ready"
+        ),
+        Nil
+      )
     }
   }
   describe("(5): Connectable squeezing") {
@@ -1077,11 +1102,15 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         val out = IO(new NestedDecoupled(false))
         out :<>= in.squeezeEach { case d: Decoupled => Seq(d.data) }
       }
-      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
-        "out.foo.valid <= in.foo.valid",
-        "in.foo.ready <= out.foo.ready",
-        "out.foo.data <= in.foo.data"
-      ), Nil)
+      testCheck(
+        ChiselStage.emitChirrtl({ new MyModule() }, true, true),
+        Seq(
+          "out.foo.valid <= in.foo.valid",
+          "in.foo.ready <= out.foo.ready",
+          "out.foo.data <= in.foo.data"
+        ),
+        Nil
+      )
     }
     it("(5.b) Squeeze works on UInt") {
       class MyModule extends Module {
@@ -1089,9 +1118,13 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         val out = IO(UInt(1.W))
         out :<>= in.squeeze
       }
-      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
-        "out <= in"
-      ), Nil)
+      testCheck(
+        ChiselStage.emitChirrtl({ new MyModule() }, true, true),
+        Seq(
+          "out <= in"
+        ),
+        Nil
+      )
     }
     it("(5.c) BundleMap example can use programmatic squeezing") {
       class MyModule extends Module {
@@ -1112,13 +1145,19 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         //Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in).squeezeAll
       }
-      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
-        "out.valid <= in.valid",
-        "in.ready <= out.ready",
-        "out.data.b <= in.data.b"
-      ), Nil)
+      testCheck(
+        ChiselStage.emitChirrtl({ new MyModule() }, true, true),
+        Seq(
+          "out.valid <= in.valid",
+          "in.ready <= out.ready",
+          "out.data.b <= in.data.b"
+        ),
+        Nil
+      )
     }
-    it("(5.e) Mismatched aggregate containing backpressure must be squeezed only if actually connecting and requiring implicit truncation") {
+    it(
+      "(5.e) Mismatched aggregate containing backpressure must be squeezed only if actually connecting and requiring implicit truncation"
+    ) {
       class OnlyBackPressure(width: Int) extends Bundle {
         val ready = Flipped(UInt(width.W))
       }
@@ -1133,11 +1172,15 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         // Should error, unless waived
         out3.squeezeAll :>= in3
       }
-      testCheck(ChiselStage.emitChirrtl({ new MyModule() }, true, true), Seq(
-        "in3.v[0].ready <= out3.v[0].ready",
-        "in3.v[1].ready <= out3.v[1].ready",
-        "in3.v[2].ready <= out3.v[2].ready"
-      ), Nil)
+      testCheck(
+        ChiselStage.emitChirrtl({ new MyModule() }, true, true),
+        Seq(
+          "in3.v[0].ready <= out3.v[0].ready",
+          "in3.v[1].ready <= out3.v[1].ready",
+          "in3.v[2].ready <= out3.v[2].ready"
+        ),
+        Nil
+      )
     }
   }
   describe("(6): Connectable and DataView") {
