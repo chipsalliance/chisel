@@ -284,6 +284,26 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     testStrings.foreach(x => assert(x == "~NestedRecordModule|InnerModule>io.foo"))
   }
 
+  they should "work correctly with DataMirror in nested OpaqueType Records" in {
+    var mod: NestedRecordModule = null
+    ChiselStage.elaborate { mod = new NestedRecordModule; mod }
+    val ports = chisel3.experimental.DataMirror.fullModulePorts(mod.inst)
+    val expectedPorts = Seq(
+      ("clock", mod.inst.clock),
+      ("reset", mod.inst.reset),
+      ("io", mod.inst.io),
+      ("io_bar", mod.inst.io.bar),
+      ("io_bar", mod.inst.io.bar.k),
+      ("io_bar", mod.inst.io.bar.k.k),
+      ("io_bar", mod.inst.io.bar.k.k.elements.head._2),
+      ("io_foo", mod.inst.io.foo),
+      ("io_foo", mod.inst.io.foo.k),
+      ("io_foo", mod.inst.io.foo.k.k),
+      ("io_foo", mod.inst.io.foo.k.k.elements.head._2)
+    )
+    ports shouldBe expectedPorts
+  }
+
   they should "work correctly when connecting nested OpaqueType elements" in {
     val nestedRecordChirrtl = ChiselStage.emitChirrtl { new NestedRecordModule }
     nestedRecordChirrtl should include("input in : UInt<8>")
