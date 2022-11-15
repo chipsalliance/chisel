@@ -53,7 +53,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
         Builder.error(
           s"Unable to name port $port in $this, " +
             s"try making it a public field of the Module $source"
-        )
+        )(UnlocatableSourceInfo)
       }
     }
   }
