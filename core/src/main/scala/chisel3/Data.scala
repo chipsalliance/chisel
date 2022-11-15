@@ -258,8 +258,13 @@ package experimental {
     def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
       def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
         case _: Element => Seq()
-        case r: Record  => r.elements.toSeq.flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
-        case v: Vec[_]  => v.zipWithIndex.flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
+        case r: Record =>
+          r.elements.toSeq.flatMap {
+            case (eltName, elt) =>
+              if (r._isOpaqueType) { getPortNames(s"${name}", elt) }
+              else { getPortNames(s"${name}_${eltName}", elt) }
+          }
+        case v: Vec[_] => v.zipWithIndex.flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
       })
       modulePorts(target).flatMap {
         case (name, data) =>
