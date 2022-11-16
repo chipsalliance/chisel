@@ -14,9 +14,11 @@ import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.{AnnotationSeq, RenameMap}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
+import chisel3.internal.sourceinfo.SourceInfo
 import logger.LazyLogging
 
 import scala.collection.mutable
+import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -221,7 +223,14 @@ private[chisel3] trait HasId extends InstanceId {
     if (_ref.isEmpty) {
       val candidate_name = _computeName(Some(default)).get
       val available_name = namespace.name(candidate_name)
+<<<<<<< HEAD
       setRef(Ref(available_name))
+=======
+      if (errorIfDup && (available_name != candidate_name)) {
+        Builder.error(s"Cannot have duplicate names $available_name and $candidate_name")(UnlocatableSourceInfo)
+      }
+      setRef(refBuilder(available_name))
+>>>>>>> e45be10a (Use SourceInfo in Builder error messages when available (#2849))
       // Clear naming prefix to free memory
       naming_prefix = Nil
     }
@@ -739,15 +748,16 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def errors: ErrorLog = dynamicContext.errors
-  def error(m: => String): Unit = {
+  def error(m: => String)(implicit sourceInfo: SourceInfo): Unit = {
     // If --throw-on-first-error is requested, throw an exception instead of aggregating errors
     if (dynamicContextVar.value.isDefined && !dynamicContextVar.value.get.throwOnFirstError) {
-      errors.error(m)
+      errors.error(m, sourceInfo)
     } else {
       throwException(m)
     }
   }
-  def warning(m:      => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
+  def warning(m: => String)(implicit sourceInfo: SourceInfo): Unit =
+    if (dynamicContextVar.value.isDefined) errors.warning(m, sourceInfo)
   def warningNoLoc(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warningNoLoc(m)
   def deprecated(m:   => String, location: Option[String] = None): Unit =
     if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
@@ -757,7 +767,7 @@ private[chisel3] object Builder extends LazyLogging {
     * @param m exception message
     */
   @throws(classOf[ChiselException])
-  def exception(m: => String): Nothing = {
+  def exception(m: => String)(implicit sourceInfo: SourceInfo): Nothing = {
     error(m)
     throwException(m)
   }
