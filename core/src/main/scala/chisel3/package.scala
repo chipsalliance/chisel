@@ -39,7 +39,8 @@ package object chisel3 {
       case bigint if bigint == 0 => Bool.Lit(false)
       case bigint if bigint == 1 => Bool.Lit(true)
       case bigint =>
-        Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1")(UnlocatableSourceInfo); Bool.Lit(false)
+        Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1")(UnlocatableSourceInfo)
+        Bool.Lit(false)
     }
 
     /** Int to UInt conversion, recommended style for constants. */
