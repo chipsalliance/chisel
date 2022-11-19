@@ -19,6 +19,7 @@ import logger.LazyLogging
 
 import scala.collection.mutable
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
+import scala.annotation.tailrec
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -26,11 +27,15 @@ private[chisel3] class Namespace(keywords: Set[String]) {
   for (keyword <- keywords)
     names(keyword) = 1
 
-  private def rename(n: String): String = {
-    val index = names(n)
+  @tailrec
+  private def rename(n: String, index: Long): String = {
     val tryName = s"${n}_${index}"
-    names(n) = index + 1
-    if (this contains tryName) rename(n) else tryName
+    if (names.contains(tryName)) {
+      rename(n, index + 1)
+    } else {
+      names(n) = index + 1
+      tryName
+    }
   }
 
   private def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
@@ -42,14 +47,51 @@ private[chisel3] class Namespace(keywords: Set[String]) {
     if (headOk) res else s"_$res"
   }
 
-  def contains(elem: String): Boolean = names.contains(elem)
+  /** Checks if `n` ends in `_\d+` and returns the substring before `_` if so, null otherwise */
+  // TODO can and should this be folded in to sanitize? Same iteration as the forall?
+  private def prefix(n: String): Int = {
+    // This is micro-optimized because it runs on every single name
+    var i = n.size - 1
+    while (i > 0 && n(i).isDigit) {
+      i -= 1
+    }
+    // Will get i == 0 for all digits or _\d+ with empty prefix, those have no prefix so returning 0 is correct
+    if (i == n.size) 0 // no digits
+    else if (n(i) != '_') 0 // no _
+    else i
+  }
+
+  // TODO implement, also can this be useful below?
+  def contains(elem: String): Boolean = getIndex(elem).isDefined
+
+  // Gets the current index for this name, 0 means "none"
+  def getIndex(elem: String): Option[Long] =
+    names.get(elem).orElse {
+      // This exact name isn't contained, but if we end in _<idx>, we need to check our prefix
+      val maybePrefix = prefix(elem)
+      if (maybePrefix == 0) None
+      else {
+        // If we get a prefix collision and our index is taken, we start disambiguating with _<idx>_1
+        names
+          .get(elem.take(maybePrefix))
+          .filter(_ > elem.drop(maybePrefix + 1).toInt)
+          .map(_ => 1) // If we have a prefix match and our index is take
+      }
+    }
 
   // leadingDigitOk is for use in fields of Records
   def name(elem: String, leadingDigitOk: Boolean = false): String = {
     val sanitized = sanitize(elem, leadingDigitOk)
-    val result = if (this.contains(sanitized)) rename(sanitized) else sanitized
-    names(result) = 1
-    result
+    getIndex(sanitized) match {
+      case Some(idx) => rename(sanitized, idx)
+      case None =>
+        names(sanitized) = 1
+        sanitized
+    }
+  }
+
+  def print(): Unit = {
+    names.foreach(println)
   }
 }
 
