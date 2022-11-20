@@ -27,13 +27,18 @@ private[chisel3] class Namespace(keywords: Set[String]) {
   for (keyword <- keywords)
     names(keyword) = 1
 
+  // Check means that we need to check the new name with index in the HashMap because there has been
+  // a name added that could collide with names with this prefix and some index
+  // We use negation of the index stored in the map to indicate this condition
   @tailrec
-  private def rename(n: String, index: Long): String = {
-    val tryName = s"${n}_${index}"
-    if (names.contains(tryName)) {
-      rename(n, index + 1)
+  private def rename(n: String, index: Long, check: Boolean): String = {
+    println(s"rename($n, $index, $check)")
+    val tryName = if (index == 0) n else s"${n}_${index}"
+    if (check && index > 0 && names.contains(tryName)) {
+      rename(n, index + 1, check)
     } else {
-      names(n) = index + 1
+      val nextIndex = index + 1
+      names(n) = if (check) ~nextIndex else nextIndex
       tryName
     }
   }
@@ -81,17 +86,59 @@ private[chisel3] class Namespace(keywords: Set[String]) {
 
   // leadingDigitOk is for use in fields of Records
   def name(elem: String, leadingDigitOk: Boolean = false): String = {
+    println(s"name on $elem")
     val sanitized = sanitize(elem, leadingDigitOk)
-    getIndex(sanitized) match {
-      case Some(idx) => rename(sanitized, idx)
-      case None =>
+    val res = names
+      .get(sanitized)
+      .map { idx =>
+        println(s"For $elem got $idx")
+        val check = idx < 0
+        val index = if (check) ~idx else idx
+        rename(sanitized, index, check)
+      }
+      .orElse {
+        // This exact name isn't contained, but if we end in _<idx>, we need to check our prefix
+        val maybePrefix = prefix(sanitized)
+        println(s"maybePrefix = $maybePrefix for $sanitized")
+        if (maybePrefix == 0) None
+        else {
+          val prefix = sanitized.take(maybePrefix)
+          val prefixIdx = names.getOrElse(prefix, 0L)
+          println(s"prefixIdx = $prefixIdx for $prefix")
+          val prefixCheck = prefixIdx < 0L
+          val realIdx =
+            if (prefixCheck) {
+              ~prefixIdx
+            } else {
+              names(prefix) = ~prefixIdx // 1s complement of 0 is good actually
+              prefixIdx
+            }
+          if (realIdx > sanitized.drop(maybePrefix + 1).toInt) {
+            Some(
+              rename(sanitized, 1, false)
+            ) // our own check is false, otherwise we would've matched in first names lookup
+          } else {
+            None
+          }
+        }
+      }
+      .getOrElse {
         names(sanitized) = 1
         sanitized
-    }
+      }
+    println(s"$elem => $res")
+    res
   }
 
   def print(): Unit = {
-    names.foreach(println)
+    names.foreach {
+      case (n, idx) =>
+        if (idx >= 0) {
+          println(s"$n => $idx")
+        } else {
+          println(s"$n => -${~idx}")
+        }
+    }
   }
 }
 
