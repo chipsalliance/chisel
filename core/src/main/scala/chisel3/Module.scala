@@ -331,9 +331,9 @@ package experimental {
         _ids.maxBy(_._id)._id
     }
 
-    private[chisel3] def getIds = {
+    private[chisel3] def getIds: Iterable[HasId] = {
       require(_closed, "Can't get ids before module close")
-      _ids.toSeq
+      _ids
     }
 
     private val _ports = new ArrayBuffer[(Data, SourceInfo)]()
