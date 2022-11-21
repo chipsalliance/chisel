@@ -28,18 +28,18 @@ private[chisel3] class Namespace(keywords: Set[String]) {
   // Names can be requested that collide with compressed sets of names, thus the algorithm for
   // checking if a name is present in the Namespace is more complex than just checking the HashMap,
   // see getIndex below.
-  private val names = collection.mutable.HashMap[String, Long]()
-  def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) => other.names(s) = l }
+  private val names = new java.util.HashMap[String, Long]
+  def copyTo(other: Namespace): Unit = other.names.putAll(names)
   for (keyword <- keywords)
-    names(keyword) = 1
+    names.put(keyword, 1)
 
   @tailrec
   private def rename(n: String, index: Long): String = {
     val tryName = s"${n}_${index}"
-    if (names.contains(tryName)) {
+    if (names.containsKey(tryName)) {
       rename(n, index + 1)
     } else {
-      names(n) = index + 1
+      names.put(n, index + 1)
       tryName
     }
   }
@@ -68,40 +68,38 @@ private[chisel3] class Namespace(keywords: Set[String]) {
   }
 
   // TODO implement, also can this be useful below?
-  def contains(elem: String): Boolean = getIndex(elem).isDefined
+  def contains(elem: String): Boolean = getIndex(elem) != 0
 
-  // Gets the current index for this name, None means it is not contained in the Namespace
-  def getIndex(elem: String): Option[Long] =
-    names.get(elem).orElse {
-      // This exact name isn't contained, but if we end in _<idx>, we need to check our prefix
+  // Gets the current index for this name, 0 means it is not contained in the Namespace
+  def getIndex(elem: String): Long = {
+    val index = names.get(elem)
+    if (index != 0) index
+    else {
       val maybePrefix = prefix(elem)
-      if (maybePrefix == 0) None
+      if (maybePrefix == 0) 0
       else {
-        // If we get a prefix collision and our index is taken, we start disambiguating with _<idx>_1
-        names
-          .get(elem.take(maybePrefix))
-          .filter { prefixIdx =>
-            val ourIdx = elem.drop(maybePrefix + 1).toInt
-            // The namespace starts disambiguating at _1 so _0 is a false collision case
-            ourIdx != 0 && prefixIdx > ourIdx
-          }
-          .map(_ => 1) // If we have a prefix match and our index is take
+        val prefix = elem.take(maybePrefix)
+        val prefixIdx = names.get(prefix)
+        if (prefixIdx == 0) 0
+        else {
+          val ourIdx = elem.drop(maybePrefix + 1).toInt
+          if (ourIdx != 0 && prefixIdx > ourIdx) 1
+          else 0
+        }
       }
     }
+  }
 
   // leadingDigitOk is for use in fields of Records
   def name(elem: String, leadingDigitOk: Boolean = false): String = {
     val sanitized = sanitize(elem, leadingDigitOk)
-    getIndex(sanitized) match {
-      case Some(idx) => rename(sanitized, idx)
-      case None =>
-        names(sanitized) = 1
-        sanitized
+    val index = getIndex(sanitized)
+    if (index != 0) {
+      rename(sanitized, index)
+    } else {
+      names.put(sanitized, 1)
+      sanitized
     }
-  }
-
-  def print(): Unit = {
-    names.foreach(println)
   }
 }
 
