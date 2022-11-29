@@ -17,11 +17,7 @@ import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
 
 import scala.collection.mutable
-<<<<<<< HEAD
-=======
-import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 import scala.annotation.tailrec
->>>>>>> 1654d87a (Implement compressed Namespace (#2856))
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   // This HashMap is compressed, not every name in the namespace is present here.
