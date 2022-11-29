@@ -15,10 +15,9 @@ import experimental.{prefix, requireIsHardware}
   * @param squeezed members of base who will not trigger an error if would end up being truncated
   */
 final class Connectable[+T <: Data] private (
-    val base: T,
-    private[chisel3] val waived: Set[Data],
-    private[chisel3] val squeezed: Set[Data]
-) {
+  val base:                      T,
+  private[chisel3] val waived:   Set[Data],
+  private[chisel3] val squeezed: Set[Data]) {
   requireIsHardware(base, s"Can only created Connectable of components, not unbound Chisel types")
 
   /** True if no members are waived or squeezed */
@@ -26,8 +25,6 @@ final class Connectable[+T <: Data] private (
 
   private[chisel3] def copy(waived: Set[Data] = this.waived, squeezed: Set[Data] = this.squeezed): Connectable[T] =
     new Connectable(base, waived, squeezed)
-
-  
 
   /** Select members of base to waive
     *
@@ -89,8 +86,8 @@ object Connectable {
 
   /** Create a Connectable from a Data */
   def apply[T <: Data](
-    base:     T,
-    waiveSelection: Data => Boolean = { _ => false },
+    base:             T,
+    waiveSelection:   Data => Boolean = { _ => false },
     squeezeSelection: Data => Boolean = { _ => false }
   ): Connectable[T] = {
     val (waived, squeezed) = {

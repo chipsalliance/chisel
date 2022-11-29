@@ -124,14 +124,21 @@ private[chisel3] object Connection {
   }
 
   private def leafConnect(
-    consumer:  Data,
-    producer:  Data,
-    alignment:  Alignment,
+    consumer:     Data,
+    producer:     Data,
+    alignment:    Alignment,
     connectionOp: Connection
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    (consumer, producer, alignment, connectionOp.connectToConsumer, connectionOp.connectToProducer, connectionOp.alwaysConnectToConsumer) match {
+    (
+      consumer,
+      producer,
+      alignment,
+      connectionOp.connectToConsumer,
+      connectionOp.connectToProducer,
+      connectionOp.alwaysConnectToConsumer
+    ) match {
       case (x: Analog, y: Analog, _, _, _, _) => connectAnalog(x, y)
       case (x: Analog, DontCare, _, _, _, _) => connectAnalog(x, DontCare)
       case (x, y, _: AlignedWithRoot, true, _, _) => consumer := producer
@@ -155,9 +162,9 @@ private[chisel3] object Connection {
   }
 
   private def doConnection[T <: Data](
-    consumer: Connectable[T],
-    producer: Connectable[T],
-    connectionOp:       Connection
+    consumer:     Connectable[T],
+    producer:     Connectable[T],
+    connectionOp: Connection
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -165,7 +172,12 @@ private[chisel3] object Connection {
     var errors: List[String] = Nil
     import Alignment.deriveChildAlignment
 
-    def doConnection(consumerAlignment: Alignment, producerAlignment: Alignment)(implicit sourceInfo: SourceInfo): Unit = {
+    def doConnection(
+      consumerAlignment: Alignment,
+      producerAlignment: Alignment
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
       (consumerAlignment, producerAlignment) match {
         // Base Case 0: should probably never happen
         case (_: EmptyAlignment, _: EmptyAlignment) => ()
@@ -175,43 +187,60 @@ private[chisel3] object Connection {
         case (_: EmptyAlignment, producerAlignment: NonEmptyAlignment) if producerAlignment.isWaived => ()
 
         // Base Case 2: early exit if operator requires matching orientations, but they don't align
-        case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment) if (!consumerAlignment.alignsWith(producerAlignment)) && (connectionOp.noWrongOrientations) =>
+        case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment)
+            if (!consumerAlignment.alignsWith(producerAlignment)) && (connectionOp.noWrongOrientations) =>
           errors = (s"inversely oriented fields ${consumerAlignment.member} and ${producerAlignment.member}") +: errors
 
         // Base Case 3: early exit if operator requires matching widths, but they aren't the same
         case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment)
-            if (consumerAlignment.mismatchedWidths(producerAlignment, connectionOp)) && (connectionOp.noMismatchedWidths) =>
+            if (consumerAlignment
+              .mismatchedWidths(producerAlignment, connectionOp)) && (connectionOp.noMismatchedWidths) =>
           errors = (s"mismatched widths of ${consumerAlignment.member} and ${producerAlignment.member}") +: errors
 
         // Base Case 3: operator error on dangling/unconnected fields
-        case (consumer: NonEmptyAlignment, _: EmptyAlignment) => errors = (s"${consumer.errorWord(connectionOp)} consumer field ${consumerAlignment.member}") +: errors
-        case (_: EmptyAlignment, producer: NonEmptyAlignment) => errors = (s"${producer.errorWord(connectionOp)} producer field ${producerAlignment.member}") +: errors
+        case (consumer: NonEmptyAlignment, _: EmptyAlignment) =>
+          errors = (s"${consumer.errorWord(connectionOp)} consumer field ${consumerAlignment.member}") +: errors
+        case (_: EmptyAlignment, producer: NonEmptyAlignment) =>
+          errors = (s"${producer.errorWord(connectionOp)} producer field ${producerAlignment.member}") +: errors
 
         // Recursive Case 4: non-empty orientations
         case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment) =>
           (consumerAlignment.member, producerAlignment.member) match {
             case (consumer: Aggregate, producer: Aggregate) =>
               matchingZipOfChildren(Some(consumerAlignment), Some(producerAlignment)).foreach {
-                case (ceo, peo) => doConnection(ceo.getOrElse(consumerAlignment.empty), peo.getOrElse(producerAlignment.empty))
+                case (ceo, peo) =>
+                  doConnection(ceo.getOrElse(consumerAlignment.empty), peo.getOrElse(producerAlignment.empty))
               }
             case (consumer: Aggregate, DontCare) =>
               consumer.getElements.foreach {
-                case f => doConnection(deriveChildAlignment(f, consumerAlignment), deriveChildAlignment(f, consumerAlignment).swap(DontCare))
+                case f =>
+                  doConnection(
+                    deriveChildAlignment(f, consumerAlignment),
+                    deriveChildAlignment(f, consumerAlignment).swap(DontCare)
+                  )
               }
             case (DontCare, producer: Aggregate) =>
               producer.getElements.foreach {
-                case f => doConnection(deriveChildAlignment(f, producerAlignment).swap(DontCare), deriveChildAlignment(f, producerAlignment))
+                case f =>
+                  doConnection(
+                    deriveChildAlignment(f, producerAlignment).swap(DontCare),
+                    deriveChildAlignment(f, producerAlignment)
+                  )
               }
             case (consumer, producer) =>
               val alignment = (
                 consumerAlignment.alignsWith(producerAlignment),
-                (!consumerAlignment.alignsWith(producerAlignment) && connectionOp.connectToConsumer && !connectionOp.connectToProducer),
-                (!consumerAlignment.alignsWith(producerAlignment) && !connectionOp.connectToConsumer && connectionOp.connectToProducer)
+                (!consumerAlignment.alignsWith(
+                  producerAlignment
+                ) && connectionOp.connectToConsumer && !connectionOp.connectToProducer),
+                (!consumerAlignment.alignsWith(
+                  producerAlignment
+                ) && !connectionOp.connectToConsumer && connectionOp.connectToProducer)
               ) match {
                 case (true, _, _) => consumerAlignment
                 case (_, true, _) => consumerAlignment
                 case (_, _, true) => producerAlignment
-                case other => throw new Exception(other.toString)
+                case other        => throw new Exception(other.toString)
               }
               val lAndROpt = alignment.computeLandR(consumer, producer, connectionOp)
               lAndROpt.foreach { case (l, r) => connect(l, r) }

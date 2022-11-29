@@ -136,12 +136,11 @@ object ChiselStage {
     * @param gen a call-by-name Chisel module
     */
   def elaborate(
-    gen:                 => RawModule,
+    gen: => RawModule
   ): cir.Circuit = {
     val phase = new ChiselPhase {
       override val targets = Seq(Dependency[chisel3.stage.phases.Checks], Dependency[chisel3.stage.phases.Elaborate])
     }
-
 
     phase
       .transform(Seq(ChiselGeneratorAnnotation(() => gen), NoRunFirrtlCompilerAnnotation))

@@ -149,7 +149,6 @@ object DataMirror {
     */
   def getParent(target: BaseModule): Option[BaseModule] = target._parent
 
-
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {
     def isSynthesizable(target: Data): Boolean = target.isSynthesizable
