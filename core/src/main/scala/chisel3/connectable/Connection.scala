@@ -90,10 +90,10 @@ private[chisel3] object Connection {
   /** Connection function which implements both :<= and :>=
     *
     * For example, given a connection like so:
-    *  c :<= p
+    *  consumer :<= producer
     * We can reason the following:
-    *  - c is the consumerRoot
-    *  - p is the producerRoot
+    *  - consumer is the consumerRoot
+    *  - producer is the producerRoot
     *  - The '<' indicates that the consumer side (left hand side) is the active side
     *
     * @param consumerRoot the original expression on the left-hand-side of the connection operator
@@ -124,19 +124,19 @@ private[chisel3] object Connection {
   }
 
   private def leafConnect(
-    c:  Data,
-    p:  Data,
-    o:  Alignment,
-    op: Connection
+    consumer:  Data,
+    producer:  Data,
+    alignment:  Alignment,
+    connectionOp: Connection
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    (c, p, o, op.connectToConsumer, op.connectToProducer, op.alwaysConnectToConsumer) match {
+    (consumer, producer, alignment, connectionOp.connectToConsumer, connectionOp.connectToProducer, connectionOp.alwaysConnectToConsumer) match {
       case (x: Analog, y: Analog, _, _, _, _) => connectAnalog(x, y)
       case (x: Analog, DontCare, _, _, _, _) => connectAnalog(x, DontCare)
-      case (x, y, _: AlignedWithRoot, true, _, _) => c := p
-      case (x, y, _: FlippedWithRoot, _, true, _) => p := c
-      case (x, y, _, _, _, true) => c := p
+      case (x, y, _: AlignedWithRoot, true, _, _) => consumer := producer
+      case (x, y, _: FlippedWithRoot, _, true, _) => producer := consumer
+      case (x, y, _, _, _, true) => consumer := producer
       case other                 =>
     }
   }
@@ -157,65 +157,66 @@ private[chisel3] object Connection {
   private def doConnection[T <: Data](
     consumer: Connectable[T],
     producer: Connectable[T],
-    op:       Connection
+    connectionOp:       Connection
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
 
-    val errors = mutable.ArrayBuffer[String]()
+    var errors: List[String] = Nil
     import Alignment.deriveChildAlignment
 
-    def doConnection(co: Alignment, po: Alignment)(implicit sourceInfo: SourceInfo): Unit = {
-      (co, po) match {
+    def doConnection(consumerAlignment: Alignment, producerAlignment: Alignment)(implicit sourceInfo: SourceInfo): Unit = {
+      (consumerAlignment, producerAlignment) match {
         // Base Case 0: should probably never happen
         case (_: EmptyAlignment, _: EmptyAlignment) => ()
 
         // Base Case 1: early exit if dangling/unconnected is wavied
-        case (co: NonEmptyAlignment, _: EmptyAlignment) if co.isWaived => ()
-        case (_: EmptyAlignment, po: NonEmptyAlignment) if po.isWaived => ()
+        case (consumerAlignment: NonEmptyAlignment, _: EmptyAlignment) if consumerAlignment.isWaived => ()
+        case (_: EmptyAlignment, producerAlignment: NonEmptyAlignment) if producerAlignment.isWaived => ()
 
         // Base Case 2: early exit if operator requires matching orientations, but they don't align
-        case (co: NonEmptyAlignment, po: NonEmptyAlignment) if (!co.alignsWith(po)) && (op.noWrongOrientations) =>
-          errors += (s"inversely oriented fields ${co.member} and ${po.member}")
+        case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment) if (!consumerAlignment.alignsWith(producerAlignment)) && (connectionOp.noWrongOrientations) =>
+          errors = (s"inversely oriented fields ${consumerAlignment.member} and ${producerAlignment.member}") +: errors
 
         // Base Case 3: early exit if operator requires matching widths, but they aren't the same
-        case (co: NonEmptyAlignment, po: NonEmptyAlignment)
-            if (co.mismatchedWidths(po, op)) && (op.noMismatchedWidths) =>
-          errors += (s"mismatched widths of ${co.member} and ${po.member}")
+        case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment)
+            if (consumerAlignment.mismatchedWidths(producerAlignment, connectionOp)) && (connectionOp.noMismatchedWidths) =>
+          errors = (s"mismatched widths of ${consumerAlignment.member} and ${producerAlignment.member}") +: errors
 
         // Base Case 3: operator error on dangling/unconnected fields
-        case (c: NonEmptyAlignment, _: EmptyAlignment) => errors += (s"${c.errorWord(op)} consumer field ${co.member}")
-        case (_: EmptyAlignment, p: NonEmptyAlignment) => errors += (s"${p.errorWord(op)} producer field ${po.member}")
+        case (consumer: NonEmptyAlignment, _: EmptyAlignment) => errors = (s"${consumer.errorWord(connectionOp)} consumer field ${consumerAlignment.member}") +: errors
+        case (_: EmptyAlignment, producer: NonEmptyAlignment) => errors = (s"${producer.errorWord(connectionOp)} producer field ${producerAlignment.member}") +: errors
 
         // Recursive Case 4: non-empty orientations
-        case (co: NonEmptyAlignment, po: NonEmptyAlignment) =>
-          (co.member, po.member) match {
-            case (c: Aggregate, p: Aggregate) =>
-              matchingZipOfChildren(Some(co), Some(po)).foreach {
-                case (ceo, peo) => doConnection(ceo.getOrElse(co.empty), peo.getOrElse(po.empty))
+        case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment) =>
+          (consumerAlignment.member, producerAlignment.member) match {
+            case (consumer: Aggregate, producer: Aggregate) =>
+              matchingZipOfChildren(Some(consumerAlignment), Some(producerAlignment)).foreach {
+                case (ceo, peo) => doConnection(ceo.getOrElse(consumerAlignment.empty), peo.getOrElse(producerAlignment.empty))
               }
-            case (c: Aggregate, DontCare) =>
-              c.getElements.foreach {
-                case f => doConnection(deriveChildAlignment(f, co), deriveChildAlignment(f, co).swap(DontCare))
+            case (consumer: Aggregate, DontCare) =>
+              consumer.getElements.foreach {
+                case f => doConnection(deriveChildAlignment(f, consumerAlignment), deriveChildAlignment(f, consumerAlignment).swap(DontCare))
               }
-            case (DontCare, p: Aggregate) =>
-              p.getElements.foreach {
-                case f => doConnection(deriveChildAlignment(f, po).swap(DontCare), deriveChildAlignment(f, po))
+            case (DontCare, producer: Aggregate) =>
+              producer.getElements.foreach {
+                case f => doConnection(deriveChildAlignment(f, producerAlignment).swap(DontCare), deriveChildAlignment(f, producerAlignment))
               }
-            case (c, p) =>
-              val o = (
-                co.alignsWith(po),
-                (!co.alignsWith(po) && op.connectToConsumer && !op.connectToProducer),
-                (!co.alignsWith(po) && !op.connectToConsumer && op.connectToProducer)
+            case (consumer, producer) =>
+              val alignment = (
+                consumerAlignment.alignsWith(producerAlignment),
+                (!consumerAlignment.alignsWith(producerAlignment) && connectionOp.connectToConsumer && !connectionOp.connectToProducer),
+                (!consumerAlignment.alignsWith(producerAlignment) && !connectionOp.connectToConsumer && connectionOp.connectToProducer)
               ) match {
-                case (true, _, _) => co
-                case (_, true, _) => co
-                case (_, _, true) => po
+                case (true, _, _) => consumerAlignment
+                case (_, true, _) => consumerAlignment
+                case (_, _, true) => producerAlignment
+                case other => throw new Exception(other.toString)
               }
-              val lAndROpt = o.computeLandR(c, p, op)
-              lAndROpt.map { case (l, r) => connect(l, r) }
+              val lAndROpt = alignment.computeLandR(consumer, producer, connectionOp)
+              lAndROpt.foreach { case (l, r) => connect(l, r) }
           }
-        case other => throw new Exception(other.toString + " " + op)
+        case other => throw new Exception(other.toString + " " + connectionOp)
       }
     }
 

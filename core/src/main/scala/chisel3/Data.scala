@@ -528,11 +528,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       }
     }
     if (connectCompileOptions.migrateMonoConnections) {
-      getRecursiveFields.noPath(this).collect {
+      getRecursiveFields.lazilyNoPath(this).collect {
         case d if d.direction != this.direction =>
           Builder.error(s"$this cannot be used with := because submember $d has inverse orientation; use :#= instead")
       }
-      getRecursiveFields.noPath(that).collect {
+      getRecursiveFields.lazilyNoPath(that).collect {
         case d if d.direction != that.direction =>
           Builder.error(s"$that cannot be used with := because submember $d has inverse orientation; use :#= instead")
       }
@@ -847,12 +847,11 @@ object Data {
     *
     * Only zips immediate children (vs members, which are all children/grandchildren etc.)
     */
-  implicit val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
+  implicit private[chisel3] val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
 
-    implicit class VecGet(v: Vec[Data]) { def get(i: Int): Option[Data] = if (i < v.length) Some(v(i)) else None }
     implicit class VecOptOps(vOpt: Option[Vec[Data]]) {
       // Like .get, but its already defined on Option
-      def grab(i: Int): Option[Data] = vOpt.flatMap { _.get(i) }
+      def grab(i: Int): Option[Data] = vOpt.flatMap { _.lift(i) }
       def size = vOpt.map(_.size).getOrElse(0)
     }
     implicit class RecordOptGet(rOpt: Option[Record]) {
@@ -860,6 +859,7 @@ object Data {
       def grab(k: String): Option[Data] = rOpt.flatMap { _.elements.get(k) }
       def keys: Iterable[String] = rOpt.map { r => r.elements.map(_._1) }.getOrElse(Seq.empty[String])
     }
+    //TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
     private def isDifferent(l: Option[Data], r: Option[Data]): Boolean =
       l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
     private def isRecord(l: Option[Data], r: Option[Data]): Boolean =

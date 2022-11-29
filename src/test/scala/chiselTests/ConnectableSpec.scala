@@ -307,7 +307,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(Clock(), Seq("wiresOut_0 <= wiresIn_0"))
     }
     it("(0.o): Error with 'cannot be written' if driving module input") {
-      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<= x }
+      implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<>= x }
       testException(Bool(), Bool(), "cannot be written")
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }

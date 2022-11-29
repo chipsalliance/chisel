@@ -167,9 +167,7 @@ object Alignment {
     right: Option[Alignment]
   ): Seq[(Option[Alignment], Option[Alignment])] = {
     Data.DataMatchingZipOfChildren.matchingZipOfChildren(left.map(_.member), right.map(_.member)).map {
-      case (Some(l), None)    => (Some(deriveChildAlignment(l, left.get)), None)
-      case (Some(l), Some(r)) => (Some(deriveChildAlignment(l, left.get)), Some(deriveChildAlignment(r, right.get)))
-      case (None, Some(r))    => (None, Some(deriveChildAlignment(r, right.get)))
+      case (l, r) => l.map(deriveChildAlignment(_, left.get)) -> r.map(deriveChildAlignment(_, right.get))
     }
   }
 }

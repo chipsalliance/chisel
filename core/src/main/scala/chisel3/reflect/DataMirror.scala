@@ -16,12 +16,7 @@ object DataMirror {
     target.direction
   }
 
-  private def hasBinding[B <: ConstrainedBinding: ClassTag](target: Data) = {
-    target.topBindingOpt match {
-      case Some(b: B) => true
-      case _ => false
-    }
-  }
+  private def hasBinding[B <: ConstrainedBinding: ClassTag](target: Data) = target.topBindingOpt.isDefined
 
   /** Check if a given `Data` is an IO port
     * @param x the `Data` to check
@@ -70,6 +65,7 @@ object DataMirror {
     * @return true if the two Chisel types have alignment type equivalence.
     */
   def checkAlignmentTypeEquivalence(x: Data, y: Data): Boolean = {
+    //TODO(azidar): Perhaps there is a better pattern of `iterateOverMatches` that we can support
     collectMembersOverMatches(connectable.Alignment(x, true), connectable.Alignment(y, true)) {
       case (a, b) => a.alignment == b.alignment
     }(AlignmentMatchingZipOfChildren).forall(r => r)

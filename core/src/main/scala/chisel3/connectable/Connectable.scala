@@ -14,7 +14,11 @@ import experimental.{prefix, requireIsHardware}
   * @param waived members of base who will not trigger an error if left dangling or unassigned
   * @param squeezed members of base who will not trigger an error if would end up being truncated
   */
-final class Connectable[+T <: Data] private (val base: T, val waived: Set[Data], val squeezed: Set[Data]) {
+final class Connectable[+T <: Data] private (
+    val base: T,
+    private[chisel3] val waived: Set[Data],
+    private[chisel3] val squeezed: Set[Data]
+) {
   requireIsHardware(base, s"Can only created Connectable of components, not unbound Chisel types")
 
   /** True if no members are waived or squeezed */
@@ -22,6 +26,8 @@ final class Connectable[+T <: Data] private (val base: T, val waived: Set[Data],
 
   private[chisel3] def copy(waived: Set[Data] = this.waived, squeezed: Set[Data] = this.squeezed): Connectable[T] =
     new Connectable(base, waived, squeezed)
+
+  
 
   /** Select members of base to waive
     *
@@ -84,9 +90,15 @@ object Connectable {
   /** Create a Connectable from a Data */
   def apply[T <: Data](
     base:     T,
-    waived:   Set[Data] = Set.empty[Data],
-    squeezed: Set[Data] = Set.empty[Data]
-  ): Connectable[T] = new Connectable(base, waived, squeezed)
+    waiveSelection: Data => Boolean = { _ => false },
+    squeezeSelection: Data => Boolean = { _ => false }
+  ): Connectable[T] = {
+    val (waived, squeezed) = {
+      val members = DataMirror.collectMembers(base) { case x => x }
+      (members.filter(waiveSelection).toSet, members.filter(squeezeSelection).toSet)
+    }
+    new Connectable(base, waived, squeezed)
+  }
 
   /** The default connection operators for Chisel hardware components
     *
@@ -174,7 +186,7 @@ object Connectable {
     *    - All bundle types have the same member names, but the flips of members can be different between producer and consumer
     *  - The leaf members that are ultimately assigned to, must be assignable. This means they cannot be module inputs or instance outputs.
     */
-  trait ConnectableDocs
+  private[chisel3] trait ConnectableDocs
 
   /** Create Connectable for consumer and producer whose unmatched members are waived
     *
