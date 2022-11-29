@@ -523,15 +523,28 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
   property("Prefixing should not be affected by repeated calls of suggestName") {
     class Test extends Module {
-      val bundle = new Bundle {
-        val wire = Wire(UInt(3.W)).suggestName("wire")
+      val in = IO(Input(UInt(3.W)))
+      val prefixed = {
+        val wire = Wire(UInt(3.W)).suggestName("wire") // "prefixed_wire"
+        wire := in
+
+        val thisShouldNotBeHere = {
+          // Second suggestName doesn't modify the instanceName since it was
+          // already suggested, but also should not modify the prefix either
+
+          // Incorrect behavior would rename the wire to
+          // "prefixed_thisShouldNotBeHere_wire"
+          wire.suggestName("wire")
+
+          val out = IO(Output(UInt(3.W)))
+          out := wire
+          out
+        }
+        thisShouldNotBeHere
       }
-      // Does not change the instanceName since it was already suggested, but also
-      // should not remove the "bundle_" prefix either
-      bundle.wire.suggestName("should_not_prefix")
     }
     aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("bundle_wire")) // In contrast to "wire"
+      Select.wires(top).map(_.instanceName) should be(List("prefixed_wire"))
     }
   }
 }

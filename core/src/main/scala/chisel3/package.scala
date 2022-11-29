@@ -8,7 +8,7 @@ import scala.collection.mutable
   */
 package object chisel3 {
   import internal.chiselRuntimeDeprecated
-  import internal.sourceinfo.DeprecatedSourceInfo
+  import internal.sourceinfo.{DeprecatedSourceInfo, UnlocatableSourceInfo}
   import internal.firrtl.{Port, Width}
   import internal.Builder
 
@@ -38,7 +38,9 @@ package object chisel3 {
     def B: Bool = bigint match {
       case bigint if bigint == 0 => Bool.Lit(false)
       case bigint if bigint == 1 => Bool.Lit(true)
-      case bigint                => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
+      case bigint =>
+        Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1")(UnlocatableSourceInfo)
+        Bool.Lit(false)
     }
 
     /** Int to UInt conversion, recommended style for constants. */
@@ -121,7 +123,7 @@ package object chisel3 {
         case "d"       => 10
         case "o"       => 8
         case "b"       => 2
-        case _         => Builder.error(s"Invalid base $base"); 2
+        case _         => Builder.error(s"Invalid base $base")(UnlocatableSourceInfo); 2
       }
       BigInt(num.filterNot(_ == '_'), radix)
     }

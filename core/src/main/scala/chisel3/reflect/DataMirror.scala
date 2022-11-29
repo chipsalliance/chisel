@@ -127,14 +127,28 @@ object DataMirror {
   def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
     def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
       case _: Element => Seq()
-      case r: Record  => r.elements.toSeq.flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
-      case v: Vec[_]  => v.zipWithIndex.flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
+      case r: Record =>
+        r.elements.toSeq.flatMap {
+          case (eltName, elt) =>
+            if (r._isOpaqueType) { getPortNames(s"${name}", elt) }
+            else { getPortNames(s"${name}_${eltName}", elt) }
+        }
+      case v: Vec[_] => v.zipWithIndex.flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
     })
     modulePorts(target).flatMap {
       case (name, data) =>
         getPortNames(name, data).toList
     }
   }
+
+  /** Returns the parent module within which a module instance is instantiated
+    *
+    * @note Top-level modules in any given elaboration do not have a parent
+    * @param target a module instance
+    * @return the parent of the `target`, if one exists
+    */
+  def getParent(target: BaseModule): Option[BaseModule] = target._parent
+
 
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {

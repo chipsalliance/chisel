@@ -18,7 +18,7 @@ class Convert extends Phase {
 
   override def prerequisites = Seq(Dependency[Elaborate])
   override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Seq.empty
+  override def optionalPrerequisiteOf = Seq(Dependency[MaybeInjectingPhase])
   override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
