@@ -1,6 +1,7 @@
 package chisel3.experimental
 
-import chisel3.{BlackBox, Data, Record}
+import chisel3.{BlackBox, ChiselException, Data, Record}
+
 import scala.collection.immutable.{ListMap, SeqMap}
 
 trait AutoBlackBox extends BlackBox {
@@ -23,4 +24,5 @@ class AutoBundleFromVerilog(allElements: ListMap[String, Data])(signalFilter: St
     extends Record
     with AutoCloneType {
   override def elements: ListMap[String, Data] = allElements.filter(n => signalFilter(n._1))
+  def apply(data: String) = elements.getOrElse(data, throw new ChiselException(s"$data not found in Verilog IO: \n ${allElements.keys.mkString("\n")}"))
 }
