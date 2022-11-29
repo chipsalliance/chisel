@@ -6,7 +6,8 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
-import chisel3.reflect.{DataMirror, OpaqueType}
+import chisel3.reflect.DataMirror
+import chisel3.experimental.OpaqueType
 
 import scala.collection.immutable.SeqMap
 

@@ -190,7 +190,7 @@ private[chisel3] object BiConnect {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
         } else if (!emitStrictConnects) {
           if (connectCompileOptions.migrateBulkConnections)
-            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")
+            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")(sourceInfo)
           newLeft.firrtlPartialConnect(newRight)(sourceInfo)
         } else {
           recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
@@ -200,7 +200,7 @@ private[chisel3] object BiConnect {
       case (left_r: Record, DontCare) =>
         if (!left_r.compileOptions.emitStrictConnects) {
           if (connectCompileOptions.migrateBulkConnections)
-            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")
+            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")(sourceInfo)
           left.firrtlPartialConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
@@ -215,7 +215,7 @@ private[chisel3] object BiConnect {
       case (DontCare, right_r: Record) =>
         if (!right_r.compileOptions.emitStrictConnects) {
           if (connectCompileOptions.migrateBulkConnections)
-            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")
+            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")(sourceInfo)
           left.firrtlPartialConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
