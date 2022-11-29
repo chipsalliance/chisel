@@ -16,7 +16,13 @@ object DataMirror {
     target.direction
   }
 
-  private def hasBinding[B <: ConstrainedBinding: ClassTag](target: Data) = target.topBindingOpt.isDefined
+  private def hasBinding[B <: ConstrainedBinding: ClassTag](target: Data) = {
+    // Cannot use isDefined because of the ClassTag
+    target.topBindingOpt match {
+      case Some(b: B) => true
+      case _ => false
+    }
+  }
 
   /** Check if a given `Data` is an IO port
     * @param x the `Data` to check
