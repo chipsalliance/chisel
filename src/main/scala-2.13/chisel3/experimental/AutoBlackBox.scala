@@ -1,9 +1,11 @@
 package chisel3.experimental
 
+import chisel3.internal.{instantiable, public}
 import chisel3.{BlackBox, ChiselException, Data, Record}
 
 import scala.collection.immutable.SeqMap
 
+@instantiable
 trait AutoBlackBox extends BlackBox {
   import chisel3.util.experimental.SlangUtils._
   def verilog: String
@@ -14,6 +16,7 @@ trait AutoBlackBox extends BlackBox {
 
   lazy val ast = getVerilogAst(verilog)
 
+  @public
   final val io = IO(new AutoBundleFromVerilog(SeqMap.from(verilogModuleIO(ast)))(signalFilter))
 }
 
