@@ -59,13 +59,24 @@ sealed abstract class Aggregate extends Data {
 
   private[chisel3] def width: Width = elementsIterator.map(_.width).foldLeft(0.W)(_ + _)
 
-  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    // If the source is a DontCare, generate a DefInvalid for the sink,
-    //  otherwise, issue a Connect.
+  // Emits the FIRRTL `this <= that`, or `this is invalid` if that == DontCare
+  private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink, otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, Node(this)))
+      pushCommand(DefInvalid(sourceInfo, lref))
     } else {
-      pushCommand(BulkConnect(sourceInfo, Node(this), Node(that)))
+      pushCommand(Connect(sourceInfo, lref, Node(that)))
+    }
+  }
+
+  // Emits the FIRRTL `this <- that`, or `this is invalid` if that == DontCare
+  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink,
+    //  otherwise, issue a Partial Connect.
+    if (that == DontCare) {
+      pushCommand(DefInvalid(sourceInfo, lref))
+    } else {
+      pushCommand(PartialConnect(sourceInfo, lref, Node(that)))
     }
   }
 
@@ -213,25 +224,54 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   private[chisel3] final override def allElements: Seq[Element] =
     (sample_element +: self).flatMap(_.allElements)
 
-  /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
+  /** The "bulk connect operator", assigning elements in this Vec from elements in a Seq.
     *
-    * @note the length of this Vec must match the length of the input Seq
+    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    *  - Complicated semantics, will likely be deprecated in the future
+    *
+    * For Chisel._, emits the FIRRTL.<- operator
+    *  - Equivalent to `this :<>= that` but bundle field names and vector sizes do not have to match
+    *
+    * @note the length of this Vec and that Seq must match
+    * @param that the Seq to connect from
+    * @group connection
     */
   def <>(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    if (this.length != that.length) {
-      Builder.error("Vec and Seq being bulk connected have different lengths!")
-    }
-    for ((a, b) <- this.zip(that))
+    if (this.length != that.length)
+      Builder.error(
+        s"Vec (size ${this.length}) and Seq (size ${that.length}) being bulk connected have different lengths!"
+      )
+    for ((a, b) <- this.zip(that)) {
       a <> b
+    }
   }
 
-  // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
+  /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
+    *
+    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    *  - See docs/src/explanations/connection-operators.md for details
+    *
+    * For Chisel._, emits the FIRRTL.<- operator
+    *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match
+    *
+    * @note This is necessary in [[Aggregate]], rather than relying on [[Data.<>]], due to supporting the Seq
+    * @note the length of this Vec and that Vec must match
+    * @param that the Vec to connect from
+    * @group connection
+    */
   def <>(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit =
     this.bulkConnect(that.asInstanceOf[Data])
 
-  /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
+  /** "The strong connect operator", assigning elements in this Vec from elements in a Seq.
+    *
+    * For chisel3._, this operator is mono-directioned; all sub-elements of `this` will be driven by sub-elements of `that`.
+    *  - Equivalent to `this :#= that`
+    *
+    * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
+    *  - Equivalent to `this :<>= that`
     *
     * @note the length of this Vec must match the length of the input Seq
+    * @group connection
     */
   def :=(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     require(
@@ -242,7 +282,18 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       a := b
   }
 
-  // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
+  /** "The strong connect operator", assigning elements in this Vec from elements in a Vec.
+    *
+    * For chisel3._, this operator is mono-directioned; all sub-elements of `this` will be driven by sub-elements of `that`.
+    *  - Equivalent to `this :#= that`
+    *
+    * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
+    *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
+    *
+    * @note This is necessary in [[Aggregate]], rather than relying on [[Data.:=]], due to supporting the Seq
+    * @note the length of this Vec must match the length of the input Vec
+    * @group connection
+    */
   def :=(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this.connect(that)
 
   /** Creates a dynamically indexed read or write accessor into the array.

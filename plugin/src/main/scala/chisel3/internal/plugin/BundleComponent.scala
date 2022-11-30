@@ -85,7 +85,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     def isData(sym: Symbol): Boolean = isDataCache.getOrElseUpdate(sym.tpe, sym.tpe <:< dataTpe)
 
     def cloneTypeFull(tree: Tree): Tree =
-      localTyper.typed(q"chisel3.experimental.DataMirror.internal.chiselTypeClone[${tree.tpe}]($tree)")
+      localTyper.typed(q"chisel3.reflect.DataMirror.internal.chiselTypeClone[${tree.tpe}]($tree)")
 
     def isNullaryMethodNamed(name: String, defdef: DefDef): Boolean =
       defdef.name.decodedName.toString == name && defdef.tparams.isEmpty && defdef.vparamss.isEmpty
