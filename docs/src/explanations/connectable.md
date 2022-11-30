@@ -535,7 +535,7 @@ class Example14 extends RawModule {
   val p = IO(Flipped(UInt(4.W)))
   val c = IO(UInt(3.W))
 
-  c := p.squeeze
+  c :<>= p.squeeze
 }
 ```
 
