@@ -237,8 +237,8 @@ This generates the following Verilog, where each member of `incoming` drives eve
 getVerilogString(new Example0)
 ```
 
-> You may be thinking "Wait, I'm confused! Isn't foo flipped and bar aligned?" -- Noo! Whether foo is aligned with bar makes no sense; remember, you only evaluate alignment between members of the same component or Chisel type.
-Because components are always aligned to themselves, `bar` is aligned to `bar`, and `foo` is aligned to `foo`, there is no problem.
+> You may be thinking "Wait, I'm confused! Isn't `incoming` flipped and `outgoing` aligned?" -- Noo! Whether `incoming` is aligned with `outgoing` makes no sense; remember, you only evaluate alignment between members of the same component or Chisel type.
+Because components are always aligned to themselves, `outgoing` is aligned to `outgoing`, and `incoming` is aligned to `incoming`, there is no problem.
 Their relative flippedness to anything else is irrelevant.
 
 ## Connecting components with mixed alignment members
@@ -331,7 +331,7 @@ getVerilogString(new Example2)
 
 ### Flipped connection operator (:>=)
 
-For connections where you want the flipped-half of 'bulk-connect-like-semantics' where the aligned members are ignored and flipped members are connected consumer-to-producer, use `:<=` (the "flipped connection", or "backpressure connection").
+For connections where you want the flipped-half of 'bulk-connect-like-semantics' where the aligned members are ignored and flipped members are connected consumer-to-producer, use `:>=` (the "flipped connection", or "backpressure connection").
 
 ```scala mdoc:silent
 class Example3 extends RawModule {
