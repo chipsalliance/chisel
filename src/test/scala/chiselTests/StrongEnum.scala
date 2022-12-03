@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.experimental.AffectsChiselPrefix
+import chisel3.experimental.suppressEnumCastWarning
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
@@ -161,6 +162,27 @@ class StrongEnumFSM extends Module {
       }
     }
   }
+}
+
+object Opcode extends ChiselEnum {
+  val load = Value(0x03.U)
+  val imm = Value(0x13.U)
+  val auipc = Value(0x17.U)
+  val store = Value(0x23.U)
+  val reg = Value(0x33.U)
+  val lui = Value(0x37.U)
+  val br = Value(0x63.U)
+  val jalr = Value(0x67.U)
+  val jal = Value(0x6f.U)
+}
+
+class LoadStoreExample extends Module {
+  val io = IO(new Bundle {
+    val opcode = Input(Opcode())
+    val load_or_store = Output(Bool())
+  })
+  io.load_or_store := io.opcode.isOneOf(Opcode.load, Opcode.store)
+  printf(p"${io.opcode}")
 }
 
 class CastToUIntTester extends BasicTester {
@@ -481,6 +503,46 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
     (log should not).include("warn")
   }
 
+  it should "suppress warning using suppressEnumCastWarning" in {
+    object TestEnum extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+
+    class MyModule extends Module {
+      val in = IO(Input(UInt(2.W)))
+      val out = IO(Output(TestEnum()))
+      suppressEnumCastWarning {
+        val res = TestEnum(in)
+        out := res
+      }
+    }
+    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    (log should not).include("warn")
+  }
+
+  it should "suppress exactly one warning using suppressEnumCastWarning" in {
+    object TestEnum1 extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+    object TestEnum2 extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+
+    class MyModule extends Module {
+      val in = IO(Input(UInt(2.W)))
+      val out1 = IO(Output(TestEnum1()))
+      val out2 = IO(Output(TestEnum2()))
+      suppressEnumCastWarning {
+        out1 := TestEnum1(in)
+      }
+      out2 := TestEnum2(in)
+    }
+    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    log should include("warn")
+    log should include("TestEnum2") // not suppressed
+    (log should not).include("TestEnum1") // suppressed
+  }
+
   "Casting a UInt to an Enum with .safe" should "NOT warn" in {
     object MyEnum extends ChiselEnum {
       val e0, e1, e2 = Value
@@ -513,6 +575,12 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "correctly check if the enumeration is one of the values in a given sequence" in {
     assertTesterPasses(new IsOneOfTester)
+  }
+
+  it should "work with Printables" in {
+    ChiselStage.emitChirrtl(new LoadStoreExample) should include(
+      """printf(clock, UInt<1>("h1"), "%c%c%c%c%c", _chiselTestsOpcodePrintable[0], _chiselTestsOpcodePrintable[1], _chiselTestsOpcodePrintable[2], _chiselTestsOpcodePrintable[3], _chiselTestsOpcodePrintable[4])"""
+    )
   }
 }
 

@@ -132,10 +132,10 @@ class CIRCT extends Phase {
           case None                              => None
         }) ++
         circtOptions.preserveAggregate.map(_ => "-preserve-public-types=0") ++
-        (!inferReadWrite).option("-infer-rw=0") ++
-        (!imcp).option("-imcp=0") ++
+        (!inferReadWrite).option("-disable-infer-rw") ++
+        (!imcp).option("-disable-imcp") ++
         /* The following options are off by default, so we enable them if they are true. */
-        (dedup).option("-dedup=1") ++
+        (dedup).option("-dedup") ++
         (blackbox).option("-blackbox-memory") ++
         /* Communicate the annotation file through a file. */
         (outputAnnotationFileName.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++

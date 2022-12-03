@@ -57,13 +57,18 @@ abstract class Element extends Data {
   override def litOption:                Option[BigInt] = litArgOption.map(_.num)
   private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
 
-  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, Node(this)))
+      pushCommand(DefInvalid(sourceInfo, lref))
     } else {
-      pushCommand(Connect(sourceInfo, Node(this), that.ref))
+      pushCommand(Connect(sourceInfo, lref, that.ref))
     }
+  }
+
+  // Since we are an element, we can just emit a Connect
+  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    firrtlConnect(that)
   }
 }

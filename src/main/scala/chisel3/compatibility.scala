@@ -52,7 +52,7 @@ package object Chisel {
   @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class AddDirMethodToData[T <: Data](target: T) {
     import chisel3.ActualDirection
-    import chisel3.experimental.DataMirror
+    import chisel3.reflect.DataMirror
     import chisel3.internal.requireIsHardware
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
@@ -72,7 +72,7 @@ package object Chisel {
 
   @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class cloneTypeable[T <: Data](target: T) {
-    import chisel3.experimental.DataMirror
+    import chisel3.reflect.DataMirror
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def chiselCloneType: T = {
       DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
@@ -753,8 +753,6 @@ package object Chisel {
     class dump extends chisel3.internal.naming.dump
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     class treedump extends chisel3.internal.naming.treedump
-    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
-    class chiselName extends chisel3.internal.naming.chiselName
   }
 
   @nowarn("msg=Chisel compatibility mode is deprecated")

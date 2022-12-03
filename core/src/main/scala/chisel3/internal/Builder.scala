@@ -14,21 +14,34 @@ import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.{AnnotationSeq, RenameMap}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
+import chisel3.internal.sourceinfo.SourceInfo
 import logger.LazyLogging
 
 import scala.collection.mutable
+import chisel3.internal.sourceinfo.UnlocatableSourceInfo
+import scala.annotation.tailrec
 
 private[chisel3] class Namespace(keywords: Set[String]) {
+  // This HashMap is compressed, not every name in the namespace is present here.
+  // If the same name is requested multiple times, it only takes 1 entry in the HashMap and the
+  // value is incremented for each time the name is requested.
+  // Names can be requested that collide with compressed sets of names, thus the algorithm for
+  // checking if a name is present in the Namespace is more complex than just checking the HashMap,
+  // see getIndex below.
   private val names = collection.mutable.HashMap[String, Long]()
   def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) => other.names(s) = l }
   for (keyword <- keywords)
     names(keyword) = 1
 
-  private def rename(n: String): String = {
-    val index = names(n)
+  @tailrec
+  private def rename(n: String, index: Long): String = {
     val tryName = s"${n}_${index}"
-    names(n) = index + 1
-    if (this contains tryName) rename(n) else tryName
+    if (names.contains(tryName)) {
+      rename(n, index + 1)
+    } else {
+      names(n) = index + 1
+      tryName
+    }
   }
 
   private def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
@@ -40,14 +53,50 @@ private[chisel3] class Namespace(keywords: Set[String]) {
     if (headOk) res else s"_$res"
   }
 
-  def contains(elem: String): Boolean = names.contains(elem)
+  /** Checks if `n` ends in `_\d+` and returns the substring before `_` if so, null otherwise */
+  // TODO can and should this be folded in to sanitize? Same iteration as the forall?
+  private def prefix(n: String): Int = {
+    // This is micro-optimized because it runs on every single name
+    var i = n.size - 1
+    while (i > 0 && n(i).isDigit) {
+      i -= 1
+    }
+    // Will get i == 0 for all digits or _\d+ with empty prefix, those have no prefix so returning 0 is correct
+    if (i == n.size) 0 // no digits
+    else if (n(i) != '_') 0 // no _
+    else i
+  }
+
+  // Gets the current index for this name, None means it is not contained in the Namespace
+  private def getIndex(elem: String): Option[Long] =
+    names.get(elem).orElse {
+      // This exact name isn't contained, but if we end in _<idx>, we need to check our prefix
+      val maybePrefix = prefix(elem)
+      if (maybePrefix == 0) None
+      else {
+        // If we get a prefix collision and our index is taken, we start disambiguating with _<idx>_1
+        names
+          .get(elem.take(maybePrefix))
+          .filter { prefixIdx =>
+            val ourIdx = elem.drop(maybePrefix + 1).toInt
+            // The namespace starts disambiguating at _1 so _0 is a false collision case
+            ourIdx != 0 && prefixIdx > ourIdx
+          }
+          .map(_ => 1)
+      }
+    }
+
+  def contains(elem: String): Boolean = getIndex(elem).isDefined
 
   // leadingDigitOk is for use in fields of Records
   def name(elem: String, leadingDigitOk: Boolean = false): String = {
     val sanitized = sanitize(elem, leadingDigitOk)
-    val result = if (this.contains(sanitized)) rename(sanitized) else sanitized
-    names(result) = 1
-    result
+    getIndex(sanitized) match {
+      case Some(idx) => rename(sanitized, idx)
+      case None =>
+        names(sanitized) = 1
+        sanitized
+    }
   }
 }
 
@@ -162,8 +211,11 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def suggestName(seed: => String): this.type = {
-    if (suggested_seed.isEmpty) suggested_seedVar = seed
-    naming_prefix = Builder.getPrefix
+    if (suggested_seed.isEmpty) {
+      suggested_seedVar = seed
+      // Only set the prefix if a seed hasn't been suggested
+      naming_prefix = Builder.getPrefix
+    }
     this
   }
 
@@ -202,11 +254,19 @@ private[chisel3] trait HasId extends InstanceId {
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
   // (e.g. tried to suggest a name to part of a Record)
-  private[chisel3] def forceName(default: => String, namespace: Namespace): Unit =
+  private[chisel3] def forceName(
+    default:    => String,
+    namespace:  Namespace,
+    errorIfDup: Boolean = false,
+    refBuilder: String => Arg = Ref(_)
+  ): Unit =
     if (_ref.isEmpty) {
-      val candidate_name = _computeName(Some(default)).get
+      val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).get
       val available_name = namespace.name(candidate_name)
-      setRef(Ref(available_name))
+      if (errorIfDup && (available_name != candidate_name)) {
+        Builder.error(s"Cannot have duplicate names $available_name and $candidate_name")(UnlocatableSourceInfo)
+      }
+      setRef(refBuilder(available_name))
       // Clear naming prefix to free memory
       naming_prefix = Nil
     }
@@ -219,16 +279,30 @@ private[chisel3] trait HasId extends InstanceId {
       _refVar = imm
     }
   }
-  private[chisel3] def setRef(parent: HasId, name:  String): Unit = setRef(Slot(Node(parent), name))
-  private[chisel3] def setRef(parent: HasId, index: Int):    Unit = setRef(Index(Node(parent), ILit(index)))
-  private[chisel3] def setRef(parent: HasId, index: UInt):   Unit = setRef(Index(Node(parent), index.ref))
+  private[chisel3] def setRef(parent: HasId, name: String, opaque: Boolean = false): Unit = {
+    if (!opaque) setRef(Slot(Node(parent), name))
+    else setRef(OpaqueSlot(Node(parent)))
+  }
+
+  private[chisel3] def setRef(parent: HasId, index: Int):  Unit = setRef(Index(Node(parent), ILit(index)))
+  private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef:       Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg.fullName(c)
-    case None =>
-      throwException("You cannot access the .instanceName or .toTarget of non-hardware Data")
+    case None => {
+      val nameGuess = _computeName(None) match {
+        case Some(name) => s": '$name'"
+        case None       => ""
+      }
+      val parentGuess = _parent match {
+        case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
+        case Some(p)          => s", in module '${p.pathName}'"
+        case None             => ""
+      }
+      throwException("You cannot access the .instanceName or .toTarget of non-hardware Data" + nameGuess + parentGuess)
+    }
   }
 
   // Helper for reifying views if they map to a single Target
@@ -333,7 +407,8 @@ private[chisel3] class ChiselContext() {
 
 private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
-  val throwOnFirstError: Boolean) {
+  val throwOnFirstError: Boolean,
+  val warningsAsErrors:  Boolean) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map holding the actual names of extModules
@@ -390,8 +465,9 @@ private[chisel3] class DynamicContext(
   var whenStack:            List[WhenContext] = Nil
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
-  val errors = new ErrorLog
+  val errors = new ErrorLog(warningsAsErrors)
   val namingStack = new NamingStack
+
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
 }
@@ -407,6 +483,9 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+
+  // Used to suppress warnings when casting from a UInt to an Enum
+  var suppressEnumCastWarning: Boolean = false
 
   // Returns the current dynamic context
   def captureContext(): DynamicContext = dynamicContext
@@ -465,6 +544,7 @@ private[chisel3] object Builder extends LazyLogging {
     def buildAggName(id: HasId): Option[String] = {
       def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
         case Slot(_, field)       => Some(field) // Record
+        case OpaqueSlot(_)        => None // OpaqueSlots don't contribute to the name
         case Index(_, ILit(n))    => Some(n.toString) // Vec static indexing
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing
@@ -670,15 +750,16 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def errors: ErrorLog = dynamicContext.errors
-  def error(m: => String): Unit = {
+  def error(m: => String)(implicit sourceInfo: SourceInfo): Unit = {
     // If --throw-on-first-error is requested, throw an exception instead of aggregating errors
     if (dynamicContextVar.value.isDefined && !dynamicContextVar.value.get.throwOnFirstError) {
-      errors.error(m)
+      errors.error(m, sourceInfo)
     } else {
       throwException(m)
     }
   }
-  def warning(m:      => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
+  def warning(m: => String)(implicit sourceInfo: SourceInfo): Unit =
+    if (dynamicContextVar.value.isDefined) errors.warning(m, sourceInfo)
   def warningNoLoc(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warningNoLoc(m)
   def deprecated(m:   => String, location: Option[String] = None): Unit =
     if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
@@ -688,7 +769,7 @@ private[chisel3] object Builder extends LazyLogging {
     * @param m exception message
     */
   @throws(classOf[ChiselException])
-  def exception(m: => String): Nothing = {
+  def exception(m: => String)(implicit sourceInfo: SourceInfo): Nothing = {
     error(m)
     throwException(m)
   }

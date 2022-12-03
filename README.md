@@ -1,6 +1,22 @@
 ![Chisel 3](https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/chisel_logo.svg?sanitize=true)
 
 ---
+### CCC 2022
+CCC(Chisel Community Conference) is an annual gathering of Chisel community enthusiasts and technical exchange workshop. With the support of the Chisel development community and RISC-V International, this conference will bring together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.
+
+The recording of CCC 2022 has been uploaded: 
+1. [Constellation, a Open-source Chisel NoC Generator for SoCs - Jerry Zhao@UCB BAR](https://www.youtube.com/watch?v=8FGnu0Tq3Qk&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=1)
+2. [The formal verification capabilities of chiseltest - Kevin Laeufer@UCB BAR](https://www.youtube.com/watch?v=-BUcTwE_URg&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=2)
+3. [Chisel Breakdown 03 - Jack Koenig@SiFive](https://www.youtube.com/watch?v=4vgSrW7Cdkk&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=3)
+4. [The Next Generation FIRRTL Compiler is Here! - Prithayan Barua&Hideto Ueno@SiFive](https://www.youtube.com/watch?v=V3h30s31qfk&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=4)
+5. [Implementing RISC-V Scalar Cryptography/Bitmanip extensions in Chisel - Hongren Zheng@Tsinghua University+PLCT](https://www.youtube.com/watch?v=hXaZMQPRXo0&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=5)
+6. [SCIRT: Bridging the Type System Gap for Circuit Generators - Ruikang Wang@Tsinghua University+PLCT](https://www.youtube.com/watch?v=fPl4eZHh1-M&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=6)
+7. [ChiselDB: Mapping Hardware Data Structures to Database Tables for Efficient Data Analysis Jiawei Lin@ICT](https://www.youtube.com/watch?v=Df1l9h351BM&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=7)
+8. [From Chisel to Chips in Fully Open-Source - Martin Schoeberl@DTU](https://www.youtube.com/watch?v=FenSOWKBbAw&list=PL02hojk7ZTSek-Zro6Zdj_nDlp6khGssJ&index=8)
+
+See you next year :)
+
+---
 
 The **Constructing Hardware in a Scala Embedded Language** ([**Chisel**](https://www.chisel-lang.org)) is an open-source hardware description language (HDL) used to describe digital electronics and circuits at the register-transfer level that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 
@@ -32,6 +48,7 @@ Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](htt
   * [Chisel3 Architecture Overview](#chisel3-architecture-overview)
   * [Chisel Sub-Projects](#chisel-sub-projects)
   * [Which version should I use?](#which-version-should-i-use)
+  * [Chisel Roadmap](#roadmap)
 
 ---
 
@@ -206,10 +223,10 @@ For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
 scalaVersion := "2.13.8"
-addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.5.3" cross CrossVersion.full)
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5.3"
+addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.5.4" cross CrossVersion.full)
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.5.4"
 // We also recommend using chiseltest for writing unit tests
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.3" % "test"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.5.4" % "test"
 ```
 
 ### Guide For New Contributors
@@ -372,3 +389,7 @@ If you're developing a Chisel library (or `chisel3` itself), you'll probably wan
 By default, the master branches of the chisel repositories are configured to build and publish their version of the code as `Z.Y-SNAPSHOT`.
 Updated SNAPSHOTs are publised on every push to master.
 You are encouraged to do your development against the latest SNAPSHOT, but note that neither API nor ABI compatibility is guaranteed so your code may break at any time.
+
+### Roadmap
+
+See [ROADMAP.md].

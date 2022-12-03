@@ -438,7 +438,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** Default print as [[Decimal]] */
   final def toPrintable: Printable = Decimal(this)
 
-  protected final def validateShiftAmount(x: Int): Int = {
+  protected final def validateShiftAmount(x: Int)(implicit sourceInfo: SourceInfo): Int = {
     if (x < 0)
       Builder.error(s"Negative shift amounts are illegal (got $x)")
     x
@@ -896,7 +896,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
 
-  /** Unary negation (expanding width)
+  /** Unary negation (constant width)
     *
     * @return a hardware $coll equal to zero minus this $coll
     * $constantWidth

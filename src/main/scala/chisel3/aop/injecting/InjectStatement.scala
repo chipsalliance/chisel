@@ -8,7 +8,7 @@ import firrtl.annotations.{Annotation, ModuleTarget, NoTargetAnnotation, SingleT
 /** Contains all information needed to inject statements into a module
   *
   * Generated when a [[InjectingAspect]] is consumed by a [[AspectPhase]]
-  * Consumed by [[InjectingTransform]]
+  * Consumed by [[InjectingPhase]]
   *
   * @param module Module to inject code into at the end of the module
   * @param s Statements to inject

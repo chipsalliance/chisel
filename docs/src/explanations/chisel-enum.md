@@ -17,6 +17,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
+import chisel3.experimental.suppressEnumCastWarning
 ```
 
 ```scala mdoc:invisible
@@ -165,6 +166,30 @@ Now there will be no warning:
 ```scala mdoc:passthrough
 val (log2, _) = grabLog(ChiselStage.emitChirrtl(new SafeFromUInt))
 println(s"```\n$log2```")
+```
+
+You can also suppress the warning by using `suppressEnumCastWarning`. This is
+primarily used for casting from [[UInt]] to a Bundle type that contains an
+Enum, where the [[UInt]] is known to be valid for the Bundle type.
+
+```scala mdoc
+class MyBundle extends Bundle {
+  val addr = UInt(8.W)
+  val op = Opcode()
+}
+
+class SuppressedFromUInt extends Module {
+  val in = IO(Input(UInt(15.W)))
+  val out = IO(Output(new MyBundle()))
+  suppressEnumCastWarning {
+    out := in.asTypeOf(new MyBundle)
+  }
+}
+```
+
+```scala mdoc:invisible
+val (log3, _) = grabLog(ChiselStage.emitChirrtl(new SuppressedFromUInt))
+assert(log3.isEmpty)
 ```
 
 ## Testing

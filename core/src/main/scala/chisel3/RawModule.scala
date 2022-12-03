@@ -2,7 +2,6 @@
 
 package chisel3
 
-import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.util.Try
 import scala.language.experimental.macros
 import scala.annotation.nowarn
@@ -13,6 +12,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
+import scala.collection.immutable.VectorBuilder
 
 /** Abstract base class for Modules that contain Chisel RTL.
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
@@ -23,14 +23,18 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   //
   // RTL construction internals
   //
-  private val _commands = ArrayBuffer[Command]()
+  // Perhaps this should be an ArrayBuffer (or ArrayBuilder), but DefModule is public and has Seq[Command]
+  // so our best option is to share a single Seq datastructure with that
+  private val _commands = new VectorBuilder[Command]()
   private[chisel3] def addCommand(c: Command) {
     require(!_closed, "Can't write to module after module close")
     _commands += c
   }
-  protected def getCommands = {
+  protected def getCommands: Seq[Command] = {
     require(_closed, "Can't get commands before module close")
-    _commands.toSeq
+    // Unsafe cast but we know that any RawModule uses a DefModule
+    // _component is defined as a var on BaseModule and we cannot override mutable vars
+    _component.get.asInstanceOf[DefModule].commands
   }
 
   //
@@ -43,14 +47,25 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
   val compileOptions = moduleCompileOptions
 
+  private[chisel3] def checkPorts(): Unit = {
+    for ((port, source) <- getModulePortsAndLocators) {
+      if (port._computeName(None).isEmpty) {
+        Builder.error(
+          s"Unable to name port $port in $this, " +
+            s"try making it a public field of the Module $source"
+        )(UnlocatableSourceInfo)
+      }
+    }
+  }
+
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    // Ports get first naming priority, since they are part of a Module's IO spec
-    namePorts()
+    // Check to make sure that all ports can be named
+    checkPorts()
 
-    // Ports are named, now name everything else
+    // Now that elaboration is complete for this Module, we can finalize names
     for (id <- getIds) {
       id match {
         case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
@@ -70,7 +85,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
               case MemoryPortBinding(_, _) =>
                 id.forceName(default = "MPORT", _namespace)
               case PortBinding(_) =>
-                id.forceName(default = "PORT", _namespace)
+                id.forceName(default = "PORT", _namespace, true, x => ModuleIO(this, x))
               case RegBinding(_, _) =>
                 id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
@@ -81,24 +96,25 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       }
     }
 
-    val firrtlPorts = getModulePorts.map { port: Data =>
-      // Special case Vec to make FIRRTL emit the direction of its
-      // element.
-      // Just taking the Vec's specifiedDirection is a bug in cases like
-      // Vec(Flipped()), since the Vec's specifiedDirection is
-      // Unspecified.
-      val direction = port match {
-        case v: Vec[_] =>
-          v.specifiedDirection match {
-            case SpecifiedDirection.Input       => SpecifiedDirection.Input
-            case SpecifiedDirection.Output      => SpecifiedDirection.Output
-            case SpecifiedDirection.Flip        => SpecifiedDirection.flip(v.sample_element.specifiedDirection)
-            case SpecifiedDirection.Unspecified => v.sample_element.specifiedDirection
-          }
-        case _ => port.specifiedDirection
-      }
+    val firrtlPorts = getModulePortsAndLocators.map {
+      case (port, sourceInfo) =>
+        // Special case Vec to make FIRRTL emit the direction of its
+        // element.
+        // Just taking the Vec's specifiedDirection is a bug in cases like
+        // Vec(Flipped()), since the Vec's specifiedDirection is
+        // Unspecified.
+        val direction = port match {
+          case v: Vec[_] =>
+            v.specifiedDirection match {
+              case SpecifiedDirection.Input       => SpecifiedDirection.Input
+              case SpecifiedDirection.Output      => SpecifiedDirection.Output
+              case SpecifiedDirection.Flip        => SpecifiedDirection.flip(v.sample_element.specifiedDirection)
+              case SpecifiedDirection.Unspecified => v.sample_element.specifiedDirection
+            }
+          case _ => port.specifiedDirection
+        }
 
-      Port(port, direction)
+        Port(port, direction, sourceInfo)
     }
     _firrtlPorts = Some(firrtlPorts)
 
@@ -106,12 +122,12 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     //  unless the client wants explicit control over their generation.
     val invalidateCommands = {
       if (!compileOptions.explicitInvalidate || this.isInstanceOf[ImplicitInvalidate]) {
-        getModulePorts.map { port => DefInvalid(UnlocatableSourceInfo, port.ref) }
+        getModulePortsAndLocators.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
       } else {
         Seq()
       }
     }
-    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
+    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++: _commands.result())
     _component = Some(component)
     _component
   }
@@ -120,7 +136,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     implicit val sourceInfo = UnlocatableSourceInfo
 
     if (!parentCompileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      for (port <- getModulePorts) {
+      for ((port, sourceInfo) <- getModulePortsAndLocators) {
         pushCommand(DefInvalid(sourceInfo, port.ref))
       }
     }
@@ -279,7 +295,7 @@ package object internal {
 
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
       }
     }
   }
@@ -303,7 +319,7 @@ package object internal {
     // required) to build.
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
       }
     }
   }

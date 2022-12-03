@@ -6,7 +6,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.6", "2.12.14")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.10", "2.12.17")
 
 object v {
   val firrtl = ivy"edu.berkeley.cs::firrtl:1.6-SNAPSHOT"
@@ -118,7 +118,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
   }
 
-  object test extends Tests with TestModule.ScalaTest {
+  object test extends Tests with TestModule.ScalaTest with ScalafmtModule {
     override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
 
     override def ivyDeps = m.ivyDeps() ++ Agg(
@@ -129,7 +129,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def moduleDeps = super.moduleDeps ++ treadleModule
   }
 
-  object `integration-tests` extends Tests with TestModule.ScalaTest {
+  object `integration-tests` extends Tests with TestModule.ScalaTest with ScalafmtModule {
     override def sources = T.sources(millSourcePath / "integration-tests" / "src" / "test" / "scala")
     override def ivyDeps = m.ivyDeps() ++ Agg(
       v.scalatest,

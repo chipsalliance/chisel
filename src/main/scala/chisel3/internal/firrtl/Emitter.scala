@@ -11,12 +11,14 @@ private[chisel3] object Emitter {
     Serializer.serialize(fcircuit)
   }
 
-  def emitLazily(circuit: Circuit): Iterable[String] = {
-    val result = LazyList(s"circuit ${circuit.name} :\n")
-    val modules = circuit.components.view.map(Converter.convert)
-    val moduleStrings = modules.flatMap { m =>
-      Array(Serializer.serialize(m, 1), "\n\n")
+  def emitLazily(circuit: Circuit): Iterable[String] = new Iterable[String] {
+    def iterator = {
+      val prelude = Iterator(s"circuit ${circuit.name} :\n")
+      val modules = circuit.components.iterator.map(Converter.convert)
+      val moduleStrings = modules.flatMap { m =>
+        Serializer.lazily(m, 1) ++ Seq("\n\n")
+      }
+      prelude ++ moduleStrings
     }
-    result ++ moduleStrings
   }
 }

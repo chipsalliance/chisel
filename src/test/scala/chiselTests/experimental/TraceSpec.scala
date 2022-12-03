@@ -51,8 +51,11 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
       r := i
 
       traceName(r)
+      dontTouch(r)
       traceName(i)
+      dontTouch(i)
       traceName(o)
+      dontTouch(o)
     }
 
     class Module1 extends Module {
@@ -193,8 +196,11 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
       a__0 := DontCare
 
       traceName(a)
+      dontTouch(a)
       traceName(a_0_c)
+      dontTouch(a_0_c)
       traceName(a__0)
+      dontTouch(a__0)
     }
 
     val (_, annos) = compile("TraceFromCollideBundle", () => new CollideModule)
@@ -225,6 +231,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
       val i = IO(Input(Bool()))
       val o = IO(Output(Bool()))
       traceName(i)
+      dontTouch(i)
       o := !i
     }
 
@@ -249,6 +256,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
       val i0 = i + 1.U
       val o = IO(Output(UInt(2.W)))
       traceName(i0)
+      dontTouch(i0)
       o := i0
     }
 
@@ -311,7 +319,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
       val b = Wire(Vec(2, Bool()))
       a := DontCare
       b := DontCare
-      Seq(a, b).foreach(traceName)
+      Seq(a, b).foreach { a => traceName(a); dontTouch(a) }
     }
     val (_, annos) = compile("NestedModule", () => new M)
     val dut = annos.collectFirst { case DesignAnnotation(dut) => dut }.get.asInstanceOf[M]
