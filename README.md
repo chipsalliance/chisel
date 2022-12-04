@@ -212,7 +212,7 @@ If you like a textbook to learn Chisel and also a bit of digital design in gener
 
 ### Build Your Own Chisel Projects
 
-See [the setup instructions](SETUP.md) for how to set up your environment to build Chisel locally.
+See [the setup instructions](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md) for how to set up your environment to build Chisel locally.
 
 When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench.
 Follow the [chisel-template README](https://github.com/freechipsproject/chisel-template) to get started.
@@ -276,7 +276,7 @@ The [Useful Resources](#useful-resources) for users are also helpful for contrib
 
 ### Compiling and Testing Chisel
 
-You must first install required dependencies to build Chisel locally, please see [the setup instructions](SETUP.md).
+You must first install required dependencies to build Chisel locally, please see [the setup instructions](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md).
 
 Clone and build the Chisel library:
 
