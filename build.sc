@@ -8,9 +8,23 @@ import mill.contrib.buildinfo.BuildInfo
 
 object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.10", "2.12.17")
 
+// The following stanza is searched for and used when preparing releases.
+// Please retain it.
+// Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
+val defaultVersions = Map(
+  "firrtl" -> "1.6-SNAPSHOT",
+  "treadle" -> "1.6-SNAPSHOT"
+)
+
+def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
+  val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
+  ivy"$org::$dep:$version"
+}
+// Do not remove the above logic, it is needed by the release automation
+
 object v {
-  val firrtl = ivy"edu.berkeley.cs::firrtl:1.6-SNAPSHOT"
-  val treadle = ivy"edu.berkeley.cs::treadle:1.6-SNAPSHOT"
+  val firrtl = getVersion("firrtl")
+  val treadle = getVersion("treadle")
   val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.6-SNAPSHOT"
   val scalatest = ivy"org.scalatest::scalatest:3.2.12"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
