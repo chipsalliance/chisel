@@ -18,7 +18,7 @@ abstract class Element extends Data {
   def name:                               String = getRef.name
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    _parent.foreach(_.addId(this))
+    this.maybeAddToParentIds(target)
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     direction = ActualDirection.fromSpecified(resolvedDirection)

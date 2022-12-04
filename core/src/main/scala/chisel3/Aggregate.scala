@@ -184,7 +184,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    _parent.foreach(_.addId(this))
+    this.maybeAddToParentIds(target)
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -987,7 +987,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    _parent.foreach(_.addId(this))
+    this.maybeAddToParentIds(target)
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)

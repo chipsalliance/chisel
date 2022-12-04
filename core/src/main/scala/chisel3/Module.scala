@@ -326,14 +326,15 @@ package experimental {
     // Returns the last id contained within a Module
     private[chisel3] def _lastId: Long = _ids.last match {
       case mod: BaseModule => mod._lastId
-      case _ =>
-        // Ideally we could just take last._id, but Records store and thus bind their Data in reverse order
-        _ids.maxBy(_._id)._id
+      case agg: Aggregate  =>
+        // Ideally we could just take .last._id, but Records store their elements in reverse order
+        getRecursiveFields.lazily(agg, "").map(_._1._id).max
+      case other => other._id
     }
 
-    private[chisel3] def getIds = {
+    private[chisel3] def getIds: Iterable[HasId] = {
       require(_closed, "Can't get ids before module close")
-      _ids.toSeq
+      _ids
     }
 
     private val _ports = new ArrayBuffer[(Data, SourceInfo)]()
