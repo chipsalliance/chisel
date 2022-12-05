@@ -8,6 +8,9 @@ import chisel3.ExplicitCompileOptions
 
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
+import scala.annotation.nowarn
+
+@nowarn("msg=Chisel compatibility mode is deprecated")
 object MigrationExamples {
   object InferResets {
     import Chisel.{defaultCompileOptions => _, _}
@@ -86,6 +89,7 @@ object MigrationExamples {
   }
 }
 
+@nowarn("msg=Chisel compatibility mode is deprecated")
 class MigrateCompileOptionsSpec extends ChiselFunSpec with Utils {
   import Chisel.{defaultCompileOptions => _, _}
   import chisel3.RequireSyncReset

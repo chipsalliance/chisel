@@ -5,6 +5,8 @@ import chisel3.util.Decoupled
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
+import scala.annotation.nowarn
+
 class BulkConnectSpec extends ChiselPropSpec {
   property("Chisel connects should emit FIRRTL bulk connects when possible") {
     val chirrtl = ChiselStage.emitChirrtl(new Module {
@@ -22,6 +24,7 @@ class BulkConnectSpec extends ChiselPropSpec {
   }
 
   property("Chisel connects should not emit FIRRTL bulk connects for Stringly-typed connections") {
+    @nowarn("msg=Chisel compatibility mode is deprecated")
     object Foo {
       import Chisel._
       // Chisel._ bundle
