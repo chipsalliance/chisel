@@ -23,10 +23,24 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
   ivy"$org::$dep:$version"
 }
+<<<<<<< HEAD
 
 def getTestVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", testDefaultVersions(dep))
   ivy"$org::$dep:$version"
+=======
+// Do not remove the above logic, it is needed by the release automation
+
+object v {
+  val firrtl = getVersion("firrtl")
+  val treadle = getVersion("treadle")
+  val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.6-SNAPSHOT"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.12"
+  val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
+  val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
+  val upickle = ivy"com.lihaoyi::upickle:2.0.0"
+  val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
+>>>>>>> 28e35823 (SerializableModuleGenerator (#2857))
 }
 
 // Since chisel contains submodule core and macros, a CommonModule is needed
@@ -46,8 +60,14 @@ trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule
   override def moduleDeps = super.moduleDeps ++ firrtlModule
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
+<<<<<<< HEAD
     ivy"com.lihaoyi::os-lib:0.8.0",
   ) ++  firrtlIvyDeps
+=======
+    v.osLib,
+    v.upickle
+  ) ++ firrtlIvyDeps
+>>>>>>> 28e35823 (SerializableModuleGenerator (#2857))
 
   def publishVersion = "3.5-SNAPSHOT"
 

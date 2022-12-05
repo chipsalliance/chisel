@@ -78,8 +78,13 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.10" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
+<<<<<<< HEAD
     "com.lihaoyi" %% "os-lib" % "0.8.0",
   ),
+=======
+    "com.lihaoyi" %% "upickle" % "2.0.0"
+  )
+>>>>>>> 28e35823 (SerializableModuleGenerator (#2857))
 ) ++ (
   // Tests from other projects may still run concurrently
   //  if we're not running with -DminimalResources.
@@ -219,6 +224,10 @@ lazy val core = (project in file("core")).
   ).
   settings(
     name := "chisel3-core",
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "upickle" % "2.0.0",
+      "com.lihaoyi" %% "os-lib" % "0.8.1"
+    ),
     scalacOptions := scalacOptions.value ++ Seq(
       "-deprecation",
       "-explaintypes",
