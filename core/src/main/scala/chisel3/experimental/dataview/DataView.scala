@@ -3,7 +3,7 @@
 package chisel3.experimental.dataview
 
 import chisel3._
-import chisel3.experimental.DataMirror.internal.chiselTypeClone
+import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.experimental.{HWTuple10, HWTuple2, HWTuple3, HWTuple4, HWTuple5, HWTuple6, HWTuple7, HWTuple8, HWTuple9}
 import chisel3.experimental.ChiselSubtypeOf
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}

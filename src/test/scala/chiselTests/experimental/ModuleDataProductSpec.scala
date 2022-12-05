@@ -10,7 +10,7 @@ import chiselTests.ChiselFlatSpec
 object ModuleDataProductSpec {
   class MyBundle extends Bundle {
     val foo = UInt(8.W)
-    val bar = UInt(8.W)
+    val bar = Vec(1, UInt(8.W))
   }
   trait MyIntf extends BaseModule {
     val in = IO(Input(new MyBundle))
@@ -49,12 +49,15 @@ class ModuleDataProductSpec extends ChiselFlatSpec {
       m.in -> "m.in",
       m.in.foo -> "m.in.foo",
       m.in.bar -> "m.in.bar",
+      m.in.bar(0) -> "m.in.bar(0)",
       m.out -> "m.out",
       m.out.foo -> "m.out.foo",
       m.out.bar -> "m.out.bar",
+      m.out.bar(0) -> "m.out.bar(0)",
       m.r -> "m.r",
       m.r.foo -> "m.r.foo",
       m.r.bar -> "m.r.bar",
+      m.r.bar(0) -> "m.r.bar(0)",
       m.inst.in -> "m.inst.in",
       m.inst.out -> "m.inst.out"
     )
@@ -72,11 +75,13 @@ class ModuleDataProductSpec extends ChiselFlatSpec {
     val m = elaborateAndGetModule(new MyExtModuleWrapper).inst
     val expected = Seq(
       m.in -> "m.in",
-      m.in.foo -> "m.in.foo",
       m.in.bar -> "m.in.bar",
+      m.in.bar(0) -> "m.in.bar(0)",
+      m.in.foo -> "m.in.foo",
       m.out -> "m.out",
-      m.out.foo -> "m.out.foo",
-      m.out.bar -> "m.out.bar"
+      m.out.bar -> "m.out.bar",
+      m.out.bar(0) -> "m.out.bar(0)",
+      m.out.foo -> "m.out.foo"
     )
 
     val impl = implicitly[DataProduct[MyExtModule]]

@@ -1,6 +1,6 @@
-package chiselTests.util
-
 // SPDX-License-Identifier: Apache-2.0
+
+package chiselTests.util
 
 import chisel3._
 import chisel3.util.{Pipe, Valid}

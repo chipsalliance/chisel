@@ -68,7 +68,7 @@ object DataProduct extends LowPriorityDataProduct {
     def dataIterator(a: BaseModule, path: String): Iterator[(Data, String)] = {
       a.getIds.iterator.flatMap {
         case d: Data if d.getOptionRef.isDefined => // Using ref to decide if it's truly hardware in the module
-          Seq(d -> s"${path}.${d.instanceName}")
+          implicitly[DataProduct[Data]].dataIterator(d, s"${path}.${d.instanceName}")
         case b: BaseModule => dataIterator(b, s"$path.${b.instanceName}")
         case _ => Seq.empty
       }

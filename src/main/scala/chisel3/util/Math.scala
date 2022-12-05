@@ -27,7 +27,11 @@ object log2Up {
   // https://github.com/freechipsproject/chisel3/issues/847
   //@chiselRuntimeDeprecated
   //@deprecated("Use log2Ceil instead", "chisel3")
-  def apply(in: BigInt): Int = Chisel.log2Up(in)
+  def apply(in: BigInt): Int = {
+    require(in >= 0)
+    1.max((in - 1).bitLength)
+  }
+  def apply(in: Int): Int = apply(BigInt(in))
 }
 
 /** Compute the log2 of a Scala integer, rounded up.
@@ -66,7 +70,8 @@ object log2Down {
   // https://github.com/freechipsproject/chisel3/issues/847
   //@chiselRuntimeDeprecated
   //@deprecated("Use log2Floor instead", "chisel3")
-  def apply(in: BigInt): Int = Chisel.log2Down(in)
+  def apply(in: BigInt): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
+  def apply(in: Int):    Int = apply(BigInt(in))
 }
 
 /** Compute the log2 of a Scala integer, rounded down.

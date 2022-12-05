@@ -50,12 +50,12 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
   // Used to enforce single bulk connect of Analog types, multi-attach is still okay
   // Note that this really means 1 bulk connect per Module because a port can
   //   be connected in the parent module as well
-  private[chisel3] val biConnectLocs = mutable.Map.empty[RawModule, SourceInfo]
+  private[chisel3] val biConnectLocs = mutable.Map.empty[RawModule, (SourceInfo, Data)]
 
   // Define setter/getter pairing
   // Analog can only be bound to Ports and Wires (and Unbound)
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    _parent.foreach(_.addId(this))
+    this.maybeAddToParentIds(target)
     SpecifiedDirection.fromParent(parentDirection, specifiedDirection) match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
       case x                                                        => throwException(s"Analog may not have explicit direction, got '$x'")
