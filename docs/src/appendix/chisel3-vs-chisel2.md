@@ -9,6 +9,8 @@ section: "chisel3"
 import chisel3._
 ```
 
+**Note** Chisel2 Compatibility Mode is entirely deprecated in 3.6, so this entire page is relevant only for 3.6 and earlier.
+
 ## Chisel2 Migration
 For those moving from Chisel2, there were some backwards incompatible changes
 and your RTL needs to be modified to work with Chisel3. The required

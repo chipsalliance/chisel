@@ -522,6 +522,40 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
   }
 
+  describe("ChiselStage AOP support") {
+    it("should be able to use Inject statement with AOP") {
+      import chisel3._
+      import chisel3.aop.Select
+      import chisel3.aop.injecting.InjectingAspect
+
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      val verilog = (new ChiselStage)
+        .execute(
+          args,
+          Seq(
+            ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo),
+            InjectingAspect(
+              { dut: ChiselStageSpec.Foo => Select.collectDeep(dut) { case dut: ChiselStageSpec.Foo => dut } },
+              { dut: ChiselStageSpec.Foo => dut.b.a := false.B }
+            )
+          )
+        )
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }
+        .get
+        .value
+      verilog should include("assign b_a = 1'h0;")
+    }
+  }
+
   describe("ChiselStage dedup behavior") {
 
     it("should be on by default and work") {

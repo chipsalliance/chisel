@@ -6,8 +6,8 @@ import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.experimental.dataview._
 import chisel3.experimental.conversions._
-import chisel3.experimental.DataMirror.internal.chiselTypeClone
-import chisel3.experimental.HWTuple2
+import chisel3.reflect.DataMirror.internal.chiselTypeClone
+import chisel3.experimental.{Analog, HWTuple2}
 import chisel3.stage.ChiselStage
 import chisel3.util.{Decoupled, DecoupledIO}
 
@@ -91,6 +91,16 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("bar <= in")
   }
 
+  it should "handle viewing Analogs as Analogs" in {
+    class MyModule extends Module {
+      val foo = IO(Analog(8.W))
+      val bar = IO(Analog(8.W))
+      foo <> bar.viewAs[Analog]
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("attach (foo, bar)")
+  }
+
   it should "handle viewing Bundles as their same concrete type" in {
     class MyBundle extends Bundle {
       val foo = UInt(8.W)
@@ -171,6 +181,28 @@ class DataViewSpec extends ChiselFlatSpec {
       val barIn = IO(Input(new Bar))
       val fooOut = IO(Output(new Foo))
       fooOut := barIn.viewAsSupertype(new Foo)
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    chirrtl should include("barOut.foo <= fooIn.foo")
+    chirrtl should include("fooOut.foo <= barIn.foo")
+  }
+
+  it should "be easy to make a PartialDataView viewing a Bundle as a Parent Bundle type" in {
+    class Foo(x: Int) extends Bundle {
+      val foo = UInt(x.W)
+    }
+    class Bar(val x: Int) extends Foo(x) {
+      val bar = UInt(x.W)
+    }
+    implicit val view = PartialDataView.supertype[Bar, Foo](b => new Foo(b.x))
+    class MyModule extends Module {
+      val fooIn = IO(Input(new Foo(8)))
+      val barOut = IO(Output(new Bar(8)))
+      barOut.viewAs[Foo] := fooIn
+
+      val barIn = IO(Input(new Bar(8)))
+      val fooOut = IO(Output(new Foo(8)))
+      fooOut := barIn.viewAs[Foo]
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     chirrtl should include("barOut.foo <= fooIn.foo")

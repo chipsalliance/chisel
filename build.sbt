@@ -73,7 +73,7 @@ lazy val chiselSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.12" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "com.lihaoyi" %% "os-lib" % "0.8.1"
+    "com.lihaoyi" %% "upickle" % "2.0.0"
   )
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -174,6 +174,10 @@ lazy val core = (project in file("core"))
   .settings(mimaPreviousArtifacts := Set())
   .settings(
     name := "chisel3-core",
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "upickle" % "2.0.0",
+      "com.lihaoyi" %% "os-lib" % "0.8.1"
+    ),
     scalacOptions := scalacOptions.value ++ Seq(
       "-deprecation",
       "-explaintypes",
@@ -238,6 +242,12 @@ lazy val chisel = (project in file("."))
       // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
       // See https://github.com/sbt/sbt-unidoc/issues/107
       (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
+      ++ {
+           CrossVersion.partialVersion(scalaVersion.value) match {
+             case Some((2, n)) if n >= 13 => "-implicits" :: Nil
+             case _                       => Nil
+           }
+         }
   )
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
