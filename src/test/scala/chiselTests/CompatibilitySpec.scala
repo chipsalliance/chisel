@@ -464,6 +464,19 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
     ChiselStage.elaborate((new Foo))
   }
 
+  behavior.of("debug")
+
+  it should "still exist" in {
+    class Foo extends Module {
+      val io = IO(new Bundle {})
+
+      val data = UInt(width = 2)
+      debug(data)
+    }
+
+    ChiselStage.elaborate(new Foo)
+  }
+
   behavior.of("Data methods")
 
   behavior.of("Wire")

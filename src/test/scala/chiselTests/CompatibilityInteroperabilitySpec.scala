@@ -111,7 +111,6 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       b.io <> a.io
       stop()
     })
-
     assertTesterPasses(new BasicTester {
       val a = Module(new Chisel3RecordModuleA)
       val b = Module(new Chisel3RecordModuleB)

@@ -47,6 +47,12 @@ package object Chisel {
     def asOutput: T = Output(target)
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def flip: T = Flipped(target)
+    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
+    @deprecated(
+      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
+      "Chisel 3.5"
+    )
+    def flip(dummy: Int*): T = flip
   }
 
   @nowarn("msg=Chisel compatibility mode is deprecated")
@@ -84,7 +90,7 @@ package object Chisel {
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   type Data = chisel3.Data
-  @deprecated
+  @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   object Wire extends WireFactory {
     import chisel3.CompileOptions
 
@@ -138,6 +144,11 @@ package object Chisel {
   object Vec extends chisel3.VecFactory {
     import chisel3.CompileOptions
     import chisel3.internal.sourceinfo._
+
+    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
+    @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
+    def apply[T <: Data](gen: T, n: Int)(implicit compileOptions: CompileOptions): Vec[T] =
+      apply(n, gen)
 
     /** Creates a new [[Vec]] of length `n` composed of the result of the given
       * function repeatedly applied.
@@ -408,6 +419,8 @@ package object Chisel {
 
   import chisel3.CompileOptions
 
+  @deprecated("Use Chisel.Module", "Chisel 3.5")
+  type CompatibilityModule = chisel3.internal.LegacyModule
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   val Module = chisel3.Module
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
@@ -491,6 +504,8 @@ package object Chisel {
   implicit class fromBooleanToLiteral(x: Boolean) extends chisel3.fromBooleanToLiteral(x)
   implicit class fromIntToWidth(x: Int) extends chisel3.fromIntToWidth(x)
 
+  @deprecated("Use object firrtl.util.BackendCompilationUtilities instead", "Chisel 3.5")
+  type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   val ImplicitConversions = chisel3.util.ImplicitConversions
 
@@ -523,8 +538,13 @@ package object Chisel {
     }
   }
 
-  // Deprecated as of Chisel3
+  @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
+  @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
+  object debug {
+    def apply(arg: Data): Data = arg
+  }
 
+  // Deprecated as of Chisel3
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   object throwException {
     @throws(classOf[Exception])
@@ -666,6 +686,40 @@ package object Chisel {
       require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
       require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
       apply(n).asInstanceOf[List[T]]
+    }
+
+    /** An old Enum API that returns a map of symbols to UInts.
+      *
+      * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+      * understands and can check, map accesses can't be compile-time checked and typos may not be
+      * caught until runtime.
+      *
+      * Despite being deprecated, this is not to be removed from the compatibility layer API.
+      * Deprecation is only to nag users to do something safer.
+      */
+    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
+    @deprecated("Use list-based Enum", "not soon enough")
+    def apply[T <: Bits](nodeType: T, l: Symbol*): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      (l.zip(createValues(l.length))).toMap.asInstanceOf[Map[Symbol, T]]
+    }
+
+    /** An old Enum API that returns a map of symbols to UInts.
+      *
+      * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+      * understands and can check, map accesses can't be compile-time checked and typos may not be
+      * caught until runtime.
+      *
+      * Despite being deprecated, this is not to be removed from the compatibility layer API.
+      * Deprecation is only to nag users to do something safer.
+      */
+    @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
+    @deprecated("Use list-based Enum", "not soon enough")
+    def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      (l.zip(createValues(l.length))).toMap.asInstanceOf[Map[Symbol, T]]
     }
   }
 
