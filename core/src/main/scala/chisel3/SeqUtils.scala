@@ -64,7 +64,10 @@ private[chisel3] object SeqUtils {
     if (in.size == 1) {
       in.head._2
     } else {
-      Mux(in.head._1, in.head._2, priorityMux(in.tail))
+      val r = in.view.reverse
+      r.tail.foldLeft(r.head._2) {
+        case (alt, (sel, elt)) => Mux(sel, elt, alt)
+      }
     }
   }
 

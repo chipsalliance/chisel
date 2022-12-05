@@ -73,7 +73,7 @@ package experimental {
       namePorts()
 
       val firrtlPorts = getModulePorts.map {
-        case (port, _) => Port(port, port.specifiedDirection, UnlocatableSourceInfo)
+        case port => Port(port, port.specifiedDirection, UnlocatableSourceInfo)
       }
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
@@ -84,7 +84,7 @@ package experimental {
       implicit val sourceInfo = UnlocatableSourceInfo
 
       if (!parentCompileOptions.explicitInvalidate) {
-        for ((port, _) <- getModulePorts) {
+        for (port <- getModulePorts) {
           pushCommand(DefInvalid(sourceInfo, port.ref))
         }
       }

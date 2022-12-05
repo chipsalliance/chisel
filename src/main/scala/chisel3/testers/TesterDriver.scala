@@ -3,9 +3,8 @@
 package chisel3.testers
 
 import java.io._
-
 import chisel3._
-import chisel3.stage.phases.{Convert, Elaborate, Emitter}
+import chisel3.stage.phases.{Convert, Elaborate, Emitter, MaybeInjectingPhase}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
@@ -39,7 +38,12 @@ object TesterDriver extends BackendCompilationUtilities {
       processLogger:        ProcessLogger = loggingProcessLogger
     ): Boolean = {
       val pm = new PhaseManager(
-        targets = Seq(Dependency[AddImplicitTesterDirectory], Dependency[Emitter], Dependency[Convert])
+        targets = Seq(
+          Dependency[AddImplicitTesterDirectory],
+          Dependency[Emitter],
+          Dependency[Convert],
+          Dependency[MaybeInjectingPhase]
+        )
       )
 
       val annotationsx = pm.transform(ChiselGeneratorAnnotation(finishWrapper(t)) +: annotations)
