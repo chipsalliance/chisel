@@ -450,6 +450,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit
 
+  /** Adds this `Data` to its parents _ids if it should be added */
+  private[chisel3] def maybeAddToParentIds(target: Binding): Unit = {
+    // ConstrainedBinding means the thing actually corresponds to a Module, no need to add to _ids otherwise
+    if (target.isInstanceOf[ConstrainedBinding]) {
+      _parent.foreach(_.addId(this))
+    }
+  }
+
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
   // Both are only valid after binding is set.
