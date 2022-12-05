@@ -130,7 +130,7 @@ object Instance extends SourceInfoDoc {
         override def generateComponent(): Option[Component] = {
           require(!_closed, s"Can't generate $desiredName module more than once")
           _closed = true
-          val firrtlPorts = definition.proto.getModulePorts.map {
+          val firrtlPorts = definition.proto.getModulePortsAndLocators.map {
             case (port, sourceInfo) =>
               Port(port, port.specifiedDirection, sourceInfo)
           }

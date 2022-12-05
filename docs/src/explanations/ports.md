@@ -40,7 +40,7 @@ Chisel 3.2 introduced `DataMirror.modulePorts` which can be used to inspect the 
 Here is an example of how to use this API:
 
 ```scala mdoc
-import chisel3.experimental.DataMirror
+import chisel3.reflect.DataMirror
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 class Adder extends Module {

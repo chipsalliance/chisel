@@ -69,7 +69,7 @@ class CatSpec extends ChiselFlatSpec {
       out := Cat(in)
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include("cat(in[0], in[1]) @[CatSpec.scala")
+    chirrtl should include("cat(in[0], in[1]) @[src/test/scala/chiselTests/util/CatSpec.scala")
     (chirrtl should not).include("Cat.scala")
   }
 
@@ -80,7 +80,7 @@ class CatSpec extends ChiselFlatSpec {
       out := Cat(in(0), in(1))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include("cat(in[0], in[1]) @[CatSpec.scala")
+    chirrtl should include("cat(in[0], in[1]) @[src/test/scala/chiselTests/util/CatSpec.scala")
     (chirrtl should not).include("Cat.scala")
   }
 
