@@ -3,9 +3,11 @@
 package chisel3.internal
 
 import scala.annotation.tailrec
-import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
+import scala.collection.mutable.{ArrayBuffer, LinkedHashMap, LinkedHashSet}
 import scala.util.control.NoStackTrace
 import _root_.logger.Logger
+
+import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 
 object ExceptionHelpers {
 
@@ -177,44 +179,53 @@ private[chisel3] object ErrorLog {
 }
 
 private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
-  def getLoc(loc: Option[StackTraceElement]): String = {
-    loc match {
-      case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
-      case None => "(unknown)"
+
+  /** Returns an appropriate location string for the provided source info.
+    * If the source info is of `NoSourceInfo` type, the source location is looked up via stack trace.
+    * If the source info is `None`, an empty string is returned.
+    */
+  private def errorLocationString(si: Option[SourceInfo]): String = {
+    si match {
+      case Some(sl: SourceLine) => s"${sl.filename}:${sl.line}:${sl.col}"
+      case Some(_: NoSourceInfo) => {
+        getUserLineNumber match {
+          case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
+          case None => "(unknown)"
+        }
+      }
+      case None => ""
     }
   }
 
-  /** Log an error message */
-  def error(m: => String): Unit = {
-    val loc = getUserLineNumber
-    errors += (((m, getLoc(loc)), new Error(m, loc)))
+  private def errorEntry(msg: String, si: Option[SourceInfo], isFatal: Boolean): ErrorEntry = {
+    val location = errorLocationString(si)
+    val fullMessage = if (location.isEmpty) msg else s"$location: $msg"
+    ErrorEntry(fullMessage, isFatal)
   }
 
-  private def warn(m: => String, loc: Option[StackTraceElement]): LogEntry =
-    if (warningsAsErrors) new Error(m, loc) else new Warning(m, loc)
+  /** Log an error message */
+  def error(m: String, si: SourceInfo): Unit = {
+    errors += errorEntry(m, Some(si), true)
+  }
+
+  private def warn(m: String, si: Option[SourceInfo]): ErrorEntry = errorEntry(m, si, warningsAsErrors)
 
   /** Log a warning message */
-  def warning(m: => String): Unit = {
-    val loc = getUserLineNumber
-    errors += (((m, getLoc(loc)), warn(m, loc)))
+  def warning(m: String, si: SourceInfo): Unit = {
+    errors += warn(m, Some(si))
   }
 
   /** Log a warning message without a source locator. This is used when the
     * locator wouldn't be helpful (e.g., due to lazy values).
     */
-  def warningNoLoc(m: => String): Unit =
-    errors += (((m, ""), warn(m, None)))
-
-  /** Emit an informational message */
-  @deprecated("This method will be removed in 3.5", "3.4")
-  def info(m: String): Unit =
-    println(new Info("[%2.3f] %s".format(elapsedTime / 1e3, m), None))
+  def warningNoLoc(m: String): Unit =
+    errors += warn(m, None)
 
   /** Log a deprecation warning message */
-  def deprecated(m: => String, location: Option[String]): Unit = {
+  def deprecated(m: String, location: Option[String]): Unit = {
     val sourceLoc = location match {
       case Some(loc) => loc
-      case None      => getLoc(getUserLineNumber)
+      case None      => errorLocationString(Some(UnlocatableSourceInfo))
     }
 
     val thisEntry = (m, sourceLoc)
@@ -227,7 +238,7 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
       case ((message, sourceLoc), count) =>
         logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
-    errors.foreach(e => logger.error(e._2.toString))
+    errors.foreach(e => logger.error(s"${e.tag} ${e.msg}"))
 
     if (!deprecations.isEmpty) {
       logger.warn(
@@ -243,8 +254,8 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
       logger.warn(s"""${ErrorLog.warnTag}     scalacOptions := Seq("-unchecked", "-deprecation")""")
     }
 
-    val allErrors = errors.filter(_._2.isFatal)
-    val allWarnings = errors.filter(!_._2.isFatal)
+    val allErrors = errors.filter(_.isFatal)
+    val allWarnings = errors.filter(!_.isFatal)
 
     if (!allWarnings.isEmpty && !allErrors.isEmpty) {
       logger.warn(
@@ -299,35 +310,13 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
       .headOption
   }
 
-  private val errors = LinkedHashMap[(String, String), LogEntry]()
+  private val errors = LinkedHashSet[ErrorEntry]()
   private val deprecations = LinkedHashMap[(String, String), Int]()
 
   private val startTime = System.currentTimeMillis
   private def elapsedTime: Long = System.currentTimeMillis - startTime
 }
 
-private abstract class LogEntry(msg: => String, line: Option[StackTraceElement]) {
-  def isFatal: Boolean = false
-  def format: String
-
-  override def toString: String = line match {
-    case Some(l) => s"${format} ${l.getFileName}:${l.getLineNumber}: ${msg} in class ${l.getClassName}"
-    case None    => s"${format} ${msg}"
-  }
-
-  protected def tag(name: String, color: String): String =
-    s"[${color}${name}${Console.RESET}]"
-}
-
-private class Error(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
-  override def isFatal: Boolean = true
-  def format:           String = tag("error", Console.RED)
-}
-
-private class Warning(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
-  def format: String = tag("warn", Console.YELLOW)
-}
-
-private class Info(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
-  def format: String = tag("info", Console.MAGENTA)
+private case class ErrorEntry(msg: String, isFatal: Boolean) {
+  def tag = if (isFatal) ErrorLog.errTag else ErrorLog.warnTag
 }

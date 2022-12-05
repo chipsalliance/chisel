@@ -21,6 +21,7 @@ private[chisel3] object ChiselPhase {
       Dependency[chisel3.stage.phases.MaybeAspectPhase],
       Dependency[chisel3.stage.phases.AddSerializationAnnotations],
       Dependency[chisel3.stage.phases.Convert],
+      Dependency[chisel3.stage.phases.MaybeInjectingPhase],
       Dependency[chisel3.stage.phases.MaybeFirrtlStage]
     )
 

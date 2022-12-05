@@ -88,6 +88,17 @@ class ExtModuleWithFlatIOTester extends Module {
   io <> inst.badIO
 }
 
+class ExtModuleInvalidatedTester extends Module {
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+  val inst = Module(new ExtModule {
+    val in = IO(Input(UInt(8.W)))
+    val out = IO(Output(UInt(8.W)))
+  })
+  inst.in := in
+  out := inst.out
+}
+
 class ExtModuleSpec extends ChiselFlatSpec {
   "A ExtModule inverter" should "work" in {
     assertTesterPasses({ new ExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
@@ -116,5 +127,11 @@ class ExtModuleSpec extends ChiselFlatSpec {
     chirrtl should include("io.out <= inst.out")
     chirrtl should include("inst.in <= io.in")
     chirrtl shouldNot include("badIO")
+  }
+
+  it should "not have invalidated ports in a chisel3._ context" in {
+    val chirrtl = ChiselStage.emitChirrtl(new ExtModuleInvalidatedTester)
+    chirrtl shouldNot include("inst.in is invalid")
+    chirrtl shouldNot include("inst.out is invalid")
   }
 }

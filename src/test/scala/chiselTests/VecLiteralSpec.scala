@@ -205,7 +205,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
     assertTesterPasses {
       new BasicTester {
-        chisel3.assert(outsideVecLit(0) === 0xdd.U, s"v(0)")
+        chisel3.assert(outsideVecLit(0) === 0xdd.U, "v(0)")
         stop()
       }
     }
@@ -216,7 +216,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
     assertTesterPasses {
       new BasicTester {
-        chisel3.assert(outsideVecLit(0) === 0xdd.U, s"v(0)")
+        chisel3.assert(outsideVecLit(0) === 0xdd.U, "v(0)")
         chisel3.assert(outsideVecLit(1) === 0xcc.U)
         chisel3.assert(outsideVecLit(2) === 0xbb.U)
         chisel3.assert(outsideVecLit(3) === 0xaa.U)

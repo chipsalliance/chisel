@@ -12,6 +12,7 @@ section: "chisel3"
 * [How do I connect a subset of Bundle fields?](#how-do-i-connect-a-subset-of-bundle-fields)
     * [How do I view a Bundle as a parent type (superclass)?](#how-do-i-view-a-bundle-as-a-parent-type-superclass)
     * [How do I view a Bundle as a parent type when the parent type is abstract (like a trait)?](#how-do-i-view-a-bundle-as-a-parent-type-when-the-parent-type-is-abstract-like-a-trait)
+    * [How can I use `.viewAs` instead of `.viewAsSupertype(type)`?](#how-can-i-use-viewas-instead-of-viewassupertypetype)
 
 ## How do I view a Data as a UInt or vice versa?
 
@@ -177,3 +178,37 @@ As indicated in the comment, abstract methods must still be implemented.
 This is the same that happens when one writes `new Bundle {}`,
 the curly braces create a new concrete subclass; however, because `Bundle` has no abstract methods,
 the contents of the body can be empty.
+
+### How can I use `.viewAs` instead of `.viewAsSupertype(type)`?
+
+While `viewAsSupertype` is helpful for one-off casts, the need to provide a type template object
+each time can be onerous.
+Because of the subtyping relationship, you can use `PartialDataView.supertype` to create a
+`DataView` from a Bundle type to a parent type by just providing the function to construct an
+instance of the parent type from an instance of the child type.
+The mapping of corresponding fields is automatically determined by Chisel to be the fields defined
+in the supertype.
+
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.experimental.dataview._
+
+class Foo(x: Int) extends Bundle {
+  val foo = UInt(x.W)
+}
+class Bar(val x: Int) extends Foo(x) {
+  val bar = UInt(x.W)
+}
+// Define a DataView without having to specify the mapping!
+implicit val view = PartialDataView.supertype[Bar, Foo](b => new Foo(b.x))
+
+class MyModule extends Module {
+  val foo = IO(Input(new Foo(8)))
+  val bar = IO(Output(new Bar(8)))
+  bar.viewAs[Foo] := foo // bar.foo := foo.foo
+  bar.bar := 123.U       // all fields need to be connected
+}
+```
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new MyModule)
+```

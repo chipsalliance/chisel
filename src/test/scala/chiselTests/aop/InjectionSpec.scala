@@ -108,6 +108,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     { _: SubmoduleManipulationTester =>
       // By creating a second SubmoduleA, the module names would conflict unless they were uniquified
       val moduleSubmoduleC = Module(new SubmoduleC)
+      moduleSubmoduleC.io <> DontCare
       //if we're here then we've elaborated correctly
       stop()
     }

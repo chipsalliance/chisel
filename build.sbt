@@ -19,8 +19,8 @@ lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "3.6-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.16",
-  crossScalaVersions := Seq("2.13.6", "2.12.16"),
+  scalaVersion := "2.12.17",
+  crossScalaVersions := Seq("2.13.10", "2.12.17"),
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
@@ -73,7 +73,7 @@ lazy val chiselSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.12" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "com.lihaoyi" %% "os-lib" % "0.8.1"
+    "com.lihaoyi" %% "upickle" % "2.0.0"
   )
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -107,6 +107,7 @@ lazy val pluginScalaVersions = Seq(
   "2.12.14",
   "2.12.15",
   "2.12.16",
+  "2.12.17",
   "2.13.0",
   "2.13.1",
   "2.13.2",
@@ -115,7 +116,9 @@ lazy val pluginScalaVersions = Seq(
   "2.13.5",
   "2.13.6",
   "2.13.7",
-  "2.13.8"
+  "2.13.8",
+  "2.13.9",
+  "2.13.10",
 )
 
 lazy val plugin = (project in file("plugin"))
@@ -171,6 +174,10 @@ lazy val core = (project in file("core"))
   .settings(mimaPreviousArtifacts := Set())
   .settings(
     name := "chisel3-core",
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "upickle" % "2.0.0",
+      "com.lihaoyi" %% "os-lib" % "0.8.1"
+    ),
     scalacOptions := scalacOptions.value ++ Seq(
       "-deprecation",
       "-explaintypes",
@@ -235,6 +242,12 @@ lazy val chisel = (project in file("."))
       // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
       // See https://github.com/sbt/sbt-unidoc/issues/107
       (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
+      ++ {
+           CrossVersion.partialVersion(scalaVersion.value) match {
+             case Some((2, n)) if n >= 13 => "-implicits" :: Nil
+             case _                       => Nil
+           }
+         }
   )
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest

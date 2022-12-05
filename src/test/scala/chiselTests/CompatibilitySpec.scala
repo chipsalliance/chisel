@@ -9,8 +9,10 @@ import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.collection.immutable.ListMap
+import scala.annotation.nowarn
 
 // Need separate import to override compile options from Chisel._
+@nowarn("msg=Chisel compatibility mode is deprecated")
 object CompatibilityCustomCompileOptions {
   import Chisel.{defaultCompileOptions => _, _}
   implicit val customCompileOptions =
@@ -20,6 +22,7 @@ object CompatibilityCustomCompileOptions {
   }
 }
 
+@nowarn("msg=Chisel compatibility mode is deprecated")
 class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
   import Chisel._
 
@@ -614,4 +617,26 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
     ChiselStage.elaborate(new MyModule)
   }
 
+  behavior.of("BlackBox")
+
+  it should "have invalidated ports in a compatibility context" in {
+    class ExtModuleInvalidatedTester extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+      val inst = Module(new BlackBox {
+        val io = IO(new Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        })
+      })
+      inst.io.in := io.in
+      io.out := inst.io.out
+    }
+
+    val chirrtl = ChiselStage.emitChirrtl(new ExtModuleInvalidatedTester)
+    chirrtl should include("inst.in is invalid")
+    chirrtl should include("inst.out is invalid")
+  }
 }

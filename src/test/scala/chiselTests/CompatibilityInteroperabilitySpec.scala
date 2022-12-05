@@ -3,8 +3,12 @@
 package chiselTests
 
 import scala.collection.immutable.ListMap
+import chisel3.stage.ChiselStage.emitChirrtl
+
+import scala.annotation.nowarn
 
 // Keep Chisel._ separate from chisel3._ below
+@nowarn("msg=Chisel compatibility mode is deprecated")
 object CompatibilityComponents {
   import Chisel._
   import Chisel3Components._
@@ -74,6 +78,7 @@ object Chisel3Components {
   class Chisel3ModuleChiselRecordB extends Chisel3PassthroughModule(Flipped(new ChiselRecord))
 }
 
+@nowarn("msg=Chisel compatibility mode is deprecated")
 class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "Modules defined in the Chisel._" should "successfully bulk connect in chisel3._" in {
@@ -389,5 +394,431 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
     }
     compile(new Top(true))
     compile(new Top(false))
+  }
+
+  "A Chisel.Bundle with only unspecified directions" should "work with D/I" in {
+
+    object Compat {
+      import Chisel._
+      import chisel3.experimental.hierarchy.{instantiable, public}
+
+      class CompatBiDirUnspecifiedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+      }
+
+      @instantiable
+      class CompatModule extends Module {
+        @public val io = IO(new CompatBiDirUnspecifiedBundle)
+      }
+    }
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.Instance
+      class Example extends Module {
+        val mod = Module(new Compat.CompatModule())
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A Chisel.Bundle with mixed Specified and Unspecified directions" should "work with D/I" in {
+
+    object Compat {
+      import Chisel._
+      import chisel3.experimental.hierarchy.{instantiable, public}
+
+      class CompatBiDirMixedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+        val explicit = Output(Bool())
+      }
+
+      @instantiable
+      class CompatModule extends Module {
+        @public val io = IO(new CompatBiDirMixedBundle)
+      }
+    }
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.Instance
+      class Example extends Module {
+        val mod = Module(new Compat.CompatModule)
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A Chisel.Bundle with only unspecified vec direction" should "work with D/I" in {
+
+    object Compat {
+      import Chisel._
+      import chisel3.experimental.hierarchy.{instantiable, public}
+
+      class CompatBiDirUnspecifiedVecBundle extends Bundle {
+        val out = Vec(3, Bool())
+        val in = Flipped(Vec(3, Bool()))
+      }
+
+      @instantiable
+      class CompatModule extends Module {
+        @public val io = IO(new CompatBiDirUnspecifiedVecBundle)
+      }
+    }
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.Instance
+      class Example extends Module {
+        val mod = Module(new Compat.CompatModule())
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A chisel3.Bundle with only unspecified directions" should "work with D/I" in {
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
+
+      class BiDirUnspecifiedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+      }
+
+      @instantiable
+      class MyModule extends Module {
+        @public val io = IO(new BiDirUnspecifiedBundle)
+        io <> DontCare
+      }
+
+      class Example extends Module {
+        val mod = Module(new MyModule())
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A chisel3.Bundle with mixed Specified and Unspecified directions" should "work with D/I" in {
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
+
+      class BiDirMixedBundle extends Bundle {
+        val out = Bool()
+        val in = Flipped(Bool())
+        val explicit = Output(Bool())
+      }
+
+      @instantiable
+      class MyModule extends Module {
+        @public val io = IO(new BiDirMixedBundle)
+        io <> DontCare
+      }
+      class Example extends Module {
+        val mod = Module(new MyModule)
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A chisel3.Bundle with only unspecified vec direction" should "work with D/I" in {
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
+
+      class BiDirUnspecifiedVecBundle extends Bundle {
+        val out = Vec(3, Bool())
+        val in = Flipped(Vec(3, Bool()))
+      }
+
+      @instantiable
+      class MyModule extends Module {
+        @public val io = IO(new BiDirUnspecifiedVecBundle)
+        io <> DontCare
+      }
+
+      class Example extends Module {
+        val mod = Module(new MyModule())
+        mod.io.in <> DontCare
+        val inst = Instance(mod.toDefinition)
+        inst.io.in <> mod.io.out
+        mod.io.in <> inst.io.out
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A chisel3.Bundle with only unspecified vec direction within an unspecified direction parent Bundle" should "work with D/I" in {
+
+    object Chisel3 {
+      import chisel3._
+      import chisel3.experimental.hierarchy.{instantiable, public, Instance}
+
+      class UnspecifiedVecBundle extends Bundle {
+        val vec = Vec(3, Bool())
+      }
+
+      class UnspecifiedParentBundle extends Bundle {
+        val out = new UnspecifiedVecBundle
+      }
+
+      @instantiable
+      class MyModule extends Module {
+        @public val io = IO(new UnspecifiedParentBundle)
+        io <> DontCare
+      }
+
+      class Example extends Module {
+        val mod = Module(new MyModule())
+
+        val wire = Wire(new UnspecifiedParentBundle)
+        wire.out.vec <> mod.io.out.vec
+        val inst = Instance(mod.toDefinition)
+        wire.out.vec <> inst.io.out.vec
+
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A undirectioned Chisel.Bundle used in a MixedVec " should "bulk connect in import chisel3._ code correctly" in {
+
+    object Compat {
+
+      import Chisel._
+      import chisel3.util.MixedVec
+
+      class ChiselModule extends Module {
+        val io = IO(new Bundle {
+          val out = MixedVec(Seq.fill(3) { Bool() })
+          val in = Flipped(MixedVec(Seq.fill(3) { Bool() }))
+        })
+        io.out := RegNext(io.in)
+      }
+
+    }
+    object Chisel3 {
+      import chisel3._
+
+      class Chisel3Module extends Compat.ChiselModule
+
+      class Example extends Module {
+        val oldMod = Module(new Compat.ChiselModule)
+        val newMod = Module(new Chisel3Module)
+
+        oldMod.io.in <> DontCare
+        newMod.io.in <> DontCare
+
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A undirectioned Chisel.Bundle with Records with undirectioned and directioned fields " should "work" in {
+
+    object Compat {
+
+      import Chisel._
+
+      class ChiselModule(gen: () => Data) extends Module {
+        val io = IO(new Bundle {
+          val mixed = new Chisel3.MyRecord(gen)
+        })
+      }
+
+    }
+    object Chisel3 {
+      import chisel3._
+      import scala.collection.immutable.SeqMap
+
+      class MyRecord(gen: () => Data) extends Record with chisel3.experimental.AutoCloneType {
+        val elements = SeqMap("genDirectioned" -> Output(gen()), "genUndirectioned" -> gen())
+      }
+
+      class Example extends Module {
+        val newMod = Module(new Compat.ChiselModule(() => Bool()))
+      }
+    }
+    compile(new Chisel3.Example)
+  }
+
+  "A BlackBox with Chisel._ fields in its IO" should "bulk connect in import chisel3._ code correctly" in {
+    object Compat {
+      import Chisel._
+      class LegacyChiselIO extends Bundle {
+        val foo = Output(Bool())
+        val bar = Output(Bool())
+      }
+    }
+    object Chisel3 {
+      import chisel3._
+      import chisel3.util.Valid
+
+      class FooModuleIO extends Bundle {
+        val quz = Input(new QuzIO)
+        val foo = Output(Bool())
+        val bar = Input(Bool())
+      }
+      class QuzIO extends Bundle {
+        val q = Flipped(Valid(new Compat.LegacyChiselIO))
+      }
+      class FooModule extends Module {
+        val io = IO(new FooModuleIO)
+        io <> DontCare
+      }
+      class FooMirrorBlackBox extends BlackBox {
+        val io = IO(Flipped(new FooModuleIO))
+      }
+      class Top extends Module {
+        val foo = Module(new FooModule)
+        val mirror = Module(new FooMirrorBlackBox)
+        foo.io <> mirror.io
+      }
+    }
+    val chirrtl = emitChirrtl(new Chisel3.Top)
+    chirrtl should include("foo.io.bar <= mirror.bar")
+    chirrtl should include("mirror.foo <= foo.io.foo")
+    chirrtl should include("foo.io.quz.q.bits <- mirror.quz.q.bits")
+    chirrtl should include("foo.io.quz.q.valid <= mirror.quz.q.valid")
+  }
+
+  "A chisel3.Bundle bulk connected to a Chisel Bundle in either direction" should "work even with mismatched fields" in {
+    object Compat {
+      import Chisel._
+      class FooBundle extends Bundle {
+        val foo = UInt(width = 8)
+      }
+    }
+    object Chisel3 {
+      import chisel3._
+      class BarBundle extends Bundle {
+        val bar = UInt(8.W)
+      }
+      class MyModule(swap: Boolean) extends Module {
+        val in = IO(Input(if (swap) new Compat.FooBundle else new BarBundle))
+        val out = IO(Output(if (swap) new BarBundle else new Compat.FooBundle))
+        out <> DontCare
+        out <> in
+      }
+    }
+    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl0 shouldNot include("<=")
+    chirrtl0 should include("out <- in")
+    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl1 shouldNot include("<=")
+    chirrtl1 should include("out <- in")
+  }
+
+  it should "work with missing fields in the Chisel._" in {
+    object Compat {
+      import Chisel._
+      class FooBundle extends Bundle {
+        val foo = UInt(width = 8)
+      }
+    }
+    object Chisel3 {
+      import chisel3._
+      class FooBarBundle extends Bundle {
+        val foo = UInt(8.W)
+        val bar = UInt(8.W)
+      }
+
+      class MyModule(swap: Boolean) extends Module {
+        val in = IO(Input(if (swap) new Compat.FooBundle else new FooBarBundle))
+        val out = IO(Output(if (swap) new FooBarBundle else new Compat.FooBundle))
+        out <> DontCare
+        out <> in
+      }
+    }
+    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl0 shouldNot include("<=")
+    chirrtl0 should include("out <- in")
+    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl1 shouldNot include("<=")
+    chirrtl1 should include("out <- in")
+  }
+
+  it should "work with missing fields in the chisel3._" in {
+    object Compat {
+      import Chisel._
+      class FooBundle extends Bundle {
+        val foo = UInt(width = 8)
+      }
+    }
+    object Chisel3 {
+      import chisel3._
+      class FooBarBundle extends Bundle {
+        val foo = UInt(8.W)
+        val bar = UInt(8.W)
+      }
+
+      class MyModule(swap: Boolean) extends Module {
+        val in = IO(Input(if (swap) new Compat.FooBundle else new FooBarBundle))
+        val out = IO(Output(if (swap) new FooBarBundle else new Compat.FooBundle))
+        out <> DontCare
+        out <> in
+      }
+    }
+    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl0 shouldNot include("<=")
+    chirrtl0 should include("out <- in")
+    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl1 shouldNot include("<=")
+    chirrtl1 should include("out <- in")
+  }
+
+  it should "emit FIRRTL connects if possible" in {
+    object Compat {
+      import Chisel._
+      class FooBarBundle extends Bundle {
+        val foo = UInt(8.W)
+        val bar = Flipped(UInt(8.W))
+      }
+    }
+    object Chisel3 {
+      import chisel3._
+      class FooBarBundle extends Bundle {
+        val foo = Output(UInt(8.W))
+        val bar = Input(UInt(8.W))
+      }
+      class MyModule(swap: Boolean) extends Module {
+        val in = IO(Flipped((if (swap) new Compat.FooBarBundle else new FooBarBundle)))
+        val out = IO(if (swap) new FooBarBundle else new Compat.FooBarBundle)
+        out <> DontCare
+        out <> in
+      }
+    }
+    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl0 should include("out <= in")
+    chirrtl0 shouldNot include("out <- in")
+    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
+    chirrtl1 should include("out <= in")
+    chirrtl1 shouldNot include("out <- in")
   }
 }

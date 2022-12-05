@@ -6,15 +6,30 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.6", "2.12.14")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.10", "2.12.17")
+
+// The following stanza is searched for and used when preparing releases.
+// Please retain it.
+// Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
+val defaultVersions = Map(
+  "firrtl" -> "1.6-SNAPSHOT",
+  "treadle" -> "1.6-SNAPSHOT"
+)
+
+def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
+  val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
+  ivy"$org::$dep:$version"
+}
+// Do not remove the above logic, it is needed by the release automation
 
 object v {
-  val firrtl = ivy"edu.berkeley.cs::firrtl:1.6-SNAPSHOT"
-  val treadle = ivy"edu.berkeley.cs::treadle:1.6-SNAPSHOT"
+  val firrtl = getVersion("firrtl")
+  val treadle = getVersion("treadle")
   val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.6-SNAPSHOT"
   val scalatest = ivy"org.scalatest::scalatest:3.2.12"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
   val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
+  val upickle = ivy"com.lihaoyi::upickle:2.0.0"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
 }
 
@@ -47,7 +62,8 @@ trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule
   override def moduleDeps = super.moduleDeps ++ firrtlModule
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    v.osLib
+    v.osLib,
+    v.upickle
   ) ++ firrtlIvyDeps
 
   def publishVersion = "3.6-SNAPSHOT"
@@ -118,7 +134,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
   }
 
-  object test extends Tests with TestModule.ScalaTest {
+  object test extends Tests with TestModule.ScalaTest with ScalafmtModule {
     override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
 
     override def ivyDeps = m.ivyDeps() ++ Agg(
@@ -129,7 +145,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def moduleDeps = super.moduleDeps ++ treadleModule
   }
 
-  object `integration-tests` extends Tests with TestModule.ScalaTest {
+  object `integration-tests` extends Tests with TestModule.ScalaTest with ScalafmtModule {
     override def sources = T.sources(millSourcePath / "integration-tests" / "src" / "test" / "scala")
     override def ivyDeps = m.ivyDeps() ++ Agg(
       v.scalatest,
