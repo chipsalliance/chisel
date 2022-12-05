@@ -26,7 +26,7 @@ object v {
   val firrtl = getVersion("firrtl")
   val treadle = getVersion("treadle")
   val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.6-SNAPSHOT"
-  val scalatest = ivy"org.scalatest::scalatest:3.2.12"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.14"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
   val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
   val upickle = ivy"com.lihaoyi::upickle:2.0.0"

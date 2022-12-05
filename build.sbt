@@ -4,7 +4,7 @@ enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT",
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT"
   // chiseltest intentionally excluded so that release automation does not try to set its version
   // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
   // when doing publishing and will not find a chiseltest release since chiseltest depends on
@@ -71,7 +71,7 @@ lazy val publishSettings = Seq(
 lazy val chiselSettings = Seq(
   name := "chisel3",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.12" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.14" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "upickle" % "2.0.0"
   )
@@ -118,7 +118,7 @@ lazy val pluginScalaVersions = Seq(
   "2.13.7",
   "2.13.8",
   "2.13.9",
-  "2.13.10",
+  "2.13.10"
 )
 
 lazy val plugin = (project in file("plugin"))
