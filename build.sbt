@@ -34,7 +34,7 @@ lazy val firrtlSettings = Seq(
     "com.github.scopt" %% "scopt" % "3.7.1",
     "net.jcazevedo" %% "moultingyaml" % "0.4.2",
     "org.json4s" %% "json4s-native" % "4.0.6",
-    "org.apache.commons" % "commons-text" % "1.9",
+    "org.apache.commons" % "commons-text" % "1.10.0",
     "io.github.alexarchambault" %% "data-class" % "0.2.5",
     "com.lihaoyi" %% "os-lib" % "0.8.1"
   ),
