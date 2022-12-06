@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scala: [2.13.7, 2.12.15]
+        scala: [2.13.10, 2.12.17]
 
     steps:
       - name: Checkout
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scala: [2.13.7, 2.12.15]
+        scala: [2.13.10, 2.12.17]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
