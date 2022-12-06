@@ -203,7 +203,7 @@ ChiselStage.elaborate(new Module {
 
 Can only call `directionOf` on Hardware:
 ```scala mdoc:silent
-import chisel3.experimental.DataMirror
+import chisel3.reflect.DataMirror
 
 class Child extends Module{
   val hardware = IO(new MyBundle(3))

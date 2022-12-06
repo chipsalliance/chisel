@@ -135,7 +135,9 @@ object ChiselStage {
   /** Return a Chisel circuit for a Chisel module
     * @param gen a call-by-name Chisel module
     */
-  def elaborate(gen: => RawModule): cir.Circuit = {
+  def elaborate(
+    gen: => RawModule
+  ): cir.Circuit = {
     val phase = new ChiselPhase {
       override val targets = Seq(Dependency[chisel3.stage.phases.Checks], Dependency[chisel3.stage.phases.Elaborate])
     }
@@ -159,7 +161,8 @@ object ChiselStage {
         Dependency[chisel3.stage.phases.AddImplicitOutputFile],
         Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
         Dependency[chisel3.stage.phases.MaybeAspectPhase],
-        Dependency[chisel3.stage.phases.Convert]
+        Dependency[chisel3.stage.phases.Convert],
+        Dependency[chisel3.stage.phases.MaybeInjectingPhase]
       )
     }
 
@@ -195,7 +198,8 @@ object ChiselStage {
   /** Return a CHIRRTL string for a Chisel module
     * @param gen a call-by-name Chisel module
     */
-  def emitChirrtl(gen: => RawModule): String = convert(gen).serialize
+  def emitChirrtl(gen: => RawModule): String =
+    convert(gen).serialize
 
   /** Return a FIRRTL string for a Chisel module
     * @param gen a call-by-name Chisel module
@@ -214,7 +218,12 @@ object ChiselStage {
     )
 
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new HighFirrtlEmitter)))
+      .transform(
+        Seq(
+          ChiselGeneratorAnnotation(() => gen),
+          RunFirrtlTransformAnnotation(new HighFirrtlEmitter)
+        )
+      )
       .collectFirst {
         case EmittedFirrtlCircuitAnnotation(a) => a
       }
@@ -240,7 +249,9 @@ object ChiselStage {
     )
 
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new VerilogEmitter)))
+      .transform(
+        Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new VerilogEmitter))
+      )
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a
       }
@@ -265,7 +276,12 @@ object ChiselStage {
     )
 
     phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new SystemVerilogEmitter)))
+      .transform(
+        Seq(
+          ChiselGeneratorAnnotation(() => gen),
+          RunFirrtlTransformAnnotation(new SystemVerilogEmitter)
+        )
+      )
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a
       }

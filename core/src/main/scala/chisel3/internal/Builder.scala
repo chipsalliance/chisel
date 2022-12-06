@@ -14,21 +14,34 @@ import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.{AnnotationSeq, RenameMap}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
+import chisel3.internal.sourceinfo.SourceInfo
 import logger.LazyLogging
 
 import scala.collection.mutable
+import chisel3.internal.sourceinfo.UnlocatableSourceInfo
+import scala.annotation.tailrec
 
 private[chisel3] class Namespace(keywords: Set[String]) {
+  // This HashMap is compressed, not every name in the namespace is present here.
+  // If the same name is requested multiple times, it only takes 1 entry in the HashMap and the
+  // value is incremented for each time the name is requested.
+  // Names can be requested that collide with compressed sets of names, thus the algorithm for
+  // checking if a name is present in the Namespace is more complex than just checking the HashMap,
+  // see getIndex below.
   private val names = collection.mutable.HashMap[String, Long]()
   def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) => other.names(s) = l }
   for (keyword <- keywords)
     names(keyword) = 1
 
-  private def rename(n: String): String = {
-    val index = names(n)
+  @tailrec
+  private def rename(n: String, index: Long): String = {
     val tryName = s"${n}_${index}"
-    names(n) = index + 1
-    if (this contains tryName) rename(n) else tryName
+    if (names.contains(tryName)) {
+      rename(n, index + 1)
+    } else {
+      names(n) = index + 1
+      tryName
+    }
   }
 
   private def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
@@ -40,14 +53,50 @@ private[chisel3] class Namespace(keywords: Set[String]) {
     if (headOk) res else s"_$res"
   }
 
-  def contains(elem: String): Boolean = names.contains(elem)
+  /** Checks if `n` ends in `_\d+` and returns the substring before `_` if so, null otherwise */
+  // TODO can and should this be folded in to sanitize? Same iteration as the forall?
+  private def prefix(n: String): Int = {
+    // This is micro-optimized because it runs on every single name
+    var i = n.size - 1
+    while (i > 0 && n(i).isDigit) {
+      i -= 1
+    }
+    // Will get i == 0 for all digits or _\d+ with empty prefix, those have no prefix so returning 0 is correct
+    if (i == n.size) 0 // no digits
+    else if (n(i) != '_') 0 // no _
+    else i
+  }
+
+  // Gets the current index for this name, None means it is not contained in the Namespace
+  private def getIndex(elem: String): Option[Long] =
+    names.get(elem).orElse {
+      // This exact name isn't contained, but if we end in _<idx>, we need to check our prefix
+      val maybePrefix = prefix(elem)
+      if (maybePrefix == 0) None
+      else {
+        // If we get a prefix collision and our index is taken, we start disambiguating with _<idx>_1
+        names
+          .get(elem.take(maybePrefix))
+          .filter { prefixIdx =>
+            val ourIdx = elem.drop(maybePrefix + 1).toInt
+            // The namespace starts disambiguating at _1 so _0 is a false collision case
+            ourIdx != 0 && prefixIdx > ourIdx
+          }
+          .map(_ => 1)
+      }
+    }
+
+  def contains(elem: String): Boolean = getIndex(elem).isDefined
 
   // leadingDigitOk is for use in fields of Records
   def name(elem: String, leadingDigitOk: Boolean = false): String = {
     val sanitized = sanitize(elem, leadingDigitOk)
-    val result = if (this.contains(sanitized)) rename(sanitized) else sanitized
-    names(result) = 1
-    result
+    getIndex(sanitized) match {
+      case Some(idx) => rename(sanitized, idx)
+      case None =>
+        names(sanitized) = 1
+        sanitized
+    }
   }
 }
 
@@ -215,7 +264,7 @@ private[chisel3] trait HasId extends InstanceId {
       val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).get
       val available_name = namespace.name(candidate_name)
       if (errorIfDup && (available_name != candidate_name)) {
-        Builder.error(s"Cannot have duplicate names $available_name and $candidate_name")
+        Builder.error(s"Cannot have duplicate names $available_name and $candidate_name")(UnlocatableSourceInfo)
       }
       setRef(refBuilder(available_name))
       // Clear naming prefix to free memory
@@ -701,15 +750,16 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def errors: ErrorLog = dynamicContext.errors
-  def error(m: => String): Unit = {
+  def error(m: => String)(implicit sourceInfo: SourceInfo): Unit = {
     // If --throw-on-first-error is requested, throw an exception instead of aggregating errors
     if (dynamicContextVar.value.isDefined && !dynamicContextVar.value.get.throwOnFirstError) {
-      errors.error(m)
+      errors.error(m, sourceInfo)
     } else {
       throwException(m)
     }
   }
-  def warning(m:      => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
+  def warning(m: => String)(implicit sourceInfo: SourceInfo): Unit =
+    if (dynamicContextVar.value.isDefined) errors.warning(m, sourceInfo)
   def warningNoLoc(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warningNoLoc(m)
   def deprecated(m:   => String, location: Option[String] = None): Unit =
     if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
@@ -719,7 +769,7 @@ private[chisel3] object Builder extends LazyLogging {
     * @param m exception message
     */
   @throws(classOf[ChiselException])
-  def exception(m: => String): Nothing = {
+  def exception(m: => String)(implicit sourceInfo: SourceInfo): Nothing = {
     error(m)
     throwException(m)
   }

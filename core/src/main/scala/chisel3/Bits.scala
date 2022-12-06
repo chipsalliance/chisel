@@ -414,7 +414,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** Default print as [[Decimal]] */
   final def toPrintable: Printable = Decimal(this)
 
-  protected final def validateShiftAmount(x: Int): Int = {
+  protected final def validateShiftAmount(x: Int)(implicit sourceInfo: SourceInfo): Int = {
     if (x < 0)
       Builder.error(s"Negative shift amounts are illegal (got $x)")
     x

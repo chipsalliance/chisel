@@ -2,7 +2,6 @@
 
 package chisel3
 
-import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.util.Try
 import scala.language.experimental.macros
 import scala.annotation.nowarn
@@ -13,6 +12,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
+import scala.collection.immutable.VectorBuilder
 
 /** Abstract base class for Modules that contain Chisel RTL.
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
@@ -23,14 +23,18 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   //
   // RTL construction internals
   //
-  private val _commands = ArrayBuffer[Command]()
+  // Perhaps this should be an ArrayBuffer (or ArrayBuilder), but DefModule is public and has Seq[Command]
+  // so our best option is to share a single Seq datastructure with that
+  private val _commands = new VectorBuilder[Command]()
   private[chisel3] def addCommand(c: Command) {
     require(!_closed, "Can't write to module after module close")
     _commands += c
   }
-  protected def getCommands = {
+  protected def getCommands: Seq[Command] = {
     require(_closed, "Can't get commands before module close")
-    _commands.toSeq
+    // Unsafe cast but we know that any RawModule uses a DefModule
+    // _component is defined as a var on BaseModule and we cannot override mutable vars
+    _component.get.asInstanceOf[DefModule].commands
   }
 
   //
@@ -41,12 +45,12 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   val compileOptions = moduleCompileOptions
 
   private[chisel3] def checkPorts(): Unit = {
-    for ((port, _) <- getModulePorts) {
+    for ((port, source) <- getModulePortsAndLocators) {
       if (port._computeName(None).isEmpty) {
         Builder.error(
           s"Unable to name port $port in $this, " +
-            "try making it a public field of the Module"
-        )
+            s"try making it a public field of the Module $source"
+        )(UnlocatableSourceInfo)
       }
     }
   }
@@ -89,7 +93,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       }
     }
 
-    val firrtlPorts = getModulePorts.map {
+    val firrtlPorts = getModulePortsAndLocators.map {
       case (port, sourceInfo) =>
         // Special case Vec to make FIRRTL emit the direction of its
         // element.
@@ -115,12 +119,12 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     //  unless the client wants explicit control over their generation.
     val invalidateCommands = {
       if (!compileOptions.explicitInvalidate || this.isInstanceOf[ImplicitInvalidate]) {
-        getModulePorts.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
+        getModulePortsAndLocators.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
       } else {
         Seq()
       }
     }
-    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
+    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++: _commands.result())
     _component = Some(component)
     _component
   }
@@ -129,7 +133,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     implicit val sourceInfo = UnlocatableSourceInfo
 
     if (!parentCompileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      for ((port, sourceInfo) <- getModulePorts) {
+      for ((port, sourceInfo) <- getModulePortsAndLocators) {
         pushCommand(DefInvalid(sourceInfo, port.ref))
       }
     }
