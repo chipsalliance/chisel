@@ -12,10 +12,8 @@ val defaultVersions = Map(
 )
 
 lazy val commonSettings = Seq(
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  ),
+  resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
+  resolvers ++= Resolver.sonatypeOssRepos("releases"),
   organization := "edu.berkeley.cs",
   version := "3.6-SNAPSHOT",
   autoAPIMappings := true,
@@ -94,7 +92,7 @@ lazy val pluginScalaVersions = Seq(
   // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
   "2.12.2",
   "2.12.3",
-  "2.12.4",
+  // 2.12.4 is broken in newer versions of Zinc: https://github.com/sbt/sbt/issues/6838
   "2.12.5",
   "2.12.6",
   "2.12.7",
