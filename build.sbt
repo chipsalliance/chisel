@@ -37,6 +37,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val publishSettings = Seq(
+  versionScheme := Some("pvp"),
   publishMavenStyle := true,
   Test / publishArtifact := false,
   pomIncludeRepository := { x => false },
