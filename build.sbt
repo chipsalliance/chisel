@@ -50,12 +50,8 @@ lazy val commonSettings = Seq (
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
 )
 
-<<<<<<< HEAD
 lazy val publishSettings = Seq (
-=======
-lazy val publishSettings = Seq(
   versionScheme := Some("pvp"),
->>>>>>> 9f080d51 (Add versionScheme (PVP) to SBT publish settings (#2871))
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
