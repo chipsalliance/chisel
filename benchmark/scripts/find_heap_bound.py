@@ -6,10 +6,13 @@ import argparse
 from typing import NamedTuple
 from subprocess import TimeoutExpired
 import logging
+from functools import total_ordering
 
 from monitor_job import monitor_job, JobFailedError
 
 BaseHeapSize = NamedTuple('JavaHeapSize', [('value', int), ('suffix', str)])
+
+@total_ordering
 class HeapSize(BaseHeapSize):
     K_FACTOR = 1024
     M_FACTOR = 1024*1024
@@ -50,6 +53,16 @@ class HeapSize(BaseHeapSize):
 
     def __sub__(self, rhs):
         return HeapSize.from_bytes(self.toBytes() - rhs.toBytes())
+
+
+    def __eq__(self, rhs):
+        return self.toBytes() == rhs.toBytes()
+
+    # Defining __eq__ for total_ordering forces us to explicitly inherit __hash__
+    __hash__ = BaseHeapSize.__hash__
+
+    def __ge__(self, rhs):
+        return self.toBytes() >= rhs.toBytes()
 
     @classmethod
     def from_str(cls, s: str):
@@ -97,6 +110,8 @@ def parseargs():
     parser.add_argument("--timeout-factor", type=float, default=4.0,
                         help="Multiple of wallclock time of first successful run "
                              "that counts as a timeout, runs over this time count as a fail")
+    parser.add_argument("--context", type=int, default=0,
+                        help="Number of extra steps above the minimum bound to run")
     return parser.parse_args()
 
 
@@ -137,16 +152,23 @@ def main():
     seen = set()
     timeout = None # Set by first successful run
     cur = HeapSize.from_str(args.start_size)
-    while cur not in seen:
+    last_success = cur
+
+    # Do binary search
+    while cur not in seen and (step is None or step >= min_step):
         seen.add(cur)
         try:
             cmd = mk_cmd(args.java, cur, args.args)
-            logger.info("Running {}".format(" ".join(cmd)))
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("Running {}".format(" ".join(cmd)))
+            else:
+                logger.info("Running {}".format(cur))
             stats = monitor_job(cmd, timeout=timeout)
             logger.debug(stats)
             if timeout is None:
                 timeout = stats.wall_clock_time * args.timeout_factor
                 logger.debug("Timeout set to {} s".format(timeout))
+            last_success = cur
             results.append((cur, stats))
             if step is None:
                 step = (cur / 2).round_to(min_step)
@@ -165,6 +187,33 @@ def main():
                 amt = step
             cur = (cur + step).round_to(min_step)
         logger.debug("Next = {}, step = {}".format(cur, step))
+
+    # Run extra steps for some context above the minimum size
+    extra_steps = []
+    if args.context > 0:
+        for i in range(1, args.context):
+            diff = min_step * i
+            heap_size = last_success + diff
+            if heap_size not in seen:
+                extra_steps.append(heap_size)
+        log_steps = ", ".join([str(e) for e in extra_steps]) # Pretty print
+        logger.info("Because context is {}, running extra heap sizes: {}".format(args.context, log_steps))
+
+    for cur in extra_steps:
+        logger.debug("Next = {}".format(cur))
+        seen.add(cur)
+        try:
+            cmd = mk_cmd(args.java, cur, args.args)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("Running {}".format(" ".join(cmd)))
+            else:
+                logger.info("Running {}".format(cur))
+            stats = monitor_job(cmd, timeout=timeout)
+            logger.debug(stats)
+            results.append((cur, stats))
+        except (JobFailedError, TimeoutExpired) as e:
+            logger.debug(job_failed_msg(e))
+            results.append((cur, None))
 
     sorted_results = sorted(results, key=lambda tup: tup[0].toBytes(), reverse=True)
 
