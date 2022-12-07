@@ -61,21 +61,9 @@ package object chisel3 {
       */
     def asUInt: UInt = UInt.Lit(bigint, Width())
 
-    @deprecated(
-      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-      "Chisel 3.5"
-    )
-    def asUInt(dummy: Int*): UInt = asUInt
-
     /** Int to SInt conversion, recommended style for variables.
       */
     def asSInt: SInt = SInt.Lit(bigint, Width())
-
-    @deprecated(
-      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-      "Chisel 3.5"
-    )
-    def asSInt(dummy: Int*): SInt = asSInt
 
     /** Int to UInt conversion with specified width, recommended style for variables.
       */
@@ -105,12 +93,6 @@ package object chisel3 {
       val bigInt = parse(str)
       UInt.Lit(bigInt, Width(bigInt.bitLength.max(1)))
     }
-
-    @deprecated(
-      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-      "Chisel 3.5"
-    )
-    def asUInt(dummy: Int*): UInt = asUInt
 
     /** String to UInt parse with specified width, recommended style for variables.
       */
@@ -142,12 +124,6 @@ package object chisel3 {
     /** Boolean to Bool conversion, recommended style for variables.
       */
     def asBool: Bool = Bool.Lit(boolean)
-
-    @deprecated(
-      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-      "Chisel 3.5"
-    )
-    def asBool(dummy: Int*): Bool = asBool
   }
 
   // Fixed Point is experimental for now, but we alias the implicit conversion classes here
@@ -206,9 +182,6 @@ package object chisel3 {
   object Bool extends BoolFactory
 
   type InstanceId = internal.InstanceId
-
-  @deprecated("MultiIOModule is now just Module", "Chisel 3.5")
-  type MultiIOModule = chisel3.Module
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {
@@ -365,12 +338,6 @@ package object chisel3 {
   def getDataElements(a: Aggregate): Seq[Element] = {
     a.allElements
   }
-  @deprecated(
-    "duplicated with DataMirror.fullModulePorts, this returns an internal API, will be removed in Chisel 3.6",
-    "Chisel 3.5"
-  )
-  def getModulePorts(m: Module): Seq[Port] = m.getPorts
-
   class BindingException(message: String) extends ChiselException(message)
 
   /** A function expected a Chisel type but got a hardware object

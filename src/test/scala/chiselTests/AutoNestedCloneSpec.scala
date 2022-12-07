@@ -120,7 +120,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   }
 
   it should "support anonymous Inner bundles that capture type parameters from outer Bundles" in {
-    elaborate(new MultiIOModule {
+    elaborate(new Module {
       class MyBundle[T <: Data](n: Int, gen: T) extends Bundle {
         val foo = new Bundle {
           val x = Input(Vec(n, gen))

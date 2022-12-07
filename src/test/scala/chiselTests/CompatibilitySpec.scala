@@ -58,7 +58,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
     l shouldBe a[UInt]
     l shouldBe 'lit
     l.getWidth shouldEqual BigInt(value).bitLength
-    l.litValue() shouldEqual value
+    l.litValue shouldEqual value
   }
 
   it should "map utility objects into the package object" in {

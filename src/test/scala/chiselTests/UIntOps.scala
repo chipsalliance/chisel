@@ -251,7 +251,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
         val in = Input(UInt(8.W))
         val out = Output(Bool())
       })
-      io.out := io.in.asBools()(2)
+      io.out := io.in.asBools(2)
     })
   }
 

@@ -217,10 +217,10 @@ class ClipSqueezeWrapDemo(
 
   printf(
     "       %d       %d          %d         %d\n",
-    counter.asSInt(),
-    clipped.asSInt(),
-    squeezed.asSInt(),
-    wrapped.asSInt()
+    counter.asSInt,
+    clipped.asSInt,
+    squeezed.asSInt,
+    wrapped.asSInt
   )
 }
 
@@ -245,7 +245,7 @@ class SqueezeFunctionalityTester(range: IntervalRange, startNum: BigDecimal, end
   squeezeTemplate := toSqueeze.squeeze(squeezeInterval)
 
   printf(
-    cf"SqueezeTest $counter%d ${toSqueeze.asSInt()}%d.squeeze($range) => ${squeezeTemplate.asSInt()}%d\n"
+    cf"SqueezeTest $counter%d ${toSqueeze.asSInt}%d.squeeze($range) => ${squeezeTemplate.asSInt}%d\n"
   )
 }
 
@@ -478,8 +478,8 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
       val inputRange = range"[-6, 6].2"
       val in1 = (-6.0).I(inputRange)
       val in2 = 6.0.I(inputRange)
-      BigDecimal(in1.litValue()) / (1 << inputRange.binaryPoint.get) should be(-6)
-      BigDecimal(in2.litValue()) / (1 << inputRange.binaryPoint.get) should be(6)
+      BigDecimal(in1.litValue) / (1 << inputRange.binaryPoint.get) should be(-6)
+      BigDecimal(in2.litValue) / (1 << inputRange.binaryPoint.get) should be(6)
       intercept[ChiselException] {
         (-6.25).I(inputRange)
       }
@@ -491,8 +491,8 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
       val inputRange = range"(-6, 6).2"
       val in1 = (-5.75).I(inputRange)
       val in2 = 5.75.I(inputRange)
-      BigDecimal(in1.litValue()) / (1 << inputRange.binaryPoint.get) should be(-5.75)
-      BigDecimal(in2.litValue()) / (1 << inputRange.binaryPoint.get) should be(5.75)
+      BigDecimal(in1.litValue) / (1 << inputRange.binaryPoint.get) should be(-5.75)
+      BigDecimal(in2.litValue) / (1 << inputRange.binaryPoint.get) should be(5.75)
       intercept[ChiselException] {
         (-6.0).I(inputRange)
       }
@@ -504,8 +504,8 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
       val inputRange = range"(-6, 6).2"
       val in1 = (-5.95).I(inputRange)
       val in2 = 5.95.I(inputRange)
-      BigDecimal(in1.litValue()) / (1 << inputRange.binaryPoint.get) should be(-5.75)
-      BigDecimal(in2.litValue()) / (1 << inputRange.binaryPoint.get) should be(5.75)
+      BigDecimal(in1.litValue) / (1 << inputRange.binaryPoint.get) should be(-5.75)
+      BigDecimal(in2.litValue) / (1 << inputRange.binaryPoint.get) should be(5.75)
       intercept[ChiselException] {
         (-6.1).I(inputRange)
       }
@@ -870,7 +870,7 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
 
           // Useful for debugging
           // printf(s"source value $sourceValue clipped gold value %d compare to clipped value %d\n",
-          //  goldClippedValue.asSInt(), clippedValue.asSInt())
+          //  goldClippedValue.asSInt, clippedValue.asSInt)
 
           chisel3.assert(goldClippedValue === clippedValue)
 
@@ -884,7 +884,7 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
 
           // Useful for debugging
           // printf(s"source value $sourceValue wrapped gold value %d compare to wrapped value %d\n",
-          //  goldWrappedValue.asSInt(), wrappedValue.asSInt())
+          //  goldWrappedValue.asSInt, wrappedValue.asSInt)
 
           chisel3.assert(goldWrappedValue === wrappedValue)
         }
@@ -915,7 +915,7 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
 
           // Useful for debugging
           // printf(s"source value $sourceValue squeezed gold value %d compare to squeezed value %d\n",
-          //   goldSqueezedValue.asSInt(), squeezedValue.asSInt())
+          //   goldSqueezedValue.asSInt, squeezedValue.asSInt)
 
           chisel3.assert(goldSqueezedValue === squeezedValue)
         }

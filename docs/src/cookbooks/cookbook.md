@@ -40,7 +40,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 
 ### How do I create a UInt from an instance of a Bundle?
 
-Call [`asUInt`](https://www.chisel-lang.org/api/latest/chisel3/Bundle.html#asUInt():chisel3.UInt) on the [`Bundle`](https://www.chisel-lang.org/api/latest/chisel3/Bundle.html) instance.
+Call [`asUInt`](https://www.chisel-lang.org/api/latest/chisel3/Bundle.html#asUInt:chisel3.UInt) on the [`Bundle`](https://www.chisel-lang.org/api/latest/chisel3/Bundle.html) instance.
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -127,7 +127,7 @@ ChiselStage.emitVerilog(new Foo(new MyBundle))
 ```
 ### How do I create a Vec of Bools from a UInt?
 
-Use [`VecInit`](https://www.chisel-lang.org/api/latest/chisel3/VecInit$.html) given a `Seq[Bool]` generated using the [`asBools`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html#asBools():Seq[chisel3.Bool]) method.
+Use [`VecInit`](https://www.chisel-lang.org/api/latest/chisel3/VecInit$.html) given a `Seq[Bool]` generated using the [`asBools`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html#asBools:Seq[chisel3.Bool]) method.
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -153,7 +153,7 @@ getVerilogString(new Foo)
 
 ### How do I create a UInt from a Vec of Bool?
 
-Use the builtin function [`asUInt`](https://www.chisel-lang.org/api/latest/chisel3/Vec.html#asUInt():chisel3.UInt)
+Use the builtin function [`asUInt`](https://www.chisel-lang.org/api/latest/chisel3/Vec.html#asUInt:chisel3.UInt)
 
 ```scala mdoc:silent:reset
 import chisel3._

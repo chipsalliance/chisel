@@ -21,7 +21,7 @@ class ThingsPassThroughTester(
     extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem, hasFlush = hasFlush))
   val elems = VecInit(elements.map {
-    _.asUInt()
+    _.asUInt
   })
   val inCnt = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
@@ -47,7 +47,7 @@ class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: I
     extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
-    _.asUInt()
+    _.asUInt
   })
   val inCnt = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
@@ -157,7 +157,7 @@ class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
     extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, flow = true, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
-    _.asUInt()
+    _.asUInt
   })
   val inCnt = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
@@ -188,7 +188,7 @@ class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap
   val deq = Queue(enq, queueDepth, useSyncReadMem = useSyncReadMem)
 
   val elems = VecInit(elements.map {
-    _.asUInt()
+    _.asUInt
   })
   val inCnt = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)

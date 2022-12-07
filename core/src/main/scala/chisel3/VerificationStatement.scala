@@ -115,24 +115,6 @@ object assert extends VerifPrintMacrosDoc {
   final class Assert private[chisel3] () extends VerificationStatement
 
   /** @group VerifPrintMacros */
-  @deprecated(
-    "This method has been deprecated in favor of _applyMacroWithStringMessage. Please use the same.",
-    "Chisel 3.5"
-  )
-  def _applyMacroWithMessage(
-    c:              blackbox.Context
-  )(cond:           c.Tree,
-    message:        c.Tree,
-    data:           c.Tree*
-  )(sourceInfo:     c.Tree,
-    compileOptions: c.Tree
-  ): c.Tree = {
-    import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
-    q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo, $compileOptions)"
-  }
-
-  /** @group VerifPrintMacros */
   def _applyMacroWithStringMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -185,7 +167,7 @@ object assert extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assert = {
     val id = new Assert()
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       failureMessage("Assertion", line, cond, message.map(Printable.pack(_, data: _*)))
       Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
@@ -203,7 +185,7 @@ object assert extends VerifPrintMacrosDoc {
   ): Assert = {
     val id = new Assert()
     message.foreach(Printable.checkScope(_))
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       failureMessage("Assertion", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
@@ -305,24 +287,6 @@ object assume extends VerifPrintMacrosDoc {
   }
 
   /** @group VerifPrintMacros */
-  @deprecated(
-    "This method has been deprecated in favor of _applyMacroWithStringMessage. Please use the same.",
-    "Chisel 3.5"
-  )
-  def _applyMacroWithMessage(
-    c:              blackbox.Context
-  )(cond:           c.Tree,
-    message:        c.Tree,
-    data:           c.Tree*
-  )(sourceInfo:     c.Tree,
-    compileOptions: c.Tree
-  ): c.Tree = {
-    import c.universe._
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
-    q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
-  }
-
-  /** @group VerifPrintMacros */
   def _applyMacroWithStringMessage(
     c:              blackbox.Context
   )(cond:           c.Tree,
@@ -375,7 +339,7 @@ object assume extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Assume = {
     val id = new Assume()
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       failureMessage("Assumption", line, cond, message.map(Printable.pack(_, data: _*)))
       Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
@@ -393,7 +357,7 @@ object assume extends VerifPrintMacrosDoc {
   ): Assume = {
     val id = new Assume()
     message.foreach(Printable.checkScope(_))
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       failureMessage("Assumption", line, cond, message)
       Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
@@ -464,7 +428,7 @@ object cover extends VerifPrintMacrosDoc {
     compileOptions:      CompileOptions
   ): Cover = {
     val id = new Cover()
-    when(!Module.reset.asBool()) {
+    when(!Module.reset.asBool) {
       Builder.pushCommand(Verification(id, Formal.Cover, sourceInfo, Module.clock.ref, cond.ref, ""))
     }
     id
@@ -481,19 +445,6 @@ object stop {
     val stp = new Stop()
     when(!Module.reset.asBool) {
       pushCommand(Stop(stp, sourceInfo, Builder.forcedClock.ref, 0))
-    }
-    stp
-  }
-
-  /** Terminate execution with a failure code. */
-  @deprecated(
-    "Non-zero return codes are not well supported. Please use assert(false.B) if you want to indicate a failure.",
-    "Chisel 3.5"
-  )
-  def apply(code: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Stop = {
-    val stp = new Stop()
-    when(!Module.reset.asBool) {
-      pushCommand(Stop(stp, sourceInfo, Builder.forcedClock.ref, code))
     }
     stp
   }
