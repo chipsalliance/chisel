@@ -160,10 +160,10 @@ jobs:
       - run: |
           PASSED="${{ needs.check-tests.outputs.success }}"
           if [[ $PASSED == "true" ]]; then
-            echo "All tests passed!"
+            echo "### All tests passed! :rocket:" >> $GITHUB_STEP_SUMMARY
             exit 0
           else
-            echo "One or more tests FAILED!"
+            echo "### One or more tests FAILED! :bangbang:" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
