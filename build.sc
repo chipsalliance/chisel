@@ -28,7 +28,7 @@ object v {
   val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.6-SNAPSHOT"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
-  val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
+  val osLib = ivy"com.lihaoyi::os-lib:0.9.0"
   val upickle = ivy"com.lihaoyi::upickle:2.0.0"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
 }
