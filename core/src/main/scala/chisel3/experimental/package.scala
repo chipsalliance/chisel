@@ -72,7 +72,7 @@ package object experimental {
     val ports: Seq[Data] =
       gen.elements.toSeq.reverse.map {
         case (name, data) =>
-          val p = IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
+          val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
           p.suggestName(name)
           p
 
