@@ -43,20 +43,7 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: ${{ matrix.jvm }}
-<<<<<<< HEAD
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
-=======
           cache: 'sbt'
-
-      - name: Install CIRCT
-        run: |
-          mkdir usr
-          # Escape version forward slashes for use in URL
-          VERSION=$(echo ${{ matrix.circt }} | sed 's|/|%2F|g')
-          wget https://github.com/llvm/circt/releases/download/${VERSION}/circt-bin-ubuntu-20.04.tar.gz -O - | tar -zx -C usr/
-          echo "$(pwd)/usr/bin" >> $GITHUB_PATH
->>>>>>> b01dd3cb ([ci] Update Github Actions (#2876))
       - name: Use Treadle for Pull Requests
         if: github.event_name == 'pull_request'
         run: echo "CHISEL3_CI_USE_TREADLE=1" >> $GITHUB_ENV
@@ -108,34 +95,6 @@ jobs:
       - name: Integration Tests
         run: sbt integrationTests/test
 
-<<<<<<< HEAD
-=======
-  std:
-    name: Standard Library Tests
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        scala: [ "2.13.10", "2.12.17" ]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        uses: YosysHQ/setup-oss-cad-suite@v1
-        with:
-          osscadsuite-version: '2021-11-09'
-      - name: Setup Scala
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'adopt'
-          java-version: '11'
-          cache: 'sbt'
-      - name: Check Formatting (Scala 2.12 only)
-        if: startsWith(matrix.scala, '2.12')
-        run: sbt ++${{ matrix.scala }} standardLibrary/scalafmtCheckAll
-      - name: Unit Tests
-        run: sbt ++${{ matrix.scala }} standardLibrary/test
-
->>>>>>> b01dd3cb ([ci] Update Github Actions (#2876))
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify. This job checks that all jobs were successful.
   #
