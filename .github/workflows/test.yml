@@ -19,7 +19,7 @@ jobs:
         jvm: ["8"]
         scala: ["2.13.10", "2.12.17"]
         espresso: ["2.4"]
-        circt: ["sifive/1/21/0"]
+        circt: ["sifive/1/22/1"]
     runs-on: ${{ matrix.system }}
 
     steps:

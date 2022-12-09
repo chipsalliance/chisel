@@ -6,6 +6,7 @@ import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
 
 import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
+import firrtl.annotations.JsonProtocol
 import firrtl.options.{
   CustomFileEmission,
   Dependency,
@@ -21,8 +22,6 @@ import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
 import _root_.logger.LogLevel
 
-import scala.sys.process._
-
 import java.io.File
 
 private object Helpers {
@@ -36,6 +35,31 @@ private object Helpers {
       case LogLevel.None  => Seq.empty
     }
   }
+
+  /** Extract the JSON-encoded Annotation region from a single file output.
+    *
+    * @todo This is very janky and should be changed to something more stable.
+    */
+  def extractAnnotationFile(string: String, filename: String): AnnotationSeq = {
+    var inAnno = false
+    val filtered: String = string.lines.filter {
+      case line if line.startsWith("// ----- 8< ----- FILE") && line.contains(filename) =>
+        inAnno = true
+        false
+      case line if line.startsWith("// ----- 8< ----- FILE") =>
+        inAnno = false
+        false
+      case line if inAnno =>
+        true
+
+      case _ => false
+    }.toArray
+      .mkString("\n")
+    filtered.forall(_.isWhitespace) match {
+      case false => JsonProtocol.deserialize(filtered, false)
+      case true  => Seq.empty
+    }
+  }
 }
 
 /** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[AnnotationSeq]] API.
@@ -45,6 +69,7 @@ private object Helpers {
 class CIRCT extends Phase {
 
   import Helpers._
+  import scala.sys.process._
 
   override def prerequisites = Seq(
     Dependency[firrtl.stage.phases.AddDefaults],
@@ -61,7 +86,7 @@ class CIRCT extends Phase {
     val stageOptions = view[StageOptions](annotations)
 
     var blackbox, inferReadWrite = false
-    var dedup, imcp = true
+    var imcp = true
     var logLevel = _root_.logger.LogLevel.None
     var split = false
 
@@ -91,9 +116,6 @@ class CIRCT extends Phase {
       case firrtl.passes.memlib.InferReadWriteAnnotation =>
         inferReadWrite = true
         Nil
-      case _: firrtl.transforms.NoDedupAnnotation =>
-        dedup = false
-        Nil
       case firrtl.transforms.NoConstantPropagationAnnotation =>
         imcp = false
         Nil
@@ -115,13 +137,16 @@ class CIRCT extends Phase {
       case Some(circuit) => circuit.serialize
     }
 
-    val outputAnnotationFileName: Option[String] =
+    val chiselAnnotationFilename: Option[String] =
       stageOptions.annotationFileOut.map(stageOptions.getBuildFileName(_, Some(".anno.json")))
+
+    val circtAnnotationFilename = "circt.anno.json"
 
     val binary = "firtool"
 
     val cmd =
-      Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-verify-each=false") ++
+      Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-verify-each=false", "-dedup") ++
+        Seq("-output-annotation-file", circtAnnotationFilename) ++
         circtOptions.firtoolOptions ++
         logLevel.toCIRCTOptions ++
         /* The following options are on by default, so we disable them if they are false. */
@@ -135,10 +160,9 @@ class CIRCT extends Phase {
         (!inferReadWrite).option("-disable-infer-rw") ++
         (!imcp).option("-disable-imcp") ++
         /* The following options are off by default, so we enable them if they are true. */
-        (dedup).option("-dedup") ++
         (blackbox).option("-blackbox-memory") ++
         /* Communicate the annotation file through a file. */
-        (outputAnnotationFileName.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
+        (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
         /* Convert the target to a firtool-compatible option. */
         ((circtOptions.target, split) match {
           case (Some(CIRCTTarget.FIRRTL), false)        => Seq("-ir-fir")
@@ -180,10 +204,18 @@ class CIRCT extends Phase {
       }
       if (split) {
         logger.info(result)
-        Nil
+        val file = new File(stageOptions.getBuildFileName(circtAnnotationFilename, Some(".anno.json")))
+        file match {
+          case file if !file.canRead() => Seq.empty
+          case file => {
+            val foo = JsonProtocol.deserialize(file, false)
+            foo
+          }
+        }
       } else { // if split it has already been written out to the file system stdout not necessary.
         val outputFileName: String = stageOptions.getBuildFileName(firrtlOptions.outputFileName.get)
-        circtOptions.target match {
+        val outputAnnotations = extractAnnotationFile(result, circtAnnotationFilename)
+        outputAnnotations ++ (circtOptions.target match {
           case Some(CIRCTTarget.FIRRTL) =>
             Seq(EmittedMLIR(outputFileName, result, Some(".fir.mlir")))
           case Some(CIRCTTarget.HW) =>
@@ -196,7 +228,7 @@ class CIRCT extends Phase {
             throw new Exception(
               "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
             )
-        }
+        })
       }
     } catch {
       case a: java.io.IOException =>
