@@ -9,8 +9,10 @@ import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.collection.immutable.ListMap
+import scala.annotation.nowarn
 
 // Need separate import to override compile options from Chisel._
+@nowarn("msg=Chisel compatibility mode is deprecated")
 object CompatibilityCustomCompileOptions {
   import Chisel.{defaultCompileOptions => _, _}
   implicit val customCompileOptions =
@@ -20,6 +22,7 @@ object CompatibilityCustomCompileOptions {
   }
 }
 
+@nowarn("msg=Chisel compatibility mode is deprecated")
 class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
   import Chisel._
 
@@ -55,7 +58,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
     l shouldBe a[UInt]
     l shouldBe 'lit
     l.getWidth shouldEqual BigInt(value).bitLength
-    l.litValue() shouldEqual value
+    l.litValue shouldEqual value
   }
 
   it should "map utility objects into the package object" in {

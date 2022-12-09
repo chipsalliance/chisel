@@ -4,7 +4,7 @@ enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT",
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT"
   // chiseltest intentionally excluded so that release automation does not try to set its version
   // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
   // when doing publishing and will not find a chiseltest release since chiseltest depends on
@@ -12,10 +12,8 @@ val defaultVersions = Map(
 )
 
 lazy val commonSettings = Seq(
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  ),
+  resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
+  resolvers ++= Resolver.sonatypeOssRepos("releases"),
   organization := "edu.berkeley.cs",
   version := "3.6-SNAPSHOT",
   autoAPIMappings := true,
@@ -39,6 +37,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val publishSettings = Seq(
+  versionScheme := Some("pvp"),
   publishMavenStyle := true,
   Test / publishArtifact := false,
   pomIncludeRepository := { x => false },
@@ -71,9 +70,9 @@ lazy val publishSettings = Seq(
 lazy val chiselSettings = Seq(
   name := "chisel3",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.12" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.14" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "com.lihaoyi" %% "os-lib" % "0.8.1"
+    "com.lihaoyi" %% "upickle" % "2.0.0"
   )
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -94,7 +93,7 @@ lazy val pluginScalaVersions = Seq(
   // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
   "2.12.2",
   "2.12.3",
-  "2.12.4",
+  // 2.12.4 is broken in newer versions of Zinc: https://github.com/sbt/sbt/issues/6838
   "2.12.5",
   "2.12.6",
   "2.12.7",
@@ -118,7 +117,7 @@ lazy val pluginScalaVersions = Seq(
   "2.13.7",
   "2.13.8",
   "2.13.9",
-  "2.13.10",
+  "2.13.10"
 )
 
 lazy val plugin = (project in file("plugin"))
@@ -174,6 +173,10 @@ lazy val core = (project in file("core"))
   .settings(mimaPreviousArtifacts := Set())
   .settings(
     name := "chisel3-core",
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "upickle" % "2.0.0",
+      "com.lihaoyi" %% "os-lib" % "0.8.1"
+    ),
     scalacOptions := scalacOptions.value ++ Seq(
       "-deprecation",
       "-explaintypes",

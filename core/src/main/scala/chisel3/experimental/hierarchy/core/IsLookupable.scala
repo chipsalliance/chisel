@@ -12,7 +12,7 @@ package chisel3.experimental.hierarchy.core
   *   the same for all instances, we should mark it as IsLookupable
   * {{{
   * case class Params(debugMessage: String) extends IsLookupable
-  * class MyModule(p: Params) extends MultiIOModule {
+  * class MyModule(p: Params) extends Module {
   *   printf(p.debugMessage)
   * }
   * val myParams = Params("Hello World")

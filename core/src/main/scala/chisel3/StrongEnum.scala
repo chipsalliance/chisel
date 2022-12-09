@@ -153,7 +153,7 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
     * @return a hardware [[Bool]] that indicates if this value matches any of the given values
     */
   final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
-    VecInit(s.map(this === _)).asUInt().orR()
+    VecInit(s.map(this === _)).asUInt.orR
   }
 
   /** Test if this enumeration is equal to any of the values given as arguments

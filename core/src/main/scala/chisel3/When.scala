@@ -80,10 +80,6 @@ final class WhenContext private[chisel3] (
   // For capturing conditions from prior whens or elsewhens
   altConds: List[() => Bool]) {
 
-  @deprecated("Use when(...) { ... }, this should never have been public", "Chisel 3.4.2")
-  def this(sourceInfo: SourceInfo, cond: Option[() => Bool], block: => Any, firrtlDepth: Int = 0) =
-    this(sourceInfo, cond, block, firrtlDepth, Nil)
-
   private var scopeOpen = false
 
   /** Returns the local condition, inverted for an otherwise */
@@ -125,12 +121,6 @@ final class WhenContext private[chisel3] (
     new WhenContext(sourceInfo, None, block, firrtlDepth + 1, cond ++: altConds)
 
   def active: Boolean = scopeOpen
-
-  @deprecated(
-    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-    "Chisel 3.5"
-  )
-  def active(dummy: Int*): Boolean = active
 
   /*
    *

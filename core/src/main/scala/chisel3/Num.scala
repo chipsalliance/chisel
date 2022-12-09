@@ -31,7 +31,7 @@ trait Num[T <: Data] {
   self: Num[T] =>
   // def << (b: T): T
   // def >> (b: T): T
-  //def unary_-(): T
+  //def unary_-: T
 
   // REVIEW TODO: double check ops conventions against FIRRTL
 
@@ -148,12 +148,6 @@ trait Num[T <: Data] {
     * @group Arithmetic
     */
   final def abs: T = macro SourceInfoTransform.noArg
-
-  @deprecated(
-    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-    "Chisel 3.5"
-  )
-  final def abs(dummy: Int*): T = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T

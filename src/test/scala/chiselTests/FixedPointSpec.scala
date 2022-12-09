@@ -71,9 +71,9 @@ class FixedPointFromBitsTester extends BasicTester {
   assert(sintToFp === sint_result)
   assert(fpToFp === fp_result)
 
-  assert(positivefp.abs() === positivefp)
-  assert(negativefp.abs() === positivefp)
-  assert(negativefp.abs() =/= negativefp)
+  assert(positivefp.abs === positivefp)
+  assert(negativefp.abs === positivefp)
+  assert(negativefp.abs =/= negativefp)
 
   val f1bp5 = 1.5.F(1.BP)
   val f6bp0 = 6.0.F(0.BP)

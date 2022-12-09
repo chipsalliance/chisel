@@ -16,11 +16,11 @@ class IntegerMathTester extends BasicTester {
   val sintpos = 3.S
   val wrongSIntPos = 4.S
 
-  assert(uint.abs() === uint)
-  assert(sint.abs() === sintpos)
-  assert(sintpos.abs() === sintpos)
+  assert(uint.abs === uint)
+  assert(sint.abs === sintpos)
+  assert(sintpos.abs === sintpos)
 
-  assert(sint.abs() =/= wrongSIntPos)
+  assert(sint.abs =/= wrongSIntPos)
 
   stop()
 }

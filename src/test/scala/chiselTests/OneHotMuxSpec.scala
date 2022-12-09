@@ -125,7 +125,7 @@ class ParameterizedOneHotTester extends BasicTester {
     val dut = Module(new ParameterizedOneHot(values.map(_.S), SInt(8.W)))
     dut.io.selectors := (1 << i).U(4.W).asBools
 
-    assert(dut.io.out.asUInt() === v.S(8.W).asUInt())
+    assert(dut.io.out.asUInt === v.S(8.W).asUInt)
   }
 
   stop()
@@ -180,7 +180,7 @@ class ParameterizedAggregateOneHotTester extends BasicTester {
     val dut = Module(new ParameterizedAggregateOneHot(Agg1, new Agg1))
     dut.io.selectors := (1 << i).U(4.W).asBools
 
-    assert(dut.io.out.asUInt() === values(i).asUInt())
+    assert(dut.io.out.asUInt === values(i).asUInt)
   }
 
   stop()

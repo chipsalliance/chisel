@@ -5,7 +5,10 @@ package chiselTests
 import scala.collection.immutable.ListMap
 import chisel3.stage.ChiselStage.emitChirrtl
 
+import scala.annotation.nowarn
+
 // Keep Chisel._ separate from chisel3._ below
+@nowarn("msg=Chisel compatibility mode is deprecated")
 object CompatibilityComponents {
   import Chisel._
   import Chisel3Components._
@@ -75,6 +78,7 @@ object Chisel3Components {
   class Chisel3ModuleChiselRecordB extends Chisel3PassthroughModule(Flipped(new ChiselRecord))
 }
 
+@nowarn("msg=Chisel compatibility mode is deprecated")
 class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
 
   "Modules defined in the Chisel._" should "successfully bulk connect in chisel3._" in {
@@ -227,7 +231,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
           val out = UInt(OUTPUT, width = 32)
         }
         val children =
-          Seq(Module(new PassthroughModule), Module(new PassthroughMultiIOModule), Module(new PassthroughRawModule))
+          Seq(Module(new PassthroughModule), Module(new PassthroughModule), Module(new PassthroughRawModule))
         io.out := children.map(_.io.out).reduce(_ + _)
         children.foreach { child =>
           when(io.cond) {
