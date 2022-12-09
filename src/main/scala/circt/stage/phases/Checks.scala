@@ -2,7 +2,7 @@
 
 package circt.stage.phases
 
-import circt.stage.{CIRCTHandover, CIRCTTargetAnnotation}
+import circt.stage.CIRCTTargetAnnotation
 
 import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, Emitter, SystemVerilogEmitter}
 import firrtl.annotations.Annotation
@@ -13,19 +13,17 @@ import firrtl.stage.OutputFileAnnotation
 class Checks extends Phase {
 
   override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Seq(Dependency[circt.stage.phases.AddDefaults])
   override def optionalPrerequisiteOf = Seq(Dependency[circt.stage.phases.CIRCT])
   override def invalidates(a: Phase) = false
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val target, outputFile, split, targetDir, handover = collection.mutable.ArrayBuffer[Annotation]()
+    val target, outputFile, split, targetDir = collection.mutable.ArrayBuffer[Annotation]()
 
     annotations.foreach {
       case a: OutputFileAnnotation     => outputFile += a
       case a: EmitAllModulesAnnotation => split += a
       case a: TargetDirAnnotation      => targetDir += a
       case a: CIRCTTargetAnnotation    => target += a
-      case a: CIRCTHandover            => handover += a
       case _ =>
     }
     if ((split.size > 0) && (outputFile.size != 0)) {
@@ -41,10 +39,6 @@ class Checks extends Phase {
 
     if (target.size != 1) {
       throw new OptionsException("Exactly one CIRCT target must be specified")
-    }
-
-    if (handover.size != 1) {
-      throw new OptionsException("Exactly one handover must be specified")
     }
 
     annotations
