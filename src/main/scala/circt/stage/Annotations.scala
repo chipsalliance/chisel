@@ -1,0 +1,100 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package circt.stage
+
+import firrtl.AnnotationSeq
+import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl.options.{CustomFileEmission, HasShellOptions, OptionsException, ShellOption, Unserializable}
+import firrtl.options.Viewer.view
+import firrtl.stage.FirrtlOptions
+
+/** An option consumed by [[circt.stage.CIRCTStage CIRCTStage]] */
+sealed trait CIRCTOption extends Unserializable { this: Annotation => }
+
+object PreserveAggregate extends HasShellOptions {
+  sealed trait Type
+  object OneDimVec extends Type
+  object Vec extends Type
+  object All extends Type
+
+  override def options = Seq(
+    new ShellOption[String](
+      longOption = "preserve-aggregate",
+      toAnnotationSeq = _ match {
+        case "none"   => Seq.empty
+        case "1d-vec" => Seq(PreserveAggregate(PreserveAggregate.OneDimVec))
+        case "vec"    => Seq(PreserveAggregate(PreserveAggregate.Vec))
+        case "all"    => Seq(PreserveAggregate(PreserveAggregate.All))
+      },
+      helpText = "Do not lower aggregate types to ground types"
+    )
+  )
+
+}
+
+/** Preserve passive aggregate types in CIRCT.
+  */
+case class PreserveAggregate(mode: PreserveAggregate.Type) extends NoTargetAnnotation with CIRCTOption
+
+/** Object storing types associated with different CIRCT target languages, e.g., RTL or SystemVerilog */
+object CIRCTTarget {
+
+  /** The parent type of all CIRCT targets */
+  sealed trait Type
+
+  /** The FIRRTL dialect */
+  case object FIRRTL extends Type
+
+  /** The HW dialect */
+  case object HW extends Type
+
+  /** The Verilog language */
+  case object Verilog extends Type
+
+  /** The SystemVerilog language */
+  case object SystemVerilog extends Type
+
+}
+
+/** Annotation that tells [[circt.stage.phases.CIRCT CIRCT]] what target to compile to */
+case class CIRCTTargetAnnotation(target: CIRCTTarget.Type) extends NoTargetAnnotation with CIRCTOption
+
+object CIRCTTargetAnnotation extends HasShellOptions {
+
+  override def options = Seq(
+    new ShellOption[String](
+      longOption = "target",
+      toAnnotationSeq = _ match {
+        case "firrtl"        => Seq(CIRCTTargetAnnotation(CIRCTTarget.FIRRTL))
+        case "hw"            => Seq(CIRCTTargetAnnotation(CIRCTTarget.HW))
+        case "verilog"       => Seq(CIRCTTargetAnnotation(CIRCTTarget.Verilog))
+        case "systemverilog" => Seq(CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
+        case a               => throw new OptionsException(s"Unknown target name '$a'! (Did you misspell it?)")
+      },
+      helpText = "The CIRCT",
+      helpValueName = Some("{firrtl|rtl|systemverilog}")
+    )
+  )
+
+}
+
+/** Annotation holding an emitted MLIR string
+  *
+  * @param filename the name of the file where this should be written
+  * @param value a string of MLIR
+  * @param suffix an optional suffix added to the filename when this is written to disk
+  */
+case class EmittedMLIR(
+  filename: String,
+  value:    String,
+  suffix:   Option[String])
+    extends NoTargetAnnotation
+    with CustomFileEmission {
+
+  override protected def baseFileName(annotations: AnnotationSeq): String = filename
+
+  override def getBytes = value.getBytes
+
+}
+
+case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption
