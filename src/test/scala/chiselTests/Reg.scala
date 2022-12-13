@@ -51,6 +51,16 @@ class ShiftTester(n: Int) extends BasicTester {
   }
 }
 
+class ShiftMemTester(n: Int, sp_mem: Boolean) extends BasicTester {
+  val (cntVal, done) = Counter(true.B, n)
+  val start = 23.U
+  val sr = ShiftRegister(cntVal + start, n, true.B, sp_mem, "simple_sr")
+  when(RegNext(done)) {
+    assert(sr === start)
+    stop()
+  }
+}
+
 class ShiftResetTester(n: Int) extends BasicTester {
   val (cntVal, done) = Counter(true.B, n - 1)
   val start = 23.U
@@ -68,6 +78,18 @@ class ShiftRegisterSpec extends ChiselPropSpec {
 
   property("ShiftRegister should reset all values inside") {
     forAll(Gen.choose(0, 4)) { (shift: Int) => assertTesterPasses { new ShiftResetTester(shift) } }
+  }
+}
+
+class ShiftRegisterMemSpec extends ChiselPropSpec {
+  property("ShiftRegister with dual-port SRAM should shift") {
+    forAll(Gen.choose(0, 4)) { (shift: Int) => assertTesterPasses { new ShiftMemTester(shift, false) } }
+  }
+
+  property("ShiftRegister with single-port SRAM should shift") {
+    forAll(Gen.choose(0, 6).suchThat(_ % 2 == 0)) { (shift: Int) =>
+      assertTesterPasses { new ShiftMemTester(shift, true) }
+    }
   }
 }
 

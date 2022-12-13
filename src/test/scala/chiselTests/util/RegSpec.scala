@@ -83,6 +83,19 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
     (chirrtl should not).include("Reg.scala")
   }
 
+  it should "have source locators when passed in, n, en, use_sp_mem, name" in {
+    class MyModule extends Module {
+      val in = IO(Input(Bool()))
+      val out = IO(Output(Bool()))
+      out := ShiftRegister(in, 2, true.B, true, "sr")
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val reset = """reset .*RegSpec.scala""".r
+    (chirrtl should include).regex(reset)
+    val update = """out_r.* in .*RegSpec.scala""".r
+    (chirrtl should include).regex(update)
+    (chirrtl should not).include("Reg.scala")
+  }
 }
 
 class ShiftRegistersSpec extends AnyFlatSpec with Matchers {
