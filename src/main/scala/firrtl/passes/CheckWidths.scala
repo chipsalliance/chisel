@@ -121,9 +121,13 @@ object CheckWidths extends Pass {
       // This is a leaf check of the "local" width-correctness of one expression node, so no recursion.
       expr match {
         case e @ UIntLiteral(v, w: IntWidth) if math.max(1, v.bitLength) > w.width =>
-          errors.append(new WidthTooSmall(info, target.serialize, v))
+          if (w.width > 0 || (w.width == 0 && v != 0)) { // UInt<0>(0) is allowed
+            errors.append(new WidthTooSmall(info, target.serialize, v))
+          }
         case e @ SIntLiteral(v, w: IntWidth) if v.bitLength + 1 > w.width =>
-          errors.append(new WidthTooSmall(info, target.serialize, v))
+          if (w.width > 0 || (w.width == 0 && v != 0)) { // SInt<0>(0) is allowed
+            errors.append(new WidthTooSmall(info, target.serialize, v))
+          }
         case e @ DoPrim(op, Seq(a, b), _, tpe) =>
           (op, a.tpe, b.tpe) match {
             case (Squeeze, IntervalType(Closed(la), Closed(ua), _), IntervalType(Closed(lb), Closed(ub), _))

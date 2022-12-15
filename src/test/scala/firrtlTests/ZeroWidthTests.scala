@@ -3,20 +3,11 @@
 package firrtlTests
 
 import firrtl._
+import firrtl.options.Dependency
 import firrtl.passes._
 import firrtl.testutils._
 
-class ZeroWidthTests extends FirrtlFlatSpec {
-  def transforms = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, ZeroWidth)
-  private def exec(input: String) = {
-    val circuit = parse(input)
-    transforms
-      .foldLeft(CircuitState(circuit, UnknownForm)) { (c: CircuitState, p: Transform) =>
-        p.runTransform(c)
-      }
-      .circuit
-      .serialize
-  }
+class ZeroWidthTests extends LeanTransformSpec(Seq(Dependency(ZeroWidth))) {
   // =============================
   "Zero width port" should " be deleted" in {
     val input =
@@ -30,7 +21,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |  module Top :
         |    output x : UInt<1>
         |    x <= UInt<1>(0)""".stripMargin
-    (parse(exec(input))) should be(parse(check))
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
   "Add of <0> and <2> " should " put in zero" in {
     val input =
@@ -44,21 +35,19 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |  module Top :
         |    output x : UInt<3>
         |    x <= add(UInt<1>(0), UInt<2>(2))""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
-  "Mux on <0>" should "put in zero" in {
+  "Mux on <0>" should "not be allowed" in {
+    // Note that this used to be allowed, but the support seems to have bit-rotted
+    // and modern firrtl enforces 1-bit UInt for muxes.
     val input =
       """circuit Top :
         |  module Top :
         |    input y : UInt<0>
         |    output x : UInt
         |    x <= mux(y, UInt<2>(2), UInt<2>(1))""".stripMargin
-    val check =
-      """circuit Top :
-        |  module Top :
-        |    output x : UInt<2>
-        |    x <= mux(UInt<1>(0), UInt<2>(2), UInt<2>(1))""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    val e = intercept[PassException] { compile(input) }
+    assert(e.getMessage.contains("A mux condition must be of type 1-bit UInt"))
   }
   "Bundle with field of <0>" should "get deleted" in {
     val input =
@@ -66,13 +55,16 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |  module Top :
         |    input y : { a: UInt<0> }
         |    output x : { a: UInt<0>, b: UInt<1>}
+        |    x.b <= UInt(1)
         |    x.a <= y.a""".stripMargin
     val check =
       """circuit Top :
         |  module Top :
         |    output x : { b: UInt<1> }
-        |    skip""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+        |    skip
+        |    x.b <= UInt(1)
+        |    """.stripMargin
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
   "Vector with type of <0>" should "get deleted" in {
     val input =
@@ -85,7 +77,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
       """circuit Top :
         |  module Top :
         |    skip""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    removeSkip(compile(input).circuit).serialize should be(parse(check).serialize)
   }
   "Node with <0>" should "be removed" in {
     val input =
@@ -97,7 +89,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
       """circuit Top :
         |  module Top :
         |    skip""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
   "IsInvalid on <0>" should "be deleted" in {
     val input =
@@ -109,7 +101,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
       """circuit Top :
         |  module Top :
         |    skip""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
   "Expression in node with type <0>" should "be replaced by UInt<1>(0)" in {
     val input =
@@ -123,7 +115,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |  module Top :
         |    input x: UInt<1>
         |    node z = add(x, UInt<1>(0))""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
   "Expression in cat with type <0>" should "be removed" in {
     val input =
@@ -137,7 +129,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |  module Top :
         |    input x: UInt<1>
         |    node z = x""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
   "Nested cats with type <0>" should "be removed" in {
     val input =
@@ -151,7 +143,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
       """circuit Top :
         |  module Top :
         |    skip""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
   "Nested cats where one has type <0>" should "be unaffected" in {
     val input =
@@ -167,9 +159,11 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    input x: UInt<1>
         |    input z: UInt<1>
         |    node a = cat(x, z)""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
   "Stop with type <0>" should "be replaced with UInt(0)" in {
+    // Note that this used to be allowed, but the support seems to have bit-rotted
+    // and modern firrtl enforces 1-bit UInt for stop enables.
     val input =
       """circuit Top :
         |  module Top :
@@ -178,14 +172,8 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    input y: UInt<0>
         |    input z: UInt<1>
         |    stop(clk, y, 1)""".stripMargin
-    val check =
-      """circuit Top :
-        |  module Top :
-        |    input clk: Clock
-        |    input x: UInt<1>
-        |    input z: UInt<1>
-        |    stop(clk, UInt(0), 1)""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    val e = intercept[PassException] { compile(input) }
+    assert(e.getMessage.contains("Enable must be a 1-bit UIntType typed signal"))
   }
   "Print with type <0>" should "be replaced with UInt(0)" in {
     val input =
@@ -203,7 +191,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    input x: UInt<1>
         |    input z: UInt<1>
         |    printf(clk, UInt(1), "%d %d %d\n", x, UInt(0), z)""".stripMargin
-    (parse(exec(input)).serialize) should be(parse(check).serialize)
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
 
   "Andr of zero-width expression" should "return true" in {
@@ -218,7 +206,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |  module Top :
         |    output x : UInt<1>
         |    x <= UInt<1>(1)""".stripMargin
-    (parse(exec(input))) should be(parse(check))
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
 
   "Cat of SInt with zero-width" should "keep type correctly" in {
@@ -235,7 +223,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    input y : SInt<1>
         |    output z : UInt<1>
         |    z <= asUInt(y)""".stripMargin
-    (parse(exec(input))) should be(parse(check))
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
 
   "dshl with zero-width" should "canonicalize to the un-shifted expression" in {
@@ -252,7 +240,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    input y : SInt<1>
         |    output z : SInt<1>
         |    z <= y""".stripMargin
-    (parse(exec(input))) should be(parse(check))
+    compile(input).circuit.serialize should be(parse(check).serialize)
   }
 
   "Memories with zero-width data-type" should "be fully removed" in {
@@ -315,7 +303,24 @@ class ZeroWidthTests extends FirrtlFlatSpec {
          |    input rwMask: UInt<1>
          |
          |${Seq.tabulate(17)(_ => "    skip").mkString("\n")}""".stripMargin
-    parse(exec(input)) should be(parse(check))
+    compile(input).circuit.serialize should be(parse(check).serialize)
+  }
+
+  "zero width literals" should "be permissible" in {
+    val input =
+      """circuit Foo:
+        |  module Foo:
+        |    output x : UInt<1>
+        |    output y : SInt<3>
+        |
+        |    x <= UInt<0>(0)
+        |    y <= SInt<0>(0)
+        |""".stripMargin
+
+    val result = compile(input).circuit
+    val lines = result.serialize.split('\n').map(_.trim)
+    assert(lines.contains("x <= UInt<1>(\"h0\")"))
+    assert(lines.contains("y <= SInt<1>(\"h0\")"))
   }
 }
 

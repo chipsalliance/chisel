@@ -35,6 +35,10 @@ class LeanTransformSpec(protected val transforms: Seq[TransformDependency])
     actual should be(expected)
     finalState
   }
+  protected def removeSkip(c: ir.Circuit): ir.Circuit = {
+    def onStmt(s: ir.Statement): ir.Statement = s.mapStmt(onStmt)
+    c.mapModule(m => m.mapStmt(onStmt))
+  }
 }
 
 private object LeanTransformSpec {
