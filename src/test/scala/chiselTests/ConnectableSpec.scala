@@ -1529,5 +1529,33 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
+    it("(8.i) Partial connect on bundles") {
+      class BoolBundleA extends Bundle { val foo = Bool() }
+      class BoolBundleB extends Bundle { val foo = Bool() }
+      class MyModule extends Module {
+        val in = IO(Flipped(new BoolBundleA))
+        val out = IO(new BoolBundleB)
+        out.waiveAllAs[Bundle] :<>= in.waiveAllAs[Bundle]
+      }
+      testCheck(
+        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq("out.foo <= in.foo"),
+        Nil
+      )
+    }
+    it("(8.j) WaiveEach with a cast") {
+      class BoolBundleA extends Bundle { val foo = UInt(); val bar = Bool() }
+      class BoolBundleB extends Bundle { val foo = UInt() }
+      class MyModule extends Module {
+        val in = IO(Flipped(new BoolBundleA))
+        val out = IO(new BoolBundleB)
+        (out: Bundle) :<>= in.waiveEach[Bundle] { case x: Bool => Seq(x) }
+      }
+      testCheck(
+        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq("out.foo <= in.foo"),
+        Nil
+      )
+    }
   }
 }

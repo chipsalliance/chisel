@@ -39,13 +39,13 @@ final class Connectable[+T <: Data] private (
   def waiveAs[S <: Data](members: (T => Data)*): Connectable[S] =
     this.copy(waived = waived ++ members.map(f => f(base)).toSet).asInstanceOf[Connectable[S]]
 
-  /** Programmatically select members of base to waive
+  /** Programmatically select members of base to waive and static cast to a new type
     *
     * @param members partial function applied to all recursive members of base, if match, can return a member to waive
     */
-  def waiveEach[S <: Data](pf: PartialFunction[Data, Seq[Data]]): Connectable[T] = {
+  def waiveEach[S <: Data](pf: PartialFunction[Data, Seq[Data]]): Connectable[S] = {
     val waivedMembers = DataMirror.collectMembers(base)(pf).flatten
-    this.copy(waived = waived ++ waivedMembers.toSet)
+    this.copy(waived = waived ++ waivedMembers.toSet).asInstanceOf[Connectable[S]]
   }
 
   /** Waive all members of base */
@@ -53,6 +53,9 @@ final class Connectable[+T <: Data] private (
     val waivedMembers = DataMirror.collectMembers(base) { case x => x }
     this.copy(waived = waivedMembers.toSet) // not appending waived because we are collecting all members
   }
+
+  /** Waive all members of base and static cast to a new type */
+  def waiveAllAs[S <: Data]: Connectable[S] = waiveAll.asInstanceOf[Connectable[S]]
 
   /** Adds base to squeezes
     *
