@@ -18,7 +18,7 @@ As we saw earlier, users can define their own interfaces by defining a class tha
 
 ```scala mdoc:invisible
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 ```
 
 ```scala mdoc:silent
@@ -125,7 +125,7 @@ class Block2 extends Module {
 ```
 Below we can see the resulting error for this example:
 ```scala mdoc:crash
-ChiselStage.emitVerilog(new Block2)
+ChiselStage.emitSystemVerilog(new Block2)
 ```
 Bidirectional connections should only be used with **directioned elements** (like IOs), e.g. connecting two wires isn't supported since Chisel can't necessarily figure out the directions automatically.
 For example, putting two temporary wires and connecting them here will not work, even though the directions could be known from the endpoints:
@@ -148,7 +148,7 @@ class BlockWithTemporaryWires extends Module {
 ```
 Below we can see the resulting error for this example:
 ```scala mdoc:crash
-ChiselStage.emitVerilog(new BlockWithTemporaryWires)
+ChiselStage.emitSystemVerilog(new BlockWithTemporaryWires)
 ```
 For more details and information, see [Deep Dive into Connection Operators](connection-operators)
 

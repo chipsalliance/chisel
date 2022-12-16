@@ -13,10 +13,10 @@ and pure Chisel types (e.g. `Bool()`). You can get runtime errors passing a Chis
 
 ```scala mdoc:invisible
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 ```
 
-The *Scala* type of the Data is recognized by the Scala compiler, such as `Bool`, `Decoupled[UInt]` or `MyBundle` in 
+The *Scala* type of the Data is recognized by the Scala compiler, such as `Bool`, `Decoupled[UInt]` or `MyBundle` in
 ```scala mdoc:silent
 class MyBundle(w: Int) extends Bundle {
   val foo = UInt(w.W)
@@ -31,7 +31,7 @@ For example, `MyBundle(3)` creates a Chisel Type with fields `foo: UInt(3.W),  b
 Hardware is `Data` that is "bound" to synthesizable hardware. For example `false.B` or `Reg(Bool())`.
 The binding is what determines the actual directionality of each field, it is not a property of the Chisel type.
 
-A literal is a `Data` that is respresentable as a literal value without being wrapped in Wire, Reg, or IO. 
+A literal is a `Data` that is respresentable as a literal value without being wrapped in Wire, Reg, or IO.
 
 ## Chisel Type vs Hardware vs Literals
 
@@ -47,12 +47,12 @@ class MyModule(gen: () => MyBundle) extends Module {
     val xReg:     MyBundle     = Reg(new MyBundle(3))       //      x          -
     val xIO:      MyBundle     = IO(Input(new MyBundle(3))) //      x          -
     val xRegInit: MyBundle     = RegInit(xIO)               //      x          -
-    val xLit:     MyBundle     = xType.Lit(                 //      x          x 
-      _.foo -> 0.U(3.W), 
+    val xLit:     MyBundle     = xType.Lit(                 //      x          x
+      _.foo -> 0.U(3.W),
       _.bar -> 0.U(3.W)
     )
     val y:        MyBundle = gen()                          //      ?          ?
-    
+
     // Need to initialize all hardware values
     xReg := DontCare
 }
@@ -60,7 +60,15 @@ class MyModule(gen: () => MyBundle) extends Module {
 
 ```scala mdoc:invisible
 // Just here to compile check the above
-ChiselStage.elaborate(new MyModule(() => new MyBundle(3)))
+def elaborate(module: => chisel3.RawModule) = {
+  (new chisel3.stage.phases.Elaborate)
+    .transform(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => module)))
+    .collectFirst { case chisel3.stage.ChiselCircuitAnnotation(circuit) =>
+      circuit
+    }
+    .get
+}
+elaborate(new MyModule(() => new MyBundle(3)))
 ```
 
 ## Chisel Type vs Hardware -- Specific Functions and Errors
@@ -68,7 +76,7 @@ ChiselStage.elaborate(new MyModule(() => new MyBundle(3)))
 `.asTypeOf` works for both hardware and Chisel type:
 
 ```scala mdoc:silent
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val chiselType = new MyBundle(3)
   val hardware = Wire(new MyBundle(3))
   hardware := DontCare
@@ -80,14 +88,14 @@ ChiselStage.elaborate(new Module {
 Can only `:=` to hardware:
 ```scala mdoc:silent
 // Do this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardware = Wire(new MyBundle(3))
   hardware := DontCare
 })
 ```
 ```scala mdoc:crash
 // Not this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val chiselType = new MyBundle(3)
   chiselType := DontCare
 })
@@ -96,7 +104,7 @@ ChiselStage.elaborate(new Module {
 Can only `:=` from hardware:
 ```scala mdoc:silent
 // Do this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardware = IO(new MyBundle(3))
   val moarHardware = Wire(new MyBundle(3))
   moarHardware := DontCare
@@ -105,7 +113,7 @@ ChiselStage.elaborate(new Module {
 ```
 ```scala mdoc:crash
 // Not this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardware = IO(new MyBundle(3))
   val chiselType = new MyBundle(3)
   hardware := chiselType
@@ -115,7 +123,7 @@ ChiselStage.elaborate(new Module {
 Have to pass hardware to `chiselTypeOf`:
 ```scala mdoc:silent
 // Do this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardware = Wire(new MyBundle(3))
   hardware := DontCare
   val chiselType = chiselTypeOf(hardware)
@@ -123,7 +131,7 @@ ChiselStage.elaborate(new Module {
 ```
 ```scala mdoc:crash
 // Not this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val chiselType = new MyBundle(3)
   val crash = chiselTypeOf(chiselType)
 })
@@ -132,7 +140,7 @@ ChiselStage.elaborate(new Module {
 Have to pass hardware to `*Init`:
 ```scala mdoc:silent
 // Do this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardware = Wire(new MyBundle(3))
   hardware := DontCare
   val moarHardware = WireInit(hardware)
@@ -140,7 +148,7 @@ ChiselStage.elaborate(new Module {
 ```
 ```scala mdoc:crash
 // Not this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val crash = WireInit(new MyBundle(3))
 })
 ```
@@ -148,14 +156,14 @@ ChiselStage.elaborate(new Module {
 Can't pass hardware to a `Wire`, `Reg`, `IO`:
 ```scala mdoc:silent
 // Do this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardware = Wire(new MyBundle(3))
   hardware := DontCare
 })
 ```
 ```scala mdoc:crash
 // Not this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardware = Wire(new MyBundle(3))
   val crash = Wire(hardware)
 })
@@ -164,16 +172,16 @@ ChiselStage.elaborate(new Module {
 `.Lit` can only be called on Chisel type:
 ```scala mdoc:silent
 // Do this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardwareLit = (new MyBundle(3)).Lit(
-    _.foo -> 0.U, 
+    _.foo -> 0.U,
     _.bar -> 0.U
   )
 })
 ```
 ```scala mdoc:crash
 //Not this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardware = Wire(new MyBundle(3))
   val crash = hardware.Lit(
     _.foo -> 0.U,
@@ -185,7 +193,7 @@ ChiselStage.elaborate(new Module {
 Can only use a Chisel type within a `Bundle` definition:
 ```scala mdoc:silent
 // Do this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val hardware = Wire(new Bundle {
     val nested = new MyBundle(3)
   })
@@ -194,7 +202,7 @@ ChiselStage.elaborate(new Module {
 ```
 ```scala mdoc:crash
 // Not this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val crash = Wire(new Bundle {
     val nested = Wire(new MyBundle(3))
   })
@@ -213,7 +221,7 @@ class Child extends Module{
 ```
 ```scala mdoc:silent
 // Do this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val child = Module(new Child())
   child.hardware := DontCare
   val direction = DataMirror.directionOf(child.hardware)
@@ -221,7 +229,7 @@ ChiselStage.elaborate(new Module {
 ```
 ```scala mdoc:crash
 // Not this...
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
 val child = Module(new Child())
   child.hardware := DontCare
   val direction = DataMirror.directionOf(child.chiselType)
@@ -230,7 +238,7 @@ val child = Module(new Child())
 
 Can call `specifiedDirectionOf` on hardware or Chisel type:
 ```scala mdoc:silent
-ChiselStage.elaborate(new Module {
+elaborate(new Module {
   val child = Module(new Child())
   child.hardware := DontCare
   val direction0 = DataMirror.specifiedDirectionOf(child.hardware)
@@ -240,7 +248,7 @@ ChiselStage.elaborate(new Module {
 
 ## `.asInstanceOf` vs `.asTypeOf` vs `chiselTypeOf`
 
-`.asInstanceOf` is a Scala runtime cast, usually used for telling the compiler 
+`.asInstanceOf` is a Scala runtime cast, usually used for telling the compiler
 that you have more information than it can infer to convert Scala types:
 
 ```scala mdoc:silent
@@ -252,17 +260,17 @@ class ScalaCastingModule(gen: () => Bundle) extends Module {
 
 This works if we do indeed have more information than the compiler:
 ```scala mdoc:silent
-ChiselStage.elaborate(new ScalaCastingModule( () => new MyBundle(3)))
+elaborate(new ScalaCastingModule( () => new MyBundle(3)))
 ```
 
 But if we are wrong, we can get a Scala runtime exception:
 ```scala mdoc:crash
 class NotMyBundle extends Bundle {val baz = Bool()}
-ChiselStage.elaborate(new ScalaCastingModule(() => new NotMyBundle()))
+elaborate(new ScalaCastingModule(() => new NotMyBundle()))
 ```
 
 `.asTypeOf` is a conversion from one `Data` subclass to another.
-It is commonly used to assign data to all-zeros, as described in [this cookbook recipe](https://www.chisel-lang.org/chisel3/docs/cookbooks/cookbook.html#how-can-i-tieoff-a-bundlevec-to-0), but it can 
+It is commonly used to assign data to all-zeros, as described in [this cookbook recipe](https://www.chisel-lang.org/chisel3/docs/cookbooks/cookbook.html#how-can-i-tieoff-a-bundlevec-to-0), but it can
 also be used (though not really recommended, as there is no checking on
 width matches) to convert one Chisel type to another:
 
@@ -271,7 +279,7 @@ class SimilarToMyBundle(w: Int) extends Bundle{
   val foobar = UInt((2*w).W)
 }
 
-ChiselStage.emitVerilog(new Module {
+ChiselStage.emitSystemVerilog(new Module {
   val in = IO(Input(new MyBundle(3)))
   val out = IO(Output(new SimilarToMyBundle(3)))
 

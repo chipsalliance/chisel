@@ -93,9 +93,9 @@ class MyFlippedModule extends RawModule {
 This generates the following Verilog:
 
 ```scala mdoc:verilog
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
-ChiselStage.emitVerilog(new MyFlippedModule())
+ChiselStage.emitSystemVerilog(new MyFlippedModule())
 ```
 
 ### MixedVec
@@ -140,7 +140,7 @@ Since Chisel is built on top of Scala and the JVM,
 it needs to know how to construct copies of `Bundle`s for various
 purposes (creating wires, IOs, etc).
 If you have a parametrized `Bundle` and Chisel can't automatically figure out how to
-clone it, you will need to create a custom `cloneType` method in your bundle. 
+clone it, you will need to create a custom `cloneType` method in your bundle.
 In the vast majority of cases, **this is not required**
 as Chisel can figure out how to clone most `Bundle`s automatically:
 
@@ -177,4 +177,3 @@ class RegisterWriteIO[T <: Data](private val gen: T) extends Bundle {
   val response = Irrevocable(Bool())
 }
 ```
-

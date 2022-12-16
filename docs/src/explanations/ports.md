@@ -41,7 +41,8 @@ Here is an example of how to use this API:
 
 ```scala mdoc
 import chisel3.reflect.DataMirror
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.ChiselGeneratorAnnotation
+import circt.stage.ChiselStage
 
 class Adder extends Module {
   val a = IO(Input(UInt(8.W)))
@@ -63,5 +64,5 @@ class Test extends Module {
   }}
 }
 
-(new ChiselStage).execute(Array.empty, Seq(ChiselGeneratorAnnotation(() => new Test)))
+ChiselStage.emitSystemVerilog(new Test)
 ```

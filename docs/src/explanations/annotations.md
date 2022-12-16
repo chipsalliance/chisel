@@ -135,7 +135,8 @@ class ModC(widthC: Int) extends Module {
 Compiling this circuit to Verilog will then result in the `InfoTransform` running and the added `println`s showing information about the components annotated.
 
 ```scala mdoc:compile-only
-import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
+import chisel3.stage.ChiselGeneratorAnnotation
+import circt.stage.ChiselStage
 
 (new ChiselStage).execute(Array.empty, Seq(ChiselGeneratorAnnotation(() => new ModC(4))))
 ```
