@@ -55,7 +55,8 @@ class ChiselPlugin(val global: Global) extends Plugin {
   private val arguments = ChiselPluginArguments()
   val components: List[PluginComponent] = List[PluginComponent](
     new ChiselComponent(global, arguments),
-    new BundleComponent(global, arguments)
+    new BundleComponent(global, arguments),
+    new DeprecateSFCComponent(global, arguments)
   )
 
   override def init(options: List[String], error: String => Unit): Boolean = {
