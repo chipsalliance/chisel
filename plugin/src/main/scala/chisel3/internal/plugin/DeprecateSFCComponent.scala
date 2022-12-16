@@ -29,8 +29,8 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
   class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private def isRootFirrtl(tree: Tree): Boolean = tree match {
       case Ident(name) if name.toString == "firrtl" => true
-      case Select(expr, _) => isRootFirrtl(expr)
-      case _ => false
+      case Select(expr, _)                          => isRootFirrtl(expr)
+      case _                                        => false
     }
 
     // Method called by the compiler to modify source tree
