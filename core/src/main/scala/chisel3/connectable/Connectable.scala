@@ -214,7 +214,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    final def :<=[S <: Data](lProducer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :<=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       connect(consumer, producer, ColonLessEq)
     }
@@ -224,7 +224,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    final def :<=[S <: Data](producer: Connectable[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :<=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         connect(consumer, producer, ColonLessEq)
       }
@@ -235,7 +235,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=[S <: Data](lProducer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :>=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       connect(consumer, producer, ColonGreaterEq)
     }
@@ -245,7 +245,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=[S <: Data](producer: Connectable[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :>=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         connect(consumer, producer, ColonGreaterEq)
       }
@@ -256,7 +256,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    final def :<>=[S <: Data](lProducer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :<>=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
         consumer.base.firrtlConnect(producer)
@@ -270,7 +270,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    final def :<>=[S <: Data](producer: Connectable[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :<>=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
           consumer.base.firrtlConnect(producer.base)
@@ -285,7 +285,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    final def :#=[S <: Data](lProducer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :#=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       connect(consumer, producer, ColonHashEq)
     }
@@ -295,7 +295,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    final def :#=[S <: Data](producer: Connectable[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :#=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         connect(consumer, producer, ColonHashEq)
       }
