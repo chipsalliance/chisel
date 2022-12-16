@@ -22,7 +22,6 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
     def apply(unit: CompilationUnit): Unit = {
       if (ChiselPlugin.runComponent(global, arguments)(unit)) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
-        global.reporter.error(unit.body.pos, "Finished Running DeprecateSFC!")
       }
     }
   }
