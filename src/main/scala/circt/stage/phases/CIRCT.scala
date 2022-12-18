@@ -92,6 +92,22 @@ private[this] object Exceptions {
         )
       )
 
+  /** Indicates that the firtool binary was not found.  This likely indicates that the user didn't install
+    * CIRCT/firtool.
+    *
+    * @param binary the path to the firtool binary
+    */
+  class FirtoolNotFound(binary: String)
+      extends RuntimeException(
+        dramaticError(
+          header = s"$binary not found",
+          body = """|Chisel requires that firtool, the MLIR-based FIRRTL Compiler (MFC), is installed
+                    |and available on your $PATH.  (Did you forget to install it?)  You can download
+                    |a binary release of firtool from the CIRCT releases webpage:
+                    |  https://github.com/llvm/circt/releases""".stripMargin
+        )
+      )
+
 }
 
 /** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[AnnotationSeq]] API.
@@ -222,8 +238,14 @@ class CIRCT extends Phase {
     val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
     val stdoutWriter = new java.io.PrintWriter(stdoutStream)
     val stderrWriter = new java.io.PrintWriter(stderrStream)
-    val exitValue = (cmd #< new java.io.ByteArrayInputStream(input.getBytes))
-      .!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
+    val exitValue =
+      try {
+        (cmd #< new java.io.ByteArrayInputStream(input.getBytes))
+          .!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
+      } catch {
+        case a: java.lang.RuntimeException if a.getMessage().startsWith("No exit code") =>
+          throw new Exceptions.FirtoolNotFound(binary)
+      }
     stdoutWriter.close()
     stderrWriter.close()
     val result = stdoutStream.toString
