@@ -4,6 +4,7 @@ runs:
   using: composite
   steps:
     - name: Install Tabby OSS Cad Suite
+      shell: bash
       run:
         VERSION="2021-11-09"
         ARTIFACT=oss-cad-suite-linux-x64-$(echo $VERSION | tr -d '-')
