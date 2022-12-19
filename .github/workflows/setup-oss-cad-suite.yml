@@ -1,0 +1,20 @@
+name: Setup OSS CAD Suite
+
+on:
+  workflow_call:
+
+jobs:
+  setup_oss_cad_suite:
+    # TODO does this need a runs
+    #runs-on: ${{ matrix.system }}
+
+    steps:
+      - name: Install Tabby OSS Cad Suite
+        with:
+          osscadsuite-version: '2021-11-09'
+        run:
+          VERSION=${{ github.inputs.osscadsuite-version }}
+          ARTIFACT=oss-cad-suite-linux-x64-$(echo $VERSION | tr -d '-')
+          wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/${VERSION}/${ARTIFACT}.tgz -O - | tar -zx
+          echo "$(pwd)/oss-cad-suite/bin" >> $GITHUB_PATH
+
