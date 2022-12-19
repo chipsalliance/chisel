@@ -69,4 +69,28 @@ class CIRCTStageSpec extends AnyFunSpec with Matchers {
 
   }
 
+  describe("CIRCTStage Error Behavior") {
+    it("should throw a FirtoolNonZeroExitCode exception if firtool fails") {
+      val input =
+        """|circuit NonZeroExitCode:
+           |  module Foo:
+           |    skip
+           |""".stripMargin
+
+      val targetDir = new File("test_run_dir/CIRCTStage")
+      val inputFile = new File(targetDir, "NonZeroExitCode.fir")
+
+      writeFile(inputFile, input)
+
+      val stage = new CIRCTStage
+
+      intercept[Exception] {
+        stage.execute(
+          Array("--target", "systemverilog", "--target-dir", targetDir.toString, "--input-file", inputFile.toString),
+          Seq.empty
+        )
+      }.getMessage() should include("firtool returned a non-zero exit code")
+    }
+  }
+
 }

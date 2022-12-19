@@ -82,7 +82,7 @@ val j = upickle.default.write(
 
 You can then read from json string and elaborate the Module:
 ```scala mdoc:compile-only
-chisel3.stage.ChiselStage.emitVerilog(
+circt.stage.ChiselStage.emitSystemVerilog(
   upickle.default.read[SerializableModuleGenerator[GCDSerializableModule, GCDSerializableModuleParameter]](
     ujson.read(j)
   ).module()

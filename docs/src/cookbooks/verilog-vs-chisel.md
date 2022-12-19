@@ -9,12 +9,12 @@ section: "chisel3"
 
 # Verilog vs Chisel Side-By-Side
 
-This page serves as a quick introduction to Chisel for those familiar with Verilog. It is by no means a comprehensive guide of everything Chisel can do. Feel free to file an issue with suggestions of things you'd like to see added to this page. 
+This page serves as a quick introduction to Chisel for those familiar with Verilog. It is by no means a comprehensive guide of everything Chisel can do. Feel free to file an issue with suggestions of things you'd like to see added to this page.
 
 ```scala mdoc:invisible
 import chisel3._
 import chisel3.util.{switch, is}
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
 import chisel3.util.{Cat, Fill, DecoupledIO}
 ```
@@ -74,9 +74,9 @@ module PassthroughGenerator(
   input  [width-1:0] in,
   output [width-1:0] out
 );
- 
+
   parameter width = 8;
-  
+
   assign out = in;
 endmodule
 ```
@@ -87,12 +87,12 @@ endmodule
 class PassthroughGenerator(width: Int = 8) extends Module {
     val in = IO(Input(UInt(width.W)))
     val out = IO(Output(UInt(width.W)))
-    
+
     out := in
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new PassthroughGenerator(10))
+ChiselStage.emitSystemVerilog(new PassthroughGenerator(10))
 ```
 </td>
          </tr>
@@ -122,11 +122,11 @@ class ParameterizedWidthAdder(
   in0Width: Int,
   in1Width: Int,
   sumWidth: Int) extends Module {
-  
+
   val in0 = IO(Input(UInt(in0Width.W)))
   val in1 = IO(Input(UInt(in1Width.W)))
   val sum = IO(Output(UInt(sumWidth.W)))
-  
+
   // a +& b includes the carry, a + b does not
   sum := in0 +& in1
 }
@@ -155,28 +155,28 @@ module MyWireAssignmentModule ();
   wire [31:0] aa = 'd42;
   // Logical reg for use in always block, not real register
   reg [31:0] a;
-  
+
   //
   always @(*) begin
     a = aa;
-  end 
-  
+  end
+
   // Hex value initialization
   wire [31:0] b = 32'hbabecafe;
-  
+
   // Declaration separate from Assignment
   wire [15:0] c;
   wire d;
-  
+
   assign c = 16'b1;
   assign d = 1'b1;
-  
+
   // Signed values
   wire signed [63:0] g;
   assign g = -’d5;
-  
+
   wire signed [31:0] h = 'd5;
-  
+
   reg signed[31:0] f;
   always@(*) begin
     f = ‘d5;
@@ -209,7 +209,7 @@ class MyWireAssignmentModule extends Module {
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new MyWireAssignmentModule)
+ChiselStage.emitSystemVerilog(new MyWireAssignmentModule)
 ```
 
 </td>
@@ -250,7 +250,7 @@ module RegisterModule(
   always @(posedge clock) begin
     registerWithoutInit <= in + 8'h1;
   end
-  
+
   always @(posedge clock) begin
     if (reset) begin
       registerWithInit <= 8'd42;
@@ -258,7 +258,7 @@ module RegisterModule(
       registerWithInit <= registerWithInit - 8'h1;
     end
   end
-  
+
   always @(posedge differentClock) begin
     if (differentSyncReset) begin
       registerOnDifferentClockAndSyncReset <= 8'h42;
@@ -266,7 +266,7 @@ module RegisterModule(
       registerOnDifferentClockAndSyncReset <= in - 8'h1;
     end
   end
-   
+
   always @(posedge differentClock or posedge differentAsyncReset) begin
     if (differentAsyncReset) begin
       registerOnDifferentClockAndAsyncReset <= 8'h24;
@@ -274,14 +274,14 @@ module RegisterModule(
       registerOnDifferentClockAndAsyncReset <= in + 8'h2;
     end
   end
-  
-  assign out = in + 
-    registerWithoutInit + 
-    registerWithInit + 
-    registerOnDifferentClockAndSyncReset + 
+
+  assign out = in +
+    registerWithoutInit +
+    registerWithInit +
+    registerOnDifferentClockAndSyncReset +
     registerOnDifferentClockAndAsyncReset;
 endmodule
-  
+
 ```
 </td>
 <td>
@@ -293,38 +293,38 @@ class RegisterModule extends Module {
 
   val differentClock = IO(Input(Clock()))
   val differentSyncReset = IO(Input(Bool()))
-  
+
   val differentAsyncReset = IO(Input(AsyncReset()))
-  
+
   val registerWithoutInit = Reg(UInt(8.W))
-  
+
   val registerWithInit = RegInit(42.U(8.W))
-  
+
   registerWithoutInit := in + 1.U
-  
+
   registerWithInit := registerWithInit - 1.U
-  
+
   val registerOnDifferentClockAndSyncReset = withClockAndReset(differentClock, differentSyncReset) {
     val reg = RegInit("h42".U(8.W))
     reg
   }
   registerOnDifferentClockAndSyncReset := in - 1.U
-  
+
   val registerOnDifferentClockAndAsyncReset = withClockAndReset(differentClock, differentAsyncReset) {
     val reg = RegInit("h24".U(8.W))
     reg
   }
   registerOnDifferentClockAndAsyncReset := in + 2.U
-  
-  out := in + 
-    registerWithoutInit + 
-    registerWithInit + 
-    registerOnDifferentClockAndSyncReset + 
+
+  out := in +
+    registerWithoutInit +
+    registerWithInit +
+    registerOnDifferentClockAndSyncReset +
     registerOnDifferentClockAndAsyncReset
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new RegisterModule)
+ChiselStage.emitSystemVerilog(new RegisterModule)
 ```
 </td>
          </tr>
@@ -371,7 +371,7 @@ class CaseStatementModule extends Module {
   val a, b, c= IO(Input(UInt(3.W)))
   val sel = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt(3.W)))
-  
+
   // default goes first
   out := 0.U
 
@@ -383,7 +383,7 @@ class CaseStatementModule extends Module {
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new CaseStatementModule)
+ChiselStage.emitSystemVerilog(new CaseStatementModule)
 ```
 </td>
          </tr>
@@ -391,7 +391,7 @@ ChiselStage.emitVerilog(new CaseStatementModule)
 <html>
 <body>
 
-# Case Statements Using Enums 
+# Case Statements Using Enums
 
 <html>
 <body>
@@ -411,7 +411,7 @@ module CaseStatementEnumModule1 (
   output reg [2:0] out);
 
   typedef enum {SELECT_RS1, SELECT_PC} AluMux1Sel;
-  
+
   case(sel)
     SELECT_RS1: out <= rs1;
     SELECT_PC: out <= pc;
@@ -424,19 +424,19 @@ endmodule
 
 ```scala mdoc:silent
 class CaseStatementEnumModule1 extends Module {
-  
+
   object AluMux1Sel extends ChiselEnum {
     val selectRS1, selectPC = Value
   }
-  
+
    import AluMux1Sel._
    val rs1, pc = IO(Input(UInt(3.W)))
    val sel = IO(Input(AluMux1Sel()))
    val out = IO(Output(UInt(3.W)))
-   
+
    // default goes first
    out := 0.U
-    
+
    switch (sel) {
      is (selectRS1) { out := rs1 }
      is (selectPC)  { out := pc }
@@ -444,7 +444,7 @@ class CaseStatementEnumModule1 extends Module {
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new CaseStatementEnumModule1)
+ChiselStage.emitSystemVerilog(new CaseStatementEnumModule1)
 ```
 </td>
          </tr>
@@ -453,16 +453,16 @@ ChiselStage.emitVerilog(new CaseStatementEnumModule1)
 
 ```verilog
 module CaseStatementEnumModule2 (input clk);
- 
+
   typedef enum {
     INIT = 3,
     IDLE = 'h13,
     START = 'h17,
     READY = 'h23 } StateValue;
-       
+
   reg StateValue state;
-    
- 
+
+
   always @(posedge clk) begin
     case (state)
       IDLE    : state = START;
@@ -478,17 +478,17 @@ endmodule
 
 ```scala mdoc:silent
 class CaseStatementEnumModule2 extends Module {
-  
+
   object StateValue extends ChiselEnum {
-   val INIT  = Value(0x03.U) 
-    val IDLE  = Value(0x13.U) 
-    val START = Value(0x17.U) 
-    val READY = Value(0x23.U) 
+   val INIT  = Value(0x03.U)
+    val IDLE  = Value(0x13.U)
+    val START = Value(0x17.U)
+    val READY = Value(0x23.U)
   }
   import StateValue._
   val state = Reg(StateValue())
 
-  
+
   switch (state) {
     is (INIT) {state := IDLE}
     is (IDLE) {state := START}
@@ -498,7 +498,7 @@ class CaseStatementEnumModule2 extends Module {
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new CaseStatementEnumModule2)
+ChiselStage.emitSystemVerilog(new CaseStatementEnumModule2)
 ```
 </td>
          </tr>
@@ -552,7 +552,7 @@ io.out <> io.in
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new MyInterfaceModule)
+ChiselStage.emitSystemVerilog(new MyInterfaceModule)
 ```
 
 </td>
@@ -616,16 +616,16 @@ class ReadWriteSmem extends Module {
     val dataIn = Input(UInt(32.W))
     val dataOut = Output(UInt(32.W))
   })
-  
+
   val mem = SyncReadMem(1024, UInt(32.W))
-  
+
   // Create one write port and one read port
   mem.write(io.addr, io.dataIn)
   io.dataOut := mem.read(io.addr, io.enable)
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new ReadWriteSmem)
+ChiselStage.emitSystemVerilog(new ReadWriteSmem)
 ```
 </td>
 </tr>
@@ -641,11 +641,11 @@ module ReadWriteMem(
   input  [31:0] io_dataIn,
   output [31:0] io_dataOut
   );
-  
+
   reg [31:0] mem [0:1023];
-  
+
   assign io_dataOut = mem[io_addr];
-  
+
   always @(posedge clock) begin
     if (io_enable && io_write) begin
       mem[io_addr] <= io_dataIn;
@@ -675,7 +675,7 @@ class ReadWriteMem extends Module {
 }
 ```
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new ReadWriteMem)
+ChiselStage.emitSystemVerilog(new ReadWriteMem)
 ```
 </td>
 </tr>
@@ -730,7 +730,7 @@ ChiselStage.emitVerilog(new ReadWriteMem)
   output [1:0]  multiple_bitselect_res,
   output [95:0] fill_res
 );
-  assign add_res = x + y; 
+  assign add_res = x + y;
   assign sub_res = x - y;
   assign mod_res = x % y;
   assign mul_res = x * y;
@@ -738,31 +738,31 @@ ChiselStage.emitVerilog(new ReadWriteMem)
   assign equ_res = x == y;
   assign not_equ_res = x != y;
   assign and_res = x & y;
-  assign or_res = x | y; 
+  assign or_res = x | y;
   assign xor_res = x ^ y;
-   assign not_res = ~x; 
+   assign not_res = ~x;
   assign logical_not_res = !(x == 32'h0);
    assign logical_and_res = x[0] && y[0];
   assign logical_or_res = x[0] || y[0];
-  assign cat_res = {x,y}; 
+  assign cat_res = {x,y};
   assign mux_res = c[0] ? x : y;
   assign rshift_res = x >> y[2:0];
   assign lshift_res = x << y[2:0];
-  assign gt_res = x > y; 
+  assign gt_res = x > y;
   assign lt_res = x < y;
-  assign geq_res = x >= y; 
+  assign geq_res = x >= y;
   assign leq_res = x <= y;
   assign single_bitselect_res = x[1];
   assign multiple_bitselect_res = x[1:0];
   assign fill_res = {3{x}};
   assign andR_res = &x;
-  assign orR_res = |x; 
-  assign xorR_res = ^x; 
- 
-  
+  assign orR_res = |x;
+  assign xorR_res = ^x;
 
-  
- 
+
+
+
+
 endmodule
 
 ```
@@ -775,30 +775,30 @@ class OperatorExampleModule extends Module {
 
   val x, y, c = IO(Input(UInt(32.W)))
 
-  val add_res, sub_res, 
-  mod_res, div_res, and_res, 
+  val add_res, sub_res,
+  mod_res, div_res, and_res,
   or_res, xor_res, not_res,
-  logical_not_res, mux_res,  
+  logical_not_res, mux_res,
   rshift_res , lshift_res = IO(Output(UInt(32.W)))
-  
-  val logical_and_res, logical_or_res, 
-  equ_res, not_equ_res, andR_res, 
-  orR_res, xorR_res, gt_res,lt_res, 
+
+  val logical_and_res, logical_or_res,
+  equ_res, not_equ_res, andR_res,
+  orR_res, xorR_res, gt_res,lt_res,
   geq_res, leq_res,single_bitselect_res = IO(Output(Bool()))
-  
+
   val mul_res, cat_res= IO(Output(UInt(64.W)))
-  
+
   val multiple_bitselect_res = IO(Output(UInt(2.W)))
-  
+
   val fill_res = IO(Output(UInt((3*32).W)))
 
   add_res := x + y
-  sub_res := x - y 
+  sub_res := x - y
   mod_res := x % y
   mul_res := x * y
   div_res := x / y
   equ_res := x === y
-  not_equ_res := x =/= y 
+  not_equ_res := x =/= y
   and_res := x & y
   or_res := x | y
   xor_res := x ^ y
@@ -814,17 +814,17 @@ class OperatorExampleModule extends Module {
   lt_res := x < y
   geq_res := x >= y
   leq_res := x <= y
-  single_bitselect_res := x(1) 
-  multiple_bitselect_res := x(1, 0) 
+  single_bitselect_res := x(1)
+  multiple_bitselect_res := x(1, 0)
   fill_res:= Fill(3,x)
   andR_res := x.andR
   orR_res := x.orR
   xorR_res := x.xorR
-} 
+}
 ```
 
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new OperatorExampleModule)
+ChiselStage.emitSystemVerilog(new OperatorExampleModule)
 ```
 </td>
          </tr>
