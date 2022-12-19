@@ -5,8 +5,8 @@ on:
 
 jobs:
   setup_oss_cad_suite:
-    # TODO does this need a runs
-    #runs-on: ${{ matrix.system }}
+    # TODO does this need a runs, can it derive from the caller?
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Install Tabby OSS Cad Suite
