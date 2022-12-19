@@ -6,6 +6,8 @@ env:
 runs:
   using: composite
   steps:
+    - name: Check env
+      run: env
     - name: Install Tabby OSS Cad Suite
       shell: bash
       run: |
