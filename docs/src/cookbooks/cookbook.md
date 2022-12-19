@@ -82,7 +82,7 @@ class MyBundle extends Bundle {
 class Foo extends Module {
   val uint = 0xb4.U
   val bundle = uint.asTypeOf(new MyBundle)
-  
+
   printf(cf"$bundle") // Bundle(foo -> 11, bar -> 4)
 
   // Test
@@ -103,7 +103,7 @@ you are tying off, you can use `chiselTypeOf`:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class MyBundle extends Bundle {
   val foo = UInt(4.W)
@@ -113,17 +113,17 @@ class MyBundle extends Bundle {
 class Foo(typ: MyBundle) extends Module {
   val bundleA = IO(Output(typ))
   val bundleB = IO(Output(typ))
-  
-  // typ is already a Chisel Data Type, so can use it directly here, but you 
+
+  // typ is already a Chisel Data Type, so can use it directly here, but you
   // need to know that bundleA is of type typ
   bundleA := 0.U.asTypeOf(typ)
-  
+
   // bundleB is a Hardware data IO(Output(...)) so need to call chiselTypeOf,
   // but this will work no matter the type of bundleB:
-  bundleB := 0.U.asTypeOf(chiselTypeOf(bundleB)) 
+  bundleB := 0.U.asTypeOf(chiselTypeOf(bundleB))
 }
 
-ChiselStage.emitVerilog(new Foo(new MyBundle))
+ChiselStage.emitSystemVerilog(new Foo(new MyBundle))
 ```
 ### How do I create a Vec of Bools from a UInt?
 
@@ -221,9 +221,9 @@ class Foo extends Module {
 ```
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
-ChiselStage.emitVerilog(new Foo)
+ChiselStage.emitSystemVerilog(new Foo)
 ```
 
 
@@ -556,7 +556,7 @@ Below, the left-hand side connection to `io.out(0)` is not allowed.
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class Foo extends Module {
   val io = IO(new Bundle {
@@ -710,7 +710,7 @@ Unlike `Vecs` which represent a singular Chisel type and must have the same widt
 `Seq` is a purely Scala construct, so their elements are independent from the perspective of Chisel and can have different widths.
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new CountBits(4))
+circt.stage.ChiselStage.emitSystemVerilog(new CountBits(4))
   // remove the body of the module by removing everything after ');'
   .split("\\);")
   .head + ");\n"
@@ -811,20 +811,20 @@ to a register:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 class BadRegConnect extends Module {
   val io = IO(new Bundle {
     val enq = Decoupled(UInt(8.W))
   })
-  
+
   val monitor = Reg(chiselTypeOf(io.enq))
   monitor := io.enq
 }
 ```
 
 ```scala mdoc:crash
-ChiselStage.emitVerilog(new BadRegConnect)
+ChiselStage.emitSystemVerilog(new BadRegConnect)
 ```
 
 While there is no construct to "strip direction" in Chisel3, wrapping a type in `Output(...)`
@@ -834,13 +834,13 @@ This will have the desired result when used to construct a Register:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 class CoercedRegConnect extends Module {
   val io = IO(new Bundle {
     val enq = Flipped(Decoupled(UInt(8.W)))
   })
-  
+
   // Make a Reg which contains all of the bundle's signals, regardless of their directionality
   val monitor = Reg(Output(chiselTypeOf(io.enq)))
   // Even though io.enq is bidirectional, := will drive all fields of monitor with the fields of io.enq
@@ -850,7 +850,7 @@ class CoercedRegConnect extends Module {
 
 <!-- Just make sure it actually works -->
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new CoercedRegConnect {
+ChiselStage.emitSystemVerilog(new CoercedRegConnect {
   // Provide default connections that would just muddy the example
   io.enq.ready := true.B
   // dontTouch so that it shows up in the Verilog
