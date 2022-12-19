@@ -28,6 +28,25 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
   }
 
   class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+    // The following trickery is necessary for using the new warning mechanism added in 2.13 from a compiler plugin
+    // See https://github.com/scala/bug/issues/12258
+    object WarningCategoryCompat {
+      object Reporting {
+        object WarningCategory {
+          val Deprecation: Any = null
+        }
+      }
+    }
+
+    // Of type Reporting.WarningCategory.type, but we cannot explicit write it
+    val WarningCategory = {
+      import WarningCategoryCompat._
+
+      {
+        import scala.tools.nsc._
+        Reporting.WarningCategory
+      }
+    }
 
     @tailrec private def isRootFirrtl(tree: Tree): Boolean = tree match {
       case Ident(name) if name.toString == "firrtl" => true
@@ -38,31 +57,11 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
       case imp @ Import(expr: Tree, selectors: List[ImportSelector]) if isRootFirrtl(expr) =>
-        // The following trickery is necessary for using the new warning mechanism added in 2.13 from a compiler plugin
-        // See https://github.com/scala/bug/issues/12258
-        object WarningCategoryCompat {
-          object Reporting {
-            object WarningCategory {
-              val Other: Any = null
-            }
-          }
-        }
-
-        // Of type Reporting.WarningCategory.type, but we cannot explicit write it
-        val WarningCategory = {
-          import WarningCategoryCompat._
-
-          {
-            import scala.tools.nsc._
-            Reporting.WarningCategory
-          }
-        }
-
         // Can supress with adding "-Wconf:msg=firrtl:s" to scalacOptions
         global.runReporting.warning(
           imp.symbol.pos,
           s"Importing from firrtl is deprecated as of Chisel's 3.6.0 release.",
-          WarningCategory.Other,
+          WarningCategory.Deprecation,
           imp.symbol
         )
         super.transform(imp)
