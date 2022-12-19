@@ -10,10 +10,8 @@ jobs:
 
     steps:
       - name: Install Tabby OSS Cad Suite
-        with:
-          osscadsuite-version: '2021-11-09'
         run:
-          VERSION=${{ github.inputs.osscadsuite-version }}
+          VERSION="2021-11-09"
           ARTIFACT=oss-cad-suite-linux-x64-$(echo $VERSION | tr -d '-')
           wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/${VERSION}/${ARTIFACT}.tgz -O - | tar -zx
           echo "$(pwd)/oss-cad-suite/bin" >> $GITHUB_PATH
