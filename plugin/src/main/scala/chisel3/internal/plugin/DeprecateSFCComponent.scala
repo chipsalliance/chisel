@@ -20,7 +20,7 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
   class DeprecateSFCComponent(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
-      if (ChiselPlugin.runComponent(global, arguments)(unit)) {
+      if (ChiselPlugin.runComponent(global, arguments)(unit) && arguments.deprecateSFC) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
       }
     }
