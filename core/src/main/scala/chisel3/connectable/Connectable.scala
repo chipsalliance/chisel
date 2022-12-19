@@ -57,31 +57,38 @@ final class Connectable[+T <: Data] private (
   /** Waive all members of base and static cast to a new type */
   def waiveAllAs[S <: Data](implicit ev: T <:< S): Connectable[S] = waiveAll.asInstanceOf[Connectable[S]]
 
-  /** Adds base to squeezes
-    *
-    * @param members functions given the base return a member to squeeze
-    */
-  def squeeze: Connectable[T] = this.copy(squeezed = squeezed + base)
+  /** Adds base to squeezes */
+  def squeeze: Connectable[T] = this.copy(squeezed = squeezed ++ addOpaque(Seq(base)))
 
   /** Select members of base to squeeze
     *
     * @param members functions given the base return a member to squeeze
     */
-  def squeeze(members: (T => Data)*): Connectable[T] = this.copy(squeezed = squeezed ++ members.map(f => f(base)).toSet)
+  def squeeze(members: (T => Data)*): Connectable[T] = {
+    this.copy(squeezed = squeezed ++ addOpaque(members.map(f => f(base))))
+  }
 
   /** Programmatically select members of base to squeeze
     *
     * @param members partial function applied to all recursive members of base, if match, can return a member to squeeze
     */
   def squeezeEach[S <: Data](pf: PartialFunction[Data, Seq[Data]]): Connectable[T] = {
-    val squeezedMembers = DataMirror.collectMembers(base)(pf).flatten
-    this.copy(squeezed = squeezed ++ squeezedMembers.toSet)
+    val squeezedMembers = addOpaque(DataMirror.collectMembers(base)(pf).flatten.toSeq)
+    this.copy(squeezed = squeezed ++ squeezedMembers)
   }
 
   /** Squeeze all members of base */
   def squeezeAll: Connectable[T] = {
     val squeezedMembers = DataMirror.collectMembers(base) { case x => x }
     this.copy(squeezed = squeezedMembers.toSet) // not appending squeezed because we are collecting all members
+  }
+
+  /** Add any elements of members that are OpaqueType */
+  private def addOpaque(members: Seq[Data]): Seq[Data] = {
+    members.flatMap {
+      case x: Record if x._isOpaqueType => Seq(x, x.getElements.head)
+      case o => Seq(o)
+    }
   }
 }
 

@@ -10,7 +10,7 @@ import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
-import chisel3.experimental.{AutoCloneType, DataMirror}
+import chisel3.experimental.{AutoCloneType, DataMirror, OpaqueType}
 import scala.collection.immutable.SeqMap
 
 object ConnectableSpec {
@@ -1183,6 +1183,54 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
           "in3.v[0].ready <= out3.v[0].ready",
           "in3.v[1].ready <= out3.v[1].ready",
           "in3.v[2].ready <= out3.v[2].ready"
+        ),
+        Nil
+      )
+    }
+    it("(5.f) Squeeze works on OpaqueType") {
+      class OpaqueRecord(width: Int) extends Record with OpaqueType {
+        private val underlying = UInt(width.W)
+        val elements = SeqMap("" -> underlying)
+        override def cloneType: this.type = (new OpaqueRecord(width)).asInstanceOf[this.type]
+      }
+      class MyModule extends Module {
+        val in = IO(Input(new OpaqueRecord(4)))
+        val out = IO(Output(new OpaqueRecord(2)))
+        out :<>= in.squeeze
+      }
+      testCheck(
+        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq(
+          "out <= in"
+        ),
+        Nil
+      )
+    }
+    it("(5.g) Squeeze works on nested OpaqueType fields") {
+      class OpaqueRecord(width: Int) extends Record with OpaqueType {
+        private val underlying = UInt(width.W)
+        val elements = SeqMap("" -> underlying)
+        override def cloneType: this.type = (new OpaqueRecord(width)).asInstanceOf[this.type]
+      }
+      class MyModule extends Module {
+        val inA = IO(Flipped(new Bundle {
+          val opaque = new OpaqueRecord(4)
+        }))
+        val inB = IO(Flipped(new Bundle {
+          val opaque = new OpaqueRecord(5)
+        }))
+        val out = IO(new Bundle {
+          val opaque = new OpaqueRecord(2)
+        })
+        // Test both `squeeze` and `squeezeEach`
+        out :<>= inA.squeeze(_.opaque)
+        out :<>= inB.squeezeEach { case d: OpaqueRecord => Seq(d) }
+      }
+      testCheck(
+        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq(
+          "out.opaque <= inA.opaque",
+          "out.opaque <= inB.opaque"
         ),
         Nil
       )
