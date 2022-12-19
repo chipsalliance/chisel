@@ -26,7 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Tabby OSS Cad Suite
-        uses: ./.github/workflows/setup-oss-cad-suite.yml
+        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
         run: |
           cd /tmp
@@ -88,7 +88,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Tabby OSS Cad Suite
-        uses: ./.github/workflows/setup-oss-cad-suite.yml
+        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
         run: |
           cd /tmp
@@ -115,7 +115,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Tabby OSS Cad Suite
-        uses: ./.github/workflows/setup-oss-cad-suite.yml
+        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
