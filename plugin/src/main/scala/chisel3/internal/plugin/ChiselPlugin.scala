@@ -8,16 +8,13 @@ import nsc.plugins.{Plugin, PluginComponent}
 import scala.reflect.internal.util.NoPosition
 import scala.collection.mutable
 
-private[plugin] class ChiselPluginArguments(
+private[plugin] case class ChiselPluginArguments(
   val skipFiles: mutable.HashSet[String] = mutable.HashSet.empty) {
   var deprecateSFC: Boolean = true
   def useBundlePluginOpt = "useBundlePlugin"
   def useBundlePluginFullOpt = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
   def genBundleElementsOpt = "genBundleElements"
   def genBundleElementsFullOpt = s"-P:${ChiselPlugin.name}:$genBundleElementsOpt"
-  // Use to not emit deprecation warning for `import firrtl._`
-  def omitSFCDeprecation = s"omitSFCDeprecation"
-  def omitSFCDeprecationFull = s"-P:${ChiselPlugin.name}:$omitSFCDeprecation"
   // Annoying because this shouldn't be used by users
   def skipFilePluginOpt = "INTERNALskipFile:"
   def skipFilePluginFullOpt = s"-P:${ChiselPlugin.name}:$skipFilePluginOpt"
@@ -56,7 +53,7 @@ object ChiselPlugin {
 class ChiselPlugin(val global: Global) extends Plugin {
   val name = ChiselPlugin.name
   val description = "Plugin for Chisel 3 Hardware Description Language"
-  private val arguments = new ChiselPluginArguments()
+  private val arguments = ChiselPluginArguments()
   val components: List[PluginComponent] = List[PluginComponent](
     new ChiselComponent(global, arguments),
     new BundleComponent(global, arguments),
@@ -77,8 +74,6 @@ class ChiselPlugin(val global: Global) extends Plugin {
       } else if (option == arguments.genBundleElementsOpt) {
         val msg = s"'${arguments.genBundleElementsOpt}' is now default behavior, you can remove the scalacOption."
         global.reporter.warning(NoPosition, msg)
-      } else if (option == arguments.omitSFCDeprecation) {
-        arguments.deprecateSFC = false
       } else {
         error(s"Option not understood: '$option'")
       }

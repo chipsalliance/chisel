@@ -280,7 +280,7 @@ lazy val docs = project // new documentation project
       "-Xfatal-warnings",
       "-language:reflectiveCalls",
       "-language:implicitConversions",
-      "-P:chiselplugin:omitSFCDeprecation"
+      "-Wconf:msg=firrtl:s"
     ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
