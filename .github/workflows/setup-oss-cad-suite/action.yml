@@ -21,5 +21,8 @@ runs:
         VERSION=${{ inputs.version }}
         ARTIFACT=oss-cad-suite-linux-x64-$(echo $VERSION | tr -d '-')
         wget -q -O - https://github.com/YosysHQ/oss-cad-suite-build/releases/download/${VERSION}/${ARTIFACT}.tgz | tar -zx
-        echo "$(pwd)/oss-cad-suite/bin" >> $GITHUB_PATH
+
+    # Add the CAD Suite to the PATH
+    - shell: bash
+      run: echo "$(pwd)/oss-cad-suite/bin" >> $GITHUB_PATH
 
