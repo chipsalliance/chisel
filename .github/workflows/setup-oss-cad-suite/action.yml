@@ -9,8 +9,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install Tabby OSS Cad Suite
-      shell: bash
+    - shell: bash
       run: |
         VERSION=${{ inputs.version }}
         ARTIFACT=oss-cad-suite-linux-x64-$(echo $VERSION | tr -d '-')
