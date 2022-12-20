@@ -19,7 +19,7 @@ runs:
       if: steps.cache-espresso.outputs.cache-hit != 'true'
       run: |
         cd /tmp
-        wget https://github.com/chipsalliance/espresso/releases/download/v${{ inputs.version }}/x86_64-linux-gnu-espresso
+        wget -q https://github.com/chipsalliance/espresso/releases/download/v${{ inputs.version }}/x86_64-linux-gnu-espresso
         chmod +x x86_64-linux-gnu-espresso
         sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
         espresso || true
