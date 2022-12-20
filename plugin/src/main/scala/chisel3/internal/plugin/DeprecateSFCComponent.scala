@@ -48,9 +48,9 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
       }
     }
     implicit final class GlobalCompat(
-        self: DeprecateSFCComponent.this.global.type) {
+      self: DeprecateSFCComponent.this.global.type) {
 
-      // Added in Scala 2.13.2 for configurable warnings                                                                                                                                                        
+      // Added in Scala 2.13.2 for configurable warnings
       object runReporting {
         def warning(pos: Position, msg: String, cat: Any, site: Symbol): Unit =
           reporter.warning(pos, msg)
