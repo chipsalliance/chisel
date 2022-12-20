@@ -36,13 +36,6 @@ jobs:
           distribution: 'adopt'
           java-version: ${{ matrix.jvm }}
           cache: 'sbt'
-<<<<<<< HEAD
-=======
-      - name: Install CIRCT
-        uses: ./.github/workflows/install-circt
-        with:
-          version: ${{ matrix.circt }}
->>>>>>> dbd5f48a (DRY out CI (#2903))
       - name: Use Treadle for Pull Requests
         if: github.event_name == 'pull_request'
         run: echo "CHISEL3_CI_USE_TREADLE=1" >> $GITHUB_ENV
@@ -63,11 +56,6 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
           cache: 'sbt'
-<<<<<<< HEAD
-=======
-      - name: Install CIRCT
-        uses: ./.github/workflows/install-circt
->>>>>>> dbd5f48a (DRY out CI (#2903))
       - name: Check Formatting
         run: sbt scalafmtCheckAll
       - name: Documentation
