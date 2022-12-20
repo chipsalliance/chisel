@@ -37,14 +37,10 @@ jobs:
           distribution: 'adopt'
           java-version: ${{ matrix.jvm }}
           cache: 'sbt'
-
       - name: Install CIRCT
-        run: |
-          mkdir usr
-          # Escape version forward slashes for use in URL
-          VERSION=$(echo ${{ matrix.circt }} | sed 's|/|%2F|g')
-          wget https://github.com/llvm/circt/releases/download/${VERSION}/circt-bin-ubuntu-20.04.tar.gz -O - | tar -zx -C usr/
-          echo "$(pwd)/usr/bin" >> $GITHUB_PATH
+        uses: ./.github/workflows/install-circt
+        with:
+          version: ${{ matrix.circt }}
       - name: Use Treadle for Pull Requests
         if: github.event_name == 'pull_request'
         run: echo "CHISEL3_CI_USE_TREADLE=1" >> $GITHUB_ENV
@@ -66,12 +62,7 @@ jobs:
           java-version: '11'
           cache: 'sbt'
       - name: Install CIRCT
-        run: |
-          mkdir usr
-          # Escape version forward slashes for use in URL
-          VERSION=$(echo "sifive/1/24/0" | sed 's|/|%2F|g')
-          wget https://github.com/llvm/circt/releases/download/${VERSION}/circt-bin-ubuntu-20.04.tar.gz -O - | tar -zx -C usr/
-          echo "$(pwd)/usr/bin" >> $GITHUB_PATH
+        uses: ./.github/workflows/install-circt
       - name: Check Formatting
         run: sbt scalafmtCheckAll
       - name: Documentation
