@@ -10,7 +10,6 @@ runs:
   using: composite
   steps:
     - id: cache-oss-cad-suite
-      shell: bash
       uses: actions/cache@v3
       with:
         path: oss-cad-suite
