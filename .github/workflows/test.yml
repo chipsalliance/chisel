@@ -27,19 +27,22 @@ jobs:
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
-        run: |
-          cd /tmp
-          wget https://github.com/chipsalliance/espresso/releases/download/v${{ matrix.espresso }}/x86_64-linux-gnu-espresso
-          chmod +x x86_64-linux-gnu-espresso
-          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
-          espresso || true
-
+        uses: ./.github/workflows/install-espresso
+        with:
+          version: ${{ matrix.espresso }}
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
           java-version: ${{ matrix.jvm }}
           cache: 'sbt'
+<<<<<<< HEAD
+=======
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
+        with:
+          version: ${{ matrix.circt }}
+>>>>>>> dbd5f48a (DRY out CI (#2903))
       - name: Use Treadle for Pull Requests
         if: github.event_name == 'pull_request'
         run: echo "CHISEL3_CI_USE_TREADLE=1" >> $GITHUB_ENV
@@ -60,6 +63,11 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
           cache: 'sbt'
+<<<<<<< HEAD
+=======
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
+>>>>>>> dbd5f48a (DRY out CI (#2903))
       - name: Check Formatting
         run: sbt scalafmtCheckAll
       - name: Documentation
@@ -74,12 +82,7 @@ jobs:
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
-        run: |
-          cd /tmp
-          wget https://github.com/chipsalliance/espresso/releases/download/v2.4/x86_64-linux-gnu-espresso
-          chmod +x x86_64-linux-gnu-espresso
-          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
-          espresso || true
+        uses: ./.github/workflows/install-espresso
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
