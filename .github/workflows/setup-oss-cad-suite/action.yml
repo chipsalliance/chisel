@@ -9,7 +9,15 @@ inputs:
 runs:
   using: composite
   steps:
+    - id: cache-oss-cad-suite
+      shell: bash
+      uses: actions/cache@v3
+      with:
+        path: oss-cad-suite
+        key: oss-cad-suite-${{ runner.os }}-${{ inputs.version }}
+
     - shell: bash
+      if: steps.cache-oss-cad-suite.outputs.cache-hit != 'true'
       run: |
         VERSION=${{ inputs.version }}
         ARTIFACT=oss-cad-suite-linux-x64-$(echo $VERSION | tr -d '-')
