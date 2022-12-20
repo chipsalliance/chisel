@@ -47,6 +47,15 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
         Reporting.WarningCategory
       }
     }
+    implicit final class GlobalCompat(
+        self: DeprecateSFCComponent.this.global.type) {
+
+      // Added in Scala 2.13.2 for configurable warnings                                                                                                                                                        
+      object runReporting {
+        def warning(pos: Position, msg: String, cat: Any, site: Symbol): Unit =
+          reporter.warning(pos, msg)
+      }
+    }
 
     @tailrec private def isRootFirrtl(tree: Tree): Boolean = tree match {
       case Ident(name) if name.toString == "firrtl" => true
