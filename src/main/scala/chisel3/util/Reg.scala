@@ -200,7 +200,7 @@ object ShiftRegister {
         mem.suggestName(name)
       }
       val raddr = Counter(en, n)._1
-      val out = mem.read(raddr)
+      val out = mem.read(raddr, en)
 
       val waddr = RegEnable(raddr, (n - 1).U, en)
       when(en) {
