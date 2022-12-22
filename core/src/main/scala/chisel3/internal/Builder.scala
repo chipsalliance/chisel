@@ -293,20 +293,24 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(arg) => arg.fullName(c)
     case None => {
       throwException(
-        "You cannot access the .instanceName or .toTarget of non-hardware Data" + _nameGuess + _parentGuess
+        "You cannot access the .instanceName or .toTarget of non-hardware Data" + _errorContext
       )
     }
   }
 
-  private[chisel3] def _nameGuess: String = _computeName(None) match {
-    case Some(name) => s": '$name'"
-    case None       => ""
-  }
+  private[chisel3] def _errorContext: String = {
+    val nameGuess: String = _computeName(None) match {
+      case Some(name) => s": '$name'"
+      case None       => ""
+    }
 
-  private[chisel3] def _parentGuess: String = _parent match {
-    case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
-    case Some(p)          => s", in module '${p.pathName}'"
-    case None             => ""
+    val parentGuess: String = _parent match {
+      case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
+      case Some(p)          => s", in module '${p.pathName}'"
+      case None             => ""
+    }
+
+    nameGuess + parentGuess
   }
 
   // Helper for reifying views if they map to a single Target
@@ -407,8 +411,8 @@ private[chisel3] trait NamedComponent extends HasId {
 
     if (isVecSubaccess) {
       throwException(
-        s"You cannot target Vec subaccess" + _nameGuess + _parentGuess +
-          ". Instead, assign it to a temporary (for example, with WireInit) and target that."
+        s"You cannot target Vec subaccess" + _errorContext +
+          ". Instead, assign it to a temporary (for example, with WireInit) and target the temporary."
       )
     }
   }
