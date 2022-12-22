@@ -9,7 +9,7 @@ class VecToTargetSpec extends ChiselFlatSpec with Utils {
   "Vec subaccess with Scala literal" should "convert to ReferenceTarget" in {
     ChiselStage.convert {
       new Module {
-        val vec = IO(Input(Vec(4,Bool())))
+        val vec = IO(Input(Vec(4, Bool())))
         val idx = 0
         dontTouch(vec(idx))
       }
@@ -20,7 +20,7 @@ class VecToTargetSpec extends ChiselFlatSpec with Utils {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.convert {
         new Module {
-          val vec = IO(Input(Vec(4,Bool())))
+          val vec = IO(Input(Vec(4, Bool())))
           val idx = 0.U
           dontTouch(vec(idx))
         }
@@ -32,7 +32,7 @@ class VecToTargetSpec extends ChiselFlatSpec with Utils {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.convert {
         new Module {
-          val vec = IO(Input(Vec(4,Bool())))
+          val vec = IO(Input(Vec(4, Bool())))
           val idx = IO(Input(UInt(4.W)))
           dontTouch(vec(idx))
         }
@@ -43,7 +43,7 @@ class VecToTargetSpec extends ChiselFlatSpec with Utils {
   "Vec subaccess with illegal construct" should "convert to ReferenceTarget if assigned to a temporary" in {
     ChiselStage.convert {
       new Module {
-        val vec = IO(Input(Vec(4,Bool())))
+        val vec = IO(Input(Vec(4, Bool())))
         val idx = 0.U
         val tmp = WireInit(vec(idx))
         dontTouch(tmp)
