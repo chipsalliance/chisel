@@ -360,13 +360,16 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  final def toNamed: ComponentName =
+  final def toNamed: ComponentName = {
+    if (isVecSubaccess()) throwException(s"Cannot target a Vec subaccess (${this.instanceName}). Instead, assign it to a temporary (for example with WireInit) and target that.")
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+  }
 
   /** Returns a FIRRTL ReferenceTarget that references this object
     * @note Should not be called until circuit elaboration is complete
     */
   final def toTarget: ReferenceTarget = {
+    if (isVecSubaccess()) throwException(s"Cannot target a Vec subaccess (${this.instanceName}). Instead, assign it to a temporary (for example with WireInit) and target that.")
     val name = this.instanceName
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
@@ -389,6 +392,14 @@ private[chisel3] trait NamedComponent extends HasId {
       case Some(parent)     => makeTarget(parent)
       case None             => localTarget
     }
+  }
+
+  private def isVecSubaccess(): Boolean = {
+    getOptionRef.map {
+      case Index(_, _: ULit) => true // Vec literal indexing
+      case Index(_, _: Node) => true // Vec dynamic indexing
+      case _ => false
+    }.getOrElse(false)
   }
 }
 
