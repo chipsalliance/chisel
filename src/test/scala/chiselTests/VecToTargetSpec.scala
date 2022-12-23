@@ -5,71 +5,82 @@ package chiselTests
 import chisel3._
 import chisel3.stage.ChiselStage
 
-trait VecToTargetSpecUtils {
+trait VecToTargetSpecUtils extends Utils {
+  this: ChiselFunSpec =>
+
   class Foo extends RawModule {
     val vec = IO(Input(Vec(4, Bool())))
 
     // Index a Vec with a Scala literal.
-    val scalaLitIdx = 0
-    val vecScalaLitIdx = vec(scalaLitIdx)
+    val scalaLit = 0
+    val vecSubaccessScalaLit = vec(scalaLit)
 
     // Index a Vec with a Chisel literal.
-    val chiselLitIdx = 0.U
-    val vecChiselLitIdx = vec(chiselLitIdx)
+    val chiselLit = 0.U
+    val vecSubaccessChiselLit = vec(chiselLit)
 
     // Index a Vec with a node.
-    val nodeIdx = IO(Input(UInt(2.W)))
-    val vecNodeIdx = vec(nodeIdx)
+    val node = IO(Input(UInt(2.W)))
+    val vecSubaccessNode = vec(node)
 
     // Put an otherwise un-targetable Vec subaccess into a temp.
-    val vecWithTmp = WireInit(vecNodeIdx)
+    val vecSubaccessTmp = WireInit(vecSubaccessNode)
   }
-
-  var foo: Foo = null
-
-  ChiselStage.elaborate { foo = new Foo; foo }
 
   val expectedError = "You cannot target Vec subaccess:"
+
+  def conversionSucceeds(data: InstanceId) = {
+    describe(".toTarget") {
+      it("should convert successfully") {
+        data.toTarget
+      }
+    }
+
+    describe(".toNamed") {
+      it("should convert successfully") {
+        data.toNamed
+      }
+    }
+  }
+
+  def conversionFails(data: InstanceId) = {
+    describe(".toTarget") {
+      it("should fail to convert with a useful error message") {
+        (the[ChiselException] thrownBy extractCause[ChiselException] {
+          data.toTarget
+        }).getMessage should include(expectedError)
+      }
+    }
+
+    describe(".toNamed") {
+      it("should fail to convert with a useful error message") {
+        (the[ChiselException] thrownBy extractCause[ChiselException] {
+          data.toNamed
+        }).getMessage should include(expectedError)
+      }
+    }
+  }
 }
 
-class VecToTargetSpec extends ChiselFlatSpec with VecToTargetSpecUtils with Utils {
-  "Vec subaccess with Scala literal" should "convert to ReferenceTarget" in {
-    foo.vecScalaLitIdx.toTarget
-  }
+class VecToTargetSpec extends ChiselFunSpec with VecToTargetSpecUtils {
+  describe("Vec subaccess") {
+    var foo: Foo = null
+    ChiselStage.elaborate { foo = new Foo; foo }
 
-  "Vec subaccess with Scala literal" should "convert to ComponentName" in {
-    foo.vecScalaLitIdx.toNamed
-  }
+    describe("with a Scala literal") {
+      (it should behave).like(conversionSucceeds(foo.vecSubaccessScalaLit))
+    }
 
-  "Vec subaccess with Chisel literal" should "fail to convert to ReferenceTarget" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
-      foo.vecChiselLitIdx.toTarget
-    }).getMessage should include(expectedError)
-  }
+    describe("with a Chisel literal") {
+      (it should behave).like(conversionFails(foo.vecSubaccessChiselLit))
+    }
 
-  "Vec subaccess with Chisel literal" should "fail to convert to ComponentName" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
-      foo.vecChiselLitIdx.toNamed
-    }).getMessage should include(expectedError)
-  }
+    describe("with a Node") {
+      (it should behave).like(conversionFails(foo.vecSubaccessNode))
+    }
 
-  "Vec subaccess with node" should "fail to convert to ReferenceTarget" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
-      foo.vecNodeIdx.toTarget
-    }).getMessage should include(expectedError)
-  }
-
-  "Vec subaccess with node" should "fail to convert to ComponentName" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
-      foo.vecNodeIdx.toNamed
-    }).getMessage should include(expectedError)
-  }
-
-  "Vec subaccess with un-targetable construct" should "convert to ReferenceTarget if assigned to a temporary" in {
-    foo.vecWithTmp.toTarget
-  }
-
-  "Vec subaccess with un-targetable construct" should "convert to ComponentName if assigned to a temporary" in {
-    foo.vecWithTmp.toNamed
+    describe("with an un-targetable construct that is assigned to a temporary") {
+      (it should behave).like(conversionSucceeds(foo.vecSubaccessTmp))
+    }
   }
 }
