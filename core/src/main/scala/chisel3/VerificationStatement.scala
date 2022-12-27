@@ -429,7 +429,7 @@ object cover extends VerifPrintMacrosDoc {
   ): Cover = {
     val id = new Cover()
     when(!Module.reset.asBool) {
-      Builder.pushCommand(Verification(id, Formal.Cover, sourceInfo, Module.clock.ref, cond.ref, ""))
+      Builder.pushCommand(Verification(id, Formal.Cover, sourceInfo, Module.clock.ref, cond.ref, message.getOrElse("")))
     }
     id
   }
