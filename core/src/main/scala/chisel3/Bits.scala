@@ -365,6 +365,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * become a [[FixedPoint]] with value -1. The interpretation of the number is also affected by the specified binary
     * point. '''Caution is advised!'''
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   final def asFixedPoint(that: BinaryPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
@@ -383,6 +384,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * 3 and value 7 (0b111) would become a FixedInt with value -1, the interpretation
     * of the number is also affected by the specified binary point.  Caution advised
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   final def asInterval(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
 
   def do_asInterval(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
