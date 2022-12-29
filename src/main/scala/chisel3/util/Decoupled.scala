@@ -42,7 +42,11 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
   val bits = Output(genType)
 }
 
+/** This factory adds a ready/valid handshaking protocol to a data bundle. */
 object ReadyValidIO {
+
+  /** Wraps some Data with a DecoupledIO interface, but use the better ReadyValidIO naming */
+  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 
   implicit class AddMethodsToReadyValid[T <: Data](target: ReadyValidIO[T]) {
 

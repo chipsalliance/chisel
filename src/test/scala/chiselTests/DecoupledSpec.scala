@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.util.Decoupled
+import chisel3.util._
 
 class DecoupledSpec extends ChiselFlatSpec {
   "Decoupled() and Decoupled.empty" should "give DecoupledIO with empty payloads" in {
@@ -107,5 +107,16 @@ class DecoupledSpec extends ChiselFlatSpec {
 
     // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
     chirrtl should include("""enq.ready <= _deq_map.ready""")
+  }
+
+  "ReadyValidIO()" should "return a DecoupledIO" in {
+    ChiselStage.elaborate(new Module {
+      val io = IO(new Bundle {
+        val in = Flipped(ReadyValidIO(UInt(8.W)))
+        val out = ReadyValidIO(UInt(8.W))
+      })
+      io.out <> io.in
+      assert(io.in.isInstanceOf[DecoupledIO[Data]])
+    })
   }
 }
