@@ -2,15 +2,16 @@ buildDir ?= build
 subprojects = $(buildDir)/subprojects
 apis = $(buildDir)/api
 docs = $(buildDir)/docs
+chisel3 = ../
 
 www-docs = \
-	$(shell find chisel3/docs/ -name "*.md")
+	$(shell find $(chisel3)/docs/ -name "*.md")
 
 www-src = \
 	$(shell find docs/src/main/resources) \
 	docs/src/main/tut/chisel3/docs \
 	docs/src/main/tut/chisel3/index.md \
-	chisel3/README.md
+	$(chisel3)/README.md
 
 chiselTags = \
 	v3.2.8 \
@@ -78,16 +79,16 @@ $(apis)/chisel3/%/index.html: $(subprojects)/chisel3/%/.git | $(apis)/chisel3/%/
 	find $(<D) -type d -name unidoc -exec cp -r '{}'/. $(@D) ';'
 
 # Build docs in subproject with a specific tag.
-docs/src/main/tut/chisel3/docs: chisel3/.git $(www-docs)
-	(cd chisel3 && sbt docs/mdoc && cp -r docs/generated ../docs/src/main/tut/chisel3/docs)
+# This command is brittle as it assumes chisel3 is up one dir from here in the path to where
+# we want to put the website docs.
+docs/src/main/tut/chisel3/docs: $(chisel3)/docs/ $(www-docs)
+	(cd $(chisel3) && sbt docs/mdoc && cp -r docs/generated website/docs/src/main/tut/chisel3/docs)
 
 # Copy *old* API of subprojects from API directory into website
 docs/target/site/api/%/index.html: $(apis)/chisel3/v%/index.html | docs/target/site/api/%/
 	cp -r $(<D)/. $(@D)
 
-# Utilities to either fetch submodules or create directories
-%/.git:
-	git submodule update --init --depth 1 $*
+# Utilities to grab specific versions of repos to build API docs.
 $(subprojects)/chisel3/%/.git:
 	git clone "https://github.com/freechipsproject/chisel3.git" --depth 1 --branch $* $(dir $@)
 %/:

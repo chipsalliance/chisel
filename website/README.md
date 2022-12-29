@@ -1,6 +1,6 @@
 # Chisel-Lang Website
 
-This repository provides the meta-website for the [Chisel](https://github.com/freechipsproject/chisel3) project.
+This directory provides the meta-website for the [Chisel](https://github.com/freechipsproject/chisel3) project.
 
 # Contributing
 
@@ -14,6 +14,7 @@ To build the website you need:
 * [`sbt`](https://www.scala-sbt.org/download.html)
 * `jekyll`
 * `gmake` - tested with version 4.2.1
+* [`firtool`](https://github.com/llvm/circt/releases)
 
 #### Installing jekyll
 
@@ -28,10 +29,10 @@ gem install jekyll-redirect-from
 
 ``` bash
 # Clone this git repository
-git clone git@github.com:freechipsproject/www.chisel-lang.org
+git clone git@github.com:chipsalliance/chisel3
 
 # Change into the directory where the clone lives
-cd www.chisel-lang.org
+cd chisel3/website
 
 # Checkout submodules (the README.md of submodules are used to populate the site)
 git submodule update --init --recursive
@@ -52,7 +53,7 @@ make serve
 # In a web browser navigate to localhost:4000 to preview the website
 ```
 
-The build process uses a [`Makefile`](https://github.com/freechipsproject/www.chisel-lang.org/blob/master/Makefile) to orchestrate building the website.
+The build process uses a [`Makefile`](https://github.com/chipsalliance/chisel3/blob/master/website/Makefile) to orchestrate building the website.
 This `Makefile` does a number of actions:
 
 #### 1. Determines Contributors
@@ -81,7 +82,7 @@ By copying the documentation out of the `subproject/` directory, only the Scalad
 
 The Scaladoc is then copied into `docs/target/site/api` while removing the leading `v` from the directory name.
 
-The actual linking on the website is handled by [`docs/src/main/resources/microsite/data/menu.yml`](https://github.com/freechipsproject/www.chisel-lang.org/blob/master/docs/src/main/resources/microsite/data/menu.yml).
+The actual linking on the website is handled by [`docs/src/main/resources/microsite/data/menu.yml`](https://github.com/chipsalliance/chisel3/blob/master/website/docs/src/main/resources/microsite/data/menu.yml).
 
 Phony build targets, used by Travis CI, to build only specific documentation (into `$(buildDir)/api/`) can be used, e.g., to build only Chisel documentation:
 
