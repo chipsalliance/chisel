@@ -1,0 +1,293 @@
+options:
+
+  # Chisel Site
+  - title: Chisel3
+    menu_type: chisel3
+    menu_section: chisel3
+    url: chisel3/docs/introduction.html
+  - title: Resources
+    url: chisel3/docs/resources/resources.html
+    menu_type: chisel3
+    menu_section: chisel3
+    nested_options:
+      - title: FAQ
+        url: chisel3/docs/resources/faqs.html
+  - title: Cookbooks
+    menu_type: chisel3
+    menu_section: chisel3
+    url: chisel3/docs/cookbooks/cookbooks.html
+    nested_options:
+      - title: General Cookbook
+        url: chisel3/docs/cookbooks/cookbook.html
+      - title: Naming Cookbook
+        url: chisel3/docs/cookbooks/naming.html
+        menu_type: chisel3
+        menu_section: naming
+      - title: Troubleshooting
+        url: chisel3/docs/cookbooks/troubleshooting.html
+        menu_type: chisel3
+        menu_section: troubleshooting
+      - title: DataView Cookbook
+        url: chisel3/docs/cookbooks/dataview.html
+        menu_type: chisel3
+        menu_section: dataview
+      - title: Hierarchy Cookbook
+        url: chisel3/docs/cookbooks/hierarchy.html
+        menu_type: chisel3
+        menu_section: hierarchy-cookbook
+  - title: Explanations
+    url: chisel3/docs/explanations/explanations.html
+    menu_type: chisel3
+    menu_section: chisel3
+    nested_options:
+      - title: Motivation
+        url: chisel3/docs/explanations/motivation.html
+        menu_type: chisel3
+        menu_section: introduction
+      - title: Supported Hardware
+        url: chisel3/docs/explanations/supported-hardware.html
+        menu_type: chisel3
+        menu_section: supported-hardware
+      - title: Data Types
+        url: chisel3/docs/explanations/data-types.html
+        menu_type: chisel3
+        menu_section: data-types
+      - title: Dataview
+        url: chisel3/docs/explanations/dataview.html
+        menu_type: chisel3
+        menu_section: dataview
+      - title: Bundles and Vecs
+        url: chisel3/docs/explanations/bundles-and-vecs.html
+        menu_type: chisel3
+        menu_section: bundles-and-vecs
+      - title: Combinational Circuits
+        url: chisel3/docs/explanations/combinational-circuits.html
+        menu_type: chisel3
+        menu_section: combinational-circuits
+      - title: Operators
+        url: chisel3/docs/explanations/operators.html
+        menu_type: chisel3
+        menu_section: operators
+      - title: Width Inference
+        url: chisel3/docs/explanations/width-inference.html
+        menu_type: chisel3
+        menu_section: width-inference
+      - title: Functional Abstraction
+        url: chisel3/docs/explanations/functional-abstraction.html
+        menu_type: chisel3
+        menu_section: functional-abstraction
+      - title: Ports
+        url: chisel3/docs/explanations/ports.html
+        menu_type: chisel3
+        menu_section: ports
+      - title: Modules
+        url: chisel3/docs/explanations/modules.html
+        menu_type: chisel3
+        menu_section: modules
+      - title: Sequential Circuits
+        url: chisel3/docs/explanations/sequential-circuits.html
+        menu_type: chisel3
+        menu_section: sequential-circuits
+      - title: Memories
+        url: chisel3/docs/explanations/memories.html
+        menu_type: chisel3
+        menu_section: memories
+      - title: Interfaces and Connections
+        url: chisel3/docs/explanations/interfaces-and-connections.html
+        menu_type: chisel3
+        menu_section: interfaces-and-connections
+      - title: Blackboxes
+        url: chisel3/docs/explanations/blackboxes.html
+        menu_type: chisel3
+        menu_section: blackboxes
+      - title: Enumerations
+        url: chisel3/docs/explanations/chisel-enum.html
+        menu_type: chisel3
+        menu_section: enumerations
+      - title: Functional Module Creation
+        url: chisel3/docs/explanations/functional-module-creation.html
+        menu_type: chisel3
+        menu_section: functional-module-creation
+      - title: Muxes and Input Selection
+        url: chisel3/docs/explanations/muxes-and-input-selection.html
+        menu_type: chisel3
+        menu_section: muxes-and-input-selection
+      - title: Multiple Clock Domains
+        url: chisel3/docs/explanations/multi-clock.html
+        menu_type: chisel3
+        menu_section: multi-clock
+      - title: Reset
+        url: chisel3/docs/explanations/reset.html
+        menu_type: chisel3
+        menu_section: reset
+      - title: Polymorphism and Parameterization
+        url: chisel3/docs/explanations/polymorphism-and-parameterization.html
+        menu_type: chisel3
+        menu_section: polymorphism-and-parameterization
+      - title: Printing in Chisel
+        url: chisel3/docs/explanations/printing.html
+        menu_type: chisel3
+        menu_section: printing
+      - title: Naming
+        url: chisel3/docs/explanations/naming.html
+        menu_type: chisel3
+        menu_section: naming
+      - title: Unconnected Wires
+        url: chisel3/docs/explanations/unconnected-wires.html
+        menu_type: chisel3
+        menu_section: unconnected-wires
+      - title: Annotations
+        url: chisel3/docs/explanations/annotations.html
+        menu_type: chisel3
+        menu_section: annotations
+      - title: Deep Dive into Connection Operators
+        url: chisel3/docs/explanations/connection-operators.html
+        menu_type: chisel3
+        menu_section: deep-dive-into-connection-operators
+      - title: Chisel Type vs Scala Type
+        url: chisel3/docs/explanations/chisel-type-vs-scala-type.html
+        menu_type: chisel3
+        menu_section: chisel-type-vs-scala-type
+  - title: Appendix
+    url: chisel3/docs/appendix/appendix.html
+    menu_type: chisel3
+    menu_section: appendix
+    nested_options:
+      - title: Chisel3 vs. Chisel2
+        url: chisel3/docs/appendix/chisel3-vs-chisel2.html
+      - title: Experimental Features
+        url: chisel3/docs/appendix/experimental-features.html
+      - title: Versioning
+        url: chisel3/docs/appendix/versioning.html
+      - title: Upgrading From Chisel 3.4 to 3.5
+        url: chisel3/docs/appendix/upgrading-from-chisel-3-4.html
+      - title: Upgrading From Scala 2.11
+        url: chisel3/docs/appendix/upgrading-from-scala-2-11.html
+  - title: Developers
+    url: chisel3/docs/developers/developers.html
+    menu_type: chisel3
+    menu_section: developers
+    nested_options:
+      - title: Style Guide
+        url: chisel3/docs/developers/style.html
+      - title: sbt Subproject
+        url: chisel3/docs/developers/sbt-subproject.html
+      - title: Test Coverage
+        url: chisel3/docs/developers/test-coverage.html
+  - title: API Documentation
+    url: api/
+    menu_type: chisel3
+    nested_options:
+      - title: Latest
+        url: api/chisel3/latest/
+      - title: 3.5
+        url: api/chisel3/3.5/
+      - title: 3.4
+        url: api/3.4.4/
+      - title: 3.3
+        url: api/3.3.3/
+      - title: 3.2
+        url: api/3.2.8/
+
+  # Testers Site
+  - title: Testers
+    url: chisel-testers/
+    menu_type: chisel-testers
+  - title: API Documentation
+    url: api/chisel-testers/
+    menu_type: chisel-testers
+    nested_options:
+      - title: Latest
+        url: api/chisel-testers/latest
+      - title: 2.5
+        url: api/chisel-testers/2.5
+      - title: 1.5
+        url: api/chisel-testers/1.5
+      - title: 1.4
+        url: api/chisel-testers/1.4
+      - title: 1.3
+        url: api/chisel-testers/1.3
+
+  # Chisel Test (chisel-testers2)
+  - title: ChiselTest
+    url: chiseltest/
+    menu_type: chiseltest
+  - title: API Documentation
+    url: api/chiseltest/
+    menu_type: chiseltest
+    nested_options:
+      - title: Latest
+        url: api/chiseltest/latest
+      - title: 0.5
+        url: api/chiseltest/0.5
+      - title: 0.3
+        url: api/chiseltest/0.3
+      - title: 0.2
+        url: api/chiseltest/0.2
+      - title: 0.1
+        url: api/chiseltest/0.1
+
+  # FIRRTL Site
+  - title: FIRRTL
+    url: firrtl/
+    menu_type: firrtl
+  - title: API Documentation
+    url: api/firrtl/
+    menu_type: firrtl
+    nested_options:
+      - title: Latest
+        url: api/firrtl/latest
+      - title: 1.5
+        url: api/firrtl/1.5
+      - title: 1.4
+        url: api/firrtl/1.4
+      - title: 1.3
+        url: api/firrtl/1.3
+      - title: 1.2
+        url: api/firrtl/1.2
+
+  # Treadle Site
+  - title: Treadle
+    url: treadle/
+    menu_type: treadle
+  - title: How it works
+    url: treadle/HowItWorks.html
+    menu_type: treadle
+    menu_section: introduction
+  - title: TreadleRepl
+    url: treadle/TreadleRepl.html
+    menu_type: treadle
+    menu_section: introduction
+  - title: API Documentation
+    url: api/treadle/
+    menu_type: treadle
+    nested_options:
+      - title: Latest
+        url: api/treadle/latest
+      - title: 1.5
+        url: api/treadle/1.5
+      - title: 1.3
+        url: api/treadle/1.3
+      - title: 1.2
+        url: api/treadle/1.2
+      - title: 1.1
+        url: api/treadle/1.1
+
+  # Diagrammer Site
+  - title: Diagrammer
+    url: diagrammer
+    menu_type: diagrammer
+  - title: API Documentation
+    url: api/diagrammer/
+    menu_type: diagrammer
+    nested_options:
+      - title: Latest
+        url: api/diagrammer/latest
+      - title: 1.5
+        url: api/diagrammer/1.5
+      - title: 1.3
+        url: api/diagrammer/1.3
+      - title: 1.2
+        url: api/diagrammer/1.2
+      - title: 1.1
+        url: api/diagrammer/1.1
