@@ -40,19 +40,20 @@ private[chisel3] sealed trait Alignment {
 
   private def skipWidth(x: Data): Boolean = x.isInstanceOf[Aggregate] || x.isInstanceOf[DontCare.type]
 
-  final def mismatchedWidths(o: Alignment, op: Connection): Boolean = (this.member, o.member) match {
-    case (x, y) if (skipWidth(x) || skipWidth(y)) => false
+  final def truncationRequired(o: Alignment, op: Connection): Option[Data] = (this.member, o.member) match {
+    case (x, y) if (skipWidth(x) || skipWidth(y)) => None
     case (x, y) =>
       val lAndROpt = computeLandR(this.member, o.member, op)
       lAndROpt.map {
         case (l, r) if !(base.squeezed.contains(r) || o.base.squeezed.contains(r)) =>
           (l.widthOption, r.widthOption) match {
-            case (None, _)            => false // l will infer a large enough width
-            case (Some(x), None)      => true // r could infer a larger width than l's width
-            case (Some(lw), Some(rw)) => lw < rw
+            case (None, _)                       => None // l will infer a large enough width
+            case (Some(x), None)                 => Some(r) // r could infer a larger width than l's width
+            case (Some(lw), Some(rw)) if lw < rw => Some(r)
+            case (Some(lw), Some(rw))            => None
           }
-        case (l, r) => false
-      }.getOrElse(false)
+        case (l, r) => None
+      }.getOrElse(None)
   }
 
   // Returns loc and roc
