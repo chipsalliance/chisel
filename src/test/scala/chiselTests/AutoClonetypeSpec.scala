@@ -83,12 +83,10 @@ class RecordAutoCloneType[T <: Data](gen: T) extends Record with AutoCloneType {
 
 // Records that don't mixin AutoCloneType should still be able to implement the related methods
 // NOTE: This is a very weird thing to do, don't do it.
-class RecordWithVerbotenMethods(w: Int) extends Record {
+class RecordWithVerbotenMethods(w: Int) extends Record with AutoCloneType {
   lazy val elements = ListMap("value" -> UInt(w.W))
-  override def cloneType: this.type = (new RecordWithVerbotenMethods(w)).asInstanceOf[this.type]
   // Verboten methods
   protected def _usingPlugin = false
-  protected override def _cloneTypeImpl = this.cloneType
 
   protected def _elementsImpl: Iterable[(String, Any)] = Nil
 }

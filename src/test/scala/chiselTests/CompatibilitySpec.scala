@@ -4,6 +4,7 @@ package chiselTests
 
 import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
+import chisel3.experimental.AutoCloneType
 
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
@@ -555,11 +556,10 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
   }
 
   it should "properly set the refs of Records" in {
-    class MyRecord extends Record {
+    class MyRecord extends Record with AutoCloneType {
       val foo = Vec(1, Bool()).asInput
       val bar = Vec(1, Bool())
       val elements = ListMap("in" -> foo, "out" -> bar)
-      def cloneType = (new MyRecord).asInstanceOf[this.type]
     }
     class Foo extends Module {
       val io = IO(new MyRecord)

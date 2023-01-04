@@ -1188,10 +1188,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it("(5.f) Squeeze works on OpaqueType") {
-      class OpaqueRecord(width: Int) extends Record with OpaqueType {
+      class OpaqueRecord(width: Int) extends Record with OpaqueType with AutoCloneType {
         private val underlying = UInt(width.W)
         val elements = SeqMap("" -> underlying)
-        override def cloneType: this.type = (new OpaqueRecord(width)).asInstanceOf[this.type]
       }
       class MyModule extends Module {
         val in = IO(Input(new OpaqueRecord(4)))
@@ -1207,10 +1206,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it("(5.g) Squeeze works on nested OpaqueType fields") {
-      class OpaqueRecord(width: Int) extends Record with OpaqueType {
+      class OpaqueRecord(width: Int) extends Record with OpaqueType with AutoCloneType {
         private val underlying = UInt(width.W)
         val elements = SeqMap("" -> underlying)
-        override def cloneType: this.type = (new OpaqueRecord(width)).asInstanceOf[this.type]
       }
       class MyModule extends Module {
         val inA = IO(Flipped(new Bundle {

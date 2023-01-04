@@ -118,13 +118,12 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       (primaryConstructor, paramAccessors.toList)
     }
 
-    def warnOnCloneType(body: List[Tree]): Unit = {
+    def errorOnCloneType(body: List[Tree]): Unit = {
       body.foreach {
         case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
-          val msg = "It is no longer necessary to implement cloneType. " +
-            "Mix in chisel3.experimental.AutoCloneType to let the compiler plugin generate it. " +
-            "This will become an error in Chisel 3.6."
-          global.reporter.warning(d.pos, msg)
+          val msg = "cloneType is unsupported starting Chisel 3.6. " +
+            "Mix in chisel3.experimental.AutoCloneType to let the compiler plugin generate it. "
+          global.reporter.error(d.pos, msg)
         case _ => // Do nothing
       }
     }
@@ -247,7 +246,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         val isAutoCloneType: Boolean = isAnAutoCloneType(record.symbol)
 
         if (!isAutoCloneType) {
-          warnOnCloneType(record.impl.body)
+          errorOnCloneType(record.impl.body)
           // Other than warning, there is nothing to do on Records that don't mixin AutoCloneType
           return super.transform(record)
         }

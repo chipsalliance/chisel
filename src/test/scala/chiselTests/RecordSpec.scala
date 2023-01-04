@@ -3,11 +3,12 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.OpaqueType
+import chisel3.experimental.{AutoCloneType, OpaqueType}
 import chisel3.reflect.DataMirror
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
+import chisel3.reflect.DataMirror
 
 import scala.collection.immutable.SeqMap
 
@@ -110,10 +111,9 @@ trait RecordSpecUtils {
     require(!DataMirror.checkTypeEquivalence(wire1, wire2))
   }
 
-  class SingleElementRecord extends Record with OpaqueType {
+  class SingleElementRecord extends Record with OpaqueType with AutoCloneType {
     private val underlying = UInt(8.W)
     val elements = SeqMap("" -> underlying)
-    override def cloneType: this.type = (new SingleElementRecord).asInstanceOf[this.type]
 
     def +(that: SingleElementRecord): SingleElementRecord = {
       val _w = Wire(new SingleElementRecord)
@@ -132,16 +132,14 @@ trait RecordSpecUtils {
     out := in1 + in2
   }
 
-  class InnerRecord extends Record with OpaqueType {
+  class InnerRecord extends Record with OpaqueType with AutoCloneType {
     val k = new InnerInnerRecord
     val elements = SeqMap("" -> k)
-    override def cloneType: this.type = (new InnerRecord).asInstanceOf[this.type]
   }
 
-  class InnerInnerRecord extends Record with OpaqueType {
+  class InnerInnerRecord extends Record with OpaqueType with AutoCloneType {
     val k = new SingleElementRecord
     val elements = SeqMap("" -> k)
-    override def cloneType: this.type = (new InnerInnerRecord).asInstanceOf[this.type]
   }
 
   class NestedRecordModule extends Module {
@@ -162,11 +160,9 @@ trait RecordSpecUtils {
     io.bar.elements.head._2 := io.foo.elements.head._2
   }
 
-  class NamedSingleElementRecord extends Record with OpaqueType {
+  class NamedSingleElementRecord extends Record with OpaqueType with AutoCloneType {
     private val underlying = UInt(8.W)
     val elements = SeqMap("unused" -> underlying)
-
-    override def cloneType: this.type = (new NamedSingleElementRecord).asInstanceOf[this.type]
   }
 
   class NamedSingleElementModule extends Module {
@@ -175,13 +171,12 @@ trait RecordSpecUtils {
     out := in
   }
 
-  class ErroneousOverride extends Record with OpaqueType {
+  class ErroneousOverride extends Record with OpaqueType with AutoCloneType {
     private val underlyingA = UInt(8.W)
     private val underlyingB = UInt(8.W)
     val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
 
     override def opaqueType = true
-    override def cloneType: this.type = (new ErroneousOverride).asInstanceOf[this.type]
   }
 
   class ErroneousOverrideModule extends Module {
@@ -190,13 +185,12 @@ trait RecordSpecUtils {
     out := in
   }
 
-  class NotActuallyOpaqueType extends Record with OpaqueType {
+  class NotActuallyOpaqueType extends Record with OpaqueType with AutoCloneType {
     private val underlyingA = UInt(8.W)
     private val underlyingB = UInt(8.W)
     val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
 
     override def opaqueType = false
-    override def cloneType: this.type = (new NotActuallyOpaqueType).asInstanceOf[this.type]
   }
 
   class NotActuallyOpaqueTypeModule extends Module {
@@ -215,17 +209,15 @@ trait RecordSpecUtils {
       if (boxed) new Boxed(gen) else new Unboxed(gen)
     }
   }
-  class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] {
+  class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] with AutoCloneType {
     def boxed = true
     lazy val elements = SeqMap("underlying" -> gen.cloneType)
     def underlying = elements.head._2
-    override def cloneType: this.type = (new Boxed(gen)).asInstanceOf[this.type]
   }
-  class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType {
+  class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType with AutoCloneType {
     def boxed = false
     lazy val elements = SeqMap("" -> gen.cloneType)
     def underlying = elements.head._2
-    override def cloneType: this.type = (new Unboxed(gen)).asInstanceOf[this.type]
   }
 }
 
@@ -249,10 +241,9 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   they should "not allow aliased fields" in {
-    class AliasedFieldRecord extends Record {
+    class AliasedFieldRecord extends Record with AutoCloneType {
       val foo = UInt(8.W)
       val elements = SeqMap("foo" -> foo, "bar" -> foo)
-      override def cloneType: AliasedFieldRecord.this.type = (new AliasedFieldRecord).asInstanceOf[this.type]
     }
 
     val e = intercept[AliasedAggregateFieldException] {
@@ -402,9 +393,8 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   "Record with unstable elements" should "error" in {
-    class MyRecord extends Record {
+    class MyRecord extends Record with AutoCloneType {
       def elements = SeqMap("a" -> UInt(8.W))
-      override def cloneType: this.type = (new MyRecord).asInstanceOf[this.type]
     }
     val e = the[ChiselException] thrownBy {
       ChiselStage.elaborate(new Module {

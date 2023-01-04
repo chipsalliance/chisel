@@ -4,8 +4,8 @@ package chiselTests
 
 import org.scalatest._
 import chisel3._
-import chisel3.experimental.OpaqueType
 import circt.stage.ChiselStage
+import chisel3.experimental.{OpaqueType, AutoCloneType}
 import org.scalatest.matchers.should.Matchers
 
 import scala.collection.immutable.SeqMap
@@ -448,10 +448,9 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       val valid = Bool()
       val ready = Flipped(Bool())
     }
-    class MyOpaqueType extends Record with OpaqueType {
+    class MyOpaqueType extends Record with OpaqueType with AutoCloneType {
       val k = new Decoupled()
       val elements = SeqMap("" -> k)
-      override def cloneType: this.type = (new MyOpaqueType).asInstanceOf[this.type]
     }
     class MyModule extends RawModule {
       val w = Wire(new MyOpaqueType())
