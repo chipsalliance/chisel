@@ -199,15 +199,6 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   }
 }
 
-package experimental {
-  object IO {
-    @deprecated("chisel3.experimental.IO is deprecated, use chisel3.IO instead", "Chisel 3.5")
-    def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-      chisel3.IO.apply(iodef)
-    }
-  }
-}
-
 package internal {
 
   object BaseModule {

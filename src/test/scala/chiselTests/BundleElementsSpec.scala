@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.FixedPoint
 import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 import org.scalatest.exceptions.TestFailedException
@@ -141,9 +140,7 @@ class HasGenParamsPassedToSuperclasses extends Module {
     val superQux = gen2
   }
 
-//  class BpipDemoBundle[T <: Data](gen: T, gen2: => T) extends BpipTwoField with BpipVarmint {
   class BpipUsesWithGen[T <: Data](gen: T, gen2: => T) extends BpipWithGen(gen, gen2) {
-    //    val foo = gen
     val bar = Bool()
     val qux = gen2
     val bad = 444
@@ -151,18 +148,10 @@ class HasGenParamsPassedToSuperclasses extends Module {
   }
 
   val out1 = IO(Output(new BpipUsesWithGen(UInt(4.W), new OtherBundle)))
-  val out2 = IO(Output(new BpipUsesWithGen(UInt(4.W), FixedPoint(10.W, 4.BP))))
 
   out1 := DontCare
 
   assertElementsMatchExpected(out1)(
-    "baz" -> _.baz,
-    "qux" -> _.qux,
-    "bar" -> _.bar,
-    "superQux" -> _.superQux,
-    "superFoo" -> _.superFoo
-  )
-  assertElementsMatchExpected(out2)(
     "baz" -> _.baz,
     "qux" -> _.qux,
     "bar" -> _.bar,
@@ -259,16 +248,15 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       val fox = UInt(w2.W)
     }
 
-    class BpipDemoBundle[T <: Data](gen: T, gen2: => T) extends BpipTwoField with BpipVarmint {
+    class BpipDemoBundle[T <: Data](gen: T) extends BpipTwoField with BpipVarmint {
       val foo = gen
       val bar = Bool()
-      val qux = gen2
       val bad = 44
       val baz = Decoupled(UInt(16.W))
       val animals = new BpipAnimalBundle(4, 8)
     }
 
-    val out = IO(Output(new BpipDemoBundle(UInt(4.W), FixedPoint(10.W, 4.BP))))
+    val out = IO(Output(new BpipDemoBundle(UInt(4.W))))
 
     val out2 = IO(Output(new BpipAbstractBundle {
       override def doNothing: Unit = ()
@@ -285,7 +273,6 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
     assertElementsMatchExpected(out)(
       "animals" -> _.animals,
       "baz" -> _.baz,
-      "qux" -> _.qux,
       "bar" -> _.bar,
       "varmint" -> _.varmint,
       "fieldThree" -> _.fieldThree,

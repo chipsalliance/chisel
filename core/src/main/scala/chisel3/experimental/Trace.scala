@@ -43,12 +43,6 @@ object Trace {
     }
   }
 
-  @deprecated("switch to using 'traceName' as 'traceNameV2' has the same behavior of 'traceName' now", "Chisel 3.6")
-  def traceNameV2(x: RawModule) = traceName(x)
-
-  @deprecated("switch to using 'traceName' as 'traceNameV2' has the same behavior of 'traceName' now", "Chisel 3.6")
-  def traceNameV2(x: Data) = traceName(x)
-
   /** An Annotation that records the original target annotate from Chisel.
     *
     * @param target target that should be renamed by [[firrtl.RenameMap]] in the firrtl transforms.

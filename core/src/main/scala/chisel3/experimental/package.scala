@@ -115,21 +115,6 @@ package object experimental {
     ports.viewAs[T]
   }
 
-  implicit class ChiselRange(val sc: StringContext) extends AnyVal {
-
-    import scala.language.experimental.macros
-
-    /** Specifies a range using mathematical range notation. Variables can be interpolated using
-      * standard string interpolation syntax.
-      * @example {{{
-      * UInt(range"[0, 2)")
-      * UInt(range"[0, \$myInt)")
-      * UInt(range"[0, \${myInt + 2})")
-      * }}}
-      */
-    def range(args: Any*): chisel3.internal.firrtl.IntervalRange = macro chisel3.internal.RangeTransform.apply
-  }
-
   class dump extends chisel3.internal.naming.dump
   class treedump extends chisel3.internal.naming.treedump
 

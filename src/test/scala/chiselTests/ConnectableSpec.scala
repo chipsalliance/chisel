@@ -4,7 +4,7 @@ package chiselTests
 
 import org.scalatest._
 import chisel3._
-import chisel3.experimental.{Analog, FixedPoint}
+import chisel3.experimental.Analog
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.testers.BasicTester
@@ -74,21 +74,12 @@ object ConnectableSpec {
   def mixedFieldModifiers(fieldType: () => Data): Seq[() => Data] = {
     allFieldModifiers(fieldType).flatMap(x => allFieldModifiers(x))
   }
-  object InCompatibility {
-    implicit val c = Chisel.defaultCompileOptions: @nowarn // here until 3.6
-    class MyCompatibilityBundle(f: () => Data) extends Bundle {
-      val foo = f()
-    }
-  }
   class MyBundle(f: () => Data) extends Bundle {
     val baz = f()
   }
   def allBundles(fieldType: () => Data): Seq[() => Data] = {
     mixedFieldModifiers(fieldType).flatMap { f =>
-      Seq(
-        () => new MyBundle(f),
-        () => new InCompatibility.MyCompatibilityBundle(f)
-      )
+      Seq(() => new MyBundle(f))
     }
   }
   def allVecs(element: () => Data): Seq[() => Data] = {
