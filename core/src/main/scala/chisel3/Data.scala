@@ -66,7 +66,7 @@ object SpecifiedDirection {
       requireIsChiselType(data)
     }
     val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
-    out.specifiedDirection = dir(out)
+    out.specifiedDirection = dir(data) // Must use original data, specified direction of clone is cleared
     out
   }
 
