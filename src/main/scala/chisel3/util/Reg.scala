@@ -130,10 +130,10 @@ object ShiftRegister {
     * @param in input to delay
     * @param n  number of cycles to delay
     * @param en enable the shift
-    * @param use_sp_mem single port or dual port SRAM based implementation
+    * @param useSinglePortMem single port or dual port SRAM based implementation
     * @param name name of SyncReadMem object
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool, use_sp_mem: Boolean, name: String): T =
+  def apply[T <: Data](in: T, n: Int, en: Bool, useSinglePortMem: Boolean, name: String): T =
     macro SourceInfoTransform.inNEnUseSpNameArg
 
   /** @group SourceInfoTransformMacro */
@@ -141,7 +141,7 @@ object ShiftRegister {
     in:         T,
     n:          Int,
     en:         Bool,
-    use_sp_mem: Boolean,
+    useSinglePortMem: Boolean,
     name:       String
   )(
     implicit sourceInfo: SourceInfo,
@@ -152,7 +152,7 @@ object ShiftRegister {
     in:         T,
     n:          Int,
     en:         Bool = true.B,
-    use_sp_mem: Boolean = false,
+    useSinglePortMem: Boolean = false,
     name:       String = null
   )(
     implicit sourceInfo: SourceInfo,
