@@ -23,51 +23,6 @@ class BulkConnectSpec extends ChiselPropSpec {
     chirrtl should include("io.outBi <= io.inBi")
   }
 
-  property("Chisel connects should not emit FIRRTL bulk connects for Stringly-typed connections") {
-    @nowarn("msg=Chisel compatibility mode is deprecated")
-    object Foo {
-      import Chisel._
-      // Chisel._ bundle
-      class BundleParent extends Bundle {
-        val foo = UInt(width = 8)
-      }
-      class BundleChild extends BundleParent {
-        val bar = UInt(width = 8)
-      }
-    }
-
-    import Foo._
-
-    // chisel3._ bundle
-    class MyBundle(child: Boolean) extends Bundle {
-      val fizz = UInt(8.W)
-      val buzz = if (child) new BundleChild else new BundleParent
-    }
-
-    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      // Checking MonoConnect
-      val in = IO(Input(new MyBundle(true)))
-      val out = IO(Output(new MyBundle(false)))
-      out := in
-
-      // Checking BulkConnect (with Decoupled)
-      val enq = IO(Flipped(Decoupled(new BundleChild)))
-      val deq = IO(Decoupled(new BundleParent))
-      deq <> enq
-    })
-
-    chirrtl should include("out.buzz.foo <= in.buzz.foo")
-    chirrtl should include("out.fizz <= in.fizz")
-    chirrtl should include("deq.bits <- enq.bits")
-    chirrtl should include("deq.valid <= enq.valid")
-    chirrtl should include("enq.ready <= deq.ready")
-
-    chirrtl shouldNot include("deq <= enq")
-    chirrtl shouldNot include("deq.bits.foo <= enq.bits.foo")
-    chirrtl shouldNot include("deq.bits.foo <- enq.bits.foo")
-    chirrtl shouldNot include("deq.bits.bar")
-  }
-
   property("Chisel connects should not emit FIRRTL bulk connects between differing FIRRTL types") {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val in = IO(Flipped(new Bundle {

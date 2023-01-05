@@ -3,7 +3,7 @@
 package chisel3.experimental
 
 import scala.language.existentials
-import chisel3.internal.{Builder, LegacyModule}
+import chisel3.internal.Builder
 import chisel3.{CompileOptions, Data, InstanceId, RawModule}
 import firrtl.Transform
 import firrtl.annotations._

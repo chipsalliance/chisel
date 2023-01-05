@@ -3,7 +3,7 @@
 package chisel3.internal
 
 import chisel3._
-import chisel3.experimental.{Analog, BaseModule, FixedPoint, Interval, SourceInfo}
+import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
@@ -107,10 +107,6 @@ private[chisel3] object MonoConnect {
       case (sink_e: UInt, source_e: UInt) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: SInt, source_e: SInt) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
-      case (sink_e: FixedPoint, source_e: FixedPoint) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
-      case (sink_e: Interval, source_e: Interval) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: Clock, source_e: Clock) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)

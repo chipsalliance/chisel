@@ -5,7 +5,6 @@ package chiselTests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.FixedPoint
 import chisel3.experimental.BundleLiterals._
 import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
@@ -24,7 +23,6 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     val a = UInt(8.W)
     val b = Bool()
     val c = SInt(8.W)
-    val e = FixedPoint(5.W, 3.BP)
     val f = EnumTest.Type()
   }
 
@@ -36,7 +34,6 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
         SInt(15.W).toString should be("SInt<15>")
         Bool().toString should be("Bool")
         Clock().toString should be("Clock")
-        FixedPoint(5.W, 3.BP).toString should be("FixedPoint<5><<3>>")
         Vec(3, UInt(2.W)).toString should be("UInt<2>[3]")
         EnumTest.Type().toString should be("EnumTest")
         (new BundleTest).toString should be("BundleTest")
@@ -99,15 +96,13 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
         -1.S.toString should be("SInt<1>(-1)")
         false.B.toString should be("Bool(false)")
         true.B.toString should be("Bool(true)")
-        2.25.F(6.W, 2.BP).toString should be("FixedPoint<6><<2>>(2.25)")
-        -2.25.F(6.W, 2.BP).toString should be("FixedPoint<6><<2>>(-2.25)")
         Vec(3, UInt(4.W)).toString should be("UInt<4>[3]")
         EnumTest.sNone.toString should be("EnumTest(0=sNone)")
         EnumTest.sTwo.toString should be("EnumTest(2=sTwo)")
         EnumTest(1.U).toString should be("EnumTest(1=sOne)")
         (new BundleTest).Lit(_.a -> 2.U, _.b -> false.B).toString should be("BundleTest(a=UInt<8>(2), b=Bool(false))")
         (new PartialBundleTest).Lit().toString should be(
-          "PartialBundleTest(a=UInt<8>(DontCare), b=Bool(DontCare), c=SInt<8>(DontCare), e=FixedPoint<5><<3>>(DontCare), f=EnumTest(DontCare))"
+          "PartialBundleTest(a=UInt<8>(DontCare), b=Bool(DontCare), c=SInt<8>(DontCare), f=EnumTest(DontCare))"
         )
         DontCare.toString should be("DontCare()")
       }

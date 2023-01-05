@@ -24,7 +24,6 @@ package object stage {
           case PrintFullStackTraceAnnotation  => c.copy(printFullStackTrace = true)
           case ThrowOnFirstErrorAnnotation    => c.copy(throwOnFirstError = true)
           case WarningsAsErrorsAnnotation     => c.copy(warningsAsErrors = true)
-          case WarnReflectiveNamingAnnotation => c // Do nothing, ignored
           case ChiselOutputFileAnnotation(f)  => c.copy(outputFile = Some(f))
           case ChiselCircuitAnnotation(a)     => c.copy(chiselCircuit = Some(a))
           case SourceRootAnnotation(s)        => c.copy(sourceRoots = c.sourceRoots :+ s)

@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.internal.firrtl.{IntervalRange, KnownWidth, ULit, UnknownWidth, Width}
+import chisel3.internal.firrtl.{KnownWidth, ULit, UnknownWidth, Width}
 import firrtl.Utils
 import firrtl.constraint.IsKnown
 import firrtl.ir.{Closed, IntWidth, Open}
@@ -24,25 +24,4 @@ trait UIntFactory {
     lit.bindLitArg(result)
   }
 
-  /** Create a UInt with the specified range, validate that range is effectively > 0
-    */
-  def apply(range: IntervalRange): UInt = {
-    // Check is only done against lower bound because range will already insist that range high >= low
-    range.lowerBound match {
-      case Closed(bound) if bound < 0 =>
-        throw new ChiselException(s"Attempt to create UInt with closed lower bound of $bound, must be > 0")
-      case Open(bound) if bound < -1 =>
-        throw new ChiselException(s"Attempt to create UInt with open lower bound of $bound, must be > -1")
-      case _ =>
-    }
-
-    // because this is a UInt we don't have to take into account the lower bound
-    val newWidth = if (range.upperBound.isInstanceOf[IsKnown]) {
-      KnownWidth(Utils.getUIntWidth(range.maxAdjusted.get).max(1)) // max(1) handles range"[0,0]"
-    } else {
-      UnknownWidth()
-    }
-
-    apply(newWidth)
-  }
 }

@@ -14,7 +14,6 @@ trait ChiselCli { this: Shell =>
     ThrowOnFirstErrorAnnotation,
     WarningsAsErrorsAnnotation,
     SourceRootAnnotation,
-    WarnReflectiveNamingAnnotation,
     ChiselOutputFileAnnotation,
     ChiselGeneratorAnnotation
   )
