@@ -146,7 +146,7 @@ object ShiftRegister {
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): T = _apply_impl_sram(in, n, en, use_sp_mem, name)
+  ): T = _apply_impl_sram(in, n, en, useSinglePortMem, name)
 
   private def _apply_impl_sram[T <: Data](
     in:         T,
@@ -163,7 +163,7 @@ object ShiftRegister {
     } else if (n == 1) {
       val out = RegEnable(in, en)
       out
-    } else if (use_sp_mem) {
+    } else if (useSinglePortMem) {
       require(n % 2 == 0, "Odd shift register length with single-port SRAMs is not supported")
 
       val out_sp0 = Wire(in.cloneType)
