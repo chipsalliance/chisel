@@ -133,6 +133,31 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
 
   import chisel3.experimental.{DataMirror, Direction}
 
+  property("Flipped should flip the specified direction of a Bundle") {
+    class MyBundle extends Bundle {
+      val out = Output(UInt(8.W))
+      val in = Input(UInt(8.W))
+    }
+    class Top extends Module {
+      val foo = IO(Flipped(new MyBundle))
+      // Where I come from, referential transparency is a good thing
+      val fooType = chiselTypeOf(foo)
+      val fizz = IO(Flipped(fooType))
+      val buzz = IO(Flipped(chiselTypeOf(foo)))
+
+      DataMirror.specifiedDirectionOf(foo) should be(SpecifiedDirection.Flip)
+      DataMirror.specifiedDirectionOf(fizz) should be(SpecifiedDirection.Unspecified)
+      DataMirror.specifiedDirectionOf(buzz) should be(SpecifiedDirection.Unspecified)
+      DataMirror.directionOf(foo) should be(Direction.Bidirectional(Direction.Flipped))
+      DataMirror.directionOf(fizz) should be(Direction.Bidirectional(Direction.Default))
+      DataMirror.directionOf(buzz) should be(Direction.Bidirectional(Direction.Default))
+    }
+    val chirrtl = ChiselStage.emitChirrtl(new Top)
+    chirrtl should include("input foo")
+    chirrtl should include("output fizz")
+    chirrtl should include("output buzz")
+  }
+
   property("Directions should be preserved through cloning and binding of Bundles") {
     ChiselStage.elaborate(new Module {
       class MyBundle extends Bundle {
