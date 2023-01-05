@@ -138,22 +138,22 @@ object ShiftRegister {
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
-    in:         T,
-    n:          Int,
-    en:         Bool,
+    in:               T,
+    n:                Int,
+    en:               Bool,
     useSinglePortMem: Boolean,
-    name:       Option[String]
+    name:             Option[String]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): T = _apply_impl_sram(in, n, en, useSinglePortMem, name)
 
   private def _apply_impl_sram[T <: Data](
-    in:         T,
-    n:          Int,
-    en:         Bool = true.B,
+    in:               T,
+    n:                Int,
+    en:               Bool = true.B,
     useSinglePortMem: Boolean = false,
-    name:       Option[String]
+    name:             Option[String] = None
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
