@@ -49,6 +49,7 @@ case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo 
 
 /** Provides a macro that returns the source information at the invocation point.
   */
+@deprecated("Public APIs in chisel3.internal are deprecated", "Chisel 3.6")
 object SourceInfoMacro {
   def generate_source_info(c: Context): c.Tree = {
     import c.universe._

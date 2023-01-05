@@ -17,9 +17,9 @@ lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "3.6-SNAPSHOT",
   autoAPIMappings := true,
+  scalacOptions := Seq("-deprecation", "-feature"),
   scalaVersion := "2.12.17",
   crossScalaVersions := Seq("2.13.10", "2.12.17"),
-  scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
   scalacOptions ++= {
@@ -35,6 +35,8 @@ lazy val commonSettings = Seq(
     }
   }
 )
+
+lazy val warningSuppression = Seq(scalacOptions += "-Wconf:msg=APIs in chisel3.internal:s,msg=Importing from firrtl:s,msg=migration to the MLIR:s")
 
 lazy val publishSettings = Seq(
   versionScheme := Some("pvp"),
@@ -171,6 +173,7 @@ lazy val core = (project in file("core"))
   )
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
+  .settings(warningSuppression: _*)
   .settings(
     name := "chisel3-core",
     libraryDependencies ++= Seq(
@@ -178,7 +181,6 @@ lazy val core = (project in file("core"))
       "com.lihaoyi" %% "os-lib" % "0.8.1"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
-      "-deprecation",
       "-explaintypes",
       "-feature",
       "-language:reflectiveCalls",
@@ -202,6 +204,7 @@ lazy val chisel = (project in file("."))
   .dependsOn(macros)
   .dependsOn(core)
   .aggregate(macros, core, plugin)
+  .settings(warningSuppression: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",
