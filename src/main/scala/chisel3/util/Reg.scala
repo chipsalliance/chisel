@@ -133,7 +133,7 @@ object ShiftRegister {
     * @param useSinglePortMem single port or dual port SRAM based implementation
     * @param name name of SyncReadMem object
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool, useSinglePortMem: Boolean, name: String): T =
+  def apply[T <: Data](in: T, n: Int, en: Bool, useSinglePortMem: Boolean, name: Option[String]): T =
     macro SourceInfoTransform.inNEnUseSpNameArg
 
   /** @group SourceInfoTransformMacro */
@@ -142,7 +142,7 @@ object ShiftRegister {
     n:          Int,
     en:         Bool,
     useSinglePortMem: Boolean,
-    name:       String
+    name:       Option[String]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
@@ -153,7 +153,7 @@ object ShiftRegister {
     n:          Int,
     en:         Bool = true.B,
     useSinglePortMem: Boolean = false,
-    name:       String = null
+    name:       Option[String]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
@@ -174,6 +174,11 @@ object ShiftRegister {
 
       val mem_sp0 = SyncReadMem(n / 2, in.cloneType)
       val mem_sp1 = SyncReadMem(n / 2, in.cloneType)
+
+      if (name != None) {
+        mem_sp0.suggestName(name.get + "_0")
+        mem_sp1.suggestName(name.get + "_1")
+      }
 
       val index_counter = Counter(en, n)._1
       val raddr_sp0 = index_counter >> 1.U
@@ -196,8 +201,8 @@ object ShiftRegister {
       out
     } else {
       val mem = SyncReadMem(n, in.cloneType)
-      if (name != null) {
-        mem.suggestName(name)
+      if (name != None) {
+        mem.suggestName(name.get)
       }
       val raddr = Counter(en, n)._1
       val out = mem.read(raddr, en)

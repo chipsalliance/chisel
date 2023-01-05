@@ -87,7 +87,7 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
     class MyModule extends Module {
       val in = IO(Input(Bool()))
       val out = IO(Output(Bool()))
-      out := ShiftRegister(in, 2, true.B, true, "sr")
+      out := ShiftRegister(in, 2, true.B, true, Some("sr"))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     val reset = """reset .*RegSpec.scala""".r
