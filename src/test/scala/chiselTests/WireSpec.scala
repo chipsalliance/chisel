@@ -30,7 +30,8 @@ class WireSpec extends ChiselFlatSpec {
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Dummy)
-    chirrtl should include regex("wire wire : UInt<1> @.*WireSpec.scala")
-    chirrtl should include regex("wire wire2 : UInt<1> @.*WireSpec.scala")
+    // This test can fail when run from IntelliJ because the source locator path can be different
+    chirrtl should include("wire wire : UInt<1> @[src/test/scala/chiselTests/WireSpec.scala")
+    chirrtl should include("wire wire2 : UInt<1> @[src/test/scala/chiselTests/WireSpec.scala")
   }
 }

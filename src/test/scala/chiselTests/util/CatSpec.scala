@@ -68,7 +68,8 @@ class CatSpec extends ChiselFlatSpec {
       out := Cat(in)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include regex("""cat\(in\[0\], in\[1\]\) @.*CatSpec.scala""")
+    // This test can fail when run from IntelliJ because the source locator path can be different
+    chirrtl should include("cat(in[0], in[1]) @[src/test/scala/chiselTests/util/CatSpec.scala")
     (chirrtl should not).include("Cat.scala")
   }
 
@@ -79,7 +80,8 @@ class CatSpec extends ChiselFlatSpec {
       out := Cat(in(0), in(1))
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include regex("""cat\(in\[0\], in\[1\]\) @.*CatSpec.scala""")
+    // This test can fail when run from IntelliJ because the source locator path can be different
+    chirrtl should include("cat(in[0], in[1]) @[src/test/scala/chiselTests/util/CatSpec.scala")
     (chirrtl should not).include("Cat.scala")
   }
 
