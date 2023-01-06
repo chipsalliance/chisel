@@ -1218,6 +1218,8 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
       s"Internal Error! This should have been implemented by the chisel3-plugin. Please file an issue against chisel3"
     )
   }
+
+  private[chisel3] lazy val hasExternalRef: Boolean = this.elements.exists(_._2._id < _id)
 }
 
 /**
@@ -1404,8 +1406,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record wi
       }
     }
   }
-
-  private[chisel3] lazy val hasExternalRef: Boolean = this.elements.exists(_._2._id < _id)
 
   override def cloneType: this.type = {
     val clone = _cloneTypeImpl.asInstanceOf[this.type]

@@ -3,8 +3,11 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.AutoCloneType
 import chisel3.stage.ChiselStage
 import chiselTests.ChiselFlatSpec
+
+import collection.immutable.VectorMap
 
 class LazyCloneSpec extends ChiselFlatSpec {
   object Counter {
@@ -58,5 +61,21 @@ class LazyCloneSpec extends ChiselFlatSpec {
     }
     ChiselStage.elaborate(new MyModule)
     Counter.count should be(4L)
+  }
+
+  it should "clone Records because of external refs" in {
+    var count = 0L
+    class MyRecord(gen: UInt) extends Record with AutoCloneType {
+      lazy val elements = VectorMap("foo" -> gen)
+      count += 1
+    }
+    class MyModule extends RawModule {
+      val gen = UInt(8.W)
+      val in = IO(Input(new MyRecord(gen)))
+      val out = IO(Output(new MyRecord(gen)))
+      out := in
+    }
+    ChiselStage.elaborate(new MyModule)
+    count should be(6L)
   }
 }
