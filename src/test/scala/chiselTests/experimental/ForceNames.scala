@@ -121,7 +121,7 @@ class ForceNamesSpec extends ChiselFlatSpec {
     }
 
     a[ChiselException] shouldBe thrownBy {
-      chisel3.stage.ChiselStage.elaborate(new Example)
+      circt.stage.ChiselStage.elaborate(new Example)
     }
   }
 }

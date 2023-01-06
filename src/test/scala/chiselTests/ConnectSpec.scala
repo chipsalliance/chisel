@@ -2,12 +2,10 @@
 
 package chiselTests
 
-import org.scalatest._
-
 import chisel3._
 import chisel3.experimental.{Analog, FixedPoint}
-import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import circt.stage.ChiselStage
 
 abstract class CrossCheck extends Bundle {
   val in:  Data

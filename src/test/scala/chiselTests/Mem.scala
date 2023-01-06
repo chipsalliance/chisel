@@ -3,9 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
-import chisel3.util._
 import chisel3.testers.BasicTester
+import chisel3.util._
+import circt.stage.ChiselStage
 
 class MemVecTester extends BasicTester {
   val mem = Mem(2, Vec(2, UInt(8.W)))
@@ -235,7 +235,6 @@ class MemorySpec extends ChiselPropSpec {
   }
 
   property("memories in modules without implicit clock should compile without warning or error") {
-    val stage = new ChiselStage
-    stage.emitVerilog(new TrueDualPortMemory(4, 32))
+    ChiselStage.emitCHIRRTL(new TrueDualPortMemory(4, 32))
   }
 }

@@ -4,7 +4,7 @@ package chiselTests.util.experimental
 
 import chisel3._
 import chisel3.util.BitPat
-import chisel3.util.experimental.decode.{decoder, TruthTable}
+import chisel3.util.experimental.decode.{TruthTable, decoder}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class TruthTableSpec extends AnyFlatSpec {
@@ -78,7 +78,7 @@ class TruthTableSpec extends AnyFlatSpec {
 
       io.out := decoder.qmc(io.in, table)
     }
-    assert(chisel3.stage.ChiselStage.emitChirrtl(new Foo) == chisel3.stage.ChiselStage.emitChirrtl(new Foo))
+    assert(circt.stage.ChiselStage.emitCHIRRTL(new Foo) == circt.stage.ChiselStage.emitCHIRRTL(new Foo))
   }
   "TruthTable" should "accept unknown input width" in {
     val t = TruthTable(

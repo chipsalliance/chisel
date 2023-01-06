@@ -6,7 +6,7 @@ package experimental.hierarchy
 import chisel3._
 import chisel3.util.Valid
 import chisel3.experimental.hierarchy._
-import chisel3.stage.ChiselStage.convert
+import circt.stage.ChiselStage.convert
 
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the

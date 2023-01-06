@@ -2,10 +2,10 @@
 
 package chiselTests.experimental
 
-import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.experimental.conversions._
-import chisel3.stage.ChiselStage
+import chiselTests.ChiselFlatSpec
+import circt.stage.ChiselStage
 
 class TupleSpec extends ChiselFlatSpec {
 
@@ -19,7 +19,7 @@ class TupleSpec extends ChiselFlatSpec {
       (y, z) := Mux(sel, (a, b), (c, d))
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     verilog should include("assign y = sel ? a : c;")
     verilog should include("assign z = sel ? b : d;")
   }
@@ -30,7 +30,7 @@ class TupleSpec extends ChiselFlatSpec {
       val w, x, y, z = IO(Output(UInt(8.W)))
       ((w, x), (y, z)) := ((a, b), (c, d))
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     chirrtl should include("w <= a")
     chirrtl should include("x <= b")
     chirrtl should include("y <= c")
@@ -46,7 +46,7 @@ class TupleSpec extends ChiselFlatSpec {
       (v, w, x) := Mux(sel, (a, b, c), (f, g, h))
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     verilog should include("assign v = sel ? a : f;")
     verilog should include("assign w = sel ? b : g;")
     verilog should include("assign x = sel ? c : h;")
@@ -61,7 +61,7 @@ class TupleSpec extends ChiselFlatSpec {
       (v, w, x, y) := Mux(sel, (a, b, c, d), (f, g, h, i))
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     verilog should include("assign v = sel ? a : f;")
     verilog should include("assign w = sel ? b : g;")
     verilog should include("assign x = sel ? c : h;")
@@ -77,7 +77,7 @@ class TupleSpec extends ChiselFlatSpec {
       (z0, z1, z2, z3, z4) := Mux(sel, (a0, a1, a2, a3, a4), (b0, b1, b2, b3, b4))
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     for (i <- 0 until 5) {
       verilog should include(s"assign z$i = sel ? a$i : b$i;")
     }
@@ -92,7 +92,7 @@ class TupleSpec extends ChiselFlatSpec {
       (z0, z1, z2, z3, z4, z5) := Mux(sel, (a0, a1, a2, a3, a4, a5), (b0, b1, b2, b3, b4, b5))
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     for (i <- 0 until 6) {
       verilog should include(s"assign z$i = sel ? a$i : b$i;")
     }
@@ -107,7 +107,7 @@ class TupleSpec extends ChiselFlatSpec {
       (z0, z1, z2, z3, z4, z5, z6) := Mux(sel, (a0, a1, a2, a3, a4, a5, a6), (b0, b1, b2, b3, b4, b5, b6))
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     for (i <- 0 until 7) {
       verilog should include(s"assign z$i = sel ? a$i : b$i;")
     }
@@ -122,7 +122,7 @@ class TupleSpec extends ChiselFlatSpec {
       (z0, z1, z2, z3, z4, z5, z6, z7) := Mux(sel, (a0, a1, a2, a3, a4, a5, a6, a7), (b0, b1, b2, b3, b4, b5, b6, b7))
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     for (i <- 0 until 8) {
       verilog should include(s"assign z$i = sel ? a$i : b$i;")
     }
@@ -138,7 +138,7 @@ class TupleSpec extends ChiselFlatSpec {
         Mux(sel, (a0, a1, a2, a3, a4, a5, a6, a7, a8), (b0, b1, b2, b3, b4, b5, b6, b7, b8))
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     for (i <- 0 until 9) {
       verilog should include(s"assign z$i = sel ? a$i : b$i;")
     }
@@ -154,7 +154,7 @@ class TupleSpec extends ChiselFlatSpec {
         Mux(sel, (a0, a1, a2, a3, a4, a5, a6, a7, a8, a9), (b0, b1, b2, b3, b4, b5, b6, b7, b8, b9))
     }
     // Verilog instead of CHIRRTL because the optimizations make it much prettier
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     for (i <- 0 until 10) {
       verilog should include(s"assign z$i = sel ? a$i : b$i;")
     }

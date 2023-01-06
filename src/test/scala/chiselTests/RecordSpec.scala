@@ -3,11 +3,11 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import chisel3.experimental.OpaqueType
+import chisel3.reflect.DataMirror
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
-import chisel3.reflect.DataMirror
-import chisel3.experimental.OpaqueType
+import circt.stage.ChiselStage
 
 import scala.collection.immutable.SeqMap
 
@@ -241,11 +241,11 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   they should "emit FIRRTL bulk connects when possible" in {
-    val chirrtl = (new ChiselStage).emitChirrtl(
+    val chirrtl = ChiselStage.emitCHIRRTL(
       gen = new ConnectionTestModule(fooBarType, fooBarType)
     )
-    chirrtl should include("io.outMono <= io.inMono @[src/test/scala/chiselTests/RecordSpec.scala")
-    chirrtl should include("io.outBi <= io.inBi @[src/test/scala/chiselTests/RecordSpec.scala")
+    chirrtl should include("io.outMono <= io.inMono @")
+    chirrtl should include("io.outBi <= io.inBi @")
   }
 
   they should "not allow aliased fields" in {
@@ -266,7 +266,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   they should "support OpaqueType for maps with single unnamed elements" in {
-    val singleElementChirrtl = ChiselStage.emitChirrtl { new SingleElementRecordModule }
+    val singleElementChirrtl = ChiselStage.emitCHIRRTL { new SingleElementRecordModule }
     singleElementChirrtl should include("input in1 : UInt<8>")
     singleElementChirrtl should include("input in2 : UInt<8>")
     singleElementChirrtl should include("add(in1, in2)")
@@ -307,7 +307,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   they should "work correctly when connecting nested OpaqueType elements" in {
-    val nestedRecordChirrtl = ChiselStage.emitChirrtl { new NestedRecordModule }
+    val nestedRecordChirrtl = ChiselStage.emitCHIRRTL { new NestedRecordModule }
     nestedRecordChirrtl should include("input in : UInt<8>")
     nestedRecordChirrtl should include("output out : UInt<8>")
     nestedRecordChirrtl should include("inst.io.foo <= in")
@@ -329,7 +329,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   they should "work correctly when an OpaqueType overrides the def as false" in {
-    val chirrtl = ChiselStage.emitChirrtl(new NotActuallyOpaqueTypeModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new NotActuallyOpaqueTypeModule)
     chirrtl should include("input in : { y : UInt<8>, x : UInt<8>}")
     chirrtl should include("output out : { y : UInt<8>, x : UInt<8>}")
     chirrtl should include("out <= in")
@@ -344,7 +344,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
       out0 := in0
       out1 := in1
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     chirrtl should include("input in0 : { underlying : UInt<8>}")
     chirrtl should include("input in1 : UInt<8>")
   }

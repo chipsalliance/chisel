@@ -5,7 +5,7 @@ package chiselTests
 import org.scalatest._
 import chisel3._
 import chisel3.experimental.OpaqueType
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 
 import scala.collection.immutable.SeqMap
@@ -152,7 +152,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       DataMirror.directionOf(fizz) should be(Direction.Bidirectional(Direction.Default))
       DataMirror.directionOf(buzz) should be(Direction.Bidirectional(Direction.Default))
     }
-    val chirrtl = ChiselStage.emitChirrtl(new Top)
+    val chirrtl = ChiselStage.emitCHIRRTL(new Top)
     chirrtl should include("input foo")
     chirrtl should include("output fizz")
     chirrtl should include("output buzz")
@@ -268,7 +268,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(flippedVecFlipped(index).b) == Direction.Output)
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
     val firrtl:  String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
@@ -337,7 +337,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(vecOutputFlipped(index).b) == Direction.Output)
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
     val firrtl:  String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
@@ -368,7 +368,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       outgoing <> incoming
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
 
     // Check that emitted directions are correct.
     assert(emitted.contains("input incoming : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
@@ -395,7 +395,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       io.monitor.ready := io.driver.ready
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
 
     assert(
       emitted.contains(
@@ -423,7 +423,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       val sink = IO(Input(Vec(1, new Decoupled())))
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
 
     assert(
       emitted.contains(
@@ -457,7 +457,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       val w = Wire(new MyOpaqueType())
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
 
     assert(
       emitted.contains(

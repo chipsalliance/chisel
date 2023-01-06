@@ -1,9 +1,8 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util.{RegEnable, ShiftRegister, ShiftRegisters}
-
+import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -16,7 +15,7 @@ class RegEnableSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(Bool()))
       out := RegEnable(in, true.B)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val reset = """reset.*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
@@ -30,7 +29,7 @@ class RegEnableSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(Bool()))
       out := RegEnable(in, true.B, true.B)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val reset = """reset .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
@@ -48,7 +47,7 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(Bool()))
       out := ShiftRegister(in, 2, true.B)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val reset = """reset .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
@@ -62,7 +61,7 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(Bool()))
       out := ShiftRegister(in, 2)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val reset = """reset .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
@@ -76,7 +75,7 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(Bool()))
       out := ShiftRegister(in, 2, false.B, true.B)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val reset = """reset .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
@@ -95,7 +94,7 @@ class ShiftRegistersSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(Bool()))
       out := ShiftRegisters(in, 2, true.B)(0)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val reset = """reset .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
@@ -109,7 +108,7 @@ class ShiftRegistersSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(Bool()))
       out := ShiftRegisters(in, 2)(0)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val reset = """reset .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
@@ -123,7 +122,7 @@ class ShiftRegistersSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(Bool()))
       out := ShiftRegisters(in, 2, false.B, true.B)(0)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val reset = """reset .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r

@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class WireSpec extends ChiselFlatSpec {
   "WireDefault.apply" should "work" in {
@@ -29,7 +29,8 @@ class WireSpec extends ChiselFlatSpec {
       out := in & wire & wire2
     }
 
-    val chirrtl = ChiselStage.emitChirrtl(new Dummy)
+    val chirrtl = ChiselStage.emitCHIRRTL(new Dummy)
+    // This test can fail when run from IntelliJ because the source locator path can be different
     chirrtl should include("wire wire : UInt<1> @[src/test/scala/chiselTests/WireSpec.scala")
     chirrtl should include("wire wire2 : UInt<1> @[src/test/scala/chiselTests/WireSpec.scala")
   }

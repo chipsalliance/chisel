@@ -4,8 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.AutoCloneType
-import chisel3.stage.ChiselStage
-
+import circt.stage.ChiselStage
 import collection.immutable.VectorMap
 
 class LazyCloneSpec extends ChiselFlatSpec {

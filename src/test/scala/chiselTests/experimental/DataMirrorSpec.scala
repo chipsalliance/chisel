@@ -3,10 +3,9 @@
 package chiselTests.experimental
 
 import chisel3._
-import chisel3.util.Valid
-import chisel3.stage.ChiselStage
 import chisel3.reflect.DataMirror
 import chiselTests.ChiselFlatSpec
+import circt.stage.ChiselStage
 
 object DataMirrorSpec {
   import org.scalatest.matchers.should.Matchers._
