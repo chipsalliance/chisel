@@ -23,6 +23,18 @@ class LazyCloneSpec extends ChiselFlatSpec {
     Counter.count += 1
   }
 
+  class GenRecord(gen: UInt) extends Record with AutoCloneType {
+    lazy val elements = VectorMap("foo" -> gen)
+    Counter.count += 1
+  }
+
+  class NestedGenBundle(gen: UInt) extends Bundle {
+    val foo = new Bundle {
+      val bar = gen
+    }
+    Counter.count += 1
+  }
+
   behavior.of("LazyClone")
 
   it should "not clone" in {
@@ -63,36 +75,48 @@ class LazyCloneSpec extends ChiselFlatSpec {
   }
 
   it should "clone Records because of external refs" in {
-    var count = 0L
-    class MyRecord(gen: UInt) extends Record with AutoCloneType {
-      lazy val elements = VectorMap("foo" -> gen)
-      count += 1
-    }
+    Counter.count = 0L
     class MyModule extends RawModule {
       val gen = UInt(8.W)
-      val in = IO(Input(new MyRecord(gen)))
-      val out = IO(Output(new MyRecord(gen)))
+      val in = IO(Input(new GenRecord(gen)))
+      val out = IO(Output(new GenRecord(gen)))
       out := in
     }
     ChiselStage.elaborate(new MyModule)
-    count should be(4L)
+    Counter.count should be(4L)
+  }
+
+  it should "not clone when ref is external to the Record but not the binding operation" in {
+    Counter.count = 0L
+    class MyModule extends RawModule {
+      val in = IO(Input(new GenRecord(UInt(8.W))))
+      val out = IO(Output(new GenRecord(UInt(8.W))))
+      out := in
+    }
+    ChiselStage.elaborate(new MyModule)
+    Counter.count should be(2L)
   }
 
   it should "clone because of nested external ref" in {
-    var count = 0L
-    class MyBundle(gen: UInt) extends Bundle {
-      val foo = new Bundle {
-        val bar = gen
-      }
-      count += 1
-    }
+    Counter.count = 0L
     class MyModule extends RawModule {
       val gen = UInt(8.W)
-      val in = IO(Input(new MyBundle(gen)))
-      val out = IO(Output(new MyBundle(gen)))
+      val in = IO(Input(new NestedGenBundle(gen)))
+      val out = IO(Output(new NestedGenBundle(gen)))
       out := in
     }
     ChiselStage.elaborate(new MyModule)
-    count should be(4L)
+    Counter.count should be(4L)
+  }
+
+  it should "not clone when nested ref is external to the Bundle but not the binding operation" in {
+    Counter.count = 0L
+    class MyModule extends RawModule {
+      val in = IO(Input(new NestedGenBundle(UInt(8.W))))
+      val out = IO(Output(new NestedGenBundle(UInt(8.W))))
+      out := in
+    }
+    ChiselStage.elaborate(new MyModule)
+    Counter.count should be(2L)
   }
 }
