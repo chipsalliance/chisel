@@ -168,6 +168,7 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
   }
 }
 
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
@@ -269,10 +270,13 @@ sealed case class KnownWidth(value: Int) extends Width {
 }
 
 object BinaryPoint {
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(x: Int): BinaryPoint = KnownBinaryPoint(x)
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(): BinaryPoint = UnknownBinaryPoint
 }
 
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 sealed abstract class BinaryPoint {
   type W = Int
   def max(that:              BinaryPoint): BinaryPoint = this.op(that, _ max _)
@@ -335,14 +339,17 @@ object IntervalRange {
     * @param firrtlBinaryPoint   binary point firrtl style
     * @return
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, firrtlBinaryPoint: firrtlir.Width): IntervalRange = {
     new IntervalRange(lower, upper, firrtlBinaryPoint)
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, binaryPoint: BinaryPoint): IntervalRange = {
     new IntervalRange(lower, upper, IntervalRange.getBinaryPoint(binaryPoint))
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, binaryPoint: Int): IntervalRange = {
     IntervalRange(lower, upper, BinaryPoint(binaryPoint))
   }
@@ -351,6 +358,7 @@ object IntervalRange {
     * @param binaryPoint  number of bits of mantissa
     * @return
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(binaryPoint: BinaryPoint): IntervalRange = {
     IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, binaryPoint)
   }
@@ -360,6 +368,7 @@ object IntervalRange {
     * @param binaryPoint  number of bits of mantissa
     * @return
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(width: Width, binaryPoint: BinaryPoint = 0.BP): IntervalRange = {
     val range = width match {
       case KnownWidth(w) =>
@@ -375,10 +384,12 @@ object IntervalRange {
     range
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def unapply(arg: IntervalRange): Option[(firrtlir.Bound, firrtlir.Bound, BinaryPoint)] = {
     return Some((arg.lower, arg.upper, arg.binaryPoint))
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def getBound(isClosed: Boolean, value: String): firrtlir.Bound = {
     if (value == "?") {
       firrtlir.UnknownBound
@@ -389,6 +400,7 @@ object IntervalRange {
     }
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def getBound(isClosed: Boolean, value: BigDecimal): firrtlir.Bound = {
     if (isClosed) {
       firrtlir.Closed(value)
@@ -397,14 +409,17 @@ object IntervalRange {
     }
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def getBound(isClosed: Boolean, value: Int): firrtlir.Bound = {
     getBound(isClosed, (BigDecimal(value)))
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def getBinaryPoint(s: String): firrtlir.Width = {
     firrtlir.UnknownWidth
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def getBinaryPoint(n: Int): firrtlir.Width = {
     if (n < 0) {
       firrtlir.UnknownWidth
@@ -412,6 +427,7 @@ object IntervalRange {
       firrtlir.IntWidth(n)
     }
   }
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def getBinaryPoint(n: BinaryPoint): firrtlir.Width = {
     n match {
       case UnknownBinaryPoint  => firrtlir.UnknownWidth
@@ -419,6 +435,7 @@ object IntervalRange {
     }
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def getRangeWidth(w: Width): firrtlir.Width = {
     if (w.known) {
       firrtlir.IntWidth(w.get)
@@ -426,6 +443,7 @@ object IntervalRange {
       firrtlir.UnknownWidth
     }
   }
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def getRangeWidth(binaryPoint: BinaryPoint): firrtlir.Width = {
     if (binaryPoint.known) {
       firrtlir.IntWidth(binaryPoint.get)
@@ -434,9 +452,11 @@ object IntervalRange {
     }
   }
 
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def Unknown: IntervalRange = range"[?,?].?"
 }
 
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 sealed class IntervalRange(
   val lowerBound:                         firrtlir.Bound,
   val upperBound:                         firrtlir.Bound,

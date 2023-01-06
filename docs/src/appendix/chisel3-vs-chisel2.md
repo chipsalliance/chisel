@@ -70,10 +70,10 @@ class Hello extends RawModule
 ```
    becomes (in Chisel3):
 ```scala mdoc:compile-only
-   import chisel3.stage.ChiselStage
+   import circt.stage.ChiselStage
    object Hello {
      def main(args: Array[String]): Unit = {
-       (new ChiselStage).emitVerilog(new Hello())
+       ChiselStage.emitSystemVerilog(new Hello())
      }
    }
 ```

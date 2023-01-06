@@ -76,9 +76,9 @@ class HelloWorld extends Module {
 
 Add the following
 ```scala mdoc:silent
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 object VerilogMain extends App {
-  (new ChiselStage).emitVerilog(new HelloWorld)
+  ChiselStage.emitSystemVerilog(new HelloWorld)
 }
 ```
 Now you can get some Verilog. Start sbt:
@@ -96,7 +96,7 @@ bash> sbt 'runMain intro.VerilogMain'
 ```
 After either of the above there will be a HelloWorld.v file in the current directory:
 ```scala mdoc:invisible
-val verilog = ChiselStage.emitVerilog(new HelloWorld)
+val verilog = ChiselStage.emitSystemVerilog(new HelloWorld)
 ```
 ```scala mdoc:passthrough
 println("```verilog")
@@ -124,7 +124,7 @@ $ sbt
 Welcome to Scala 2.12.13 (OpenJDK 64-Bit Server VM, Java 1.8.0_275).
 Type in expressions for evaluation. Or try :help.
 
-scala> (new chisel3.stage.ChiselStage).emitVerilog(new HelloWorld())
+scala> (new circt.stage.ChiselStage).emitSystemVerilog(new HelloWorld())
 chisel3.Driver.execute(Array[String](), () => new HelloWorld)
 Elaborating design...
 Done elaborating.
@@ -142,7 +142,7 @@ Note: Using the following, without the `new`,
 will ONLY return the string representation, and will not emit a `.v` file:
 
 ```scala mdoc:silent
-ChiselStage.emitVerilog(new HelloWorld())
+ChiselStage.emitSystemVerilog(new HelloWorld())
 ```
 
 ### Get me FIRRTL
@@ -155,14 +155,14 @@ package intro
 ```scala mdoc:silent:reset
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class MyFirrtlModule extends Module {
   val io = IO(new Bundle{})
 }
 
 object FirrtlMain extends App {
-  (new ChiselStage).emitFirrtl(new MyFirrtlModule)
+  ChiselStage.emitCHIRRTL(new MyFirrtlModule)
 }
 ```
 
@@ -172,7 +172,7 @@ Run it with:
 sbt 'runMain intro.FirrtlMain'
 ```
 ```scala mdoc:invisible
-val theFirrtl = ChiselStage.emitFirrtl(new MyFirrtlModule)
+val theFirrtl = ChiselStage.emitCHIRRTL(new MyFirrtlModule)
 ```
 ```scala mdoc:passthrough
 println("```")
@@ -189,7 +189,7 @@ $ sbt
 Welcome to Scala 2.12.13 (OpenJDK 64-Bit Server VM, Java 1.8.0_275).
 Type in expressions for evaluation. Or try :help.
 
-scala> (new chisel3.stage.ChiselStage).emitFirrtl(new MyFirrtlModule)
+scala> circt.stage.ChiselStage.emitCHIRRTL(new MyFirrtlModule)
 Elaborating design...
 Done elaborating.
 res3: String = ...

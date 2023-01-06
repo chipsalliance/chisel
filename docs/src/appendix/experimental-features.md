@@ -50,7 +50,7 @@ class Example extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example)
+circt.stage.ChiselStage.emitSystemVerilog(new Example)
 ```
 
 Partial specification is allowed, which results in "invalidated fields" as
@@ -66,7 +66,7 @@ class Example2 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example2)
+circt.stage.ChiselStage.emitSystemVerilog(new Example2)
 ```
 
 Bundle literals can also be nested arbitrarily.
@@ -88,13 +88,13 @@ class Example3 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example3)
+circt.stage.ChiselStage.emitSystemVerilog(new Example3)
 ```
 
 ### Vec Literals
 
 Vec literals are very similar to Bundle literals and can be constructed via an experimental import.
-They can be constructed in two forms, with type and length inferred as in: 
+They can be constructed in two forms, with type and length inferred as in:
 
 ```scala mdoc
 import chisel3._
@@ -106,7 +106,7 @@ class VecExample1 extends Module {
 }
 ```
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample1)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample1)
 ```
 
 or explicitly as in:
@@ -122,7 +122,7 @@ class VecExample1a extends Module {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample1a)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample1a)
 ```
 
 The following examples all use the explicit form.
@@ -139,7 +139,7 @@ class VecExample2 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample2)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample2)
 ```
 
 Registers can be initialized from Vec literals
@@ -155,7 +155,7 @@ class VecExample3 extends Module {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample3)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample3)
 ```
 
 Vec literals can also be nested arbitrarily.
@@ -171,7 +171,7 @@ class VecExample5 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample5)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample5)
 ```
 
 ### Interval Type <a name="interval-type"></a>

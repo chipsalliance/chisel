@@ -256,7 +256,10 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
 
       elaborate {
         new Module {
-          val io = IO(Output(new BadBundle(UInt(8.W), 1)))
+          // This needs to be constructed before the call to Output, otherwise it won't be cloned
+          // thanks to lazy cloning
+          val gen = new BadBundle(UInt(8.W), 1)
+          val io = IO(Output(gen))
           io.a := 0.U
         }
       }
