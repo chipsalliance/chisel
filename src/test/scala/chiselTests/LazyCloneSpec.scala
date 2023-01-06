@@ -119,4 +119,29 @@ class LazyCloneSpec extends ChiselFlatSpec {
     ChiselStage.elaborate(new MyModule)
     Counter.count should be(2L)
   }
+
+  it should "not clone Vecs (but Vecs always clone their gen 1 + size times)" in {
+    Counter.count = 0L
+    class MyModule extends RawModule {
+      val in = IO(Input(Vec(2, new Foo)))
+      val out = IO(Output(Vec(2, new Foo)))
+      out := in
+    }
+    ChiselStage.elaborate(new MyModule)
+    // Each Vec has 3 clones of Foo + the original Foo, then the Vec isn't cloned
+    Counter.count should be(8L)
+  }
+
+  it should "not clone Vecs even with external refs (but Vecs always clone their gen 1 + size times)" in {
+    Counter.count = 0L
+    class MyModule extends RawModule {
+      val gen = new Foo
+      val in = IO(Input(Vec(2, gen)))
+      val out = IO(Output(Vec(2, gen)))
+      out := in
+    }
+    ChiselStage.elaborate(new MyModule)
+    // Each Vec has 3 clones of Foo + the original Foo, then the Vec isn't cloned
+    Counter.count should be(7L)
+  }
 }
