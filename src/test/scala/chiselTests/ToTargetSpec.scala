@@ -3,9 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
-import chisel3.util.Queue
 import chisel3.internal.ChiselException
+import circt.stage.ChiselStage
 
 class ToTargetSpec extends ChiselFlatSpec with Utils {
 

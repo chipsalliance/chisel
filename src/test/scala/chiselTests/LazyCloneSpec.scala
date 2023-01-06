@@ -3,8 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
-import chiselTests.ChiselFlatSpec
+import circt.stage.ChiselStage
 
 class LazyCloneSpec extends ChiselFlatSpec {
   object Counter {

@@ -3,11 +3,10 @@
 package chiselTests.naming
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.aop.Select
-import chisel3.experimental.{dump, noPrefix, prefix, treedump}
+import chisel3.experimental.{AffectsChiselPrefix, noPrefix, prefix}
 import chiselTests.{ChiselPropSpec, Utils}
-import chisel3.experimental.AffectsChiselPrefix
+import circt.stage.ChiselStage
 
 class PrefixSpec extends ChiselPropSpec with Utils {
   implicit val minimumMajorVersion: Int = 12
@@ -437,7 +436,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    val chirrtl = ChiselStage.emitChirrtl(new Test)
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
     (chirrtl should include).regex("assert.*: x5")
     (chirrtl should include).regex("cover.*: x5_x2")
     (chirrtl should include).regex("assume.*: x5_x3")

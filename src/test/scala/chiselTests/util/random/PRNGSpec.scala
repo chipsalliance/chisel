@@ -3,7 +3,7 @@
 package chiselTests.util.random
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util.Counter
 import chisel3.util.random.PRNG

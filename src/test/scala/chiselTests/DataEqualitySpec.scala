@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.experimental.VecLiterals._
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.{Analog, ChiselEnum, ChiselRange, FixedPoint, Interval}
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util.Valid
 
@@ -238,11 +238,11 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     }
 
     // Compare the verilog generated from both test cases and verify that they both are equal to true
-    val verilog1 = ChiselStage.emitVerilog(
+    val verilog1 = ChiselStage.emitSystemVerilog(
       new EqualityModule(Valid(UInt(8.W)).Lit(_.bits -> 123.U), Valid(UInt(8.W)).Lit(_.bits -> 123.U))
     )
     val verilog2 =
-      ChiselStage.emitVerilog(new EqualityModule(WireInit(UInt(8.W), DontCare), WireInit(UInt(8.W), DontCare)))
+      ChiselStage.emitSystemVerilog(new EqualityModule(WireInit(UInt(8.W), DontCare), WireInit(UInt(8.W), DontCare)))
 
     verilog1 should include("assign out = 1'h1;")
     verilog2 should include("assign out = 1'h1;")

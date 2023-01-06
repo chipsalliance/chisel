@@ -4,11 +4,8 @@ package circt.stage
 
 import chisel3.RawModule
 import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation}
-
-import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
-import firrtl.options.Viewer.view
-import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
+import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
@@ -50,7 +47,15 @@ object ChiselStage {
   /** Elaborate a Chisel circuit into a CHIRRTL string */
   def emitCHIRRTL(gen: => RawModule): String = chisel3.stage.ChiselStage.emitChirrtl(gen)
 
-  /** A phase shared by all the CIRCT backends */
+  /** Return a CHIRRTL circuit for a Chisel module
+    *
+    * @param gen a call-by-name Chisel module
+    */
+  def convert(gen: => RawModule): firrtl.ir.Circuit = {
+    chisel3.stage.ChiselStage.convert(gen)
+  }
+
+    /** A phase shared by all the CIRCT backends */
   private def phase = new PhaseManager(
     Seq(
       Dependency[chisel3.stage.phases.Checks],
@@ -90,16 +95,17 @@ object ChiselStage {
     .get
 
   /** Compile a Chisel circuit to SystemVerilog
-    * @param gen a call-by-name Chisel module
-    * @param args additional command line arguments to pass to Chisel
+    *
+    * @param gen         a call-by-name Chisel module
+    * @param args        additional command line arguments to pass to Chisel
     * @param firtoolOpts additional [[circt.stage.FirtoolOption]] to pass to firtool
     * @return a string containing the Verilog output
     */
   def emitSystemVerilog(
-    gen:         => RawModule,
-    args:        Array[String] = Array.empty,
-    firtoolOpts: Array[String] = Array.empty
-  ): String =
+                         gen: => RawModule,
+                         args: Array[String] = Array.empty,
+                         firtoolOpts: Array[String] = Array.empty
+                       ): String =
     phase
       .transform(
         Seq(
@@ -114,21 +120,32 @@ object ChiselStage {
       .value
 
   /** Compile a Chisel circuit to SystemVerilog with file output
-    * @param gen a call-by-name Chisel module
-    * @param args additional command line arguments to pass to Chisel
+    *
+    * @param gen         a call-by-name Chisel module
+    * @param args        additional command line arguments to pass to Chisel
     * @param firtoolOpts additional command line options to pass to firtool
     * @return a string containing the Verilog output
     */
   def emitSystemVerilogFile(
-    gen:         => RawModule,
-    args:        Array[String] = Array.empty,
-    firtoolOpts: Array[String] = Array.empty
-  ) = {
+                             gen: => RawModule,
+                             args: Array[String] = Array.empty,
+                             firtoolOpts: Array[String] = Array.empty
+                           ) = {
     val chiselArgs = Array("--target", "systemverilog") ++ args
     (new circt.stage.ChiselStage).execute(
       chiselArgs,
       Seq(ChiselGeneratorAnnotation(() => gen)) ++ firtoolOpts.map(FirtoolOption(_))
     )
+  }
+
+  /** Return a Chisel circuit for a Chisel module
+    *
+    * @param gen a call-by-name Chisel module
+    */
+  def elaborate(
+                 gen: => RawModule
+               ): chisel3.internal.firrtl.Circuit = {
+    chisel3.stage.ChiselStage.elaborate(gen)
   }
 }
 

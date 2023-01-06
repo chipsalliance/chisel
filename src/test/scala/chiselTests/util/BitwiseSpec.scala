@@ -1,9 +1,8 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util.{Fill, FillInterleaved, PopCount, Reverse}
-
+import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -15,7 +14,7 @@ class FillInterleavedSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(UInt()))
       out := FillInterleaved(2, "b1000".U)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val cat = """cat.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(cat)
     val mux = """mux.*BitwiseSpec\.scala""".r
@@ -28,7 +27,7 @@ class FillInterleavedSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(UInt()))
       out := FillInterleaved(2, Seq(true.B, false.B, false.B, false.B))
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val cat = """cat.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(cat)
     val mux = """mux.*BitwiseSpec\.scala""".r
@@ -45,7 +44,7 @@ class PopCountSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(UInt()))
       out := PopCount(Seq(true.B, false.B, false.B, false.B))
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val add = """add.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(add)
     val bits = """bits.*BitwiseSpec\.scala""".r
@@ -58,7 +57,7 @@ class PopCountSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(UInt()))
       out := PopCount("b1000".U)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val add = """add.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(add)
     val bits = """bits.*BitwiseSpec\.scala""".r
@@ -74,7 +73,7 @@ class FillSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(UInt()))
       out := Fill(2, "b1000".U)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val cat = """cat.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(cat)
     (chirrtl should not).include("Bitwise.scala")
@@ -89,7 +88,7 @@ class ReverseSpec extends AnyFlatSpec with Matchers {
       val out = IO(Output(UInt()))
       out := Reverse("b1101".U)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val cat = """cat.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(cat)
     (chirrtl should not).include("Bitwise.scala")

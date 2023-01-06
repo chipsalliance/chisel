@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 import scala.annotation.nowarn
 

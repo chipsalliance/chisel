@@ -2,10 +2,7 @@
 
 package chisel3.testers
 
-import TesterDriver.Backend
-import chisel3.{Bundle, RawModule}
-import chisel3.internal.firrtl.Circuit
-import chisel3.stage.ChiselStage
+import chisel3.testers.TesterDriver.Backend
 import firrtl.AnnotationSeq
 
 object TestUtils {

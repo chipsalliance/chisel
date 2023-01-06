@@ -2,13 +2,12 @@
 
 package chiselTests
 
-import org.scalacheck._
-
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
-import org.scalacheck.Shrink
+import circt.stage.ChiselStage
+import org.scalacheck._
+
 import scala.annotation.tailrec
 
 class LitTesterMod(vecSize: Int) extends Module {
@@ -534,7 +533,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       override def cloneType = (new EmptyRecord).asInstanceOf[this.type]
     }
     for (gen <- List(new EmptyBundle, new EmptyRecord)) {
-      val chirrtl = ChiselStage.emitChirrtl(new MyModule(gen))
+      val chirrtl = ChiselStage.emitCHIRRTL(new MyModule(gen))
       chirrtl should include("input in : { }")
       chirrtl should include("reg reg : { }[4]")
     }

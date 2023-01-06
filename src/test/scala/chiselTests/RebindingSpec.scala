@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class RebindingSpec extends ChiselFlatSpec with Utils {
   "Rebinding a literal" should "fail" in {

@@ -3,10 +3,10 @@
 package chiselTests.naming
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.aop.Select
-import chisel3.experimental.{prefix, treedump}
+import chisel3.experimental.prefix
 import chiselTests.{ChiselFlatSpec, Utils}
+import circt.stage.ChiselStage
 
 class NamePluginSpec extends ChiselFlatSpec with Utils {
   implicit val minimumScalaVersion: Int = 12
@@ -81,7 +81,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
         val x4 = printf("foo = %d\n", foo)
       }
     }
-    val chirrtl = ChiselStage.emitChirrtl(new Test)
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
     (chirrtl should include).regex("assert.*: x1")
     (chirrtl should include).regex("cover.*: x2")
     (chirrtl should include).regex("assume.*: x3")

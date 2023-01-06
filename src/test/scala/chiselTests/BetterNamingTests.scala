@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.util._
 
 import scala.collection.mutable
@@ -98,8 +98,8 @@ class BetterNamingTests extends ChiselFlatSpec {
       }
       WireDefault(3.U)
     }
-    val withLits = ChiselStage.emitChirrtl(new MyModule(true))
-    val noLits = ChiselStage.emitChirrtl(new MyModule(false))
+    val withLits = ChiselStage.emitCHIRRTL(new MyModule(true))
+    val noLits = ChiselStage.emitCHIRRTL(new MyModule(false))
     withLits should equal(noLits)
   }
 }

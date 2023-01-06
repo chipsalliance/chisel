@@ -3,9 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util._
+import circt.stage.ChiselStage
 
 class WhenTester() extends BasicTester {
   val cnt = Counter(4)

@@ -3,11 +3,10 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.stage.ChiselStage
-import chisel3.util.Cat
 import chisel3.experimental.noPrefix
-
+import chisel3.util.Cat
 import chiselTests.ChiselFlatSpec
+import circt.stage.ChiselStage
 
 object CatSpec {
 
@@ -39,7 +38,7 @@ class CatSpec extends ChiselFlatSpec {
 
       out := Cat(a, b, c, d)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     for (name <- Seq("a", "b", "c", "d")) {
       chirrtl should include(s"input $name : UInt<8>")
     }
@@ -53,7 +52,7 @@ class CatSpec extends ChiselFlatSpec {
       // noPrefix to avoid `out` as prefix
       out := noPrefix(Cat(in))
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     chirrtl should include("node lo_lo = cat(in[6], in[7])")
     chirrtl should include("node lo_hi = cat(in[4], in[5])")
     chirrtl should include("node hi_lo = cat(in[2], in[3])")
@@ -68,8 +67,8 @@ class CatSpec extends ChiselFlatSpec {
       // noPrefix to avoid `out` as prefix
       out := Cat(in)
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include("cat(in[0], in[1]) @[src/test/scala/chiselTests/util/CatSpec.scala")
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include regex("""cat\(in\[0\], in\[1\]\) @.*CatSpec.scala""")
     (chirrtl should not).include("Cat.scala")
   }
 
@@ -79,8 +78,8 @@ class CatSpec extends ChiselFlatSpec {
       val out = IO(Output(UInt()))
       out := Cat(in(0), in(1))
     }
-    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include("cat(in[0], in[1]) @[src/test/scala/chiselTests/util/CatSpec.scala")
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include regex("""cat\(in\[0\], in\[1\]\) @.*CatSpec.scala""")
     (chirrtl should not).include("Cat.scala")
   }
 

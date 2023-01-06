@@ -3,10 +3,10 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.TestUtils
-import chisel3.util.QueueIO
-import chisel3.stage.ChiselStage.elaborate
 import chisel3.experimental.AutoCloneType
+import chisel3.util.QueueIO
+import circt.stage.ChiselStage.elaborate
+
 import scala.collection.immutable.ListMap
 
 class BundleWithIntArg(val i: Int) extends Bundle {
