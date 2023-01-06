@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.AutoCloneType
 import chisel3.stage.ChiselStage
-import chiselTests.ChiselFlatSpec
 
 import collection.immutable.VectorMap
 
@@ -51,7 +50,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
     Counter.count should be(3L)
   }
 
-  it should "clone because of external ref" in {
+  it should "not clone when ref is external to the Bundle but not the binding operation" in {
     Counter.count = 0L
     class MyModule extends RawModule {
       val io = IO(Flipped(new Bundle {
@@ -60,7 +59,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
       }))
     }
     ChiselStage.elaborate(new MyModule)
-    Counter.count should be(4L)
+    Counter.count should be(2L)
   }
 
   it should "clone Records because of external refs" in {
@@ -76,6 +75,24 @@ class LazyCloneSpec extends ChiselFlatSpec {
       out := in
     }
     ChiselStage.elaborate(new MyModule)
-    count should be(6L)
+    count should be(4L)
+  }
+
+  it should "clone because of nested external ref" in {
+    var count = 0L
+    class MyBundle(gen: UInt) extends Bundle {
+      val foo = new Bundle {
+        val bar = gen
+      }
+      count += 1
+    }
+    class MyModule extends RawModule {
+      val gen = UInt(8.W)
+      val in = IO(Input(new MyBundle(gen)))
+      val out = IO(Output(new MyBundle(gen)))
+      out := in
+    }
+    ChiselStage.elaborate(new MyModule)
+    count should be(4L)
   }
 }

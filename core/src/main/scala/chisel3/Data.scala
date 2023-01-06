@@ -367,18 +367,19 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  // must clone a data if
-  // * it has a binding
-  // * its id is older than prevId (not "freshly created")
-  // * it is a bundle with a non-fresh member (external reference)
+  // Must clone a Data if any of the following are true:
+  // * It has a binding
+  // * Its id is older than prevId (not "freshly created")
+  // * It is a Bundle or Record that contains a member older than prevId
   private[chisel3] def mustClone(prevId: Long): Boolean = {
-    if (this.hasBinding || this._id <= prevId) true
-    else
-      this match {
-        case r: Record => r.hasExternalRef
-        case _ => false
-      }
+    this.hasBinding || this._minId <= prevId
   }
+
+  /** The minimum (aka "oldest") id that is part of this Data
+    *
+    * @note This is usually just _id except for some Records and Bundles
+    */
+  private[chisel3] def _minId: Long = this._id
 
   override def autoSeed(name: String): this.type = {
     topBindingOpt match {

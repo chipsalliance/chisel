@@ -1219,7 +1219,9 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     )
   }
 
-  private[chisel3] lazy val hasExternalRef: Boolean = this.elements.exists(_._2._id < _id)
+  override private[chisel3] lazy val _minId: Long = {
+    this.elementsIterator.map(_._minId).foldLeft(this._id)(_ min _)
+  }
 }
 
 /**
