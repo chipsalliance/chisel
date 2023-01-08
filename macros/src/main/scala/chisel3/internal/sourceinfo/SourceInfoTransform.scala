@@ -252,8 +252,8 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     q"$thisObj.$doFuncTerm($in, $n, $resetData, $en)($implicitSourceInfo, $implicitCompileOptions)"
   }
 
-  def inNEnUseSpNameArg(in: c.Tree, n: c.Tree, en: c.Tree, useSinglePortMem: c.Tree, name: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in, $n, $en, $useSinglePortMem, $name)($implicitSourceInfo, $implicitCompileOptions)"
+  def inNEnUseDualSRAMpNameArg(in: c.Tree, n: c.Tree, en: c.Tree, useDualSRAMPort: c.Tree, name: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($in, $n, $en, $useDualSRAMPort, $name)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
 

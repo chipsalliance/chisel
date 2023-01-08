@@ -130,30 +130,30 @@ object ShiftRegister {
     * @param in input to delay
     * @param n  number of cycles to delay
     * @param en enable the shift
-    * @param useSinglePortMem single port or dual port SRAM based implementation
+    * @param useDualSRAMPort dual port or single port SRAM based implementation
     * @param name name of SyncReadMem object
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool, useSinglePortMem: Boolean, name: Option[String]): T =
-    macro SourceInfoTransform.inNEnUseSpNameArg
+  def apply[T <: Data](in: T, n: Int, en: Bool, useDualSRAMPort: Boolean, name: Option[String]): T =
+    macro SourceInfoTransform.inNEnUseDualSRAMpNameArg
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
-    in:               T,
-    n:                Int,
-    en:               Bool,
-    useSinglePortMem: Boolean,
-    name:             Option[String]
+    in:              T,
+    n:               Int,
+    en:              Bool,
+    useDualSRAMPort: Boolean,
+    name:            Option[String]
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): T = _apply_impl_sram(in, n, en, useSinglePortMem, name)
+  ): T = _apply_impl_sram(in, n, en, useDualSRAMPort, name)
 
   private def _apply_impl_sram[T <: Data](
-    in:               T,
-    n:                Int,
-    en:               Bool = true.B,
-    useSinglePortMem: Boolean = false,
-    name:             Option[String] = None
+    in:              T,
+    n:               Int,
+    en:              Bool = true.B,
+    useDualSRAMPort: Boolean = false,
+    name:            Option[String] = None
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
@@ -163,7 +163,20 @@ object ShiftRegister {
     } else if (n == 1) {
       val out = RegEnable(in, en)
       out
-    } else if (useSinglePortMem) {
+    } else if (useDualSRAMPort) {
+      val mem = SyncReadMem(n, in.cloneType)
+      if (name != None) {
+        mem.suggestName(name.get)
+      }
+      val raddr = Counter(en, n)._1
+      val out = mem.read(raddr, en)
+
+      val waddr = RegEnable(raddr, (n - 1).U, en)
+      when(en) {
+        mem.write(waddr, in)
+      }
+      out
+    } else {
       require(n % 2 == 0, "Odd shift register length with single-port SRAMs is not supported")
 
       val out_sp0 = Wire(in.cloneType)
@@ -198,19 +211,6 @@ object ShiftRegister {
         when(wen_sp1) { rdwrPort := in }.otherwise { out_sp1 := rdwrPort }
       }
       val out = Mux(~wen_sp1, out_sp0, out_sp1)
-      out
-    } else {
-      val mem = SyncReadMem(n, in.cloneType)
-      if (name != None) {
-        mem.suggestName(name.get)
-      }
-      val raddr = Counter(en, n)._1
-      val out = mem.read(raddr, en)
-
-      val waddr = RegEnable(raddr, (n - 1).U, en)
-      when(en) {
-        mem.write(waddr, in)
-      }
       out
     }
   }

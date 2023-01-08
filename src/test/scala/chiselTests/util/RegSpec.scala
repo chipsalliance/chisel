@@ -83,11 +83,11 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
     (chirrtl should not).include("Reg.scala")
   }
 
-  it should "have source locators when passed in, n, en, useSinglePortMem, name" in {
+  it should "have source locators when passed in, n, en, useDualSRAMPort, name" in {
     class MyModule extends Module {
       val in = IO(Input(Bool()))
       val out = IO(Output(Bool()))
-      out := ShiftRegister(in, 2, true.B, true, Some("sr"))
+      out := ShiftRegister(in, 2, true.B, false, Some("sr"))
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     val reset = """reset .*RegSpec.scala""".r
