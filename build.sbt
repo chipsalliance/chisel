@@ -279,7 +279,8 @@ lazy val docs = project // new documentation project
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
       "-language:reflectiveCalls",
-      "-language:implicitConversions"
+      "-language:implicitConversions",
+      "-Wconf:msg=firrtl:s"
     ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),

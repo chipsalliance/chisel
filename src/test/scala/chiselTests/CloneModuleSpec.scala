@@ -97,13 +97,13 @@ class CloneModuleSpec extends ChiselPropSpec {
     assert(c.modules.length == 2)
   }
 
-  property("Clone of MultiIOModule should simulate correctly") {
+  property("Clone of Module should simulate correctly") {
     forAll(xVals) { (x: Int) =>
       assertTesterPasses { new QueueCloneTester(x, multiIO = true) }
     }
   }
 
-  property("Clones of MultiIOModules should share the same module") {
+  property("Clones of Modules should share the same module") {
     val c = ChiselStage.convert(new QueueClone(multiIO = true))
     assert(c.modules.length == 3)
   }

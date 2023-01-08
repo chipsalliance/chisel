@@ -56,7 +56,7 @@ object InjectionHierarchy {
     when(counter >= values.length.U) {
       stop()
     }.otherwise {
-      when(reset.asBool() === false.B) {
+      when(reset.asBool === false.B) {
         assert(counter === values(counter))
       }
     }
@@ -120,7 +120,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     },
     { m: Module =>
       val wire = Wire(Bool())
-      wire := m.reset.asBool()
+      wire := m.reset.asBool
       dontTouch(wire)
       stop()
     }

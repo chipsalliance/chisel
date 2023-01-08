@@ -66,7 +66,7 @@ object SpecifiedDirection {
       requireIsChiselType(data)
     }
     val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
-    out.specifiedDirection = dir(out)
+    out.specifiedDirection = dir(data) // Must use original data, specified direction of clone is cleared
     out
   }
 
@@ -359,7 +359,6 @@ object Flipped {
   */
 abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // This is a bad API that punches through object boundaries.
-  @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {
       case elt: Aggregate => elt.elementsIterator.toIndexedSeq.flatMap { _.flatten }
@@ -368,18 +367,19 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  // must clone a data if
-  // * it has a binding
-  // * its id is older than prevId (not "freshly created")
-  // * it is a bundle with a non-fresh member (external reference)
+  // Must clone a Data if any of the following are true:
+  // * It has a binding
+  // * Its id is older than prevId (not "freshly created")
+  // * It is a Bundle or Record that contains a member older than prevId
   private[chisel3] def mustClone(prevId: Long): Boolean = {
-    if (this.hasBinding || this._id <= prevId) true
-    else
-      this match {
-        case b: Bundle => b.hasExternalRef
-        case _ => false
-      }
+    this.hasBinding || this._minId <= prevId
   }
+
+  /** The minimum (aka "oldest") id that is part of this Data
+    *
+    * @note This is usually just _id except for some Records and Bundles
+    */
+  private[chisel3] def _minId: Long = this._id
 
   override def autoSeed(name: String): this.type = {
     topBindingOpt match {
@@ -491,10 +491,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // User-friendly representation of the binding as a helper function for toString.
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
-  // TODO Is this okay for sample_element? It *shouldn't* be visible to users
-  @deprecated("This was never intended to be visible to user-defined types", "Chisel 3.5.0")
-  protected def bindingToString: String = _bindingToString(topBinding)
-
   private[chisel3] def _bindingToString(topBindingOpt: TopBinding): String =
     topBindingOpt match {
       case OpBinding(_, _)           => "OpResult"
@@ -742,34 +738,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   def isLit: Boolean = litOption.isDefined
 
-  @deprecated(
-    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-    "Chisel 3.5"
-  )
-  def isLit(dummy: Int*): Boolean = isLit
-
   /**
     * If this is a literal that is representable as bits, returns the value as a BigInt.
     * If not a literal, or not representable as bits (for example, is or contains Analog), returns None.
     */
   def litOption: Option[BigInt]
 
-  @deprecated(
-    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-    "Chisel 3.5"
-  )
-  def litOption(dummy: Int*): Option[BigInt] = litOption
-
   /**
     * Returns the literal value if this is a literal that is representable as bits, otherwise crashes.
     */
   def litValue: BigInt = litOption.get
-
-  @deprecated(
-    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-    "Chisel 3.5"
-  )
-  def litValue(dummy: Int*): BigInt = litValue
 
   /** Returns the width, in bits, if currently known. */
   final def getWidth: Int =
@@ -815,12 +793,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * in the least-significant bits of the result.
     */
   final def asUInt: UInt = macro SourceInfoTransform.noArg
-
-  @deprecated(
-    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-    "Chisel 3.5"
-  )
-  final def asUInt(dummy: Int*): UInt = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt

@@ -16,42 +16,31 @@ jobs:
     strategy:
       matrix:
         system: ["ubuntu-20.04"]
-        jvm: ["adopt@1.8"]
+        jvm: ["8"]
         scala: ["2.13.10", "2.12.17"]
         espresso: ["2.4"]
-        circt: ["sifive/1/21/0"]
+        circt: ["sifive/1/24/0"]
     runs-on: ${{ matrix.system }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        uses: YosysHQ/setup-oss-cad-suite@v1
-        with:
-          osscadsuite-version: '2021-11-09'
-
+        uses: actions/checkout@v3
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
-        run: |
-          cd /tmp
-          wget https://github.com/chipsalliance/espresso/releases/download/v${{ matrix.espresso }}/x86_64-linux-gnu-espresso
-          chmod +x x86_64-linux-gnu-espresso
-          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
-          espresso || true
-
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+        uses: ./.github/workflows/install-espresso
         with:
+          version: ${{ matrix.espresso }}
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
           java-version: ${{ matrix.jvm }}
+          cache: 'sbt'
       - name: Install CIRCT
-        run: |
-          mkdir usr
-          # Escape version forward slashes for use in URL
-          VERSION=$(echo ${{ matrix.circt }} | sed 's|/|%2F|g')
-          wget https://github.com/llvm/circt/releases/download/${VERSION}/circt-bin-ubuntu-20.04.tar.gz -O - | tar -zx -C usr/
-          echo "$(pwd)/usr/bin" >> $GITHUB_PATH
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
+        uses: ./.github/workflows/install-circt
+        with:
+          version: ${{ matrix.circt }}
       - name: Use Treadle for Pull Requests
         if: github.event_name == 'pull_request'
         run: echo "CHISEL3_CI_USE_TREADLE=1" >> $GITHUB_ENV
@@ -65,13 +54,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+        uses: actions/setup-java@v3
         with:
-          java-version: "adopt@1.11"
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
+          distribution: 'adopt'
+          java-version: '11'
+          cache: 'sbt'
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
       - name: Check Formatting
         run: sbt scalafmtCheckAll
       - name: Documentation
@@ -82,24 +73,17 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        uses: YosysHQ/setup-oss-cad-suite@v1
-        with:
-          osscadsuite-version: '2021-11-09'
+        uses: actions/checkout@v3
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
-        run: |
-          cd /tmp
-          wget https://github.com/chipsalliance/espresso/releases/download/v2.4/x86_64-linux-gnu-espresso
-          chmod +x x86_64-linux-gnu-espresso
-          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
-          espresso || true
+        uses: ./.github/workflows/install-espresso
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+        uses: actions/setup-java@v3
         with:
-          java-version: "adopt@1.11"
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
+          distribution: 'adopt'
+          java-version: '11'
+          cache: 'sbt'
       - name: Integration Tests
         run: sbt integrationTests/test
 
@@ -111,17 +95,15 @@ jobs:
         scala: [ "2.13.10", "2.12.17" ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        uses: YosysHQ/setup-oss-cad-suite@v1
-        with:
-          osscadsuite-version: '2021-11-09'
+        uses: actions/checkout@v3
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+        uses: actions/setup-java@v3
         with:
-          java-version: "adopt@1.11"
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
+          distribution: 'adopt'
+          java-version: '11'
+          cache: 'sbt'
       - name: Check Formatting (Scala 2.12 only)
         if: startsWith(matrix.scala, '2.12')
         run: sbt ++${{ matrix.scala }} standardLibrary/scalafmtCheckAll
@@ -141,7 +123,7 @@ jobs:
       success: ${{ steps.setoutput.outputs.success }}
     steps:
       - id: setoutput
-        run: echo "::set-output name=success::true"
+        run: echo "success=true" >> $GITHUB_OUTPUT
 
   # Related to check-tests above, this job _always_ runs (even if tests fail
   # and thus check-steps is skipped). This two sentinel job approach avoids an
@@ -159,10 +141,10 @@ jobs:
       - run: |
           PASSED="${{ needs.check-tests.outputs.success }}"
           if [[ $PASSED == "true" ]]; then
-            echo "All tests passed!"
+            echo "### All tests passed! :rocket:" >> $GITHUB_STEP_SUMMARY
             exit 0
           else
-            echo "One or more tests FAILED!"
+            echo "### One or more tests FAILED! :bangbang:" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
@@ -175,13 +157,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+        uses: actions/setup-java@v3
         with:
-          java-version: adopt@1.8
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
+          distribution: 'adopt'
+          java-version: '8'
+          cache: 'sbt'
       - name: Setup GPG (for Publish)
         uses: olafurpg/setup-gpg@v3
       - name: Publish
@@ -191,5 +173,3 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-
-

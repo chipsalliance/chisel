@@ -57,7 +57,7 @@ class AddTwo(width: Int) extends Module {
 }
 ```
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new AddTwo(10))
+circt.stage.ChiselStage.emitSystemVerilog(new AddTwo(10))
 ```
 
 ## How do I access internal fields of an instance?
@@ -135,7 +135,12 @@ class Top extends Module {
 ```
 ```scala mdoc:passthrough
 println("```")
-chisel3.stage.ChiselStage.elaborate(new Top)
+val chiselCircuit = (new chisel3.stage.phases.Elaborate)
+  .transform(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new Top)))
+  .collectFirst { case chisel3.stage.ChiselCircuitAnnotation(a) =>
+    a
+  }.get
+  println(chiselCircuit)
 println("```")
 ```
 
@@ -149,7 +154,7 @@ import chisel3._
 import chisel3.experimental.hierarchy.{Definition, instantiable, public}
 
 @instantiable
-class AddOne(val width: Int) extends Module {
+class AddOne(val width: Int) extends RawModule {
   @public val width = width
   @public val in  = IO(Input(UInt(width.W)))
   @public val out = IO(Output(UInt(width.W)))
@@ -161,8 +166,9 @@ class Top extends Module {
   println(s"Width is: ${definition.width}")
 }
 ```
+
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Top())
+circt.stage.ChiselStage.emitSystemVerilog(new Top())
 ```
 
 ## How do I parameterize a module by its children instances?
@@ -202,7 +208,7 @@ class AddTwo(addOneDef: Definition[AddOne]) extends Module {
 }
 ```
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new AddTwo(Definition(new AddOne(10))))
+circt.stage.ChiselStage.emitSystemVerilog(new AddTwo(Definition(new AddOne(10))))
 ```
 
 ## How do I use the new hierarchy-specific Select functions?
@@ -257,7 +263,7 @@ class Top extends Module {
 ```
 ```scala mdoc:passthrough
 println("```")
-val x = chisel3.stage.ChiselStage.emitFirrtl(new Top)
+val x = circt.stage.ChiselStage.emitCHIRRTL(new Top)
 println("```")
 ```
 
@@ -305,6 +311,6 @@ class InOutTop extends Module {
 ```
 ```scala mdoc:passthrough
 println("```")
-val y = chisel3.stage.ChiselStage.emitFirrtl(new InOutTop)
+val y = circt.stage.ChiselStage.emitCHIRRTL(new InOutTop)
 println("```")
 ```
