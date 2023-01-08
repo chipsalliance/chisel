@@ -55,9 +55,11 @@ class FlatIOSpec extends ChiselFlatSpec {
       val bar = Analog(8.W)
     }
     class MyModule extends RawModule {
-      val in = IO(Flipped(new MyBundle))
-      val out = IO(new MyBundle)
-      out <> in
+      val io = FlatIO(new Bundle {
+        val in = Flipped(new MyBundle)
+        val out = new MyBundle
+      })
+      io.out <> io.in
     }
     val chirrtl = emitChirrtl(new MyModule)
     chirrtl should include("out.foo <= in.foo")
