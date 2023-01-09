@@ -15,9 +15,9 @@ In contrast with `Chisel.util.Enum`, `ChiselEnum` are subclasses of `Data`, whic
 // Imports used in the following examples
 import chisel3._
 import chisel3.util._
-import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
 import chisel3.experimental.suppressEnumCastWarning
+import circt.stage.ChiselStage
 ```
 
 ```scala mdoc:invisible
@@ -77,7 +77,7 @@ class AluMux1File extends Module {
 ```
 
 ```scala mdoc:verilog
-ChiselStage.emitVerilog(new AluMux1File)
+ChiselStage.emitSystemVerilog(new AluMux1File)
 ```
 
 ChiselEnum also allows for the user to directly set the Values by passing an `UInt` to `Value(...)`
@@ -124,7 +124,7 @@ class ToUInt extends RawModule {
 
 ```scala mdoc:invisible
 // Always need to run Chisel to see if there are elaboration errors
-ChiselStage.emitVerilog(new ToUInt)
+ChiselStage.emitSystemVerilog(new ToUInt)
 ```
 
 You can cast from a `UInt` to an enum by passing the `UInt` to the apply method of the `ChiselEnum` object:
@@ -141,7 +141,7 @@ However, if you cast from a `UInt` to an Enum type when there are undefined stat
 that the `UInt` could hit, you will see a warning like the following:
 
 ```scala mdoc:passthrough
-val (log, _) = grabLog(ChiselStage.emitChirrtl(new FromUInt))
+val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new FromUInt))
 println(s"```\n$log```")
 ```
 
@@ -164,7 +164,7 @@ class SafeFromUInt extends Module {
 Now there will be no warning:
 
 ```scala mdoc:passthrough
-val (log2, _) = grabLog(ChiselStage.emitChirrtl(new SafeFromUInt))
+val (log2, _) = grabLog(ChiselStage.emitCHIRRTL(new SafeFromUInt))
 println(s"```\n$log2```")
 ```
 
@@ -188,7 +188,7 @@ class SuppressedFromUInt extends Module {
 ```
 
 ```scala mdoc:invisible
-val (log3, _) = grabLog(ChiselStage.emitChirrtl(new SuppressedFromUInt))
+val (log3, _) = grabLog(ChiselStage.emitCHIRRTL(new SuppressedFromUInt))
 assert(log3.isEmpty)
 ```
 
@@ -223,7 +223,7 @@ class LoadStoreExample extends Module {
 
 ```scala mdoc:invisible
 // Always need to run Chisel to see if there are elaboration errors
-ChiselStage.emitVerilog(new LoadStoreExample)
+ChiselStage.emitSystemVerilog(new LoadStoreExample)
 ```
 
 Some additional useful methods defined on the `ChiselEnum` object are:

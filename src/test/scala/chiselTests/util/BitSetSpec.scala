@@ -110,9 +110,36 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
             "b11??????"
           )
         ),
-        true
+        errorBit = true
       )
     })
   }
 
+  it should "be decoded with DontCare error" in {
+    import chisel3._
+    import chisel3.util.experimental.decode.decoder
+    // [0 - 256] part into: [0 - 31], [32 - 47, 64 - 127], [192 - 255]
+    // "0011????" "10??????" is empty to error
+    chisel3.stage.ChiselStage.emitSystemVerilog(new Module {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(4.W)))
+      out := decoder.bitset(
+        in,
+        Seq(
+          BitSet.fromString(
+            "b000?????"
+          ),
+          BitSet.fromString(
+            """b0010????
+              |b01??????
+              |""".stripMargin
+          ),
+          BitSet.fromString(
+            "b11??????"
+          )
+        ),
+        errorBit = false
+      )
+    })
+  }
 }

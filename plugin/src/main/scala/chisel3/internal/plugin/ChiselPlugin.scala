@@ -10,6 +10,7 @@ import scala.collection.mutable
 
 private[plugin] case class ChiselPluginArguments(
   val skipFiles: mutable.HashSet[String] = mutable.HashSet.empty) {
+  var deprecateSFC: Boolean = true
   def useBundlePluginOpt = "useBundlePlugin"
   def useBundlePluginFullOpt = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
   def genBundleElementsOpt = "genBundleElements"
@@ -55,7 +56,8 @@ class ChiselPlugin(val global: Global) extends Plugin {
   private val arguments = ChiselPluginArguments()
   val components: List[PluginComponent] = List[PluginComponent](
     new ChiselComponent(global, arguments),
-    new BundleComponent(global, arguments)
+    new BundleComponent(global, arguments),
+    new DeprecateSFCComponent(global, arguments)
   )
 
   override def init(options: List[String], error: String => Unit): Boolean = {

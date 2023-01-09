@@ -95,8 +95,8 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
         }
       } else {
         val literal = value.I(range)
-        literal.isLit() should be(true)
-        literal.litValue().toDouble / 4.0 should be(value)
+        literal.isLit should be(true)
+        literal.litValue.toDouble / 4.0 should be(value)
       }
     }
   }

@@ -97,33 +97,4 @@ case class EmittedMLIR(
 
 }
 
-object CIRCTHandover extends HasShellOptions {
-
-  sealed trait Type
-
-  case object CHIRRTL extends Type
-  case object HighFIRRTL extends Type
-  case object MiddleFIRRTL extends Type
-  case object LowFIRRTL extends Type
-  case object LowOptimizedFIRRTL extends Type
-
-  override def options = Seq(
-    new ShellOption[String](
-      longOption = "handover",
-      toAnnotationSeq = _ match {
-        case "chirrtl" => Seq(CIRCTHandover(CHIRRTL))
-        case "high"    => Seq(CIRCTHandover(HighFIRRTL))
-        case "middle"  => Seq(CIRCTHandover(MiddleFIRRTL))
-        case "low"     => Seq(CIRCTHandover(LowFIRRTL))
-        case "lowopt"  => Seq(CIRCTHandover(LowOptimizedFIRRTL))
-        case a         => throw new OptionsException(s"Unknown handover point '$a'! (Did you misspell it?)")
-      },
-      helpText = "Switch to the CIRCT compiler at this point, using the Scala FIRRTL Compiler if needed",
-      helpValueName = Some("{chirrtl|high|middle|low|lowopt}")
-    )
-  )
-}
-
-case class CIRCTHandover(handover: CIRCTHandover.Type) extends NoTargetAnnotation with CIRCTOption
-
 case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption

@@ -6,6 +6,7 @@ import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
 
 import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
+import firrtl.annotations.JsonProtocol
 import firrtl.options.{
   CustomFileEmission,
   Dependency,
@@ -21,8 +22,6 @@ import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
 import _root_.logger.LogLevel
 
-import scala.sys.process._
-
 import java.io.File
 
 private object Helpers {
@@ -36,6 +35,79 @@ private object Helpers {
       case LogLevel.None  => Seq.empty
     }
   }
+
+  /** Extract the JSON-encoded Annotation region from a single file output.
+    *
+    * @todo This is very janky and should be changed to something more stable.
+    */
+  def extractAnnotationFile(string: String, filename: String): AnnotationSeq = {
+    var inAnno = false
+    val filtered: String = string.lines.filter {
+      case line if line.startsWith("// ----- 8< ----- FILE") && line.contains(filename) =>
+        inAnno = true
+        false
+      case line if line.startsWith("// ----- 8< ----- FILE") =>
+        inAnno = false
+        false
+      case line if inAnno =>
+        true
+
+      case _ => false
+    }.toArray
+      .mkString("\n")
+    filtered.forall(_.isWhitespace) match {
+      case false => JsonProtocol.deserialize(filtered, false)
+      case true  => Seq.empty
+    }
+  }
+}
+
+private[this] object Exceptions {
+
+  /** Wrap a message in colorful error text in the sytle of StageUtils.dramaticError.  That method prints to stdout and by
+    * extracting this to just a method that does the string wrapping, this enables the message to be sent to another
+    * file, e.g., stderr.
+    * @todo Remove/unify this with StageUtils.dramaticError once SFC code is migrated into Chisel3.
+    */
+  def dramaticError(header: String, body: String): String = {
+    s"""|$header
+        |${"-" * 78}
+        |$body
+        |${"-" * 78}""".stripMargin
+  }
+
+  /** Indicates that the firtool binary failed with a non-zero exit code.  This generally indicates a compiler error
+    * either originating from a user error or from a crash.
+    *
+    * @param binary the path to the firtool binary
+    * @param exitCode the numeric exit status code returned by the firtool binary
+    * @param stdout the contents returned to standard out by the firtool binary
+    * @param stderr the contents returned to standard error by the firtool binary
+    */
+  class FirtoolNonZeroExitCode(binary: String, exitCode: Int, stdout: String, stderr: String)
+      extends RuntimeException(
+        dramaticError(
+          header = s"${binary} returned a non-zero exit code",
+          body = s"ExitCode:\n${exitCode}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}"
+        )
+      )
+
+  /** Indicates that the firtool binary was not found.  This likely indicates that the user didn't install
+    * CIRCT/firtool.
+    *
+    * @param binary the path to the firtool binary
+    */
+  class FirtoolNotFound(binary: String)
+      extends RuntimeException(
+        dramaticError(
+          header = s"$binary not found",
+          body = """|Chisel requires that firtool, the MLIR-based FIRRTL Compiler (MFC), is installed
+                    |and available on your $PATH.  (Did you forget to install it?)  You can download
+                    |a binary release of firtool from the CIRCT releases webpage:
+                    |  https://github.com/llvm/circt/releases""".stripMargin
+        )
+      )
+
 }
 
 /** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[AnnotationSeq]] API.
@@ -45,6 +117,7 @@ private object Helpers {
 class CIRCT extends Phase {
 
   import Helpers._
+  import scala.sys.process._
 
   override def prerequisites = Seq(
     Dependency[firrtl.stage.phases.AddDefaults],
@@ -61,7 +134,7 @@ class CIRCT extends Phase {
     val stageOptions = view[StageOptions](annotations)
 
     var blackbox, inferReadWrite = false
-    var dedup, imcp = true
+    var imcp = true
     var logLevel = _root_.logger.LogLevel.None
     var split = false
 
@@ -91,9 +164,6 @@ class CIRCT extends Phase {
       case firrtl.passes.memlib.InferReadWriteAnnotation =>
         inferReadWrite = true
         Nil
-      case _: firrtl.transforms.NoDedupAnnotation =>
-        dedup = false
-        Nil
       case firrtl.transforms.NoConstantPropagationAnnotation =>
         imcp = false
         Nil
@@ -115,13 +185,16 @@ class CIRCT extends Phase {
       case Some(circuit) => circuit.serialize
     }
 
-    val outputAnnotationFileName: Option[String] =
+    val chiselAnnotationFilename: Option[String] =
       stageOptions.annotationFileOut.map(stageOptions.getBuildFileName(_, Some(".anno.json")))
+
+    val circtAnnotationFilename = "circt.anno.json"
 
     val binary = "firtool"
 
     val cmd =
-      Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-verify-each=false") ++
+      Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-verify-each=false", "-dedup") ++
+        Seq("-output-annotation-file", circtAnnotationFilename) ++
         circtOptions.firtoolOptions ++
         logLevel.toCIRCTOptions ++
         /* The following options are on by default, so we disable them if they are false. */
@@ -132,13 +205,12 @@ class CIRCT extends Phase {
           case None                              => None
         }) ++
         circtOptions.preserveAggregate.map(_ => "-preserve-public-types=0") ++
-        (!inferReadWrite).option("-infer-rw=0") ++
-        (!imcp).option("-imcp=0") ++
+        (!inferReadWrite).option("-disable-infer-rw") ++
+        (!imcp).option("-disable-imcp") ++
         /* The following options are off by default, so we enable them if they are true. */
-        (dedup).option("-dedup=1") ++
         (blackbox).option("-blackbox-memory") ++
         /* Communicate the annotation file through a file. */
-        (outputAnnotationFileName.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
+        (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
         /* Convert the target to a firtool-compatible option. */
         ((circtOptions.target, split) match {
           case (Some(CIRCTTarget.FIRRTL), false)        => Seq("-ir-fir")
@@ -161,47 +233,53 @@ class CIRCT extends Phase {
             )
         })
 
-    try {
-      logger.info(s"""Running CIRCT: '${cmd.mkString(" ")} < $$input'""")
-      println(s"""Running CIRCT: '${cmd.mkString(" ")} < $$input'""")
-      val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
-      val stdoutWriter = new java.io.PrintWriter(stdoutStream)
-      val stderrWriter = new java.io.PrintWriter(stderrStream)
-      val exitValue = (cmd #< new java.io.ByteArrayInputStream(input.getBytes))
-        .!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
-      stdoutWriter.close()
-      stderrWriter.close()
-      val result = stdoutStream.toString
-      logger.info(result)
-      val errors = stderrStream.toString
-      if (exitValue != 0) {
-        StageUtils.dramaticError(s"${binary} failed.\nExitCode:\n${exitValue}\nSTDOUT:\n${result}\nSTDERR:\n${errors}")
-        throw new StageError()
+    logger.info(s"""Running CIRCT: '${cmd.mkString(" ")} < $$input'""")
+    println(s"""Running CIRCT: '${cmd.mkString(" ")} < $$input'""")
+    val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
+    val stdoutWriter = new java.io.PrintWriter(stdoutStream)
+    val stderrWriter = new java.io.PrintWriter(stderrStream)
+    val exitValue =
+      try {
+        (cmd #< new java.io.ByteArrayInputStream(input.getBytes))
+          .!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
+      } catch {
+        case a: java.lang.RuntimeException if a.getMessage().startsWith("No exit code") =>
+          throw new Exceptions.FirtoolNotFound(binary)
       }
-      if (split) {
-        logger.info(result)
-        Nil
-      } else { // if split it has already been written out to the file system stdout not necessary.
-        val outputFileName: String = stageOptions.getBuildFileName(firrtlOptions.outputFileName.get)
-        circtOptions.target match {
-          case Some(CIRCTTarget.FIRRTL) =>
-            Seq(EmittedMLIR(outputFileName, result, Some(".fir.mlir")))
-          case Some(CIRCTTarget.HW) =>
-            Seq(EmittedMLIR(outputFileName, result, Some(".hw.mlir")))
-          case Some(CIRCTTarget.Verilog) =>
-            Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".v")))
-          case Some(CIRCTTarget.SystemVerilog) =>
-            Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".sv")))
-          case None =>
-            throw new Exception(
-              "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
-            )
+    stdoutWriter.close()
+    stderrWriter.close()
+    val result = stdoutStream.toString
+    logger.info(result)
+    val errors = stderrStream.toString
+    if (exitValue != 0)
+      throw new Exceptions.FirtoolNonZeroExitCode(binary, exitValue, result, errors)
+    if (split) {
+      logger.info(result)
+      val file = new File(stageOptions.getBuildFileName(circtAnnotationFilename, Some(".anno.json")))
+      file match {
+        case file if !file.canRead() => Seq.empty
+        case file => {
+          val foo = JsonProtocol.deserialize(file, false)
+          foo
         }
       }
-    } catch {
-      case a: java.io.IOException =>
-        StageUtils.dramaticError(s"Binary '$binary' was not found on the $$PATH. (Do you have CIRCT installed?)")
-        throw new StageError(cause = a)
+    } else { // if split it has already been written out to the file system stdout not necessary.
+      val outputFileName: String = stageOptions.getBuildFileName(firrtlOptions.outputFileName.get)
+      val outputAnnotations = extractAnnotationFile(result, circtAnnotationFilename)
+      outputAnnotations ++ (circtOptions.target match {
+        case Some(CIRCTTarget.FIRRTL) =>
+          Seq(EmittedMLIR(outputFileName, result, Some(".fir.mlir")))
+        case Some(CIRCTTarget.HW) =>
+          Seq(EmittedMLIR(outputFileName, result, Some(".hw.mlir")))
+        case Some(CIRCTTarget.Verilog) =>
+          Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".v")))
+        case Some(CIRCTTarget.SystemVerilog) =>
+          Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".sv")))
+        case None =>
+          throw new Exception(
+            "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
+          )
+      })
     }
 
   }

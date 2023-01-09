@@ -8,7 +8,7 @@ import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewExcept
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, VecLiteralException}
+import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, OpaqueType, VecLiteralException}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
@@ -23,54 +23,6 @@ class AliasedAggregateFieldException(message: String) extends ChiselException(me
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    _parent.foreach(_.addId(this))
-    binding = target
-
-    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
-    if (!duplicates.isEmpty) {
-      this match {
-        case b: Record =>
-          // show groups of names of fields with duplicate id's
-          // The sorts make the displayed order of fields deterministic and matching the order of occurrence in the Bundle.
-          // It's a bit convoluted but happens rarely and makes the error message easier to understand
-          val dupNames = duplicates.toSeq
-            .sortBy(_._id)
-            .map { duplicate =>
-              b.elements.collect { case x if x._2._id == duplicate._id => x }.toSeq
-                .sortBy(_._2._id)
-                .map(_._1)
-                .reverse
-                .mkString("(", ",", ")")
-            }
-            .mkString(",")
-          throw new AliasedAggregateFieldException(
-            s"${b.className} contains aliased fields named ${dupNames}"
-          )
-        case _ =>
-          throw new AliasedAggregateFieldException(
-            s"Aggregate ${this.getClass} contains aliased fields $duplicates ${duplicates.mkString(",")}"
-          )
-      }
-    }
-    for (child <- getElements) {
-      child.bind(ChildBinding(this), resolvedDirection)
-    }
-
-    // Check that children obey the directionality rules.
-    val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
-    direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
-      case Some(dir) => dir
-      case None =>
-        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-        resolvedDirection match {
-          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
-        }
-    }
-  }
 
   /** Return an Aggregate's literal value if it is a literal, None otherwise.
     * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
@@ -102,20 +54,34 @@ sealed abstract class Aggregate extends Data {
     */
   def getElements: Seq[Data]
 
-  private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
+  /** Similar to [[getElements]] but allows for more optimized use */
+  private[chisel3] def elementsIterator: Iterator[Data]
 
-  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    // If the source is a DontCare, generate a DefInvalid for the sink,
-    //  otherwise, issue a Connect.
+  private[chisel3] def width: Width = elementsIterator.map(_.width).foldLeft(0.W)(_ + _)
+
+  // Emits the FIRRTL `this <= that`, or `this is invalid` if that == DontCare
+  private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink, otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, Node(this)))
+      pushCommand(DefInvalid(sourceInfo, lref))
     } else {
-      pushCommand(BulkConnect(sourceInfo, Node(this), Node(that)))
+      pushCommand(Connect(sourceInfo, lref, Node(that)))
+    }
+  }
+
+  // Emits the FIRRTL `this <- that`, or `this is invalid` if that == DontCare
+  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink,
+    //  otherwise, issue a Partial Connect.
+    if (that == DontCare) {
+      pushCommand(DefInvalid(sourceInfo, lref))
+    } else {
+      pushCommand(PartialConnect(sourceInfo, lref, Node(that)))
     }
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
-    SeqUtils.do_asUInt(flatten.map(_.asUInt()))
+    SeqUtils.do_asUInt(flatten.map(_.asUInt))
   }
 
   private[chisel3] override def connectFromBits(
@@ -218,12 +184,12 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    _parent.foreach(_.addId(this))
+    this.maybeAddToParentIds(target)
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     sample_element.bind(SampleElementBinding(this), resolvedDirection)
-    for (child <- getElements) { // assume that all children are the same
+    for (child <- elementsIterator) { // assume that all children are the same
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
@@ -258,25 +224,54 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   private[chisel3] final override def allElements: Seq[Element] =
     (sample_element +: self).flatMap(_.allElements)
 
-  /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
+  /** The "bulk connect operator", assigning elements in this Vec from elements in a Seq.
     *
-    * @note the length of this Vec must match the length of the input Seq
+    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    *  - Complicated semantics, will likely be deprecated in the future
+    *
+    * For Chisel._, emits the FIRRTL.<- operator
+    *  - Equivalent to `this :<>= that` but bundle field names and vector sizes do not have to match
+    *
+    * @note the length of this Vec and that Seq must match
+    * @param that the Seq to connect from
+    * @group connection
     */
   def <>(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    if (this.length != that.length) {
-      Builder.error("Vec and Seq being bulk connected have different lengths!")
-    }
-    for ((a, b) <- this.zip(that))
+    if (this.length != that.length)
+      Builder.error(
+        s"Vec (size ${this.length}) and Seq (size ${that.length}) being bulk connected have different lengths!"
+      )
+    for ((a, b) <- this.zip(that)) {
       a <> b
+    }
   }
 
-  // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
+  /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
+    *
+    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    *  - See docs/src/explanations/connection-operators.md for details
+    *
+    * For Chisel._, emits the FIRRTL.<- operator
+    *  - Equivalent to `this :<>= that` without the restrictions that bundle field names and vector sizes must match
+    *
+    * @note This is necessary in [[Aggregate]], rather than relying on [[Data.<>]], due to supporting the Seq
+    * @note the length of this Vec and that Vec must match
+    * @param that the Vec to connect from
+    * @group connection
+    */
   def <>(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit =
     this.bulkConnect(that.asInstanceOf[Data])
 
-  /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
+  /** "The strong connect operator", assigning elements in this Vec from elements in a Seq.
+    *
+    * For chisel3._, this operator is mono-directioned; all sub-elements of `this` will be driven by sub-elements of `that`.
+    *  - Equivalent to `this :#= that`
+    *
+    * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
+    *  - Equivalent to `this :<>= that`
     *
     * @note the length of this Vec must match the length of the input Seq
+    * @group connection
     */
   def :=(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     require(
@@ -287,7 +282,18 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       a := b
   }
 
-  // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
+  /** "The strong connect operator", assigning elements in this Vec from elements in a Vec.
+    *
+    * For chisel3._, this operator is mono-directioned; all sub-elements of `this` will be driven by sub-elements of `that`.
+    *  - Equivalent to `this :#= that`
+    *
+    * For Chisel._, this operator connections bi-directionally via emitting the FIRRTL.<=
+    *  - Equivalent to `this :<>= that`, with the additional restriction that the relative bundle field flips must match
+    *
+    * @note This is necessary in [[Aggregate]], rather than relying on [[Data.:=]], due to supporting the Seq
+    * @note the length of this Vec must match the length of the input Vec
+    * @group connection
+    */
   def :=(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this.connect(that)
 
   /** Creates a dynamically indexed read or write accessor into the array.
@@ -344,8 +350,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     new Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
   }
 
-  override def getElements: Seq[Data] =
-    (0 until length).map(apply(_))
+  override def getElements: Seq[Data] = self
+
+  final override private[chisel3] def elementsIterator: Iterator[Data] = self.iterator
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Seq
@@ -925,23 +932,15 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
-  /** Indicates if this Record represents an "Opaque Type"
-    *
-    * Opaque types provide a mechanism for user-defined types
-    * that do not impose any "boxing" overhead in the emitted FIRRTL and Verilog.
-    * You can think about an opaque type Record as a box around
-    * a single element that only exists at Chisel elaboration time.
-    * Put another way, if opaqueType is overridden to true,
-    * The Record may only contain a single element with an empty name
-    * and there will be no `_` in the name for that element in the emitted Verilog.
-    *
-    * @see RecordSpec in Chisel's tests for example usage and expected output
-    */
-  def opaqueType: Boolean = false
+  private[chisel3] def _isOpaqueType: Boolean = this match {
+    case maybe: OpaqueType => maybe.opaqueType
+    case _ => false
+  }
 
   // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
   // of hardware created when connecting to one of these elements
   private def setElementRefs(): Unit = {
+    val opaqueType = this._isOpaqueType
     // Since elements is a map, it is impossible for two elements to have the same
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
@@ -955,8 +954,67 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     }
   }
 
+  /** Checks that there are no duplicate elements (aka aliased fields) in the Record */
+  private def checkForAndReportDuplicates(): Unit = {
+    // Using List to avoid allocation in the common case of no duplicates
+    var duplicates: List[Data] = Nil
+    // Is there a more optimized datastructure we could use with the Int identities? BitSet? Requires benchmarking.
+    val seen = mutable.HashSet.empty[Data]
+    this.elementsIterator.foreach { e =>
+      if (seen(e)) {
+        duplicates = e :: duplicates
+      }
+      seen += e
+    }
+    if (!duplicates.isEmpty) {
+      // show groups of names of fields with duplicate id's
+      // The sorts make the displayed order of fields deterministic and matching the order of occurrence in the Bundle.
+      // It's a bit convoluted but happens rarely and makes the error message easier to understand
+      val dupNames = duplicates.toSeq
+        .sortBy(_._id)
+        .map { duplicate =>
+          this.elements.collect { case x if x._2._id == duplicate._id => x }.toSeq
+            .sortBy(_._2._id)
+            .map(_._1)
+            .reverse
+            .mkString("(", ",", ")")
+        }
+        .mkString(",")
+      throw new AliasedAggregateFieldException(
+        s"${this.className} contains aliased fields named ${dupNames}"
+      )
+    }
+  }
+
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    super.bind(target, parentDirection)
+    this.maybeAddToParentIds(target)
+    binding = target
+
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+
+    checkForAndReportDuplicates()
+
+    for ((child, sameChild) <- this.elementsIterator.zip(this.elementsIterator)) {
+      if (child != sameChild) {
+        throwException(
+          s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
+        )
+      }
+      child.bind(ChildBinding(this), resolvedDirection)
+    }
+
+    // Check that children obey the directionality rules.
+    val childDirections = elementsIterator.map(_.direction).toSet - ActualDirection.Empty
+    direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
+      case Some(dir) => dir
+      case None =>
+        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+        resolvedDirection match {
+          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case SpecifiedDirection.Flip        => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
+        }
+    }
     setElementRefs()
   }
 
@@ -1108,7 +1166,12 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   def elements: SeqMap[String, Data]
 
   /** Name for Pretty Printing */
-  def className: String = this.getClass.getSimpleName
+  def className: String = try {
+    this.getClass.getSimpleName
+  } catch {
+    // This happens if your class is defined in an object and is anonymous
+    case e: java.lang.InternalError if e.getMessage == "Malformed class name" => this.getClass.toString
+  }
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>
@@ -1122,9 +1185,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
-  private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
+  private[chisel3] final def allElements: Seq[Element] = elementsIterator.flatMap(_.allElements).toIndexedSeq
 
-  override def getElements: Seq[Data] = elements.toIndexedSeq.map(_._2)
+  override def getElements: Seq[Data] = elementsIterator.toIndexedSeq
+
+  final override private[chisel3] def elementsIterator: Iterator[Data] = elements.iterator.map(_._2)
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
@@ -1143,6 +1208,20 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     * Results in "`\$className(elt0.name -> elt0.value, ...)`"
     */
   def toPrintable: Printable = toPrintableHelper(elements.toList)
+
+  /** Implementation of cloneType that is [optionally for Record] overridden by the compiler plugin
+    *
+    * @note This should _never_ be overridden or called in user-code
+    */
+  protected def _cloneTypeImpl: Record = {
+    throwException(
+      s"Internal Error! This should have been implemented by the chisel3-plugin. Please file an issue against chisel3"
+    )
+  }
+
+  override private[chisel3] lazy val _minId: Long = {
+    this.elementsIterator.map(_._minId).foldLeft(this._id)(_ min _)
+  }
 }
 
 /**
@@ -1167,6 +1246,15 @@ package experimental {
   class BundleLiteralException(message: String) extends ChiselException(message)
   class VecLiteralException(message: String) extends ChiselException(message)
 
+  /** Indicates that the compiler plugin should generate [[cloneType]] for this type
+    *
+    * All user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
+    */
+  trait AutoCloneType { self: Record =>
+
+    override def cloneType: this.type = _cloneTypeImpl.asInstanceOf[this.type]
+
+  }
 }
 
 /** Base class for data types defined as a bundle of other data types.
@@ -1202,17 +1290,22 @@ package experimental {
   *   }
   * }}}
   */
-abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record with experimental.AutoCloneType {
 
   private def mustUsePluginMsg: String =
     "The Chisel compiler plugin is now required for compiling Chisel code. " +
       "Please see https://github.com/chipsalliance/chisel3#build-your-own-chisel-projects."
   assert(_usingPlugin, mustUsePluginMsg)
 
-  override def className: String = this.getClass.getSimpleName match {
-    case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
-    case ""                                => "AnonymousBundle" // ditto, but on other platforms
-    case name                              => name
+  override def className: String = try {
+    this.getClass.getSimpleName match {
+      case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
+      case ""                                => "AnonymousBundle" // ditto, but on other platforms
+      case name                              => name
+    }
+  } catch {
+    // This happens if you have nested objects which your class is defined in
+    case e: java.lang.InternalError if e.getMessage == "Malformed class name" => this.getClass.toString
   }
 
   /** The collection of [[Data]]
@@ -1316,23 +1409,14 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
   }
 
-  private[chisel3] lazy val hasExternalRef: Boolean = this.elements.exists(_._2._id < _id)
-
   override def cloneType: this.type = {
     val clone = _cloneTypeImpl.asInstanceOf[this.type]
     checkClone(clone)
     clone
   }
 
-  /** Implementation of cloneType using runtime reflection. This should _never_ be overridden or called in user-code
-    *
-    * @note This is overridden by the compiler plugin (this implementation is never called)
-    */
-  protected def _cloneTypeImpl: Bundle = {
-    throwException(
-      s"Internal Error! This should have been implemented by the chisel3-plugin. Please file an issue against chisel3"
-    )
-  }
+  // This is overriden for binary compatibility reasons in 3.5
+  override protected def _cloneTypeImpl: Bundle = super._cloneTypeImpl.asInstanceOf[Bundle]
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Map

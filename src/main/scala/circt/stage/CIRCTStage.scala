@@ -13,8 +13,7 @@ trait CLI { this: Shell =>
   Seq(
     CIRCTTargetAnnotation,
     PreserveAggregate,
-    ChiselGeneratorAnnotation,
-    CIRCTHandover
+    ChiselGeneratorAnnotation
   ).foreach(_.addOptions(parser))
 }
 

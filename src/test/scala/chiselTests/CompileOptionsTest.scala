@@ -6,6 +6,9 @@ import chisel3._
 import chisel3.CompileOptions._
 import chisel3.stage.ChiselStage
 
+import scala.annotation.nowarn
+
+@nowarn("msg=Chisel compatibility mode is deprecated")
 class CompileOptionsSpec extends ChiselFlatSpec with Utils {
 
   abstract class StrictModule extends Module()(chisel3.ExplicitCompileOptions.Strict)

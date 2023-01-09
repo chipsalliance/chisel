@@ -51,7 +51,7 @@ class CastToUInt extends Module {
     val out = Output(UInt())
   })
 
-  io.out := io.in.asUInt()
+  io.out := io.in.asUInt
 }
 
 class CastFromLit(in: UInt) extends Module {
@@ -164,6 +164,27 @@ class StrongEnumFSM extends Module {
   }
 }
 
+object Opcode extends ChiselEnum {
+  val load = Value(0x03.U)
+  val imm = Value(0x13.U)
+  val auipc = Value(0x17.U)
+  val store = Value(0x23.U)
+  val reg = Value(0x33.U)
+  val lui = Value(0x37.U)
+  val br = Value(0x63.U)
+  val jalr = Value(0x67.U)
+  val jal = Value(0x6f.U)
+}
+
+class LoadStoreExample extends Module {
+  val io = IO(new Bundle {
+    val opcode = Input(Opcode())
+    val load_or_store = Output(Bool())
+  })
+  io.load_or_store := io.opcode.isOneOf(Opcode.load, Opcode.store)
+  printf(p"${io.opcode}")
+}
+
 class CastToUIntTester extends BasicTester {
   for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastToUInt)
@@ -238,12 +259,12 @@ class EnumOpsTester extends BasicTester {
     mod.io.x := x
     mod.io.y := y
 
-    assert(mod.io.lt === (x.asUInt() < y.asUInt()))
-    assert(mod.io.le === (x.asUInt() <= y.asUInt()))
-    assert(mod.io.gt === (x.asUInt() > y.asUInt()))
-    assert(mod.io.ge === (x.asUInt() >= y.asUInt()))
-    assert(mod.io.eq === (x.asUInt() === y.asUInt()))
-    assert(mod.io.ne === (x.asUInt() =/= y.asUInt()))
+    assert(mod.io.lt === (x.asUInt < y.asUInt))
+    assert(mod.io.le === (x.asUInt <= y.asUInt))
+    assert(mod.io.gt === (x.asUInt > y.asUInt))
+    assert(mod.io.ge === (x.asUInt >= y.asUInt))
+    assert(mod.io.eq === (x.asUInt === y.asUInt))
+    assert(mod.io.ne === (x.asUInt =/= y.asUInt))
   }
   stop()
 }
@@ -554,6 +575,12 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "correctly check if the enumeration is one of the values in a given sequence" in {
     assertTesterPasses(new IsOneOfTester)
+  }
+
+  it should "work with Printables" in {
+    ChiselStage.emitChirrtl(new LoadStoreExample) should include(
+      """printf(clock, UInt<1>("h1"), "%c%c%c%c%c", _chiselTestsOpcodePrintable[0], _chiselTestsOpcodePrintable[1], _chiselTestsOpcodePrintable[2], _chiselTestsOpcodePrintable[3], _chiselTestsOpcodePrintable[4])"""
+    )
   }
 }
 

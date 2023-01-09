@@ -192,7 +192,7 @@ You can also parametrize modules based on other modules rather than just types. 
 ```scala mdoc:silent
 import chisel3.RawModule
 import chisel3.experimental.BaseModule
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 // Provides a more specific interface since generic Module
 // provides no compile-time information on generic module's IOs.
@@ -228,13 +228,13 @@ class X[T <: BaseModule with MyAdder](genT: => T) extends Module {
     subMod.in2 := io.in2
 }
 
-println(ChiselStage.emitVerilog(new X(new Mod1)))
-println(ChiselStage.emitVerilog(new X(new Mod2)))
+println(ChiselStage.emitSystemVerilog(new X(new Mod1)))
+println(ChiselStage.emitSystemVerilog(new X(new Mod2)))
 ```
 
 Output:
 
 ```scala mdoc:verilog
-ChiselStage.emitVerilog(new X(new Mod1))
-ChiselStage.emitVerilog(new X(new Mod2))
+ChiselStage.emitSystemVerilog(new X(new Mod1))
+ChiselStage.emitSystemVerilog(new X(new Mod2))
 ```

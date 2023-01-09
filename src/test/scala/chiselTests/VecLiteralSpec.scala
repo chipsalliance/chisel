@@ -175,8 +175,8 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       val vec1 = Vec(4, UInt(16.W)).Lit(0 -> 0xdd.U, 1 -> 0xcc.U, 2 -> 0xbb.U, 3 -> 0xaa.U)
 
       val vec2 = VecInit(Seq(0xdd.U, 0xcc.U, 0xbb.U, 0xaa.U))
-      printf("vec1 %x\n", vec1.asUInt())
-      printf("vec2 %x\n", vec2.asUInt())
+      printf("vec1 %x\n", vec1.asUInt)
+      printf("vec2 %x\n", vec2.asUInt)
       stop()
     })
   }
@@ -205,7 +205,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
     assertTesterPasses {
       new BasicTester {
-        chisel3.assert(outsideVecLit(0) === 0xdd.U, s"v(0)")
+        chisel3.assert(outsideVecLit(0) === 0xdd.U, "v(0)")
         stop()
       }
     }
@@ -216,12 +216,12 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
     assertTesterPasses {
       new BasicTester {
-        chisel3.assert(outsideVecLit(0) === 0xdd.U, s"v(0)")
+        chisel3.assert(outsideVecLit(0) === 0xdd.U, "v(0)")
         chisel3.assert(outsideVecLit(1) === 0xcc.U)
         chisel3.assert(outsideVecLit(2) === 0xbb.U)
         chisel3.assert(outsideVecLit(3) === 0xaa.U)
 
-        chisel3.assert(outsideVecLit.litValue.U === outsideVecLit.asUInt())
+        chisel3.assert(outsideVecLit.litValue.U === outsideVecLit.asUInt)
 
         val insideVecLit = Vec(4, UInt(16.W)).Lit(0 -> 0xdd.U, 1 -> 0xcc.U, 2 -> 0xbb.U, 3 -> 0xaa.U)
         chisel3.assert(insideVecLit(0) === 0xdd.U)
@@ -331,7 +331,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
         vecWire1 := vecLit1
         vecWire1 := vecLit2
-        printf("vw1(0) %x  vw1(1) %x\n", vecWire1(0).asUInt(), vecWire1(1).asUInt())
+        printf("vw1(0) %x  vw1(1) %x\n", vecWire1(0).asUInt, vecWire1(1).asUInt)
         chisel3.assert(vecWire1(0) === (1.5).F(8.W, 4.BP))
         chisel3.assert(vecWire1(1) === (3.25).F(8.W, 4.BP))
         stop()
@@ -352,7 +352,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
         vecWire1 := vecLit1
         vecWire2 := vecLit2
         vecWire1(1) := (0.5).F(8.W, 4.BP)
-        printf("vw1(0) %x  vw1(1) %x\n", vecWire1(0).asUInt(), vecWire1(1).asUInt())
+        printf("vw1(0) %x  vw1(1) %x\n", vecWire1(0).asUInt, vecWire1(1).asUInt)
         chisel3.assert(vecWire1(0) === (1.5).F(8.W, 4.BP))
         chisel3.assert(vecWire1(1) === (0.5).F(8.W, 4.BP)) // Last connect won
         chisel3.assert(vecWire2(1) === (3.25).F(8.W, 4.BP))

@@ -49,6 +49,34 @@ object ChiselStageSpec {
   }
 }
 
+/** A fixture used that exercises features of the Trace API.
+  */
+class TraceSpec {
+
+  import chisel3._
+  import chisel3.experimental.Trace
+  import chisel3.util.experimental.InlineInstance
+
+  /** A mutable Chisel reference to an internal wire inside Bar. This is done to enable later use of the Trace API to find this wire. */
+  var id: Option[Bool] = None
+
+  /** A submodule that will be inlined into the parent, Foo. */
+  class Bar extends RawModule with InlineInstance {
+
+    /** The wire that we want to trace. */
+    val a = WireDefault(false.B)
+    id = Some(a)
+    dontTouch(a)
+    Trace.traceName(a)
+  }
+
+  /** The top module. */
+  class Foo extends RawModule {
+    val bar = Module(new Bar)
+  }
+
+}
+
 class ChiselStageSpec extends AnyFunSpec with Matchers {
 
   describe("ChiselStage") {
@@ -171,171 +199,6 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
     }
   }
 
-  describe("ChiselStage handover to CIRCT") {
-
-    /*Test that widths were not inferred in the FIRRTL passed to CIRCT */
-    it("should handover at CHIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val a = IO(Input(UInt(1.W)))
-        val b = IO(Output(UInt()))
-
-        b := a
-      }
-
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/low",
-        "--handover",
-        "chirrtl"
-      )
-
-      ((new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should not).include("b : UInt<")
-
-    }
-
-    /* Test that widths were inferred in the FIRRTL passed to CIRCT */
-    it("should handover at High FIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val a = IO(Input(UInt(1.W)))
-        val b = IO(Output(UInt()))
-
-        b := a
-      }
-
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/low",
-        "--handover",
-        "high"
-      )
-
-      (new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should include("b : UInt<1>")
-
-    }
-
-    /* Test that a subaccess was removed in the FIRRTL passed to CIRCT */
-    it("should handover at Middle FIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val a = IO(Input(Vec(2, Bool())))
-        val b = IO(Input(Bool()))
-        val c = IO(Output(Bool()))
-        c := a(b)
-      }
-
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/low",
-        "--handover",
-        "middle"
-      )
-
-      ((new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should not).include("a[b]")
-
-    }
-
-    /* Test that aggregates were lowered in the FIRRTL passed to CIRCT */
-    it("should handover at Low FIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val b = IO(
-          new Bundle {
-            val a = Output(Bool())
-            val b = Output(Bool())
-          }
-        )
-        b := DontCare
-      }
-
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/low",
-        "--handover",
-        "low"
-      )
-
-      (new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should include("b_a")
-
-    }
-
-    /* Test that primops were folded in the FIRRTL passed to CIRCT */
-    it("should handover at Low Optimized FIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val a = IO(Input(Bool()))
-        val b = IO(Output(Bool()))
-        b := a | 1.U(1.W)
-      }
-
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/lowopt",
-        "--handover",
-        "lowopt"
-      )
-
-      (new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should include("""b <= UInt<1>("h1")""")
-
-    }
-  }
-
   describe("ChiselStage custom transform support") {
 
     it("should work with InlineInstance") {
@@ -421,6 +284,71 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
       (verilog should not).include("module Baz")
       (verilog should not).include("module Bar")
+
+    }
+
+    it("should work with the Trace API for unified output") {
+
+      import chisel3.experimental.Trace
+
+      val fixture = new TraceSpec
+
+      val targetDir = new File("test_run_dir/TraceAPIUnified")
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      val annos = (new ChiselStage).execute(
+        args,
+        Seq(
+          ChiselGeneratorAnnotation(() => new fixture.Foo)
+        )
+      )
+
+      val finalTargets = Trace.finalTarget(annos)(fixture.id.get)
+      info("there is one final target")
+      finalTargets should have size (1)
+
+      val expectedTarget = firrtl.annotations.CircuitTarget("Foo").module("Foo").ref("bar_a")
+      info(s"the final target is $expectedTarget")
+      finalTargets.head should be(expectedTarget)
+
+    }
+
+    it("should work with the Trace API for split  verilog output") {
+
+      import chisel3.experimental.Trace
+
+      val fixture = new TraceSpec
+
+      val targetDir = new File("test_run_dir/TraceAPISplit")
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      val annos = (new ChiselStage).execute(
+        args,
+        Seq(
+          ChiselGeneratorAnnotation(() => new fixture.Foo),
+          firrtl.EmitAllModulesAnnotation(classOf[firrtl.SystemVerilogEmitter])
+        )
+      )
+
+      val finalTargets = Trace.finalTarget(annos)(fixture.id.get)
+      info("there is one final target")
+      finalTargets should have size (1)
+
+      val expectedTarget = firrtl.annotations.CircuitTarget("Foo").module("Foo").ref("bar_a")
+      info(s"the final target is $expectedTarget")
+      finalTargets.head should be(expectedTarget)
 
     }
 
@@ -644,10 +572,56 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
     }
 
-    it("should emit SystemVerilog") {
+    it("should emit SystemVerilog to string") {
 
       ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo) should include("endmodule")
 
+    }
+    it("should emit SystemVerilog to string with firtool options") {
+
+      val sv = ChiselStage
+        .emitSystemVerilog(
+          new ChiselStageSpec.Foo,
+          firtoolOpts = Array("--strip-debug-info")
+        )
+      (sv should not).include("// <stdin>:")
+
+    }
+    it("should emit SystemVerilog to string with chisel arguments and firtool options") {
+
+      val sv = ChiselStage.emitSystemVerilog(
+        new ChiselStageSpec.Foo,
+        Array("--show-registrations"),
+        Array("--strip-debug-info")
+      )
+      sv should include("Generated by CIRCT")
+
+    }
+
+    it("emitSystemVerilogFile should support custom Chisel args and firtool options") {
+      val targetDir = new File("test_run_dir/ChiselStageSpec/generated")
+
+      val args: Array[String] = Array(
+        "--target-dir",
+        targetDir.toString
+      )
+
+      info(s"output contains a case statement using --lowering-options=disallowPackedArrays")
+      ChiselStage
+        .emitSystemVerilogFile(
+          new ChiselStageSpec.Bar,
+          args,
+          Array("--lowering-options=disallowPackedArrays")
+        )
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }
+        .get
+        .value should include("case")
+
+      val expectedOutput = new File(targetDir, "Bar.sv")
+      expectedOutput should (exist)
+      info(s"'$expectedOutput' exists")
     }
 
   }

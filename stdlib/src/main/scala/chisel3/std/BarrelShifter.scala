@@ -43,10 +43,9 @@ object BarrelShifter {
   ): Vec[T] = {
     require(shiftGranularity > 0)
     val elementType: T = chiselTypeOf(inputs.head)
-    shiftInput
-      .asBools()
+    shiftInput.asBools
       .grouped(shiftGranularity)
-      .map(VecInit(_).asUInt())
+      .map(VecInit(_).asUInt)
       .zipWithIndex
       .foldLeft(inputs) {
         case (prev, (shiftBits, layer)) =>

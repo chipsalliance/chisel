@@ -3,7 +3,6 @@
 // This file contains part of the implementation of the naming static annotation system.
 
 package chisel3.internal.naming
-import chisel3.experimental.NoChiselNamePrefix
 
 import scala.collection.mutable.Stack
 import scala.collection.mutable.ListBuffer
@@ -97,8 +96,7 @@ class NamingContext extends NamingContextInterface {
   def name[T](obj: T, name: String): T = {
     assert(!closed, "Can't name elements after namePrefix called")
     obj match {
-      case _:   NoChiselNamePrefix => // Don't name things with NoChiselNamePrefix
-      case ref: AnyRef             => items += ((ref, name))
+      case ref: AnyRef => items += ((ref, name))
       case _ =>
     }
     obj

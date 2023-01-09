@@ -8,7 +8,7 @@ import scala.collection.mutable
   */
 package object chisel3 {
   import internal.chiselRuntimeDeprecated
-  import internal.sourceinfo.DeprecatedSourceInfo
+  import internal.sourceinfo.{DeprecatedSourceInfo, UnlocatableSourceInfo}
   import internal.firrtl.{Port, Width}
   import internal.Builder
 
@@ -38,7 +38,9 @@ package object chisel3 {
     def B: Bool = bigint match {
       case bigint if bigint == 0 => Bool.Lit(false)
       case bigint if bigint == 1 => Bool.Lit(true)
-      case bigint                => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
+      case bigint =>
+        Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1")(UnlocatableSourceInfo)
+        Bool.Lit(false)
     }
 
     /** Int to UInt conversion, recommended style for constants. */
@@ -59,21 +61,9 @@ package object chisel3 {
       */
     def asUInt: UInt = UInt.Lit(bigint, Width())
 
-    @deprecated(
-      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-      "Chisel 3.5"
-    )
-    def asUInt(dummy: Int*): UInt = asUInt
-
     /** Int to SInt conversion, recommended style for variables.
       */
     def asSInt: SInt = SInt.Lit(bigint, Width())
-
-    @deprecated(
-      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-      "Chisel 3.5"
-    )
-    def asSInt(dummy: Int*): SInt = asSInt
 
     /** Int to UInt conversion with specified width, recommended style for variables.
       */
@@ -104,12 +94,6 @@ package object chisel3 {
       UInt.Lit(bigInt, Width(bigInt.bitLength.max(1)))
     }
 
-    @deprecated(
-      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-      "Chisel 3.5"
-    )
-    def asUInt(dummy: Int*): UInt = asUInt
-
     /** String to UInt parse with specified width, recommended style for variables.
       */
     def asUInt(width: Width): UInt = UInt.Lit(parse(str), width)
@@ -121,7 +105,7 @@ package object chisel3 {
         case "d"       => 10
         case "o"       => 8
         case "b"       => 2
-        case _         => Builder.error(s"Invalid base $base"); 2
+        case _         => Builder.error(s"Invalid base $base")(UnlocatableSourceInfo); 2
       }
       BigInt(num.filterNot(_ == '_'), radix)
     }
@@ -140,12 +124,6 @@ package object chisel3 {
     /** Boolean to Bool conversion, recommended style for variables.
       */
     def asBool: Bool = Bool.Lit(boolean)
-
-    @deprecated(
-      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-      "Chisel 3.5"
-    )
-    def asBool(dummy: Int*): Bool = asBool
   }
 
   // Fixed Point is experimental for now, but we alias the implicit conversion classes here
@@ -204,9 +182,6 @@ package object chisel3 {
   object Bool extends BoolFactory
 
   type InstanceId = internal.InstanceId
-
-  @deprecated("MultiIOModule is now just Module", "Chisel 3.5")
-  type MultiIOModule = chisel3.Module
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {
@@ -351,6 +326,10 @@ package object chisel3 {
     }
   }
 
+  type Connectable[T <: Data] = connectable.Connectable[T]
+
+  val Connectable = connectable.Connectable
+
   implicit def string2Printable(str: String): Printable = PString(str)
 
   type ChiselException = internal.ChiselException
@@ -359,12 +338,6 @@ package object chisel3 {
   def getDataElements(a: Aggregate): Seq[Element] = {
     a.allElements
   }
-  @deprecated(
-    "duplicated with DataMirror.fullModulePorts, this returns an internal API, will be removed in Chisel 3.6",
-    "Chisel 3.5"
-  )
-  def getModulePorts(m: Module): Seq[Port] = m.getPorts
-
   class BindingException(message: String) extends ChiselException(message)
 
   /** A function expected a Chisel type but got a hardware object
@@ -385,4 +358,7 @@ package object chisel3 {
   // Connection exceptions.
   case class BiConnectException(message: String) extends ChiselException(message)
   case class MonoConnectException(message: String) extends ChiselException(message)
+
+  final val deprecatedMFCMessage =
+    "this feature will not be supported as part of the migration to the MLIR-based FIRRTL Compiler (MFC). For more information about this migration, please see the Chisel ROADMAP.md."
 }

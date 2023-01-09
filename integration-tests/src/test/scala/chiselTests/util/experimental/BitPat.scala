@@ -23,7 +23,7 @@ class BitSetRangeTest extends AnyFlatSpec with ChiselScalatestTester with Formal
   val rng = new Random(0x19260817)
   val cases = 128
   "BitSet.fromRange" should "be formally equivalent with bound checks" in {
-    for(i <- 1 to cases) {
+    for (i <- 1 to cases) {
       val a = rng.nextLong() & Long.MaxValue
       val b = rng.nextLong() & Long.MaxValue
       val start = a.min(b)

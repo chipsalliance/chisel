@@ -26,7 +26,6 @@ package object stage {
             case OutputFileAnnotation(a)  => acc.copy(outputFile = Some(new File(a)))
             case CIRCTTargetAnnotation(a) => acc.copy(target = Some(a))
             case PreserveAggregate(a)     => acc.copy(preserveAggregate = Some(a))
-            case CIRCTHandover(a)         => acc.copy(handover = Some(a))
             case FirtoolOption(a)         => acc.copy(firtoolOptions = acc.firtoolOptions :+ a)
             case _                        => acc
           }

@@ -153,7 +153,7 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
     * @return a hardware [[Bool]] that indicates if this value matches any of the given values
     */
   final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
-    VecInit(s.map(this === _)).asUInt().orR()
+    VecInit(s.map(this === _)).asUInt.orR
   }
 
   /** Test if this enumeration is equal to any of the values given as arguments
@@ -240,18 +240,41 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
       case None    => EnumComponentChiselAnnotation(this, enumTypeName)
     }
 
-    if (!Builder.annotations.contains(anno)) {
+    if (!Builder.enumAnnos.contains(anno)) {
+      Builder.enumAnnos += anno
       annotate(anno)
     }
 
-    if (!Builder.annotations.contains(factory.globalAnnotation)) {
+    if (!Builder.enumAnnos.contains(factory.globalAnnotation)) {
+      Builder.enumAnnos += factory.globalAnnotation
       annotate(factory.globalAnnotation)
     }
   }
 
   protected def enumTypeName: String = factory.enumTypeName
 
-  def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
+  def toPrintable: Printable = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+    implicit val compileOptions = ExplicitCompileOptions.Strict
+    val allNames = factory.allNames.zip(factory.all)
+    val nameSize = allNames.map(_._1.length).max
+    def leftPad(str: String): String = {
+      str.reverse.padTo(nameSize, ' ').reverse
+    }
+    val allNamesPadded = allNames.map { case (name, value) => leftPad(name) -> value }
+
+    val result = Wire(Vec(nameSize, UInt(8.W))).suggestName(s"_${enumTypeName}Printable")
+    result.foreach(_ := '?'.U)
+
+    for ((name, value) <- allNamesPadded) {
+      when(this === value) {
+        for ((r, c) <- result.zip(name)) {
+          r := c.toChar.U
+        }
+      }
+    }
+    result.map(Character(_)).foldLeft(p"")(_ + _)
+  }
 }
 
 abstract class EnumFactory {
@@ -284,6 +307,8 @@ abstract class EnumFactory {
   def getWidth: Int = width.get
 
   def all: Seq[Type] = enumInstances
+  /* Accessor for Seq of names in enumRecords */
+  def allNames: Seq[String] = enumNames
 
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
     enumRecords.find(_.inst.litValue == id).map(_.name)

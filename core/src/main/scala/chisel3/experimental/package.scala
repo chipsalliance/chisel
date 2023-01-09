@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.ExplicitCompileOptions.Strict
-import chisel3.experimental.DataMirror.internal.chiselTypeClone
+import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.internal.sourceinfo.SourceInfo
 
 /** Package for experimental features, which may have their API changed, be removed, etc.
@@ -72,7 +72,7 @@ package object experimental {
     val ports: Seq[Data] =
       gen.elements.toSeq.reverse.map {
         case (name, data) =>
-          val p = IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
+          val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
           p.suggestName(name)
           p
 
@@ -102,69 +102,6 @@ package object experimental {
 
   class dump extends chisel3.internal.naming.dump
   class treedump extends chisel3.internal.naming.treedump
-
-  /** Experimental macro for naming Chisel hardware values
-    *
-    * By default, Chisel uses reflection for naming which only works for public fields of `Bundle`
-    * and `Module` classes. Applying this macro annotation to a `class` or `object` enables Chisel
-    * to name any hardware values within the annotated `class` or `object.
-    *
-    * @example {{{
-    * import chisel3._
-    * import chisel3.experimental.chiselName
-    *
-    * @chiselName
-    * class MyModule extends Module {
-    *   val io = IO(new Bundle {
-    *     val in = Input(UInt(8.W))
-    *     val out = Output(UInt(8.W))
-    *   })
-    *   def createReg(): Unit = {
-    *     // @chiselName allows Chisel to name this Reg
-    *     val myReg = RegInit(io.in)
-    *     io.out := myReg
-    *   }
-    *   createReg()
-    * }
-    * }}}
-    */
-  class chiselName extends chisel3.internal.naming.chiselName
-
-  /** Do not name instances of this type in [[chiselName]]
-    *
-    * By default, `chiselName` will include `val` names of instances of annotated classes as a
-    * prefix in final naming. Mixing in this trait to a `class`, `object`, or anonymous `class`
-    * instances will exclude the `val` name from `chiselName` naming.
-    *
-    * @example {{{
-    * import chisel3._
-    * import chisel3.experimental.{chiselName, NoChiselNamePrefix}
-    *
-    * // Note that this is not a Module
-    * @chiselName
-    * class Counter(w: Int) {
-    *   val myReg = RegInit(0.U(w.W))
-    *   myReg := myReg + 1.U
-    * }
-    *
-    * @chiselName
-    * class MyModule extends Module {
-    *   val io = IO(new Bundle {
-    *     val out = Output(UInt(8.W))
-    *   })
-    *   // Name of myReg will be "counter0_myReg"
-    *   val counter0 = new Counter(8)
-    *   // Name of myReg will be "myReg"
-    *   val counter1 = new Counter(8) with NoChiselNamePrefix
-    *   io.out := counter0.myReg + counter1.myReg
-    * }
-    * }}}
-    */
-  @deprecated(
-    "@chiselName and NoChiselNamePrefix have been replaced by the compiler plugin and AffectsChiselPrefix. Use these instead",
-    "Chisel 3.5"
-  )
-  trait NoChiselNamePrefix
 
   /** Generate prefixes from values of this type in the Chisel compiler plugin
     *
@@ -595,4 +532,5 @@ package object experimental {
       "_10" -> _10
     )
   }
+  val DataMirror = chisel3.reflect.DataMirror
 }
