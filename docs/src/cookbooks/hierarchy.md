@@ -24,12 +24,18 @@ Instead, it returns a `Definition` class which represents that module's definiti
 
 `Instance(...)` takes a `Definition` and instantiates it, returning an `Instance` object.
 
+`Instantiate(...)` provides an API similar to `Module(...)`, except it uses
+`Definition` and `Instance` to only elaborate modules once for a given set of
+parameters. It returns an `Instance` object.
+
 Modules (classes or traits) which will be used with the `Definition`/`Instance` api should be marked
 with the `@instantiable` annotation at the class/trait definition.
 
 To make a Module's members variables accessible from an `Instance` object, they must be annotated
 with the `@public` annotation. Note that this is only accessible from a Scala sense—this is not
 in and of itself a mechanism for cross-module references.
+
+### Using Definition and Instance
 
 In the following example, use `Definition`, `Instance`, `@instantiable` and `@public` to create
 multiple instances of one specific parameterization of a module, `AddOne`.
@@ -58,6 +64,28 @@ class AddTwo(width: Int) extends Module {
 ```
 ```scala mdoc:verilog
 circt.stage.ChiselStage.emitSystemVerilog(new AddTwo(10))
+```
+
+### Using Instantiate
+
+Similar to the above, the following example uses `Instantiate` to create
+multiple instances of `AddOne`.
+
+```scala mdoc:silent
+import chisel3.experimental.hierarchy.Instantiate
+
+class AddTwoInstantiate(width: Int) extends Module {
+  val in  = IO(Input(UInt(width.W)))
+  val out = IO(Output(UInt(width.W)))
+  val i0 = Instantiate(new AddOne(width))
+  val i1 = Instantiate(new AddOne(width))
+  i0.in := in
+  i1.in := i0.out
+  out   := i1.out
+}
+```
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new AddTwoInstantiate(16))
 ```
 
 ## How do I access internal fields of an instance?
