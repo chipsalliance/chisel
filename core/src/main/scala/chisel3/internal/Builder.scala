@@ -526,7 +526,7 @@ private[chisel3] object Builder extends LazyLogging {
   def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
   def instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = dynamicContext.instantiateCache
-  def enumAnnos: mutable.HashSet[ChiselAnnotation] = dynamicContext.enumAnnos
+  def enumAnnos:        mutable.HashSet[ChiselAnnotation] = dynamicContext.enumAnnos
 
   // TODO : Unify this with annotations in the future - done this way for backward compatability
   def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
