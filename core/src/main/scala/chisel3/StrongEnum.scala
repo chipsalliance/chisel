@@ -240,11 +240,13 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
       case None    => EnumComponentChiselAnnotation(this, enumTypeName)
     }
 
-    if (!Builder.annotations.contains(anno)) {
+    if (!Builder.enumAnnos.contains(anno)) {
+      Builder.enumAnnos += anno
       annotate(anno)
     }
 
-    if (!Builder.annotations.contains(factory.globalAnnotation)) {
+    if (!Builder.enumAnnos.contains(factory.globalAnnotation)) {
+      Builder.enumAnnos += factory.globalAnnotation
       annotate(factory.globalAnnotation)
     }
   }

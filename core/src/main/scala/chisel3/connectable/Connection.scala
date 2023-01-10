@@ -194,8 +194,11 @@ private[chisel3] object Connection {
         // Base Case 3: early exit if operator requires matching widths, but they aren't the same
         case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment)
             if (consumerAlignment
-              .mismatchedWidths(producerAlignment, connectionOp)) && (connectionOp.noMismatchedWidths) =>
-          errors = (s"mismatched widths of ${consumerAlignment.member} and ${producerAlignment.member}") +: errors
+              .truncationRequired(producerAlignment, connectionOp)
+              .nonEmpty) && (connectionOp.noMismatchedWidths) =>
+          val mustBeTruncated = consumerAlignment.truncationRequired(producerAlignment, connectionOp).get
+          errors =
+            (s"mismatched widths of ${consumerAlignment.member} and ${producerAlignment.member} might require truncation of $mustBeTruncated") +: errors
 
         // Base Case 3: operator error on dangling/unconnected fields
         case (consumer: NonEmptyAlignment, _: EmptyAlignment) =>

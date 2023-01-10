@@ -70,7 +70,7 @@ lazy val publishSettings = Seq(
 lazy val chiselSettings = Seq(
   name := "chisel3",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.14" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.15" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "upickle" % "2.0.0"
   )
@@ -242,11 +242,11 @@ lazy val chisel = (project in file("."))
       // See https://github.com/sbt/sbt-unidoc/issues/107
       (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
       ++ {
-           CrossVersion.partialVersion(scalaVersion.value) match {
-             case Some((2, n)) if n >= 13 => "-implicits" :: Nil
-             case _                       => Nil
-           }
-         }
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, n)) if n >= 13 => "-implicits" :: Nil
+          case _                       => Nil
+        }
+      }
   )
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
