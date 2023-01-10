@@ -68,8 +68,9 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       // Sanity check that firrtl doesn't change the width
       x := 0.U.asTypeOf(chiselTypeOf(x))
       val (_, done) = chisel3.util.Counter(true.B, 2)
+      val ones = if (expected == 0) 0.U(0.W) else -1.S(expected.W).asUInt
       when(done) {
-        chisel3.assert(~(x.asUInt) === -1.S(expected.W).asUInt)
+        chisel3.assert(~(x.asUInt) === ones)
         stop()
       }
     })
@@ -81,8 +82,9 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       assert(!x.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
       x := 0.U.asTypeOf(chiselTypeOf(x))
       val (_, done) = chisel3.util.Counter(true.B, 2)
+      val ones = if (expected == 0) 0.U(0.W) else -1.S(expected.W).asUInt
       when(done) {
-        chisel3.assert(~(x.asUInt) === -1.S(expected.W).asUInt)
+        chisel3.assert(~(x.asUInt) === ones)
         stop()
       }
     })
