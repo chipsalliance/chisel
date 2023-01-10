@@ -293,37 +293,20 @@ private[chisel3] trait HasId extends InstanceId {
 
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg.fullName(c)
-<<<<<<< HEAD
     case None      =>
       // This is super hacky but this is just for a short term deprecation
       // These accesses occur after Chisel elaboration so we cannot use the normal
       // Builder.deprecated mechanism, we have to create our own one off ErrorLog and print the
       // warning right away.
       // It's especially bad because --warnings-as-errors does not work with these warnings
-      val nameGuess = _computeName(None) match {
-        case Some(name) => s": '$name'"
-        case None       => ""
-      }
-      val parentGuess = _parent match {
-        case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
-        case Some(p)          => s", in module '${p.pathName}'"
-        case None             => ""
-      }
       val errors = new ErrorLog(false)
       val logger = new _root_.logger.Logger(this.getClass.getName)
       val msg =
-        "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated" + nameGuess + parentGuess + ". " +
+        "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated" + _errorContext + ". " +
           "This will become an error in Chisel 3.6."
       errors.deprecated(msg, None)
       errors.checkpoint(logger)
       _computeName(None).get
-=======
-    case None => {
-      throwException(
-        "You cannot access the .instanceName or .toTarget of non-hardware Data" + _errorContext
-      )
-    }
->>>>>>> d8c30961 (Check for Vec subaccess in NamedComponent and throw a nicer error. (#2907))
   }
 
   private[chisel3] def _errorContext: String = {
