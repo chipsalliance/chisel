@@ -477,7 +477,7 @@ private[chisel3] class DynamicContext(
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   var currentModule: Option[BaseModule] = None
 
-  // Enum annotations are added every time a StrongEnum is bound
+  // Enum annotations are added every time a ChiselEnum is bound
   // To keep the number down, we keep them unique in the annotations
   val enumAnnos = mutable.HashSet[ChiselAnnotation]()
 

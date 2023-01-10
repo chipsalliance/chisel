@@ -22,7 +22,12 @@ package object experimental {
   implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
-  type ChiselEnum = EnumFactory
+  @deprecated("This type has moved to chisel3", "Chisel 3.5")
+  type ChiselEnum = chisel3.ChiselEnum
+  @deprecated("This type has moved to chisel3", "Chisel 3.5")
+  type EnumType = chisel3.EnumType
+  @deprecated("This type has moved to chisel3", "Chisel 3.5")
+  val suppressEnumCastWarning = chisel3.suppressEnumCastWarning
 
   // Rocket Chip-style clonemodule
 
