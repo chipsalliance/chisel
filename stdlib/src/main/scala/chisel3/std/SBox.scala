@@ -7,7 +7,9 @@ package chisel3.std
 
 import chisel3._
 
-// top (inner) linear layer for AES
+/** top (inner) linear layer for AES
+  * See SBoxMid for more doc
+  */
 object SBoxAESEncIn {
   def apply(x: UInt): UInt = {
     val t = Wire(Vec(6, Bool()))
@@ -43,7 +45,9 @@ object SBoxAESEncIn {
   }
 }
 
-// top (inner) linear layer for AES^-1
+/** top (inner) linear layer for AES^-1
+  * See SBoxMid for more doc
+  */
 object SBoxAESDecIn {
   def apply(x: UInt): UInt = {
     val t = Wire(Vec(5, Bool()))
@@ -78,7 +82,9 @@ object SBoxAESDecIn {
   }
 }
 
-// top (inner) linear layer for SM4
+/** top (inner) linear layer for SM4
+  * See SBoxMid for more doc
+  */
 object SBoxSM4In {
   def apply(x: UInt): UInt = {
     val t = Wire(Vec(7, Bool()))
@@ -115,7 +121,30 @@ object SBoxSM4In {
   }
 }
 
-// The shared non-linear middle part for AES, AES^-1, and SM4.
+/** The shared non-linear middle part for AES, AES^-1, and SM4.
+  *
+  * @example {{{
+  * // Only Implement AES Encryption SBox
+  * val aes_enc_out = SBoxAESEncOut(SBoxMid(SBoxAESEncIn(aes_enc_in)))
+  * // Only Implement AES Decryption SBox
+  * val aes_dec_out = SBoxAESDecOut(SBoxMid(SBoxAESEncIn(aes_dec_in)))
+  * // Only Implement SM4 Encryption/Decryption SBox
+  * val sm4_out = SBoxSM4Out(SBoxMid(SBoxSM4In(sm4_in)))
+  * // Implement AES Encryption/Decryption SBox
+  * // SBoxMid is shared
+  * val aes_mid = SBoxMid(Mux(isEnc, SBoxAESEncIn(aes_in), SBoxAESDecIn(aes_in)))
+  * val aes_out = Mux(isEnc, SBoxAESEncOut(aes_mid), SBoxAESDecOut(aes_mid))
+  * // Implement AES/SM4 Encryption/Decryption SBox
+  * // SBoxMid is shared
+  * val aes_sm4_in = Mux(isSM4,
+  *   SM4SBoxIn(in),
+  *   Mux(isEnc, SBoxAESEncIn(in), SBoxAESDecIn(in)))
+  * val aes_sm4_mid = SBoxMid(aes_sm4_in)
+  * val aes_sm4_out = Mux(isSM4,
+  *   SM4SBoxOut(aes_sm4_mid),
+  *   Mux(isEnc, SBoxAESEncOut(aes_sm4_mid), SBoxAESDecOut(aes_sm4_mid)))
+  * }}}
+  */
 object SBoxMid {
   def apply(x: UInt): UInt = {
     val t = Wire(Vec(46, Bool()))
@@ -188,7 +217,9 @@ object SBoxMid {
   }
 }
 
-// bottom (outer) linear layer for AES
+/** bottom (outer) linear layer for AES
+  * See SBoxMid for more doc
+  */
 object SBoxAESEncOut {
   def apply(x: UInt): UInt = {
     val t = Wire(Vec(30, Bool()))
@@ -235,7 +266,9 @@ object SBoxAESEncOut {
   }
 }
 
-// bottom (outer) linear layer for AES^-1
+/** bottom (outer) linear layer for AES^-1
+  * See SBoxMid for more doc
+  */
 object SBoxAESDecOut {
   def apply(x: UInt): UInt = {
     val t = Wire(Vec(30, Bool()))
@@ -282,7 +315,8 @@ object SBoxAESDecOut {
   }
 }
 
-// bottom (outer) linear layer for SM4
+/** bottom (outer) linear layer for SM4
+  */
 object SBoxSM4Out {
   def apply(x: UInt): UInt = {
     val t = Wire(Vec(30, Bool()))
