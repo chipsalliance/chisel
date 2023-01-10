@@ -5,7 +5,7 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule, DataMirror, EnumType, FixedPoint, Interval}
+import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._

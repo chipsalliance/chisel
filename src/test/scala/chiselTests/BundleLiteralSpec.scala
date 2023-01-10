@@ -7,7 +7,7 @@ import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.experimental.{BundleLiteralException, ChiselEnum, ChiselRange, FixedPoint, Interval}
+import chisel3.experimental.{BundleLiteralException, ChiselRange, FixedPoint, Interval}
 
 class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   object MyEnum extends ChiselEnum {
