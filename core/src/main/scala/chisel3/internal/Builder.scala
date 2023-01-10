@@ -451,6 +451,10 @@ private[chisel3] class DynamicContext(
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   var currentModule: Option[BaseModule] = None
 
+  // Enum annotations are added every time a StrongEnum is bound
+  // To keep the number down, we keep them unique in the annotations
+  val enumAnnos = mutable.HashSet[ChiselAnnotation]()
+
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
     */
@@ -458,6 +462,8 @@ private[chisel3] class DynamicContext(
 
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
+
+  val instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = mutable.HashMap()
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -518,6 +524,9 @@ private[chisel3] object Builder extends LazyLogging {
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components:      ArrayBuffer[Component] = dynamicContext.components
   def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  def instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = dynamicContext.instantiateCache
+  def enumAnnos:        mutable.HashSet[ChiselAnnotation] = dynamicContext.enumAnnos
 
   // TODO : Unify this with annotations in the future - done this way for backward compatability
   def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
