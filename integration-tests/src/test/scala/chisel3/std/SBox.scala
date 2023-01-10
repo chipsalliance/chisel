@@ -7,7 +7,6 @@ import chisel3.util._
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
-import chisel3.std.BarrelShifter
 
 object AES {
   val enc: Seq[Int] = Seq(
