@@ -1,21 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-//  This is translated from https://github.com/riscv/riscv-crypto
-//
-//    2020-01-29    Markku-Juhani O. Saarinen <mjos@pqshield.com>
-//    Copyright (c) 2020, PQShield Ltd. All rights reserved.
-//    Converted to Chisel in 2022
-
-/*
-    [BoPe12] Boyar J., Peralta R. "A Small Depth-16 Circuit for the AES
-    S-Box." Proc.SEC 2012. IFIP AICT 376. Springer, pp. 287-298 (2012)
-    DOI: https://doi.org/10.1007/978-3-642-30436-1_24
-    Preprint: https://eprint.iacr.org/2011/332.pdf
-
-    [Ny93] Nyberg K., "Differentially Uniform Mappings for Cryptography",
-    Proc. EUROCRYPT '93, LNCS 765, Springer, pp. 55-64 (1993)
-    DOI: https://doi.org/10.1007/3-540-48285-7_6
- */
+// Originally done by Markku-Juhani O. Saarinen <mjos@pqshield.com>
+// https://github.com/mjosaarinen/lwaes_isa/blob/master/hdl/sboxes.v
 
 package chisel3.std
 
