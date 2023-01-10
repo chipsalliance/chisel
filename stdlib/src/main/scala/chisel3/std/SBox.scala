@@ -316,6 +316,7 @@ object SBoxAESDecOut {
 }
 
 /** bottom (outer) linear layer for SM4
+  * See SBoxMid for more doc
   */
 object SBoxSM4Out {
   def apply(x: UInt): UInt = {
