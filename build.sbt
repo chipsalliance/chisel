@@ -19,7 +19,11 @@ lazy val commonSettings = Seq(
   autoAPIMappings := true,
   scalaVersion := "2.12.17",
   crossScalaVersions := Seq("2.13.10", "2.12.17"),
-  scalacOptions := Seq("-deprecation", "-feature"),
+  scalacOptions := Seq(
+    "-deprecation",
+    "-feature",
+    "-Wconf:cat=deprecation&msg=Importing from firrtl:s",
+  ),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
   scalacOptions ++= {
@@ -280,7 +284,6 @@ lazy val docs = project // new documentation project
       "-Xfatal-warnings",
       "-language:reflectiveCalls",
       "-language:implicitConversions",
-      "-Wconf:msg=firrtl:s"
     ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
