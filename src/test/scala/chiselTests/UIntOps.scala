@@ -107,6 +107,14 @@ class BadBoolConversion extends Module {
   io.b := io.u.asBool
 }
 
+class ZeroWidthBoolConversion extends Module {
+  val io = IO(new Bundle {
+    val u = Input(UInt(0.W))
+    val b = Output(Bool())
+  })
+  io.b := io.u.asBool
+}
+
 class NegativeShift(t: => Bits) extends Module {
   val io = IO(new Bundle {})
   Reg(t) >> -1
@@ -182,6 +190,7 @@ class UIntLitExtractTester extends BasicTester {
   assert("b101010".U(6.W)(100) === false.B)
   assert("b101010".U(6.W)(3, 0) === "b1010".U)
   assert("b101010".U(6.W)(9, 0) === "b0000101010".U)
+  assert("b0".U(0.W)(0, 0) === "b0".U)
   stop()
 }
 
@@ -192,6 +201,10 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Bools can be created from 1 bit UInts") {
     ChiselStage.elaborate(new GoodBoolConversion)
+  }
+
+  property("Bools cannot be created from 0 bit UInts") {
+    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new ZeroWidthBoolConversion) }
   }
 
   property("Bools cannot be created from >1 bit UInts") {
