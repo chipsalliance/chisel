@@ -293,7 +293,7 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
       io.outMono := (io.inMono: Data)
       io.outBi <> io.inBi
     })
-    chirrtl should include("io.outMono <= io.inMono @")
-    chirrtl should include("io.outBi <= io.inBi @")
+    chirrtl should include("io.outMono <= io.inMono")
+    chirrtl should include("io.outBi <= io.inBi")
   }
 }

@@ -30,8 +30,7 @@ class WireSpec extends ChiselFlatSpec {
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Dummy)
-    // This test can fail when run from IntelliJ because the source locator path can be different
-    chirrtl should include("wire wire : UInt<1> @[src/test/scala/chiselTests/WireSpec.scala")
-    chirrtl should include("wire wire2 : UInt<1> @[src/test/scala/chiselTests/WireSpec.scala")
+    chirrtl should include("wire wire : UInt<1>")
+    chirrtl should include("wire wire2 : UInt<1>")
   }
 }

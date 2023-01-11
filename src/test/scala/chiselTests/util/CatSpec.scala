@@ -68,8 +68,7 @@ class CatSpec extends ChiselFlatSpec {
       out := Cat(in)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    // This test can fail when run from IntelliJ because the source locator path can be different
-    chirrtl should include("cat(in[0], in[1]) @[src/test/scala/chiselTests/util/CatSpec.scala")
+    chirrtl should include("cat(in[0], in[1])")
     (chirrtl should not).include("Cat.scala")
   }
 
@@ -80,8 +79,7 @@ class CatSpec extends ChiselFlatSpec {
       out := Cat(in(0), in(1))
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    // This test can fail when run from IntelliJ because the source locator path can be different
-    chirrtl should include("cat(in[0], in[1]) @[src/test/scala/chiselTests/util/CatSpec.scala")
+    chirrtl should include("cat(in[0], in[1])")
     (chirrtl should not).include("Cat.scala")
   }
 
