@@ -14,7 +14,7 @@ final class CustomBundle(elts: (String, Data)*) extends Record with AutoCloneTyp
   val elements = ListMap(elts.map {
     case (field, elt) =>
       requireIsChiselType(elt)
-      field -> elt
+      field -> DataMirror.internal.chiselTypeClone(elt)
   }: _*)
   def apply(elt: String): Data = elements(elt)
 }

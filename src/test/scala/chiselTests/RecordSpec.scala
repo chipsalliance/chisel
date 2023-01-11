@@ -221,6 +221,16 @@ trait RecordSpecUtils {
   }
 }
 
+/* 
+inline this and add negative tests for this
+final class CustomBundleBroken(elts: (String, Data)*) extends Record with AutoCloneType {
+  val elements = ListMap(elts.map {
+    case (field, elt) =>
+      field -> elt
+  }: _*)
+  def apply(elt: String): Data = elements(elt)
+} */
+
 class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   behavior.of("Records")
 

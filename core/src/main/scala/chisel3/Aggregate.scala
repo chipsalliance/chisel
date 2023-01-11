@@ -938,6 +938,33 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
+
+  trait AutoCloneType { self: Record =>    
+    override def cloneType: this.type = _cloneTypeImpl.asInstanceOf[this.type]
+  }
+
+  // move this to wherever the autocloning is happening
+  // update the error message to note that this cannot actually be cloned
+  private def checkClone(clone: Record): Unit = {
+    for ((name, field) <- elements) {
+      if (clone.elements(name) eq field) {
+        throw new AutoClonetypeException(
+          s"Automatically cloned $clone has field '$name' aliased with base $this." +
+            " In the future, this will be solved automatically by the compiler plugin." +
+            " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
+            " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate." +
+            " As a last resort, you can override cloneType manually."
+        )
+      }
+    }
+  }
+
+  override def cloneType: this.type = {
+    val clone = _cloneTypeImpl.asInstanceOf[this.type]
+    checkClone(clone)
+    clone
+  }
+  
   // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
   // of hardware created when connecting to one of these elements
   private def setElementRefs(): Unit = {
@@ -1247,15 +1274,10 @@ package experimental {
   class BundleLiteralException(message: String) extends ChiselException(message)
   class VecLiteralException(message: String) extends ChiselException(message)
 
-  /** Indicates that the compiler plugin should generate [[cloneType]] for this type
-    *
-    * All user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
-    */
-  trait AutoCloneType { self: Record =>
-
-    override def cloneType: this.type = _cloneTypeImpl.asInstanceOf[this.type]
-
-  }
+    /** Indicates that the compiler plugin should generate [[clonType]] for this typll user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
+  */
+  @deprecated("AutoCloneType is handled by the plugin", "3.6")
+  trait AutoCloneType
 }
 
 /** Base class for data types defined as a bundle of other data types.
@@ -1395,29 +1417,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record wi
     * @note This should not be used in user code!
     */
   protected def _usingPlugin: Boolean = false
-
-  private def checkClone(clone: Bundle): Unit = {
-    for ((name, field) <- elements) {
-      if (clone.elements(name) eq field) {
-        throw new AutoClonetypeException(
-          s"Automatically cloned $clone has field '$name' aliased with base $this." +
-            " In the future, this will be solved automatically by the compiler plugin." +
-            " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
-            " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate." +
-            " As a last resort, you can override cloneType manually."
-        )
-      }
-    }
-  }
-
-  override def cloneType: this.type = {
-    val clone = _cloneTypeImpl.asInstanceOf[this.type]
-    checkClone(clone)
-    clone
-  }
-
-  // This is overriden for binary compatibility reasons in 3.5
-  override protected def _cloneTypeImpl: Bundle = super._cloneTypeImpl.asInstanceOf[Bundle]
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
