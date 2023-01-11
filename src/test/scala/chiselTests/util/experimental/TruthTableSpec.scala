@@ -4,7 +4,7 @@ package chiselTests.util.experimental
 
 import chisel3._
 import chisel3.util.BitPat
-import chisel3.util.experimental.decode.{TruthTable, decoder}
+import chisel3.util.experimental.decode.{decoder, TruthTable}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class TruthTableSpec extends AnyFlatSpec {
