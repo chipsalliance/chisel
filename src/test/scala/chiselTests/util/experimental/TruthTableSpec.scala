@@ -35,7 +35,9 @@ class TruthTableSpec extends AnyFlatSpec {
     assert(table.toString contains "     0")
   }
   "TruthTable" should "deserialize" in {
-    assert(TruthTable.fromString(str) == table)
+    val table2 = TruthTable.fromString(str)
+    assert(table2 === table)
+    assert(table2.hashCode === table.hashCode)
   }
   "TruthTable" should "merge same key" in {
     assert(

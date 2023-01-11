@@ -3,6 +3,7 @@
 package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
+import scala.util.hashing.MurmurHash3
 import scala.collection.mutable
 
 sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat, val sort: Boolean) {
@@ -22,10 +23,12 @@ sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: 
 
   override def equals(y: Any): Boolean = {
     y match {
-      case y: TruthTable => toString == y.toString
+      case that: TruthTable => this.table == that.table && this.default == that.default
       case _ => false
     }
   }
+
+  override lazy val hashCode: Int = MurmurHash3.productHash((table, default))
 }
 
 object TruthTable {
