@@ -61,7 +61,7 @@ class DecoderTableSpec extends ChiselFlatSpec {
   }
 
   "DecoderTable" should "elaborate a decoder" in {
-    chisel3.stage.ChiselStage.emitChirrtl(new ExampleALUDecoder)
+    circt.stage.ChiselStage.emitCHIRRTL(new ExampleALUDecoder)
   }
 
   "DecoderTable" should "decode every field" in {

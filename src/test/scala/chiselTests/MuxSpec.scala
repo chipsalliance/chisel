@@ -3,9 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
-import chisel3.util.{log2Ceil, MuxLookup}
 import chisel3.testers.BasicTester
+import chisel3.util.{log2Ceil, MuxLookup}
+import circt.stage.ChiselStage
 
 class MuxTester extends BasicTester {
   assert(Mux(0.B, 1.U, 2.U) === 2.U)
@@ -45,27 +45,27 @@ class MuxLookupExhaustiveSpec extends ChiselPropSpec {
 
   val incomplete = () => Seq(0.U -> 1.U, 1.U -> 2.U, 2.U -> 3.U)
   property("The default value should not be optimized away for an incomplete MuxLookup") {
-    ChiselStage.emitChirrtl(new MuxLookupWrapper(keyWidth, default, incomplete)) should include(firrtlLit)
+    ChiselStage.emitCHIRRTL(new MuxLookupWrapper(keyWidth, default, incomplete)) should include(firrtlLit)
   }
 
   val exhaustive = () => (3.U -> 0.U) +: incomplete()
   property("The default value should be optimized away for an exhaustive MuxLookup") {
-    (ChiselStage.emitChirrtl(new MuxLookupWrapper(keyWidth, default, exhaustive)) should not).include(firrtlLit)
+    (ChiselStage.emitCHIRRTL(new MuxLookupWrapper(keyWidth, default, exhaustive)) should not).include(firrtlLit)
   }
 
   val overlap = () => (4096.U -> 0.U) +: incomplete()
   property("The default value should not be optimized away for a MuxLookup with 2^{keyWidth} non-distinct mappings") {
-    ChiselStage.emitChirrtl(new MuxLookupWrapper(keyWidth, default, overlap)) should include(firrtlLit)
+    ChiselStage.emitCHIRRTL(new MuxLookupWrapper(keyWidth, default, overlap)) should include(firrtlLit)
   }
 
   val nonLiteral = () => { val foo = Wire(UInt()); (foo -> 1.U) +: incomplete() }
   property("The default value should not be optimized away for a MuxLookup with a non-literal") {
-    ChiselStage.emitChirrtl(new MuxLookupWrapper(keyWidth, default, nonLiteral)) should include(firrtlLit)
+    ChiselStage.emitCHIRRTL(new MuxLookupWrapper(keyWidth, default, nonLiteral)) should include(firrtlLit)
   }
 
   val nonLiteralStillFull = () => { val foo = Wire(UInt()); (foo -> 1.U) +: exhaustive() }
   property("The default value should be optimized away for a MuxLookup with a non-literal that is still full") {
-    (ChiselStage.emitChirrtl(new MuxLookupWrapper(keyWidth, default, nonLiteralStillFull)) should not)
+    (ChiselStage.emitCHIRRTL(new MuxLookupWrapper(keyWidth, default, nonLiteralStillFull)) should not)
       .include(firrtlLit)
   }
 

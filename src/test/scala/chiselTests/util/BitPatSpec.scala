@@ -3,6 +3,7 @@
 package chiselTests.util
 
 import chisel3.util.BitPat
+import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -29,7 +30,7 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
 
   it should "throw when BitPat apply to a Hardware" in {
     intercept[java.lang.IllegalArgumentException] {
-      chisel3.stage.ChiselStage.emitChirrtl(new chisel3.Module {
+      ChiselStage.emitCHIRRTL(new chisel3.Module {
         BitPat(chisel3.Reg(chisel3.Bool()))
       })
     }

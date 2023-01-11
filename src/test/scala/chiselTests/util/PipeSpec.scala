@@ -4,9 +4,8 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.util.{Pipe, Valid}
-import chisel3.stage.ChiselStage.emitChirrtl
-import chisel3.experimental.FlatIO
 import chiselTests.ChiselFlatSpec
+import circt.stage.ChiselStage.emitCHIRRTL
 
 class PipeSpec extends ChiselFlatSpec {
   behavior.of("Pipe")
@@ -17,7 +16,7 @@ class PipeSpec extends ChiselFlatSpec {
       val bar = IO(Output(Valid(UInt(8.W))))
       bar := Pipe(foo.valid, bar.bits, 2)
     }
-    val chirrtl = emitChirrtl(new MyModule)
+    val chirrtl = emitCHIRRTL(new MyModule)
     chirrtl should include("reg bar_pipe_v")
     chirrtl should include("reg bar_pipe_pipe_v")
     chirrtl should include("wire bar_pipe_pipe_out")
@@ -31,7 +30,7 @@ class PipeSpec extends ChiselFlatSpec {
       val bar = IO(Output(Valid(UInt(8.W))))
       bar := Pipe(foo.valid, foo.bits, 0)
     }
-    val chirrtl = emitChirrtl(new MyModule)
+    val chirrtl = emitCHIRRTL(new MyModule)
     (chirrtl should not).include("pipe")
     chirrtl should include("wire bar_out")
     chirrtl should include("bar_out.valid <= foo.valid")

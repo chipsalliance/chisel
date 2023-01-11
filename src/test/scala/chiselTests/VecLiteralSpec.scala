@@ -5,10 +5,11 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals._
-import chisel3.experimental.{FixedPoint, VecLiteralException}
-import chisel3.stage.ChiselStage
+import chisel3.experimental.{ChiselEnum, FixedPoint, VecLiteralException}
 import chisel3.testers.BasicTester
 import chisel3.util.Counter
+import circt.stage.ChiselStage
+
 import scala.language.reflectiveCalls
 
 class VecLiteralSpec extends ChiselFreeSpec with Utils {
@@ -76,7 +77,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   "Vec literals should work when used to initialize a reg of vec" in {
-    val firrtl = (new ChiselStage).emitFirrtl(new HasVecInit, args = Array("--full-stacktrace"))
+    val firrtl = ChiselStage.emitCHIRRTL(new HasVecInit)
     firrtl should include("""_y_WIRE[0] <= UInt<8>("hab")""")
     firrtl should include("""_y_WIRE[1] <= UInt<8>("hcd")""")
     firrtl should include("""_y_WIRE[2] <= UInt<8>("hef")""")
@@ -91,7 +92,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   "Vec literals should work when used to partially initialize a reg of vec" in {
-    val firrtl = (new ChiselStage).emitFirrtl(new HasPartialVecInit, args = Array("--full-stacktrace"))
+    val firrtl = ChiselStage.emitCHIRRTL(new HasPartialVecInit)
     firrtl should include("""_y_WIRE[0] <= UInt<8>("hab")""")
     firrtl should include("""_y_WIRE[1] is invalid""")
     firrtl should include("""_y_WIRE[2] <= UInt<8>("hef")""")
@@ -114,7 +115,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   "Vec literals should only init specified fields when used to partially initialize a reg of vec" in {
-    println(ChiselStage.emitFirrtl(new ResetRegWithPartialVecLiteral))
+    println(ChiselStage.emitCHIRRTL(new ResetRegWithPartialVecLiteral))
     assertTesterPasses(new BasicTester {
       val m = Module(new ResetRegWithPartialVecLiteral)
       val (counter, wrapped) = Counter(true.B, 8)
@@ -444,7 +445,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       out := bundle
     }
 
-    val firrtl = (new chisel3.stage.ChiselStage).emitFirrtl(new VecExample5, args = Array("--full-stacktrace"))
+    val firrtl = ChiselStage.emitCHIRRTL(new VecExample5)
     firrtl should include("""out[0] <= UInt<4>("ha")""")
     firrtl should include("""out[1] <= UInt<4>("hb")""")
   }
@@ -464,7 +465,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   "vec literals can contain bundles and should not be bulk connected" in {
-    val chirrtl = (new chisel3.stage.ChiselStage).emitChirrtl(new VecExample, args = Array("--full-stacktrace"))
+    val chirrtl = ChiselStage.emitCHIRRTL(new VecExample)
     chirrtl should include("""out[0].bar <= UInt<5>("h16")""")
     chirrtl should include("""out[0].foo <= UInt<6>("h2a")""")
     chirrtl should include("""out[1].bar <= UInt<2>("h3")""")

@@ -3,10 +3,11 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental._
 import chisel3.experimental.BundleLiterals._
-import chisel3.stage.ChiselStage
+import chisel3.experimental._
 import chisel3.testers.BasicTester
+import circt.stage.ChiselStage
+
 import scala.collection.immutable.ListMap
 
 class LiteralExtractorSpec extends ChiselFlatSpec {

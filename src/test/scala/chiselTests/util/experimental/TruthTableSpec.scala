@@ -78,7 +78,7 @@ class TruthTableSpec extends AnyFlatSpec {
 
       io.out := decoder.qmc(io.in, table)
     }
-    assert(chisel3.stage.ChiselStage.emitChirrtl(new Foo) == chisel3.stage.ChiselStage.emitChirrtl(new Foo))
+    assert(circt.stage.ChiselStage.emitCHIRRTL(new Foo) == circt.stage.ChiselStage.emitCHIRRTL(new Foo))
   }
   "TruthTable" should "accept unknown input width" in {
     val t = TruthTable(

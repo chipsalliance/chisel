@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 import org.scalacheck.Gen
@@ -565,7 +565,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       val io = IO(new MyRecord)
       io.bar := io.foo
     }
-    val verilog = ChiselStage.emitVerilog(new Foo)
+    val verilog = ChiselStage.emitSystemVerilog(new Foo)
     // Check that the names are correct (and that the FIRRTL is valid)
     verilog should include("assign io_out_0 = io_in_0;")
   }
@@ -579,7 +579,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       io.suggestName("potato")
       io.bar := io.foo
     }
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     verilog should include("input  [7:0] io_foo")
     verilog should include("output [7:0] io_bar")
   }
@@ -593,7 +593,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       val wire = Wire(init = io.foo)
       io.bar := wire
     }
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     verilog should include("input  [7:0] io_foo")
     verilog should include("output [7:0] io_bar")
   }
@@ -635,7 +635,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       io.out := inst.io.out
     }
 
-    val chirrtl = ChiselStage.emitChirrtl(new ExtModuleInvalidatedTester)
+    val chirrtl = ChiselStage.emitCHIRRTL(new ExtModuleInvalidatedTester)
     chirrtl should include("inst.in is invalid")
     chirrtl should include("inst.out is invalid")
   }

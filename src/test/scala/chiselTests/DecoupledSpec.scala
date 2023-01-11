@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 
 class DecoupledSpec extends ChiselFlatSpec {
@@ -20,7 +20,7 @@ class DecoupledSpec extends ChiselFlatSpec {
 
   "Decoupled.map" should "apply a function to a wrapped Data" in {
     val chirrtl = ChiselStage
-      .emitChirrtl(new Module {
+      .emitCHIRRTL(new Module {
         val enq = IO(Flipped(Decoupled(UInt(8.W))))
         val deq = IO(Decoupled(UInt(8.W)))
         deq <> enq.map(_ + 1.U)
@@ -57,7 +57,7 @@ class DecoupledSpec extends ChiselFlatSpec {
     }
 
     val chirrtl = ChiselStage
-      .emitChirrtl(new Module {
+      .emitCHIRRTL(new Module {
         val enq = IO(Flipped(Decoupled(new TestBundle)))
         val deq = IO(Decoupled(new TestBundle))
         deq <> enq.map(func)
@@ -91,7 +91,7 @@ class DecoupledSpec extends ChiselFlatSpec {
     }
 
     val chirrtl = ChiselStage
-      .emitChirrtl(new Module {
+      .emitCHIRRTL(new Module {
         val enq = IO(Flipped(Decoupled(new TestBundle)))
         val deq = IO(Decoupled(UInt(8.W)))
         deq <> enq.map(bundle => bundle.foo & bundle.bar)
