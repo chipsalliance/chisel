@@ -287,7 +287,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     assertTesterPasses(new UIntLitExtractTester)
   }
 
-  property("Basic arithmetic with zero-width literals should return correct result (0)") {
+  property("Basic arithmetic and bit operations with zero-width literals should return correct result (0)") {
     assertTesterPasses(new UIntLitZeroWidthTester)
   }
 

@@ -129,7 +129,7 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
     assertTesterPasses(new SIntLitExtractTester)
   }
 
-  property("Basic arithmetic with zero-width literals should return correct result (0)") {
+  property("Basic arithmetic and bit operations with zero-width literals should return correct result (0)") {
     assertTesterPasses(new SIntLitZeroWidthTester)
   }
 
