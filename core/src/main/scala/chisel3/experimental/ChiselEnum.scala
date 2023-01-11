@@ -69,9 +69,11 @@ object EnumAnnotations {
     override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
   }
 }
+
 import EnumAnnotations._
 
-abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
+@deprecated("This type has moved to chisel3", "Chisel 3.5")
+abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true) extends Element {
 
   // Use getSimpleName instead of enumTypeName because for debugging purposes
   //   the fully qualified name isn't necessary (compared to for the
@@ -277,6 +279,7 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
   }
 }
 
+@deprecated("This type has been moved and renamed to chisel3.ChiselEnum", "Chisel 3.5")
 abstract class EnumFactory {
   class Type extends EnumType(this)
   object Type {
@@ -433,11 +436,11 @@ private[chisel3] object EnumMacros {
 private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum, selfAnnotating = false) {
   override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
 }
-private object UnsafeEnum extends EnumFactory
+private object UnsafeEnum extends ChiselEnum
 
 /** Suppress enum cast warnings
   *
-  * Users should use [[EnumFactory.safe <EnumType>.safe]] when possible.
+  * Users should use [[ChiselEnum.safe <EnumType>.safe]] when possible.
   *
   * This is primarily used for casting from [[UInt]] to a Bundle type that contains an Enum.
   * {{{
@@ -452,6 +455,7 @@ private object UnsafeEnum extends EnumFactory
   * }
   * }}}
   */
+@deprecated("This type has moved to chisel3", "Chisel 3.5")
 object suppressEnumCastWarning {
   def apply[T](block: => T): T = {
     val parentWarn = Builder.suppressEnumCastWarning

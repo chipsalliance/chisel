@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{ChiselEnum, DataMirror, FixedPoint}
+import chisel3.experimental.{DataMirror, FixedPoint}
 import chisel3.testers.BasicTester
 
 class AsTypeOfBundleTester extends BasicTester {
