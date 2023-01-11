@@ -15,13 +15,7 @@ In contrast with `Chisel.util.Enum`, `ChiselEnum` are subclasses of `Data`, whic
 // Imports used in the following examples
 import chisel3._
 import chisel3.util._
-<<<<<<< HEAD
 import chisel3.stage.ChiselStage
-import chisel3.experimental.ChiselEnum
-import chisel3.experimental.suppressEnumCastWarning
-=======
-import circt.stage.ChiselStage
->>>>>>> 424e9446 (Promote ChiselEnum user APIs from experimental (#2929))
 ```
 
 ```scala mdoc:invisible

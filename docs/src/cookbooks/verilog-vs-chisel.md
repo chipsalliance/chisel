@@ -14,12 +14,7 @@ This page serves as a quick introduction to Chisel for those familiar with Veril
 ```scala mdoc:invisible
 import chisel3._
 import chisel3.util.{switch, is}
-<<<<<<< HEAD
 import chisel3.stage.ChiselStage
-import chisel3.experimental.ChiselEnum
-=======
-import circt.stage.ChiselStage
->>>>>>> 424e9446 (Promote ChiselEnum user APIs from experimental (#2929))
 import chisel3.util.{Cat, Fill, DecoupledIO}
 ```
 

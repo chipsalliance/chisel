@@ -1,19 +1,78 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3
+package chisel3.experimental
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
-import chisel3.experimental.{annotate, requireIsHardware}
+import chisel3._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 import chisel3.internal.{throwException, Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId}
+import firrtl.annotations._
 
-import chisel3.experimental.EnumAnnotations._
+object EnumAnnotations {
 
+  /** An annotation for strong enum instances that are ''not'' inside of Vecs
+    *
+    * @param target the enum instance being annotated
+    * @param enumTypeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
+    */
+  case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
+    def duplicate(n: Named): EnumComponentAnnotation = this.copy(target = n)
+  }
+
+  case class EnumComponentChiselAnnotation(target: InstanceId, enumTypeName: String) extends ChiselAnnotation {
+    def toFirrtl: EnumComponentAnnotation = EnumComponentAnnotation(target.toNamed, enumTypeName)
+  }
+
+  /** An annotation for Vecs of strong enums.
+    *
+    * The ''fields'' parameter deserves special attention, since it may be difficult to understand. Suppose you create a the following Vec:
+    *
+    *               {{{
+    *               VecInit(new Bundle {
+    *                 val e = MyEnum()
+    *                 val b = new Bundle {
+    *                   val inner_e = MyEnum()
+    *                 }
+    *                 val v = Vec(3, MyEnum())
+    *               }
+    *               }}}
+    *
+    *               Then, the ''fields'' parameter will be: ''Seq(Seq("e"), Seq("b", "inner_e"), Seq("v"))''. Note that for any Vec that doesn't contain Bundles, this field will simply be an empty Seq.
+    *
+    * @param target the Vec being annotated
+    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
+    * @param fields a list of all chains of elements leading from the Vec instance to its inner enum fields.
+    */
+  case class EnumVecAnnotation(target: Named, typeName: String, fields: Seq[Seq[String]])
+      extends SingleTargetAnnotation[Named] {
+    def duplicate(n: Named): EnumVecAnnotation = this.copy(target = n)
+  }
+
+  case class EnumVecChiselAnnotation(target: InstanceId, typeName: String, fields: Seq[Seq[String]])
+      extends ChiselAnnotation {
+    override def toFirrtl: EnumVecAnnotation = EnumVecAnnotation(target.toNamed, typeName, fields)
+  }
+
+  /** An annotation for enum types (rather than enum ''instances'').
+    *
+    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
+    * @param definition a map describing which integer values correspond to which enum names
+    */
+  case class EnumDefAnnotation(typeName: String, definition: Map[String, BigInt]) extends NoTargetAnnotation
+
+  case class EnumDefChiselAnnotation(typeName: String, definition: Map[String, BigInt]) extends ChiselAnnotation {
+    override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
+  }
+}
+
+import EnumAnnotations._
+
+@deprecated("This type has moved to chisel3", "Chisel 3.5")
 abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true) extends Element {
 
   // Use getSimpleName instead of enumTypeName because for debugging purposes
@@ -220,10 +279,11 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
   }
 }
 
-abstract class ChiselEnum {
+@deprecated("This type has been moved and renamed to chisel3.ChiselEnum", "Chisel 3.5")
+abstract class EnumFactory {
   class Type extends EnumType(this)
   object Type {
-    def apply(): Type = ChiselEnum.this.apply()
+    def apply(): Type = EnumFactory.this.apply()
   }
 
   private var id:             BigInt = 0
@@ -395,6 +455,7 @@ private object UnsafeEnum extends ChiselEnum
   * }
   * }}}
   */
+@deprecated("This type has moved to chisel3", "Chisel 3.5")
 object suppressEnumCastWarning {
   def apply[T](block: => T): T = {
     val parentWarn = Builder.suppressEnumCastWarning
