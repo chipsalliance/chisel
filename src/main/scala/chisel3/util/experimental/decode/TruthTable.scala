@@ -3,12 +3,16 @@
 package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
+import scala.util.hashing.MurmurHash3
 import scala.collection.mutable
 
-sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat, val sort: Boolean) {
+sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat, _sort: Boolean) {
   def inputWidth = table.head._1.getWidth
 
   def outputWidth = table.head._2.getWidth
+
+  @deprecated("This field is unused and will be removed.", "Chisel 3.5")
+  def sort: Boolean = _sort
 
   override def toString: String = {
     def writeRow(map: (BitPat, BitPat)): String =
@@ -17,15 +21,17 @@ sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: 
     (table.map(writeRow) ++ Seq(s"${" " * (inputWidth + 2)}${default.rawString}")).mkString("\n")
   }
 
-  def copy(table: Seq[(BitPat, BitPat)] = this.table, default: BitPat = this.default, sort: Boolean = this.sort) =
-    TruthTable(table, default, sort)
+  def copy(table: Seq[(BitPat, BitPat)] = this.table, default: BitPat = this.default, sort: Boolean = _sort) =
+    TruthTable(table, default)
 
   override def equals(y: Any): Boolean = {
     y match {
-      case y: TruthTable => toString == y.toString
+      case that: TruthTable => this.table == that.table && this.default == that.default
       case _ => false
     }
   }
+
+  override lazy val hashCode: Int = MurmurHash3.productHash((table, default))
 }
 
 object TruthTable {
