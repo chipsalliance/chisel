@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.internal.{prefix, BiConnect, Builder}
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 
 package object connectable {
 

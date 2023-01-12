@@ -7,7 +7,7 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap, LinkedHashSet}
 import scala.util.control.NoStackTrace
 import _root_.logger.Logger
 
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 
 object ExceptionHelpers {
 

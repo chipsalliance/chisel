@@ -3,7 +3,7 @@
 // This file transform macro definitions to explicitly add implicit source info to Chisel method
 // calls.
 
-package chisel3.internal.sourceinfo
+package chisel3.internal.sourceinfomacros
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
@@ -22,7 +22,7 @@ trait SourceInfoTransformMacro {
   val c: Context
   import c.universe._
   def thisObj: Tree = c.prefix.tree
-  def implicitSourceInfo = q"implicitly[_root_.chisel3.internal.sourceinfo.SourceInfo]"
+  def implicitSourceInfo = q"implicitly[_root_.chisel3.experimental.SourceInfo]"
   def implicitCompileOptions = q"implicitly[_root_.chisel3.CompileOptions]"
 }
 

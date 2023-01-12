@@ -2,7 +2,7 @@ package chisel3
 
 import chisel3.internal.requireIsChiselType // Fix ambiguous import
 import chisel3.internal.Builder
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 
 object IO {
 

@@ -7,8 +7,8 @@ import chisel3._
 
 import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
-import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
-import chisel3.experimental.BaseModule
+import chisel3.internal.sourceinfomacros.{DefinitionTransform, DefinitionWrapTransform}
+import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.experimental.hierarchy.Definition
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
 
@@ -51,7 +51,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
     case value: BaseModule =>
       val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value))(
-        chisel3.internal.sourceinfo.UnlocatableSourceInfo,
+        chisel3.experimental.UnlocatableSourceInfo,
         chisel3.ExplicitCompileOptions.Strict
       )
       newChild._circuit = value._circuit.orElse(Some(value))

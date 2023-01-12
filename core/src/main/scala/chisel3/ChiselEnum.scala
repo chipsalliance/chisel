@@ -5,11 +5,11 @@ package chisel3
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
-import chisel3.experimental.{annotate, requireIsHardware}
+import chisel3.experimental.{annotate, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo._
+import chisel3.internal.sourceinfomacros._
 import chisel3.internal.{throwException, Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId}
 
 import chisel3.experimental.EnumAnnotations._

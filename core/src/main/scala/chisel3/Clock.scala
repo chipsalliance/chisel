@@ -3,9 +3,10 @@
 package chisel3
 
 import scala.language.experimental.macros
+import chisel3.experimental.SourceInfo
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo._
+import chisel3.internal.sourceinfomacros._
 import chisel3.internal.firrtl.PrimOp.AsUIntOp
 
 object Clock {

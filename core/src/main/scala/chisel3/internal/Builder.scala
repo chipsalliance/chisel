@@ -14,11 +14,9 @@ import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.{AnnotationSeq, RenameMap}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
-import chisel3.internal.sourceinfo.SourceInfo
 import logger.LazyLogging
 
 import scala.collection.mutable
-import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 import scala.annotation.tailrec
 
 private[chisel3] class Namespace(keywords: Set[String]) {

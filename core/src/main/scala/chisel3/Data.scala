@@ -6,10 +6,11 @@ import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
 import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
+import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
+import chisel3.internal.sourceinfomacros._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 import scala.reflect.ClassTag
@@ -1132,7 +1133,7 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
     Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
 
-  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): UInt = {
+  def do_asUInt(implicit sourceInfo: chisel3.experimental.SourceInfo, compileOptions: CompileOptions): UInt = {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }

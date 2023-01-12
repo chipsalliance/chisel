@@ -4,9 +4,9 @@ package chisel3
 
 import chisel3.internal.ChiselException
 import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint}
-
+import chisel3.internal.sourceinfomacros.SourceInfoTransform
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel3.experimental.SourceInfo
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
 

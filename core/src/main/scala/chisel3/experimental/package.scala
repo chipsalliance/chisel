@@ -4,7 +4,7 @@ package chisel3
 
 import chisel3.ExplicitCompileOptions.Strict
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 
 /** Package for experimental features, which may have their API changed, be removed, etc.
   *
@@ -50,7 +50,7 @@ package object experimental {
     def apply(
       proto: BaseModule
     )(
-      implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
+      implicit sourceInfo: chisel3.experimental.SourceInfo,
       compileOptions:      CompileOptions
     ): ClonePorts = {
       BaseModule.cloneIORecord(proto)
