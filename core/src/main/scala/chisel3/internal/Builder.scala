@@ -299,23 +299,29 @@ private[chisel3] trait HasId extends InstanceId {
       // Builder.deprecated mechanism, we have to create our own one off ErrorLog and print the
       // warning right away.
       // It's especially bad because --warnings-as-errors does not work with these warnings
-      val nameGuess = _computeName(None) match {
-        case Some(name) => s": '$name'"
-        case None       => ""
-      }
-      val parentGuess = _parent match {
-        case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
-        case Some(p)          => s", in module '${p.pathName}'"
-        case None             => ""
-      }
       val errors = new ErrorLog(false)
       val logger = new _root_.logger.Logger(this.getClass.getName)
       val msg =
-        "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated" + nameGuess + parentGuess + ". " +
+        "Accessing the .instanceName or .toTarget of non-hardware Data is deprecated" + _errorContext + ". " +
           "This will become an error in Chisel 3.6."
       errors.deprecated(msg, None)
       errors.checkpoint(logger)
       _computeName(None).get
+  }
+
+  private[chisel3] def _errorContext: String = {
+    val nameGuess: String = _computeName(None) match {
+      case Some(name) => s": '$name'"
+      case None       => ""
+    }
+
+    val parentGuess: String = _parent match {
+      case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
+      case Some(p)          => s", in module '${p.pathName}'"
+      case None             => ""
+    }
+
+    nameGuess + parentGuess
   }
 
   // Helper for reifying views if they map to a single Target
@@ -393,13 +399,16 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  final def toNamed: ComponentName =
+  final def toNamed: ComponentName = {
+    assertValidTarget()
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+  }
 
   /** Returns a FIRRTL ReferenceTarget that references this object
     * @note Should not be called until circuit elaboration is complete
     */
   final def toTarget: ReferenceTarget = {
+    assertValidTarget()
     val name = this.instanceName
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
@@ -421,6 +430,21 @@ private[chisel3] trait NamedComponent extends HasId {
       case Some(ViewParent) => makeTarget(reifyParent)
       case Some(parent)     => makeTarget(parent)
       case None             => localTarget
+    }
+  }
+
+  private def assertValidTarget(): Unit = {
+    val isVecSubaccess = getOptionRef.map {
+      case Index(_, _: ULit) => true // Vec literal indexing
+      case Index(_, _: Node) => true // Vec dynamic indexing
+      case _ => false
+    }.getOrElse(false)
+
+    if (isVecSubaccess) {
+      throwException(
+        s"You cannot target Vec subaccess" + _errorContext +
+          ". Instead, assign it to a temporary (for example, with WireInit) and target the temporary."
+      )
     }
   }
 }
@@ -484,6 +508,10 @@ private[chisel3] class DynamicContext(
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   var currentModule: Option[BaseModule] = None
+
+  // Enum annotations are added every time a ChiselEnum is bound
+  // To keep the number down, we keep them unique in the annotations
+  val enumAnnos = mutable.HashSet[ChiselAnnotation]()
 
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
@@ -552,6 +580,8 @@ private[chisel3] object Builder extends LazyLogging {
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components:      ArrayBuffer[Component] = dynamicContext.components
   def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  def enumAnnos: mutable.HashSet[ChiselAnnotation] = dynamicContext.enumAnnos
 
   // TODO : Unify this with annotations in the future - done this way for backward compatability
   def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations

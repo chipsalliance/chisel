@@ -3,9 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.experimental.AffectsChiselPrefix
-import chisel3.experimental.suppressEnumCastWarning
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
@@ -119,7 +117,7 @@ class EnumOps(val xType: ChiselEnum, val yType: ChiselEnum) extends Module {
   io.ne := io.x =/= io.y
 }
 
-object StrongEnumFSM {
+object ChiselEnumFSM {
   object State extends ChiselEnum {
     val sNone, sOne1, sTwo1s = Value
 
@@ -127,9 +125,9 @@ object StrongEnumFSM {
   }
 }
 
-class StrongEnumFSM extends Module {
-  import StrongEnumFSM.State
-  import StrongEnumFSM.State._
+class ChiselEnumFSM extends Module {
+  import ChiselEnumFSM.State
+  import ChiselEnumFSM.State._
 
   // This FSM detects two 1's one after the other
   val io = IO(new Bundle {
@@ -304,10 +302,10 @@ class WidthTester extends BasicTester {
   stop()
 }
 
-class StrongEnumFSMTester extends BasicTester {
-  import StrongEnumFSM.State._
+class ChiselEnumFSMTester extends BasicTester {
+  import ChiselEnumFSM.State._
 
-  val dut = Module(new StrongEnumFSM)
+  val dut = Module(new ChiselEnumFSM)
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
@@ -362,10 +360,10 @@ class IsOneOfTester extends BasicTester {
   stop()
 }
 
-class StrongEnumSpec extends ChiselFlatSpec with Utils {
+class ChiselEnumSpec extends ChiselFlatSpec with Utils {
   import chisel3.internal.ChiselException
 
-  behavior.of("Strong enum tester")
+  behavior.of("ChiselEnum")
 
   it should "fail to instantiate non-literal enums with the Value function" in {
     an[ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError] {
@@ -470,8 +468,8 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
     "object UnnamedEnum extends ChiselEnum { Value }" shouldNot compile
   }
 
-  "StrongEnum FSM" should "work" in {
-    assertTesterPasses(new StrongEnumFSMTester)
+  "ChiselEnum FSM" should "work" in {
+    assertTesterPasses(new ChiselEnumFSMTester)
   }
 
   "Casting a UInt to an Enum" should "warn if the UInt can express illegal states" in {
@@ -584,7 +582,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
   }
 }
 
-class StrongEnumAnnotator extends Module {
+class ChiselEnumAnnotator extends Module {
   import EnumExample._
 
   object LocalEnum extends ChiselEnum {
@@ -643,7 +641,7 @@ class StrongEnumAnnotator extends Module {
   val indexed2 = vec_of_bundles(cycle)
 }
 
-class StrongEnumAnnotatorWithChiselName extends Module {
+class ChiselEnumAnnotatorWithChiselName extends Module {
   import EnumExample._
 
   object LocalEnum extends ChiselEnum with AffectsChiselPrefix {
@@ -702,7 +700,7 @@ class StrongEnumAnnotatorWithChiselName extends Module {
   val indexed2 = vec_of_bundles(cycle)
 }
 
-class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
+class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
   import chisel3.experimental.EnumAnnotations._
   import firrtl.annotations.{Annotation, ComponentName}
 
@@ -820,7 +818,7 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
   }
 
   "Test that strong enums annotate themselves appropriately" in {
-    test(() => new StrongEnumAnnotator)
-    test(() => new StrongEnumAnnotatorWithChiselName)
+    test(() => new ChiselEnumAnnotator)
+    test(() => new ChiselEnumAnnotatorWithChiselName)
   }
 }
