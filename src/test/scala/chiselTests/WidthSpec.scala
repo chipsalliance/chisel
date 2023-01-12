@@ -98,18 +98,18 @@ abstract class WireRegWidthSpecImpl extends ChiselFlatSpec {
     }
   }
 
-  it should "infer width as 1-bit if the template type has no width and is initialized to zero-width literal" in {
-    assertInferredWidth(1) {
+  it should "infer width as zero if the template type has no width and is initialized to zero-width literal" in {
+    assertInferredWidth(0) {
       val w = builder(UInt())
       w := 0.U(0.W)
       w
     }
-    assertInferredWidth(1) {
+    assertInferredWidth(0) {
       val w = builder(new ZeroWidthBundle)
       w := ZeroWidthBundle.intoWire()
       w.y
     }
-    assertInferredWidth(1) {
+    assertInferredWidth(0) {
       val w = builder(Vec(1, UInt()))
       w(0) := 0.U(0.W)
       w(0)
