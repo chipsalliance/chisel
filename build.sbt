@@ -36,7 +36,13 @@ lazy val commonSettings = Seq(
   }
 )
 
-lazy val warningSuppression = Seq(scalacOptions += "-Wconf:msg=APIs in chisel3.internal:s,msg=Importing from firrtl:s,msg=migration to the MLIR:s")
+lazy val warningSuppression = Seq(
+  scalacOptions += "-Wconf:" + Seq(
+    "msg=APIs in chisel3.internal:s",
+    "msg=Importing from firrtl:s",
+    "msg=migration to the MLIR:s"
+  ).mkString(",")
+)
 
 lazy val publishSettings = Seq(
   versionScheme := Some("pvp"),
