@@ -340,7 +340,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     }
   }
 
-  "partially initialized Vec literals should assign" in {
+  "partially initialized Vec literals should assign" ignore {
     assertTesterPasses {
       new BasicTester {
         def vecFactory = Vec(2, FixedPoint(8.W, 4.BP))

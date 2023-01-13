@@ -68,7 +68,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
       val s0, s1, s2 = Value
     }
 
-    val (testDir, annos) = compile("TraceFromAnnotaions", () => new Module1)
+    val (testDir, annos) = compile("TraceFromAnnotations", () => new Module1)
     val dut = annos.collectFirst { case DesignAnnotation(dut) => dut }.get.asInstanceOf[Module1]
     // out of Builder.
 

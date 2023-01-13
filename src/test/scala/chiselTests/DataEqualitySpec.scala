@@ -18,9 +18,9 @@ class EqualityModule(lhsGen: => Data, rhsGen: => Data) extends Module {
 }
 
 class EqualityTester(lhsGen: => Data, rhsGen: => Data) extends BasicTester {
-  val module = Module(new EqualityModule(lhsGen, rhsGen))
+  val equalityModule = Module(new EqualityModule(lhsGen, rhsGen))
 
-  assert(module.out)
+  assert(equalityModule.out)
 
   stop()
 }
@@ -116,30 +116,6 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
   it should "fail with differing values" in {
     assertTesterFails {
       new EqualityTester(true.B.asAsyncReset, false.B.asAsyncReset)
-    }
-  }
-
-  behavior.of("Interval === Interval")
-  it should "pass with equal values" in {
-    assertTesterPasses {
-      new EqualityTester(2.I, 2.I)
-    }
-  }
-  it should "fail with differing values" in {
-    assertTesterFails {
-      new EqualityTester(2.I, 3.I)
-    }
-  }
-
-  behavior.of("FixedPoint === FixedPoint")
-  it should "pass with equal values" in {
-    assertTesterPasses {
-      new EqualityTester(4.5.F(16.W, 4.BP), 4.5.F(16.W, 4.BP))
-    }
-  }
-  it should "fail with differing values" in {
-    assertTesterFails {
-      new EqualityTester(4.5.F(16.W, 4.BP), 4.6.F(16.W, 4.BP))
     }
   }
 

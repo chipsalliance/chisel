@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import _root_.logger.Logger
 import chisel3._
 import chisel3.aop.Aspect
 import chisel3.stage.{
@@ -11,19 +12,18 @@ import chisel3.stage.{
   PrintFullStackTraceAnnotation
 }
 import chisel3.testers._
+import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation}
 import firrtl.annotations.Annotation
 import firrtl.ir.Circuit
-import firrtl.util.BackendCompilationUtilities
-import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
-import _root_.logger.Logger
 import firrtl.stage.FirrtlCircuitAnnotation
+import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import java.io.{ByteArrayOutputStream, PrintStream}
@@ -96,10 +96,10 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     * @return the Verilog code as a string.
     */
   def compile(t: => RawModule): String = {
-    (new ChiselStage)
+    (new circt.stage.ChiselStage)
       .execute(
         Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
-        Seq(ChiselGeneratorAnnotation(() => t))
+        Seq(ChiselGeneratorAnnotation(() => t), CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
       )
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a.value
@@ -122,17 +122,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     * @return The FIRRTL Circuit and Annotations _before_ FIRRTL compilation
     */
   def getFirrtlAndAnnos(t: => RawModule, providedAnnotations: Seq[Annotation] = Nil): (Circuit, Seq[Annotation]) = {
-    val args = Array(
-      "--target-dir",
-      createTestDirectory(this.getClass.getSimpleName).toString,
-      "--no-run-firrtl",
-      "--full-stacktrace"
-    )
-    val annos = (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => t)) ++ providedAnnotations)
-    val circuit = annos.collectFirst {
-      case FirrtlCircuitAnnotation(c) => c
-    }.getOrElse(fail("No FIRRTL Circuit found!!"))
-    (circuit, annos)
+    TestUtils.getChirrtlAndAnnotations(t, providedAnnotations)
   }
 }
 

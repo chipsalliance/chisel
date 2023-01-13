@@ -285,8 +285,7 @@ class QueueFlushSpec extends ChiselPropSpec {
     forAll(Gen.choose(3, 5), safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses(
-          new DequeueFullQueueEdgecaseTester(se._2, depth, se._1, tap, isSync),
-          annotations = Seq(WriteVcdAnnotation)
+          new DequeueFullQueueEdgecaseTester(se._2, depth, se._1, tap, isSync)
         )
       }
     }
