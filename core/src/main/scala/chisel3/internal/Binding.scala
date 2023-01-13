@@ -8,40 +8,14 @@ import chisel3.internal.firrtl.LitArg
 
 import scala.collection.immutable.VectorMap
 
-/** Requires that a node is hardware ("bound")
-  */
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
+@deprecated(deprecatedPublicAPIMsg + ". Use chisel3.experimental.requireIsHardware instead", "Chisel 3.6")
 object requireIsHardware {
-  def apply(node: Data, msg: String = ""): Unit = _requireIsHardware.apply(node, msg)
+  def apply(node: Data, msg: String = ""): Unit = chisel3.experimental.requireIsHardware.apply(node, msg)
 }
 
-private[chisel3] object _requireIsHardware {
-  def apply(node: Data, msg: String = ""): Unit = {
-    node._parent match { // Compatibility layer hack
-      case Some(x: BaseModule) => x._compatAutoWrapPorts
-      case _ =>
-    }
-    if (!node.isSynthesizable) {
-      val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw ExpectedHardwareException(
-        s"$prefix'$node' must be hardware, " +
-          "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?"
-      )
-    }
-  }
-}
-
-/** Requires that a node is a chisel type (not hardware, "unbound")
-  */
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
+@deprecated(deprecatedPublicAPIMsg + ". Use chisel3.experimental.requireIsChiselType instead", "Chisel 3.6")
 object requireIsChiselType {
-  def apply(node: Data, msg: String = ""): Unit = _requireIsChiselType.apply(node, msg)
-}
-private[chisel3] object _requireIsChiselType {
-  def apply(node: Data, msg: String = ""): Unit = if (node.isSynthesizable) {
-    val prefix = if (msg.nonEmpty) s"$msg " else ""
-    throw ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
-  }
+  def apply(node: Data, msg: String = ""): Unit = chisel3.experimental.requireIsChiselType.apply(node, msg)
 }
 
 // Element only direction used for the Binding system only.
@@ -155,8 +129,7 @@ case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
 case class DontCareBinding() extends UnconstrainedBinding
 
 // Views currently only support 1:1 Element-level mappings
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class ViewBinding(target: Element) extends UnconstrainedBinding
+private[chisel3] case class ViewBinding(target: Element) extends UnconstrainedBinding
 
 /** Binding for Aggregate Views
   * @param childMap Mapping from children of this view to their respective targets
@@ -165,8 +138,7 @@ case class ViewBinding(target: Element) extends UnconstrainedBinding
   * @note The types of key and value need not match for the top Data in a total view of type
   *       Aggregate
   */
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class AggregateViewBinding(childMap: Map[Data, Data]) extends UnconstrainedBinding {
+private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Data]) extends UnconstrainedBinding {
   // Helper lookup function since types of Elements always match
   def lookup(key: Element): Option[Element] = childMap.get(key).map(_.asInstanceOf[Element])
 }
