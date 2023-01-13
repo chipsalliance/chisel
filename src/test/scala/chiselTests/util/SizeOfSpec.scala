@@ -33,7 +33,7 @@ class SizeOfSpec extends AnyFlatSpec with Matchers {
 
     // The second elaboration uses a unique name since the Builder is reused (?)
     val anno = ChiselStage.emitAnnotations(new SizeOfTop)
-    val c = """intrinsic\(~SizeOfTop\|SizeOf.*,circt.sizeof\)"""
+    val c = """Intrinsic\(~SizeOfTop\|SizeOf.*,circt.sizeof\)"""
     (anno should include).regex(c)
   }
 }

@@ -5,7 +5,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
 
-import circt.intrinsic
+import circt.Intrinsic
 
 /** Create a module with a parameterized type which returns the size of the type
   * as a compile-time constant.  This lets you write code which depends on the
@@ -16,7 +16,7 @@ private class SizeOfIntrinsic [T <: Data](gen: T) extends ExtModule {
   val size = IO(Output(UInt(32.W)));
   annotate(new ChiselAnnotation {
     def toFirrtl =
-      intrinsic(toTarget, "circt.sizeof")
+      Intrinsic(toTarget, "circt.sizeof")
   })
   override val desiredName = "SizeOf" + _id.toString()
 }
