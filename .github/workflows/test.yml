@@ -21,10 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        uses: YosysHQ/setup-oss-cad-suite@v1
-        with:
-          osscadsuite-version: '2021-11-09'
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -75,10 +73,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Tabby OSS Cad Suite (from YosysHQ)
-        uses: YosysHQ/setup-oss-cad-suite@v1
-        with:
-          osscadsuite-version: '2021-11-09'
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
