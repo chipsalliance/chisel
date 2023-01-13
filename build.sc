@@ -55,6 +55,7 @@ object v {
     "2.12.17",
     "2.13.10"
   )
+  val firtoolCrossVersions = Seq("1.27.0")
   val firrtl = getVersion("firrtl")
   val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
   val upickle = ivy"com.lihaoyi::upickle:2.0.0"
@@ -181,6 +182,48 @@ class stdlib(val crossScalaVersion: String)
 
   def pluginModule = plugin(crossScalaVersion)
 }
+
+object circt extends mill.Cross[circt](v.firtoolCrossVersions: _*)
+
+class circt(firtoolCrossVersion: String)
+  extends common.CIRCTModule { cm =>
+  def circtSourcePath: T[PathRef] = T {
+    val circtPath = T.dest / s"circt"
+    os.proc("git", "clone", "https://github.com/llvm/circt", "--depth", "1", "--branch", s"firtool-${firtoolCrossVersion}", circtPath).call(T.dest)
+    PathRef(circtPath)
+  }
+
+  def llvmSourcePath: T[PathRef] = T {
+    val llvmPath = circtSourcePath().path / s"llvm"
+    os.proc("git", "submodule", "init", "llvm").call(circtSourcePath().path)
+    os.proc("git", "submodule", "update", "--depth", 1).call(circtSourcePath().path)
+    PathRef(circtSourcePath().path / s"llvm")
+  }
+}
+
+object `circt-panama` extends mill.Cross[`circt-panama`](v.firtoolCrossVersions: _*)
+
+class `circt-panama`(firtoolCrossVersion: String)
+  extends common.CIRCTPanamaModule {
+  def circtModule = circt(firtoolCrossVersion)
+}
+
+object `chisel-circt-panama` extends mill.Cross[`chisel-circt-panama`]((for {
+  scalaCrossVersion <- v.scalaCrossVersions
+  firtoolCrossVersion <- v.firtoolCrossVersions
+} yield (scalaCrossVersion, firtoolCrossVersion)): _*)
+
+class `chisel-circt-panama`(val crossScalaVersion: String, firtoolCrossVersion: String)
+  extends common.ChiselCIRCTPanamaModule
+    with CrossSbtModule
+    with ScalafmtModule
+    with SonatypeSnapshotModule {
+  def scalaVersion = crossScalaVersion
+  def coreModule = core(crossScalaVersion)
+  def circtPanamaModule = `circt-panama`(firtoolCrossVersion)
+  def circtInstallDirectory = `circt-panama`(firtoolCrossVersion).circtInstallDirectory
+}
+
 
 trait SonatypeSnapshotModule extends CoursierModule {
   override def repositoriesTask = T.task {
