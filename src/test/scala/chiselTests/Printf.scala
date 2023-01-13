@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.BasicTester
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class SinglePrintfTester() extends BasicTester {
   val x = 254.U

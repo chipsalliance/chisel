@@ -3,11 +3,10 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.util.{is, switch, Counter, PriorityMux}
 import chisel3.testers.BasicTester
-import chisel3.stage.ChiselStage.emitChirrtl
-
+import chisel3.util.{Counter, PriorityMux}
 import chiselTests.ChiselFlatSpec
+import circt.stage.ChiselStage.emitCHIRRTL
 
 class PriorityMuxTester extends BasicTester {
 
@@ -49,7 +48,7 @@ class PriorityMuxSpec extends ChiselFlatSpec {
   }
 
   it should "be stack safe" in {
-    emitChirrtl(new RawModule {
+    emitCHIRRTL(new RawModule {
       val n = 1 << 15
       val in = IO(Input(Vec(n, UInt(8.W))))
       val sel = IO(Input(UInt(n.W)))

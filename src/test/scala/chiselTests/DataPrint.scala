@@ -5,9 +5,9 @@ package chiselTests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.{ChiselEnum, FixedPoint}
+import chisel3.experimental.FixedPoint
 import chisel3.experimental.BundleLiterals._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 
 class DataPrintSpec extends ChiselFlatSpec with Matchers {

@@ -3,9 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
-
-import org.scalatest._
+import circt.stage.ChiselStage
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

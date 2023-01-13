@@ -4,7 +4,7 @@ inputs:
   version:
     description: 'version to install'
     required: false
-    default: 'sifive/1/24/0'
+    default: 'firtool-1.26.0'
 
 runs:
   using: composite

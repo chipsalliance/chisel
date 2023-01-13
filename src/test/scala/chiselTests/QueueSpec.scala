@@ -2,14 +2,12 @@
 
 package chiselTests
 
-import org.scalacheck._
-
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
 import chisel3.util.random.LFSR
-
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
+import org.scalacheck._
 
 class ThingsPassThroughTester(
   elements:       Seq[Int],
@@ -304,7 +302,7 @@ class QueueSpec extends ChiselPropSpec {
       out <> bar
     }
 
-    val chirrtl = ChiselStage.emitChirrtl(new HasTwoQueues)
+    val chirrtl = ChiselStage.emitCHIRRTL(new HasTwoQueues)
     chirrtl should include("inst foo_q of Queue")
     chirrtl should include("inst bar_q of Queue")
   }

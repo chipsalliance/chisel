@@ -3,7 +3,7 @@
 package chiselTests.util.random
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.util.{Cat, Counter, Enum}
 import chisel3.util.random._
 import chisel3.testers.{BasicTester, TesterDriver}

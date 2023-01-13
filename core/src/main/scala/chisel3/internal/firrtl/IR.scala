@@ -135,7 +135,7 @@ case class ILit(n: BigInt) extends Arg {
 
 case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name:     String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
-  def minWidth: Int = 1.max(n.bitLength)
+  def minWidth: Int = (if (w.known) 0 else 1).max(n.bitLength)
 
   def cloneWithWidth(newWidth: Width): this.type = {
     ULit(n, newWidth).asInstanceOf[this.type]
@@ -149,7 +149,7 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asSInt(${ULit(unsigned, width).name})"
   }
-  def minWidth: Int = 1 + n.bitLength
+  def minWidth: Int = (if (w.known) 0 else 1) + n.bitLength
 
   def cloneWithWidth(newWidth: Width): this.type = {
     SLit(n, newWidth).asInstanceOf[this.type]

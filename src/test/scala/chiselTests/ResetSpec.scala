@@ -3,9 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
-import chisel3.util.{Counter, Queue}
-import chisel3.testers.BasicTester
+import circt.stage.ChiselStage
 
 class ResetAgnosticModule extends RawModule {
   val clk = IO(Input(Clock()))
@@ -44,7 +42,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "be able to drive Bool" in {
-    ChiselStage.emitVerilog(new RawModule {
+    ChiselStage.emitSystemVerilog(new RawModule {
       val in = IO(Input(Bool()))
       val out = IO(Output(Bool()))
       val w = Wire(Reset())
@@ -54,7 +52,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "be able to drive AsyncReset" in {
-    ChiselStage.emitVerilog(new RawModule {
+    ChiselStage.emitSystemVerilog(new RawModule {
       val in = IO(Input(AsyncReset()))
       val out = IO(Output(AsyncReset()))
       val w = Wire(Reset())
@@ -92,14 +90,14 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   behavior.of("Users")
 
   they should "be able to force implicit reset to be synchronous" in {
-    val fir = ChiselStage.emitChirrtl(new Module with RequireSyncReset {
+    val fir = ChiselStage.emitCHIRRTL(new Module with RequireSyncReset {
       reset shouldBe a[Bool]
     })
     fir should include("input reset : UInt<1>")
   }
 
   they should "be able to force implicit reset to be asynchronous" in {
-    val fir = ChiselStage.emitChirrtl(new Module with RequireAsyncReset {
+    val fir = ChiselStage.emitCHIRRTL(new Module with RequireAsyncReset {
       reset shouldBe an[AsyncReset]
     })
     fir should include("input reset : AsyncReset")

@@ -4,7 +4,7 @@ package chiselTests
 package experimental
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 // NOTE This is currently an experimental API and subject to change
 // Example using a private port
