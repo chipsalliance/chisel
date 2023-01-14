@@ -1,4 +1,0 @@
----
-redirect_to: https://javadoc.io/doc/edu.berkeley.cs/firrtl-diagrammer_2.12/1.3
----
-

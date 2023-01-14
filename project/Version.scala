@@ -24,9 +24,6 @@ object Version {
 
   val versionMap: Map[String, (Repository, SemanticVersion)] = Map(
     "chisel3"        -> (GitHubRepository("freechipsproject", "chisel3"),        SemanticVersion(3, 1, 7)),
-    "chisel-testers" -> (GitHubRepository("freechipsproject", "chisel-testers"), SemanticVersion(1, 2, 9)),
-    "firrtl"         -> (GitHubRepository("freechipsproject", "firrtl"),         SemanticVersion(1, 1, 7)),
-    "treadle"        -> (GitHubRepository("freechipsproject", "treadle"),        SemanticVersion(1, 0, 5)) )
 
   def docSourceUrl(project: String): Seq[String] = {
     val repo = versionMap(project)._1.url

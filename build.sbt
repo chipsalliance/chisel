@@ -46,28 +46,7 @@ lazy val micrositeSettings = Seq(
       "index.md", "home",
       Map("title" -> "Home",
           "section" -> "home",
-          "technologies" -> technologies)),
-    file("chisel-testers/README.md") -> ExtraMdFileConfig(
-      "chisel-testers/index.md", "docs",
-      Map("title" -> "Testers",
-          "section" -> "chisel-testers",
-          "position" -> "2")),
-    file("chiseltest/README.md") -> ExtraMdFileConfig(
-      "chiseltest/index.md", "docs",
-      Map("title" -> "ChiselTest",
-          "section" -> "chiseltest",
-          "position" -> "3")),
-    file("firrtl/README.md") -> ExtraMdFileConfig(
-      "firrtl/index.md", "docs",
-      Map("title" -> "FIRRTL",
-          "section" -> "firrtl",
-          "position" -> "4")),
-//    Treadle occupies position 5
-    file("diagrammer/README.md") -> ExtraMdFileConfig(
-      "diagrammer/index.md", "docs",
-      Map("title" -> "Diagrammer",
-          "section" -> "diagrammer",
-          "position" -> "6"))
+          "technologies" -> technologies))
   ),
   micrositeExtraMdFilesOutput := resourceManaged.value / "main" / "jekyll",
   micrositeStaticDirectory := file("docs/target/site/api"),
@@ -113,6 +92,8 @@ lazy val contributors =
       determineContributors := {
         import java.io.{File, PrintWriter}
         val uniqueContributors =
+          // Even though we no longer host all these projects,
+          // we still honor their contributions
           Seq( GitHubRepository("chipsalliance", "chisel3"),
                GitHubRepository("chipsalliance", "firrtl"),
                GitHubRepository("chipsalliance", "treadle"),
@@ -138,6 +119,5 @@ lazy val docs = project
   .enablePlugins(MicrositesPlugin)
   .settings(commonSettings)
   .settings(micrositeSettings)
-  .settings(libraryDependencies += "edu.berkeley.cs" %% "chisel-iotesters" % "1.4.0")
   .settings(scalacOptions ++= (Seq("-Xsource:2.11")))
   .dependsOn(contributors)

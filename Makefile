@@ -10,12 +10,7 @@ www-src = \
 	$(shell find docs/src/main/resources) \
 	docs/src/main/tut/chisel3/docs \
 	docs/src/main/tut/chisel3/index.md \
-	chisel3/README.md \
-	firrtl/README.md \
-	chisel-testers/README.md \
-	chiseltest/README.md \
-	treadle/README.md \
-	diagrammer/README.md
+	chisel3/README.md
 
 chiselTags = \
 	v3.2.8 \
@@ -38,14 +33,7 @@ endif
 	apis-chisel3
 .PRECIOUS: \
 	$(subprojects)/chisel3/%/.git $(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html \
-	$(subprojects)/firrtl/%/.git $(subprojects)/firrtl/%/target/scala-$(scalaVersion)/unidoc/index.html \
-	$(subprojects)/chisel-testers/%/.git $(subprojects)/chisel-testers/%/target/scala-$(scalaVersion)/api/index.html \
-	$(subprojects)/chiseltest/%/.git $(subprojects)/chiseltest/%/target/scala-$(scalaVersion)/api/index.html \
-	$(subprojects)/treadle/%/.git $(subprojects)/treadle/%/target/scala-$(scalaVersion)/api/index.html \
-	$(subprojects)/diagrammer/%/.git $(subprojects)/diagrammer/%/target/scala-$(scalaVersion)/api/index.html \
 	$(apis)/chisel3/v%/index.html \
-	docs/target/site/api/%/ docs/target/site/api/firrtl/%/ docs/target/site/api/chisel-testers/%/ \
-	docs/target/site/api/chiseltest/%/ docs/target/site/api/treadle/%/ docs/target/site/api/diagrammer/%/ \
 	$(apis)/%/
 
 # Build the site into the default directory (docs/target/site)
@@ -60,7 +48,7 @@ clean:
 
 # Remove everything
 mrproper:
-	rm -rf $(buildDir) target project/target firrtl/target treadle/target diagrammer/target
+	rm -rf $(buildDir) target project/target
 
 # Publish Microsite
 publish: all
@@ -101,15 +89,5 @@ docs/target/site/api/%/index.html: $(apis)/chisel3/v%/index.html | docs/target/s
 	git submodule update --init --depth 1 $*
 $(subprojects)/chisel3/%/.git:
 	git clone "https://github.com/freechipsproject/chisel3.git" --depth 1 --branch $* $(dir $@)
-$(subprojects)/firrtl/%/.git:
-	git clone "https://github.com/freechipsproject/firrtl.git" --depth 1 --branch $* $(dir $@)
-$(subprojects)/chisel-testers/%/.git:
-	git clone "https://github.com/freechipsproject/chisel-testers.git" --depth 1 --branch $* $(dir $@)
-$(subprojects)/treadle/%/.git:
-	git clone "https://github.com/freechipsproject/treadle.git" --depth 1 --branch $* $(dir $@)
-$(subprojects)/diagrammer/%/.git:
-	git clone "https://github.com/freechipsproject/diagrammer.git" --depth 1 --branch $* $(dir $@)
-$(subprojects)/chiseltest/%/.git:
-	git clone "https://github.com/ucb-bar/chisel-testers2.git" --depth 1 --branch $* $(dir $@)
 %/:
 	mkdir -p $@

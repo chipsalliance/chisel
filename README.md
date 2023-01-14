@@ -1,6 +1,6 @@
 # Chisel-Lang Website
 
-This repository provides the meta-website for [Chisel](https://github.com/freechipsproject/chisel3), [FIRRTL](https://github.com/freechipsproject/firrtl), and associated projects.
+This repository provides the meta-website for the [Chisel](https://github.com/freechipsproject/chisel3) project.
 
 # Contributing
 
@@ -70,7 +70,7 @@ make docs/src/main/tut/contributors.md
 
 #### 2. Builds Scaladoc for Project Versions
 
-The website includes Scaladoc for both the current and legacy versions of Chisel, FIRRTL, and related projects.
+The website includes Scaladoc for both the current and legacy versions of the Chisel project.
 The specific versions built are defined in the `Makefile`.
 Each version corresponds to an associated git tag for that project.
 
