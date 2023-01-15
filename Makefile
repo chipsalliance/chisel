@@ -34,6 +34,7 @@ endif
 .PRECIOUS: \
 	$(subprojects)/chisel3/%/.git $(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html \
 	$(apis)/chisel3/v%/index.html \
+	docs/target/site/api/%/ \
 	$(apis)/%/
 
 # Build the site into the default directory (docs/target/site)
