@@ -22,16 +22,4 @@ object Version {
     def url: String = s"https://$serialize"
   }
 
-  val versionMap: Map[String, (Repository, SemanticVersion)] = Map(
-    "chisel3"        -> (GitHubRepository("freechipsproject", "chisel3"),        SemanticVersion(3, 1, 7))
-  )
-
-  def docSourceUrl(project: String): Seq[String] = {
-    val repo = versionMap(project)._1.url
-    val branch = versionMap(project)._2.serialize
-    Seq(
-      "-doc-source-url",
-      s"$repo/tree/$branch/€{FILE_PATH}.scala" )
-  }
-
 }
