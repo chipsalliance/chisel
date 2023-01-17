@@ -85,6 +85,8 @@ jobs:
           java-version: '11'
           cache: 'sbt'
       - name: Integration Tests
+        if: github.event_name == 'pull_request' &&
+          ! contains(github.event.pull_request.labels.*.name, 'Skip chiseltest')
         run: sbt integrationTests/test
 
   std:
