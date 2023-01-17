@@ -85,6 +85,11 @@ jobs:
           java-version: '11'
           cache: 'sbt'
       - name: Integration Tests
+        # This is here instead of on the whole job because, if a job is skipped, so are dependent jobs.
+        # If this job were skipped, all_tests_passed would be skipped too.
+        # By having this "if" here, this job returns success so that all_tests_passed will succeed too.
+        if: github.event_name != 'pull_request' ||
+          ! contains(github.event.pull_request.labels.*.name, 'Skip chiseltest')
         run: sbt integrationTests/test
 
   std:
