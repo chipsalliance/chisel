@@ -119,6 +119,7 @@ private[chisel3] class IdGen {
   * currently, the node's name, the full path name, and references to its parent Module and component.
   * These are only valid once the design has been elaborated, and should not be used during its construction.
   */
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 trait InstanceId {
   def instanceName:   String
   def pathName:       String

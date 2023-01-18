@@ -361,4 +361,6 @@ package object chisel3 {
 
   final val deprecatedMFCMessage =
     "this feature will not be supported as part of the migration to the MLIR-based FIRRTL Compiler (MFC). For more information about this migration, please see the Chisel ROADMAP.md."
+
+  final val deprecatedPublicAPIMsg = "APIs in chisel3.internal are not intended to be public"
 }

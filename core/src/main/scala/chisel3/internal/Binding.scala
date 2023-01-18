@@ -8,31 +8,14 @@ import chisel3.internal.firrtl.LitArg
 
 import scala.collection.immutable.VectorMap
 
-/** Requires that a node is hardware ("bound")
-  */
+@deprecated(deprecatedPublicAPIMsg + ". Use chisel3.experimental.requireIsHardware instead", "Chisel 3.6")
 object requireIsHardware {
-  def apply(node: Data, msg: String = ""): Unit = {
-    node._parent match { // Compatibility layer hack
-      case Some(x: BaseModule) => x._compatAutoWrapPorts
-      case _ =>
-    }
-    if (!node.isSynthesizable) {
-      val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw ExpectedHardwareException(
-        s"$prefix'$node' must be hardware, " +
-          "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?"
-      )
-    }
-  }
+  def apply(node: Data, msg: String = ""): Unit = chisel3.experimental.requireIsHardware.apply(node, msg)
 }
 
-/** Requires that a node is a chisel type (not hardware, "unbound")
-  */
+@deprecated(deprecatedPublicAPIMsg + ". Use chisel3.experimental.requireIsChiselType instead", "Chisel 3.6")
 object requireIsChiselType {
-  def apply(node: Data, msg: String = ""): Unit = if (node.isSynthesizable) {
-    val prefix = if (msg.nonEmpty) s"$msg " else ""
-    throw ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
-  }
+  def apply(node: Data, msg: String = ""): Unit = chisel3.experimental.requireIsChiselType.apply(node, msg)
 }
 
 // Element only direction used for the Binding system only.
@@ -103,38 +86,46 @@ sealed trait ConditionalDeclarable extends TopBinding {
 
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ReadOnlyBinding
     with ConditionalDeclarable
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ChildBinding(parent: Data) extends Binding {
   def location: Option[BaseModule] = parent.topBinding.location
 }
 
 /** Special binding for Vec.sample_element */
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
   def location = parent.topBinding.location
 }
 
 /** Special binding for Mem types */
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
   def location: Option[BaseModule] = parent._parent
 }
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DontCareBinding() extends UnconstrainedBinding
 
 // Views currently only support 1:1 Element-level mappings
@@ -153,14 +144,18 @@ private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Data]) exte
 }
 
 /** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 private[chisel3] case object CrossModuleBinding extends TopBinding {
   def location = None
 }
 
 sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 // Literal binding attached to a element that is not part of a Bundle.
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ElementLitBinding(litArg: LitArg) extends LitBinding
 // Literal binding attached to the root of a Bundle, containing literal values of its children.
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
 // Literal binding attached to the root of a Vec, containing literal values of its children.
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding

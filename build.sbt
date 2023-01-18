@@ -36,6 +36,14 @@ lazy val commonSettings = Seq(
   }
 )
 
+lazy val warningSuppression = Seq(
+  scalacOptions += "-Wconf:" + Seq(
+    "msg=APIs in chisel3.internal:s",
+    "msg=Importing from firrtl:s",
+    "msg=migration to the MLIR:s"
+  ).mkString(",")
+)
+
 lazy val publishSettings = Seq(
   versionScheme := Some("pvp"),
   publishMavenStyle := true,
@@ -171,6 +179,7 @@ lazy val core = (project in file("core"))
   )
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
+  .settings(warningSuppression: _*)
   .settings(
     name := "chisel3-core",
     libraryDependencies ++= Seq(
@@ -178,7 +187,6 @@ lazy val core = (project in file("core"))
       "com.lihaoyi" %% "os-lib" % "0.8.1"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
-      "-deprecation",
       "-explaintypes",
       "-feature",
       "-language:reflectiveCalls",
@@ -202,6 +210,7 @@ lazy val chisel = (project in file("."))
   .dependsOn(macros)
   .dependsOn(core)
   .aggregate(macros, core, plugin)
+  .settings(warningSuppression: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",

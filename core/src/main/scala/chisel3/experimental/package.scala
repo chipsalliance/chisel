@@ -57,8 +57,33 @@ package object experimental {
     }
   }
 
-  val requireIsHardware = chisel3.internal.requireIsHardware
-  val requireIsChiselType = chisel3.internal.requireIsChiselType
+  /** Requires that a node is hardware ("bound")
+    */
+  object requireIsHardware {
+    def apply(node: Data, msg: String = ""): Unit = {
+      node._parent match { // Compatibility layer hack
+        case Some(x: BaseModule) => x._compatAutoWrapPorts
+        case _ =>
+      }
+      if (!node.isSynthesizable) {
+        val prefix = if (msg.nonEmpty) s"$msg " else ""
+        throw ExpectedHardwareException(
+          s"$prefix'$node' must be hardware, " +
+            "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?"
+        )
+      }
+    }
+  }
+
+  /** Requires that a node is a chisel type (not hardware, "unbound")
+    */
+  object requireIsChiselType {
+    def apply(node: Data, msg: String = ""): Unit = if (node.isSynthesizable) {
+      val prefix = if (msg.nonEmpty) s"$msg " else ""
+      throw ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
+    }
+  }
+
   type Direction = ActualDirection
   val Direction = ActualDirection
 
