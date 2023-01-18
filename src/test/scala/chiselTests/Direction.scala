@@ -3,11 +3,11 @@
 package chiselTests
 
 import org.scalatest._
-import chisel3._
-import circt.stage.ChiselStage
-import chisel3.experimental.{OpaqueType, AutoCloneType}
 import org.scalatest.matchers.should.Matchers
+import chisel3._
+import chisel3.experimental.{AutoCloneType, OpaqueType}
 
+import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
 
 class DirectionedBundle extends Bundle {

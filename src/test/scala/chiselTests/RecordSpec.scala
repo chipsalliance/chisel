@@ -10,7 +10,7 @@ import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
 import chisel3.reflect.DataMirror
 
-import scala.collection.immutable.SeqMap
+import scala.collection.immutable.{ListMap, SeqMap}
 
 trait RecordSpecUtils {
   class MyBundle extends Bundle {
@@ -221,16 +221,6 @@ trait RecordSpecUtils {
   }
 }
 
-/* 
-inline this and add negative tests for this
-final class CustomBundleBroken(elts: (String, Data)*) extends Record with AutoCloneType {
-  val elements = ListMap(elts.map {
-    case (field, elt) =>
-      field -> elt
-  }: _*)
-  def apply(elt: String): Data = elements(elt)
-} */
-
 class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   behavior.of("Records")
 
@@ -412,5 +402,22 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
       })
     }
     e.getMessage should include("does not return the same objects when calling .elements multiple times")
+  }
+
+  "Bundle types which couldn't be cloned by the plugin" should "throw an error" in {
+    class CustomBundleBroken(elts: (String, Data)*) extends Record with AutoCloneType {
+      val elements = ListMap(elts.map {
+        case (field, elt) =>
+          field -> elt
+      }: _*)
+      def apply(elt: String): Data = elements(elt)
+    }
+    val err = the[ChiselException] thrownBy {
+      val recordType = new CustomBundleBroken("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
+      val record = Wire(recordType)
+      val uint = record.asUInt
+      val record2 = uint.asTypeOf(recordType)
+    }
+    err.getMessage should include("bundle plugin was unable to clone")
   }
 }

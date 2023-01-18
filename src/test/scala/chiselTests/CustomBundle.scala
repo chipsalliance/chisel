@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{AutoCloneType, requireIsChiselType, DataMirror}
+import chisel3.experimental.{requireIsChiselType, AutoCloneType, DataMirror}
 import scala.collection.immutable.ListMap
 
 // An example of how Record might be extended
