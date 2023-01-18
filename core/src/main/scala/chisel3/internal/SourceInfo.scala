@@ -47,24 +47,6 @@ case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo 
   def makeMessage(f: String => String): String = f(s"@[$filename $line:$col]")
 }
 
-/** Provides a macro that returns the source information at the invocation point.
-  */
-object SourceInfoMacro {
-  def generate_source_info(c: Context): c.Tree = {
-    import c.universe._
-    val p = c.enclosingPosition
-
-    val userDir = sys.props.get("user.dir") // Figure out what to do if not provided
-    val projectRoot = sys.props.get("chisel.project.root")
-    val root = projectRoot.orElse(userDir)
-
-    val path = root.map(r => p.source.file.canonicalPath.stripPrefix(r)).getOrElse(p.source.file.name)
-    val pathNoStartingSlash = if (path(0) == '/') path.tail else path
-
-    q"_root_.chisel3.internal.sourceinfo.SourceLine($pathNoStartingSlash, ${p.line}, ${p.column})"
-  }
-}
-
 object SourceInfo {
   implicit def materialize: SourceInfo = macro SourceInfoMacro.generate_source_info
 }

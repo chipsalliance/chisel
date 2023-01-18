@@ -9,7 +9,7 @@ import chisel3.experimental.{annotate, requireIsHardware, SourceInfo, Unlocatabl
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfomacros._
+import chisel3.internal.sourceinfo._
 import chisel3.internal.{throwException, Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId}
 
 import chisel3.experimental.EnumAnnotations._

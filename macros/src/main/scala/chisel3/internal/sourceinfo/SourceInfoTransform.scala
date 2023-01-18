@@ -3,7 +3,7 @@
 // This file transform macro definitions to explicitly add implicit source info to Chisel method
 // calls.
 
-package chisel3.internal.sourceinfomacros
+package chisel3.internal.sourceinfo
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context

@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
 import chisel3.internal.Builder
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo}
-import chisel3.internal.sourceinfomacros.InstanceTransform
+import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefModule, Port}
 import firrtl.annotations.IsModule
 import chisel3.internal.throwException

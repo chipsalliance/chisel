@@ -9,7 +9,7 @@ import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interva
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
-import chisel3.internal.sourceinfomacros._
+import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl._
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias

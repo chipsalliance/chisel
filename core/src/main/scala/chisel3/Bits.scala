@@ -8,7 +8,7 @@ import chisel3.experimental.{FixedPoint, Interval, SourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfomacros.{
+import chisel3.internal.sourceinfo.{
   IntLiteralApplyTransform,
   SourceInfoTransform,
   SourceInfoWhiteboxTransform,

@@ -6,7 +6,7 @@ import scala.language.experimental.macros
 
 import chisel3._
 import chisel3.experimental.SourceInfo
-import chisel3.internal.sourceinfomacros.SourceInfoTransform
+import chisel3.internal.sourceinfo.SourceInfoTransform
 
 /** Concatenates elements of the input, in order, together.
   *

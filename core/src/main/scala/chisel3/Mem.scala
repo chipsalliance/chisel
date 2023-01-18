@@ -9,7 +9,7 @@ import firrtl.{ir => fir}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfomacros.{MemTransform, SourceInfoTransform}
+import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
 import chisel3.experimental.{SourceInfo, SourceLine, UnlocatableSourceInfo}
 
 object Mem {

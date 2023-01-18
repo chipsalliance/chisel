@@ -8,7 +8,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.experimental.SourceInfo
-import chisel3.internal.sourceinfomacros.SourceInfoTransform
+import chisel3.internal.sourceinfo.SourceInfoTransform
 
 /** Utility for constructing hardware registers
   *

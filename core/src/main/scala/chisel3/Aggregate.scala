@@ -13,7 +13,7 @@ import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfomacros.{CompileOptionsTransform, SourceInfoTransform, VecTransform}
+import chisel3.internal.sourceinfo.{CompileOptionsTransform, SourceInfoTransform, VecTransform}
 
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable

@@ -144,7 +144,7 @@ package object Chisel {
   object Vec extends chisel3.VecFactory {
     import chisel3.CompileOptions
     import chisel3.experimental._
-    import chisel3.internal.sourceinfomacros.VecTransform
+    import chisel3.internal.sourceinfo.VecTransform
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
