@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 
 class BasicTester extends Module() {
   // The testbench has no IOs, rather it should communicate using printf, assert, and stop.

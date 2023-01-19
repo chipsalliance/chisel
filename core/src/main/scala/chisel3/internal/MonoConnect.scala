@@ -3,13 +3,12 @@
 package chisel3.internal
 
 import chisel3._
-import chisel3.experimental.{Analog, BaseModule, FixedPoint, Interval}
+import chisel3.experimental.{Analog, BaseModule, FixedPoint, Interval, SourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo.SourceInfo
 import _root_.firrtl.passes.CheckTypes
 import scala.annotation.tailrec
 

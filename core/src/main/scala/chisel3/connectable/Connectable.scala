@@ -3,7 +3,7 @@
 package chisel3
 package connectable
 
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 import chisel3.reflect.DataMirror
 import experimental.{prefix, requireIsHardware}
 

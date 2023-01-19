@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.reflect.DataMirror
-import chisel3.internal.sourceinfo.UnlocatableSourceInfo
+import chisel3.experimental.UnlocatableSourceInfo
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Unserializable

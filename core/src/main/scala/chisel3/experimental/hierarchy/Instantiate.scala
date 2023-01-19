@@ -9,10 +9,9 @@ import scala.reflect.runtime.{universe => ru}
 import scala.collection.mutable
 
 import chisel3._
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.DataMirror
 import chisel3.experimental.DataMirror.internal.isSynthesizable
-import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder
 import chisel3.ExplicitCompileOptions
 

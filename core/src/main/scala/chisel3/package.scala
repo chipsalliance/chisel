@@ -8,7 +8,7 @@ import scala.collection.mutable
   */
 package object chisel3 {
   import internal.chiselRuntimeDeprecated
-  import internal.sourceinfo.{DeprecatedSourceInfo, UnlocatableSourceInfo}
+  import experimental.{DeprecatedSourceInfo, UnlocatableSourceInfo}
   import internal.firrtl.{Port, Width}
   import internal.Builder
 
