@@ -133,11 +133,11 @@ object ShiftRegister {
     * @param useDualSRAMPort dual port or single port SRAM based implementation
     * @param name name of SyncReadMem object
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool, useDualSRAMPort: Boolean, name: Option[String]): T =
+  def mem[T <: Data](in: T, n: Int, en: Bool, useDualSRAMPort: Boolean, name: Option[String]): T =
     macro SourceInfoTransform.inNEnUseDualSRAMpNameArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](
+  def do_mem[T <: Data](
     in:              T,
     n:               Int,
     en:              Bool,
@@ -146,9 +146,9 @@ object ShiftRegister {
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): T = _apply_impl_sram(in, n, en, useDualSRAMPort, name)
+  ): T = _apply_impl_mem(in, n, en, useDualSRAMPort, name)
 
-  private def _apply_impl_sram[T <: Data](
+  private def _apply_impl_mem[T <: Data](
     in:              T,
     n:               Int,
     en:              Bool = true.B,
