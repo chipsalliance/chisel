@@ -452,9 +452,12 @@ In some cases though, the plugin may not be able to clone the Bundle fields. The
 
 There are a few ways around this issue - you can try wrapping the problematic fields in Input(...), Output(...), or Flipped(...) if appropriate. You can also try manually cloning each field in the Bundle using the `chiselTypeClone` method in `chisel3.reflect.DataMirror`. Here's an example with the Bundle whose fields won't get cloned:
 
-```scala mdoc
+```scala mdoc:invisible
  import chisel3._
+ import scala.collection.immutable.ListMap
+```
 
+```scala mdoc 
  class CustomBundleBroken(elts: (String, Data)*) extends Record {
  	val elements = ListMap(elts.map {
  		case (field, elt) =>
@@ -468,10 +471,9 @@ You can use `chiselTypeClone` to clone the elements as:
 
 
 ```scala mdoc
- import chisel3._
  import chisel3.reflect.DataMirror
  
- class CustomBundleBroken(elts: (String, Data)*) extends Record {
+ class CustomBundleFixed(elts: (String, Data)*) extends Record {
  	val elements = ListMap(elts.map {
  		case (field, elt) =>
 		field -> DataMirror.internal.chiselTypeClone(elt)
