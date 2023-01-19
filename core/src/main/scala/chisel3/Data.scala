@@ -547,9 +547,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
         case MonoConnectException(message) =>
-          throwException(
-            s"Connection between sink ($this) and source ($that) failed @: $message"
-          )
+          Builder.error(s"Connection between sink ($this) and source ($that) failed @: $message")
+          //throwException(
+          //  s"Connection between sink ($this) and source ($that) failed @: $message"
+          //)
       }
     } else {
       this.firrtlPartialConnect(that)
@@ -576,9 +577,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
         case BiConnectException(message) =>
-          throwException(
-            s"Connection between left ($this) and source ($that) failed @$message"
-          )
+          Builder.error(s"Connection between left ($this) and source ($that) failed @$message")
+          //throwException(
+          //  s"Connection between left ($this) and source ($that) failed @$message"
+          //)
       }
     } else {
       if (connectCompileOptions.migrateBulkConnections)
