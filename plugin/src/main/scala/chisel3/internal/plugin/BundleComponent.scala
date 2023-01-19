@@ -41,9 +41,9 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
-    val bundleTpe:      Type = inferType(tq"chisel3.Bundle")
-    val recordTpe:      Type = inferType(tq"chisel3.Record")
-    val autoCloneTpe:   Type = inferType(tq"chisel3.experimental.AutoCloneType")
+    val bundleTpe: Type = inferType(tq"chisel3.Bundle")
+    val recordTpe: Type = inferType(tq"chisel3.Record")
+    // val autoCloneTpe:   Type = inferType(tq"chisel3.experimental.AutoCloneType")
     val dataTpe:        Type = inferType(tq"chisel3.Data")
     val ignoreSeqTpe:   Type = inferType(tq"chisel3.IgnoreSeqInBundle")
     val seqOfDataTpe:   Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
@@ -55,7 +55,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     def isARecord(sym: Symbol): Boolean = { sym.tpe <:< recordTpe }
 
-    def isAnAutoCloneType(sym: Symbol): Boolean = { sym.tpe <:< autoCloneTpe }
+    // def isAnAutoCloneType(sym: Symbol): Boolean = { sym.tpe <:< autoCloneTpe }
 
     def isIgnoreSeqInBundle(sym: Symbol): Boolean = { sym.tpe <:< ignoreSeqTpe }
 
@@ -116,16 +116,6 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         case _ =>
       }
       (primaryConstructor, paramAccessors.toList)
-    }
-
-    def errorOnCloneType(body: List[Tree]): Unit = {
-      body.foreach {
-        case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
-          val msg = "cloneType is unsupported starting Chisel 3.6. " +
-            "Mix in chisel3.experimental.AutoCloneType to let the compiler plugin generate it. "
-          global.reporter.error(d.pos, msg)
-        case _ => // Do nothing
-      }
     }
 
     def generateAutoCloneType(record: ClassDef, thiz: global.This, isBundle: Boolean): Option[Tree] = {
@@ -242,16 +232,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     override def transform(tree: Tree): Tree = tree match {
 
       case record: ClassDef if isARecord(record.symbol) && !record.mods.hasFlag(Flag.ABSTRACT) =>
-        val isBundle:        Boolean = isABundle(record.symbol)
-        val isAutoCloneType: Boolean = isAnAutoCloneType(record.symbol)
-
-        if (!isAutoCloneType) {
-          errorOnCloneType(record.impl.body)
-          // Other than warning, there is nothing to do on Records that don't mixin AutoCloneType
-          return super.transform(record)
-        }
-
-        val thiz: global.This = gen.mkAttributedThis(record.symbol)
+        val isBundle: Boolean = isABundle(record.symbol)
+        val thiz:     global.This = gen.mkAttributedThis(record.symbol)
 
         // ==================== Generate _cloneTypeImpl ====================
         val cloneTypeImplOpt = generateAutoCloneType(record, thiz, isBundle)

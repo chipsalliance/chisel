@@ -938,17 +938,15 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
-  trait AutoCloneType { self: Record =>
-    override def cloneType: this.type = _cloneTypeImpl.asInstanceOf[this.type]
-  }
-
   private def checkClone(clone: Record): Unit = {
     for ((name, field) <- elements) {
       if (clone.elements(name) eq field) {
         throw new AutoClonetypeException(
           s"The bundle plugin was unable to clone $clone that has field '$name' aliased with base $this." +
+            "This likely happened because you tried nesting Data arguments inside of other data structures." +
             " Try wrapping the field(s) in Input(...), Output(...), or Flipped(...) if appropriate." +
-            " As a last resort, you can override cloneType manually."
+            " As a last resort, you can call chisel3.reflect.DataMirror.internal.chiselTypeClone on any nested Data arguments." +
+            "See the cookbok entry on this issue for more details."
         )
       }
     }
@@ -1268,11 +1266,6 @@ package experimental {
 
   class BundleLiteralException(message: String) extends ChiselException(message)
   class VecLiteralException(message: String) extends ChiselException(message)
-
-  /** Indicates that the compiler plugin should generate [[clonType]] for this typll user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
-    */
-  @deprecated("AutoCloneType is handled by the plugin", "3.6")
-  trait AutoCloneType
 }
 
 /** Base class for data types defined as a bundle of other data types.
@@ -1308,7 +1301,7 @@ package experimental {
   *   }
   * }}}
   */
-abstract class Bundle(implicit compileOptions: CompileOptions) extends Record with experimental.AutoCloneType {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
   private def mustUsePluginMsg: String =
     "The Chisel compiler plugin is now required for compiling Chisel code. " +

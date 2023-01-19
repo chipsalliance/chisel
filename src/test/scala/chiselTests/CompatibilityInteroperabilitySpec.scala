@@ -4,7 +4,6 @@ package chiselTests
 
 import scala.collection.immutable.ListMap
 import circt.stage.ChiselStage.emitCHIRRTL
-import chisel3.experimental.AutoCloneType
 
 import scala.annotation.nowarn
 
@@ -18,7 +17,7 @@ object CompatibilityComponents {
     val a = UInt(width = 32)
     val b = UInt(width = 32).flip
   }
-  class ChiselRecord extends Record with AutoCloneType {
+  class ChiselRecord extends Record {
     val elements = ListMap("a" -> UInt(width = 32), "b" -> UInt(width = 32).flip)
   }
 
@@ -52,7 +51,7 @@ object Chisel3Components {
     val b = Input(UInt(32.W))
   }
 
-  class Chisel3Record extends Record with AutoCloneType {
+  class Chisel3Record extends Record {
     val elements = ListMap("a" -> Output(UInt(32.W)), "b" -> Input(UInt(32.W)))
   }
 
@@ -656,7 +655,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       import chisel3._
       import scala.collection.immutable.SeqMap
 
-      class MyRecord(gen: () => Data) extends Record with chisel3.experimental.AutoCloneType {
+      class MyRecord(gen: () => Data) extends Record {
         val elements = SeqMap("genDirectioned" -> Output(gen()), "genUndirectioned" -> gen())
       }
 

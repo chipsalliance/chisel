@@ -144,7 +144,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
   }
 
   "record literals" should "do the right thing" in {
-    class MyRecord extends Record with AutoCloneType {
+    class MyRecord extends Record {
       override val elements = ListMap(
         "a" -> UInt(8.W),
         "b" -> Bool()

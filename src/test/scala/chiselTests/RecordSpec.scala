@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{AutoCloneType, OpaqueType}
+import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
@@ -111,7 +111,7 @@ trait RecordSpecUtils {
     require(!DataMirror.checkTypeEquivalence(wire1, wire2))
   }
 
-  class SingleElementRecord extends Record with OpaqueType with AutoCloneType {
+  class SingleElementRecord extends Record with OpaqueType {
     private val underlying = UInt(8.W)
     val elements = SeqMap("" -> underlying)
 
@@ -132,12 +132,12 @@ trait RecordSpecUtils {
     out := in1 + in2
   }
 
-  class InnerRecord extends Record with OpaqueType with AutoCloneType {
+  class InnerRecord extends Record with OpaqueType {
     val k = new InnerInnerRecord
     val elements = SeqMap("" -> k)
   }
 
-  class InnerInnerRecord extends Record with OpaqueType with AutoCloneType {
+  class InnerInnerRecord extends Record with OpaqueType {
     val k = new SingleElementRecord
     val elements = SeqMap("" -> k)
   }
@@ -160,7 +160,7 @@ trait RecordSpecUtils {
     io.bar.elements.head._2 := io.foo.elements.head._2
   }
 
-  class NamedSingleElementRecord extends Record with OpaqueType with AutoCloneType {
+  class NamedSingleElementRecord extends Record with OpaqueType {
     private val underlying = UInt(8.W)
     val elements = SeqMap("unused" -> underlying)
   }
@@ -171,7 +171,7 @@ trait RecordSpecUtils {
     out := in
   }
 
-  class ErroneousOverride extends Record with OpaqueType with AutoCloneType {
+  class ErroneousOverride extends Record with OpaqueType {
     private val underlyingA = UInt(8.W)
     private val underlyingB = UInt(8.W)
     val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
@@ -185,7 +185,7 @@ trait RecordSpecUtils {
     out := in
   }
 
-  class NotActuallyOpaqueType extends Record with OpaqueType with AutoCloneType {
+  class NotActuallyOpaqueType extends Record with OpaqueType {
     private val underlyingA = UInt(8.W)
     private val underlyingB = UInt(8.W)
     val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
@@ -209,12 +209,12 @@ trait RecordSpecUtils {
       if (boxed) new Boxed(gen) else new Unboxed(gen)
     }
   }
-  class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] with AutoCloneType {
+  class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] {
     def boxed = true
     lazy val elements = SeqMap("underlying" -> gen.cloneType)
     def underlying = elements.head._2
   }
-  class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType with AutoCloneType {
+  class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType {
     def boxed = false
     lazy val elements = SeqMap("" -> gen.cloneType)
     def underlying = elements.head._2
@@ -241,7 +241,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   they should "not allow aliased fields" in {
-    class AliasedFieldRecord extends Record with AutoCloneType {
+    class AliasedFieldRecord extends Record {
       val foo = UInt(8.W)
       val elements = SeqMap("foo" -> foo, "bar" -> foo)
     }
@@ -393,7 +393,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   "Record with unstable elements" should "error" in {
-    class MyRecord extends Record with AutoCloneType {
+    class MyRecord extends Record {
       def elements = SeqMap("a" -> UInt(8.W))
     }
     val e = the[ChiselException] thrownBy {
@@ -405,7 +405,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   }
 
   "Bundle types which couldn't be cloned by the plugin" should "throw an error" in {
-    class CustomBundleBroken(elts: (String, Data)*) extends Record with AutoCloneType {
+    class CustomBundleBroken(elts: (String, Data)*) extends Record {
       val elements = ListMap(elts.map {
         case (field, elt) =>
           field -> elt
@@ -418,6 +418,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
       val uint = record.asUInt
       val record2 = uint.asTypeOf(recordType)
     }
+
     err.getMessage should include("bundle plugin was unable to clone")
   }
 }

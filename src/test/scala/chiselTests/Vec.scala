@@ -7,7 +7,6 @@ import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import circt.stage.ChiselStage
 import org.scalacheck._
-import chisel3.experimental.AutoCloneType
 import scala.annotation.tailrec
 
 class LitTesterMod(vecSize: Int) extends Module {
@@ -528,7 +527,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       out := reg(idx)
     }
     class EmptyBundle extends Bundle
-    class EmptyRecord extends Record with AutoCloneType {
+    class EmptyRecord extends Record {
       val elements = collection.immutable.ListMap.empty
     }
     for (gen <- List(new EmptyBundle, new EmptyRecord)) {
