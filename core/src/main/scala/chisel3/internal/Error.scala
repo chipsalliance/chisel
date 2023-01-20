@@ -248,7 +248,7 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
     if (!allErrors.isEmpty) {
       throw new Errors(
         "Fatal errors during hardware elaboration. Look above for error list. " +
-          "Rerun with --throw-on-first-error if you wish to see a stack trace."
+          "Rerun with --throw-on-first-error if you wish to see a stack trace.\n" + allErrors.map(e => s"${e.tag} ${e.msg}").mkString("\n")
       )
     } else {
       // No fatal errors, clear accumulated warnings since they've been reported
