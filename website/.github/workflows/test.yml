@@ -1,0 +1,97 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  api-docs:
+    name: API Docs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [chisel3]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Calculate API Docs Cache Key
+        id: calc-key
+        run: |
+          KEY=$(make --always-make --dry-run apis-${{ matrix.project }} | sha256sum | awk '{print $1}')
+          echo "::set-output name=cache_key::${KEY}"
+      - name: Cache API Docs
+        uses: actions/cache@v2
+        with:
+          path: build/api/${{ matrix.project }}
+          key: ${{ runner.os }}-${{ matrix.project }}-${{ steps.calc-key.outputs.cache_key }}
+          # On miss, still start from previous value for incremental rebuild
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.project }}
+      - name: ${{ matrix.project }} APIs
+        run: make apis-${{ matrix.project }}
+      - name: Tar build artifacts
+        run: tar zcf build/api/${{ matrix.project }}.tar.gz build/api/${{ matrix.project }}
+      - name: Share API Docs
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.project }}-api-docs
+          path: build/api/${{ matrix.project }}.tar.gz
+
+  website:
+    name: Build & Deploy Website
+    needs: [api-docs]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+      - name: Setup Jekyll
+        run: |
+          gem install jekyll -v 4.2.0
+          gem install jekyll-redirect-from
+      - name: Download all built API docs
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+      - name: Untar build artifacts
+        run: for f in $(find artifacts -name "*.tar.gz"); do tar zxf "$f"; done
+      - name: Fetch submodules
+        run: git submodule update --init --recursive
+      - name: Build the microsite
+        run: make
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
+        uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: docs/target/site
+
+  # Sentinel job to simplify how we specify which checks need to pass in branch
+  # protection and in Mergify
+  #
+  # When adding new jobs, please add them to `needs` below
+  all_tests_passed:
+    name: "all tests passed"
+    needs: [api-docs, website]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo Success!
+

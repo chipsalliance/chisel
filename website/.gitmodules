@@ -1,0 +1,4 @@
+[submodule "chisel3"]
+	path = chisel3
+	url = https://github.com/freechipsproject/chisel3.git
+	branch = 3.5.x
