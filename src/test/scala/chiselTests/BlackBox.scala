@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
-import circt.stage.ChiselStage
+import _root_.circt.stage.ChiselStage
 
 class BlackBoxInverter extends BlackBox {
   val io = IO(new Bundle() {

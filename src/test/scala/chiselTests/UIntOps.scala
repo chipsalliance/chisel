@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-import circt.stage.ChiselStage
+import _root_.circt.stage.ChiselStage
 import org.scalacheck.Shrink
 import org.scalatest.matchers.should.Matchers
 

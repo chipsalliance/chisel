@@ -18,7 +18,7 @@ private class SizeOfIntrinsic [T <: Data](gen: T) extends ExtModule {
     def toFirrtl =
       Intrinsic(toTarget, "circt.sizeof")
   })
-  override val desiredName = "SizeOf" + _id.toString()
+  override val desiredName = "SizeOf"
 }
 
 object SizeOf {
