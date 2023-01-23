@@ -23,6 +23,7 @@ import chisel3.internal.InstanceId
 import firrtl._
 import firrtl.annotations.{Annotation, SingleTargetAnnotation}
 import firrtl.annotations.{CircuitTarget, ModuleTarget, InstanceTarget, ReferenceTarget, Target}
+import scala.annotation.nowarn
 ```
 
 ### Define an `Annotation` and a `Transform`
@@ -97,6 +98,7 @@ This is delaying the generation of the `InfoAnnotation` until the full circuit i
 This annotator also mixes in the `RunFirrtlTransform` trait (abstract in the `transformClass` method) because this annotator, whenever used, should result in the FIRRTL compiler running the custom `InfoTransform`.
 
 ```scala mdoc:silent
+@nowarn("msg=InstanceId")
 object InfoAnnotator {
   def info(component: InstanceId, info: String): Unit = {
     annotate(new ChiselAnnotation with RunFirrtlTransform {

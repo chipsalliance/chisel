@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.experimental.FixedPoint
+import chisel3.experimental.{FixedPoint, SourceInfo}
 import chisel3.internal.{prefix, throwException}
 
 import scala.language.experimental.macros

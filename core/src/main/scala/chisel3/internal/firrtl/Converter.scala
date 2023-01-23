@@ -3,7 +3,7 @@
 package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
 

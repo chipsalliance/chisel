@@ -314,7 +314,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
   describe("Instantiate") {
     it("should provide source locators for module instances") {
       // Materialize the source info so we can use it in the check
-      implicit val info = implicitly[chisel3.internal.sourceinfo.SourceInfo]
+      implicit val info = implicitly[chisel3.experimental.SourceInfo]
       val chirrtl = convert(new Top {
         val inst = Instantiate(new OneArg(3))
       }).serialize

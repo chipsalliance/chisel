@@ -6,7 +6,8 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel3.experimental.SourceInfo
+import chisel3.internal.sourceinfo.SourceInfoTransform
 import scala.language.experimental.macros
 
 /** Creates repetitions of each bit of the input in order.

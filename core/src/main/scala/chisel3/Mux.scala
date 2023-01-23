@@ -6,7 +6,8 @@ import scala.language.experimental.macros
 
 import chisel3.internal._
 import chisel3.internal.Builder.pushOp
-import chisel3.internal.sourceinfo.{MuxTransform, SourceInfo}
+import chisel3.experimental.SourceInfo
+import chisel3.internal.sourceinfo.MuxTransform
 import chisel3.internal.firrtl._
 import chisel3.internal.firrtl.PrimOp._
 

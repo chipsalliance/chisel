@@ -5,12 +5,11 @@ package chisel3
 import scala.util.Try
 import scala.language.experimental.macros
 import scala.annotation.nowarn
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
 
