@@ -3,7 +3,7 @@ package chiselTests.util
 import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers.BasicTester
-import chisel3.util.SizeOf
+import chisel3.util.circt.SizeOf
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

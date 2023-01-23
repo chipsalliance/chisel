@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.util
+package chisel3.util.circt
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
