@@ -2,6 +2,8 @@
 
 package chisel3.util.circt
 
+import scala.util.hashing.MurmurHash3
+
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
 
@@ -18,7 +20,7 @@ private class SizeOfIntrinsic [T <: Data](gen: T) extends ExtModule {
     def toFirrtl =
       Intrinsic(toTarget, "circt.sizeof")
   })
-  override val desiredName = "SizeOf"
+  override val desiredName = "SizeOf_" + MurmurHash3.stringHash(gen.toString()).toHexString
 }
 
 object SizeOf {

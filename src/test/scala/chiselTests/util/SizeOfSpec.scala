@@ -13,9 +13,12 @@ import scala.io.Source
 class SizeOfTop extends Module {
   val io = IO(new Bundle{
     val w = Input(UInt(65.W))
+    val x = Input(UInt(66.W))
     val outw = UInt(32.W)
+    val outx = UInt(32.W)
   })
   io.outw  := SizeOf(io.w)
+  io.outx  := SizeOf(io.x)
 }
 
 /** A test for intrinsics.  Since chisel is producing intrinsics as tagged 
@@ -26,10 +29,15 @@ class SizeOfTop extends Module {
 class SizeOfSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitChirrtl(new SizeOfTop)
-    val a = """extmodule SizeOf8""".r
-    (fir should include).regex(a)
-    val b = """defname = SizeOf8""".r
-    (fir should include).regex(b)
+    println(fir)
+    val a1 = """extmodule SizeOf_4""".r
+    (fir should include).regex(a1)
+    val b1 = """defname = SizeOf_4""".r
+    (fir should include).regex(b1)
+    val a2 = """extmodule SizeOf_e""".r
+    (fir should include).regex(a2)
+    val b2 = """defname = SizeOf_e""".r
+    (fir should include).regex(b2)
 
     // The second elaboration uses a unique name since the Builder is reused (?)
     val anno = ChiselStage.emitAnnotations(new SizeOfTop)
