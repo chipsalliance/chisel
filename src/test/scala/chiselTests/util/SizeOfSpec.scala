@@ -11,21 +11,22 @@ import org.scalatest.matchers.should.Matchers
 import scala.io.Source
 
 class SizeOfTop extends Module {
-  val io = IO(new Bundle{
+  val io = IO(new Bundle {
     val w = Input(UInt(65.W))
     val x = Input(UInt(66.W))
     val outw = UInt(32.W)
     val outx = UInt(32.W)
   })
-  io.outw  := SizeOf(io.w)
-  io.outx  := SizeOf(io.x)
+  io.outw := SizeOf(io.w)
+  io.outx := SizeOf(io.x)
 }
 
-/** A test for intrinsics.  Since chisel is producing intrinsics as tagged 
- * extmodules (for now), we explicitly test the chirrtl and annotations rather
- * than the processed firrtl or verilog.  It is worth noting that annotations 
- * are implemented (for now) in a way which makes the output valid for all
- * firrtl compilers, hence we write a localized, not end-to-end test */
+/** A test for intrinsics.  Since chisel is producing intrinsics as tagged
+  * extmodules (for now), we explicitly test the chirrtl and annotations rather
+  * than the processed firrtl or verilog.  It is worth noting that annotations
+  * are implemented (for now) in a way which makes the output valid for all
+  * firrtl compilers, hence we write a localized, not end-to-end test
+  */
 class SizeOfSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitChirrtl(new SizeOfTop)

@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: Apache-2.0
 
 /** This has to be in a separate file and package to generate the correct class
