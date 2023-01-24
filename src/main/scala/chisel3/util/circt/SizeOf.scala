@@ -17,7 +17,7 @@ private class SizeOfIntrinsic[T <: Data](gen: T) extends ExtModule {
   val i = IO(Input(gen));
   val size = IO(Output(UInt(32.W)));
   annotate(new ChiselAnnotation {
-    def toFirrtl =
+    override def toFirrtl =
       Intrinsic(toTarget, "circt.sizeof")
   })
   override val desiredName = "SizeOf_" + MurmurHash3.stringHash(gen.toString()).toHexString

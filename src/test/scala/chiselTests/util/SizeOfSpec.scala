@@ -30,7 +30,6 @@ class SizeOfTop extends Module {
 class SizeOfSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitChirrtl(new SizeOfTop)
-    println(fir)
     val a1 = """extmodule SizeOf_4""".r
     (fir should include).regex(a1)
     val b1 = """defname = SizeOf_4""".r
@@ -41,8 +40,12 @@ class SizeOfSpec extends AnyFlatSpec with Matchers {
     (fir should include).regex(b2)
 
     // The second elaboration uses a unique name since the Builder is reused (?)
-    val anno = ChiselStage.emitAnnotations(new SizeOfTop)
     val c = """Intrinsic\(~SizeOfTop\|SizeOf.*,circt.sizeof\)"""
-    (anno should include).regex(c)
+    ((new chisel3.stage.ChiselStage)
+      .execute(
+        args = Array("--no-run-firrtl"),
+        annotations = Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new SizeOfTop))
+      )
+      .mkString("\n") should include).regex(c)
   }
 }
