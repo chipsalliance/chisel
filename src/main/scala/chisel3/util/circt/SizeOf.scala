@@ -9,6 +9,19 @@ import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
 
 import circt.Intrinsic
 
+// We have to unique designedName per type, be we can't due to name conflicts
+// on bundles.  Thus we use a globally unique id.
+private object SizeOfGlobalIDGen {
+  private var id: Int = 0
+  def getID() = {
+    this.synchronized {
+      val oldID = id
+      id = id + 1
+      oldID
+    }
+  }
+}
+
 /** Create a module with a parameterized type which returns the size of the type
   * as a compile-time constant.  This lets you write code which depends on the
   * results of type inference.
@@ -20,7 +33,7 @@ private class SizeOfIntrinsic[T <: Data](gen: T) extends ExtModule {
     override def toFirrtl =
       Intrinsic(toTarget, "circt.sizeof")
   })
-  override val desiredName = "SizeOf_" + MurmurHash3.stringHash(gen.toString()).toHexString
+  override val desiredName = "SizeOf_" + SizeOfGlobalIDGen.getID()
 }
 
 object SizeOf {
