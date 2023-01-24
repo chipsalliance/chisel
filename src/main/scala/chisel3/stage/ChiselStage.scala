@@ -194,28 +194,6 @@ object ChiselStage {
       .get
   }
 
-  /** Return annotations for a Chisel module
-    * @param gen a call-by-name Chisel module
-    */
-  def emitAnnotations(gen: => RawModule): String = {
-    val phase = new ChiselPhase {
-      override val targets = Seq(
-        Dependency[chisel3.stage.phases.Checks],
-        Dependency[chisel3.stage.phases.Elaborate],
-        Dependency[chisel3.stage.phases.AddImplicitOutputFile],
-        Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-        Dependency[chisel3.stage.phases.MaybeAspectPhase],
-        Dependency[chisel3.stage.phases.Convert],
-        Dependency[chisel3.stage.phases.MaybeInjectingPhase]
-      )
-    }
-
-    phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen)))
-      .map(a => a.serialize)
-      .reduceLeft(_ + "\n" + _)
-  }
-
   /** Return a CHIRRTL string for a Chisel module
     * @param gen a call-by-name Chisel module
     */
