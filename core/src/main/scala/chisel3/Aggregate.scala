@@ -946,7 +946,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
             "This likely happened because you tried nesting Data arguments inside of other data structures." +
             " Try wrapping the field(s) in Input(...), Output(...), or Flipped(...) if appropriate." +
             " As a last resort, you can call chisel3.reflect.DataMirror.internal.chiselTypeClone on any nested Data arguments." +
-            "See the cookbok entry on this issue for more details."
+            " See the cookbook entry 'How do I deal with the \"unable to clone\" error' for more details."
         )
       }
     }
