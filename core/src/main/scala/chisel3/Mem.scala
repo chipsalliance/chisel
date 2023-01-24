@@ -318,6 +318,9 @@ object SyncReadMem {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "memory type")
     }
+    if (ruw != Undefined) {
+      Builder.warning(s"specifying read-under-write behavior other than Undefined is deprecated 3.6 and removed in 5.0")
+    }
     val mt = t.cloneTypeFull
     val mem = new SyncReadMem(mt, size, ruw)
     mt.bind(MemTypeBinding(mem))
