@@ -13,9 +13,9 @@ In contrast with `Chisel.util.Enum`, `ChiselEnum` are subclasses of `Data`, whic
 
 ```scala mdoc
 // Imports used in the following examples
+import circt.stage.ChiselStage
 import chisel3._
 import chisel3.util._
-import _root_.circt.stage.ChiselStage
 ```
 
 ```scala mdoc:invisible

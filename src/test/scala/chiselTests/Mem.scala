@@ -2,10 +2,10 @@
 
 package chiselTests
 
+import circt.stage.ChiselStage
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-import _root_.circt.stage.ChiselStage
 
 class MemVecTester extends BasicTester {
   val mem = Mem(2, Vec(2, UInt(8.W)))

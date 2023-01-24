@@ -28,7 +28,7 @@ private object SizeOfGlobalIDGen {
   */
 private class SizeOfIntrinsic[T <: Data](gen: T) extends ExtModule {
   val i = IO(Input(gen));
-  val size = IO(Output(UInt(32.W)));
+  val size = IO(Output(UInt(32.W)))
   annotate(new ChiselAnnotation {
     override def toFirrtl =
       Intrinsic(toTarget, "circt.sizeof")
@@ -48,7 +48,7 @@ object SizeOf {
     * }}}
     */
   def apply[T <: Data](gen: T): Data = {
-    val sizeOfInst = Module(new SizeOfIntrinsic(chiselTypeOf(gen)));
+    val sizeOfInst = Module(new SizeOfIntrinsic(chiselTypeOf(gen)))
     sizeOfInst.i := gen
     sizeOfInst.size
   }
