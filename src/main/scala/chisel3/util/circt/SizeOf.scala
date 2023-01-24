@@ -24,6 +24,16 @@ private class SizeOfIntrinsic[T <: Data](gen: T) extends ExtModule {
 }
 
 object SizeOf {
+
+  /** Creates an intrinsic which returns the size of a type.  The returned size
+    * is after width inference, so you can use this to compute expressions based
+    * on the inferred size of types.
+    *
+    * @example {{{
+    * val a = Wire(UInt())
+    * a := 1 << (SizeOf(a) - 1)
+    * }}}
+    */
   def apply[T <: Data](gen: T): Data = {
     val sizeOfInst = Module(new SizeOfIntrinsic(chiselTypeOf(gen)));
     sizeOfInst.i := gen
