@@ -303,7 +303,10 @@ object Serializer {
     case firrtl.CDefMemory(info, name, tpe, size, seq, readUnderWrite) =>
       if (seq) b ++= "smem " else b ++= "cmem "
       b ++= name; b ++= " : "; s(tpe); b ++= " ["; b ++= size.toString(); b += ']'
-      b += ' '; b ++= readUnderWrite.toString; s(info)
+      if (readUnderWrite != ReadUnderWrite.Undefined) { // undefined is the default
+        b += ' '; b ++= readUnderWrite.toString
+      }
+      s(info)
     case firrtl.CDefMPort(info, name, _, mem, exps, direction) =>
       b ++= direction.serialize; b ++= " mport "; b ++= name; b ++= " = "; b ++= mem
       b += '['; s(exps.head); b ++= "], "; s(exps(1)); s(info)
