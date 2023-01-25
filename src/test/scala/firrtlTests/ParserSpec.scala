@@ -405,6 +405,35 @@ class ParserSpec extends FirrtlFlatSpec {
       firrtl.Parser.parse(input)
     }
   }
+
+  it should "parse smem read-under-write behavior" in {
+    val undefined = firrtl.Parser.parse(SMemTestCircuit.src(""))
+    assert(SMemTestCircuit.findRuw(undefined) == ReadUnderWrite.Undefined)
+
+    val undefined2 = firrtl.Parser.parse(SMemTestCircuit.src(" undefined"))
+    assert(SMemTestCircuit.findRuw(undefined2) == ReadUnderWrite.Undefined)
+
+    val old = firrtl.Parser.parse(SMemTestCircuit.src(" old"))
+    assert(SMemTestCircuit.findRuw(old) == ReadUnderWrite.Old)
+
+    val readNew = firrtl.Parser.parse(SMemTestCircuit.src(" new"))
+    assert(SMemTestCircuit.findRuw(readNew) == ReadUnderWrite.New)
+  }
+}
+
+/** used to test parsing and serialization of smems */
+object SMemTestCircuit {
+  def src(ruw: String): String =
+    s"""circuit Example :
+       |  module Example :
+       |    smem mem : UInt<8> [8] $ruw@[main.scala 10:25]
+       |""".stripMargin
+
+  def findRuw(c: Circuit): ReadUnderWrite.Value = {
+    val main = c.modules.head.asInstanceOf[ir.Module]
+    val mem = main.body.asInstanceOf[ir.Block].stmts.collectFirst { case m: CDefMemory => m }.get
+    mem.readUnderWrite
+  }
 }
 
 class ParserPropSpec extends FirrtlPropSpec {
