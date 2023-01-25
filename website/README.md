@@ -2,6 +2,7 @@
 
 This directory provides the meta-website for the [Chisel](https://github.com/freechipsproject/chisel3) project.
 
+
 # Contributing
 
 We accept modifications to the website via Pull Requests.
@@ -138,3 +139,13 @@ There are two targets for cleaning the build:
 
 - To clean the website build use `make clean` (*this will not remove built Scaladoc documentation*)
 - To clean everything (including cached Scaladoc) use `make mrproper`
+
+# Website Deployment
+
+The Website is automatically deployed on every push to the `master` branch.
+The built website is pushed to the `gh-pages` branch, which is the source
+for what is hosted at https://chipsalliance.github.io/chisel3/.
+
+Note that currently there is another website, https://www.chisel-lang.org/,
+the source for which is https://github.com/freechipsproject/www.chisel-lang.org.
+Following the 3.6 release, the chisel-lang.org be changed to be sourced from this repository.

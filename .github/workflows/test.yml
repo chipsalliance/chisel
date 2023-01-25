@@ -50,7 +50,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 
   doc:
-    name: Formatting and Documentation
+    name: Formatting
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -65,8 +65,6 @@ jobs:
         uses: ./.github/workflows/install-circt
       - name: Check Formatting
         run: sbt scalafmtCheckAll
-      - name: Documentation
-        run: sbt docs/mdoc unidoc
 
   integration:
     name: Integration Tests (w/ chiseltest)
@@ -184,17 +182,13 @@ jobs:
         uses: ./.github/workflows/install-circt
       - name: Build the microsite
         run: make -C website
-
-  # TODO: I'm not sure if we want this enabled right away on chisel3
-  #     - name: Deploy Website to GitHub Pages
-  #       if: github.event_name == 'push'
-  #       uses: JamesIves/github-pages-deploy-action@3.7.1
-  #       with:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         BRANCH: gh-pages
-  #         FOLDER: website/docs/target/site
-
-
+      - name: Deploy Website to GitHub Pages (From Master Branch)
+        if: (github.event_name == 'push') && (github.ref_type == 'branch') && (github.ref_name == 'master')
+        uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: website/docs/target/site
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify. This job checks that all jobs were successful.

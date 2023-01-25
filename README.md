@@ -246,7 +246,8 @@ These simulation-based verification tools are available for Chisel:
 * [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
 * [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 * [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
-* [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
+* [**Website (3.6 and earlier)**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
+* [**Website (master)**](https://chipsalliance.github.io/chisel3) ([source](website)) (Note that this will replace the above after the 3.6 release)
 * [**Scastie (3.5.3)**](https://scastie.scala-lang.org/O3LqeVH7SWyIxD7bZRH8hA)
 * [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 

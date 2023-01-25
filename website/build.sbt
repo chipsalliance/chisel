@@ -21,20 +21,20 @@ lazy val micrositeSettings = Seq(
   scalaVersion := "2.12.12",
   micrositeName := "Chisel/FIRRTL",
   micrositeDescription := "Chisel/FIRRTL\nHardware Compiler Framework",
-  micrositeUrl := "https://www.chisel-lang.org",
+  micrositeUrl := "https://chipsalliance.github.io/",
+  micrositeBaseUrl := "chisel3",
   micrositeConfigYaml := ConfigYml(
     yamlCustomProperties = Map("plugins" -> Seq("jekyll-redirect-from"))
   ),
-  micrositeBaseUrl := "",
   micrositeAuthor := "the Chisel/FIRRTL Developers",
   micrositeTwitter := "@chisel_lang",
-  micrositeGithubOwner := "freechipsproject",
+  micrositeGithubOwner := "chipsalliance",
   micrositeGithubRepo := "chisel3",
   micrositeGithubLinks := false,
   micrositeShareOnSocial := false,
   micrositeDocumentationUrl := "chisel3/",
   micrositeDocumentationLabelDescription := "Documentation",
-  micrositeGitterChannelUrl := "freechipsproject/chisel3",
+  micrositeGitterChannelUrl := "chipsalliance/chisel3",
   micrositeHighlightLanguages ++= Seq("verilog"),
   mdocIn := file("docs/src/main/tut"),
   /* Copy markdown files from each of the submodules to build out the website:
@@ -70,7 +70,7 @@ lazy val micrositeSettings = Seq(
   ghpagesNoJekyll := false,
   ghpagesRepository := file("build/gh-pages"),
   ghpagesBranch := "gh-pages",
-  git.remoteRepo := "git@github.com:freechipsproject/www.chisel-lang.org.git",
+  git.remoteRepo := "git@github.com:chipsalliance/chisel3.git",
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.yml" | "*.md" |
     "*.svg" | "*.woff" | "*.ttf",
   includeFilter in Jekyll := (includeFilter in makeSite).value,
