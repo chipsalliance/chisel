@@ -186,8 +186,7 @@ jobs:
       - name: Build the microsite
         run: make -C website
       - name: Deploy Website to GitHub Pages (Test Branch)
-        if: github.event_name == 'push'
-	if: github.branch == "website-test"
+        if: (github.event_name == 'push') && (github.branch == 'website-test')
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
