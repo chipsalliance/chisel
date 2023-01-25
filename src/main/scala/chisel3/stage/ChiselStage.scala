@@ -57,7 +57,6 @@ class ChiselStage extends Stage {
   ): String = {
 
     val annos = execute(Array("--no-run-firrtl") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
-
     annos.collectFirst {
       case a: ChiselCircuitAnnotation => CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat).getBytes
     }.get
