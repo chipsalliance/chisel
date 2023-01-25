@@ -2,11 +2,11 @@
 
 package chiselTests
 
+import circt.stage.ChiselStage
 import chisel3._
 import chisel3.reflect.DataMirror
 import chisel3.testers.BasicTester
 import chisel3.util._
-import circt.stage.ChiselStage
 import org.scalacheck.Gen
 
 class RegSpec extends ChiselFlatSpec {
