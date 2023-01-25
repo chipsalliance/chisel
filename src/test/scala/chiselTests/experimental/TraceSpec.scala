@@ -30,7 +30,8 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     (testDir, annos)
   }
 
-  "TraceFromAnnotations" should "be able to get nested name." in {
+  //TODO: SFC->MFC, this test is ignored because MFC does not support the custom annotations used here
+  "TraceFromAnnotations" should "be able to get nested name." ignore {
     class Bundle0 extends Bundle {
       val a = UInt(8.W)
       val b = Bool()
