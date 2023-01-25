@@ -3,7 +3,7 @@
 enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
-  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6.0-M2",
   "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT"
   // chiseltest intentionally excluded so that release automation does not try to set its version
   // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
