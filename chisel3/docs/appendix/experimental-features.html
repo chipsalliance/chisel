@@ -1,0 +1,552 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Experimental Features</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Experimental Features" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Experimental Features" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Experimental Features" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class=" active ">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="experimental-features">Experimental Features</h1>
+
+<p>Chisel has a number of new features that are worth checking out.  This page is an informal list of these features and projects.</p>
+
+<ul>
+  <li><a href="#fixed-point">FixedPoint</a></li>
+  <li><a href="#module-variants">Module Variants</a></li>
+  <li><a href="#bundle-literals">Bundle Literals</a></li>
+  <li><a href="#vec-literals">Vec Literals</a></li>
+  <li><a href="#interval-type">Interval Type</a></li>
+  <li><a href="#loading-memories">Loading Memories for simulation or FPGA initialization</a></li>
+</ul>
+
+<h3 id="fixedpoint--">FixedPoint  <a name="fixed-point"></a></h3>
+<p>FixedPoint numbers are basic <em>Data</em> type along side of UInt, SInt, etc.  Most common math and logic operations
+are supported. Chisel allows both the width and binary point to be inferred by the Firrtl compiler which can simplify
+circuit descriptions. See <a href="https://github.com/freechipsproject/chisel3/tree/master/src/test/scala/chiselTests/FixedPointSpec.scala">FixedPointSpec</a></p>
+
+<h3 id="module-variants-">Module Variants <a name="module-variants"></a></h3>
+<p>The standard Chisel <em>Module</em> requires a <code class="language-plaintext highlighter-rouge">val io = IO(...)</code>, the experimental package introduces several
+new ways of defining Modules</p>
+<ul>
+  <li>BaseModule: no contents, instantiable</li>
+  <li>BlackBox extends BaseModule</li>
+  <li>UserDefinedModule extends BaseModule: this module can contain Chisel RTL. No default clock or reset lines. No default IO. - User should be able to specify non-io ports, ideally multiple of them.</li>
+  <li>ImplicitModule extends UserModule: has clock, reset, and io, essentially current Chisel Module.</li>
+  <li>RawModule: will be the user-facing version of UserDefinedModule</li>
+  <li>Module: type-aliases to ImplicitModule, the user-facing version of ImplicitModule.</li>
+</ul>
+
+<h3 id="bundle-literals-">Bundle Literals <a name="bundle-literals"></a></h3>
+
+<p>Bundle literals can be constructed via an experimental import:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.BundleLiterals._</span>
+
+<span class="k">class</span> <span class="nc">MyBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">Example</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="o">(</span><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">).</span><span class="py">Lit</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">a</span> <span class="o">-&gt;</span> <span class="mf">8.</span><span class="n">U</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">b</span> <span class="o">-&gt;</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_a</span><span class="p">,</span>
+  <span class="kt">output</span>       <span class="n">out_b</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out_a</span> <span class="o">=</span> <span class="mh">8'h8</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:22:7</span>
+  <span class="k">assign</span> <span class="n">out_b</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:22:7</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Partial specification is allowed, which results in “invalidated fields” as
+described in <a href="../explanations/unconnected-wires">Unconnected Wires</a>.
+Note that this can be used with <code class="language-plaintext highlighter-rouge">RegInit</code> to construct partially reset registers as
+described in the <a href="../cookbooks/cookbook#how-do-i-partially-reset-an-aggregate-reg">Cookbook</a>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example2</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="o">(</span><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">).</span><span class="py">Lit</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">b</span> <span class="o">-&gt;</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example2</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_a</span><span class="p">,</span>
+  <span class="kt">output</span>       <span class="n">out_b</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out_a</span> <span class="o">=</span> <span class="mh">8'h0</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:37:7</span>
+  <span class="k">assign</span> <span class="n">out_b</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:37:7</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Bundle literals can also be nested arbitrarily.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ChildBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">ParentBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">ChildBundle</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">Example3</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">ParentBundle</span><span class="o">))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="o">(</span><span class="k">new</span> <span class="nc">ParentBundle</span><span class="o">).</span><span class="py">Lit</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">a</span> <span class="o">-&gt;</span> <span class="mf">123.</span><span class="n">U</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">b</span> <span class="o">-&gt;</span> <span class="o">(</span><span class="k">new</span> <span class="nc">ChildBundle</span><span class="o">).</span><span class="py">Lit</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">foo</span> <span class="o">-&gt;</span> <span class="mf">42.</span><span class="n">U</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example3</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_a</span><span class="p">,</span>
+               <span class="n">out_b_foo</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out_a</span> <span class="o">=</span> <span class="mh">8'h7B</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:63:7</span>
+  <span class="k">assign</span> <span class="n">out_b_foo</span> <span class="o">=</span> <span class="mh">8'h2A</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:63:7</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h3 id="vec-literals">Vec Literals</h3>
+
+<p>Vec literals are very similar to Bundle literals and can be constructed via an experimental import.
+They can be constructed in two forms, with type and length inferred as in:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.VecLiterals._</span>
+
+<span class="k">class</span> <span class="nc">VecExample1</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">))))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="nv">Vec</span><span class="o">.</span><span class="py">Lit</span><span class="o">(</span><span class="mh">0xa</span><span class="o">.</span><span class="py">U</span><span class="o">,</span> <span class="mh">0xbb</span><span class="o">.</span><span class="py">U</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">VecExample1</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_0</span><span class="p">,</span>
+               <span class="n">out_1</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out_0</span> <span class="o">=</span> <span class="mh">4'hA</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:84:7</span>
+  <span class="k">assign</span> <span class="n">out_1</span> <span class="o">=</span> <span class="mh">4'hB</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:84:7</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>or explicitly as in:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.VecLiterals._</span>
+
+<span class="k">class</span> <span class="nc">VecExample1a</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">))))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="nc">Vec</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)).</span><span class="py">Lit</span><span class="o">(</span><span class="mi">0</span> <span class="o">-&gt;</span> <span class="mf">1.</span><span class="n">U</span><span class="o">,</span> <span class="mi">1</span> <span class="o">-&gt;</span> <span class="mf">2.</span><span class="n">U</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">VecExample1a</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_0</span><span class="p">,</span>
+               <span class="n">out_1</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out_0</span> <span class="o">=</span> <span class="mh">4'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:105:7</span>
+  <span class="k">assign</span> <span class="n">out_1</span> <span class="o">=</span> <span class="mh">4'h2</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:105:7</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>The following examples all use the explicit form.
+With the explicit form partial specification is allowed, which results in
+“invalidated fields” as described in <a href="../explanations/unconnected-wires">Unconnected Wires</a>.
+Note that this can be used with <code class="language-plaintext highlighter-rouge">RegInit</code> to construct partially reset registers as
+described in the <a href="../cookbooks/cookbook#how-do-i-partially-reset-an-aggregate-reg">Cookbook</a>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">VecExample2</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">))))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="nc">Vec</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)).</span><span class="py">Lit</span><span class="o">(</span><span class="mi">0</span> <span class="o">-&gt;</span> <span class="mf">1.</span><span class="n">U</span><span class="o">,</span> <span class="mi">3</span> <span class="o">-&gt;</span> <span class="mf">7.</span><span class="n">U</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">VecExample2</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_0</span><span class="p">,</span>
+               <span class="n">out_1</span><span class="p">,</span>
+               <span class="n">out_2</span><span class="p">,</span>
+               <span class="n">out_3</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out_0</span> <span class="o">=</span> <span class="mh">4'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:120:7</span>
+  <span class="k">assign</span> <span class="n">out_1</span> <span class="o">=</span> <span class="mh">4'h0</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:120:7</span>
+  <span class="k">assign</span> <span class="n">out_2</span> <span class="o">=</span> <span class="mh">4'h0</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:120:7</span>
+  <span class="k">assign</span> <span class="n">out_3</span> <span class="o">=</span> <span class="mh">4'h7</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:120:7</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Registers can be initialized from Vec literals</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">VecExample3</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))))</span>
+  <span class="k">val</span> <span class="nv">y</span> <span class="k">=</span> <span class="nc">RegInit</span><span class="o">(</span>
+    <span class="nc">Vec</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)).</span><span class="py">Lit</span><span class="o">(</span><span class="mi">0</span> <span class="o">-&gt;</span> <span class="mh">0xAB</span><span class="o">.</span><span class="py">U</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="mi">1</span> <span class="o">-&gt;</span> <span class="mh">0xCD</span><span class="o">.</span><span class="py">U</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="mi">2</span> <span class="o">-&gt;</span> <span class="mh">0xEF</span><span class="o">.</span><span class="py">U</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="mi">3</span> <span class="o">-&gt;</span> <span class="mh">0xFF</span><span class="o">.</span><span class="py">U</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">)</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">y</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">VecExample3</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_0</span><span class="p">,</span>
+               <span class="n">out_1</span><span class="p">,</span>
+               <span class="n">out_2</span><span class="p">,</span>
+               <span class="n">out_3</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out_0</span> <span class="o">=</span> <span class="mh">8'hAB</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:135:18</span>
+  <span class="k">assign</span> <span class="n">out_1</span> <span class="o">=</span> <span class="mh">8'hCD</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:135:18</span>
+  <span class="k">assign</span> <span class="n">out_2</span> <span class="o">=</span> <span class="mh">8'hEF</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:135:18</span>
+  <span class="k">assign</span> <span class="n">out_3</span> <span class="o">=</span> <span class="mh">8'hFF</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:135:18</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Vec literals can also be nested arbitrarily.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">VecExample5</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ChildBundle</span><span class="o">)))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="nc">Vec</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ChildBundle</span><span class="o">).</span><span class="py">Lit</span><span class="o">(</span>
+    <span class="mi">0</span> <span class="o">-&gt;</span> <span class="o">(</span><span class="k">new</span> <span class="nc">ChildBundle</span><span class="o">).</span><span class="py">Lit</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">foo</span> <span class="o">-&gt;</span> <span class="mf">42.</span><span class="n">U</span><span class="o">),</span>
+    <span class="mi">1</span> <span class="o">-&gt;</span> <span class="o">(</span><span class="k">new</span> <span class="nc">ChildBundle</span><span class="o">).</span><span class="py">Lit</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">foo</span> <span class="o">-&gt;</span> <span class="mf">7.</span><span class="n">U</span><span class="o">)</span>
+  <span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">VecExample5</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_0_foo</span><span class="p">,</span>
+               <span class="n">out_1_foo</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out_0_foo</span> <span class="o">=</span> <span class="mh">8'h2A</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:153:7</span>
+  <span class="k">assign</span> <span class="n">out_1_foo</span> <span class="o">=</span> <span class="mh">8'h7</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, experimental-features.md:153:7</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h3 id="interval-type-">Interval Type <a name="interval-type"></a></h3>
+
+<p><strong>Intervals</strong> are a new experimental numeric type that comprises UInt, SInt and FixedPoint numbers.
+It augments these types with range information, i.e. upper and lower numeric bounds.
+This information can be used to exercise tighter programmatic control over the ultimate widths of
+signals in the final circuit.  The <strong>Firrtl</strong> compiler can infer this range information based on
+operations and earlier values in the circuit. Intervals support all the ordinary bit and arithmetic operations
+associated with UInt, SInt, and FixedPoint and adds the following methods for manipulating the range of
+a <strong>source</strong> Interval with the IntervalRange of <strong>target</strong> Interval</p>
+
+<h4 id="clip--fit-the-value-source-into-the-intervalrange-of-target-saturate-if-out-of-bounds">Clip – Fit the value <strong>source</strong> into the IntervalRange of <strong>target</strong>, saturate if out of bounds</h4>
+<p>The clip method applied to an interval creates a new interval based on the argument to clip,
+and constructs the necessary hardware so that the source Interval’s value will be mapped into the new Interval.
+Values that are outside the result range will be pegged to either maximum or minimum of result range as appropriate.</p>
+
+<blockquote>
+  <p>Generates necessary hardware to clip values, values greater than range are set to range.high, values lower than range are set to range min.</p>
+</blockquote>
+
+<h4 id="wrap--fit-the-value-source-into-the-intervalrange-of-target-wrapping-around-if-out-of-bounds">Wrap – Fit the value <strong>source</strong> into the IntervalRange of <strong>target</strong>, wrapping around if out of bounds</h4>
+<p>The wrap method applied to an interval creates a new interval based on the argument to wrap,
+and constructs the necessary
+hardware so that the source Interval’s value will be mapped into the new Interval.
+Values that are outside the result range will be wrapped until they fall within the result range.</p>
+
+<blockquote>
+  <p>Generates necessary hardware to wrap values, values greater than range are set to range.high, values lower than range are set to range min.</p>
+</blockquote>
+
+<blockquote>
+  <p>Does not handle out of range values that are less than half the minimum or greater than twice maximum</p>
+</blockquote>
+
+<h4 id="squeeze--fit-the-value-source-into-the-smallest-intervalrange-based-on-source-and-target">Squeeze – Fit the value <strong>source</strong> into the smallest IntervalRange based on source and target.</h4>
+<p>The squeeze method applied to an interval creates a new interval based on the argument to clip, the two ranges must overlap
+behavior of squeeze with inputs outside of the produced range is undefined.</p>
+
+<blockquote>
+  <p>Generates no hardware, strictly a sizing operation</p>
+</blockquote>
+
+<h5 id="range-combinations">Range combinations</h5>
+
+<table>
+  <thead>
+    <tr>
+      <th>Condition</th>
+      <th>A.clip(B)</th>
+      <th>A.wrap(B)</th>
+      <th>A.squeeze(B)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>A === B</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+    </tr>
+    <tr>
+      <td>A contains B</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+    </tr>
+    <tr>
+      <td>B contains A</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+    </tr>
+    <tr>
+      <td>A min &lt; B min, A max in B</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+    </tr>
+    <tr>
+      <td>A min in B, A max &gt; B max</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+      <td>max(Alo, Blo), min(Ahi, Bhi)</td>
+    </tr>
+    <tr>
+      <td>A strictly less than B</td>
+      <td>error</td>
+      <td>error</td>
+      <td>error</td>
+    </tr>
+    <tr>
+      <td>A strictly greater than B</td>
+      <td>error</td>
+      <td>error</td>
+      <td>error</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="applying-binary-point-operators-to-an-interval">Applying binary point operators to an Interval</h4>
+
+<p>Consider a Interval with a binary point of 3: aaa.bbb</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>operation</th>
+      <th>after operation</th>
+      <th>binary point</th>
+      <th>lower</th>
+      <th>upper</th>
+      <th>meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>setBinaryPoint(2)</td>
+      <td>aaa.bb</td>
+      <td>2</td>
+      <td>X</td>
+      <td>X</td>
+      <td>set the precision</td>
+    </tr>
+    <tr>
+      <td>shiftLeftBinaryPoint(2)</td>
+      <td>a.aabbb</td>
+      <td>5</td>
+      <td>X</td>
+      <td>X</td>
+      <td>increase the precision</td>
+    </tr>
+    <tr>
+      <td>shiftRighBinaryPoint(2)</td>
+      <td>aaaa.b</td>
+      <td>1</td>
+      <td>X</td>
+      <td>X</td>
+      <td>reduce the precision</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="loading-memories-for-simulation-or-fpga-initialization-">Loading Memories for simulation or FPGA initialization <a name="loading-memories"></a></h2>
+
+<p>Chisel supports multiple experimental methods for annotating memories to be loaded from a text file containing hex or binary data. When using verilog simulation it uses the <code class="language-plaintext highlighter-rouge">$readmemh</code> or <code class="language-plaintext highlighter-rouge">$readmemb</code> verilog extension. The treadle simulator can also load memories using the same annotation.</p>
+
+<h3 id="inline-initialization-with-external-file">Inline initialization with external file</h3>
+
+<p>Memories can be initialized by generating inline <code class="language-plaintext highlighter-rouge">readmemh</code> or <code class="language-plaintext highlighter-rouge">readmemb</code> statements in the output Verilog.</p>
+
+<p>The function <code class="language-plaintext highlighter-rouge">loadMemoryFromFileInline</code> from <code class="language-plaintext highlighter-rouge">chisel3.util.experimental</code> allows the memory to be initialized by the synthesis software from the specified file. Chisel does not validate the file contents nor its location. Both the memory initialization file and the Verilog source should be accessible for the toolchain.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.experimental.loadMemoryFromFileInline</span>
+
+<span class="k">class</span> <span class="nc">InitMemInline</span><span class="o">(</span><span class="n">memoryFile</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">""</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">width</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">32</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">enable</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+    <span class="k">val</span> <span class="nv">write</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+    <span class="k">val</span> <span class="nv">addr</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">10.</span><span class="n">W</span><span class="o">))</span>
+    <span class="k">val</span> <span class="nv">dataIn</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+    <span class="k">val</span> <span class="nv">dataOut</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="o">})</span>
+
+  <span class="k">val</span> <span class="nv">mem</span> <span class="k">=</span> <span class="nc">SyncReadMem</span><span class="o">(</span><span class="mi">1024</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="c1">// Initialize memory</span>
+  <span class="nf">if</span> <span class="o">(</span><span class="nv">memoryFile</span><span class="o">.</span><span class="py">trim</span><span class="o">().</span><span class="py">nonEmpty</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nf">loadMemoryFromFileInline</span><span class="o">(</span><span class="n">mem</span><span class="o">,</span> <span class="n">memoryFile</span><span class="o">)</span>
+  <span class="o">}</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">dataOut</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+  <span class="nf">when</span><span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">enable</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">rdwrPort</span> <span class="k">=</span> <span class="nf">mem</span><span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">addr</span><span class="o">)</span>
+    <span class="nf">when</span> <span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">write</span><span class="o">)</span> <span class="o">{</span> <span class="n">rdwrPort</span> <span class="o">:=</span> <span class="nv">io</span><span class="o">.</span><span class="py">dataIn</span> <span class="o">}</span>
+      <span class="o">.</span><span class="py">otherwise</span>    <span class="o">{</span> <span class="nv">io</span><span class="o">.</span><span class="py">dataOut</span> <span class="o">:=</span> <span class="n">rdwrPort</span> <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>The default is to use <code class="language-plaintext highlighter-rouge">$readmemh</code> (which assumes all numbers in the file are in ascii hex),
+but to use ascii binary there is an optional <code class="language-plaintext highlighter-rouge">hexOrBinary</code> argument which can be set to <code class="language-plaintext highlighter-rouge">MemoryLoadFileType.Hex</code> or <code class="language-plaintext highlighter-rouge">MemoryLoadFileType.Binary</code>. You will need to add an additional import.</p>
+
+<p>By default, the inline initialization will generate the memory <code class="language-plaintext highlighter-rouge">readmem</code> statements inside an <code class="language-plaintext highlighter-rouge">ifndef SYNTHESIS</code> block, which suits ASIC workflow.</p>
+
+<p>Some synthesis tools (like Synplify and Yosys) define <code class="language-plaintext highlighter-rouge">SYNTHESIS</code> so the <code class="language-plaintext highlighter-rouge">readmem</code> statement is not read when inside this block.</p>
+
+<p>To control this, one can use the <code class="language-plaintext highlighter-rouge">MemoryNoSynthInit</code> and <code class="language-plaintext highlighter-rouge">MemorySynthInit</code> annotations from <code class="language-plaintext highlighter-rouge">firrtl.annotations</code>. The former which is the default setting when no annotation is present generates <code class="language-plaintext highlighter-rouge">readmem</code> inside the block. Using the latter, the statement are generated outside the <code class="language-plaintext highlighter-rouge">ifndef</code> block so it can be used by FPGA synthesis tools.</p>
+
+<p>Below an example for initialization suited for FPGA workflows:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.experimental.loadMemoryFromFileInline</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.</span><span class="o">{</span><span class="n">annotate</span><span class="o">,</span> <span class="nc">ChiselAnnotation</span><span class="o">}</span>
+<span class="k">import</span> <span class="nn">firrtl.annotations.MemorySynthInit</span>
+
+<span class="k">class</span> <span class="nc">InitMemInlineFPGA</span><span class="o">(</span><span class="n">memoryFile</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">""</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">width</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">32</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">enable</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+    <span class="k">val</span> <span class="nv">write</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+    <span class="k">val</span> <span class="nv">addr</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">10.</span><span class="n">W</span><span class="o">))</span>
+    <span class="k">val</span> <span class="nv">dataIn</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+    <span class="k">val</span> <span class="nv">dataOut</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="o">})</span>
+
+  <span class="c1">// Notice the annotation below</span>
+  <span class="nf">annotate</span><span class="o">(</span><span class="k">new</span> <span class="nc">ChiselAnnotation</span> <span class="o">{</span>
+    <span class="k">override</span> <span class="k">def</span> <span class="nf">toFirrtl</span> <span class="k">=</span>
+      <span class="nc">MemorySynthInit</span>
+  <span class="o">})</span>
+
+  <span class="k">val</span> <span class="nv">mem</span> <span class="k">=</span> <span class="nc">SyncReadMem</span><span class="o">(</span><span class="mi">1024</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="nf">if</span> <span class="o">(</span><span class="nv">memoryFile</span><span class="o">.</span><span class="py">trim</span><span class="o">().</span><span class="py">nonEmpty</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nf">loadMemoryFromFileInline</span><span class="o">(</span><span class="n">mem</span><span class="o">,</span> <span class="n">memoryFile</span><span class="o">)</span>
+  <span class="o">}</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">dataOut</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+  <span class="nf">when</span><span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">enable</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">rdwrPort</span> <span class="k">=</span> <span class="nf">mem</span><span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">addr</span><span class="o">)</span>
+    <span class="nf">when</span> <span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">write</span><span class="o">)</span> <span class="o">{</span> <span class="n">rdwrPort</span> <span class="o">:=</span> <span class="nv">io</span><span class="o">.</span><span class="py">dataIn</span> <span class="o">}</span>
+      <span class="o">.</span><span class="py">otherwise</span>    <span class="o">{</span> <span class="nv">io</span><span class="o">.</span><span class="py">dataOut</span> <span class="o">:=</span> <span class="n">rdwrPort</span> <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="systemverilog-bind-initialization">SystemVerilog Bind Initialization</h4>
+
+<p>Chisel can also initialize memories by generating a SV bind module with <code class="language-plaintext highlighter-rouge">readmemh</code> or <code class="language-plaintext highlighter-rouge">readmemb</code> statements by using the function <code class="language-plaintext highlighter-rouge">loadMemoryFromFile</code> from <code class="language-plaintext highlighter-rouge">chisel3.util.experimental</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.experimental.loadMemoryFromFile</span>
+
+<span class="k">class</span> <span class="nc">InitMemBind</span><span class="o">(</span><span class="k">val</span> <span class="nv">bits</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="k">val</span> <span class="nv">size</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">filename</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">nia</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">bits</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+    <span class="k">val</span> <span class="nv">insn</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+
+  <span class="k">val</span> <span class="nv">memory</span> <span class="k">=</span> <span class="nc">Mem</span><span class="o">(</span><span class="n">size</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">insn</span> <span class="o">:=</span> <span class="nf">memory</span><span class="o">(</span><span class="nv">io</span><span class="o">.</span><span class="py">nia</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="o">);</span>
+  <span class="nf">loadMemoryFromFile</span><span class="o">(</span><span class="n">memory</span><span class="o">,</span> <span class="n">filename</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Which generates the bind module:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">BindsTo_0_Foo</span><span class="p">(</span>
+  <span class="kt">input</span>         <span class="n">clock</span><span class="p">,</span>
+  <span class="kt">input</span>         <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_nia</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_insn</span>
+<span class="p">);</span>
+
+<span class="k">initial</span> <span class="k">begin</span>
+  <span class="p">$</span><span class="nb">readmemh</span><span class="p">(</span><span class="s">"test.hex"</span><span class="p">,</span> <span class="n">Foo</span><span class="p">.</span><span class="n">memory</span><span class="p">);</span>
+<span class="k">end</span>
+<span class="k">endmodule</span>
+
+<span class="k">bind</span> <span class="n">Foo</span> <span class="n">BindsTo_0_Foo</span> <span class="n">BindsTo_0_Foo_Inst</span><span class="p">(.</span><span class="o">*</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h3 id="notes-on-files">Notes on files</h3>
+
+<p>There is no simple answer to where to put the <code class="language-plaintext highlighter-rouge">hex</code> or <code class="language-plaintext highlighter-rouge">bin</code> file with the initial contents. It’s probably best to create a resource directory somewhere and reference that through a full path or place the file beside the generated Verilog. Another option is adding the path to the memory file in the synthesis tool path. Because these files may be large, Chisel does not copy them.</p>
+<blockquote>
+  <p>Don’t forget there is no decimal option, so a 10 in an input file will be 16 decimal</p>
+</blockquote>
+
+<p>See: <a href="https://github.com/freechipsproject/chisel-testers/blob/master/src/test/scala/examples/ComplexMemoryLoadingSpec.scala">ComplexMemoryLoadingSpec.scala</a> and
+<a href="https://github.com/freechipsproject/chisel-testers/blob/master/src/test/scala/examples/LoadMemoryFromFileSpec.scala">LoadMemoryFromFileSpec.scala</a>
+for working examples.</p>
+
+<h3 id="aggregate-memories">Aggregate memories</h3>
+
+<p>Aggregate memories are supported but in bit of a clunky way. Since they will be split up into a memory per field, the following convention was adopted.  When specifying the file for such a memory the file name should be regarded as a template. If the memory is a Bundle e.g.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MemDataType</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">16.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>The memory will be split into <code class="language-plaintext highlighter-rouge">memory_a</code>, <code class="language-plaintext highlighter-rouge">memory_b</code>, and <code class="language-plaintext highlighter-rouge">memory_c</code>. Similarly if a load file is specified as <code class="language-plaintext highlighter-rouge">"memory-load.txt"</code> the simulation will expect that there will be three files, <code class="language-plaintext highlighter-rouge">"memory-load_a.txt"</code>, <code class="language-plaintext highlighter-rouge">"memory-load_b.txt"</code>, <code class="language-plaintext highlighter-rouge">"memory-load_c.txt"</code></p>
+
+<blockquote>
+  <p>Note: The use of <code class="language-plaintext highlighter-rouge">_</code> and that the memory field name is added before any file suffix. The suffix is optional but if present is considered to be the text after the last <code class="language-plaintext highlighter-rouge">.</code> in the file name.</p>
+</blockquote>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

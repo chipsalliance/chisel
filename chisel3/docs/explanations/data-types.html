@@ -1,0 +1,163 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Chisel Data Types</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Chisel Data Types" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Chisel Data Types" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Chisel Data Types" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="chisel-data-types">Chisel Data Types</h1>
+
+<p>Chisel datatypes are used to specify the type of values held in state
+elements or flowing on wires.  While hardware designs ultimately
+operate on vectors of binary digits, other more abstract
+representations for values allow clearer specifications and help the
+tools generate more optimal circuits.  In Chisel, a raw collection of
+bits is represented by the <code class="language-plaintext highlighter-rouge">Bits</code> type.  Signed and unsigned integers
+are considered subsets of fixed-point numbers and are represented by
+types <code class="language-plaintext highlighter-rouge">SInt</code> and <code class="language-plaintext highlighter-rouge">UInt</code> respectively. Signed fixed-point
+numbers, including integers, are represented using two’s-complement
+format.  Boolean values are represented as type <code class="language-plaintext highlighter-rouge">Bool</code>.  Note
+that these types are distinct from Scala’s builtin types such as
+<code class="language-plaintext highlighter-rouge">Int</code> or <code class="language-plaintext highlighter-rouge">Boolean</code>.</p>
+
+<blockquote>
+  <p>There is a new experimental type <strong>Interval</strong> which gives the developer more control of the type by allowing the definition of an IntervalRange.  See: <a href="../appendix/experimental-features#interval-type">Interval Type</a></p>
+</blockquote>
+
+<p>Additionally, Chisel defines <code class="language-plaintext highlighter-rouge">Bundles</code> for making
+collections of values with named fields (similar to <code class="language-plaintext highlighter-rouge">structs</code> in
+other languages), and <code class="language-plaintext highlighter-rouge">Vecs</code> for indexable collections of
+values.</p>
+
+<p>Bundles and Vecs will be covered later.</p>
+
+<p>Constant or literal values are expressed using Scala integers or
+strings passed to constructors for the types:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="mf">1.</span><span class="n">U</span>       <span class="c1">// decimal 1-bit lit from Scala Int.</span>
+<span class="s">"ha"</span><span class="o">.</span><span class="py">U</span>    <span class="c1">// hexadecimal 4-bit lit from string.</span>
+<span class="s">"o12"</span><span class="o">.</span><span class="py">U</span>   <span class="c1">// octal 4-bit lit from string.</span>
+<span class="s">"b1010"</span><span class="o">.</span><span class="py">U</span> <span class="c1">// binary 4-bit lit from string.</span>
+
+<span class="mf">5.</span><span class="n">S</span>    <span class="c1">// signed decimal 4-bit lit from Scala Int.</span>
+<span class="o">-</span><span class="mf">8.</span><span class="n">S</span>   <span class="c1">// negative decimal 4-bit lit from Scala Int.</span>
+<span class="mf">5.</span><span class="n">U</span>    <span class="c1">// unsigned decimal 3-bit lit from Scala Int.</span>
+
+<span class="mf">8.</span><span class="nf">U</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)</span> <span class="c1">// 4-bit unsigned decimal, value 8.</span>
+<span class="o">-</span><span class="mf">152.</span><span class="nf">S</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)</span> <span class="c1">// 32-bit signed decimal, value -152.</span>
+
+<span class="nv">true</span><span class="o">.</span><span class="py">B</span> <span class="c1">// Bool lits from Scala lits.</span>
+<span class="nv">false</span><span class="o">.</span><span class="py">B</span>
+</code></pre></div></div>
+<p>Underscores can be used as separators in long string literals to aid
+readability, but are ignored when creating the value, e.g.:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">"h_dead_beef"</span><span class="o">.</span><span class="py">U</span>   <span class="c1">// 32-bit lit of type UInt</span>
+</code></pre></div></div>
+
+<p>By default, the Chisel compiler will size each constant to the minimum
+number of bits required to hold the constant, including a sign bit for
+signed types. Bit widths can also be specified explicitly on
+literals, as shown below. Note that (<code class="language-plaintext highlighter-rouge">.W</code> is used to cast a Scala Int
+to a Chisel width)</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">"ha"</span><span class="o">.</span><span class="py">asUInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>     <span class="c1">// hexadecimal 8-bit lit of type UInt</span>
+<span class="s">"o12"</span><span class="o">.</span><span class="py">asUInt</span><span class="o">(</span><span class="mf">6.</span><span class="n">W</span><span class="o">)</span>    <span class="c1">// octal 6-bit lit of type UInt</span>
+<span class="s">"b1010"</span><span class="o">.</span><span class="py">asUInt</span><span class="o">(</span><span class="mf">12.</span><span class="n">W</span><span class="o">)</span> <span class="c1">// binary 12-bit lit of type UInt</span>
+
+<span class="mf">5.</span><span class="nf">asSInt</span><span class="o">(</span><span class="mf">7.</span><span class="n">W</span><span class="o">)</span> <span class="c1">// signed decimal 7-bit lit of type SInt</span>
+<span class="mf">5.</span><span class="nf">asUInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span> <span class="c1">// unsigned decimal 8-bit lit of type UInt</span>
+</code></pre></div></div>
+
+<p>For literals of type <code class="language-plaintext highlighter-rouge">UInt</code>, the value is
+zero-extended to the desired bit width.  For literals of type
+<code class="language-plaintext highlighter-rouge">SInt</code>, the value is sign-extended to fill the desired bit width.
+If the given bit width is too small to hold the argument value, then a
+Chisel error is generated.</p>
+
+<blockquote>
+  <p>We are working on a more concise literal syntax for Chisel using
+symbolic prefix operators, but are stymied by the limitations of Scala
+operator overloading and have not yet settled on a syntax that is
+actually more readable than constructors taking strings.</p>
+</blockquote>
+
+<blockquote>
+  <p>We have also considered allowing Scala literals to be automatically
+converted to Chisel types, but this can cause type ambiguity and
+requires an additional import.</p>
+</blockquote>
+
+<blockquote>
+  <p>The SInt and UInt types will also later support an optional exponent
+field to allow Chisel to automatically produce optimized fixed-point
+arithmetic circuits.</p>
+</blockquote>
+
+<h2 id="casting">Casting</h2>
+
+<p>We can also cast types in Chisel:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">sint</span> <span class="k">=</span> <span class="mf">3.</span><span class="nf">S</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)</span>             <span class="c1">// 4-bit SInt</span>
+
+<span class="k">val</span> <span class="nv">uint</span> <span class="k">=</span> <span class="nv">sint</span><span class="o">.</span><span class="py">asUInt</span>          <span class="c1">// cast SInt to UInt</span>
+<span class="nv">uint</span><span class="o">.</span><span class="py">asSInt</span>                     <span class="c1">// cast UInt to SInt</span>
+</code></pre></div></div>
+
+<p><strong>NOTE</strong>: <code class="language-plaintext highlighter-rouge">asUInt</code>/<code class="language-plaintext highlighter-rouge">asSInt</code> with an explicit width can <strong>not</strong> be used to cast (convert) between Chisel datatypes.
+No width parameter is accepted, as Chisel will automatically pad or truncate as required when the objects are connected.</p>
+
+<p>We can also perform casts on clocks, though you should be careful about this, since clocking (especially in ASIC) requires special attention:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">bool</span><span class="k">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="nv">false</span><span class="o">.</span><span class="py">B</span>        <span class="c1">// always-low wire</span>
+<span class="k">val</span> <span class="nv">clock</span> <span class="k">=</span> <span class="nv">bool</span><span class="o">.</span><span class="py">asClock</span>        <span class="c1">// always-low clock</span>
+
+<span class="nv">clock</span><span class="o">.</span><span class="py">asUInt</span>                    <span class="c1">// convert clock to UInt (width 1)</span>
+<span class="nv">clock</span><span class="o">.</span><span class="py">asUInt</span><span class="o">.</span><span class="py">asBool</span>             <span class="c1">// convert clock to Bool (Chisel 3.2+)</span>
+<span class="nv">clock</span><span class="o">.</span><span class="py">asUInt</span><span class="o">.</span><span class="py">toBool</span>             <span class="c1">// convert clock to Bool (Chisel 3.0 and 3.1 only)</span>
+</code></pre></div></div>
+
+<h2 id="analogblackbox-type">Analog/BlackBox type</h2>
+
+<p>(Experimental, Chisel 3.1+)</p>
+
+<p>Chisel supports an <code class="language-plaintext highlighter-rouge">Analog</code> type (equivalent to Verilog <code class="language-plaintext highlighter-rouge">inout</code>) that can be used to support arbitrary nets in Chisel. This includes analog wires, tri-state/bi-directional wires, and power nets (with appropriate annotations).</p>
+
+<p><code class="language-plaintext highlighter-rouge">Analog</code> is an undirectioned type, and so it is possible to connect multiple <code class="language-plaintext highlighter-rouge">Analog</code> nets together using the <code class="language-plaintext highlighter-rouge">attach</code> operator. It is possible to connect an <code class="language-plaintext highlighter-rouge">Analog</code> <strong>once</strong> using <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> but illegal to do it more than once.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Analog</span><span class="o">(</span><span class="mf">1.</span><span class="n">W</span><span class="o">))</span>
+<span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Analog</span><span class="o">(</span><span class="mf">1.</span><span class="n">W</span><span class="o">))</span>
+<span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Analog</span><span class="o">(</span><span class="mf">1.</span><span class="n">W</span><span class="o">))</span>
+
+<span class="c1">// Legal</span>
+<span class="nf">attach</span><span class="o">(</span><span class="n">a</span><span class="o">,</span> <span class="n">b</span><span class="o">)</span>
+<span class="nf">attach</span><span class="o">(</span><span class="n">a</span><span class="o">,</span> <span class="n">c</span><span class="o">)</span>
+
+<span class="c1">// Legal</span>
+<span class="n">a</span> <span class="o">&lt;&gt;</span> <span class="n">b</span>
+
+<span class="c1">// Illegal - connects 'a' multiple times</span>
+<span class="n">a</span> <span class="o">&lt;&gt;</span> <span class="n">b</span>
+<span class="n">a</span> <span class="o">&lt;&gt;</span> <span class="n">c</span>
+</code></pre></div></div>
+
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

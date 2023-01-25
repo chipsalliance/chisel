@@ -1,0 +1,197 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Reset</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Reset" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Reset" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Reset" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class=" active ">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="reset">Reset</h1>
+
+<p>As of Chisel 3.2.0, Chisel 3 supports both synchronous and asynchronous reset,
+meaning that it can natively emit both synchronous and asynchronously reset registers.</p>
+
+<p>The type of register that is emitted is based on the type of the reset signal associated
+with the register.</p>
+
+<p>There are three types of reset that implement a common trait <code class="language-plaintext highlighter-rouge">Reset</code>:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Bool</code> - constructed with <code class="language-plaintext highlighter-rouge">Bool()</code>. Also known as “synchronous reset”.</li>
+  <li><code class="language-plaintext highlighter-rouge">AsyncReset</code> - constructed with <code class="language-plaintext highlighter-rouge">AsyncReset()</code>. Also known as “asynchronous reset”.</li>
+  <li><code class="language-plaintext highlighter-rouge">Reset</code> - constructed with <code class="language-plaintext highlighter-rouge">Reset()</code>. Also known as “abstract reset”.</li>
+</ul>
+
+<p>For implementation reasons, the concrete Scala type is <code class="language-plaintext highlighter-rouge">ResetType</code>. Stylistically we avoid <code class="language-plaintext highlighter-rouge">ResetType</code>, instead using the common trait <code class="language-plaintext highlighter-rouge">Reset</code>.</p>
+
+<p>Registers with reset signals of type <code class="language-plaintext highlighter-rouge">Bool</code> are emitted as synchronous reset flops.
+Registers with reset signals of type <code class="language-plaintext highlighter-rouge">AsyncReset</code> are emitted as asynchronouly reset flops.
+Registers with reset signals of type <code class="language-plaintext highlighter-rouge">Reset</code> will have their reset type <em>inferred</em> during FIRRTL compilation.</p>
+
+<h3 id="reset-inference">Reset Inference</h3>
+
+<p>FIRRTL will infer a concrete type for any signals of type abstract <code class="language-plaintext highlighter-rouge">Reset</code>.
+The rules are as follows:</p>
+<ol>
+  <li>An abstract <code class="language-plaintext highlighter-rouge">Reset</code> with only signals of type <code class="language-plaintext highlighter-rouge">AsyncReset</code>, abstract <code class="language-plaintext highlighter-rouge">Reset</code>, and <code class="language-plaintext highlighter-rouge">DontCare</code>
+in both its fan-in and fan-out will infer to be of type <code class="language-plaintext highlighter-rouge">AsyncReset</code></li>
+  <li>An abstract <code class="language-plaintext highlighter-rouge">Reset</code> with signals of both types <code class="language-plaintext highlighter-rouge">Bool</code> and <code class="language-plaintext highlighter-rouge">AsyncReset</code> in its fan-in and fan-out
+is an error.</li>
+  <li>Otherwise, an abstract <code class="language-plaintext highlighter-rouge">Reset</code> will infer to type <code class="language-plaintext highlighter-rouge">Bool</code>.</li>
+</ol>
+
+<p>You can think about (3) as the mirror of (1) replacing <code class="language-plaintext highlighter-rouge">AsyncReset</code> with <code class="language-plaintext highlighter-rouge">Bool</code> with the additional
+rule that abstract <code class="language-plaintext highlighter-rouge">Reset</code>s with neither <code class="language-plaintext highlighter-rouge">AsyncReset</code> nor <code class="language-plaintext highlighter-rouge">Bool</code> in their fan-in and fan-out will
+default to type <code class="language-plaintext highlighter-rouge">Bool</code>.
+This “default” case is uncommon and implies that reset signal is ultimately driven by a <code class="language-plaintext highlighter-rouge">DontCare</code>.</p>
+
+<h3 id="implicit-reset">Implicit Reset</h3>
+
+<p>A <code class="language-plaintext highlighter-rouge">Module</code>’s <code class="language-plaintext highlighter-rouge">reset</code> is of type abstract <code class="language-plaintext highlighter-rouge">Reset</code>.
+Prior to Chisel 3.2.0, the type of this field was <code class="language-plaintext highlighter-rouge">Bool</code>.
+For backwards compatability, if the top-level module has an implicit reset, its type will default to <code class="language-plaintext highlighter-rouge">Bool</code>.</p>
+
+<h4 id="setting-implicit-reset-type">Setting Implicit Reset Type</h4>
+
+<p><em>New in Chisel 3.3.0</em></p>
+
+<p>If you would like to set the reset type from within a Module (including the top-level <code class="language-plaintext highlighter-rouge">Module</code>),
+rather than relying on <em>Reset Inference</em>, you can mixin one of the following traits:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">RequireSyncReset</code> - sets the type of <code class="language-plaintext highlighter-rouge">reset</code> to <code class="language-plaintext highlighter-rouge">Bool</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RequireAsyncReset</code> - sets the type of <code class="language-plaintext highlighter-rouge">reset</code> to <code class="language-plaintext highlighter-rouge">AsyncReset</code></li>
+</ul>
+
+<p>For example:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyAlwaysSyncResetModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="k">with</span> <span class="nc">RequireSyncReset</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">mySyncResetReg</span> <span class="k">=</span> <span class="nc">RegInit</span><span class="o">(</span><span class="nv">false</span><span class="o">.</span><span class="py">B</span><span class="o">)</span> <span class="c1">// reset is of type Bool</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyAlwaysAsyncResetModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="k">with</span> <span class="nc">RequireAsyncReset</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">myAsyncResetReg</span> <span class="k">=</span> <span class="nc">RegInit</span><span class="o">(</span><span class="nv">false</span><span class="o">.</span><span class="py">B</span><span class="o">)</span> <span class="c1">// reset is of type AsyncReset</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><strong>Note:</strong> This sets the concrete type, but the Scala type will remain <code class="language-plaintext highlighter-rouge">Reset</code>, so casting may still be necessary.
+This comes up most often when using a reset of type <code class="language-plaintext highlighter-rouge">Bool</code> in logic.</p>
+
+<h3 id="reset-agnostic-code">Reset-Agnostic Code</h3>
+
+<p>The purpose of abstract <code class="language-plaintext highlighter-rouge">Reset</code> is to make it possible to design hardware that is agnostic to the
+reset discipline used.
+This enables code reuse for utilities and designs where the reset discipline does not matter to
+the functionality of the block.</p>
+
+<p>Consider the two example modules below which are agnostic to the type of reset used within them:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ResetAgnosticModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="nv">resetAgnosticReg</span> <span class="k">=</span> <span class="nc">RegInit</span><span class="o">(</span><span class="mf">0.</span><span class="nf">U</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">))</span>
+  <span class="n">resetAgnosticReg</span> <span class="o">:=</span> <span class="n">resetAgnosticReg</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">out</span> <span class="o">:=</span> <span class="n">resetAgnosticReg</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">ResetAgnosticRawModule</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">clk</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">Clock</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">rst</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">Reset</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+
+  <span class="k">val</span> <span class="nv">resetAgnosticReg</span> <span class="k">=</span> <span class="nf">withClockAndReset</span><span class="o">(</span><span class="n">clk</span><span class="o">,</span> <span class="n">rst</span><span class="o">)(</span><span class="nc">RegInit</span><span class="o">(</span><span class="mf">0.</span><span class="nf">U</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="n">resetAgnosticReg</span> <span class="o">:=</span> <span class="n">resetAgnosticReg</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">resetAgnosticReg</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>These modules can be used in both synchronous and asynchronous reset domains.
+Their reset types will be inferred based on the context within which they are used.</p>
+
+<h3 id="forcing-reset-type">Forcing Reset Type</h3>
+
+<p>You can set the type of a Module’s implicit reset as described <a href="#setting-implicit-reset-type">above</a>.</p>
+
+<p>You can also cast to force the concrete type of reset.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">.asBool</code> will reinterpret a <code class="language-plaintext highlighter-rouge">Reset</code> as <code class="language-plaintext highlighter-rouge">Bool</code></li>
+  <li><code class="language-plaintext highlighter-rouge">.asAsyncReset</code> will reinterpret a <code class="language-plaintext highlighter-rouge">Reset</code> as <code class="language-plaintext highlighter-rouge">AsyncReset</code>.</li>
+</ul>
+
+<p>You can then use <code class="language-plaintext highlighter-rouge">withReset</code> to use a cast reset as the implicit reset.
+See <a href="../explanations/multi-clock">“Multiple Clock Domains”</a> for more information about <code class="language-plaintext highlighter-rouge">withReset</code>.</p>
+
+<p>The following will make <code class="language-plaintext highlighter-rouge">myReg</code> as well as both <code class="language-plaintext highlighter-rouge">resetAgnosticReg</code>s synchronously reset:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ForcedSyncReset</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="c1">// withReset's argument becomes the implicit reset in its scope</span>
+  <span class="nf">withReset</span> <span class="o">(</span><span class="nv">reset</span><span class="o">.</span><span class="py">asBool</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">myReg</span> <span class="k">=</span> <span class="nc">RegInit</span><span class="o">(</span><span class="mf">0.</span><span class="n">U</span><span class="o">)</span>
+    <span class="k">val</span> <span class="nv">myModule</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">ResetAgnosticModule</span><span class="o">)</span>
+
+    <span class="c1">// RawModules do not have implicit resets so withReset has no effect</span>
+    <span class="k">val</span> <span class="nv">myRawModule</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">ResetAgnosticRawModule</span><span class="o">)</span>
+    <span class="c1">// We must drive the reset port manually</span>
+    <span class="nv">myRawModule</span><span class="o">.</span><span class="py">rst</span> <span class="o">:=</span> <span class="nv">Module</span><span class="o">.</span><span class="py">reset</span> <span class="c1">// Module.reset grabs the current implicit reset</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>The following will make <code class="language-plaintext highlighter-rouge">myReg</code> as well as both <code class="language-plaintext highlighter-rouge">resetAgnosticReg</code>s asynchronously reset:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ForcedAysncReset</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="c1">// withReset's argument becomes the implicit reset in its scope</span>
+  <span class="nf">withReset</span> <span class="o">(</span><span class="nv">reset</span><span class="o">.</span><span class="py">asAsyncReset</span><span class="o">){</span>
+    <span class="k">val</span> <span class="nv">myReg</span> <span class="k">=</span> <span class="nc">RegInit</span><span class="o">(</span><span class="mf">0.</span><span class="n">U</span><span class="o">)</span>
+    <span class="k">val</span> <span class="nv">myModule</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">ResetAgnosticModule</span><span class="o">)</span> <span class="c1">// myModule.reset is connected implicitly</span>
+
+    <span class="c1">// RawModules do not have implicit resets so withReset has no effect</span>
+    <span class="k">val</span> <span class="nv">myRawModule</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">ResetAgnosticRawModule</span><span class="o">)</span>
+    <span class="c1">// We must drive the reset port manually</span>
+    <span class="nv">myRawModule</span><span class="o">.</span><span class="py">rst</span> <span class="o">:=</span> <span class="nv">Module</span><span class="o">.</span><span class="py">reset</span> <span class="c1">// Module.reset grabs the current implicit reset</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><strong>Note:</strong> such casts (<code class="language-plaintext highlighter-rouge">asBool</code> and <code class="language-plaintext highlighter-rouge">asAsyncReset</code>) are not checked by FIRRTL.
+In doing such a cast, you as the designer are effectively telling the compiler
+that you know what you are doing and to force the type as cast.</p>
+
+<h3 id="last-connect-semantics">Last-Connect Semantics</h3>
+
+<p>It is <strong>not</strong> legal to override the reset type using last-connect semantics
+unless you are overriding a <code class="language-plaintext highlighter-rouge">DontCare</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">resetBool</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">Reset</span><span class="o">())</span>
+  <span class="n">resetBool</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+  <span class="n">resetBool</span> <span class="o">:=</span> <span class="nv">false</span><span class="o">.</span><span class="py">B</span> <span class="c1">// this is fine</span>
+  <span class="nf">withReset</span><span class="o">(</span><span class="n">resetBool</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">mySubmodule</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Submodule</span><span class="o">())</span>
+  <span class="o">}</span>
+  <span class="n">resetBool</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span> <span class="c1">// this is fine</span>
+  <span class="n">resetBool</span> <span class="o">:=</span> <span class="nv">false</span><span class="o">.</span><span class="py">B</span><span class="o">.</span><span class="py">asAsyncReset</span> <span class="c1">// this will error in FIRRTL</span>
+<span class="o">}</span>
+</code></pre></div></div>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

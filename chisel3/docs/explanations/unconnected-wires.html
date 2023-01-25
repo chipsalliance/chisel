@@ -1,0 +1,143 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Unconnected Wires</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Unconnected Wires" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Unconnected Wires" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Unconnected Wires" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class=" active ">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="unconnected-wires">Unconnected Wires</h1>
+
+<p>The Invalidate API <a href="https://github.com/freechipsproject/chisel3/pull/645">(#645)</a> adds support to Chisel
+for reporting unconnected wires as errors.</p>
+
+<p>Prior to this pull request, Chisel automatically generated a firrtl <code class="language-plaintext highlighter-rouge">is invalid</code> for <code class="language-plaintext highlighter-rouge">Module IO()</code>, and each <code class="language-plaintext highlighter-rouge">Wire()</code> definition.
+This made it difficult to detect cases where output signals were never driven.
+Chisel now supports a <code class="language-plaintext highlighter-rouge">DontCare</code> element, which may be connected to an output signal, indicating that that signal is intentionally not driven.
+Unless a signal is driven by hardware or connected to a <code class="language-plaintext highlighter-rouge">DontCare</code>, Firrtl will complain with a “not fully initialized” error.</p>
+
+<h3 id="api">API</h3>
+
+<p>Output signals may be connected to DontCare, generating a <code class="language-plaintext highlighter-rouge">is invalid</code> when the corresponding firrtl is emitted.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">Out</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span> 
+  <span class="k">val</span> <span class="nv">debug</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+  <span class="k">val</span> <span class="nv">debugOption</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+<span class="o">}</span>
+<span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Out</span> <span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">io</span><span class="o">.</span><span class="py">out</span><span class="o">.</span><span class="py">debug</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span>
+<span class="nv">io</span><span class="o">.</span><span class="py">out</span><span class="o">.</span><span class="py">debugOption</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+</code></pre></div></div>
+
+<p>This indicates that the signal <code class="language-plaintext highlighter-rouge">io.out.debugOption</code> is intentionally not driven and firrtl should not issue a “not fully initialized”
+error for this signal.</p>
+
+<p>This can be applied to aggregates as well as individual signals:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">class</span> <span class="nc">ModWithVec</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="c1">// ...</span>
+  <span class="k">val</span> <span class="nv">nElements</span> <span class="k">=</span> <span class="mi">5</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">outs</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="n">nElements</span><span class="o">,</span> <span class="nc">Bool</span><span class="o">()))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">outs</span> <span class="o">&lt;&gt;</span> <span class="nc">DontCare</span>
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">TrivialInterface</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">ModWithTrivalInterface</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="c1">// ...</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">TrivialInterface</span><span class="o">)</span>
+  <span class="n">io</span> <span class="o">&lt;&gt;</span> <span class="nc">DontCare</span>
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This feature is controlled by <code class="language-plaintext highlighter-rouge">CompileOptions.explicitInvalidate</code> and is set to <code class="language-plaintext highlighter-rouge">false</code> in <code class="language-plaintext highlighter-rouge">NotStrict</code> (Chisel2 compatibility mode),
+and <code class="language-plaintext highlighter-rouge">true</code> in <code class="language-plaintext highlighter-rouge">Strict</code> mode.</p>
+
+<p>You can selectively enable this for Chisel2 compatibility mode by providing your own explicit <code class="language-plaintext highlighter-rouge">compileOptions</code>,
+either for a group of Modules (via inheritance):</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">abstract</span> <span class="k">class</span> <span class="nc">ExplicitInvalidateModule</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">()(</span><span class="nv">chisel3</span><span class="o">.</span><span class="py">ExplicitCompileOptions</span><span class="o">.</span><span class="py">NotStrict</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">explicitInvalidate</span> <span class="k">=</span> <span class="kc">true</span><span class="o">))</span>
+</code></pre></div></div>
+<p>or on a per-Module basis:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">override</span> <span class="k">val</span> <span class="nv">compileOptions</span> <span class="k">=</span> <span class="nv">chisel3</span><span class="o">.</span><span class="py">ExplicitCompileOptions</span><span class="o">.</span><span class="py">NotStrict</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">explicitInvalidate</span> <span class="k">=</span> <span class="kc">true</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span> <span class="cm">/* ... */</span> <span class="o">}</span> <span class="o">)</span>
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Or conversely, disable this stricter checking (which is now the default in pure chisel3):</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">abstract</span> <span class="k">class</span> <span class="nc">ImplicitInvalidateModule</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">()(</span><span class="nv">chisel3</span><span class="o">.</span><span class="py">ExplicitCompileOptions</span><span class="o">.</span><span class="py">Strict</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">explicitInvalidate</span> <span class="k">=</span> <span class="kc">false</span><span class="o">))</span>
+</code></pre></div></div>
+<p>or on a per-Module basis:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">override</span> <span class="k">val</span> <span class="nv">compileOptions</span> <span class="k">=</span> <span class="nv">chisel3</span><span class="o">.</span><span class="py">ExplicitCompileOptions</span><span class="o">.</span><span class="py">Strict</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">explicitInvalidate</span> <span class="k">=</span> <span class="kc">false</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span> <span class="cm">/* ... */</span> <span class="o">}</span> <span class="o">)</span>
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Please see the corresponding <a href="https://github.com/freechipsproject/chisel3/blob/master/src/test/scala/chiselTests/InvalidateAPISpec.scala">API tests</a>
+for examples.</p>
+
+<h3 id="determining-the-unconnected-element">Determining the unconnected element</h3>
+
+<p>I have an interface with 42 wires.
+Which one of them is unconnected?</p>
+
+<p>The firrtl error message should contain something like:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>firrtl.passes.CheckInitialization<span class="nv">$RefNotInitializedException</span>:  @[:@6.4] : <span class="o">[</span>module Router]  Reference io is not fully initialized.
+   @[Decoupled.scala 38:19:@48.12] : node _GEN_23 <span class="o">=</span> mux<span class="o">(</span>and<span class="o">(</span>UInt&lt;1&gt;<span class="o">(</span><span class="s2">"h1"</span><span class="o">)</span>, eq<span class="o">(</span>UInt&lt;2&gt;<span class="o">(</span><span class="s2">"h3"</span><span class="o">)</span>, _T_84<span class="o">))</span>, _GEN_2, VOID<span class="o">)</span> @[Decoupled.scala 38:19:@48.12]
+   @[Router.scala 78:30:@44.10] : node _GEN_36 <span class="o">=</span> mux<span class="o">(</span>_GEN_0.ready, _GEN_23, VOID<span class="o">)</span> @[Router.scala 78:30:@44.10]
+   @[Router.scala 75:26:@39.8] : node _GEN_54 <span class="o">=</span> mux<span class="o">(</span>io.in.valid, _GEN_36, VOID<span class="o">)</span> @[Router.scala 75:26:@39.8]
+   @[Router.scala 70:50:@27.6] : node _GEN_76 <span class="o">=</span> mux<span class="o">(</span>io.load_routing_table_request.valid, VOID, _GEN_54<span class="o">)</span> @[Router.scala 70:50:@27.6]
+   @[Router.scala 65:85:@19.4] : node _GEN_102 <span class="o">=</span> mux<span class="o">(</span>_T_62, VOID, _GEN_76<span class="o">)</span> @[Router.scala 65:85:@19.4]
+   : io.outs[3].bits.body &lt;<span class="o">=</span> _GEN_102
+</code></pre></div></div>
+<p>The first line is the initial error report.
+Successive lines, indented and beginning with source line information indicate connections involving the problematic signal.
+Unfortunately, if these are <code class="language-plaintext highlighter-rouge">when</code> conditions involving muxes, they may be difficult to decipher.
+The last line of the group, indented and beginning with a <code class="language-plaintext highlighter-rouge">:</code> should indicate the uninitialized signal component.
+This example (from the <a href="https://github.com/ucb-bar/chisel-tutorial/blob/release/src/main/scala/examples/Router.scala">Router tutorial</a>)
+was produced when the output queue bits were not initialized.
+The old code was:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nv">io</span><span class="o">.</span><span class="py">outs</span><span class="o">.</span><span class="py">foreach</span> <span class="o">{</span> <span class="n">out</span> <span class="k">=&gt;</span> <span class="nv">out</span><span class="o">.</span><span class="py">noenq</span><span class="o">()</span> <span class="o">}</span>
+</code></pre></div></div>
+<p>which initialized the queue’s <code class="language-plaintext highlighter-rouge">valid</code> bit, but did not initialize the actual output values.
+The fix was:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nv">io</span><span class="o">.</span><span class="py">outs</span><span class="o">.</span><span class="py">foreach</span> <span class="o">{</span> <span class="n">out</span> <span class="k">=&gt;</span>
+    <span class="nv">out</span><span class="o">.</span><span class="py">bits</span> <span class="o">:=</span> <span class="mf">0.</span><span class="nv">U</span><span class="o">.</span><span class="py">asTypeOf</span><span class="o">(</span><span class="nv">out</span><span class="o">.</span><span class="py">bits</span><span class="o">)</span>
+    <span class="nv">out</span><span class="o">.</span><span class="py">noenq</span><span class="o">()</span>
+  <span class="o">}</span>
+</code></pre></div></div>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Style Guide</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Style Guide" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Style Guide" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Style Guide" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class=" active ">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="chisel-developers-style-guide">Chisel Developers Style Guide</h1>
+
+<p>This document describes the syle used within the <code class="language-plaintext highlighter-rouge">chisel3</code>
+and related projects (<code class="language-plaintext highlighter-rouge">firrtl</code>, <code class="language-plaintext highlighter-rouge">treadle</code>, etc). It does not
+capture requirements for code which is written using these libraries,
+although projects may choose to adopt these guidelines.</p>
+
+<p>The Chisel style guide reflects the <a href="http://google.github.io/styleguide/javaguide.html">Google Java style
+guide</a> and the <a href="http://docs.scala-lang.org/style/">General Public Scala style
+guide</a>. The specific rules below are to clarify
+the style used for the chisel3 repo and repos related to Chisel (Firrtl).</p>
+
+<p><strong>Goal:</strong> Readability and consistency are the main purposes of the style guide.
+Writing your code so someone else (or yourself) can grok it later is important
+to code health and quality.</p>
+
+<h2 id="filenames">Filenames</h2>
+<p>The source file name consists of the case-sensitive name of the top-level class
+it contains, plus “.scala”.</p>
+
+<h2 id="packages">Packages</h2>
+
+<p>Package definitions must contain the full path to the package from scala. If
+you create a subpackage, it should go in a subdirectory.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>package directory.name.to.get.you.to.your.source
+</code></pre></div></div>
+
+<p>As in Scala, packages follow the <a href="https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names">Java package naming convention</a>.
+Note that these guidelines call for all lowercase, no underscores.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Do this</span>
+<span class="k">package</span> <span class="nn">hardware.chips.topsecret.masterplan</span>
+
+<span class="c1">// Not this</span>
+<span class="k">package</span> <span class="nn">hardware.chips.veryObvious.bad_style</span>
+</code></pre></div></div>
+
+<p>We also suggest you do not use chisel3 as a package, and especially do not use it
+as the final (innermost) package.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Don't do this</span>
+<span class="k">package</span> <span class="nn">hardware.chips.newchip.superfastcomponent.chisel3</span>
+
+<span class="c1">// This will lead to instantiating package members like so:</span>
+<span class="k">val</span> <span class="nv">module</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nv">chisel3</span><span class="o">.</span><span class="py">FastModule</span><span class="o">)</span>
+
+<span class="c1">// Which collides with the chisel namespace</span>
+<span class="k">import</span> <span class="nn">chisel3._</span>
+</code></pre></div></div>
+
+<h2 id="imports">Imports</h2>
+<p>Avoid wildcard ( ._ ) imports, with the exception of chisel3._
+All other imports must call out used methods.
+<code class="language-plaintext highlighter-rouge">import chisel3._</code> must be first, and separated from remaining imports with an extra blank line.</p>
+
+<p><strong>Reason:</strong> This makes it clear where methods are defined.</p>
+
+<p>Any remaining imports must be listed alphabetically.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+
+<span class="k">import</span> <span class="nn">the.other.thing.that.i.reference.inline</span>
+<span class="k">import</span> <span class="nn">the.other.things.that.i.reference.</span><span class="o">{</span><span class="nc">ClassOne</span><span class="o">,</span> <span class="nc">ClassTwo</span><span class="o">}</span>
+
+
+<span class="k">val</span> <span class="nv">myInline</span> <span class="k">=</span> <span class="nv">inline</span><span class="o">.</span><span class="py">MakeAnInline</span><span class="o">()</span>
+<span class="k">val</span> <span class="nv">myClassOne</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">ClassOne</span>
+</code></pre></div></div>
+
+<h2 id="tests">Tests</h2>
+<p>Test classes are named starting with the name of the class they are testing, and
+ending with “Test”.
+Test files must start with the name of the class you are testing and end with
+“Test.scala”.
+Test files should reside in a subdirectory called “tests”.
+The tests package should be composed of the package class you are testing.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">package</span> <span class="nn">class.under.test.class</span>
+<span class="k">package</span> <span class="nn">tests</span>
+</code></pre></div></div>
+
+<h2 id="comments">Comments</h2>
+<p>We use scaladoc to automatically generate documentation from the source code.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/** Multiple lines of ScalaDoc text are written here,
+  * wrapped normally...
+  */</span>
+<span class="n">public</span> <span class="n">int</span> <span class="nf">method</span><span class="o">(</span><span class="nc">String</span> <span class="n">p1</span><span class="o">)</span> <span class="o">{</span> <span class="o">...</span> <span class="o">}</span>
+</code></pre></div></div>
+
+<p>… or in this single-line example:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/** An especially short bit of Javadoc. */</span>
+</code></pre></div></div>
+
+<p>Write documentation as if the person reading it knows more about Scala and
+Chisel than you. If you find comments in the code consider breaking them up
+into seperate methods.</p>
+
+<h2 id="module-classes-and-instances">Module Classes and Instances</h2>
+
+<p>Modules can take different forms in Chisel. The first form is similar to Verilog, where
+you instance the module and then hook it up. In this case <code class="language-plaintext highlighter-rouge">Module(new MyMod())</code> is
+returning a reference to the module.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">myMod</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyMod</span><span class="o">())</span>
+<span class="nv">myMod</span><span class="o">.</span><span class="py">io</span> <span class="o">&lt;&gt;</span> <span class="n">hookUp</span>
+</code></pre></div></div>
+
+<p>The second form is a more programmatic inline style with factory methods. In this case,
+Queue is actually returning the part of the IO bundle representing the queue’s
+output. The factory method takes the input IO to the queue and an optional parameter
+for depth.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">queueOut</span> <span class="k">=</span> <span class="nc">Queue</span><span class="o">(</span><span class="n">queueIn</span><span class="o">,</span> <span class="n">depth</span><span class="k">=</span><span class="mi">10</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>The latter can be used for composing multiple functions into a single line.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">queueOut</span> <span class="k">=</span> <span class="nc">Queue</span><span class="o">(</span>
+  <span class="nv">Arbitrate</span><span class="o">.</span><span class="py">byRoundRobin</span><span class="o">(</span>
+    <span class="nc">Queue</span><span class="o">(</span><span class="n">a</span><span class="o">),</span> <span class="c1">// depth assumed to be 1</span>
+    <span class="nc">Queue</span><span class="o">(</span><span class="n">b</span><span class="o">,</span> <span class="n">depth</span><span class="k">=</span><span class="mi">3</span><span class="o">),</span>
+    <span class="nc">Queue</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">depth</span><span class="k">=</span><span class="mi">4</span><span class="o">)</span>
+  <span class="o">),</span>
+  <span class="n">depth</span><span class="k">=</span><span class="mi">10</span>
+<span class="o">)</span>
+</code></pre></div></div>
+
+<h2 id="naming-conventions">Naming Conventions</h2>
+
+<p>Chisel follows the <a href="http://docs.scala-lang.org/style/naming-conventions.html">Scala Naming Conventions</a>.
+In general, Chisel code should use <code class="language-plaintext highlighter-rouge">lowerCamelCase</code> for variable naming (ie. the first letter
+of each word is capitalized except for the first word) and <code class="language-plaintext highlighter-rouge">UpperCamelCase</code> for class names.</p>
+
+<blockquote>
+  <p>Using these guidelines can result in verilog which is noncompliant with common verilog coding standards, e.g.
+the <a href="https://github.com/lowRISC/style-guides/blob/master/VerilogCodingStyle.md#naming">lowRISC verilog coding style</a>.
+Authors of Chisel code that translates to hardware constructs might therefore prefer to use <code class="language-plaintext highlighter-rouge">snake_case</code>. However,
+generated code can always be transformed to meet various emitted code requirements, so the official Chisel style
+guide follows the Scala convention.</p>
+</blockquote>
+
+<h3 id="why-camelcase-instead-of-snake_case">Why CamelCase instead of Snake_Case?</h3>
+
+<p>The compiler inserts underscores when splitting Chisel/FIRRTL aggregate types
+into Verilog types. The compiler uses underscores to preserve the original
+structure of the data in the resulting Verilog. Because of the special meaning
+of underscores in Chisel-generated Verilog, their use in naming is <strong>strongly</strong>
+discouraged.</p>
+
+<p>Consider the following Chisel code:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">msg</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+  <span class="k">val</span> <span class="nv">addr</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mi">32</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">data</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mi">64</span><span class="o">)</span>
+<span class="o">})</span>
+<span class="k">val</span> <span class="nv">msg_rec</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+</code></pre></div></div>
+
+<p>Which compiles to the Verilog:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">wire</span>  <span class="n">msg_valid</span><span class="p">;</span>
+<span class="kt">wire</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">msg_addr</span><span class="p">;</span>
+<span class="kt">wire</span> <span class="p">[</span><span class="mi">63</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">msg_data</span><span class="p">;</span>
+<span class="kt">wire</span>  <span class="n">msg_rec</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The Verilog maintains the structure of the original aggregate wire <code class="language-plaintext highlighter-rouge">msg</code>.
+However, because we named another variable <code class="language-plaintext highlighter-rouge">msg_rec</code>, it appears in the Verilog
+as if <code class="language-plaintext highlighter-rouge">msg</code> had 4 fields instead of its actual 3! If we instead follow the
+lowerCamelCase for values naming convention, the resulting Verilog makes more
+sense:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">msg</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+  <span class="k">val</span> <span class="nv">addr</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mi">32</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">data</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mi">64</span><span class="o">)</span>
+<span class="o">})</span>
+<span class="k">val</span> <span class="nv">msgRec</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+</code></pre></div></div>
+
+<p>And its resulting Verilog:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">wire</span>  <span class="n">msg_valid</span><span class="p">;</span>
+<span class="kt">wire</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">msg_addr</span><span class="p">;</span>
+<span class="kt">wire</span> <span class="p">[</span><span class="mi">63</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">msg_data</span><span class="p">;</span>
+<span class="kt">wire</span>  <span class="n">msgRec</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Much better.</p>
+
+<h3 id="modules-and-bundles-classes-traits-and-objects">Modules and Bundles (Classes, Traits, and Objects)</h3>
+
+<p>Modules are Scala classes and thus use UpperCamelCase.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ModuleNamingExample</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="o">...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Similarly, other classes (Chisel &amp; Scala) should be UpperCamelCase as well.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">trait</span> <span class="nc">UsefulScalaUtilities</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="nf">isEven</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="o">(</span><span class="n">n</span> <span class="o">%</span> <span class="mi">2</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span>
+  <span class="k">def</span> <span class="nf">isOdd</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="o">!</span><span class="nf">isEven</span><span class="o">(</span><span class="n">n</span><span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">MyCustomBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="o">...</span>
+<span class="o">}</span>
+<span class="c1">// Companion object to MyCustomBundle</span>
+<span class="k">object</span> <span class="nc">MyCustomBundle</span> <span class="o">{</span>
+  <span class="o">...</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h3 id="values-and-methods">Values and Methods</h3>
+
+<p>Values and methods should use lowerCamelCase. (Unless the value is a constant.)</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">mySuperReg</span> <span class="k">=</span> <span class="nc">Reg</span><span class="o">(</span><span class="n">init</span> <span class="k">=</span> <span class="mf">0.</span><span class="nf">asUInt</span><span class="o">(</span><span class="mi">32</span><span class="o">))</span>
+<span class="k">def</span> <span class="nf">myImportantMethod</span><span class="o">(</span><span class="n">a</span><span class="k">:</span> <span class="kt">UInt</span><span class="o">)</span><span class="k">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="mf">23.</span><span class="n">asUInt</span>
+</code></pre></div></div>
+
+<h3 id="constants">Constants</h3>
+
+<p>Unlike the Google Java style, constants use UpperCamelCase, which is in line
+with the official <a href="https://docs.scala-lang.org/style/naming-conventions.html">Scala Naming
+Conventions</a>.
+Constants are final fields (val or object) whose contents are deeply immutable
+and belong to a package object or an object. Examples:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Constants</span>
+<span class="k">object</span> <span class="nc">Constants</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">Number</span> <span class="k">=</span> <span class="mi">5</span>
+  <span class="k">val</span> <span class="nv">Names</span> <span class="k">=</span> <span class="s">"Ed"</span> <span class="o">::</span> <span class="s">"Ann"</span> <span class="o">::</span> <span class="nc">Nil</span>
+  <span class="k">val</span> <span class="nv">Ages</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="s">"Ed"</span> <span class="o">-&gt;</span> <span class="mi">35</span><span class="o">,</span> <span class="s">"Ann"</span> <span class="o">-&gt;</span> <span class="mi">32</span><span class="o">)</span>
+<span class="o">}</span>
+
+<span class="c1">// Not constants</span>
+<span class="k">class</span> <span class="nc">NonConstantsInClass</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">inClass</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">"in-class"</span>
+<span class="o">}</span>
+
+<span class="k">object</span> <span class="nc">nonConstantsInObject</span> <span class="o">{</span>
+  <span class="k">var</span> <span class="n">varString</span> <span class="k">=</span> <span class="s">"var-string"</span>
+  <span class="k">val</span> <span class="nv">mutableCollection</span><span class="k">:</span> <span class="kt">scala.collection.mutable.Set</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
+  <span class="k">val</span> <span class="nv">mutableElements</span> <span class="k">=</span> <span class="nc">Set</span><span class="o">(</span><span class="n">mutable</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="uppercamelcase-vs-lowercamelcase">UpperCamelCase vs. lowerCamelCase</h3>
+
+<p>There is more than one reasonable way to covert English prose into camel case.
+We follow the convention defined in the <a href="https://google.github.io/styleguide/javaguide.html#s5.3-camel-case">Google Java style
+guide</a>. The
+potentially non-obvious rule being to treat acronymns as words for the purpose
+of camel case.</p>
+
+<p>Note that the casing of the original words is almost entirely disregarded.
+Example:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">Prose form</th>
+      <th style="text-align: left">UpperCamelCase</th>
+      <th style="text-align: left">lowerCamelCase</th>
+      <th style="text-align: left">Incorrect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">find GCD</td>
+      <td style="text-align: left">FindGcd</td>
+      <td style="text-align: left">findGcd</td>
+      <td style="text-align: left"><del>findGCD</del></td>
+    </tr>
+    <tr>
+      <td style="text-align: left">state for FSM</td>
+      <td style="text-align: left">StateForFsm</td>
+      <td style="text-align: left">stateForFsm</td>
+      <td style="text-align: left"><del>stateForFSM</del></td>
+    </tr>
+    <tr>
+      <td style="text-align: left">mock dut</td>
+      <td style="text-align: left">MockDut</td>
+      <td style="text-align: left">mockDut</td>
+      <td style="text-align: left"><del>MockDUT</del></td>
+    </tr>
+    <tr>
+      <td style="text-align: left">FIFO Generator</td>
+      <td style="text-align: left">FifoGenerator</td>
+      <td style="text-align: left">fifoGenerator</td>
+      <td style="text-align: left"><del>FIFOGenerator</del></td>
+    </tr>
+  </tbody>
+</table>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

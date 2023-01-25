@@ -1,0 +1,446 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Hierarchy Cookbook</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Hierarchy Cookbook" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Hierarchy Cookbook" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Hierarchy Cookbook" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class=" active ">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="hierarchy-cookbook">Hierarchy Cookbook</h1>
+
+<ul>
+  <li><a href="#how-do-i-instantiate-multiple-instances-with-the-same-module-parameterization">How do I instantiate multiple instances with the same module parameterization, but avoid re-elaboration?</a></li>
+  <li><a href="#how-do-i-access-internal-fields-of-an-instance">How do I access internal fields of an instance?</a></li>
+  <li><a href="#how-do-i-make-my-parameters-accessable-from-an-instance">How do I make my parameters accessable from an instance?</a></li>
+  <li><a href="#how-do-i-reuse-a-previously-elaborated-module-if-my-new-module-has-the-same-parameterization">How do I reuse a previously elaborated module, if my new module has the same parameterization?</a></li>
+  <li><a href="#how-do-I-parameterize-a-module-by-its-children-instances">How do I parameterize a module by its children instances?</a></li>
+  <li><a href="#how-do-I-use-the-new-hierarchy-specific-Select-functions">How do I use the new hierarchy-specific Select functions?</a></li>
+</ul>
+
+<h2 id="how-do-i-instantiate-multiple-instances-with-the-same-module-parameterization">How do I instantiate multiple instances with the same module parameterization?</h2>
+
+<p>Prior to this package, Chisel users relied on deduplication in a FIRRTL compiler to combine
+structurally equivalent modules into one module (aka “deduplication”).
+This package introduces the following new APIs to enable multiply-instantiated modules directly in Chisel.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Definition(...)</code> enables elaborating a module, but does not actually instantiate that module.
+Instead, it returns a <code class="language-plaintext highlighter-rouge">Definition</code> class which represents that module’s definition.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Instance(...)</code> takes a <code class="language-plaintext highlighter-rouge">Definition</code> and instantiates it, returning an <code class="language-plaintext highlighter-rouge">Instance</code> object.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Instantiate(...)</code> provides an API similar to <code class="language-plaintext highlighter-rouge">Module(...)</code>, except it uses
+<code class="language-plaintext highlighter-rouge">Definition</code> and <code class="language-plaintext highlighter-rouge">Instance</code> to only elaborate modules once for a given set of
+parameters. It returns an <code class="language-plaintext highlighter-rouge">Instance</code> object.</p>
+
+<p>Modules (classes or traits) which will be used with the <code class="language-plaintext highlighter-rouge">Definition</code>/<code class="language-plaintext highlighter-rouge">Instance</code> api should be marked
+with the <code class="language-plaintext highlighter-rouge">@instantiable</code> annotation at the class/trait definition.</p>
+
+<p>To make a Module’s members variables accessible from an <code class="language-plaintext highlighter-rouge">Instance</code> object, they must be annotated
+with the <code class="language-plaintext highlighter-rouge">@public</code> annotation. Note that this is only accessible from a Scala sense—this is not
+in and of itself a mechanism for cross-module references.</p>
+
+<h3 id="using-definition-and-instance">Using Definition and Instance</h3>
+
+<p>In the following example, use <code class="language-plaintext highlighter-rouge">Definition</code>, <code class="language-plaintext highlighter-rouge">Instance</code>, <code class="language-plaintext highlighter-rouge">@instantiable</code> and <code class="language-plaintext highlighter-rouge">@public</code> to create
+multiple instances of one specific parameterization of a module, <code class="language-plaintext highlighter-rouge">AddOne</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.hierarchy.</span><span class="o">{</span><span class="nc">Definition</span><span class="o">,</span> <span class="nc">Instance</span><span class="o">,</span> <span class="n">instantiable</span><span class="o">,</span> <span class="n">public</span><span class="o">}</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">AddOne</span><span class="o">(</span><span class="n">width</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">in</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">AddTwo</span><span class="o">(</span><span class="n">width</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">addOneDef</span> <span class="k">=</span> <span class="nc">Definition</span><span class="o">(</span><span class="k">new</span> <span class="nc">AddOne</span><span class="o">(</span><span class="n">width</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">i0</span> <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">addOneDef</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">i1</span> <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">addOneDef</span><span class="o">)</span>
+  <span class="nv">i0</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="n">in</span>
+  <span class="nv">i1</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="nv">i0</span><span class="o">.</span><span class="py">out</span>
+  <span class="n">out</span>   <span class="o">:=</span> <span class="nv">i1</span><span class="o">.</span><span class="py">out</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">AddOne</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">10'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, hierarchy.md:18:13</span>
+<span class="k">endmodule</span>
+
+<span class="k">module</span> <span class="n">AddTwo</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:13:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">i0_out</span><span class="p">;</span>	<span class="c1">// hierarchy.md:26:20</span>
+  <span class="n">AddOne</span> <span class="n">i0</span> <span class="p">(</span>	<span class="c1">// hierarchy.md:26:20</span>
+    <span class="p">.</span><span class="n">in</span>  <span class="p">(</span><span class="n">in</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">out</span> <span class="p">(</span><span class="mi">_</span><span class="n">i0_out</span><span class="p">)</span>
+  <span class="p">);</span>
+  <span class="n">AddOne</span> <span class="n">i1</span> <span class="p">(</span>	<span class="c1">// hierarchy.md:27:20</span>
+    <span class="p">.</span><span class="n">in</span>  <span class="p">(</span><span class="mi">_</span><span class="n">i0_out</span><span class="p">),</span>	<span class="c1">// hierarchy.md:26:20</span>
+    <span class="p">.</span><span class="n">out</span> <span class="p">(</span><span class="n">out</span><span class="p">)</span>
+  <span class="p">);</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h3 id="using-instantiate">Using Instantiate</h3>
+
+<p>Similar to the above, the following example uses <code class="language-plaintext highlighter-rouge">Instantiate</code> to create
+multiple instances of <code class="language-plaintext highlighter-rouge">AddOne</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.hierarchy.Instantiate</span>
+
+<span class="k">class</span> <span class="nc">AddTwoInstantiate</span><span class="o">(</span><span class="n">width</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">i0</span> <span class="k">=</span> <span class="nc">Instantiate</span><span class="o">(</span><span class="k">new</span> <span class="nc">AddOne</span><span class="o">(</span><span class="n">width</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">i1</span> <span class="k">=</span> <span class="nc">Instantiate</span><span class="o">(</span><span class="k">new</span> <span class="nc">AddOne</span><span class="o">(</span><span class="n">width</span><span class="o">))</span>
+  <span class="nv">i0</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="n">in</span>
+  <span class="nv">i1</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="nv">i0</span><span class="o">.</span><span class="py">out</span>
+  <span class="n">out</span>   <span class="o">:=</span> <span class="nv">i1</span><span class="o">.</span><span class="py">out</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">AddOne</span><span class="p">(</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">15</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span> <span class="c1">// @[hierarchy.md 16:23]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">15</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span> <span class="c1">// @[hierarchy.md 17:23]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">16'h1</span><span class="p">;</span> <span class="c1">// @[hierarchy.md 18:13]</span>
+<span class="k">endmodule</span>
+<span class="k">module</span> <span class="n">AddTwoInstantiate</span><span class="p">(</span>
+  <span class="kt">input</span>         <span class="n">clock</span><span class="p">,</span>
+  <span class="kt">input</span>         <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">15</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span> <span class="c1">// @[hierarchy.md 47:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">15</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span> <span class="c1">// @[hierarchy.md 48:15]</span>
+<span class="p">);</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">15</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">i0_in</span><span class="p">;</span> <span class="c1">// @[hierarchy.md 49:23]</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">15</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">i0_out</span><span class="p">;</span> <span class="c1">// @[hierarchy.md 49:23]</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">15</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">i1_in</span><span class="p">;</span> <span class="c1">// @[hierarchy.md 50:23]</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">15</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">i1_out</span><span class="p">;</span> <span class="c1">// @[hierarchy.md 50:23]</span>
+  <span class="n">AddOne</span> <span class="n">i0</span> <span class="p">(</span> <span class="c1">// @[hierarchy.md 49:23]</span>
+    <span class="p">.</span><span class="n">in</span><span class="p">(</span><span class="n">i0_in</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">out</span><span class="p">(</span><span class="n">i0_out</span><span class="p">)</span>
+  <span class="p">);</span>
+  <span class="n">AddOne</span> <span class="n">i1</span> <span class="p">(</span> <span class="c1">// @[hierarchy.md 50:23]</span>
+    <span class="p">.</span><span class="n">in</span><span class="p">(</span><span class="n">i1_in</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">out</span><span class="p">(</span><span class="n">i1_out</span><span class="p">)</span>
+  <span class="p">);</span>
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">i1_out</span><span class="p">;</span> <span class="c1">// @[hierarchy.md 53:9]</span>
+  <span class="k">assign</span> <span class="n">i0_in</span> <span class="o">=</span> <span class="n">in</span><span class="p">;</span> <span class="c1">// @[hierarchy.md 51:9]</span>
+  <span class="k">assign</span> <span class="n">i1_in</span> <span class="o">=</span> <span class="n">i0_out</span><span class="p">;</span> <span class="c1">// @[hierarchy.md 52:9]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h2 id="how-do-i-access-internal-fields-of-an-instance">How do I access internal fields of an instance?</h2>
+
+<p>You can mark internal members of a class or trait marked with <code class="language-plaintext highlighter-rouge">@instantiable</code> with the <code class="language-plaintext highlighter-rouge">@public</code> annotation.
+The requirements are that the field is publicly accessible, is a <code class="language-plaintext highlighter-rouge">val</code> or <code class="language-plaintext highlighter-rouge">lazy val</code>, and is a valid type.
+The list of valid types are:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">IsInstantiable</code></li>
+  <li><code class="language-plaintext highlighter-rouge">IsLookupable</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Data</code></li>
+  <li><code class="language-plaintext highlighter-rouge">BaseModule</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Iterable</code>/<code class="language-plaintext highlighter-rouge">Option </code>containing a type that meets these requirements</li>
+  <li>Basic type like <code class="language-plaintext highlighter-rouge">String</code>, <code class="language-plaintext highlighter-rouge">Int</code>, <code class="language-plaintext highlighter-rouge">BigInt</code> etc.</li>
+</ol>
+
+<p>To mark a superclass’s member as <code class="language-plaintext highlighter-rouge">@public</code>, use the following pattern (shown with <code class="language-plaintext highlighter-rouge">val clock</code>).</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.hierarchy.</span><span class="o">{</span><span class="n">instantiable</span><span class="o">,</span> <span class="n">public</span><span class="o">}</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">clock</span> <span class="k">=</span> <span class="n">clock</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>You’ll get the following error message for improperly marking something as <code class="language-plaintext highlighter-rouge">@public</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.hierarchy.</span><span class="o">{</span><span class="n">instantiable</span><span class="o">,</span> <span class="n">public</span><span class="o">}</span>
+
+<span class="k">object</span> <span class="nc">NotValidType</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">x</span> <span class="k">=</span> <span class="nc">NotValidType</span>
+<span class="o">}</span>
+<span class="c1">// error: @public is only legal within a class or trait marked @instantiable, and only on vals of type Data, BaseModule, MemBase, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, Either, or Tuple2</span>
+<span class="c1">// val x = circt.stage.ChiselStage.emitCHIRRTL(new Top)</span>
+<span class="c1">//     ^</span>
+</code></pre></div></div>
+
+<h2 id="how-do-i-make-my-parameters-accessible-from-an-instance">How do I make my parameters accessible from an instance?</h2>
+
+<p>If an instance’s parameters are simple (e.g. <code class="language-plaintext highlighter-rouge">Int</code>, <code class="language-plaintext highlighter-rouge">String</code> etc.) they can be marked directly with <code class="language-plaintext highlighter-rouge">@public</code>.</p>
+
+<p>Often, parameters are more complicated and are contained in case classes.
+In such cases, mark the case class with the <code class="language-plaintext highlighter-rouge">IsLookupable</code> trait.
+This indicates to Chisel that instances of the <code class="language-plaintext highlighter-rouge">IsLookupable</code> class may be accessed from within instances.</p>
+
+<p>However, ensure that these parameters are true for <strong>all</strong> instances of a definition.
+For example, if our parameters contained an id field which was instance-specific but defaulted to zero,
+then the definition’s id would be returned for all instances.
+This change in behavior could lead to bugs if other code presumed the id field was correct.</p>
+
+<p>Thus, it is important that when converting normal modules to use this package,
+you are careful about what you mark as <code class="language-plaintext highlighter-rouge">IsLookupable</code>.</p>
+
+<p>In the following example, we added the trait <code class="language-plaintext highlighter-rouge">IsLookupable</code> to allow the member to be marked <code class="language-plaintext highlighter-rouge">@public</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.hierarchy.</span><span class="o">{</span><span class="nc">Definition</span><span class="o">,</span> <span class="nc">Instance</span><span class="o">,</span> <span class="n">instantiable</span><span class="o">,</span> <span class="nc">IsLookupable</span><span class="o">,</span> <span class="n">public</span><span class="o">}</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">MyCaseClass</span><span class="o">(</span><span class="n">width</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">IsLookupable</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">x</span> <span class="k">=</span> <span class="nc">MyCaseClass</span><span class="o">(</span><span class="mi">10</span><span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">Top</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">inst</span> <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="nc">Definition</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyModule</span><span class="o">))</span>
+  <span class="nf">println</span><span class="o">(</span><span class="n">s</span><span class="s">"Width is ${inst.x.width}"</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Width is 10
+Circuit(Top,ArrayBuffer(DefModule(repl.MdocSession$MdocApp5$MyModule@54354da0,MyModule,ArrayBuffer(Port(MyModule.clock: IO[Clock],Input,UnlocatableSourceInfo), Port(MyModule.reset: IO[Reset],Input,UnlocatableSourceInfo)),Vector()), DefModule(repl.MdocSession$MdocApp5$Top@60a1b230,Top,ArrayBuffer(Port(Top.clock: IO[Clock],Input,UnlocatableSourceInfo), Port(Top.reset: IO[Bool],Input,UnlocatableSourceInfo)),Vector(DefInstance(SourceLine(hierarchy.md,112,22),ModuleClone(repl.MdocSession$MdocApp5$MyModule@54354da0),ArrayBuffer(Port(MyModule.clock: IO[Clock],Input,UnlocatableSourceInfo), Port(MyModule.reset: IO[Reset],Input,UnlocatableSourceInfo))), Connect(SourceLine(hierarchy.md,112,22),Node(MyModule.inst.clock: IO[Clock]),Node(Top.clock: IO[Clock])), Connect(SourceLine(hierarchy.md,112,22),Node(MyModule.inst.reset: IO[Reset]),Node(Top.reset: IO[Bool]))))),ArrayBuffer(),firrtl.renamemap.package$MutableRenameMap@5548bb9d,ArrayBuffer())
+</code></pre></div></div>
+
+<h2 id="how-do-i-look-up-parameters-from-a-definition-if-i-dont-want-to-instantiate-it">How do I look up parameters from a Definition, if I don’t want to instantiate it?</h2>
+
+<p>Just like <code class="language-plaintext highlighter-rouge">Instance</code>s, <code class="language-plaintext highlighter-rouge">Definition</code>’s also contain accessors for <code class="language-plaintext highlighter-rouge">@public</code> members.
+As such, you can directly access them:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.hierarchy.</span><span class="o">{</span><span class="nc">Definition</span><span class="o">,</span> <span class="n">instantiable</span><span class="o">,</span> <span class="n">public</span><span class="o">}</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">AddOne</span><span class="o">(</span><span class="k">val</span> <span class="nv">width</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">width</span> <span class="k">=</span> <span class="n">width</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">in</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">Top</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">definition</span> <span class="k">=</span> <span class="nc">Definition</span><span class="o">(</span><span class="k">new</span> <span class="nc">AddOne</span><span class="o">(</span><span class="mi">10</span><span class="o">))</span>
+  <span class="nf">println</span><span class="o">(</span><span class="n">s</span><span class="s">"Width is: ${definition.width}"</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Top</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:11:10</span>
+  <span class="kt">input</span> <span class="n">clock</span><span class="p">,</span>
+        <span class="n">reset</span><span class="p">);</span>
+
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h2 id="how-do-i-parameterize-a-module-by-its-children-instances">How do I parameterize a module by its children instances?</h2>
+
+<p>Prior to the introduction of this package, a parent module would have to pass all necessary parameters
+when instantiating a child module.
+This had the unfortunate consequence of requiring a parent’s parameters to always contain the child’s
+parameters, which was an unnecessary coupling which lead to some anti-patterns.</p>
+
+<p>Now, a parent can take a child <code class="language-plaintext highlighter-rouge">Definition</code> as an argument, and instantiate it directly.
+In addition, it can analyze the parameters used in the definition to parameterize itself.
+In a sense, now the child can actually parameterize the parent.</p>
+
+<p>In the following example, we create a definition of <code class="language-plaintext highlighter-rouge">AddOne</code>, and pass the definition to <code class="language-plaintext highlighter-rouge">AddTwo</code>.
+The width of the <code class="language-plaintext highlighter-rouge">AddTwo</code> ports are now derived from the parameterization of the <code class="language-plaintext highlighter-rouge">AddOne</code> instance.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.hierarchy.</span><span class="o">{</span><span class="nc">Definition</span><span class="o">,</span> <span class="nc">Instance</span><span class="o">,</span> <span class="n">instantiable</span><span class="o">,</span> <span class="n">public</span><span class="o">}</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">AddOne</span><span class="o">(</span><span class="k">val</span> <span class="nv">width</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">width</span> <span class="k">=</span> <span class="n">width</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">in</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">AddTwo</span><span class="o">(</span><span class="n">addOneDef</span><span class="k">:</span> <span class="kt">Definition</span><span class="o">[</span><span class="kt">AddOne</span><span class="o">])</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">i0</span> <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">addOneDef</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">i1</span> <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">addOneDef</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">addOneDef</span><span class="o">.</span><span class="py">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">addOneDef</span><span class="o">.</span><span class="py">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="nv">i0</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="n">in</span>
+  <span class="nv">i1</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="nv">i0</span><span class="o">.</span><span class="py">out</span>
+  <span class="n">out</span>   <span class="o">:=</span> <span class="nv">i1</span><span class="o">.</span><span class="py">out</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">AddOne</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">10'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, hierarchy.md:186:13</span>
+<span class="k">endmodule</span>
+
+<span class="k">module</span> <span class="n">AddTwo</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:13:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">9</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">i0_out</span><span class="p">;</span>	<span class="c1">// hierarchy.md:191:20</span>
+  <span class="n">AddOne</span> <span class="n">i0</span> <span class="p">(</span>	<span class="c1">// hierarchy.md:191:20</span>
+    <span class="p">.</span><span class="n">in</span>  <span class="p">(</span><span class="n">in</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">out</span> <span class="p">(</span><span class="mi">_</span><span class="n">i0_out</span><span class="p">)</span>
+  <span class="p">);</span>
+  <span class="n">AddOne</span> <span class="n">i1</span> <span class="p">(</span>	<span class="c1">// hierarchy.md:192:20</span>
+    <span class="p">.</span><span class="n">in</span>  <span class="p">(</span><span class="mi">_</span><span class="n">i0_out</span><span class="p">),</span>	<span class="c1">// hierarchy.md:191:20</span>
+    <span class="p">.</span><span class="n">out</span> <span class="p">(</span><span class="n">out</span><span class="p">)</span>
+  <span class="p">);</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h2 id="how-do-i-use-the-new-hierarchy-specific-select-functions">How do I use the new hierarchy-specific Select functions?</h2>
+
+<p>Select functions can be applied after a module has been elaborated, either in a Chisel Aspect or in a parent module applied to a child module.</p>
+
+<p>There are seven hierarchy-specific functions, which (with the exception of <code class="language-plaintext highlighter-rouge">ios</code>) either return <code class="language-plaintext highlighter-rouge">Instance</code>’s or <code class="language-plaintext highlighter-rouge">Definition</code>’s:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">instancesIn(parent)</code>: Return all instances directly instantiated locally within <code class="language-plaintext highlighter-rouge">parent</code></li>
+  <li><code class="language-plaintext highlighter-rouge">instancesOf[type](parent)</code>: Return all instances of provided <code class="language-plaintext highlighter-rouge">type</code> directly instantiated locally within <code class="language-plaintext highlighter-rouge">parent</code></li>
+  <li><code class="language-plaintext highlighter-rouge">allInstancesOf[type](root)</code>: Return all instances of provided <code class="language-plaintext highlighter-rouge">type</code> directly and indirectly instantiated, locally and deeply, starting from <code class="language-plaintext highlighter-rouge">root</code></li>
+  <li><code class="language-plaintext highlighter-rouge">definitionsIn</code>: Return definitions of all instances directly instantiated locally within <code class="language-plaintext highlighter-rouge">parent</code></li>
+  <li><code class="language-plaintext highlighter-rouge">definitionsOf[type]</code>: Return definitions of all instances of provided <code class="language-plaintext highlighter-rouge">type</code> directly instantiated locally within <code class="language-plaintext highlighter-rouge">parent</code></li>
+  <li><code class="language-plaintext highlighter-rouge">allDefinitionsOf[type]</code>: Return all definitions of instances of provided <code class="language-plaintext highlighter-rouge">type</code> directly and indirectly instantiated, locally and deeply, starting from <code class="language-plaintext highlighter-rouge">root</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ios</code>: Returns all the I/Os of the provided definition or instance.</li>
+</ul>
+
+<p>To demonstrate this, consider the following. We mock up an example where we are using the <code class="language-plaintext highlighter-rouge">Select.allInstancesOf</code> and <code class="language-plaintext highlighter-rouge">Select.allDefinitionsOf</code> to annotate instances and the definition of <code class="language-plaintext highlighter-rouge">EmptyModule</code>. When converting the <code class="language-plaintext highlighter-rouge">ChiselAnnotation</code> to firrtl’s <code class="language-plaintext highlighter-rouge">Annotation</code>, we print out the resulting <code class="language-plaintext highlighter-rouge">Target</code>. As shown, despite <code class="language-plaintext highlighter-rouge">EmptyModule</code> actually only being elaborated once, we still provide different targets depending on how the instance or definition is selected.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.hierarchy.</span><span class="o">{</span><span class="nc">Definition</span><span class="o">,</span> <span class="nc">Instance</span><span class="o">,</span> <span class="nc">Hierarchy</span><span class="o">,</span> <span class="n">instantiable</span><span class="o">,</span> <span class="n">public</span><span class="o">}</span>
+<span class="k">import</span> <span class="nn">firrtl.annotations.</span><span class="o">{</span><span class="nc">IsModule</span><span class="o">,</span> <span class="nc">NoTargetAnnotation</span><span class="o">}</span>
+<span class="k">case</span> <span class="k">object</span> <span class="nc">EmptyAnnotation</span> <span class="k">extends</span> <span class="nc">NoTargetAnnotation</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">MyChiselAnnotation</span><span class="o">(</span><span class="n">m</span><span class="k">:</span> <span class="kt">Hierarchy</span><span class="o">[</span><span class="kt">RawModule</span><span class="o">],</span> <span class="n">tag</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nv">experimental</span><span class="o">.</span><span class="py">ChiselAnnotation</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="nf">toFirrtl</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="nf">println</span><span class="o">(</span><span class="n">tag</span> <span class="o">+</span> <span class="s">": "</span> <span class="o">+</span> <span class="nv">m</span><span class="o">.</span><span class="py">toTarget</span><span class="o">)</span>
+    <span class="nc">EmptyAnnotation</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">EmptyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="nf">println</span><span class="o">(</span><span class="s">"Elaborating EmptyModule!"</span><span class="o">)</span>
+<span class="o">}</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">TwoEmptyModules</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">definition</span> <span class="k">=</span> <span class="nc">Definition</span><span class="o">(</span><span class="k">new</span> <span class="nc">EmptyModule</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">i0</span>         <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">definition</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">i1</span>         <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">definition</span><span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">Top</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">definition</span> <span class="k">=</span> <span class="nc">Definition</span><span class="o">(</span><span class="k">new</span> <span class="nc">TwoEmptyModules</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">instance</span>   <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">definition</span><span class="o">)</span>
+  <span class="nv">aop</span><span class="o">.</span><span class="py">Select</span><span class="o">.</span><span class="py">allInstancesOf</span><span class="o">[</span><span class="kt">EmptyModule</span><span class="o">](</span><span class="n">instance</span><span class="o">).</span><span class="py">foreach</span> <span class="o">{</span> <span class="n">i</span> <span class="k">=&gt;</span>
+    <span class="nv">experimental</span><span class="o">.</span><span class="py">annotate</span><span class="o">(</span><span class="nc">MyChiselAnnotation</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="s">"instance"</span><span class="o">))</span>
+  <span class="o">}</span>
+  <span class="nv">aop</span><span class="o">.</span><span class="py">Select</span><span class="o">.</span><span class="py">allDefinitionsOf</span><span class="o">[</span><span class="kt">EmptyModule</span><span class="o">](</span><span class="n">instance</span><span class="o">).</span><span class="py">foreach</span> <span class="o">{</span> <span class="n">d</span> <span class="k">=&gt;</span>
+    <span class="nv">experimental</span><span class="o">.</span><span class="py">annotate</span><span class="o">(</span><span class="nc">MyChiselAnnotation</span><span class="o">(</span><span class="n">d</span><span class="o">,</span> <span class="s">"definition"</span><span class="o">))</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Elaborating EmptyModule!
+instance: ~Top|Top/instance:TwoEmptyModules/i0:EmptyModule
+instance: ~Top|Top/instance:TwoEmptyModules/i1:EmptyModule
+definition: ~Top|EmptyModule
+</code></pre></div></div>
+
+<p>You can also use <code class="language-plaintext highlighter-rouge">Select.ios</code> on either a <code class="language-plaintext highlighter-rouge">Definition</code> or an <code class="language-plaintext highlighter-rouge">Instance</code> to annotate the I/Os appropriately:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">MyIOAnnotation</span><span class="o">(</span><span class="n">m</span><span class="k">:</span> <span class="kt">Data</span><span class="o">,</span> <span class="n">tag</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nv">experimental</span><span class="o">.</span><span class="py">ChiselAnnotation</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="nf">toFirrtl</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="nf">println</span><span class="o">(</span><span class="n">tag</span> <span class="o">+</span> <span class="s">": "</span> <span class="o">+</span> <span class="nv">m</span><span class="o">.</span><span class="py">toTarget</span><span class="o">)</span>
+    <span class="nc">EmptyAnnotation</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">InOutModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span>
+  <span class="nd">@public</span> <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">in</span>
+<span class="o">}</span>
+
+<span class="nd">@instantiable</span>
+<span class="k">class</span> <span class="nc">TwoInOutModules</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">definition</span> <span class="k">=</span> <span class="nc">Definition</span><span class="o">(</span><span class="k">new</span> <span class="nc">InOutModule</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">i0</span>         <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">definition</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">i1</span>         <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">definition</span><span class="o">)</span>
+  <span class="nv">i0</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="n">in</span>
+  <span class="nv">i1</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="nv">i0</span><span class="o">.</span><span class="py">out</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="nv">i1</span><span class="o">.</span><span class="py">out</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">InOutTop</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">definition</span> <span class="k">=</span> <span class="nc">Definition</span><span class="o">(</span><span class="k">new</span> <span class="nc">TwoInOutModules</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">instance</span>   <span class="k">=</span> <span class="nc">Instance</span><span class="o">(</span><span class="n">definition</span><span class="o">)</span>
+  <span class="nv">aop</span><span class="o">.</span><span class="py">Select</span><span class="o">.</span><span class="py">allInstancesOf</span><span class="o">[</span><span class="kt">InOutModule</span><span class="o">](</span><span class="n">instance</span><span class="o">).</span><span class="py">foreach</span> <span class="o">{</span> <span class="n">i</span> <span class="k">=&gt;</span>
+    <span class="nv">aop</span><span class="o">.</span><span class="py">Select</span><span class="o">.</span><span class="py">ios</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="py">foreach</span> <span class="o">{</span> <span class="n">io</span> <span class="k">=&gt;</span>
+      <span class="nv">experimental</span><span class="o">.</span><span class="py">annotate</span><span class="o">(</span><span class="nc">MyIOAnnotation</span><span class="o">(</span><span class="n">io</span><span class="o">,</span> <span class="s">"instance io"</span><span class="o">))</span>
+  <span class="o">}}</span>
+  <span class="nv">aop</span><span class="o">.</span><span class="py">Select</span><span class="o">.</span><span class="py">allDefinitionsOf</span><span class="o">[</span><span class="kt">InOutModule</span><span class="o">](</span><span class="n">instance</span><span class="o">).</span><span class="py">foreach</span> <span class="o">{</span> <span class="n">d</span> <span class="k">=&gt;</span>
+    <span class="nv">aop</span><span class="o">.</span><span class="py">Select</span><span class="o">.</span><span class="py">ios</span><span class="o">(</span><span class="n">d</span><span class="o">).</span><span class="py">foreach</span> <span class="o">{</span><span class="n">io</span> <span class="k">=&gt;</span>
+      <span class="nv">experimental</span><span class="o">.</span><span class="py">annotate</span><span class="o">(</span><span class="nc">MyIOAnnotation</span><span class="o">(</span><span class="n">io</span><span class="o">,</span> <span class="s">"definition io"</span><span class="o">))</span>
+  <span class="o">}}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>instance io: ~InOutTop|InOutTop/instance:TwoInOutModules/i0:InOutModule&gt;clock
+instance io: ~InOutTop|InOutTop/instance:TwoInOutModules/i0:InOutModule&gt;reset
+instance io: ~InOutTop|InOutTop/instance:TwoInOutModules/i0:InOutModule&gt;in
+instance io: ~InOutTop|InOutTop/instance:TwoInOutModules/i0:InOutModule&gt;out
+instance io: ~InOutTop|InOutTop/instance:TwoInOutModules/i1:InOutModule&gt;clock
+instance io: ~InOutTop|InOutTop/instance:TwoInOutModules/i1:InOutModule&gt;reset
+instance io: ~InOutTop|InOutTop/instance:TwoInOutModules/i1:InOutModule&gt;in
+instance io: ~InOutTop|InOutTop/instance:TwoInOutModules/i1:InOutModule&gt;out
+definition io: ~InOutTop|InOutModule&gt;clock
+definition io: ~InOutTop|InOutModule&gt;reset
+definition io: ~InOutTop|InOutModule&gt;in
+definition io: ~InOutTop|InOutModule&gt;out
+</code></pre></div></div>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

@@ -1,0 +1,25 @@
+name: Install CIRCT
+
+inputs:
+  version:
+    description: 'version to install'
+    required: false
+    default: 'firtool-1.26.0'
+
+runs:
+  using: composite
+  steps:
+    - id: cache-circt
+      uses: actions/cache@v3
+      with:
+        path: circt
+        key: circt-${{ runner.os }}-${{ inputs.version }}
+
+    - shell: bash
+      if: steps.cache-circt.outputs.cache-hit != 'true'
+      run: |
+        mkdir circt
+        wget -q -O - https://github.com/llvm/circt/releases/download/${{ inputs.version }}/circt-bin-ubuntu-20.04.tar.gz | tar -zx -C circt/
+
+    - shell: bash
+      run: echo "$(pwd)/circt/bin" >> $GITHUB_PATH

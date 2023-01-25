@@ -1,0 +1,821 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Verilog-vs-Chisel</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Verilog-vs-Chisel" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Verilog-vs-Chisel" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Verilog-vs-Chisel" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><p>&lt;!Doctype html&gt;</p>
+<html>
+
+# Verilog vs Chisel Side-By-Side
+
+This page serves as a quick introduction to Chisel for those familiar with Verilog. It is by no means a comprehensive guide of everything Chisel can do. Feel free to file an issue with suggestions of things you'd like to see added to this page.
+
+
+<body>
+    <!-- This script is needed so that Markdown and HTML will render together, see link to Stack overflow -->
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+    <table border="0">
+        <h1>Creating a Module</h1>
+        <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+         </tr>
+         <tr>
+<td>
+
+```verilog
+module Foo (
+  input  a,
+  output b
+);
+  assign b = a;
+endmodule
+```
+
+</td>
+    <td>
+
+```scala
+class Foo extends Module {
+  val a = IO(Input(Bool()))
+  val b = IO(Output(Bool()))
+  b := a
+}
+```
+</td>
+         </tr>
+    </table>
+</body>
+</html>
+
+<h1 id="parameterizing-a-module">Parameterizing a Module</h1>
+
+<html>
+<body>
+    <table border="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+         </tr>
+
+<tr>
+<td>
+
+```verilog
+module PassthroughGenerator(
+  input  [width-1:0] in,
+  output [width-1:0] out
+);
+
+  parameter width = 8;
+
+  assign out = in;
+endmodule
+```
+</td>
+<td>
+
+```scala
+class PassthroughGenerator(width: Int = 8) extends Module {
+    val in = IO(Input(UInt(width.W)))
+    val out = IO(Output(UInt(width.W)))
+
+    out := in
+}
+```
+</td>
+         </tr>
+         <tr>
+<td>
+
+```verilog
+module ParameterizedWidthAdder(
+  input [in0Width-1:0] in0,
+  input [in1Width-1:0] in1,
+  output [sumWidth-1:0] sum
+);
+  parameter in0Width = 8;
+  parameter in1Width = 1;
+  parameter sumWidth = 9;
+
+  assign sum = in0 + in1;
+
+endmodule
+```
+
+</td>
+<td>
+
+```scala
+class ParameterizedWidthAdder(
+  in0Width: Int,
+  in1Width: Int,
+  sumWidth: Int) extends Module {
+
+  val in0 = IO(Input(UInt(in0Width.W)))
+  val in1 = IO(Input(UInt(in1Width.W)))
+  val sum = IO(Output(UInt(sumWidth.W)))
+
+  // a +&amp; b includes the carry, a + b does not
+  sum := in0 +&amp; in1
+}
+```
+</td>
+</tr>
+    </table>
+<html>
+<body>
+
+# Wire Assignment and Literal Values
+
+<html>
+<body>
+    <table border="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+         </tr>
+<tr>
+<td>
+
+```verilog
+module MyWireAssignmentModule ();
+
+  wire [31:0] aa = 'd42;
+  // Logical reg for use in always block, not real register
+  reg [31:0] a;
+
+  //
+  always @(*) begin
+    a = aa;
+  end
+
+  // Hex value initialization
+  wire [31:0] b = 32'hbabecafe;
+
+  // Declaration separate from Assignment
+  wire [15:0] c;
+  wire d;
+
+  assign c = 16'b1;
+  assign d = 1'b1;
+
+  // Signed values
+  wire signed [63:0] g;
+  assign g = -’d5;
+
+  wire signed [31:0] h = 'd5;
+
+  reg signed[31:0] f;
+  always@(*) begin
+    f = ‘d5;
+  end
+endmodule
+```
+
+
+</td>
+<td>
+
+```scala
+
+
+class MyWireAssignmentModule extends Module {
+
+    val aa = 42.U(32.W)
+    val a = Wire(UInt(32.W))
+    a := aa
+    val b = "hbabecafe".U(32.W)
+    val c = Wire(UInt(16.W))
+    val d = Wire(Bool())
+    c := "b1".U(16.W)
+    d := true.B
+    val g = Wire(SInt(64.W))
+    g := -5.S
+    val h = 5.asSInt(32.W)
+    val f = Wire(SInt(32.W))
+    f := 5.S
+}
+```
+
+</td>
+</tr>
+    </table>
+<html>
+<body>
+
+# Register Declaration and Assignment
+
+<html>
+<body>
+    <table border="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+         </tr>
+ <tr>
+<td>
+
+```verilog
+module RegisterModule(
+  input        clock,
+  input        reset,
+  input  [7:0] in,
+  output [7:0] out,
+  input        differentClock,
+  input        differentSyncReset,
+  input        differentAsyncReset
+);
+
+  reg [7:0] registerWithoutInit;
+  reg [7:0] registerWithInit;
+  reg [7:0] registerOnDifferentClockAndSyncReset;
+  reg [7:0] registerOnDifferentClockAndAsyncReset;
+
+
+  always @(posedge clock) begin
+    registerWithoutInit &lt;= in + 8'h1;
+  end
+
+  always @(posedge clock) begin
+    if (reset) begin
+      registerWithInit &lt;= 8'd42;
+    end else begin
+      registerWithInit &lt;= registerWithInit - 8'h1;
+    end
+  end
+
+  always @(posedge differentClock) begin
+    if (differentSyncReset) begin
+      registerOnDifferentClockAndSyncReset &lt;= 8'h42;
+    end else begin
+      registerOnDifferentClockAndSyncReset &lt;= in - 8'h1;
+    end
+  end
+
+  always @(posedge differentClock or posedge differentAsyncReset) begin
+    if (differentAsyncReset) begin
+      registerOnDifferentClockAndAsyncReset &lt;= 8'h24;
+    end else begin
+      registerOnDifferentClockAndAsyncReset &lt;= in + 8'h2;
+    end
+  end
+
+  assign out = in +
+    registerWithoutInit +
+    registerWithInit +
+    registerOnDifferentClockAndSyncReset +
+    registerOnDifferentClockAndAsyncReset;
+endmodule
+
+```
+</td>
+<td>
+
+```scala
+class RegisterModule extends Module {
+  val in  = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+
+  val differentClock = IO(Input(Clock()))
+  val differentSyncReset = IO(Input(Bool()))
+
+  val differentAsyncReset = IO(Input(AsyncReset()))
+
+  val registerWithoutInit = Reg(UInt(8.W))
+
+  val registerWithInit = RegInit(42.U(8.W))
+
+  registerWithoutInit := in + 1.U
+
+  registerWithInit := registerWithInit - 1.U
+
+  val registerOnDifferentClockAndSyncReset = withClockAndReset(differentClock, differentSyncReset) {
+    val reg = RegInit("h42".U(8.W))
+    reg
+  }
+  registerOnDifferentClockAndSyncReset := in - 1.U
+
+  val registerOnDifferentClockAndAsyncReset = withClockAndReset(differentClock, differentAsyncReset) {
+    val reg = RegInit("h24".U(8.W))
+    reg
+  }
+  registerOnDifferentClockAndAsyncReset := in + 2.U
+
+  out := in +
+    registerWithoutInit +
+    registerWithInit +
+    registerOnDifferentClockAndSyncReset +
+    registerOnDifferentClockAndAsyncReset
+}
+```
+</td>
+         </tr>
+    </table>
+<html>
+<body>
+
+# Case Statements
+
+<html>
+<body>
+    <table border="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+         </tr>
+         <tr>
+<td>
+
+```verilog
+module CaseStatementModule(
+  input  [2:0] a,
+  input  [2:0] b,
+  input  [2:0] c,
+  input  [1:0] sel,
+  output reg [2:0] out
+);
+
+  always @(*)
+    case (sel)
+      2'b00: out &lt;= a;
+      2'b01: out &lt;= b;
+      2'b10: out &lt;= c;
+      default: out &lt;= 3'b0;
+    end
+  end
+endmodule
+```
+</td>
+<td>
+
+```scala
+class CaseStatementModule extends Module {
+  val a, b, c= IO(Input(UInt(3.W)))
+  val sel = IO(Input(UInt(2.W)))
+  val out = IO(Output(UInt(3.W)))
+
+  // default goes first
+  out := 0.U
+
+  switch (sel) {
+    is ("b00".U) { out := a }
+    is ("b01".U) { out := b }
+    is ("b10".U) { out := c }
+  }
+}
+```
+</td>
+         </tr>
+    </table>
+<html>
+<body>
+
+# Case Statements Using Enums
+
+<html>
+<body>
+    <table border="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+         </tr>
+         <tr>
+<td>
+
+```verilog
+module CaseStatementEnumModule1 (
+  input [2:0] rs1,
+  input [2:0] pc,
+  input AluMux1Sel sel,
+  output reg [2:0] out);
+
+  typedef enum {SELECT_RS1, SELECT_PC} AluMux1Sel;
+
+  case(sel)
+    SELECT_RS1: out &lt;= rs1;
+    SELECT_PC: out &lt;= pc;
+    default: out &lt;= 3'b0;
+  end
+endmodule
+```
+</td>
+<td>
+
+```scala
+class CaseStatementEnumModule1 extends Module {
+
+  object AluMux1Sel extends ChiselEnum {
+    val selectRS1, selectPC = Value
+  }
+
+   import AluMux1Sel._
+   val rs1, pc = IO(Input(UInt(3.W)))
+   val sel = IO(Input(AluMux1Sel()))
+   val out = IO(Output(UInt(3.W)))
+
+   // default goes first
+   out := 0.U
+
+   switch (sel) {
+     is (selectRS1) { out := rs1 }
+     is (selectPC)  { out := pc }
+  }
+}
+```
+</td>
+         </tr>
+  <tr>
+<td>
+
+```verilog
+module CaseStatementEnumModule2 (input clk);
+
+  typedef enum {
+    INIT = 3,
+    IDLE = 'h13,
+    START = 'h17,
+    READY = 'h23 } StateValue;
+
+  reg StateValue state;
+
+
+  always @(posedge clk) begin
+    case (state)
+      IDLE    : state = START;
+      START   : state = READY;
+      READY   : state = IDLE ;
+      default : state = IDLE ;
+    endcase
+  end
+endmodule
+```
+</td>
+<td>
+
+```scala
+class CaseStatementEnumModule2 extends Module {
+
+  object StateValue extends ChiselEnum {
+   val INIT  = Value(0x03.U)
+    val IDLE  = Value(0x13.U)
+    val START = Value(0x17.U)
+    val READY = Value(0x23.U)
+  }
+  import StateValue._
+  val state = Reg(StateValue())
+
+
+  switch (state) {
+    is (INIT) {state := IDLE}
+    is (IDLE) {state := START}
+    is (START) {state := READY}
+    is (READY) {state := IDLE}
+  }
+}
+```
+</td>
+         </tr>
+    </table>
+<html>
+<body>
+
+<!--
+# SystemVerilog Interfaces
+
+<html>
+<body>
+    <table border ="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+         </tr>
+         <tr>
+<td>
+
+```
+module MyInterfaceModule(
+  input        clock,
+  input        reset,
+  output       io_in_ready,
+  input        io_in_valid,
+  input  [7:0] io_in_bits,
+  input        io_out_ready,
+  output       io_out_valid,
+  output [7:0] io_out_bits
+);
+  assign io_in_ready = io_out_ready; // @[main.scala 17:12]
+  assign io_out_valid = io_in_valid; // @[main.scala 17:12]
+  assign io_out_bits = io_in_bits; // @[main.scala 17:12]
+endmodule
+```
+</td>
+<td>
+
+```scala
+class MyInterfaceModule extends Module {
+val io = IO(new Bundle {
+val in = Flipped(DecoupledIO(UInt(8.W)))
+val out = DecoupledIO(UInt(8.W))
+})
+
+val tmp = Wire(DecoupledIO(UInt(8.W)))
+tmp <> io.in
+io.out <> tmp
+io.out <> io.in
+}
+```
+
+</td>
+         </tr>
+    </table>
+
+<html>
+<body>
+-->
+
+
+# Multi-Dimensional Memories
+
+<html>
+<body>
+    <table border="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+         </tr>
+         <tr>
+<td>
+
+```verilog
+module ReadWriteSmem(
+  input clock,
+  input reset,
+  input io_enable,
+  input io_write,
+  input [9:0] io_addr,
+  input [31:0] io_dataIn,
+  output [31:0] io_dataOut
+);
+
+reg [31:0] mem [0:1023];
+reg [9:0] addr_delay;
+
+assign io_dataOut = mem[addr_delay]
+
+  always @(posedge clock) begin
+    if (io_enable &amp; io_write) begin
+      mem[io_addr] &lt;= io_data;
+    end
+    if (io_enable) begin
+      addr_delay &lt;= io_addr;
+    end
+  end
+endmodule
+```
+</td>
+
+
+<td>
+
+```scala
+class ReadWriteSmem extends Module {
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(32.W))
+    val dataOut = Output(UInt(32.W))
+  })
+
+  val mem = SyncReadMem(1024, UInt(32.W))
+
+  // Create one write port and one read port
+  mem.write(io.addr, io.dataIn)
+  io.dataOut := mem.read(io.addr, io.enable)
+}
+```
+</td>
+</tr>
+<tr>
+<td>
+
+```verilog
+module ReadWriteMem(
+  input         clock,
+  input         io_enable,
+  input         io_write,
+  input  [9:0]  io_addr,
+  input  [31:0] io_dataIn,
+  output [31:0] io_dataOut
+  );
+
+  reg [31:0] mem [0:1023];
+
+  assign io_dataOut = mem[io_addr];
+
+  always @(posedge clock) begin
+    if (io_enable &amp;&amp; io_write) begin
+      mem[io_addr] &lt;= io_dataIn;
+    end
+  end
+
+endmodule
+```
+
+</td>
+
+<td>
+
+```scala
+class ReadWriteMem extends Module {
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(32.W))
+    val dataOut = Output(UInt(32.W))
+})
+  val mem = Mem(1024, UInt(32.W))
+  // Create one write port and one read port
+  mem.write(io.addr, io.dataIn)
+  io.dataOut := mem.read(io.addr)
+}
+```
+</td>
+</tr>
+    </table>
+<html>
+<html>
+
+# Operators
+
+<body>
+    <table border="0">
+          <tr>
+            <td><b style="font-size:30px">Verilog</b></td>
+            <td><b style="font-size:30px">Chisel</b></td>
+          </tr>
+         <tr>
+<td>
+
+```verilog
+ module OperatorExampleModule(
+  input         clock,
+  input         reset,
+  input  [31:0] x,
+  input  [31:0] y,
+  input  [31:0] c,
+  output [31:0] add_res,
+  output [31:0] sub_res,
+  output [31:0] mod_res,
+  output [31:0] div_res,
+  output [31:0] and_res,
+  output [31:0] or_res,
+  output [31:0] xor_res,
+  output [31:0] not_res,
+  output [31:0] logical_not_res,
+  output [31:0] mux_res,
+  output [31:0] rshift_res,
+  output [31:0] lshift_res,
+  output        andR_res,
+  output        logical_and_res,
+  output        logical_or_res,
+  output        equ_res,
+  output        not_equ_res,
+  output        orR_res,
+  output        xorR_res,
+  output        gt_res,
+  output        lt_res,
+  output        geq_res,
+  output        leq_res,
+  output        single_bitselect_res,
+  output [63:0] mul_res,
+  output [63:0] cat_res,
+  output [1:0]  multiple_bitselect_res,
+  output [95:0] fill_res
+);
+  assign add_res = x + y;
+  assign sub_res = x - y;
+  assign mod_res = x % y;
+  assign mul_res = x * y;
+  assign div_res = x / y;
+  assign equ_res = x == y;
+  assign not_equ_res = x != y;
+  assign and_res = x &amp; y;
+  assign or_res = x | y;
+  assign xor_res = x ^ y;
+   assign not_res = ~x;
+  assign logical_not_res = !(x == 32'h0);
+   assign logical_and_res = x[0] &amp;&amp; y[0];
+  assign logical_or_res = x[0] || y[0];
+  assign cat_res = {x,y};
+  assign mux_res = c[0] ? x : y;
+  assign rshift_res = x &gt;&gt; y[2:0];
+  assign lshift_res = x &lt;&lt; y[2:0];
+  assign gt_res = x &gt; y;
+  assign lt_res = x &lt; y;
+  assign geq_res = x &gt;= y;
+  assign leq_res = x &lt;= y;
+  assign single_bitselect_res = x[1];
+  assign multiple_bitselect_res = x[1:0];
+  assign fill_res = {3{x}};
+  assign andR_res = &x;
+  assign orR_res = |x;
+  assign xorR_res = ^x;
+
+
+
+
+
+endmodule
+
+```
+
+</td>
+<td>
+
+```scala
+class OperatorExampleModule extends Module {
+
+  val x, y, c = IO(Input(UInt(32.W)))
+
+  val add_res, sub_res,
+  mod_res, div_res, and_res,
+  or_res, xor_res, not_res,
+  logical_not_res, mux_res,
+  rshift_res , lshift_res = IO(Output(UInt(32.W)))
+
+  val logical_and_res, logical_or_res,
+  equ_res, not_equ_res, andR_res,
+  orR_res, xorR_res, gt_res,lt_res,
+  geq_res, leq_res,single_bitselect_res = IO(Output(Bool()))
+
+  val mul_res, cat_res= IO(Output(UInt(64.W)))
+
+  val multiple_bitselect_res = IO(Output(UInt(2.W)))
+
+  val fill_res = IO(Output(UInt((3*32).W)))
+
+  add_res := x + y
+  sub_res := x - y
+  mod_res := x % y
+  mul_res := x * y
+  div_res := x / y
+  equ_res := x === y
+  not_equ_res := x =/= y
+  and_res := x &amp; y
+  or_res := x | y
+  xor_res := x ^ y
+  not_res :=  ~x
+  logical_not_res := !x
+  logical_and_res := x(0) &amp;&amp; y(0)
+  logical_or_res := x(0) || y(0)
+  cat_res := Cat(x, y)
+  mux_res := Mux(c(0), x, y)
+  rshift_res := x &gt;&gt; y(2, 0)
+  lshift_res := x &lt;&lt; y(2, 0)
+  gt_res := x &gt; y
+  lt_res := x &lt; y
+  geq_res := x &gt;= y
+  leq_res := x &lt;= y
+  single_bitselect_res := x(1)
+  multiple_bitselect_res := x(1, 0)
+  fill_res:= Fill(3,x)
+  andR_res := x.andR
+  orR_res := x.orR
+  xorR_res := x.xorR
+}
+```
+
+</td>
+         </tr>
+    </table>
+</body>
+</html>
+</html></body></html></body></html></body></html></body></html></body></html></body></html></body></html></body></html></body></html></body></html></body></html>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Interfaces and Connections</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Interfaces and Connections" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Interfaces and Connections" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Interfaces and Connections" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class=" active ">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="interfaces--connections">Interfaces &amp; Connections</h1>
+
+<p>For more sophisticated modules it is often useful to define and instantiate interface classes while defining the IO for a module. First and foremost, interface classes promote reuse allowing users to capture once and for all common interfaces in a useful form.</p>
+
+<p>Secondly, interfaces allow users to dramatically reduce wiring by supporting bulk connections between producer and consumer modules. Finally, users can make changes in large interfaces in one place reducing the number of updates required when adding or removing pieces of the interface.</p>
+
+<p>Note that Chisel has some built-in standard interface which should be used whenever possible for interoperability (e.g. Decoupled).</p>
+
+<h2 id="ports-subclasses--nesting">Ports: Subclasses &amp; Nesting</h2>
+
+<p>As we saw earlier, users can define their own interfaces by defining a class that subclasses Bundle. For example, a user could define a simple link for hand-shaking data as follows:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">SimpleLink</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">data</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">16.</span><span class="n">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>We can then extend SimpleLink by adding parity bits using bundle inheritance:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">PLink</span> <span class="k">extends</span> <span class="nc">SimpleLink</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">parity</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">5.</span><span class="n">W</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>In general, users can organize their interfaces into hierarchies using inheritance.</p>
+
+<p>From there we can define a filter interface by nesting two PLinks into a new FilterIO bundle:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">FilterIO</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">x</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">PLink</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">y</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PLink</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>where flip recursively changes the direction of a bundle, changing input to output and output to input.</p>
+
+<p>We can now define a filter by defining a filter class extending module:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Filter</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">FilterIO</span><span class="o">)</span>
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>where the io field contains FilterIO.</p>
+
+<h2 id="bundle-vectors">Bundle Vectors</h2>
+
+<p>Beyond single elements, vectors of elements form richer hierarchical interfaces. For example, in order to create a crossbar with a vector of inputs, producing a vector of outputs, and selected by a UInt input, we utilize the Vec constructor:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.util.log2Ceil</span>
+<span class="k">class</span> <span class="nc">CrossbarIo</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Vec</span><span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">PLink</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">sel</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nf">log2Ceil</span><span class="o">(</span><span class="n">n</span><span class="o">).</span><span class="py">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">Vec</span><span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="k">new</span> <span class="nc">PLink</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>where Vec takes a size as the first argument and a block returning a port as the second argument.</p>
+
+<h2 id="bulk-connections">Bulk Connections</h2>
+<p>Once we have a defined Interface, we can connect to it via a <a href="https://www.chisel-lang.org/api/latest/chisel3/Data.html#:="><code class="language-plaintext highlighter-rouge">MonoConnect</code></a> operator (<code class="language-plaintext highlighter-rouge">:=</code>) or <a href="https://www.chisel-lang.org/api/latest/chisel3/Data.html#%3C%3E"><code class="language-plaintext highlighter-rouge">BiConnect</code></a> operator (<code class="language-plaintext highlighter-rouge">&lt;&gt;</code>).</p>
+
+<h3 id="monoconnect-algorithm"><code class="language-plaintext highlighter-rouge">MonoConnect</code> Algorithm</h3>
+<p><code class="language-plaintext highlighter-rouge">MonoConnect.connect</code>, or <code class="language-plaintext highlighter-rouge">:=</code>, executes a mono-directional connection element-wise.</p>
+
+<p>Note that this isn’t commutative. There is an explicit source and sink
+already determined before this function is called.</p>
+
+<p>The connect operation will recurse down the left Data (with the right Data).
+An exception will be thrown if a movement through the left cannot be matched
+in the right. The right side is allowed to have extra fields.
+Vecs must still be exactly the same size.</p>
+
+<p>Note that the LHS element must be writable so, one of these must hold:</p>
+<ul>
+  <li>Is an internal writable node (<code class="language-plaintext highlighter-rouge">Reg</code> or <code class="language-plaintext highlighter-rouge">Wire</code>)</li>
+  <li>Is an output of the current module</li>
+  <li>Is an input of a submodule of the current module</li>
+</ul>
+
+<p>Note that the RHS element must be readable so, one of these must hold:</p>
+<ul>
+  <li>Is an internal readable node (<code class="language-plaintext highlighter-rouge">Reg</code>, <code class="language-plaintext highlighter-rouge">Wire</code>, <code class="language-plaintext highlighter-rouge">Op</code>)</li>
+  <li>Is a literal</li>
+  <li>Is a port of the current module or submodule of the current module</li>
+</ul>
+
+<h3 id="biconnect-algorithm"><code class="language-plaintext highlighter-rouge">BiConnect</code> Algorithm</h3>
+<p><code class="language-plaintext highlighter-rouge">BiConnect.connect</code>, or <code class="language-plaintext highlighter-rouge">&lt;&gt;</code>, executes a bidirectional connection element-wise. Note that the arguments are left and right (not source and sink) so the intent is for the operation to be commutative. The connect operation will recurse down the left <code class="language-plaintext highlighter-rouge">Data</code> (with the right <code class="language-plaintext highlighter-rouge">Data</code>). An exception will be thrown if a movement through the left cannot be matched in the right, or if the right side has extra fields.</p>
+
+<p>Using the biconnect <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> operator, we can now compose two filters into a filter block as follows:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Block</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">FilterIO</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">f1</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Filter</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">f2</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Filter</span><span class="o">)</span>
+  <span class="nv">f1</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">x</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">x</span>
+  <span class="nv">f1</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">y</span> <span class="o">&lt;&gt;</span> <span class="nv">f2</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">x</span>
+  <span class="nv">f2</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">y</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">y</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>The bidirectional bulk connection operator <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> connects leaf ports of the same name to each other. The Scala types of the Bundles are not required to match. If one named signal is missing from either side, Chisel will give an error such as in the following example:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">NotReallyAFilterIO</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">x</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">PLink</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">y</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PLink</span>
+  <span class="k">val</span> <span class="nv">z</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bool</span><span class="o">())</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Block2</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">FilterIO</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">io2</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">NotReallyAFilterIO</span><span class="o">))</span>
+
+  <span class="n">io1</span> <span class="o">&lt;&gt;</span> <span class="n">io2</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Below we can see the resulting error for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Block2</span><span class="o">)</span>
+<span class="c1">// chisel3.internal.ChiselException: Connection between left (Block2.io1: IO[FilterIO]) and source (Block2.io2: IO[NotReallyAFilterIO]) failed @.z: Left Record missing field (z).</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp$Block2.&lt;init&gt;(interfaces-and-connections.md:89)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp$$anonfun$22$$anonfun$apply$20.apply(interfaces-and-connections.md:97)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp$$anonfun$22$$anonfun$apply$20.apply(interfaces-and-connections.md:97)</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at ... (Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace)</span>
+</code></pre></div></div>
+<p>Bidirectional connections should only be used with <strong>directioned elements</strong> (like IOs), e.g. connecting two wires isn’t supported since Chisel can’t necessarily figure out the directions automatically.
+For example, putting two temporary wires and connecting them here will not work, even though the directions could be known from the endpoints:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">BlockWithTemporaryWires</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">FilterIO</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">f1</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Filter</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">f2</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Filter</span><span class="o">)</span>
+  <span class="nv">f1</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">x</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">x</span>
+ <span class="k">val</span> <span class="nv">tmp1</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">FilterIO</span><span class="o">)</span>
+ <span class="k">val</span> <span class="nv">tmp2</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">FilterIO</span><span class="o">)</span>
+  <span class="nv">f1</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">y</span> <span class="o">&lt;&gt;</span> <span class="n">tmp1</span>
+  <span class="n">tmp1</span> <span class="o">&lt;&gt;</span> <span class="n">tmp2</span>
+  <span class="n">tmp2</span> <span class="o">&lt;&gt;</span> <span class="nv">f2</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">x</span>
+  <span class="nv">f2</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">y</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">y</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+<p>Below we can see the resulting error for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">BlockWithTemporaryWires</span><span class="o">)</span>
+<span class="c1">// chisel3.internal.ChiselException: Connection between left (Filter.io.y: IO[PLink]) and source (BlockWithTemporaryWires.tmp1: Wire[FilterIO]) failed @.y: Left Record missing field (y).</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp$BlockWithTemporaryWires.&lt;init&gt;(interfaces-and-connections.md:113)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp$$anonfun$33$$anonfun$apply$29.apply(interfaces-and-connections.md:124)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp$$anonfun$33$$anonfun$apply$29.apply(interfaces-and-connections.md:124)</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at ... (Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace)</span>
+</code></pre></div></div>
+<p>For more details and information, see <a href="connection-operators">Deep Dive into Connection Operators</a></p>
+
+<p>NOTE: When using <code class="language-plaintext highlighter-rouge">Chisel._</code> (compatibility mode) instead of <code class="language-plaintext highlighter-rouge">chisel3._</code>, the <code class="language-plaintext highlighter-rouge">:=</code> operator works in a bidirectional fashion similar to <code class="language-plaintext highlighter-rouge">&lt;&gt;</code>, but not exactly the same.</p>
+
+<h2 id="the-standard-ready-valid-interface-readyvalidio--decoupled">The standard ready-valid interface (ReadyValidIO / Decoupled)</h2>
+
+<p>Chisel provides a standard interface for <a href="http://inst.eecs.berkeley.edu/~cs150/Documents/Interfaces.pdf">ready-valid interfaces</a>.
+A ready-valid interface consists of a <code class="language-plaintext highlighter-rouge">ready</code> signal, a <code class="language-plaintext highlighter-rouge">valid</code> signal, and some data stored in <code class="language-plaintext highlighter-rouge">bits</code>.
+The <code class="language-plaintext highlighter-rouge">ready</code> bit indicates that a consumer is <em>ready</em> to consume data.
+The <code class="language-plaintext highlighter-rouge">valid</code> bit indicates that a producer has <em>valid</em> data on <code class="language-plaintext highlighter-rouge">bits</code>.
+When both <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> are asserted, a data transfer from the producer to the consumer takes place.
+A convenience method <code class="language-plaintext highlighter-rouge">fire</code> is provided that is asserted if both <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> are asserted.</p>
+
+<p>Usually, we use the utility function <a href="https://chisel.eecs.berkeley.edu/api/latest/chisel3/util/Decoupled$.html"><code class="language-plaintext highlighter-rouge">Decoupled()</code></a> to turn any type into a ready-valid interface rather than directly using <a href="http://chisel.eecs.berkeley.edu/api/latest/chisel3/util/ReadyValidIO.html">ReadyValidIO</a>.</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Decoupled(...)</code> creates a producer / output ready-valid interface (i.e. bits is an output).</li>
+  <li><code class="language-plaintext highlighter-rouge">Flipped(Decoupled(...))</code> creates a consumer / input ready-valid interface (i.e. bits is an input).</li>
+</ul>
+
+<p>Take a look at the following example Chisel code to better understand exactly what is generated:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.Decoupled</span>
+
+<span class="cm">/**
+  * Using Decoupled(...) creates a producer interface.
+  * i.e. it has bits as an output.
+  * This produces the following ports:
+  *   input         io_readyValid_ready,
+  *   output        io_readyValid_valid,
+  *   output [31:0] io_readyValid_bits
+  */</span>
+<span class="k">class</span> <span class="nc">ProducingData</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">readyValid</span> <span class="k">=</span> <span class="nc">Decoupled</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="c1">// do something with io.readyValid.ready</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">readyValid</span><span class="o">.</span><span class="py">valid</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">readyValid</span><span class="o">.</span><span class="py">bits</span> <span class="o">:=</span> <span class="mf">5.</span><span class="n">U</span>
+<span class="o">}</span>
+
+<span class="cm">/**
+  * Using Flipped(Decoupled(...)) creates a consumer interface.
+  * i.e. it has bits as an input.
+  * This produces the following ports:
+  *   output        io_readyValid_ready,
+  *   input         io_readyValid_valid,
+  *   input  [31:0] io_readyValid_bits
+  */</span>
+<span class="k">class</span> <span class="nc">ConsumingData</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">readyValid</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Decoupled</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">readyValid</span><span class="o">.</span><span class="py">ready</span> <span class="o">:=</span> <span class="nv">false</span><span class="o">.</span><span class="py">B</span>
+  <span class="c1">// do something with io.readyValid.valid</span>
+  <span class="c1">// do something with io.readyValid.bits</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">DecoupledIO</code> is a ready-valid interface with the <em>convention</em> that there are no guarantees placed on deasserting <code class="language-plaintext highlighter-rouge">ready</code> or <code class="language-plaintext highlighter-rouge">valid</code> or on the stability of <code class="language-plaintext highlighter-rouge">bits</code>.
+That means <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> can also be deasserted without a data transfer.</p>
+
+<p><code class="language-plaintext highlighter-rouge">IrrevocableIO</code> is a ready-valid interface with the <em>convention</em> that the value of <code class="language-plaintext highlighter-rouge">bits</code> will not change while <code class="language-plaintext highlighter-rouge">valid</code> is asserted and <code class="language-plaintext highlighter-rouge">ready</code> is deasserted.
+Also, the consumer shall keep <code class="language-plaintext highlighter-rouge">ready</code> asserted after a cycle where <code class="language-plaintext highlighter-rouge">ready</code> was high and <code class="language-plaintext highlighter-rouge">valid</code> was low.
+Note that the <em>irrevocable</em> constraint <em>is only a convention</em> and cannot be enforced by the interface.
+Chisel does not automatically generate checkers or assertions to enforce the <em>irrevocable</em> convention.</p>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

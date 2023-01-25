@@ -1,0 +1,252 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Frequently Asked Questions</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Frequently Asked Questions" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Frequently Asked Questions" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Frequently Asked Questions" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="frequently-asked-questions">Frequently Asked Questions</h1>
+
+<ul>
+  <li><a href="#where-should-i-start-if-i-want-to-learn-chisel">Where should I start if I want to learn Chisel?</a></li>
+  <li><a href="#how-do-i-do--eg-like-that-in-verilog-in-chisel">How do I … in Chisel?</a></li>
+  <li><a href="#what-versions">What versions of the various projects work together?</a></li>
+  <li><a href="#how-can-i-contribute-to-chisel">How can I contribute to Chisel?</a></li>
+  <li><a href="#why-decoupledio-instead-of-readyvalidio">Why DecoupledIO instead of ReadyValidIO?</a></li>
+  <li><a href="#why-do-i-have-to-wrap-module-instantiations-in-module">Why do I have to wrap module instantiations in <code class="language-plaintext highlighter-rouge">Module(...)</code>?</a></li>
+  <li><a href="#why-chisel">Why Chisel?</a></li>
+  <li><a href="#does-chisel-support-x-and-z-logic-values">Does Chisel support X and Z logic values?</a></li>
+  <li><a href="#get-me-verilog">I just want some Verilog; what do I do?</a></li>
+  <li><a href="#get-me-firrtl">I just want some FIRRTL; what do I do?</a></li>
+  <li><a href="#why-doesnt-chisel-tell-me-which-wires-arent-connected">Why doesn’t Chisel tell me which wires aren’t connected?</a></li>
+  <li><a href="#what-does-reference--is-not-fully-initialized-mean">What does <code class="language-plaintext highlighter-rouge">Reference ... is not fully initialized.</code> mean?</a></li>
+  <li><a href="#can-i-specify-behavior-before-and-after-generated-initial-blocks">Can I specify behavior before and after generated initial blocks?</a></li>
+</ul>
+
+<h3 id="where-should-i-start-if-i-want-to-learn-chisel">Where should I start if I want to learn Chisel?</h3>
+
+<p>We recommend the <a href="https://github.com/freechipsproject/chisel-bootcamp">Chisel Bootcamp</a> for getting started with Chisel.</p>
+
+<h3 id="how-do-i-do--eg-like-that-in-verilog-in-chisel">How do I do … (e.g. like that in Verilog) in Chisel?</h3>
+
+<p>See the <a href="../cookbooks/cookbook">cookbooks</a>.</p>
+
+<h3 id="what-versions-of-the-various-projects-work-together-">What versions of the various projects work together? <a name="what-versions"></a></h3>
+
+<p>See <a href="../appendix/versioning">Chisel Project Versioning</a>.</p>
+
+<h3 id="how-can-i-contribute-to-chisel">How can I contribute to Chisel?</h3>
+
+<p>Check out the <a href="https://github.com/chipsalliance/chisel3#contributor-documentation">Contributor Documentation</a> in the chisel3 repository.</p>
+
+<h3 id="why-decoupledio-instead-of-readyvalidio">Why DecoupledIO instead of ReadyValidIO?</h3>
+
+<p>There are multiple kinds of Ready/Valid interfaces that impose varying restrictions on the producers and consumers. Chisel currently provides the following:</p>
+
+<ul>
+  <li><a href="https://chisel.eecs.berkeley.edu/api/index.html#chisel3.util.DecoupledIO">DecoupledIO</a> - No guarantees</li>
+  <li><a href="https://chisel.eecs.berkeley.edu/api/index.html#chisel3.util.IrrevocableIO">IrrevocableIO</a> - Producer promises to not change the value of ‘bits’ after a cycle where ‘valid’ is high and ‘ready’ is low. Additionally, once ‘valid’ is raised it will never be lowered until after ‘ready’ has also been raised.</li>
+</ul>
+
+<h3 id="why-do-i-have-to-wrap-module-instantiations-in-module">Why do I have to wrap module instantiations in <code class="language-plaintext highlighter-rouge">Module(...)</code>?</h3>
+
+<p>In short: Limitations of Scala</p>
+
+<p>Chisel Modules are written by defining a <a href="http://docs.scala-lang.org/tutorials/tour/classes.html">Scala class</a> and implementing its constructor. As elaboration runs, Chisel constructs a hardware AST from these Modules. The compiler needs hooks to run before and after the actual construction of the Module object. In Scala, superclasses are fully initialized before subclasses, so by extending Module, Chisel has the ability to run some initialization code before the user’s Module is constructed. However, there is no such hook to run after the Module object is initialized. By wrapping Module instantiations in the Module object’s apply method (ie. <code class="language-plaintext highlighter-rouge">Module(...)</code>), Chisel is able to perform post-initialization actions. There is a <a href="https://issues.scala-lang.org/browse/SI-4330">proposed solution</a>, so eventually this requirement will be lifted, but for now, wrap those Modules!</p>
+
+<h3 id="why-chisel">Why Chisel?</h3>
+
+<p>Please see <a href="../explanations/motivation">Chisel Motivation</a></p>
+
+<h3 id="does-chisel-support-x-and-z-logic-values">Does Chisel support X and Z logic values</h3>
+
+<p>Chisel does not directly support Verilog logic values <code class="language-plaintext highlighter-rouge">x</code> <em>unknown</em> and <code class="language-plaintext highlighter-rouge">z</code> <em>high-impedance</em>.  There are a number of reasons to want to avoid these values.  See:<a href="http://infocenter.arm.com/help/topic/com.arm.doc.arp0009a/Verilog_X_Bugs.pdf">The Dangers of Living With An X</a> and <a href="http://ieeexplore.ieee.org/document/7827620/">Malicious LUT: A stealthy FPGA Trojan injected and triggered by the design flow</a>.  Chisel has its own eco-system of unit and functional testers that limit the need for <code class="language-plaintext highlighter-rouge">x</code> and <code class="language-plaintext highlighter-rouge">z</code> and their omission simplify language implementation, design, and testing.  The circuits created by chisel do not preclude developers from using <code class="language-plaintext highlighter-rouge">x</code> and <code class="language-plaintext highlighter-rouge">z</code> in downstream toolchains as they see fit.</p>
+
+<h3 id="get-me-verilog">Get me Verilog</h3>
+<p>I wrote a module and I want to see the Verilog; what do I do?</p>
+
+<p>Here’s a simple hello world module in a file HelloWorld.scala.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">package</span> <span class="nn">intro</span>
+</code></pre></div></div>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">class</span> <span class="nc">HelloWorld</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{})</span>
+  <span class="nf">printf</span><span class="o">(</span><span class="s">"hello world\n"</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Add the following</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+<span class="k">object</span> <span class="nc">VerilogMain</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{</span>
+  <span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">HelloWorld</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Now you can get some Verilog. Start sbt:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bash&gt; sbt
+&gt; run-main intro.VerilogMain
+[info] Running intro.VerilogMain
+[info] [0.004] Elaborating design...
+[info] [0.100] Done elaborating.
+[success] Total time: 1 s, completed Jan 12, 2017 6:24:03 PM
+</code></pre></div></div>
+<p>or as a one-liner:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bash&gt; sbt 'runMain intro.VerilogMain'
+</code></pre></div></div>
+<p>After either of the above there will be a HelloWorld.v file in the current directory:</p>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="c1">// Standard header to adapt well known macros to our needs.</span>
+
+<span class="c1">// Users can define 'PRINTF_COND' to add an extra gate to prints.</span>
+<span class="cp">`ifdef</span> <span class="n">PRINTF_COND</span>
+  <span class="cp">`define</span> PRINTF_COND_ <span class="err">(`</span>PRINTF_COND<span class="err">)</span><span class="cp">
+`else</span>  <span class="c1">// PRINTF_COND</span>
+  <span class="cp">`define</span> PRINTF_COND_ 1<span class="cp">
+`endif</span> <span class="c1">// PRINTF_COND</span>
+
+<span class="k">module</span> <span class="n">HelloWorld</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span> <span class="n">clock</span><span class="p">,</span>
+        <span class="n">reset</span><span class="p">);</span>
+
+  <span class="cp">`ifndef</span> <span class="n">SYNTHESIS</span>	<span class="c1">// faqs.md:13:9</span>
+    <span class="k">always</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clock</span><span class="p">)</span> <span class="k">begin</span>	<span class="c1">// faqs.md:13:9</span>
+      <span class="k">if</span> <span class="p">((</span><span class="cp">`PRINTF_COND_</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">reset</span><span class="p">)</span>	<span class="c1">// faqs.md:13:9</span>
+        <span class="p">$</span><span class="nb">fwrite</span><span class="p">(</span><span class="mh">32'h80000002</span><span class="p">,</span> <span class="s">"hello world</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>	<span class="c1">// faqs.md:13:9</span>
+    <span class="k">end</span> <span class="c1">// always @(posedge)</span>
+  <span class="cp">`endif</span> <span class="c1">// not def SYNTHESIS</span>
+<span class="k">endmodule</span>
+
+
+</code></pre></div></div>
+
+<p>You can see additional options with</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bash&gt; sbt 'runMain intro.HelloWorld --help'
+</code></pre></div></div>
+<p>This will return a comprehensive usage line with available options.</p>
+
+<p>For example to place the output in a directory name buildstuff use</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bash&gt; sbt 'runMain intro.HelloWorld --target-dir buildstuff --top-name HelloWorld'
+</code></pre></div></div>
+
+<p>Alternatively, you can also use the sbt console to invoke the Verilog driver:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sbt
+&gt; console
+[info] Starting scala interpreter...
+Welcome to Scala 2.12.13 (OpenJDK 64-Bit Server VM, Java 1.8.0_275).
+Type in expressions for evaluation. Or try :help.
+
+scala&gt; (new circt.stage.ChiselStage).emitSystemVerilog(new HelloWorld())
+chisel3.Driver.execute(Array[String](), () =&gt; new HelloWorld)
+Elaborating design...
+Done elaborating.
+res1: String =
+"module HelloWorld(
+  input   clock,
+  input   reset
+);
+...
+</code></pre></div></div>
+
+<p>As before, there should be a HelloWorld.v file in the current directory.</p>
+
+<p>Note: Using the following, without the <code class="language-plaintext highlighter-rouge">new</code>,
+will ONLY return the string representation, and will not emit a <code class="language-plaintext highlighter-rouge">.v</code> file:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">HelloWorld</span><span class="o">())</span>
+</code></pre></div></div>
+
+<h3 id="get-me-firrtl">Get me FIRRTL</h3>
+
+<p>If for some reason you don’t want the Verilog (e.g. maybe you want to run some custom transformations before exporting to Verilog), then use something along these lines:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">package</span> <span class="nn">intro</span>
+</code></pre></div></div>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+
+<span class="k">class</span> <span class="nc">MyFirrtlModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{})</span>
+<span class="o">}</span>
+
+<span class="k">object</span> <span class="nc">FirrtlMain</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{</span>
+  <span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitCHIRRTL</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyFirrtlModule</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Run it with:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sbt 'runMain intro.FirrtlMain'
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>FIRRTL version 1.1.0
+circuit MyFirrtlModule :
+  module MyFirrtlModule :
+    input clock : Clock
+    input reset : UInt&lt;1&gt;
+    output io : { } @[faqs.md 65:14]
+
+    skip
+
+</code></pre></div></div>
+
+<p>Alternatively, you can also use the sbt console to invoke the FIRRTL driver directly (replace MyFirrtlModule with your module name):</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sbt
+&gt; console
+[info] Starting scala interpreter...
+Welcome to Scala 2.12.13 (OpenJDK 64-Bit Server VM, Java 1.8.0_275).
+Type in expressions for evaluation. Or try :help.
+
+scala&gt; circt.stage.ChiselStage.emitCHIRRTL(new MyFirrtlModule)
+Elaborating design...
+Done elaborating.
+res3: String = ...
+</code></pre></div></div>
+
+<h3 id="why-doesnt-chisel-tell-me-which-wires-arent-connected">Why doesn’t Chisel tell me which wires aren’t connected?</h3>
+
+<p>As long as your code uses <code class="language-plaintext highlighter-rouge">import chisel3._</code> (and not <code class="language-plaintext highlighter-rouge">import Chisel._</code>), it does!
+See <a href="../explanations/unconnected-wires">Unconnected Wires</a> for details.</p>
+
+<h3 id="what-does-reference--is-not-fully-initialized-mean">What does <code class="language-plaintext highlighter-rouge">Reference ... is not fully initialized.</code> mean?</h3>
+
+<p>It means that you have unconnected wires in your design which could be an indication of a design bug.</p>
+
+<p>In Chisel2 compatibility mode (<code class="language-plaintext highlighter-rouge">NotStrict</code> compile options), chisel generates firrtl code that disables firrtl’s initialized wire checks.
+In pure chisel3 (<code class="language-plaintext highlighter-rouge">Strict</code> compile options), the generated firrtl code does not contain these disablers (<code class="language-plaintext highlighter-rouge">is invalid</code>).
+Output wires that are not driven (not connected) are reported by firrtl as <code class="language-plaintext highlighter-rouge">not fully initialized</code>.
+Read more at <a href="../explanations/unconnected-wires">Unconnected Wires</a> for details on solving the problem.</p>
+
+<h3 id="can-i-specify-behavior-before-and-after-generated-initial-blocks">Can I specify behavior before and after generated initial blocks?</h3>
+<p>Users may define the following macros if they wish to specify behavior before or after emitted initial blocks.</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">BEFORE_INITIAL</code>, which is called before the emitted (non-empty) initial block if it is defined</li>
+  <li><code class="language-plaintext highlighter-rouge">AFTER_INITIAL</code>, which is called after the emitted (non-empty) initial block if it is defined</li>
+</ul>
+
+<p>These macros may be useful for turning coverage on and off.</p>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

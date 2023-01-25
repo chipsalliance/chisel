@@ -1,0 +1,656 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Deep Dive into <> and := Connection Operators</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Deep Dive into <> and := Connection Operators" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Deep Dive into <> and := Connection Operators" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Deep Dive into <> and := Connection Operators" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="deep-dive-into-connection-operators">Deep Dive into Connection Operators</h1>
+
+<p>Chisel contains two connection operators, <code class="language-plaintext highlighter-rouge">:=</code> and <code class="language-plaintext highlighter-rouge">&lt;&gt;</code>. This document provides a deeper explanation of the differences of the two and when to use one or the other. The differences are demonstrated with experiments using Scastie examples which use <code class="language-plaintext highlighter-rouge">DecoupledIO</code>.</p>
+
+<h3 id="experiment-setup">Experiment Setup</h3>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Imports used by the following examples</span>
+<span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.DecoupledIO</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+</code></pre></div></div>
+
+<p>The diagram for the experiment can be viewed <a href="https://docs.google.com/document/d/14C918Hdahk2xOGSJJBT-ZVqAx99_hg3JQIq-vaaifQU/edit?usp=sharing">here</a>.
+<img src="https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/connection-operators-experiment.svg?sanitize=true" alt="Experiment Image" /></p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">Wrapper</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="c1">// connect Producer to IO</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">in</span>
+  <span class="c1">// connect producer to consumer</span>
+  <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+  <span class="c1">// connect consumer to IO</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">out</span> <span class="o">&lt;&gt;</span> <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">PipelineStage</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span>
+    <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+    <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">b</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">a</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Below we can see the resulting Verilog for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
+<span class="c1">// Running CIRCT: 'firtool -format=fir -warn-on-unprocessed-annotations -verify-each=false -dedup -output-annotation-file circt.anno.json -disable-infer-rw -annotation-file Wrapper.anno.json &lt; $input'</span>
+<span class="c1">// res0: String = """// Generated by CIRCT sifive/1/20/0</span>
+<span class="c1">// module PipelineStage(	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   input        io_a_valid,</span>
+<span class="c1">//   input  [7:0] io_a_bits,</span>
+<span class="c1">//   input        io_b_ready,</span>
+<span class="c1">//   output       io_a_ready,</span>
+<span class="c1">//                io_b_valid,</span>
+<span class="c1">//   output [7:0] io_b_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   assign io_a_ready = io_b_ready;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_valid = io_a_valid;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_bits = io_a_bits;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// module Wrapper(	// &lt;stdin&gt;:17:10</span>
+<span class="c1">//   input        clock,</span>
+<span class="c1">//                reset,</span>
+<span class="c1">//                io_in_valid,</span>
+<span class="c1">//   input  [7:0] io_in_bits,</span>
+<span class="c1">//   input        io_out_ready,</span>
+<span class="c1">//   output       io_in_ready,</span>
+<span class="c1">//                io_out_valid,</span>
+<span class="c1">//   output [7:0] io_out_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   wire       _c_io_a_ready;	// connection-operators.md:26:17</span>
+<span class="c1">//   wire       _p_io_b_valid;	// connection-operators.md:25:17</span>
+<span class="c1">//   wire [7:0] _p_io_b_bits;	// connection-operators.md:25:17</span>
+<span class="c1">//   PipelineStage p (	// connection-operators.md:25:17</span>
+<span class="c1">//     .io_a_valid (io_in_valid),</span>
+<span class="c1">//     .io_a_bits  (io_in_bits),</span>
+<span class="c1">//     .io_b_ready (_c_io_a_ready),	// connection-operators.md:26:17</span>
+<span class="c1">//     .io_a_ready (io_in_ready),</span>
+<span class="c1">//     .io_b_valid (_p_io_b_valid),</span>
+<span class="c1">//     .io_b_bits  (_p_io_b_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">//   PipelineStage c (	// connection-operators.md:26:17</span>
+<span class="c1">//     .io_a_valid (_p_io_b_valid),	// connection-operators.md:25:17</span>
+<span class="c1">//     .io_a_bits  (_p_io_b_bits),	// connection-operators.md:25:17</span>
+<span class="c1">//     .io_b_ready (io_out_ready),</span>
+<span class="c1">//     .io_a_ready (_c_io_a_ready),</span>
+<span class="c1">//     .io_b_valid (io_out_valid),</span>
+<span class="c1">//     .io_b_bits  (io_out_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// """</span>
+</code></pre></div></div>
+<h2 id="concept-1--is-commutative">Concept 1: <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> is Commutative</h2>
+
+<p>This experiment is set up to test for the function of <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> using the experiment above.</p>
+
+<p>Achieving this involves flipping the RHS and LHS of the <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> operator and seeing how <code class="language-plaintext highlighter-rouge">&lt;&gt;</code>  will react.
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/LVhlbkFQQnq7X3trHfgZZQ )</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.DecoupledIO</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+
+<span class="k">class</span> <span class="nc">Wrapper</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="c1">// connect producer to I/O</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">in</span> <span class="o">&lt;&gt;</span> <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span>
+  <span class="c1">// connect producer  to consumer</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span> <span class="o">&lt;&gt;</span> <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span>
+  <span class="c1">// connect consumer to I/O</span>
+  <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">out</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">PipelineStage</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span>
+    <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+    <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Below we can see the resulting Verilog for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
+<span class="c1">// Running CIRCT: 'firtool -format=fir -warn-on-unprocessed-annotations -verify-each=false -dedup -output-annotation-file circt.anno.json -disable-infer-rw -annotation-file Wrapper.anno.json &lt; $input'</span>
+<span class="c1">// res2: String = """// Generated by CIRCT sifive/1/20/0</span>
+<span class="c1">// module PipelineStage(	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   input        io_a_valid,</span>
+<span class="c1">//   input  [7:0] io_a_bits,</span>
+<span class="c1">//   input        io_b_ready,</span>
+<span class="c1">//   output       io_a_ready,</span>
+<span class="c1">//                io_b_valid,</span>
+<span class="c1">//   output [7:0] io_b_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   assign io_a_ready = io_b_ready;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_valid = io_a_valid;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_bits = io_a_bits;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// module Wrapper(	// &lt;stdin&gt;:17:10</span>
+<span class="c1">//   input        clock,</span>
+<span class="c1">//                reset,</span>
+<span class="c1">//                io_in_valid,</span>
+<span class="c1">//   input  [7:0] io_in_bits,</span>
+<span class="c1">//   input        io_out_ready,</span>
+<span class="c1">//   output       io_in_ready,</span>
+<span class="c1">//                io_out_valid,</span>
+<span class="c1">//   output [7:0] io_out_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   wire       _c_io_a_ready;	// connection-operators.md:72:17</span>
+<span class="c1">//   wire       _p_io_b_valid;	// connection-operators.md:71:17</span>
+<span class="c1">//   wire [7:0] _p_io_b_bits;	// connection-operators.md:71:17</span>
+<span class="c1">//   PipelineStage p (	// connection-operators.md:71:17</span>
+<span class="c1">//     .io_a_valid (io_in_valid),</span>
+<span class="c1">//     .io_a_bits  (io_in_bits),</span>
+<span class="c1">//     .io_b_ready (_c_io_a_ready),	// connection-operators.md:72:17</span>
+<span class="c1">//     .io_a_ready (io_in_ready),</span>
+<span class="c1">//     .io_b_valid (_p_io_b_valid),</span>
+<span class="c1">//     .io_b_bits  (_p_io_b_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">//   PipelineStage c (	// connection-operators.md:72:17</span>
+<span class="c1">//     .io_a_valid (_p_io_b_valid),	// connection-operators.md:71:17</span>
+<span class="c1">//     .io_a_bits  (_p_io_b_bits),	// connection-operators.md:71:17</span>
+<span class="c1">//     .io_b_ready (io_out_ready),</span>
+<span class="c1">//     .io_a_ready (_c_io_a_ready),</span>
+<span class="c1">//     .io_b_valid (io_out_valid),</span>
+<span class="c1">//     .io_b_bits  (io_out_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// """</span>
+</code></pre></div></div>
+<h3 id="conclusion">Conclusion:</h3>
+<p>The Verilog remained the same without incurring errors, showing that the <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> operator is commutative.</p>
+
+<h2 id="concept-2--means-assign-all-lhs-signals-from-the-rhs-regardless-of-the-direction-on-the-lhs">Concept 2: <code class="language-plaintext highlighter-rouge">:=</code> means assign ALL LHS signals from the RHS, regardless of the direction on the LHS.</h2>
+<p>Using the same experiment code as above, we set to test for the function of <code class="language-plaintext highlighter-rouge">:=</code>
+We replace all instances of <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> with <code class="language-plaintext highlighter-rouge">:=</code> in the sample code above.
+(Scastie link to the experiment: https://scastie.scala-lang.org/Shorla/o1ShdaY3RWKf0IIFwwQ1UQ/1)</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.DecoupledIO</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+
+<span class="k">class</span> <span class="nc">Wrapper</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="c1">// connect producer to I/O</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">:=</span> <span class="nv">io</span><span class="o">.</span><span class="py">in</span>
+  <span class="c1">// connect producer  to consumer</span>
+  <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">:=</span> <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+  <span class="c1">// connect consumer to I/O</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">out</span> <span class="o">:=</span> <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">PipelineStage</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span>
+    <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+    <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">a</span> <span class="o">:=</span> <span class="nv">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Below we can see the resulting error message for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
+<span class="c1">// chisel3.internal.ChiselException: Connection between sink (PipelineStage.io.a: IO[DecoupledIO]) and source (PipelineStage.io.b: IO[DecoupledIO]) failed @: .bitsio.a.bits in PipelineStage cannot be written from module PipelineStage.</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp3$PipelineStage.&lt;init&gt;(connection-operators.md:133)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp3$Wrapper$$anonfun$30$$anonfun$apply$20.apply(connection-operators.md:117)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp3$Wrapper$$anonfun$30$$anonfun$apply$20.apply(connection-operators.md:117)</span>
+<span class="c1">// 	at chisel3.Module$.do_apply(Module.scala:53)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp3$Wrapper$$anonfun$30.apply(connection-operators.md:117)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp3$Wrapper$$anonfun$30.apply(connection-operators.md:117)</span>
+<span class="c1">// 	at chisel3.internal.plugin.package$.autoNameRecursively(package.scala:33)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp3$Wrapper.&lt;init&gt;(connection-operators.md:117)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp3$$anonfun$39$$anonfun$apply$25.apply(connection-operators.md:141)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp3$$anonfun$39$$anonfun$apply$25.apply(connection-operators.md:141)</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at ... (Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace)</span>
+</code></pre></div></div>
+<h3 id="conclusion-1">Conclusion:</h3>
+<p>The := operator goes field-by-field on the LHS and attempts to connect it to the same-named signal from the RHS. If something on the LHS is actually an Input, or the corresponding signal on the RHS is an Output, you will get an error as shown above.</p>
+
+<h2 id="concept-3-always-use--to-assign-dontcare-to-wires">Concept 3: Always Use <code class="language-plaintext highlighter-rouge">:=</code> to assign DontCare to Wires</h2>
+<p>When assigning <code class="language-plaintext highlighter-rouge">DontCare</code> to something that is not directioned, should you use <code class="language-plaintext highlighter-rouge">:=</code> or <code class="language-plaintext highlighter-rouge">&lt;&gt;</code>?
+We will find out using the sample codes below:
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.DecoupledIO</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+
+<span class="k">class</span> <span class="nc">Wrapper</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="c1">//connect Producer to IO</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nc">DontCare</span>
+  <span class="k">val</span> <span class="nv">tmp</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))))</span>
+  <span class="n">tmp</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">in</span>
+  <span class="c1">// connect producer to consumer</span>
+  <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+  <span class="c1">//connect consumer to IO</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">out</span> <span class="o">&lt;&gt;</span> <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">PipelineStage</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span>
+    <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+    <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">b</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">a</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Below we can see the resulting Verilog for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
+<span class="c1">// Running CIRCT: 'firtool -format=fir -warn-on-unprocessed-annotations -verify-each=false -dedup -output-annotation-file circt.anno.json -disable-infer-rw -annotation-file Wrapper.anno.json &lt; $input'</span>
+<span class="c1">// res5: String = """// Generated by CIRCT sifive/1/20/0</span>
+<span class="c1">// module PipelineStage(	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   input        io_a_valid,</span>
+<span class="c1">//   input  [7:0] io_a_bits,</span>
+<span class="c1">//   input        io_b_ready,</span>
+<span class="c1">//   output       io_a_ready,</span>
+<span class="c1">//                io_b_valid,</span>
+<span class="c1">//   output [7:0] io_b_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   assign io_a_ready = io_b_ready;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_valid = io_a_valid;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_bits = io_a_bits;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// module Wrapper(	// &lt;stdin&gt;:17:10</span>
+<span class="c1">//   input        clock,</span>
+<span class="c1">//                reset,</span>
+<span class="c1">//                io_in_valid,</span>
+<span class="c1">//   input  [7:0] io_in_bits,</span>
+<span class="c1">//   input        io_out_ready,</span>
+<span class="c1">//   output       io_in_ready,</span>
+<span class="c1">//                io_out_valid,</span>
+<span class="c1">//   output [7:0] io_out_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   wire       _c_io_a_ready;	// connection-operators.md:168:17</span>
+<span class="c1">//   wire       _p_io_b_valid;	// connection-operators.md:167:17</span>
+<span class="c1">//   wire [7:0] _p_io_b_bits;	// connection-operators.md:167:17</span>
+<span class="c1">//   PipelineStage p (	// connection-operators.md:167:17</span>
+<span class="c1">//     .io_a_valid (io_in_valid),</span>
+<span class="c1">//     .io_a_bits  (io_in_bits),</span>
+<span class="c1">//     .io_b_ready (_c_io_a_ready),	// connection-operators.md:168:17</span>
+<span class="c1">//     .io_a_ready (io_in_ready),</span>
+<span class="c1">//     .io_b_valid (_p_io_b_valid),</span>
+<span class="c1">//     .io_b_bits  (_p_io_b_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">//   PipelineStage c (	// connection-operators.md:168:17</span>
+<span class="c1">//     .io_a_valid (_p_io_b_valid),	// connection-operators.md:167:17</span>
+<span class="c1">//     .io_a_bits  (_p_io_b_bits),	// connection-operators.md:167:17</span>
+<span class="c1">//     .io_b_ready (io_out_ready),</span>
+<span class="c1">//     .io_a_ready (_c_io_a_ready),</span>
+<span class="c1">//     .io_b_valid (io_out_valid),</span>
+<span class="c1">//     .io_b_bits  (io_out_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// """</span>
+</code></pre></div></div>
+<h3 id="conclusion-2">Conclusion:</h3>
+<p>If <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> were used to assign the unidrectioned wire <code class="language-plaintext highlighter-rouge">tmp</code> to DontCare, we would get an error. But in the example above, we used <code class="language-plaintext highlighter-rouge">:=</code> and no errors occurred.
+But when <code class="language-plaintext highlighter-rouge">:=</code> was used to assign the wire to DontCare, no errors will occur.</p>
+
+<p>Thus, when assigning <code class="language-plaintext highlighter-rouge">DontCare</code> to a <code class="language-plaintext highlighter-rouge">Wire</code>, always use <code class="language-plaintext highlighter-rouge">:=</code>.</p>
+
+<h2 id="concept-4-you-can-use--or--to-assign-dontcare-to-directioned-things-ios">Concept 4: You can use <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> or <code class="language-plaintext highlighter-rouge">:=</code> to assign <code class="language-plaintext highlighter-rouge">DontCare</code> to directioned things (IOs)</h2>
+<p>When assigning <code class="language-plaintext highlighter-rouge">DontCare</code> to something that is directioned, should you use <code class="language-plaintext highlighter-rouge">:=</code> or <code class="language-plaintext highlighter-rouge">&lt;&gt;</code>?
+We will find out using the sample codes below:
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/ZIGsWcylRqKJhZCkKWlSIA/1)</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.DecoupledIO</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+
+<span class="k">class</span> <span class="nc">Wrapper</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="c1">//connect Producer to IO</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nc">DontCare</span>
+  <span class="k">val</span> <span class="nv">tmp</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))))</span>
+  <span class="n">tmp</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">in</span>
+  <span class="c1">// connect producer to consumer</span>
+  <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+  <span class="c1">//connect consumer to IO</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">out</span> <span class="o">&lt;&gt;</span> <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">PipelineStage</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span>
+    <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+    <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">b</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">a</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Below we can see the resulting Verilog for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
+<span class="c1">// Running CIRCT: 'firtool -format=fir -warn-on-unprocessed-annotations -verify-each=false -dedup -output-annotation-file circt.anno.json -disable-infer-rw -annotation-file Wrapper.anno.json &lt; $input'</span>
+<span class="c1">// res7: String = """// Generated by CIRCT sifive/1/20/0</span>
+<span class="c1">// module PipelineStage(	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   input        io_a_valid,</span>
+<span class="c1">//   input  [7:0] io_a_bits,</span>
+<span class="c1">//   input        io_b_ready,</span>
+<span class="c1">//   output       io_a_ready,</span>
+<span class="c1">//                io_b_valid,</span>
+<span class="c1">//   output [7:0] io_b_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   assign io_a_ready = io_b_ready;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_valid = io_a_valid;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_bits = io_a_bits;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// module Wrapper(	// &lt;stdin&gt;:17:10</span>
+<span class="c1">//   input        clock,</span>
+<span class="c1">//                reset,</span>
+<span class="c1">//                io_in_valid,</span>
+<span class="c1">//   input  [7:0] io_in_bits,</span>
+<span class="c1">//   input        io_out_ready,</span>
+<span class="c1">//   output       io_in_ready,</span>
+<span class="c1">//                io_out_valid,</span>
+<span class="c1">//   output [7:0] io_out_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   wire       _c_io_a_ready;	// connection-operators.md:218:17</span>
+<span class="c1">//   wire       _p_io_b_valid;	// connection-operators.md:217:17</span>
+<span class="c1">//   wire [7:0] _p_io_b_bits;	// connection-operators.md:217:17</span>
+<span class="c1">//   PipelineStage p (	// connection-operators.md:217:17</span>
+<span class="c1">//     .io_a_valid (io_in_valid),</span>
+<span class="c1">//     .io_a_bits  (io_in_bits),</span>
+<span class="c1">//     .io_b_ready (_c_io_a_ready),	// connection-operators.md:218:17</span>
+<span class="c1">//     .io_a_ready (io_in_ready),</span>
+<span class="c1">//     .io_b_valid (_p_io_b_valid),</span>
+<span class="c1">//     .io_b_bits  (_p_io_b_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">//   PipelineStage c (	// connection-operators.md:218:17</span>
+<span class="c1">//     .io_a_valid (_p_io_b_valid),	// connection-operators.md:217:17</span>
+<span class="c1">//     .io_a_bits  (_p_io_b_bits),	// connection-operators.md:217:17</span>
+<span class="c1">//     .io_b_ready (io_out_ready),</span>
+<span class="c1">//     .io_a_ready (_c_io_a_ready),</span>
+<span class="c1">//     .io_b_valid (io_out_valid),</span>
+<span class="c1">//     .io_b_bits  (io_out_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// """</span>
+</code></pre></div></div>
+<h3 id="conclusion-3">Conclusion:</h3>
+<p>Both <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> and <code class="language-plaintext highlighter-rouge">:=</code> can be used to assign directioned things (IOs) to DontCare as shown in <code class="language-plaintext highlighter-rouge">io.in</code> and <code class="language-plaintext highlighter-rouge">p.io.a</code> respectively. This is basically equivalent because in this case both <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> and <code class="language-plaintext highlighter-rouge">:=</code> will determine the direction from the LHS.</p>
+
+<h2 id="concept-5---works-between-things-with-at-least-one-known-flow-an-io-or-childs-io">Concept 5: <code class="language-plaintext highlighter-rouge">&lt;&gt;</code>  works between things with at least one known flow (An IO or child’s IO).</h2>
+
+<p>If there is at least one known flow what will <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> do? This will be shown using the experiment code below:
+( Scastie link for the experiment:https://scastie.scala-lang.org/Shorla/gKx9ReLVTTqDTk9vmw5ozg)</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.DecoupledIO</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+
+<span class="k">class</span> <span class="nc">Wrapper</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="c1">//connect Producer to IO</span>
+    <span class="c1">// For this experiment, we add a temporary wire and see if it works...</span>
+  <span class="c1">//p.io.a &lt;&gt; io.in</span>
+  <span class="k">val</span> <span class="nv">tmp</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// connect intermediate wire</span>
+  <span class="n">tmp</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">in</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="n">tmp</span>
+  <span class="c1">// connect producer to consumer</span>
+  <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+  <span class="c1">//connect consumer to IO</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">out</span> <span class="o">&lt;&gt;</span> <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">PipelineStage</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span>
+    <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+    <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">b</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">a</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Below we can see the resulting Verilog for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
+<span class="c1">// Running CIRCT: 'firtool -format=fir -warn-on-unprocessed-annotations -verify-each=false -dedup -output-annotation-file circt.anno.json -disable-infer-rw -annotation-file Wrapper.anno.json &lt; $input'</span>
+<span class="c1">// res9: String = """// Generated by CIRCT sifive/1/20/0</span>
+<span class="c1">// module PipelineStage(	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   input        io_a_valid,</span>
+<span class="c1">//   input  [7:0] io_a_bits,</span>
+<span class="c1">//   input        io_b_ready,</span>
+<span class="c1">//   output       io_a_ready,</span>
+<span class="c1">//                io_b_valid,</span>
+<span class="c1">//   output [7:0] io_b_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   assign io_a_ready = io_b_ready;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_valid = io_a_valid;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_bits = io_a_bits;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// module Wrapper(	// &lt;stdin&gt;:17:10</span>
+<span class="c1">//   input        clock,</span>
+<span class="c1">//                reset,</span>
+<span class="c1">//                io_in_valid,</span>
+<span class="c1">//   input  [7:0] io_in_bits,</span>
+<span class="c1">//   input        io_out_ready,</span>
+<span class="c1">//   output       io_in_ready,</span>
+<span class="c1">//                io_out_valid,</span>
+<span class="c1">//   output [7:0] io_out_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   wire       _c_io_a_ready;	// connection-operators.md:268:17</span>
+<span class="c1">//   wire       _p_io_b_valid;	// connection-operators.md:267:17</span>
+<span class="c1">//   wire [7:0] _p_io_b_bits;	// connection-operators.md:267:17</span>
+<span class="c1">//   PipelineStage p (	// connection-operators.md:267:17</span>
+<span class="c1">//     .io_a_valid (io_in_valid),</span>
+<span class="c1">//     .io_a_bits  (io_in_bits),</span>
+<span class="c1">//     .io_b_ready (_c_io_a_ready),	// connection-operators.md:268:17</span>
+<span class="c1">//     .io_a_ready (io_in_ready),</span>
+<span class="c1">//     .io_b_valid (_p_io_b_valid),</span>
+<span class="c1">//     .io_b_bits  (_p_io_b_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">//   PipelineStage c (	// connection-operators.md:268:17</span>
+<span class="c1">//     .io_a_valid (_p_io_b_valid),	// connection-operators.md:267:17</span>
+<span class="c1">//     .io_a_bits  (_p_io_b_bits),	// connection-operators.md:267:17</span>
+<span class="c1">//     .io_b_ready (io_out_ready),</span>
+<span class="c1">//     .io_a_ready (_c_io_a_ready),</span>
+<span class="c1">//     .io_b_valid (io_out_valid),</span>
+<span class="c1">//     .io_b_bits  (io_out_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// """</span>
+</code></pre></div></div>
+<h3 id="conclusion-4">Conclusion:</h3>
+<p>The connection above went smoothly with no errors, this goes to show <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> will work as long as there is at least one directioned thing (IO or submodule’s IO) to “fix” the direction.</p>
+
+<h2 id="concept-6--and--connect-signals-by-field-name">Concept 6: <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> and <code class="language-plaintext highlighter-rouge">:=</code> connect signals by field name.</h2>
+<p>This experiment creates a MockDecoupledIO which has the same fields by name as a DecoupledIO. Chisel lets us connect it and produces the same verilog, even though MockDecoupledIO and DecoupledIO are different types.
+( Scastie link for the experiment:https://scastie.scala-lang.org/Uf4tQquvQYigZAW705NFIQ)</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.DecoupledIO</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+
+<span class="k">class</span> <span class="nc">MockDecoupledIO</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+  <span class="k">val</span> <span class="nv">ready</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+  <span class="k">val</span> <span class="nv">bits</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Wrapper</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MockDecoupledIO</span><span class="o">())</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">MockDecoupledIO</span><span class="o">()</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="c1">// connect producer to I/O</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">in</span>
+  <span class="c1">// connect producer  to consumer</span>
+  <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+  <span class="c1">// connect consumer to I/O</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">out</span> <span class="o">&lt;&gt;</span> <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">PipelineStage</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span>
+    <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+    <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Below we can see the resulting Verilog for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
+<span class="c1">// Running CIRCT: 'firtool -format=fir -warn-on-unprocessed-annotations -verify-each=false -dedup -output-annotation-file circt.anno.json -disable-infer-rw -annotation-file Wrapper.anno.json &lt; $input'</span>
+<span class="c1">// res11: String = """// Generated by CIRCT sifive/1/20/0</span>
+<span class="c1">// module PipelineStage(	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   input        io_a_valid,</span>
+<span class="c1">//   input  [7:0] io_a_bits,</span>
+<span class="c1">//   input        io_b_ready,</span>
+<span class="c1">//   output       io_a_ready,</span>
+<span class="c1">//                io_b_valid,</span>
+<span class="c1">//   output [7:0] io_b_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   assign io_a_ready = io_b_ready;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_valid = io_a_valid;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">//   assign io_b_bits = io_a_bits;	// &lt;stdin&gt;:3:10, :10:10</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// module Wrapper(	// &lt;stdin&gt;:17:10</span>
+<span class="c1">//   input        clock,</span>
+<span class="c1">//                reset,</span>
+<span class="c1">//                io_in_valid,</span>
+<span class="c1">//   input  [7:0] io_in_bits,</span>
+<span class="c1">//   input        io_out_ready,</span>
+<span class="c1">//   output       io_in_ready,</span>
+<span class="c1">//                io_out_valid,</span>
+<span class="c1">//   output [7:0] io_out_bits);</span>
+<span class="c1">// </span>
+<span class="c1">//   wire       _c_io_a_ready;	// connection-operators.md:326:17</span>
+<span class="c1">//   wire       _p_io_b_valid;	// connection-operators.md:325:17</span>
+<span class="c1">//   wire [7:0] _p_io_b_bits;	// connection-operators.md:325:17</span>
+<span class="c1">//   PipelineStage p (	// connection-operators.md:325:17</span>
+<span class="c1">//     .io_a_valid (io_in_valid),</span>
+<span class="c1">//     .io_a_bits  (io_in_bits),</span>
+<span class="c1">//     .io_b_ready (_c_io_a_ready),	// connection-operators.md:326:17</span>
+<span class="c1">//     .io_a_ready (io_in_ready),</span>
+<span class="c1">//     .io_b_valid (_p_io_b_valid),</span>
+<span class="c1">//     .io_b_bits  (_p_io_b_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">//   PipelineStage c (	// connection-operators.md:326:17</span>
+<span class="c1">//     .io_a_valid (_p_io_b_valid),	// connection-operators.md:325:17</span>
+<span class="c1">//     .io_a_bits  (_p_io_b_bits),	// connection-operators.md:325:17</span>
+<span class="c1">//     .io_b_ready (io_out_ready),</span>
+<span class="c1">//     .io_a_ready (_c_io_a_ready),</span>
+<span class="c1">//     .io_b_valid (io_out_valid),</span>
+<span class="c1">//     .io_b_bits  (io_out_bits)</span>
+<span class="c1">//   );</span>
+<span class="c1">// endmodule</span>
+<span class="c1">// </span>
+<span class="c1">// """</span>
+</code></pre></div></div>
+<p>And here is another experiment, where we remove one of the fields of MockDecoupledIO:
+( Scastie link for the experiment:https://scastie.scala-lang.org/ChtkhKCpS9CvJkjjqpdeIA)</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.DecoupledIO</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+
+<span class="k">class</span> <span class="nc">MockDecoupledIO</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+  <span class="k">val</span> <span class="nv">ready</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+  <span class="c1">//val bits = Output(UInt(8.W))</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Wrapper</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MockDecoupledIO</span><span class="o">())</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">MockDecoupledIO</span><span class="o">()</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">PipelineStage</span><span class="o">)</span>
+  <span class="c1">// connect producer to I/O</span>
+  <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">in</span>
+  <span class="c1">// connect producer  to consumer</span>
+  <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">p</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+  <span class="c1">// connect consumer to I/O</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">out</span> <span class="o">&lt;&gt;</span> <span class="nv">c</span><span class="o">.</span><span class="py">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">PipelineStage</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span>
+    <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+    <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">DecoupledIO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+  <span class="nv">io</span><span class="o">.</span><span class="py">a</span> <span class="o">&lt;&gt;</span> <span class="nv">io</span><span class="o">.</span><span class="py">b</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Below we can see the resulting error for this example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
+<span class="c1">// chisel3.internal.ChiselException: Connection between left (PipelineStage.io.a: IO[DecoupledIO]) and source (Wrapper.io.in: IO[MockDecoupledIO]) failed @.bits: Right Record missing field (bits).</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp12$Wrapper.&lt;init&gt;(connection-operators.md:381)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp12$$anonfun$119$$anonfun$apply$79.apply(connection-operators.md:402)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp12$$anonfun$119$$anonfun$apply$79.apply(connection-operators.md:402)</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at ... (Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace)</span>
+</code></pre></div></div>
+<p>This one fails because there is a field <code class="language-plaintext highlighter-rouge">bits</code> missing.</p>
+
+<h3 id="conclusion-5">Conclusion:</h3>
+<p>For <code class="language-plaintext highlighter-rouge">:=</code>, the Scala types do not need to match but all the signals on the LHS must be provided by the RHS or you will get a Chisel elaboration error. There may be additional signals on the RHS, these will be ignored. For <code class="language-plaintext highlighter-rouge">&lt;&gt;</code>, the Scala types do not need to match, but all signals must match exactly between LHS and RHS. In both cases, the order of the fields does not matter.</p>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

@@ -1,0 +1,635 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: DataView</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: DataView" /><meta name="title" property="og:title" content="Chisel/FIRRTL: DataView" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: DataView" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class=" active ">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="dataview">DataView</h1>
+
+<p><em>New in Chisel 3.5</em></p>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>DataView is a mechanism for “viewing” Scala objects as a subtype of <code class="language-plaintext highlighter-rouge">chisel3.Data</code>.
+Often, this is useful for viewing one subtype of <code class="language-plaintext highlighter-rouge">chisel3.Data</code>, as another.
+One can think about a <code class="language-plaintext highlighter-rouge">DataView</code> as a mapping from a <em>Target</em> type <code class="language-plaintext highlighter-rouge">T</code> to a <em>View</em> type <code class="language-plaintext highlighter-rouge">V</code>.
+This is similar to a cast (eg. <code class="language-plaintext highlighter-rouge">.asTypeOf</code>) with a few differences:</p>
+<ol>
+  <li>Views are <em>connectable</em>—connections to the view will occur on the target</li>
+  <li>Whereas casts are <em>structural</em> (a reinterpretation of the underlying bits), a DataView is a customizable mapping</li>
+  <li>Views can be <em>partial</em>—not every field in the target must be included in the mapping</li>
+</ol>
+
+<h2 id="a-motivating-example-axi4">A Motivating Example (AXI4)</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/Advanced_eXtensible_Interface">AXI4</a> is a common interface in digital
+design.
+A typical Verilog peripheral using AXI4 will define a write channel as something like:</p>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">my_module</span><span class="p">(</span>
+  <span class="c1">// Write Channel</span>
+  <span class="kt">input</span>        <span class="n">AXI_AWVALID</span><span class="p">,</span>
+  <span class="kt">output</span>       <span class="n">AXI_AWREADY</span><span class="p">,</span>
+  <span class="kt">input</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">AXI_AWID</span><span class="p">,</span>
+  <span class="kt">input</span> <span class="p">[</span><span class="mi">19</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">AXI_AWADDR</span><span class="p">,</span>
+  <span class="kt">input</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">AXI_AWLEN</span><span class="p">,</span>
+  <span class="kt">input</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">AXI_AWSIZE</span><span class="p">,</span>
+  <span class="c1">// ...</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>This would correspond to the following Chisel Bundle:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">VerilogAXIBundle</span><span class="o">(</span><span class="k">val</span> <span class="nv">addrWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">AWVALID</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+  <span class="k">val</span> <span class="nv">AWREADY</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+  <span class="k">val</span> <span class="nv">AWID</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">AWADDR</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">addrWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">AWLEN</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">AWSIZE</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">))</span>
+  <span class="c1">// The rest of AW and other AXI channels here</span>
+<span class="o">}</span>
+
+<span class="c1">// Instantiated as</span>
+<span class="k">class</span> <span class="nc">my_module</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">AXI</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">VerilogAXIBundle</span><span class="o">(</span><span class="mi">20</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Expressing something that matches a standard Verilog interface is important when instantiating Verilog
+modules in a Chisel design as <code class="language-plaintext highlighter-rouge">BlackBoxes</code>.
+Generally though, Chisel developers prefer to use composition via utilities like <code class="language-plaintext highlighter-rouge">Decoupled</code> rather
+than a flat handling of <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> as in the above.
+A more “Chisel-y” implementation of this interface might look like:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Note that both the AW and AR channels look similar and could use the same Bundle definition</span>
+<span class="k">class</span> <span class="nc">AXIAddressChannel</span><span class="o">(</span><span class="k">val</span> <span class="nv">addrWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">id</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">addr</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="nv">addrWidth</span><span class="o">.</span><span class="py">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">len</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">size</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)</span>
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+<span class="k">import</span> <span class="nn">chisel3.util.Decoupled</span>
+<span class="c1">// We can compose the various AXI channels together</span>
+<span class="k">class</span> <span class="nc">AXIBundle</span><span class="o">(</span><span class="k">val</span> <span class="nv">addrWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">aw</span> <span class="k">=</span> <span class="nc">Decoupled</span><span class="o">(</span><span class="k">new</span> <span class="nc">AXIAddressChannel</span><span class="o">(</span><span class="n">addrWidth</span><span class="o">))</span>
+  <span class="c1">// val ar = new AXIAddressChannel</span>
+  <span class="c1">// ... Other channels here ...</span>
+<span class="o">}</span>
+<span class="c1">// Instantiated as</span>
+<span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">axi</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">AXIBundle</span><span class="o">(</span><span class="mi">20</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Of course, this would result in very different looking Verilog:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">MyModule</span><span class="p">(</span>
+  <span class="kt">input</span>         <span class="n">axi_aw_ready</span><span class="p">,</span> <span class="c1">// @[dataview.md 53:15]</span>
+  <span class="kt">output</span>        <span class="n">axi_aw_valid</span><span class="p">,</span> <span class="c1">// @[dataview.md 53:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">axi_aw_bits_id</span><span class="p">,</span> <span class="c1">// @[dataview.md 53:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">19</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">axi_aw_bits_addr</span><span class="p">,</span> <span class="c1">// @[dataview.md 53:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">axi_aw_bits_len</span><span class="p">,</span> <span class="c1">// @[dataview.md 53:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">axi_aw_bits_size</span> <span class="c1">// @[dataview.md 53:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">axi_aw_valid</span> <span class="o">=</span> <span class="mh">1'h0</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">axi_aw_bits_id</span> <span class="o">=</span> <span class="mh">4'h0</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">axi_aw_bits_addr</span> <span class="o">=</span> <span class="mh">20'h0</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">axi_aw_bits_len</span> <span class="o">=</span> <span class="mh">2'h0</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">axi_aw_bits_size</span> <span class="o">=</span> <span class="mh">2'h0</span><span class="p">;</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<p>So how can we use our more structured types while maintaining expected Verilog interfaces?
+Meet DataView:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.dataview._</span>
+
+<span class="c1">// We recommend putting DataViews in a companion object of one of the involved types</span>
+<span class="k">object</span> <span class="nc">AXIBundle</span> <span class="o">{</span>
+  <span class="c1">// Don't be afraid of the use of implicits, we will discuss this pattern in more detail later</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">axiView</span> <span class="k">=</span> <span class="nc">DataView</span><span class="o">[</span><span class="kt">VerilogAXIBundle</span>, <span class="kt">AXIBundle</span><span class="o">](</span>
+    <span class="c1">// The first argument is a function constructing an object of View type (AXIBundle)</span>
+    <span class="c1">// from an object of the Target type (VerilogAXIBundle)</span>
+    <span class="n">vab</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">AXIBundle</span><span class="o">(</span><span class="nv">vab</span><span class="o">.</span><span class="py">addrWidth</span><span class="o">),</span>
+    <span class="c1">// The remaining arguments are a mapping of the corresponding fields of the two types</span>
+    <span class="nv">_</span><span class="o">.</span><span class="py">AWVALID</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">valid</span><span class="o">,</span>
+    <span class="nv">_</span><span class="o">.</span><span class="py">AWREADY</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">ready</span><span class="o">,</span>
+    <span class="nv">_</span><span class="o">.</span><span class="py">AWID</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">bits</span><span class="o">.</span><span class="py">id</span><span class="o">,</span>
+    <span class="nv">_</span><span class="o">.</span><span class="py">AWADDR</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">bits</span><span class="o">.</span><span class="py">addr</span><span class="o">,</span>
+    <span class="nv">_</span><span class="o">.</span><span class="py">AWLEN</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">bits</span><span class="o">.</span><span class="py">len</span><span class="o">,</span>
+    <span class="nv">_</span><span class="o">.</span><span class="py">AWSIZE</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">bits</span><span class="o">.</span><span class="py">size</span><span class="o">,</span>
+    <span class="c1">// ...</span>
+  <span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This <code class="language-plaintext highlighter-rouge">DataView</code> is a mapping between our flat, Verilog-style AXI Bundle to our more compositional,
+Chisel-style AXI Bundle.
+It allows us to define our ports to match the expected Verilog interface, while manipulating it as if
+it were the more structured type:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">AXIStub</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">AXI</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">VerilogAXIBundle</span><span class="o">(</span><span class="mi">20</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">view</span> <span class="k">=</span> <span class="nv">AXI</span><span class="o">.</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">AXIBundle</span><span class="o">]</span>
+
+  <span class="c1">// We can now manipulate `AXI` via `view`</span>
+  <span class="nv">view</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">bits</span> <span class="o">:=</span> <span class="mf">0.</span><span class="nv">U</span><span class="o">.</span><span class="py">asTypeOf</span><span class="o">(</span><span class="k">new</span> <span class="nc">AXIAddressChannel</span><span class="o">(</span><span class="mi">20</span><span class="o">))</span> <span class="c1">// zero everything out by default</span>
+  <span class="nv">view</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">valid</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span>
+  <span class="nf">when</span> <span class="o">(</span><span class="nv">view</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">ready</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nv">view</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">bits</span><span class="o">.</span><span class="py">id</span> <span class="o">:=</span> <span class="mf">5.</span><span class="n">U</span>
+    <span class="nv">view</span><span class="o">.</span><span class="py">aw</span><span class="o">.</span><span class="py">bits</span><span class="o">.</span><span class="py">addr</span> <span class="o">:=</span> <span class="mf">1234.</span><span class="n">U</span>
+    <span class="c1">// We can still manipulate AXI as well</span>
+    <span class="nv">AXI</span><span class="o">.</span><span class="py">AWLEN</span> <span class="o">:=</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This will generate Verilog that matches the standard naming convention:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">AXIStub</span><span class="p">(</span>
+  <span class="kt">output</span>        <span class="n">AXI_AWVALID</span><span class="p">,</span> <span class="c1">// @[dataview.md 94:15]</span>
+  <span class="kt">input</span>         <span class="n">AXI_AWREADY</span><span class="p">,</span> <span class="c1">// @[dataview.md 94:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">AXI_AWID</span><span class="p">,</span> <span class="c1">// @[dataview.md 94:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">19</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">AXI_AWADDR</span><span class="p">,</span> <span class="c1">// @[dataview.md 94:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">AXI_AWLEN</span><span class="p">,</span> <span class="c1">// @[dataview.md 94:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">AXI_AWSIZE</span> <span class="c1">// @[dataview.md 94:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">AXI_AWVALID</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[dataview.md 99:17]</span>
+  <span class="k">assign</span> <span class="n">AXI_AWID</span> <span class="o">=</span> <span class="n">AXI_AWREADY</span> <span class="o">?</span> <span class="mh">4'h5</span> <span class="o">:</span> <span class="mh">4'h0</span><span class="p">;</span> <span class="c1">// @[dataview.md 100:24 101:21 98:16]</span>
+  <span class="k">assign</span> <span class="n">AXI_AWADDR</span> <span class="o">=</span> <span class="n">AXI_AWREADY</span> <span class="o">?</span> <span class="mh">20'h4d2</span> <span class="o">:</span> <span class="mh">20'h0</span><span class="p">;</span> <span class="c1">// @[dataview.md 100:24 102:23 98:16]</span>
+  <span class="k">assign</span> <span class="n">AXI_AWLEN</span> <span class="o">=</span> <span class="n">AXI_AWREADY</span> <span class="o">?</span> <span class="mh">2'h1</span> <span class="o">:</span> <span class="mh">2'h0</span><span class="p">;</span> <span class="c1">// @[dataview.md 100:24 104:15 98:16]</span>
+  <span class="k">assign</span> <span class="n">AXI_AWSIZE</span> <span class="o">=</span> <span class="mh">2'h0</span><span class="p">;</span> <span class="c1">// @[dataview.md 98:{31,31}]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<p>Note that if both the <em>Target</em> and the <em>View</em> types are subtypes of <code class="language-plaintext highlighter-rouge">Data</code> (as they are in this example),
+the <code class="language-plaintext highlighter-rouge">DataView</code> is <em>invertible</em>.
+This means that we can easily create a <code class="language-plaintext highlighter-rouge">DataView[AXIBundle, VerilogAXIBundle]</code> from our existing
+<code class="language-plaintext highlighter-rouge">DataView[VerilogAXIBundle, AXIBundle]</code>, all we need to do is provide a function to construct
+a <code class="language-plaintext highlighter-rouge">VerilogAXIBundle</code> from an instance of an <code class="language-plaintext highlighter-rouge">AXIBundle</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Note that typically you should define these together (eg. inside object AXIBundle)</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">axiView2</span> <span class="k">=</span> <span class="nv">AXIBundle</span><span class="o">.</span><span class="py">axiView</span><span class="o">.</span><span class="py">invert</span><span class="o">(</span><span class="n">ab</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">VerilogAXIBundle</span><span class="o">(</span><span class="nv">ab</span><span class="o">.</span><span class="py">addrWidth</span><span class="o">))</span>
+</code></pre></div></div>
+
+<p>The following example shows this and illustrates another use case of <code class="language-plaintext highlighter-rouge">DataView</code>—connecting unrelated
+types:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ConnectionExample</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">AXIBundle</span><span class="o">(</span><span class="mi">20</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">VerilogAXIBundle</span><span class="o">(</span><span class="mi">20</span><span class="o">)))</span>
+  <span class="nv">out</span><span class="o">.</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">AXIBundle</span><span class="o">]</span> <span class="o">&lt;&gt;</span> <span class="n">in</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This results in the corresponding fields being connected in the emitted Verilog:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">ConnectionExample</span><span class="p">(</span>
+  <span class="kt">input</span>         <span class="n">in_aw_ready</span><span class="p">,</span> <span class="c1">// @[dataview.md 125:14]</span>
+  <span class="kt">output</span>        <span class="n">in_aw_valid</span><span class="p">,</span> <span class="c1">// @[dataview.md 125:14]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">in_aw_bits_id</span><span class="p">,</span> <span class="c1">// @[dataview.md 125:14]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">19</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_aw_bits_addr</span><span class="p">,</span> <span class="c1">// @[dataview.md 125:14]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">in_aw_bits_len</span><span class="p">,</span> <span class="c1">// @[dataview.md 125:14]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">in_aw_bits_size</span><span class="p">,</span> <span class="c1">// @[dataview.md 125:14]</span>
+  <span class="kt">input</span>         <span class="n">out_AWVALID</span><span class="p">,</span> <span class="c1">// @[dataview.md 126:15]</span>
+  <span class="kt">output</span>        <span class="n">out_AWREADY</span><span class="p">,</span> <span class="c1">// @[dataview.md 126:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">out_AWID</span><span class="p">,</span> <span class="c1">// @[dataview.md 126:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">19</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_AWADDR</span><span class="p">,</span> <span class="c1">// @[dataview.md 126:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">out_AWLEN</span><span class="p">,</span> <span class="c1">// @[dataview.md 126:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>  <span class="n">out_AWSIZE</span> <span class="c1">// @[dataview.md 126:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">in_aw_valid</span> <span class="o">=</span> <span class="n">out_AWVALID</span><span class="p">;</span> <span class="c1">// @[dataview.md 127:25]</span>
+  <span class="k">assign</span> <span class="n">in_aw_bits_id</span> <span class="o">=</span> <span class="n">out_AWID</span><span class="p">;</span> <span class="c1">// @[dataview.md 127:25]</span>
+  <span class="k">assign</span> <span class="n">in_aw_bits_addr</span> <span class="o">=</span> <span class="n">out_AWADDR</span><span class="p">;</span> <span class="c1">// @[dataview.md 127:25]</span>
+  <span class="k">assign</span> <span class="n">in_aw_bits_len</span> <span class="o">=</span> <span class="n">out_AWLEN</span><span class="p">;</span> <span class="c1">// @[dataview.md 127:25]</span>
+  <span class="k">assign</span> <span class="n">in_aw_bits_size</span> <span class="o">=</span> <span class="n">out_AWSIZE</span><span class="p">;</span> <span class="c1">// @[dataview.md 127:25]</span>
+  <span class="k">assign</span> <span class="n">out_AWREADY</span> <span class="o">=</span> <span class="n">in_aw_ready</span><span class="p">;</span> <span class="c1">// @[dataview.md 127:25]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h2 id="other-use-cases">Other Use Cases</h2>
+
+<p>While the ability to map between <code class="language-plaintext highlighter-rouge">Bundle</code> types as in the AXI4 example is pretty compelling,
+DataView has many other applications.
+Importantly, because the <em>Target</em> of the <code class="language-plaintext highlighter-rouge">DataView</code> need not be a <code class="language-plaintext highlighter-rouge">Data</code>, it provides a way to use
+<code class="language-plaintext highlighter-rouge">non-Data</code> objects with APIs that require <code class="language-plaintext highlighter-rouge">Data</code>.</p>
+
+<h3 id="tuples">Tuples</h3>
+
+<p>Perhaps the most helpful use of <code class="language-plaintext highlighter-rouge">DataView</code> for a non-<code class="language-plaintext highlighter-rouge">Data</code> type is viewing Scala tuples as <code class="language-plaintext highlighter-rouge">Bundles</code>.
+For example, in Chisel prior to the introduction of <code class="language-plaintext highlighter-rouge">DataView</code>, one might try to <code class="language-plaintext highlighter-rouge">Mux</code> tuples and
+see an error like the following:</p>
+
+<!-- Todo will need to ensure built-in code for Tuples is suppressed once added to stdlib -->
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TupleExample</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">a</span><span class="o">,</span> <span class="n">b</span><span class="o">,</span> <span class="n">c</span><span class="o">,</span> <span class="n">d</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">cond</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">x</span><span class="o">,</span> <span class="n">y</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="o">:=</span> <span class="nc">Mux</span><span class="o">(</span><span class="n">cond</span><span class="o">,</span> <span class="o">(</span><span class="n">a</span><span class="o">,</span> <span class="n">b</span><span class="o">),</span> <span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">d</span><span class="o">))</span>
+<span class="o">}</span>
+<span class="c1">// error: value := is not a member of (chisel3.UInt, chisel3.UInt)</span>
+<span class="c1">//   Expression does not convert to assignment because receiver is not assignable.</span>
+<span class="c1">//   (x, y) := Mux(cond, (a, b), (c, d))</span>
+<span class="c1">//   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1">// error: inferred type arguments [(chisel3.UInt, chisel3.UInt)] do not conform to macro method apply's type parameter bounds [T &lt;: chisel3.Data]</span>
+<span class="c1">//   (x, y) := Mux(cond, (a, b), (c, d))</span>
+<span class="c1">//             ^^^</span>
+<span class="c1">// error: type mismatch;</span>
+<span class="c1">//  found   : (chisel3.UInt, chisel3.UInt)</span>
+<span class="c1">//  required: T</span>
+<span class="c1">//   (x, y) := Mux(cond, (a, b), (c, d))</span>
+<span class="c1">//                       ^^^^^^</span>
+<span class="c1">// error: type mismatch;</span>
+<span class="c1">//  found   : (chisel3.UInt, chisel3.UInt)</span>
+<span class="c1">//  required: T</span>
+<span class="c1">//   (x, y) := Mux(cond, (a, b), (c, d))</span>
+<span class="c1">//                               ^^^^^^</span>
+</code></pre></div></div>
+
+<p>The issue, is that Chisel primitives like <code class="language-plaintext highlighter-rouge">Mux</code> and <code class="language-plaintext highlighter-rouge">:=</code> only operate on subtypes of <code class="language-plaintext highlighter-rouge">Data</code> and
+Tuples (as members of the Scala standard library), are not subclasses of <code class="language-plaintext highlighter-rouge">Data</code>.
+<code class="language-plaintext highlighter-rouge">DataView</code> provides a mechanism to <em>view</em> a <code class="language-plaintext highlighter-rouge">Tuple</code> as if it were a <code class="language-plaintext highlighter-rouge">Data</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// We need a type to represent the Tuple</span>
+<span class="k">class</span> <span class="nc">HWTuple2</span><span class="o">[</span><span class="kt">A</span> <span class="k">&lt;:</span> <span class="kt">Data</span>, <span class="kt">B</span> <span class="k">&lt;:</span> <span class="kt">Data</span><span class="o">](</span><span class="k">val</span> <span class="nv">_1</span><span class="k">:</span> <span class="kt">A</span><span class="o">,</span> <span class="k">val</span> <span class="nv">_2</span><span class="k">:</span> <span class="kt">B</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Bundle</span>
+
+<span class="c1">// Provide DataView between Tuple and HWTuple</span>
+<span class="k">implicit</span> <span class="k">def</span> <span class="nf">view</span><span class="o">[</span><span class="kt">A</span> <span class="k">&lt;:</span> <span class="kt">Data</span>, <span class="kt">B</span> <span class="k">&lt;:</span> <span class="kt">Data</span><span class="o">]</span><span class="k">:</span> <span class="kt">DataView</span><span class="o">[(</span><span class="kt">A</span>, <span class="kt">B</span><span class="o">)</span>, <span class="kt">HWTuple2</span><span class="o">[</span><span class="kt">A</span>, <span class="kt">B</span><span class="o">]]</span> <span class="k">=</span>
+  <span class="nc">DataView</span><span class="o">(</span><span class="n">tup</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">HWTuple2</span><span class="o">(</span><span class="nv">tup</span><span class="o">.</span><span class="py">_1</span><span class="o">.</span><span class="py">cloneType</span><span class="o">,</span> <span class="nv">tup</span><span class="o">.</span><span class="py">_2</span><span class="o">.</span><span class="py">cloneType</span><span class="o">),</span>
+           <span class="nv">_</span><span class="o">.</span><span class="py">_1</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">_1</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">_2</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">_2</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>Now, we can use <code class="language-plaintext highlighter-rouge">.viewAs</code> to view Tuples as if they were subtypes of <code class="language-plaintext highlighter-rouge">Data</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TupleVerboseExample</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">a</span><span class="o">,</span> <span class="n">b</span><span class="o">,</span> <span class="n">c</span><span class="o">,</span> <span class="n">d</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">cond</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">x</span><span class="o">,</span> <span class="n">y</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">).</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">HWTuple2</span><span class="o">[</span><span class="kt">UInt</span>, <span class="kt">UInt</span><span class="o">]]</span> <span class="o">:=</span> <span class="nc">Mux</span><span class="o">(</span><span class="n">cond</span><span class="o">,</span> <span class="o">(</span><span class="n">a</span><span class="o">,</span> <span class="n">b</span><span class="o">).</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">HWTuple2</span><span class="o">[</span><span class="kt">UInt</span>, <span class="kt">UInt</span><span class="o">]],</span> <span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">d</span><span class="o">).</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">HWTuple2</span><span class="o">[</span><span class="kt">UInt</span>, <span class="kt">UInt</span><span class="o">]])</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This is much more verbose than the original idea of just using the Tuples directly as if they were <code class="language-plaintext highlighter-rouge">Data</code>.
+We can make this better by providing an implicit conversion that views a <code class="language-plaintext highlighter-rouge">Tuple</code> as a <code class="language-plaintext highlighter-rouge">HWTuple2</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">def</span> <span class="nf">tuple2hwtuple</span><span class="o">[</span><span class="kt">A</span> <span class="k">&lt;:</span> <span class="kt">Data</span>, <span class="kt">B</span> <span class="k">&lt;:</span> <span class="kt">Data</span><span class="o">](</span><span class="n">tup</span><span class="k">:</span> <span class="o">(</span><span class="kt">A</span><span class="o">,</span> <span class="kt">B</span><span class="o">))</span><span class="k">:</span> <span class="kt">HWTuple2</span><span class="o">[</span><span class="kt">A</span>, <span class="kt">B</span><span class="o">]</span> <span class="k">=</span>
+  <span class="nv">tup</span><span class="o">.</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">HWTuple2</span><span class="o">[</span><span class="kt">A</span>, <span class="kt">B</span><span class="o">]]</span>
+</code></pre></div></div>
+
+<p>Now, the original code just works!</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TupleExample</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">a</span><span class="o">,</span> <span class="n">b</span><span class="o">,</span> <span class="n">c</span><span class="o">,</span> <span class="n">d</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">cond</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">x</span><span class="o">,</span> <span class="n">y</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="o">:=</span> <span class="nc">Mux</span><span class="o">(</span><span class="n">cond</span><span class="o">,</span> <span class="o">(</span><span class="n">a</span><span class="o">,</span> <span class="n">b</span><span class="o">),</span> <span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">d</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Note that this example ignored <code class="language-plaintext highlighter-rouge">DataProduct</code> which is another required piece (see <a href="#dataproduct">the documentation
+about it below</a>).</p>
+
+<p>All of this is available to users via a single import:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.conversions._</span>
+</code></pre></div></div>
+
+<h2 id="totality-and-partialdataview">Totality and PartialDataView</h2>
+
+<p>A <code class="language-plaintext highlighter-rouge">DataView</code> is <em>total</em> if all fields of the <em>Target</em> type and all fields of the <em>View</em> type are 
+included in the mapping.
+Chisel will error if a field is accidentally left out from a <code class="language-plaintext highlighter-rouge">DataView</code>.
+For example:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">BundleA</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">bar</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">BundleB</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">fizz</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// We forgot BundleA.foo in the mapping!</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">myView</span> <span class="k">=</span> <span class="nc">DataView</span><span class="o">[</span><span class="kt">BundleA</span>, <span class="kt">BundleB</span><span class="o">](</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">BundleB</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">bar</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">fizz</span><span class="o">)</span>
+<span class="k">class</span> <span class="nc">BadMapping</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="k">new</span> <span class="nc">BundleA</span><span class="o">))</span>
+   <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">BundleB</span><span class="o">))</span>
+   <span class="n">out</span> <span class="o">:=</span> <span class="nv">in</span><span class="o">.</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">BundleB</span><span class="o">]</span>
+<span class="o">}</span>
+<span class="c1">// We must run Chisel to see the error</span>
+<span class="nf">getVerilogString</span><span class="o">(</span><span class="k">new</span> <span class="nc">BadMapping</span><span class="o">)</span>
+<span class="c1">// chisel3.experimental.dataview.package$InvalidViewException: Viewing BadMapping.in: IO[BundleA] as BundleB is non-Total!</span>
+<span class="c1">//   Target field '_.foo' is missing.</span>
+<span class="c1">//   DataView used is DataView(defined @[dataview.md 228:49]).</span>
+<span class="c1">//   If the view *should* be non-total, try a 'PartialDataView'.</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$55$BadMapping$1$$anonfun$60.apply(dataview.md:232)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$55$BadMapping$1$$anonfun$60.apply(dataview.md:232)</span>
+<span class="c1">// 	at chisel3.Data.$anonfun$$colon$eq$1(Data.scala:719)</span>
+<span class="c1">// 	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)</span>
+<span class="c1">// 	at chisel3.internal.prefix$.apply(prefix.scala:31)</span>
+<span class="c1">// 	at chisel3.Data.$colon$eq(Data.scala:719)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$55$BadMapping$1.&lt;init&gt;(dataview.md:232)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$55$$anonfun$apply$67.apply(dataview.md:234)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$55$$anonfun$apply$67.apply(dataview.md:234)</span>
+<span class="c1">// 	at ... ()</span>
+<span class="c1">// 	at ... (Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace)</span>
+</code></pre></div></div>
+
+<p>As that error suggests, if we <em>want</em> the view to be non-total, we can use a <code class="language-plaintext highlighter-rouge">PartialDataView</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// A PartialDataView does not have to be total for the Target</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">myView</span> <span class="k">=</span> <span class="nc">PartialDataView</span><span class="o">[</span><span class="kt">BundleA</span>, <span class="kt">BundleB</span><span class="o">](</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">BundleB</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">bar</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">fizz</span><span class="o">)</span>
+<span class="c1">// myView: DataView[BundleA, BundleB] = PartialDataView(defined @[dataview.md 243:56])</span>
+<span class="k">class</span> <span class="nc">PartialDataViewModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="k">new</span> <span class="nc">BundleA</span><span class="o">))</span>
+   <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">BundleB</span><span class="o">))</span>
+   <span class="n">out</span> <span class="o">:=</span> <span class="nv">in</span><span class="o">.</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">BundleB</span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">PartialDataViewModule</span><span class="p">(</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+  <span class="kt">input</span>        <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_foo</span><span class="p">,</span> <span class="c1">// @[dataview.md 247:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bar</span><span class="p">,</span> <span class="c1">// @[dataview.md 247:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_fizz</span> <span class="c1">// @[dataview.md 248:16]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">out_fizz</span> <span class="o">=</span> <span class="n">in_bar</span><span class="p">;</span> <span class="c1">// @[dataview.md 249:8]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<p>While <code class="language-plaintext highlighter-rouge">PartialDataViews</code> need not be total for the <em>Target</em>, both <code class="language-plaintext highlighter-rouge">PartialDataViews</code> and <code class="language-plaintext highlighter-rouge">DataViews</code>
+must always be total for the <em>View</em>.
+This has the consequence that <code class="language-plaintext highlighter-rouge">PartialDataViews</code> are <strong>not</strong> invertible in the same way as <code class="language-plaintext highlighter-rouge">DataViews</code>.</p>
+
+<p>For example:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">val</span> <span class="nv">myView2</span> <span class="k">=</span> <span class="nv">myView</span><span class="o">.</span><span class="py">invert</span><span class="o">(</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">BundleA</span><span class="o">)</span>
+<span class="k">class</span> <span class="nc">PartialDataViewModule2</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="k">new</span> <span class="nc">BundleA</span><span class="o">))</span>
+   <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">BundleB</span><span class="o">))</span>
+   <span class="c1">// Using the inverted version of the mapping</span>
+   <span class="nv">out</span><span class="o">.</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">BundleA</span><span class="o">]</span> <span class="o">:=</span> <span class="n">in</span>
+<span class="o">}</span>
+<span class="c1">// We must run Chisel to see the error</span>
+<span class="nf">getVerilogString</span><span class="o">(</span><span class="k">new</span> <span class="nc">PartialDataViewModule2</span><span class="o">)</span>
+<span class="c1">// chisel3.experimental.dataview.package$InvalidViewException: Cannot invert 'PartialDataView(defined @[dataview.md 243:56])' as it is non-total.</span>
+<span class="c1">//   Try providing a DataView[MdocApp6.this.BundleB, MdocApp6.this.BundleA].</span>
+<span class="c1">//   Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview.</span>
+<span class="c1">// 	at chisel3.experimental.dataview.DataView$InvertibleDataView.invert(DataView.scala:139)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$67.apply(dataview.md:263)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$67.apply(dataview.md:262)</span>
+</code></pre></div></div>
+
+<p>As noted, the mapping must <strong>always</strong> be total for the <code class="language-plaintext highlighter-rouge">View</code>.</p>
+
+<h2 id="advanced-details">Advanced Details</h2>
+
+<p><code class="language-plaintext highlighter-rouge">DataView</code> takes advantage of features of Scala that may be new to many users of Chisel—in particular
+<a href="#type-classes">Type Classes</a>.</p>
+
+<h3 id="type-classes">Type Classes</h3>
+
+<p><a href="https://en.wikipedia.org/wiki/Type_class">Type classes</a> are powerful language feature for writing
+polymorphic code.
+They are a common feature in “modern programming languages” like
+Scala,
+Swift (see <a href="https://docs.swift.org/swift-book/LanguageGuide/Protocols.html">protocols</a>),
+and Rust (see <a href="https://doc.rust-lang.org/book/ch10-02-traits.html">traits</a>). 
+Type classes may appear similar to inheritance in object-oriented programming but there are some
+important  differences:</p>
+
+<ol>
+  <li>You can provide a type class for a type you don’t own (eg. one defined in a 3rd party library,
+  the Scala standard library, or Chisel itself)</li>
+  <li>You can write a single type class for many types that do not have a sub-typing relationship</li>
+  <li>You can provide multiple different type classes for the same type</li>
+</ol>
+
+<p>For <code class="language-plaintext highlighter-rouge">DataView</code>, (1) is crucial because we want to be able to implement <code class="language-plaintext highlighter-rouge">DataViews</code> of built-in Scala
+types like tuples and <code class="language-plaintext highlighter-rouge">Seqs</code>. Furthermore, <code class="language-plaintext highlighter-rouge">DataView</code> has two type parameters (the <em>Target</em> and the
+<em>View</em> types) so inheritance does not really make sense—which type would <code class="language-plaintext highlighter-rouge">extend</code> <code class="language-plaintext highlighter-rouge">DataView</code>?</p>
+
+<p>In Scala 2, type classes are not a built-in language feature, but rather are implemented using implicits.
+There are great resources out there for interested readers:</p>
+<ul>
+  <li><a href="https://scalac.io/blog/typeclasses-in-scala/">Basic Tutorial</a></li>
+  <li><a href="https://stackoverflow.com/a/5598107/2483329">Fantastic Explanation on StackOverflow</a></li>
+</ul>
+
+<p>Note that Scala 3 has added built-in syntax for type classes that does not apply to Chisel 3 which
+currently only supports Scala 2.</p>
+
+<h3 id="implicit-resolution">Implicit Resolution</h3>
+
+<p>Given that <code class="language-plaintext highlighter-rouge">DataView</code> is implemented using implicits, it is important to understand implicit
+resolution.
+Whenever the compiler sees an implicit argument is required, it first looks in <em>current scope</em>
+before looking in the <em>implicit scope</em>.</p>
+
+<ol>
+  <li>Current scope
+    <ul>
+      <li>Values defined in the current scope</li>
+      <li>Explicit imports</li>
+      <li>Wildcard imports</li>
+    </ul>
+  </li>
+  <li>Implicit scope
+    <ul>
+      <li>Companion object of a type</li>
+      <li>Implicit scope of an argument’s type</li>
+      <li>Implicit scope of type parameters</li>
+    </ul>
+  </li>
+</ol>
+
+<p>If at either stage, multiple implicits are found, then the static overloading rule is used to resolve
+it.
+Put simply, if one implicit applies to a more-specific type than the other, the more-specific one
+will be selected.
+If multiple implicits apply within a given stage, then the compiler throws an ambiguous implicit
+resolution error.</p>
+
+<p>This section draws heavily from <a href="https://stackoverflow.com/a/5598107/2483329">[1]</a> and
+<a href="https://stackoverflow.com/a/8694558/2483329">[2]</a>.
+In particular, see [1] for examples.</p>
+
+<h4 id="implicit-resolution-example">Implicit Resolution Example</h4>
+
+<p>To help clarify a bit, let us consider how implicit resolution works for <code class="language-plaintext highlighter-rouge">DataView</code>.
+Consider the definition of <code class="language-plaintext highlighter-rouge">viewAs</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">viewAs</span><span class="o">[</span><span class="kt">V</span> <span class="k">&lt;:</span> <span class="kt">Data</span><span class="o">](</span><span class="k">implicit</span> <span class="n">dataView</span><span class="k">:</span> <span class="kt">DataView</span><span class="o">[</span><span class="kt">T</span>, <span class="kt">V</span><span class="o">])</span><span class="k">:</span> <span class="kt">V</span>
+</code></pre></div></div>
+
+<p>Armed with the knowledge from the previous section, we know that whenever we call <code class="language-plaintext highlighter-rouge">.viewAs</code>, the
+Scala compiler will first look for a <code class="language-plaintext highlighter-rouge">DataView[T, V]</code> in the current scope (defined in, or imported),
+then it will look in the companion objects of <code class="language-plaintext highlighter-rouge">DataView</code>, <code class="language-plaintext highlighter-rouge">T</code>, and <code class="language-plaintext highlighter-rouge">V</code>.
+This enables a fairly powerful pattern, namely that default or typical implementations of a <code class="language-plaintext highlighter-rouge">DataView</code>
+should be defined in the companion object for one of the two types.
+We can think about <code class="language-plaintext highlighter-rouge">DataViews</code> defined in this way as “low priority defaults”.
+They can then be overruled by a specific import if a given user ever wants different behavior.
+For example:</p>
+
+<p>Given the following types:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Foo</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Bar</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">d</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">object</span> <span class="nc">Foo</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">f2b</span> <span class="k">=</span> <span class="nc">DataView</span><span class="o">[</span><span class="kt">Foo</span>, <span class="kt">Bar</span><span class="o">](</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">Bar</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">a</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">c</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">b</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">d</span><span class="o">)</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">b2f</span> <span class="k">=</span> <span class="nv">f2b</span><span class="o">.</span><span class="py">invert</span><span class="o">(</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">Foo</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This provides an implementation of <code class="language-plaintext highlighter-rouge">DataView</code> in the <em>implicit scope</em> as a “default” mapping between
+<code class="language-plaintext highlighter-rouge">Foo</code> and <code class="language-plaintext highlighter-rouge">Bar</code> (and it doesn’t even require an import!):</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">FooToBar</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="k">new</span> <span class="nc">Foo</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">bar</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bar</span><span class="o">))</span>
+  <span class="n">bar</span> <span class="o">:=</span> <span class="nv">foo</span><span class="o">.</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">Bar</span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">FooToBar</span><span class="p">(</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+  <span class="kt">input</span>        <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">foo_a</span><span class="p">,</span> <span class="c1">// @[dataview.md 301:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">foo_b</span><span class="p">,</span> <span class="c1">// @[dataview.md 301:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">bar_c</span><span class="p">,</span> <span class="c1">// @[dataview.md 302:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">bar_d</span> <span class="c1">// @[dataview.md 302:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">bar_c</span> <span class="o">=</span> <span class="n">foo_a</span><span class="p">;</span> <span class="c1">// @[dataview.md 303:7]</span>
+  <span class="k">assign</span> <span class="n">bar_d</span> <span class="o">=</span> <span class="n">foo_b</span><span class="p">;</span> <span class="c1">// @[dataview.md 303:7]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<p>However, it’s possible that some user of <code class="language-plaintext highlighter-rouge">Foo</code> and <code class="language-plaintext highlighter-rouge">Bar</code> wants different behavior,
+perhaps they would prefer more of “swizzling” behavior rather than a direct mapping:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">object</span> <span class="nc">Swizzle</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">swizzle</span> <span class="k">=</span> <span class="nc">DataView</span><span class="o">[</span><span class="kt">Foo</span>, <span class="kt">Bar</span><span class="o">](</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">Bar</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">a</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">d</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">b</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">c</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="c1">// Current scope always wins over implicit scope</span>
+<span class="k">import</span> <span class="nn">Swizzle._</span>
+<span class="k">class</span> <span class="nc">FooToBarSwizzled</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="k">new</span> <span class="nc">Foo</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">bar</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bar</span><span class="o">))</span>
+  <span class="n">bar</span> <span class="o">:=</span> <span class="nv">foo</span><span class="o">.</span><span class="py">viewAs</span><span class="o">[</span><span class="kt">Bar</span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">FooToBarSwizzled</span><span class="p">(</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+  <span class="kt">input</span>        <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">foo_a</span><span class="p">,</span> <span class="c1">// @[dataview.md 325:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">foo_b</span><span class="p">,</span> <span class="c1">// @[dataview.md 325:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">bar_c</span><span class="p">,</span> <span class="c1">// @[dataview.md 326:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">bar_d</span> <span class="c1">// @[dataview.md 326:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">bar_c</span> <span class="o">=</span> <span class="n">foo_b</span><span class="p">;</span> <span class="c1">// @[dataview.md 327:7]</span>
+  <span class="k">assign</span> <span class="n">bar_d</span> <span class="o">=</span> <span class="n">foo_a</span><span class="p">;</span> <span class="c1">// @[dataview.md 327:7]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h3 id="dataproduct">DataProduct</h3>
+
+<p><code class="language-plaintext highlighter-rouge">DataProduct</code> is a type class used by <code class="language-plaintext highlighter-rouge">DataView</code> to validate the correctness of a user-provided mapping.
+In order for a type to be “viewable” (ie. the <code class="language-plaintext highlighter-rouge">Target</code> type of a <code class="language-plaintext highlighter-rouge">DataView</code>), it must have an
+implementation of <code class="language-plaintext highlighter-rouge">DataProduct</code>.</p>
+
+<p>For example, say we have some non-Bundle type:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Loosely based on chisel3.util.Counter</span>
+<span class="k">class</span> <span class="nc">MyCounter</span><span class="o">(</span><span class="k">val</span> <span class="nv">width</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="o">{</span>
+  <span class="cm">/** Indicates if the Counter is incrementing this cycle */</span>
+  <span class="k">val</span> <span class="nv">active</span> <span class="k">=</span> <span class="nc">WireDefault</span><span class="o">(</span><span class="nv">false</span><span class="o">.</span><span class="py">B</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">value</span> <span class="k">=</span> <span class="nc">RegInit</span><span class="o">(</span><span class="mf">0.</span><span class="nf">U</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="k">def</span> <span class="nf">inc</span><span class="o">()</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="n">active</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span>
+    <span class="n">value</span> <span class="o">:=</span> <span class="n">value</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="o">}</span>
+  <span class="k">def</span> <span class="nf">reset</span><span class="o">()</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="n">value</span> <span class="o">:=</span> <span class="mf">0.</span><span class="n">U</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Say we want to view <code class="language-plaintext highlighter-rouge">MyCounter</code> as a <code class="language-plaintext highlighter-rouge">Valid[UInt]</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.util.Valid</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">counterView</span> <span class="k">=</span> <span class="nc">DataView</span><span class="o">[</span><span class="kt">MyCounter</span>, <span class="kt">Valid</span><span class="o">[</span><span class="kt">UInt</span><span class="o">]](</span><span class="n">c</span> <span class="k">=&gt;</span> <span class="nc">Valid</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">c</span><span class="o">.</span><span class="py">width</span><span class="o">.</span><span class="py">W</span><span class="o">)),</span> <span class="nv">_</span><span class="o">.</span><span class="py">value</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">bits</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">active</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">valid</span><span class="o">)</span>
+<span class="c1">// error: myView is already defined as value myView</span>
+<span class="c1">// implicit val myView = PartialDataView[BundleA, BundleB](_ =&gt; new BundleB, _.bar -&gt; _.fizz)</span>
+<span class="c1">// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1">// error: Could not find implicit value for DataView[MdocApp1.this.BundleA, MdocApp1.this.BundleB].</span>
+<span class="c1">// Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview</span>
+<span class="c1">//    out := in.viewAs[BundleB]</span>
+<span class="c1">//                    ^</span>
+<span class="c1">// error: Could not find implicit value for DataView[MdocApp1.this.BundleA, MdocApp1.this.BundleB].</span>
+<span class="c1">// Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview</span>
+<span class="c1">//    out := in.viewAs[BundleB]</span>
+<span class="c1">//                    ^</span>
+<span class="c1">// error: Could not find implicit value for DataView[MdocApp1.this.BundleB, MdocApp1.this.BundleA].</span>
+<span class="c1">// Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview</span>
+<span class="c1">//    out.viewAs[BundleA] := in</span>
+<span class="c1">//    ^^^^^^^^^^^^^^^^^^^</span>
+<span class="c1">// error: Could not find implicit value for DataProduct[MdocApp1.this.MyCounter].</span>
+<span class="c1">// Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview#dataproduct</span>
+<span class="c1">// implicit val counterView = DataView[MyCounter, Valid[UInt]](c =&gt; Valid(UInt(c.width.W)), _.value -&gt; _.bits, _.active -&gt; _.valid)</span>
+<span class="c1">//                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+</code></pre></div></div>
+
+<p>As you can see, this fails Scala compliation.
+We need to provide an implementation of <code class="language-plaintext highlighter-rouge">DataProduct[MyCounter]</code> which provides Chisel a way to access
+the objects of type <code class="language-plaintext highlighter-rouge">Data</code> within <code class="language-plaintext highlighter-rouge">MyCounter</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.util.Valid</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">counterProduct</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">DataProduct</span><span class="o">[</span><span class="kt">MyCounter</span><span class="o">]</span> <span class="o">{</span>
+  <span class="c1">// The String part of the tuple is a String path to the object to help in debugging</span>
+  <span class="k">def</span> <span class="nf">dataIterator</span><span class="o">(</span><span class="n">a</span><span class="k">:</span> <span class="kt">MyCounter</span><span class="o">,</span> <span class="n">path</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Iterator</span><span class="o">[(</span><span class="kt">Data</span>, <span class="kt">String</span><span class="o">)]</span> <span class="k">=</span>
+    <span class="nc">List</span><span class="o">(</span><span class="nv">a</span><span class="o">.</span><span class="py">value</span> <span class="o">-&gt;</span> <span class="n">s</span><span class="s">"$path.value"</span><span class="o">,</span> <span class="nv">a</span><span class="o">.</span><span class="py">active</span> <span class="o">-&gt;</span> <span class="n">s</span><span class="s">"$path.active"</span><span class="o">).</span><span class="py">iterator</span>
+<span class="o">}</span>
+<span class="c1">// Now this works</span>
+<span class="k">implicit</span> <span class="k">val</span> <span class="nv">counterView</span> <span class="k">=</span> <span class="nc">DataView</span><span class="o">[</span><span class="kt">MyCounter</span>, <span class="kt">Valid</span><span class="o">[</span><span class="kt">UInt</span><span class="o">]](</span><span class="n">c</span> <span class="k">=&gt;</span> <span class="nc">Valid</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">c</span><span class="o">.</span><span class="py">width</span><span class="o">.</span><span class="py">W</span><span class="o">)),</span> <span class="nv">_</span><span class="o">.</span><span class="py">value</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">bits</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">active</span> <span class="o">-&gt;</span> <span class="nv">_</span><span class="o">.</span><span class="py">valid</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>Why is this useful?
+This is how Chisel is able to check for totality as <a href="#totality-and-partialdataview">described above</a>.
+In addition to checking if a user has left a field out of the mapping, it also allows Chisel to check
+if the user has included a <code class="language-plaintext highlighter-rouge">Data</code> in the mapping that isn’t actually a part of the <em>target</em> nor the
+<em>view</em>.</p>
+
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

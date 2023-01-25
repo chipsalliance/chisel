@@ -1,0 +1,261 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - 3.5.x
+      - 3.4.x
+      - 3.3.x
+      - 3.2.x
+
+jobs:
+  ci:
+    name: ci
+    strategy:
+      matrix:
+        system: ["ubuntu-20.04"]
+        jvm: ["8"]
+        scala: ["2.13.10", "2.12.17"]
+        espresso: ["2.4"]
+        circt: ["sifive/1/24/0"]
+    runs-on: ${{ matrix.system }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
+      - name: Install Espresso
+        uses: ./.github/workflows/install-espresso
+        with:
+          version: ${{ matrix.espresso }}
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: ${{ matrix.jvm }}
+          cache: 'sbt'
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
+        with:
+          version: ${{ matrix.circt }}
+      - name: Use Treadle for Pull Requests
+        if: github.event_name == 'pull_request'
+        run: echo "CHISEL3_CI_USE_TREADLE=1" >> $GITHUB_ENV
+      - name: Test
+        run: sbt ++${{ matrix.scala }} test
+      - name: Binary compatibility
+        run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+
+  doc:
+    name: Formatting and Documentation
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+          cache: 'sbt'
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
+      - name: Check Formatting
+        run: sbt scalafmtCheckAll
+      - name: Documentation
+        run: sbt docs/mdoc unidoc
+
+  integration:
+    name: Integration Tests (w/ chiseltest)
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
+      - name: Install Espresso
+        uses: ./.github/workflows/install-espresso
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+          cache: 'sbt'
+      - name: Integration Tests
+        # This is here instead of on the whole job because, if a job is skipped, so are dependent jobs.
+        # If this job were skipped, all_tests_passed would be skipped too.
+        # By having this "if" here, this job returns success so that all_tests_passed will succeed too.
+        if: github.event_name != 'pull_request' ||
+          ! contains(github.event.pull_request.labels.*.name, 'Skip chiseltest')
+        run: sbt integrationTests/test
+
+  std:
+    name: Standard Library Tests
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        scala: [ "2.13.10", "2.12.17" ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+          cache: 'sbt'
+      - name: Check Formatting (Scala 2.12 only)
+        if: startsWith(matrix.scala, '2.12')
+        run: sbt ++${{ matrix.scala }} standardLibrary/scalafmtCheckAll
+      - name: Unit Tests
+        run: sbt ++${{ matrix.scala }} standardLibrary/test
+
+  website-api-docs:
+    name: API Docs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [chisel3]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Calculate API Docs Cache Key
+        id: calc-key
+        run: |
+          KEY=$(make -C website --always-make --dry-run apis-${{ matrix.project }} | sha256sum | awk '{print $1}')
+          echo "::set-output name=cache_key::${KEY}"
+      - name: Cache API Docs
+        uses: actions/cache@v2
+        with:
+          path: website/build/api/${{ matrix.project }}
+          key: ${{ runner.os }}-${{ matrix.project }}-${{ steps.calc-key.outputs.cache_key }}
+          # On miss, still start from previous value for incremental rebuild
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.project }}
+      - name: ${{ matrix.project }} APIs
+        run: make -C website apis-${{ matrix.project }}
+      - name: Tar build artifacts
+        run: tar zcf website/build/api/${{ matrix.project }}.tar.gz website/build/api/${{ matrix.project }}
+      - name: Share API Docs
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.project }}-api-docs
+          path: website/build/api/${{ matrix.project }}.tar.gz
+
+  website:
+    name: Build & Deploy Website
+    needs: [website-api-docs]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+      - name: Setup Jekyll
+        run: |
+          gem install jekyll -v 4.2.0
+          gem install jekyll-redirect-from
+      - name: Download all built API docs
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+      - name: Untar build artifacts
+        run: for f in $(find artifacts -name "*.tar.gz"); do tar zxf "$f"; done
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
+      - name: Build the microsite
+        run: make -C website
+
+  # TODO: I'm not sure if we want this enabled right away on chisel3
+  #     - name: Deploy Website to GitHub Pages
+  #       if: github.event_name == 'push'
+  #       uses: JamesIves/github-pages-deploy-action@3.7.1
+  #       with:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         BRANCH: gh-pages
+  #         FOLDER: website/docs/target/site
+
+
+
+  # Sentinel job to simplify how we specify which checks need to pass in branch
+  # protection and in Mergify. This job checks that all jobs were successful.
+  #
+  # When adding new jobs, please add them to `needs` below
+  check-tests:
+    name: "check tests"
+    needs: [ci, integration, std, doc, website, website-api-docs]
+    runs-on: ubuntu-20.04
+    if: success() # only run if all tests have passed
+    outputs:
+      success: ${{ steps.setoutput.outputs.success }}
+    steps:
+      - id: setoutput
+        run: echo "success=true" >> $GITHUB_OUTPUT
+
+  # Related to check-tests above, this job _always_ runs (even if tests fail
+  # and thus check-steps is skipped). This two sentinel job approach avoids an
+  # issue where failing tests causes a single sentinel job to be skipped which
+  # counts as passing for purposes of branch protection.
+  #
+  # See: https://brunoscheufler.com/blog/2022-04-09-the-required-github-status-check-that-wasnt
+  all_tests_passed:
+    name: "all tests passed"
+    runs-on: ubuntu-20.04
+    if: always() # Always run so that we never skip this check
+    needs: check-tests
+      # Pass only if check-tests set its output value
+    steps:
+      - run: |
+          PASSED="${{ needs.check-tests.outputs.success }}"
+          if [[ $PASSED == "true" ]]; then
+            echo "### All tests passed! :rocket:" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "### One or more tests FAILED! :bangbang:" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  # sbt ci-release publishes all cross versions so this job needs to be
+  # separate from a Scala versions build matrix to avoid duplicate publishing
+  publish:
+    needs: [all_tests_passed]
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '8'
+          cache: 'sbt'
+      - name: Setup GPG (for Publish)
+        uses: olafurpg/setup-gpg@v3
+      - name: Publish
+        run: sbt ci-release
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}

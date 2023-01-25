@@ -1,0 +1,203 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Naming Cookbook</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Naming Cookbook" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Naming Cookbook" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Naming Cookbook" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class=" active ">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="naming-cookbook">Naming Cookbook</h1>
+
+<h3 id="i-still-have-_t-signals-can-this-be-fixed">I still have _T signals, can this be fixed?</h3>
+
+<p>See the next answer!</p>
+
+<h3 id="i-have-so-many-wires-with-the-same-name-like-x-x_1-and-x_2-how-can-i-make-them-easier-to-understand">I have so many wires with the same name, like <code class="language-plaintext highlighter-rouge">x</code>, <code class="language-plaintext highlighter-rouge">x_1</code> and <code class="language-plaintext highlighter-rouge">x_2</code>. How can I make them easier to understand?</h3>
+
+<p>Signals with <code class="language-plaintext highlighter-rouge">_T</code> names or names that Chisel has to uniquify
+often are intermediate values generated within loops, function calls, or <code class="language-plaintext highlighter-rouge">when</code> predicates.
+They can also be consumed by verification statements like <code class="language-plaintext highlighter-rouge">assert</code> or <code class="language-plaintext highlighter-rouge">prints</code>.
+In these cases, the compiler plugin often can’t find a good prefix for the generated
+intermediate signals and can’t name them at all or has to make up a unique name for them.</p>
+
+<p>We recommend you manually insert calls to <code class="language-plaintext highlighter-rouge">prefix</code> to clarify these cases:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.prefix</span>
+<span class="k">class</span> <span class="nc">ExamplePrefix</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+
+  <span class="nv">Seq</span><span class="o">.</span><span class="py">tabulate</span><span class="o">{</span><span class="mi">2</span><span class="o">}</span> <span class="o">{</span><span class="n">i</span> <span class="k">=&gt;</span>
+    <span class="nv">Seq</span><span class="o">.</span><span class="py">tabulate</span><span class="o">{</span><span class="mi">2</span><span class="o">}{</span> <span class="n">j</span> <span class="k">=&gt;</span>
+      <span class="nf">prefix</span><span class="o">(</span><span class="n">s</span><span class="s">"loop_${i}_${j}"</span><span class="o">){</span>
+        <span class="k">val</span> <span class="nv">x</span> <span class="k">=</span> <span class="nc">WireInit</span><span class="o">((</span><span class="n">i</span><span class="o">*</span><span class="mh">0x10</span><span class="o">+</span><span class="n">j</span><span class="o">).</span><span class="py">U</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+        <span class="nf">dontTouch</span><span class="o">(</span><span class="n">x</span><span class="o">)</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">ExamplePrefix</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span> <span class="n">clock</span><span class="p">,</span>
+        <span class="n">reset</span><span class="p">);</span>
+
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">loop_0_0_x</span> <span class="o">=</span> <span class="mh">8'h0</span><span class="p">;</span>	<span class="c1">// naming.md:25:25</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">loop_0_1_x</span> <span class="o">=</span> <span class="mh">8'h1</span><span class="p">;</span>	<span class="c1">// naming.md:25:25</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">loop_1_0_x</span> <span class="o">=</span> <span class="mh">8'h10</span><span class="p">;</span>	<span class="c1">// naming.md:25:25</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">loop_1_1_x</span> <span class="o">=</span> <span class="mh">8'h11</span><span class="p">;</span>	<span class="c1">// naming.md:25:25</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+<h3 id="how-can-i-get-better-names-for-code-generated-by-when-clauses">How can I get better names for code generated by <code class="language-plaintext highlighter-rouge">when</code> clauses?</h3>
+
+<p>The <code class="language-plaintext highlighter-rouge">prefix</code> API can help with code inside <code class="language-plaintext highlighter-rouge">when</code> clauses:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ExampleWhenPrefix</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+
+  <span class="nv">Seq</span><span class="o">.</span><span class="py">tabulate</span><span class="o">{</span><span class="mi">2</span><span class="o">}{</span> <span class="n">i</span> <span class="k">=&gt;</span>
+    <span class="k">val</span> <span class="nv">j</span> <span class="k">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="nf">when</span> <span class="o">(</span><span class="n">in</span> <span class="o">===</span> <span class="nv">j</span><span class="o">.</span><span class="py">U</span><span class="o">)</span> <span class="o">{</span> <span class="nf">prefix</span><span class="o">(</span><span class="n">s</span><span class="s">"clause_${j}"</span><span class="o">){</span>
+      <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">))</span>
+      <span class="n">foo</span> <span class="o">:=</span> <span class="n">in</span> <span class="o">+&amp;</span> <span class="nv">j</span><span class="o">.</span><span class="py">U</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)</span>
+      <span class="n">out</span> <span class="o">:=</span> <span class="n">foo</span>
+    <span class="o">}}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">ExampleWhenPrefix</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">==</span> <span class="mh">4'h2</span> <span class="o">?</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">4'h2</span> <span class="o">:</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">4'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:51:{14,23}, :53:17, :54:11</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h3 id="i-still-see-_gen-signals-can-this-be-fixed">I still see _GEN signals, can this be fixed?</h3>
+
+<p><code class="language-plaintext highlighter-rouge">_GEN</code> signals are usually generated from the FIRRTL compiler, rather than the Chisel library. We are working on
+renaming these signals with more context-dependent names, but it is a work in progress. Thanks for caring!</p>
+
+<h3 id="my-module-names-are-super-unstable---i-change-one-thing-and-queue_1-becomes-queue_42-help">My module names are super unstable - I change one thing and Queue_1 becomes Queue_42. Help!</h3>
+
+<p>This is the infamous <code class="language-plaintext highlighter-rouge">Queue</code> instability problem. In general, these cases are best solved at the source - the module
+itself! If you overwrite <code class="language-plaintext highlighter-rouge">desiredName</code> to include parameter information (see the
+<a href="../explanations/naming#set-a-module-name">explanation</a> for more info), then this can avoid this problem permanantly.
+We’ve done this with some Chisel utilities with great results!</p>
+
+<h3 id="i-want-to-add-some-hardware-or-assertions-but-each-time-i-do-all-the-signal-names-get-bumped">I want to add some hardware or assertions, but each time I do all the signal names get bumped!</h3>
+
+<p>This is the classic “ECO” problem, and we provide descriptions in <a href="../explanations/naming">explanation</a>. In short,
+we recommend wrapping all additional logic in a prefix scope, which enables a unique namespace. This should prevent
+name collisions, which are what triggers all those annoying signal name bumps!</p>
+
+<h3 id="i-want-to-force-a-signal-or-instance-name-to-something-how-do-i-do-that">I want to force a signal (or instance) name to something, how do I do that?</h3>
+
+<p>Use the <code class="language-plaintext highlighter-rouge">.suggestName</code> method, which is on all classes which subtype <code class="language-plaintext highlighter-rouge">Data</code>.</p>
+
+<h3 id="how-can-i-omit-the-prefix-in-certain-parts-of-the-code">How can I omit the prefix in certain parts of the code?</h3>
+
+<p>You can use the <code class="language-plaintext highlighter-rouge">noPrefix { ... }</code> to strip the prefix from all signals generated in that scope.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.noPrefix</span>
+
+<span class="k">class</span> <span class="nc">ExampleNoPrefix</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">noPrefix</span> <span class="o">{</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">}</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">ExampleNoPrefix</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:76:{27,32}</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h3 id="i-am-still-not-getting-the-name-i-want-for-example-inlining-an-instance-changes-my-name">I am still not getting the name I want. For example, inlining an instance changes my name!</h3>
+
+<p>In cases where a FIRRTL transform renames a signal/instance, you can use the <code class="language-plaintext highlighter-rouge">forcename</code> API:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.util.experimental.</span><span class="o">{</span><span class="n">forceName</span><span class="o">,</span> <span class="nc">InlineInstance</span><span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">WrapperExample</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">inst</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
+  <span class="nv">inst</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="n">in</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="nv">inst</span><span class="o">.</span><span class="py">out</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Wrapper</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="k">with</span> <span class="nc">InlineInstance</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">inst</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyLeaf</span><span class="o">)</span>
+  <span class="nf">forceName</span><span class="o">(</span><span class="n">inst</span><span class="o">,</span> <span class="s">"inst"</span><span class="o">)</span>
+  <span class="nv">inst</span><span class="o">.</span><span class="py">in</span> <span class="o">:=</span> <span class="n">in</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="nv">inst</span><span class="o">.</span><span class="py">out</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">MyLeaf</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">in</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">MyLeaf</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+<span class="k">endmodule</span>
+
+<span class="k">module</span> <span class="n">WrapperExample</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:23:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="n">MyLeaf</span> <span class="n">inst</span> <span class="p">(</span>	<span class="c1">// naming.md:106:20</span>
+    <span class="p">.</span><span class="n">in</span>  <span class="p">(</span><span class="n">in</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">out</span> <span class="p">(</span><span class="n">out</span><span class="p">)</span>
+  <span class="p">);</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>This can be used to rename instances and non-aggregate typed signals.</p>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

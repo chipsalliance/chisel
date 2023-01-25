@@ -1,0 +1,502 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Naming</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Naming" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Naming" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Naming" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class=" active ">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h1 id="naming">Naming</h1>
+
+<p>Historically, Chisel has had trouble reliably capturing the names of signals. The reasons for this are due to (1)
+primarily relying on reflection to find names, (2) using <code class="language-plaintext highlighter-rouge">@chiselName</code> macro which had unreliable behavior.</p>
+
+<p>Chisel 3.4 introduced a custom Scala compiler plugin which enables reliabe and automatic capturing of signal names, when
+they are declared. In addition, this release includes prolific use of a new prefixing API which enables more stable
+naming of signals programmatically generated from function calls.</p>
+
+<p>This document explains how naming now works in Chisel for signal and module names. For cookbook examples on how to fix
+systemic name-stability issues, please refer to the naming <a href="../cookbooks/naming">cookbook</a>.</p>
+
+<h3 id="compiler-plugin">Compiler Plugin</h3>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Imports used by the following examples</span>
+<span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.</span><span class="o">{</span><span class="n">prefix</span><span class="o">,</span> <span class="n">noPrefix</span><span class="o">}</span>
+<span class="k">import</span> <span class="nn">circt.stage.ChiselStage</span>
+</code></pre></div></div>
+
+<p>With the release of Chisel 3.5, users are required to add the following line to
+their build.sbt settings:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// chiselVersion is the String version (eg. "3.5.3")</span>
+<span class="nf">addCompilerPlugin</span><span class="o">(</span><span class="s">"edu.berkeley.cs"</span> <span class="o">%</span> <span class="s">"chisel3-plugin"</span> <span class="o">%</span> <span class="n">chiselVersion</span> <span class="n">cross</span> <span class="nv">CrossVersion</span><span class="o">.</span><span class="py">full</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>This plugin will run after the ‘typer’ phase of the Scala compiler. It looks for any user code which is of the form
+<code class="language-plaintext highlighter-rouge">val x = y</code>, where <code class="language-plaintext highlighter-rouge">x</code> is of type <code class="language-plaintext highlighter-rouge">chisel3.Data</code>, <code class="language-plaintext highlighter-rouge">chisel3.MemBase</code>, or <code class="language-plaintext highlighter-rouge">chisel3.experimental.BaseModule</code>. For each
+line which fits this criteria, it rewrites that line. In the following examples, the commented line is the what the
+line above is rewritten to.</p>
+
+<p>If the line is within a bundle declaration or is a module instantiation, it is rewritten to replace the right hand
+side with a call to <code class="language-plaintext highlighter-rouge">autoNameRecursively</code>, which names the signal/module.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">))</span>
+  <span class="c1">// val foo = autoNameRecursively("foo")(Input(UInt(3.W)))</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Example1</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">())</span>
+  <span class="c1">// val io = autoNameRecursively("io")(IO(new MyBundle()))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example1</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>       <span class="n">clock</span><span class="p">,</span>
+              <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_foo</span><span class="p">);</span>
+
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Otherwise, it is rewritten to also include the name as a prefix to any signals generated while executing the right-hand-
+side of the val declaration:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example2</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))</span>
+
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))</span>
+
+  <span class="k">def</span> <span class="nf">inXin</span><span class="o">()</span> <span class="k">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span>
+
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="mf">3.</span><span class="n">U</span> <span class="o">+</span> <span class="nf">inXin</span><span class="o">()</span>
+  <span class="c1">// val add = autoNameRecursively("add")(prefix("add")(3.U + inXin()))</span>
+  <span class="c1">// Note that the intermediate result of the multiplication is prefixed with `add`</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example2</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:48:20</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Prefixing can also be derived from the name of signals on the left-hand side of a connection.
+While this is not implemented via the compiler plugin, the behavior should feel similar:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ConnectPrefixing</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))</span>
+
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="o">{</span> <span class="c1">// technically this is not wrapped in autoNameRecursively nor prefix</span>
+    <span class="c1">// But the Chisel runtime will still use the name of `out` as a prefix</span>
+    <span class="k">val</span> <span class="nv">double</span> <span class="k">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span>
+    <span class="c1">// val double = autoNameRecursively("double")(prefix("double")(in * in))</span>
+    <span class="n">double</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">ConnectPrefixing</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:76:21, :78:12</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Note that the naming also works if the hardware type is nested in an <code class="language-plaintext highlighter-rouge">Option</code> or a subtype of <code class="language-plaintext highlighter-rouge">Iterable</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example3</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))</span>
+
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+  <span class="c1">// val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))</span>
+
+  <span class="k">def</span> <span class="nf">inXin</span><span class="o">()</span> <span class="k">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span>
+
+  <span class="k">val</span> <span class="nv">opt</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">3.</span><span class="n">U</span> <span class="o">+</span> <span class="nf">inXin</span><span class="o">())</span>
+  <span class="c1">// Note that the intermediate result of the inXin() is prefixed with `opt`:</span>
+  <span class="c1">// val opt = autoNameRecursively("opt")(prefix("opt")(Some(3.U + inXin())))</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="nv">opt</span><span class="o">.</span><span class="py">get</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example3</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">=</span> <span class="o">{</span><span class="mh">2'h0</span><span class="p">,</span> <span class="n">in</span><span class="o">}</span><span class="p">;</span>	<span class="c1">// naming.md:99:20</span>
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">*</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">+</span> <span class="mh">4'h4</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:99:20, :105:18</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>There is also a slight variant (<code class="language-plaintext highlighter-rouge">autoNameRecursivelyProduct</code>) for naming hardware with names provided by an unapply:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">UnapplyExample</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="nf">mkIO</span><span class="o">()</span> <span class="k">=</span> <span class="o">(</span><span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">))),</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">())))</span>
+  <span class="nf">val</span> <span class="o">(</span><span class="n">in</span><span class="o">,</span> <span class="n">out</span><span class="o">)</span> <span class="k">=</span> <span class="nf">mkIO</span><span class="o">()</span>
+  <span class="c1">// val (in, out) = autoNameRecursivelyProduct(List(Some("in"), Some("out")))(mkIO())</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">in</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">UnapplyExample</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Note that the compiler plugin will not insert a prefix in these cases because it is ambiguous what the prefix should be.
+Users who desire a prefix are encouraged to provide one as <a href="#prefixing">described below</a>.</p>
+
+<h3 id="prefixing">Prefixing</h3>
+
+<p>As shown above, the compiler plugin automatically attempts to prefix some of your signals for you. However, you as a
+user can also add your own prefixes. This is especially useful for ECO-type fixes where you need to add some logic to a module
+but don’t want to influence other names in the module.</p>
+
+<p>In the following example, we prefix additional logic with “ECO”, where <code class="language-plaintext highlighter-rouge">Example4</code> is pre-ECO and <code class="language-plaintext highlighter-rouge">Example5</code> is post-ECO:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example4</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+<span class="o">}</span>
+
+<span class="k">class</span> <span class="nc">Example5</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="nf">prefix</span><span class="o">(</span><span class="s">"ECO"</span><span class="o">)</span> <span class="o">{</span> <span class="n">add</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span> <span class="o">+</span> <span class="n">in</span> <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example4</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:140:{16,21}, :142:14</span>
+<span class="k">endmodule</span>
+
+<span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example5</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:150:{16,21}, :152:{30,36}</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Also note that the prefixes append to each other (including the prefix generated by the compiler plugin):</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example6</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="nf">prefix</span><span class="o">(</span><span class="s">"foo"</span><span class="o">)</span> <span class="o">{</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">}</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example6</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:172:{32,37}</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Sometimes you may want to disable the prefixing. This might occur if you are writing a library function and
+don’t want the prefixing behavior. In this case, you can use the <code class="language-plaintext highlighter-rouge">noPrefix</code> object:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example7</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">noPrefix</span> <span class="o">{</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">}</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example7</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:191:{27,32}</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h3 id="suggest-a-signals-name-or-the-instance-name-of-a-module">Suggest a Signal’s Name (or the instance name of a Module)</h3>
+
+<p>If you want to specify the name of a signal, you can always use the <code class="language-plaintext highlighter-rouge">.suggestName</code> API. Please note that the suggested
+name will still be prefixed (including by the plugin). You can always use the <code class="language-plaintext highlighter-rouge">noPrefix</code> object to strip this.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example8</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="o">(</span><span class="n">in</span> <span class="o">+</span> <span class="o">(</span><span class="n">in</span> <span class="o">+</span> <span class="n">in</span><span class="o">).</span><span class="py">suggestName</span><span class="o">(</span><span class="s">"foo"</span><span class="o">))</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">Example8</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">+</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:210:{17,23}</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>Note that using <code class="language-plaintext highlighter-rouge">.suggestName</code> does <strong>not</strong> affect prefixes derived from val names;
+however, it <em>can</em> affect prefixes derived from connections (eg. <code class="language-plaintext highlighter-rouge">:=</code>):</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ConnectionPrefixExample</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in0</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">in1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+
+  <span class="k">val</span> <span class="nv">out0</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">port</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+    <span class="c1">// Even though this suggestName is before mul, the prefix used in this scope</span>
+    <span class="c1">// is derived from `val out0`, so this does not affect the name of mul</span>
+    <span class="nv">port</span><span class="o">.</span><span class="py">suggestName</span><span class="o">(</span><span class="s">"foo"</span><span class="o">)</span>
+    <span class="c1">// out0_mul</span>
+    <span class="k">val</span> <span class="nv">mul</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">*</span> <span class="n">in1</span>
+    <span class="n">port</span> <span class="o">:=</span> <span class="n">mul</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+    <span class="n">port</span>
+  <span class="o">}</span>
+
+  <span class="k">val</span> <span class="nv">out1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">out2</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+  <span class="n">out1</span> <span class="o">:=</span> <span class="o">{</span>
+    <span class="c1">// out1_sum</span>
+    <span class="k">val</span> <span class="nv">sum</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span>
+    <span class="n">sum</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="o">}</span>
+  <span class="c1">// Comes after so does *not* affect prefix above</span>
+  <span class="nv">out1</span><span class="o">.</span><span class="py">suggestName</span><span class="o">(</span><span class="s">"bar"</span><span class="o">)</span>
+
+  <span class="c1">// Comes before so *does* affect prefix below</span>
+  <span class="nv">out2</span><span class="o">.</span><span class="py">suggestName</span><span class="o">(</span><span class="s">"fizz"</span><span class="o">)</span>
+  <span class="n">out2</span> <span class="o">:=</span> <span class="o">{</span>
+    <span class="c1">// fizz_diff</span>
+    <span class="k">val</span> <span class="nv">diff</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">-</span> <span class="n">in1</span>
+    <span class="n">diff</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">ConnectionPrefixExample</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in0</span><span class="p">,</span>
+               <span class="n">in1</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">foo</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">bar</span><span class="p">,</span>
+               <span class="n">fizz</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">foo</span> <span class="o">=</span> <span class="o">{</span><span class="mh">2'h0</span><span class="p">,</span> <span class="n">in0</span><span class="o">}</span> <span class="o">*</span> <span class="o">{</span><span class="mh">2'h0</span><span class="p">,</span> <span class="n">in1</span><span class="o">}</span> <span class="o">+</span> <span class="mh">4'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:235:19, :236:17</span>
+  <span class="k">assign</span> <span class="n">bar</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:246:9</span>
+  <span class="k">assign</span> <span class="n">fizz</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">-</span> <span class="n">in1</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:246:9, :255:20, :256:10</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>As this example illustrates, this behavior is slightly inconsistent so is subject to change in a future version of Chisel.</p>
+
+<h3 id="behavior-for-unnamed-signals-aka-temporaries">Behavior for “Unnamed signals” (aka “Temporaries”)</h3>
+
+<p>If you want to signify that the name of a signal does not matter, you can prefix the name of your val with <code class="language-plaintext highlighter-rouge">_</code>.
+Chisel will preserve the convention of leading <code class="language-plaintext highlighter-rouge">_</code> signifying an unnamed signal across prefixes.
+For example:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TemporaryExample</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in0</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">in1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">port</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+    <span class="k">val</span> <span class="nv">_sum</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span>
+    <span class="n">port</span> <span class="o">:=</span> <span class="nc">_sum</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+    <span class="n">port</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">TemporaryExample</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in0</span><span class="p">,</span>
+               <span class="n">in1</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:277:18</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<p>If an unnamed signal is itself used to generate a prefix, the leading <code class="language-plaintext highlighter-rouge">_</code> will be ignored to avoid double <code class="language-plaintext highlighter-rouge">__</code> in the names of further nested signals.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TemporaryPrefixExample</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in0</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">in1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+  <span class="k">val</span> <span class="nv">_sum</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">x</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span>
+    <span class="n">x</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="o">}</span>
+  <span class="n">out</span> <span class="o">:=</span> <span class="nc">_sum</span> <span class="o">&amp;</span> <span class="mh">0x2</span><span class="o">.</span><span class="py">U</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">TemporaryPrefixExample</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in0</span><span class="p">,</span>
+               <span class="n">in1</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span> <span class="o">+</span> <span class="mh">2'h1</span> <span class="o">&amp;</span> <span class="mh">2'h2</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:299:7, :301:15</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h3 id="set-a-module-name">Set a Module Name</h3>
+
+<p>If you want to specify the module’s name (not the instance name of a module), you can always override the <code class="language-plaintext highlighter-rouge">desiredName</code>
+value. Note that you can parameterize the name by the module’s parameters. This is an excellent way to make your module
+names more stable and is highly recommended to do.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example9</span><span class="o">(</span><span class="n">width</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">override</span> <span class="k">val</span> <span class="nv">desiredName</span> <span class="k">=</span> <span class="n">s</span><span class="s">"EXAMPLE9WITHWIDTH$width"</span>
+  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="o">(</span><span class="n">in</span> <span class="o">+</span> <span class="o">(</span><span class="n">in</span> <span class="o">+</span> <span class="n">in</span><span class="o">).</span><span class="py">suggestName</span><span class="o">(</span><span class="s">"foo"</span><span class="o">))</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">EXAMPLE9WITHWIDTH8</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
+               <span class="n">reset</span><span class="p">,</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">7</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">+</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">6</span><span class="o">:</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:319:{17,23}</span>
+<span class="k">endmodule</span>
+
+<span class="c1">// Generated by CIRCT sifive/1/20/0</span>
+<span class="k">module</span> <span class="n">EXAMPLE9WITHWIDTH1</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>  <span class="n">clock</span><span class="p">,</span>
+         <span class="n">reset</span><span class="p">,</span>
+         <span class="n">in</span><span class="p">,</span>
+  <span class="kt">output</span> <span class="n">out</span><span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
+<h3 id="reflection-naming">Reflection Naming</h3>
+
+<p>Regardless of whether the compiler plugin is enabled or not, after Chisel constructs a module, it attempts to name all
+members of the Module. This will name all vals which are fields of the module class, but it will not name any
+vals in nested functions or scopes.</p>
+
+<p>If the plugin successfully names a signal, the reflection naming will do nothing. We plan to deprecate all reflection
+naming in a future Chisel release, but are leaving it to allow the plugin naming to be optional (but recommended).</p>
+
+<p>For example, the signals in the following module are in a nested scope; the plugin successfully names them, but
+reflection naming cannot:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example10</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">)))</span>
+    <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+
+    <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span>
+
+    <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="chiselname">@chiselName</h3>
+
+<p>This macro is no longer recommended as its functionality is entirely replaced by the compiler plugin. Feel free to
+delete from your Chisel designs!</p>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>

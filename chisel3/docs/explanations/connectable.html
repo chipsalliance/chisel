@@ -1,0 +1,866 @@
+<!DOCTYPE html><html><head><title>Chisel/FIRRTL: Connectable Operators</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="og:image" content="/img/poster.png" /><meta name="image" property="og:image" content="/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Connectable Operators" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Connectable Operators" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Connectable Operators" /><meta name="twitter:image" content="https://www.chisel-lang.org/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/highlight/styles/vs.css" /><link rel="stylesheet" href="/css/pattern-style.css" /><script async="async">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-145179088-1' , 'auto');
+ga('send', 'pageview');
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/" class="brand"><div class="brand-wrapper"><span>Chisel/FIRRTL</span></div></a></li> <li><a href="/chisel3/docs/introduction.html" class="">Chisel3</a></li> <li><a href="/chisel3/docs/resources/resources.html" class="">Resources</a> <ul class="sub-section"> <li><a href="/chisel3/docs/resources/faqs.html" class="">FAQ</a></li></ul></li> <li><a href="/chisel3/docs/cookbooks/cookbooks.html" class="">Cookbooks</a> <ul class="sub-section"> <li><a href="/chisel3/docs/cookbooks/cookbook.html" class="">General Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/naming.html" class="">Naming Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/troubleshooting.html" class="">Troubleshooting</a></li> <li><a href="/chisel3/docs/cookbooks/dataview.html" class="">DataView Cookbook</a></li> <li><a href="/chisel3/docs/cookbooks/hierarchy.html" class="">Hierarchy Cookbook</a></li></ul></li> <li><a href="/chisel3/docs/explanations/explanations.html" class="">Explanations</a> <ul class="sub-section"> <li><a href="/chisel3/docs/explanations/motivation.html" class="">Motivation</a></li> <li><a href="/chisel3/docs/explanations/supported-hardware.html" class="">Supported Hardware</a></li> <li><a href="/chisel3/docs/explanations/data-types.html" class="">Data Types</a></li> <li><a href="/chisel3/docs/explanations/dataview.html" class="">Dataview</a></li> <li><a href="/chisel3/docs/explanations/bundles-and-vecs.html" class="">Bundles and Vecs</a></li> <li><a href="/chisel3/docs/explanations/combinational-circuits.html" class="">Combinational Circuits</a></li> <li><a href="/chisel3/docs/explanations/operators.html" class="">Operators</a></li> <li><a href="/chisel3/docs/explanations/width-inference.html" class="">Width Inference</a></li> <li><a href="/chisel3/docs/explanations/functional-abstraction.html" class="">Functional Abstraction</a></li> <li><a href="/chisel3/docs/explanations/ports.html" class="">Ports</a></li> <li><a href="/chisel3/docs/explanations/modules.html" class="">Modules</a></li> <li><a href="/chisel3/docs/explanations/sequential-circuits.html" class="">Sequential Circuits</a></li> <li><a href="/chisel3/docs/explanations/memories.html" class="">Memories</a></li> <li><a href="/chisel3/docs/explanations/interfaces-and-connections.html" class="">Interfaces and Connections</a></li> <li><a href="/chisel3/docs/explanations/blackboxes.html" class="">Blackboxes</a></li> <li><a href="/chisel3/docs/explanations/chisel-enum.html" class="">Enumerations</a></li> <li><a href="/chisel3/docs/explanations/functional-module-creation.html" class="">Functional Module Creation</a></li> <li><a href="/chisel3/docs/explanations/muxes-and-input-selection.html" class="">Muxes and Input Selection</a></li> <li><a href="/chisel3/docs/explanations/multi-clock.html" class="">Multiple Clock Domains</a></li> <li><a href="/chisel3/docs/explanations/reset.html" class="">Reset</a></li> <li><a href="/chisel3/docs/explanations/polymorphism-and-parameterization.html" class="">Polymorphism and Parameterization</a></li> <li><a href="/chisel3/docs/explanations/printing.html" class="">Printing in Chisel</a></li> <li><a href="/chisel3/docs/explanations/naming.html" class="">Naming</a></li> <li><a href="/chisel3/docs/explanations/unconnected-wires.html" class="">Unconnected Wires</a></li> <li><a href="/chisel3/docs/explanations/annotations.html" class="">Annotations</a></li> <li><a href="/chisel3/docs/explanations/connection-operators.html" class="">Deep Dive into Connection Operators</a></li> <li><a href="/chisel3/docs/explanations/chisel-type-vs-scala-type.html" class="">Chisel Type vs Scala Type</a></li></ul></li> <li><a href="/chisel3/docs/appendix/appendix.html" class="">Appendix</a> <ul class="sub-section"> <li><a href="/chisel3/docs/appendix/chisel3-vs-chisel2.html" class="">Chisel3 vs. Chisel2</a></li> <li><a href="/chisel3/docs/appendix/experimental-features.html" class="">Experimental Features</a></li> <li><a href="/chisel3/docs/appendix/versioning.html" class="">Versioning</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-chisel-3-4.html" class="">Upgrading From Chisel 3.4 to 3.5</a></li> <li><a href="/chisel3/docs/appendix/upgrading-from-scala-2-11.html" class="">Upgrading From Scala 2.11</a></li></ul></li> <li><a href="/chisel3/docs/developers/developers.html" class="">Developers</a> <ul class="sub-section"> <li><a href="/chisel3/docs/developers/style.html" class="">Style Guide</a></li> <li><a href="/chisel3/docs/developers/sbt-subproject.html" class="">sbt Subproject</a></li> <li><a href="/chisel3/docs/developers/test-coverage.html" class="">Test Coverage</a></li></ul></li> <li><a href="/api/" class="">API Documentation</a> <ul class="sub-section"> <li><a href="/api/chisel3/latest/" class="">Latest</a></li> <li><a href="/api/chisel3/3.5/" class="">3.5</a></li> <li><a href="/api/3.4.4/" class="">3.4</a></li> <li><a href="/api/3.3.3/" class="">3.3</a></li> <li><a href="/api/3.2.8/" class="">3.2</a></li></ul></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav hidden-xs hidden-sm"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li></ul></div></div></div></div><div id="content" data-github-owner="freechipsproject" data-github-repo="chisel3"><div class="content-wrapper"><section><h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+  <li><a href="#terminology">Terminology</a></li>
+  <li><a href="#overview">Overview</a></li>
+  <li><a href="#alignment-flipped-vs-aligned">Alignment: Flipped vs Aligned</a></li>
+  <li><a href="#inputoutput">Input/Output</a></li>
+  <li><a href="#connecting-components-with-fully-aligned-members">Connecting components with fully aligned members</a>
+    <ul>
+      <li><a href="#mono-direction-connection-operator-">Mono-direction connection operator (:=)</a></li>
+    </ul>
+  </li>
+  <li><a href="#connecting-components-with-mixed-alignment-members">Connecting components with mixed alignment members</a>
+    <ul>
+      <li><a href="#bi-direction-connection-operator-">Bi-direction connection operator (:&lt;&gt;=)</a></li>
+      <li><a href="#port-direction-computation-versus-connection-direction-computation">Port-Direction Computation versus Connection-Direction Computation</a></li>
+      <li><a href="#aligned-connection-operator-">Aligned connection operator (:&lt;=)</a></li>
+      <li><a href="#flipped-connection-operator-">Flipped connection operator (:&gt;=)</a></li>
+      <li><a href="#coercing-mono-direction-connection-operator-">Coercing mono-direction connection operator (:#=)</a></li>
+    </ul>
+  </li>
+  <li><a href="#connectable">Connectable</a>
+    <ul>
+      <li><a href="#connecting-records">Connecting Records</a></li>
+      <li><a href="#defaults-with-waived-connections">Defaults with waived connections</a></li>
+      <li><a href="#connecting-types-with-optional-members">Connecting types with optional members</a></li>
+      <li><a href="#always-ignore-extra-members-partial-connection-operator">Always ignore extra members (partial connection operator)</a></li>
+      <li><a href="#connecting-components-with-different-widths">Connecting components with different widths</a></li>
+    </ul>
+  </li>
+  <li><a href="#techniques-for-connecting-structurally-inequivalent-chisel-types">Techniques for connecting structurally inequivalent Chisel types</a>
+    <ul>
+      <li><a href="#connecting-different-sub-types-of-the-same-super-type-with-colliding-names">Connecting different sub-types of the same super-type, with colliding names</a></li>
+      <li><a href="#connecting-sub-types-to-super-types-by-waiving-extra-members">Connecting sub-types to super-types by waiving extra members</a></li>
+      <li><a href="#connecting-different-sub-types">Connecting different sub-types</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="terminology">Terminology</h2>
+
+<ul>
+  <li>“Chisel type” - a <code class="language-plaintext highlighter-rouge">Data</code> that is not bound to hardware, i.e. not a component. (more details <a href="chisel-type-vs-scala-type">here</a>).
+    <ul>
+      <li>E.g. <code class="language-plaintext highlighter-rouge">UInt(3.W)</code>, <code class="language-plaintext highlighter-rouge">new Bundle {..}</code>, <code class="language-plaintext highlighter-rouge">Vec(3, SInt(2.W))</code> are all Chisel types</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">Aggregate</code> - a Chisel type or component that contains other Chisel types or components (i.e. <code class="language-plaintext highlighter-rouge">Vec</code>, <code class="language-plaintext highlighter-rouge">Record</code>, or <code class="language-plaintext highlighter-rouge">Bundle</code>)</li>
+  <li><code class="language-plaintext highlighter-rouge">Element</code> - a Chisel type or component that does not contain other Chisel types or components (e.g. <code class="language-plaintext highlighter-rouge">UInt</code>, <code class="language-plaintext highlighter-rouge">SInt</code>, <code class="language-plaintext highlighter-rouge">Clock</code>, <code class="language-plaintext highlighter-rouge">Bool</code> etc.)</li>
+  <li>“component” - a <code class="language-plaintext highlighter-rouge">Data</code> that is bound to hardware (<code class="language-plaintext highlighter-rouge">IO</code>, <code class="language-plaintext highlighter-rouge">Reg</code>, <code class="language-plaintext highlighter-rouge">Wire</code>, etc.)
+    <ul>
+      <li>E.g. <code class="language-plaintext highlighter-rouge">Wire(UInt(3.W))</code> is a component, whose Chisel type is <code class="language-plaintext highlighter-rouge">UInt(3.W)</code></li>
+    </ul>
+  </li>
+  <li>“member” - a Chisel type or component, or any of its children (could be an <code class="language-plaintext highlighter-rouge">Aggregate</code> or an <code class="language-plaintext highlighter-rouge">Element</code>)
+    <ul>
+      <li>E.g. <code class="language-plaintext highlighter-rouge">Vec(3, UInt(2.W))(0)</code> is a member of the parent <code class="language-plaintext highlighter-rouge">Vec</code> Chisel type</li>
+      <li>E.g. <code class="language-plaintext highlighter-rouge">Wire(Vec(3, UInt(2.W)))(0)</code> is a member of the parent <code class="language-plaintext highlighter-rouge">Wire</code> component</li>
+      <li>E.g. <code class="language-plaintext highlighter-rouge">IO(Decoupled(Bool)).ready</code> is a member of the parent <code class="language-plaintext highlighter-rouge">IO</code> component</li>
+    </ul>
+  </li>
+  <li>“relative alignment” - whether two members of the same component or Chisel type are aligned/flipped, relative to one another
+    <ul>
+      <li>see section <a href="#alignment-flipped-vs-aligned">below</a> for a detailed definition</li>
+    </ul>
+  </li>
+  <li>“structural type check” - Chisel type <code class="language-plaintext highlighter-rouge">A</code> is structurally equivalent to Chisel type <code class="language-plaintext highlighter-rouge">B</code> if <code class="language-plaintext highlighter-rouge">A</code> and <code class="language-plaintext highlighter-rouge">B</code> have matching bundle field names and types (<code class="language-plaintext highlighter-rouge">Record</code> vs <code class="language-plaintext highlighter-rouge">Vector</code> vs <code class="language-plaintext highlighter-rouge">Element</code>), vector sizes, <code class="language-plaintext highlighter-rouge">Element</code> types (UInt/SInt/Bool/Clock etc))
+    <ul>
+      <li>ignores relative alignment (flippedness)</li>
+    </ul>
+  </li>
+  <li>“alignment type check” - a Chisel type <code class="language-plaintext highlighter-rouge">A</code> matches alignment with another Chisel type <code class="language-plaintext highlighter-rouge">B</code> if every member of <code class="language-plaintext highlighter-rouge">A</code>’s relative alignment to <code class="language-plaintext highlighter-rouge">A</code> is the same as the structurally corresponding member of <code class="language-plaintext highlighter-rouge">B</code>’s relative alignment to <code class="language-plaintext highlighter-rouge">B</code>.</li>
+</ul>
+
+<h2 id="overview">Overview</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">Connectable</code> operators are the standard way to connect Chisel hardware components to one another.</p>
+
+<blockquote>
+  <p>Note: For descriptions of the semantics for the previous operators, see <a href="connection-operators"><code class="language-plaintext highlighter-rouge">Connection Operators</code></a>.</p>
+</blockquote>
+
+<p>All connection operators require the two hardware components (consumer and producer) to be structurally type equivalent.</p>
+
+<p>The one exception to the structural type-equivalence rule is using the <code class="language-plaintext highlighter-rouge">Connectable</code> mechanism, detailed at this <a href="#waived-data">section</a> towards the end of this document.</p>
+
+<p>Aggregate (<code class="language-plaintext highlighter-rouge">Record</code>, <code class="language-plaintext highlighter-rouge">Vec</code>, <code class="language-plaintext highlighter-rouge">Bundle</code>) Chisel types can include data members which are flipped relative to one another.
+Due to this, there are many desired connection behaviors between two Chisel components.
+The following are the Chisel connection operators:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">c := p</code> (mono-direction): connects all p members to c; requires c &amp; p to not have any flipped members</li>
+  <li><code class="language-plaintext highlighter-rouge">c :#= p</code> (coercing mono-direction): connects all p members to c; regardless of alignment</li>
+  <li><code class="language-plaintext highlighter-rouge">c :&lt;= p</code> (aligned-direction): connects all aligned (non-flipped) c members from p</li>
+  <li><code class="language-plaintext highlighter-rouge">c :&gt;= p</code> (flipped-direction): connects all flipped p members from c</li>
+  <li><code class="language-plaintext highlighter-rouge">c :&lt;&gt;= p</code> (bi-direction operator): connects all aligned c members from p; all flipped p members from c</li>
+</ul>
+
+<p>These operators may appear to be a random collection of symbols; however, the characters are consistent between operators and self-describe the semantics of each operator:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">:</code> always indicates the consumer, or left-hand-side, of the operator.</li>
+  <li><code class="language-plaintext highlighter-rouge">=</code> always indicates the producer, or right-hand-side, of the operator.
+    <ul>
+      <li>Hence, <code class="language-plaintext highlighter-rouge">c := p</code> connects a consumer (<code class="language-plaintext highlighter-rouge">c</code>) and a producer (<code class="language-plaintext highlighter-rouge">p</code>).</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">&lt;</code> always indicates that some members will be driven producer-to-consumer, or right-to-left.
+    <ul>
+      <li>Hence, <code class="language-plaintext highlighter-rouge">c :&lt;= p</code> drives members in producer (<code class="language-plaintext highlighter-rouge">p</code>) to members in consumer (<code class="language-plaintext highlighter-rouge">c</code>).</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">&gt;</code> always indicates that some signals will be driven consumer-to-producer, or left-to-right.
+    <ul>
+      <li>Hence, <code class="language-plaintext highlighter-rouge">c :&gt;= p</code> drives members in consumer (<code class="language-plaintext highlighter-rouge">c</code>) to members producer (<code class="language-plaintext highlighter-rouge">p</code>).</li>
+      <li>Hence, <code class="language-plaintext highlighter-rouge">c :&lt;&gt;= p</code> both drives members from <code class="language-plaintext highlighter-rouge">p</code> to <code class="language-plaintext highlighter-rouge">c</code> and from <code class="language-plaintext highlighter-rouge">c</code> to <code class="language-plaintext highlighter-rouge">p</code>.</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">#</code> always indicates to ignore member alignment and to drive producer-to-consumer.
+    <ul>
+      <li>Hence, <code class="language-plaintext highlighter-rouge">c :#= p</code> always drives members from <code class="language-plaintext highlighter-rouge">p</code> to <code class="language-plaintext highlighter-rouge">c</code> ignoring direction.</li>
+    </ul>
+  </li>
+</ul>
+
+<blockquote>
+  <p>Note: in addition, an operator that ends in <code class="language-plaintext highlighter-rouge">=</code> has assignment-precendence, which means that <code class="language-plaintext highlighter-rouge">x :&lt;&gt;= y + z</code> will translate to <code class="language-plaintext highlighter-rouge">x :&lt;&gt;= (y + z)</code>, rather than <code class="language-plaintext highlighter-rouge">(x :&lt;&gt;= y) + z</code>.
+This was not true of the <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> operator and was a minor painpoint for users.</p>
+</blockquote>
+
+<h2 id="alignment-flipped-vs-aligned">Alignment: Flipped vs Aligned</h2>
+
+<p>A member’s alignment is a relative property: a member is aligned/flipped relative to another member of the same component or Chisel type.
+Hence, one must always say whether a member is flipped/aligned <em>with respect to (w.r.t)</em> another member of that type (parent, sibling, child etc.).</p>
+
+<p>We use the following example of a non-nested bundle <code class="language-plaintext highlighter-rouge">Parent</code> to let us state all of the alignment relationships between members of <code class="language-plaintext highlighter-rouge">p</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">class</span> <span class="nc">Parent</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">alignedChild</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">flippedChild</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">MyModule0</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">Parent</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>First, every member is always aligned with themselves:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">p</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">p</code></li>
+  <li><code class="language-plaintext highlighter-rouge">p.alignedChild</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">p.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">p.flippedChild</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">p.flippedChild</code></li>
+</ul>
+
+<p>Next, we list all parent/child relationships.
+Because the <code class="language-plaintext highlighter-rouge">flippedChild</code> field is <code class="language-plaintext highlighter-rouge">Flipped</code>, it changes its aligment relative to its parent.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">p</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">p.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">p</code> is flipped w.r.t <code class="language-plaintext highlighter-rouge">p.flippedChild</code></li>
+</ul>
+
+<p>Finally, we can list all sibling relationships:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">p.alignedChild</code> is flipped w.r.t <code class="language-plaintext highlighter-rouge">p.flippedChild</code></li>
+</ul>
+
+<p>The next example has a nested bundle <code class="language-plaintext highlighter-rouge">GrandParent</code> who instantiates an aligned <code class="language-plaintext highlighter-rouge">Parent</code> field and flipped <code class="language-plaintext highlighter-rouge">Parent</code> field.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">class</span> <span class="nc">GrandParent</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">alignedParent</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Parent</span>
+  <span class="k">val</span> <span class="nv">flippedParent</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">Parent</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">MyModule1</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">g</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">GrandParent</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Consider the following alignements between grandparent and grandchildren.
+An odd number of flips indicate a flipped relationship; even numbers of flips indicate an aligned relationship.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">g</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">g.flippedParent.flippedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">g.alignedParent.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g</code> is flipped w.r.t <code class="language-plaintext highlighter-rouge">g.flippedParent.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g</code> is flipped w.r.t <code class="language-plaintext highlighter-rouge">g.alignedParent.flippedChild</code></li>
+</ul>
+
+<p>Consider the following alignment relationships starting from <code class="language-plaintext highlighter-rouge">g.alignedParent</code> and <code class="language-plaintext highlighter-rouge">g.flippedParent</code>.
+<em>Note that whether <code class="language-plaintext highlighter-rouge">g.alignedParent</code> is aligned/flipped relative to <code class="language-plaintext highlighter-rouge">g</code> has no effect on the aligned/flipped relationship between <code class="language-plaintext highlighter-rouge">g.alignedParent</code> and <code class="language-plaintext highlighter-rouge">g.alignedParent.alignedChild</code> because alignment is only relative to the two members in question!</em>:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">g.alignedParent</code> is aligned w.r.t. <code class="language-plaintext highlighter-rouge">g.alignedParent.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g.flippedParent</code> is aligned w.r.t. <code class="language-plaintext highlighter-rouge">g.flippedParent.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g.alignedParent</code> is flipped w.r.t. <code class="language-plaintext highlighter-rouge">g.alignedParent.flippedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g.flippedParent</code> is flipped w.r.t. <code class="language-plaintext highlighter-rouge">g.flippedParent.flippedChild</code></li>
+</ul>
+
+<p>In summary, a member is aligned or flipped w.r.t. another member of the hardware component.
+This means that the type of the consumer/producer is the only information needed to determine the behavior of any operator.
+<em>Whether the consumer/producer is a member of a larger bundle is irrelevant; you ONLY need to know the type of the consumer/producer</em>.</p>
+
+<h2 id="inputoutput">Input/Output</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Input(gen)</code>/<code class="language-plaintext highlighter-rouge">Output(gen)</code> are coercing operators.
+They perform two functions: (1) create a new Chisel type that has all flips removed from all recursive children members (still structurally equivalent to <code class="language-plaintext highlighter-rouge">gen</code> but no longer alignment type equivalent), and (2) apply <code class="language-plaintext highlighter-rouge">Flipped</code> if <code class="language-plaintext highlighter-rouge">Input</code>, keep aligned (do nothing) if <code class="language-plaintext highlighter-rouge">Output</code>.
+E.g. if we imagine a function called <code class="language-plaintext highlighter-rouge">cloneChiselTypeButStripAllFlips</code>, then <code class="language-plaintext highlighter-rouge">Input(gen)</code> is structurally and alignment type equivalent to <code class="language-plaintext highlighter-rouge">Flipped(cloneChiselTypeButStripAllFlips(gen))</code>.</p>
+
+<p>Note that if <code class="language-plaintext highlighter-rouge">gen</code> is a non-aggregate, then <code class="language-plaintext highlighter-rouge">Input(nonAggregateGen)</code> is equivalent to <code class="language-plaintext highlighter-rouge">Flipped(nonAggregateGen)</code>.</p>
+
+<blockquote>
+  <p>Future work will refactor how these primitives are exposed to the user to make Chisel’s type system more intuitive.
+See [https://github.com/chipsalliance/chisel3/issues/2643].</p>
+</blockquote>
+
+<p>With this in mind, we can consider the following examples and detail relative alignments of members.</p>
+
+<p>First, we can use a similar example to <code class="language-plaintext highlighter-rouge">Parent</code> but use <code class="language-plaintext highlighter-rouge">Input/Output</code> instead of <code class="language-plaintext highlighter-rouge">Flipped</code>.
+Because <code class="language-plaintext highlighter-rouge">alignedChild</code> and <code class="language-plaintext highlighter-rouge">flippedChild</code> are non-aggregates, <code class="language-plaintext highlighter-rouge">Input</code> is basically just a <code class="language-plaintext highlighter-rouge">Flipped</code> and thus the alignments are unchanged compared to the previous <code class="language-plaintext highlighter-rouge">Parent</code> example.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">class</span> <span class="nc">ParentWithOutputInput</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">alignedCoerced</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))</span> <span class="c1">// Equivalent to just UInt(32.W)</span>
+  <span class="k">val</span> <span class="nv">flippedCoerced</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))</span>  <span class="c1">// Equivalent to Flipped(UInt(32.W))</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">MyModule2</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">ParentWithOutputInput</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>The aligments are the same as the previous <code class="language-plaintext highlighter-rouge">Parent</code> example:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">p</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">p</code></li>
+  <li><code class="language-plaintext highlighter-rouge">p.alignedCoerced</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">p.alignedCoerced</code></li>
+  <li><code class="language-plaintext highlighter-rouge">p.flippedCoerced</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">p.flippedCoerced</code></li>
+  <li><code class="language-plaintext highlighter-rouge">p</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">p.alignedCoerced</code></li>
+  <li><code class="language-plaintext highlighter-rouge">p</code> is flipped w.r.t <code class="language-plaintext highlighter-rouge">p.flippedCoerced</code></li>
+  <li><code class="language-plaintext highlighter-rouge">p.alignedCoerced</code> is flipped w.r.t <code class="language-plaintext highlighter-rouge">p.flippedCoerced</code></li>
+</ul>
+
+<p>The next example has a nested bundle <code class="language-plaintext highlighter-rouge">GrandParent</code> who instantiates an <code class="language-plaintext highlighter-rouge">Output</code> <code class="language-plaintext highlighter-rouge">ParentWithOutputInput</code> field and an <code class="language-plaintext highlighter-rouge">Input</code> <code class="language-plaintext highlighter-rouge">ParentWithOutputInput</code> field.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">class</span> <span class="nc">GrandParentWithOutputInput</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">alignedCoerced</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">ParentWithOutputInput</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">flippedCoerced</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="k">new</span> <span class="nc">ParentWithOutputInput</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">MyModule3</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">g</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">GrandParentWithOutputInput</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Remember that <code class="language-plaintext highlighter-rouge">Output(gen)/Input(gen)</code> recursively strips the <code class="language-plaintext highlighter-rouge">Flipped</code> of any recursive children.
+This makes every member of <code class="language-plaintext highlighter-rouge">gen</code> aligned with every other member of <code class="language-plaintext highlighter-rouge">gen</code>.</p>
+
+<p>Consider the following alignments between grandparent and grandchildren.
+Because <code class="language-plaintext highlighter-rouge">alignedCoerced</code> and <code class="language-plaintext highlighter-rouge">flippedCoerced</code> are aligned with all their recursive members, they are fully aligned.
+Thus, only their alignment to <code class="language-plaintext highlighter-rouge">g</code> influences grandchildren alignment:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">g</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">g.alignedCoerced.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g</code> is aligned w.r.t <code class="language-plaintext highlighter-rouge">g.alignedCoerced.flippedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g</code> is flipped w.r.t <code class="language-plaintext highlighter-rouge">g.flippedCoerced.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g</code> is flipped w.r.t <code class="language-plaintext highlighter-rouge">g.flippedCoerced.flippedChild</code></li>
+</ul>
+
+<p>Consider the following alignment relationships starting from <code class="language-plaintext highlighter-rouge">g.alignedCoerced</code> and <code class="language-plaintext highlighter-rouge">g.flippedCoerced</code>.
+<em>Note that whether <code class="language-plaintext highlighter-rouge">g.alignedCoerced</code> is aligned/flipped relative to <code class="language-plaintext highlighter-rouge">g</code> has no effect on the aligned/flipped relationship between <code class="language-plaintext highlighter-rouge">g.alignedCoerced</code> and <code class="language-plaintext highlighter-rouge">g.alignedCoerced.alignedChild</code> or <code class="language-plaintext highlighter-rouge">g.alignedCoerced.flippedChild</code> because alignment is only relative to the two members in question! However, because alignment is coerced, everything is aligned between <code class="language-plaintext highlighter-rouge">g.alignedCoerced</code>/<code class="language-plaintext highlighter-rouge">g.flippedAligned</code> and their children</em>:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">g.alignedCoerced</code> is aligned w.r.t. <code class="language-plaintext highlighter-rouge">g.alignedCoerced.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g.alignedCoerced</code> is aligned w.r.t. <code class="language-plaintext highlighter-rouge">g.alignedCoerced.flippedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g.flippedCoerced</code> is aligned w.r.t. <code class="language-plaintext highlighter-rouge">g.flippedCoerced.alignedChild</code></li>
+  <li><code class="language-plaintext highlighter-rouge">g.flippedCoerced</code> is aligned w.r.t. <code class="language-plaintext highlighter-rouge">g.flippedCoerced.flippedChild</code></li>
+</ul>
+
+<p>In summary, <code class="language-plaintext highlighter-rouge">Input(gen)</code> and <code class="language-plaintext highlighter-rouge">Output(gen)</code> recursively coerce children alignment, as well as dictate <code class="language-plaintext highlighter-rouge">gen</code>’s alignment to its parent bundle (if it exists).</p>
+
+<h2 id="connecting-components-with-fully-aligned-members">Connecting components with fully aligned members</h2>
+
+<h3 id="mono-direction-connection-operator-">Mono-direction connection operator (:=)</h3>
+
+<p>For simple connections where all members are aligned (non-flipped) w.r.t. one another, use <code class="language-plaintext highlighter-rouge">:=</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">class</span> <span class="nc">FullyAlignedBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+  <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Example0</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">incoming</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">FullyAlignedBundle</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">outgoing</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">FullyAlignedBundle</span><span class="o">)</span>
+  <span class="n">outgoing</span> <span class="o">:=</span> <span class="n">incoming</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where each member of <code class="language-plaintext highlighter-rouge">incoming</code> drives every member of <code class="language-plaintext highlighter-rouge">outgoing</code>:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example0</span><span class="p">(</span>
+  <span class="kt">input</span>   <span class="n">incoming_a</span><span class="p">,</span> <span class="c1">// @[connectable.md 86:20]</span>
+  <span class="kt">input</span>   <span class="n">incoming_b</span><span class="p">,</span> <span class="c1">// @[connectable.md 86:20]</span>
+  <span class="kt">output</span>  <span class="n">outgoing_a</span><span class="p">,</span> <span class="c1">// @[connectable.md 87:20]</span>
+  <span class="kt">output</span>  <span class="n">outgoing_b</span> <span class="c1">// @[connectable.md 87:20]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">outgoing_a</span> <span class="o">=</span> <span class="n">incoming_a</span><span class="p">;</span> <span class="c1">// @[connectable.md 88:12]</span>
+  <span class="k">assign</span> <span class="n">outgoing_b</span> <span class="o">=</span> <span class="n">incoming_b</span><span class="p">;</span> <span class="c1">// @[connectable.md 88:12]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>You may be thinking “Wait, I’m confused! Isn’t <code class="language-plaintext highlighter-rouge">incoming</code> flipped and <code class="language-plaintext highlighter-rouge">outgoing</code> aligned?” – Noo! Whether <code class="language-plaintext highlighter-rouge">incoming</code> is aligned with <code class="language-plaintext highlighter-rouge">outgoing</code> makes no sense; remember, you only evaluate alignment between members of the same component or Chisel type.
+Because components are always aligned to themselves, <code class="language-plaintext highlighter-rouge">outgoing</code> is aligned to <code class="language-plaintext highlighter-rouge">outgoing</code>, and <code class="language-plaintext highlighter-rouge">incoming</code> is aligned to <code class="language-plaintext highlighter-rouge">incoming</code>, there is no problem.
+Their relative flippedness to anything else is irrelevant.</p>
+</blockquote>
+
+<h2 id="connecting-components-with-mixed-alignment-members">Connecting components with mixed alignment members</h2>
+
+<p>Aggregate Chisel types can include data members which are flipped relative to one another; in the example below, <code class="language-plaintext highlighter-rouge">alignedChild</code> and <code class="language-plaintext highlighter-rouge">flippedChild</code> are aligned/flipped relative to <code class="language-plaintext highlighter-rouge">MixedAlignmentBundle</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">class</span> <span class="nc">MixedAlignmentBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">alignedChild</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+  <span class="k">val</span> <span class="nv">flippedChild</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Due to this, there are many desired connection behaviors between two Chisel components.
+First we will introduce the most common Chisel connection operator, <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code>, useful for connecting components with members of mixed-alignments, then take a moment to investigate a common source of confusion between port-direction and connection-direction.
+Then, we will explore the remainder of the the Chisel connection operators.</p>
+
+<h3 id="bi-direction-connection-operator-">Bi-direction connection operator (:&lt;&gt;=)</h3>
+
+<p>For connections where you want ‘bulk-connect-like-semantics’ where the aligned members are driven producer-to-consumer and flipped members are driven consumer-to-producer, use <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example1</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">incoming</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">outgoing</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">)</span>
+  <span class="n">outgoing</span> <span class="o">:&lt;&gt;=</span> <span class="n">incoming</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where the aligned members are driven <code class="language-plaintext highlighter-rouge">incoming</code> to <code class="language-plaintext highlighter-rouge">outgoing</code> and flipped members are driven <code class="language-plaintext highlighter-rouge">outgoing</code> to <code class="language-plaintext highlighter-rouge">incoming</code>:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example1</span><span class="p">(</span>
+  <span class="kt">input</span>   <span class="n">incoming_alignedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 114:20]</span>
+  <span class="kt">output</span>  <span class="n">incoming_flippedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 114:20]</span>
+  <span class="kt">output</span>  <span class="n">outgoing_alignedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 115:20]</span>
+  <span class="kt">input</span>   <span class="n">outgoing_flippedChild</span> <span class="c1">// @[connectable.md 115:20]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">incoming_flippedChild</span> <span class="o">=</span> <span class="n">outgoing_flippedChild</span><span class="p">;</span> <span class="c1">// @[connectable.md 116:12]</span>
+  <span class="k">assign</span> <span class="n">outgoing_alignedChild</span> <span class="o">=</span> <span class="n">incoming_alignedChild</span><span class="p">;</span> <span class="c1">// @[connectable.md 116:12]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h3 id="port-direction-computation-versus-connection-direction-computation">Port-Direction Computation versus Connection-Direction Computation</h3>
+
+<p>A common question is if you use a mixed-alignment connection (such as <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code>) to connect submembers of parent components, does the alignment of the submember to their parent affect anything? The answer is no, because <em>alignment is always computed relative to what is being connected to, and members are always aligned with themselves.</em></p>
+
+<p>In the following example connecting from <code class="language-plaintext highlighter-rouge">incoming.alignedChild</code> to <code class="language-plaintext highlighter-rouge">outgoing.alignedChild</code>, whether <code class="language-plaintext highlighter-rouge">incoming.alignedChild</code> is aligned with <code class="language-plaintext highlighter-rouge">incoming</code> is irrelevant because the <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code> only computes alignment relative to the thing being connected to, and <code class="language-plaintext highlighter-rouge">incoming.alignedChild</code> is aligned with <code class="language-plaintext highlighter-rouge">incoming.alignedChild</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example1a</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">incoming</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">outgoing</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">)</span>
+  <span class="nv">outgoing</span><span class="o">.</span><span class="py">alignedChild</span> <span class="o">:&lt;&gt;=</span> <span class="nv">incoming</span><span class="o">.</span><span class="py">alignedChild</span> <span class="c1">// whether incoming.alignedChild is aligned/flipped to incoming is IRRELEVANT to what gets connected with :&lt;&gt;=</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>While <code class="language-plaintext highlighter-rouge">incoming.flippedChild</code>’s alignment with <code class="language-plaintext highlighter-rouge">incoming</code> does not affect our operators, it does influence whether <code class="language-plaintext highlighter-rouge">incoming.flippedChild</code> is an output or input port of my module.
+A common source of confusion is to mistake the process for determining whether <code class="language-plaintext highlighter-rouge">incoming.flippedChild</code> will resolve to a verilog <code class="language-plaintext highlighter-rouge">output</code>/<code class="language-plaintext highlighter-rouge">input</code> (the port-direction computation) with the process for determining how <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code> drives what with what (the connection-direction computation).
+While both processes consider relative alignment, they are distinct.</p>
+
+<p>The port-direction computation always computes alignment relative to the component marked with <code class="language-plaintext highlighter-rouge">IO</code>.
+An <code class="language-plaintext highlighter-rouge">IO(Flipped(gen))</code> is an incoming port, and any member of <code class="language-plaintext highlighter-rouge">gen</code> that is aligned/flipped with <code class="language-plaintext highlighter-rouge">gen</code> is an incoming/outgoing port.
+An <code class="language-plaintext highlighter-rouge">IO(gen)</code> is an outgoing port, and any member of <code class="language-plaintext highlighter-rouge">gen</code> that is aligned/flipped with <code class="language-plaintext highlighter-rouge">gen</code> is an outgoing/incoming port.</p>
+
+<p>The connection-direction computation always computes alignment based on the explicit consumer/producer referenced for the connection.
+If one connects <code class="language-plaintext highlighter-rouge">incoming :&lt;&gt;= outgoing</code>, alignments are computed based on <code class="language-plaintext highlighter-rouge">incoming</code> and <code class="language-plaintext highlighter-rouge">outgoing</code>.
+If one connects <code class="language-plaintext highlighter-rouge">incoming.alignedChild :&lt;&gt;= outgoing.alignedChild</code>, then alignments are computed based on <code class="language-plaintext highlighter-rouge">incoming.alignedChild</code> and <code class="language-plaintext highlighter-rouge">outgoing.alignedChild</code> (and the alignment of <code class="language-plaintext highlighter-rouge">incoming</code> to <code class="language-plaintext highlighter-rouge">incoming.alignedChild</code> is irrelevant).</p>
+
+<p>This means that users can try to connect to input ports of their module! If I write <code class="language-plaintext highlighter-rouge">x :&lt;&gt;= y</code>, and <code class="language-plaintext highlighter-rouge">x</code> is an input to the current module, then that is what the connection is trying to do.
+However, because input ports are not drivable from within the current module, Chisel will throw an error.
+This is the same error a user would get using a mono-directioned operator: <code class="language-plaintext highlighter-rouge">x := y</code> will throw the same error if <code class="language-plaintext highlighter-rouge">x</code> is an input to the current module.
+<em>Whether a component is drivable is irrelevant to the semantics of any connection operator attempting to drive to it.</em></p>
+
+<p>In summary, the port-direction computation is relative to the root marked <code class="language-plaintext highlighter-rouge">IO</code>, but connection-direction computation is relative to the consumer/producer that the connection is doing.
+This has the positive property that connection semantics are solely based on the Chisel structural type and its relative alignments of the consumer/producer (nothing more, nothing less).</p>
+
+<h3 id="aligned-connection-operator-">Aligned connection operator (:&lt;=)</h3>
+
+<p>For connections where you want the aligned-half of ‘bulk-connect-like-semantics’ where the aligned members are driven producer-to-consumer and flipped members are ignored, use <code class="language-plaintext highlighter-rouge">:&lt;=</code> (the “aligned connection”).</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example2</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">incoming</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">outgoing</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">)</span>
+  <span class="nv">incoming</span><span class="o">.</span><span class="py">flippedChild</span> <span class="o">:=</span> <span class="nc">DontCare</span> <span class="c1">// Otherwise FIRRTL throws an uninitialization error</span>
+  <span class="n">outgoing</span> <span class="o">:&lt;=</span> <span class="n">incoming</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where the aligned members are driven <code class="language-plaintext highlighter-rouge">incoming</code> to <code class="language-plaintext highlighter-rouge">outgoing</code> and flipped members are ignored:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example2</span><span class="p">(</span>
+  <span class="kt">input</span>   <span class="n">incoming_alignedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 140:20]</span>
+  <span class="kt">output</span>  <span class="n">incoming_flippedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 140:20]</span>
+  <span class="kt">output</span>  <span class="n">outgoing_alignedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 141:20]</span>
+  <span class="kt">input</span>   <span class="n">outgoing_flippedChild</span> <span class="c1">// @[connectable.md 141:20]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">incoming_flippedChild</span> <span class="o">=</span> <span class="mh">1'h0</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">outgoing_alignedChild</span> <span class="o">=</span> <span class="n">incoming_alignedChild</span><span class="p">;</span> <span class="c1">// @[connectable.md 143:12]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h3 id="flipped-connection-operator-">Flipped connection operator (:&gt;=)</h3>
+
+<p>For connections where you want the flipped-half of ‘bulk-connect-like-semantics’ where the aligned members are ignored and flipped members are connected consumer-to-producer, use <code class="language-plaintext highlighter-rouge">:&gt;=</code> (the “flipped connection”, or “backpressure connection”).</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example3</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">incoming</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">outgoing</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">)</span>
+  <span class="nv">outgoing</span><span class="o">.</span><span class="py">alignedChild</span> <span class="o">:=</span> <span class="nc">DontCare</span> <span class="c1">// Otherwise FIRRTL throws an uninitialization error</span>
+  <span class="n">outgoing</span> <span class="o">:&gt;=</span> <span class="n">incoming</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where the aligned members are ignore and the flipped members are driven <code class="language-plaintext highlighter-rouge">outgoing</code> to <code class="language-plaintext highlighter-rouge">incoming</code>:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example3</span><span class="p">(</span>
+  <span class="kt">input</span>   <span class="n">incoming_alignedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 157:20]</span>
+  <span class="kt">output</span>  <span class="n">incoming_flippedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 157:20]</span>
+  <span class="kt">output</span>  <span class="n">outgoing_alignedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 158:20]</span>
+  <span class="kt">input</span>   <span class="n">outgoing_flippedChild</span> <span class="c1">// @[connectable.md 158:20]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">incoming_flippedChild</span> <span class="o">=</span> <span class="n">outgoing_flippedChild</span><span class="p">;</span> <span class="c1">// @[connectable.md 160:12]</span>
+  <span class="k">assign</span> <span class="n">outgoing_alignedChild</span> <span class="o">=</span> <span class="mh">1'h0</span><span class="p">;</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>Note: Astute observers will realize that semantically <code class="language-plaintext highlighter-rouge">c :&lt;&gt;= p</code> is exactly equivalent to <code class="language-plaintext highlighter-rouge">c :&lt;= p</code> followed by <code class="language-plaintext highlighter-rouge">c :&gt;= p</code>.</p>
+</blockquote>
+
+<h3 id="coercing-mono-direction-connection-operator-">Coercing mono-direction connection operator (:#=)</h3>
+
+<p>For connections where you want to every producer member to always drive every consumer member, regardless of alignment, use <code class="language-plaintext highlighter-rouge">:#=</code> (the “coercion connection”).
+This operator is useful for initializing wires whose types contain members of mixed alignment.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.BundleLiterals._</span>
+<span class="k">class</span> <span class="nc">Example4</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">w</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">)</span>
+  <span class="nf">dontTouch</span><span class="o">(</span><span class="n">w</span><span class="o">)</span> <span class="c1">// So we see it in the output verilog</span>
+  <span class="n">w</span> <span class="o">:#=</span> <span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">).</span><span class="py">Lit</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">alignedChild</span> <span class="o">-&gt;</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">flippedChild</span> <span class="o">-&gt;</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where all members are driven from the literal to <code class="language-plaintext highlighter-rouge">w</code>, regardless of alignment:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example4</span><span class="p">(</span>
+<span class="p">);</span>
+  <span class="kt">wire</span>  <span class="n">w_alignedChild</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 177:15 179:5]</span>
+  <span class="kt">wire</span>  <span class="n">w_flippedChild</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 177:15 179:5]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>Note: Astute observers will realize that semantically <code class="language-plaintext highlighter-rouge">c :#= p</code> is exactly equivalent to <code class="language-plaintext highlighter-rouge">c :&lt;= p</code> followed by <code class="language-plaintext highlighter-rouge">p :&gt;= c</code> (note <code class="language-plaintext highlighter-rouge">p</code> and <code class="language-plaintext highlighter-rouge">c</code> switched places in the second connection).</p>
+</blockquote>
+
+<p>Another use case for <code class="language-plaintext highlighter-rouge">:#=</code> is for connecting a mixed-directional bundle to a fully-aligned monitor.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.BundleLiterals._</span>
+<span class="k">class</span> <span class="nc">Example4b</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">monitor</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">w</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">MixedAlignmentBundle</span><span class="o">)</span>
+  <span class="nf">dontTouch</span><span class="o">(</span><span class="n">w</span><span class="o">)</span> <span class="c1">// So we see it in the output verilog</span>
+  <span class="n">w</span> <span class="o">:#=</span> <span class="nc">DontCare</span>
+  <span class="n">monitor</span> <span class="o">:#=</span> <span class="n">w</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where all members are driven from the literal to <code class="language-plaintext highlighter-rouge">w</code>, regardless of alignment:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example4b</span><span class="p">(</span>
+  <span class="kt">output</span>  <span class="n">monitor_alignedChild</span><span class="p">,</span> <span class="c1">// @[connectable.md 196:19]</span>
+  <span class="kt">output</span>  <span class="n">monitor_flippedChild</span> <span class="c1">// @[connectable.md 196:19]</span>
+<span class="p">);</span>
+  <span class="kt">wire</span>  <span class="n">w_alignedChild</span> <span class="o">=</span> <span class="mh">1'h0</span><span class="p">;</span>
+  <span class="kt">wire</span>  <span class="n">w_flippedChild</span> <span class="o">=</span> <span class="mh">1'h0</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">monitor_alignedChild</span> <span class="o">=</span> <span class="n">w_alignedChild</span><span class="p">;</span> <span class="c1">// @[connectable.md 200:11]</span>
+  <span class="k">assign</span> <span class="n">monitor_flippedChild</span> <span class="o">=</span> <span class="n">w_alignedChild</span><span class="p">;</span> <span class="c1">// @[connectable.md 200:11]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+<h2 id="connectable">Connectable</h2>
+
+<p>It is not uncommon for a user to want to connect Chisel components which are not type equivalent.
+For example, a user may want to hook up anonymous <code class="language-plaintext highlighter-rouge">Record</code> components who may have an intersection of their fields being equivalent, but cannot because they are not structurally equivalent.
+Alternatively, one may want to connect two types that have different widths.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Connectable</code> is the mechanism to specialize connection operator behavior in these scenarios.
+For additional members which are not present in the other component being connected to or for mismatched widths, they can be explicitly waived from the operator to be ignored, rather than trigger an error.</p>
+
+<p>In addition, there are other techniques that can be used to address similar use cases including <code class="language-plaintext highlighter-rouge">.viewAsSuperType</code>, a static cast to a supertype (e.g. <code class="language-plaintext highlighter-rouge">(x: T)</code>), or creating a custom dataview.
+For a discussion about when to use each technique, please continue <a href="#techniques-for-connecting-structurally-inequivalent-chisel-types">here</a>.</p>
+
+<p>This section demonstrates how <code class="language-plaintext highlighter-rouge">Connectable</code> specifically can be used in a multitude of scenarios.</p>
+
+<h3 id="connecting-records">Connecting Records</h3>
+
+<p>A not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, they should be ignored.
+To accomplish this, use the other operators to initialize all Record members, then use <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code> with <code class="language-plaintext highlighter-rouge">waiveAll</code> to connect only the matching members.</p>
+
+<blockquote>
+  <p>Note that none of <code class="language-plaintext highlighter-rouge">.viewAsSuperType</code>, static casts, nor a custom DataView helps this case because the Scala types are still <code class="language-plaintext highlighter-rouge">Record</code>.</p>
+</blockquote>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.collection.immutable.SeqMap</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.AutoCloneType</span>
+
+<span class="k">class</span> <span class="nc">Example9</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">abType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="k">with</span> <span class="nc">AutoCloneType</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"a"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">(),</span> <span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span> <span class="o">}</span>
+  <span class="k">val</span> <span class="nv">bcType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="k">with</span> <span class="nc">AutoCloneType</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()),</span> <span class="s">"c"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">())</span> <span class="o">}</span>
+
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="n">abType</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="n">bcType</span><span class="o">)</span>
+
+  <span class="nc">DontCare</span> <span class="o">:&gt;=</span> <span class="n">p</span>
+  <span class="n">c</span> <span class="o">:&lt;=</span> <span class="nc">DontCare</span>
+
+  <span class="nv">c</span><span class="o">.</span><span class="py">waive</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">elements</span><span class="o">(</span><span class="s">"c"</span><span class="o">)):&lt;&gt;=</span> <span class="nv">p</span><span class="o">.</span><span class="py">waive</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">elements</span><span class="o">(</span><span class="s">"a"</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">p.b</code> is driven from <code class="language-plaintext highlighter-rouge">c.b</code>:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example9</span><span class="p">(</span>
+  <span class="kt">output</span>  <span class="n">p_b</span><span class="p">,</span> <span class="c1">// @[connectable.md 223:13]</span>
+  <span class="kt">input</span>   <span class="n">p_a</span><span class="p">,</span> <span class="c1">// @[connectable.md 223:13]</span>
+  <span class="kt">output</span>  <span class="n">c_c</span><span class="p">,</span> <span class="c1">// @[connectable.md 224:13]</span>
+  <span class="kt">input</span>   <span class="n">c_b</span> <span class="c1">// @[connectable.md 224:13]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">p_b</span> <span class="o">=</span> <span class="n">c_b</span><span class="p">;</span> <span class="c1">// @[connectable.md 229:27]</span>
+  <span class="k">assign</span> <span class="n">c_c</span> <span class="o">=</span> <span class="mh">1'h0</span><span class="p">;</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h3 id="defaults-with-waived-connections">Defaults with waived connections</h3>
+
+<p>Another not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, <em>they should be connected a default value</em>.
+To accomplish this, use the other operators to initialize all Record members, then use <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code> with <code class="language-plaintext highlighter-rouge">waiveAll</code> to connect only the matching members.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.collection.immutable.SeqMap</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.AutoCloneType</span>
+<span class="k">class</span> <span class="nc">Example10</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">abType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="k">with</span> <span class="nc">AutoCloneType</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"a"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">(),</span> <span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span> <span class="o">}</span>
+  <span class="k">val</span> <span class="nv">bcType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="k">with</span> <span class="nc">AutoCloneType</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()),</span> <span class="s">"c"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">())</span> <span class="o">}</span>
+
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="n">abType</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="n">bcType</span><span class="o">)</span>
+
+  <span class="nf">dontTouch</span><span class="o">(</span><span class="n">p</span><span class="o">)</span> <span class="c1">// So it doesn't get constant-propped away for the example</span>
+  <span class="nf">dontTouch</span><span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="c1">// So it doesn't get constant-propped away for the example</span>
+
+  <span class="n">p</span> <span class="o">:#=</span> <span class="nv">abType</span><span class="o">.</span><span class="py">Lit</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">elements</span><span class="o">(</span><span class="s">"a"</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">elements</span><span class="o">(</span><span class="s">"b"</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span><span class="o">)</span>
+  <span class="n">c</span> <span class="o">:#=</span> <span class="nv">bcType</span><span class="o">.</span><span class="py">Lit</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">elements</span><span class="o">(</span><span class="s">"b"</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span><span class="o">,</span> <span class="nv">_</span><span class="o">.</span><span class="py">elements</span><span class="o">(</span><span class="s">"c"</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span><span class="o">)</span>
+
+  <span class="nv">c</span><span class="o">.</span><span class="py">waive</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">elements</span><span class="o">(</span><span class="s">"c"</span><span class="o">))</span> <span class="o">:&lt;&gt;=</span> <span class="nv">p</span><span class="o">.</span><span class="py">waive</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">elements</span><span class="o">(</span><span class="s">"a"</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">p.b</code> is driven from <code class="language-plaintext highlighter-rouge">c.b</code>, and <code class="language-plaintext highlighter-rouge">p.a</code>, <code class="language-plaintext highlighter-rouge">c.b</code>, and <code class="language-plaintext highlighter-rouge">c.c</code> are initialized to default values:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example10</span><span class="p">(</span>
+<span class="p">);</span>
+  <span class="kt">wire</span>  <span class="n">c_b</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 253:15 259:5]</span>
+  <span class="kt">wire</span>  <span class="n">p_b</span> <span class="o">=</span> <span class="n">c_b</span><span class="p">;</span> <span class="c1">// @[connectable.md 252:15 261:28]</span>
+  <span class="kt">wire</span>  <span class="n">p_a</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 252:15 258:5]</span>
+  <span class="kt">wire</span>  <span class="n">c_c</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 253:15 259:5]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h3 id="connecting-types-with-optional-members">Connecting types with optional members</h3>
+
+<p>In the following example, we can use <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code> and <code class="language-plaintext highlighter-rouge">waive</code> to connect two <code class="language-plaintext highlighter-rouge">MyDecoupledOpts</code>’s, where only one has a <code class="language-plaintext highlighter-rouge">bits</code> member.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyDecoupledOpt</span><span class="o">(</span><span class="n">hasBits</span><span class="k">:</span> <span class="kt">Boolean</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+  <span class="k">val</span> <span class="nv">ready</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+  <span class="k">val</span> <span class="nv">bits</span> <span class="k">=</span> <span class="nf">if</span> <span class="o">(</span><span class="n">hasBits</span><span class="o">)</span> <span class="nc">Some</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))</span> <span class="k">else</span> <span class="nc">None</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Example6</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyDecoupledOpt</span><span class="o">(</span><span class="kc">true</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyDecoupledOpt</span><span class="o">(</span><span class="kc">false</span><span class="o">))</span>
+  <span class="n">out</span> <span class="o">:&lt;&gt;=</span> <span class="nv">in</span><span class="o">.</span><span class="py">waive</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">bits</span><span class="o">.</span><span class="py">get</span><span class="o">)</span> <span class="c1">// We can know to call .get because we can inspect in.bits.isEmpty</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> are connected, and <code class="language-plaintext highlighter-rouge">bits</code> is ignored:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example6</span><span class="p">(</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 282:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 282:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 282:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 283:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span> <span class="c1">// @[connectable.md 283:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 284:7]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 284:7]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h3 id="always-ignore-extra-members-partial-connection-operator">Always ignore extra members (partial connection operator)</h3>
+
+<p>The most unsafe connection is to connect only members that are present in both consumer and producer, and ignore all other members.
+This is unsafe because this connection will never error on any Chisel types.</p>
+
+<p>To do this, you can use <code class="language-plaintext highlighter-rouge">.waiveAll</code> and static cast to <code class="language-plaintext highlighter-rouge">Data</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">OnlyA</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">OnlyB</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Example11</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">OnlyA</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">OnlyB</span><span class="o">)</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+
+  <span class="o">(</span><span class="n">out</span><span class="k">:</span> <span class="kt">Data</span><span class="o">).</span><span class="py">waiveAll</span> <span class="o">:&lt;&gt;=</span> <span class="o">(</span><span class="n">in</span><span class="k">:</span> <span class="kt">Data</span><span class="o">).</span><span class="py">waiveAll</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where nothing is connected:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example11</span><span class="p">(</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_a</span><span class="p">,</span> <span class="c1">// @[connectable.md 308:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_b</span> <span class="c1">// @[connectable.md 309:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">out_b</span> <span class="o">=</span> <span class="mh">32'h0</span><span class="p">;</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h3 id="connecting-components-with-different-widths">Connecting components with different widths</h3>
+
+<p>Non-connectable operators implicitly truncate if a component with a larger width is connected to a component with a smaller width.
+Connectable operators disallow this implicit truncation behavior and require the driven component to be equal or larger in width that the sourcing component.</p>
+
+<p>If implicit truncation behavior is desired, then <code class="language-plaintext highlighter-rouge">Connectable</code> provides a <code class="language-plaintext highlighter-rouge">squeeze</code> mechanism which will allow the connection to continue and implicit trunction to continue.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.collection.immutable.SeqMap</span>
+<span class="k">import</span> <span class="nn">chisel3.experimental.AutoCloneType</span>
+
+<span class="k">class</span> <span class="nc">Example14</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">))</span>
+
+  <span class="n">c</span> <span class="o">:&lt;&gt;=</span> <span class="nv">p</span><span class="o">.</span><span class="py">squeeze</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">p</code> is implicitly truncated prior to driving <code class="language-plaintext highlighter-rouge">c</code>:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example14</span><span class="p">(</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">p</span><span class="p">,</span> <span class="c1">// @[connectable.md 333:13]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">c</span> <span class="c1">// @[connectable.md 334:13]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">c</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">];</span> <span class="c1">// @[connectable.md 336:5]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h2 id="techniques-for-connecting-structurally-inequivalent-chisel-types">Techniques for connecting structurally inequivalent Chisel types</h2>
+
+<p><code class="language-plaintext highlighter-rouge">DataView</code> and <code class="language-plaintext highlighter-rouge">viewAsSupertype</code> create a view of the component that has a different Chisel type.
+This means that a user can first create a <code class="language-plaintext highlighter-rouge">DataView</code> of the consumer or producer (or both) so that the Chisel types are structurally equivalent.
+This is useful when the difference between the consumer and producers aren’t super nested, and also if they have rich Scala types which encode their structure.
+In general, <code class="language-plaintext highlighter-rouge">DataView</code> is the preferred mechanism to use (if you can) because it maintains the most about of Chisel information in the Scala type, but there are many instances where it doesn’t work and thus one must fall back on <code class="language-plaintext highlighter-rouge">Connectable</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Connectable</code> does not change the Chisel type, but instead changes the semantics of the operator to not error on the waived members if they are dangling or unconnected.
+This is useful for when differences between the consumer and producer do not show up in the Scala type system (e.g. present/missing fields of type <code class="language-plaintext highlighter-rouge">Option[Data]</code>, or anonymous <code class="language-plaintext highlighter-rouge">Record</code>s) or are deeply nested in a bundle that is especially onerous to create a <code class="language-plaintext highlighter-rouge">DataView</code>.</p>
+
+<p>Static casts (e.g. <code class="language-plaintext highlighter-rouge">(x: T)</code>) allows connecting components that have different Scala types, but leaves the Chisel type unchanged.
+Use this to force a connection to occur, even if the Scala types are different.</p>
+
+<blockquote>
+  <p>One may wonder why the operators require identical Scala types in the first place, if they can easily be bypassed.
+The reason is to encourage users to use the Scala type system to encode Chisel information as it can make their code more robust; however, we don’t want to be draconian about it because there are times when we want to enable the user to “just connect the darn thing”.</p>
+</blockquote>
+
+<p>When all else fails one can always manually expand the connection to do what they want to happen, member by member.
+The down-side to this approach is its verbosity and that adding new members to a component will require updating the manual connections.</p>
+
+<p>Things to remember about <code class="language-plaintext highlighter-rouge">Connectable</code> vs <code class="language-plaintext highlighter-rouge">viewAsSupertype</code>/<code class="language-plaintext highlighter-rouge">DataView</code> vs static cast (e.g. <code class="language-plaintext highlighter-rouge">(x: T)</code>):</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">DataView</code> and <code class="language-plaintext highlighter-rouge">viewAsSupertype</code> will preemptively remove members that are not present in the new view which has a different Chisel type, thus <code class="language-plaintext highlighter-rouge">DataView</code> <em>does</em> affect what is connected</li>
+  <li><code class="language-plaintext highlighter-rouge">Connectable</code> can be used to waive the error on members who end up being dangling or unconnected.
+Importantly, <code class="language-plaintext highlighter-rouge">Connectable</code> <em>does not</em> affect what is connected</li>
+  <li>Static cast does not remove extra members, thus a static cast <em>does not</em> affect what is connected</li>
+</ul>
+
+<h3 id="connecting-different-sub-types-of-the-same-super-type-with-colliding-names">Connecting different sub-types of the same super-type, with colliding names</h3>
+
+<p>In these examples, we are connecting <code class="language-plaintext highlighter-rouge">MyDecoupled</code> with <code class="language-plaintext highlighter-rouge">MyDecoupledOtherBits</code>.
+Both are subtypes of <code class="language-plaintext highlighter-rouge">MyReadyValid</code>, and both have a <code class="language-plaintext highlighter-rouge">bits</code> field of <code class="language-plaintext highlighter-rouge">UInt(32.W)</code>.</p>
+
+<p>The first example will use <code class="language-plaintext highlighter-rouge">.viewAsSupertype</code> to connect them as <code class="language-plaintext highlighter-rouge">MyReadyValid</code>.
+Because it changes the Chisel type to omit both <code class="language-plaintext highlighter-rouge">bits</code> fields, the <code class="language-plaintext highlighter-rouge">bits</code> fields are unconnected.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">experimental.dataview._</span>
+<span class="k">class</span> <span class="nc">MyDecoupledOtherBits</span> <span class="k">extends</span> <span class="nc">MyReadyValid</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">bits</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Example12</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyDecoupled</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyDecoupledOtherBits</span><span class="o">)</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+
+  <span class="nv">out</span><span class="o">.</span><span class="py">viewAsSupertype</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyReadyValid</span><span class="o">)</span> <span class="o">:&lt;&gt;=</span> <span class="nv">in</span><span class="o">.</span><span class="py">viewAsSupertype</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyReadyValid</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Note that the <code class="language-plaintext highlighter-rouge">bits</code> fields are unconnected.</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example12</span><span class="p">(</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 358:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 358:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 358:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 359:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 359:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span> <span class="c1">// @[connectable.md 359:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 363:41]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 363:41]</span>
+  <span class="k">assign</span> <span class="n">out_bits</span> <span class="o">=</span> <span class="mh">32'h0</span><span class="p">;</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<p>The second example will use a static cast and <code class="language-plaintext highlighter-rouge">.waive(_.bits)</code> to connect them as <code class="language-plaintext highlighter-rouge">MyReadyValid</code>.
+Note that because the static cast does not change the Chisel type, the connection finds that both consumer and producer have a <code class="language-plaintext highlighter-rouge">bits</code> field.
+This means that since they are structurally equivalent, they match and are connected.
+The <code class="language-plaintext highlighter-rouge">waive(_.bits)</code> does nothing, because the <code class="language-plaintext highlighter-rouge">bits</code> are not dangling nor unconnected.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">experimental.dataview._</span>
+<span class="k">class</span> <span class="nc">Example13</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyDecoupled</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyDecoupledOtherBits</span><span class="o">)</span>
+
+  <span class="n">out</span> <span class="o">:=</span> <span class="nc">DontCare</span>
+
+  <span class="nv">out</span><span class="o">.</span><span class="py">waiveAs</span><span class="o">[</span><span class="kt">MyReadyValid</span><span class="o">](</span><span class="nv">_</span><span class="o">.</span><span class="py">bits</span><span class="o">)</span> <span class="o">:&lt;&gt;=</span> <span class="nv">in</span><span class="o">.</span><span class="py">waiveAs</span><span class="o">[</span><span class="kt">MyReadyValid</span><span class="o">](</span><span class="nv">_</span><span class="o">.</span><span class="py">bits</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Note that the <code class="language-plaintext highlighter-rouge">bits</code> fields ARE connected, even though they are waived, as <code class="language-plaintext highlighter-rouge">waive</code> just changes whether an error should be thrown if they are missing, NOT to not connect them if they are structurally equivalent.</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example13</span><span class="p">(</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 380:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 380:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 380:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 381:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 381:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span> <span class="c1">// @[connectable.md 381:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 385:37]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 385:37]</span>
+  <span class="k">assign</span> <span class="n">out_bits</span> <span class="o">=</span> <span class="n">in_bits</span><span class="p">;</span> <span class="c1">// @[connectable.md 385:37]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h3 id="connecting-sub-types-to-super-types-by-waiving-extra-members">Connecting sub-types to super-types by waiving extra members</h3>
+
+<blockquote>
+  <p>Note that in this example, it would be better to use <code class="language-plaintext highlighter-rouge">.viewAsSupertype</code>.</p>
+</blockquote>
+
+<p>In the following example, we can use <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code> to connect a <code class="language-plaintext highlighter-rouge">MyReadyValid</code> to a <code class="language-plaintext highlighter-rouge">MyDecoupled</code> by waiving the <code class="language-plaintext highlighter-rouge">bits</code> member.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyReadyValid</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+  <span class="k">val</span> <span class="nv">ready</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">MyDecoupled</span> <span class="k">extends</span> <span class="nc">MyReadyValid</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">bits</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Example5</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyDecoupled</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyReadyValid</span><span class="o">)</span>
+  <span class="n">out</span> <span class="o">:&lt;&gt;=</span> <span class="nv">in</span><span class="o">.</span><span class="py">waiveAs</span><span class="o">[</span><span class="kt">MyReadyValid</span><span class="o">](</span><span class="nv">_</span><span class="o">.</span><span class="py">bits</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> are connected, and <code class="language-plaintext highlighter-rouge">bits</code> is ignored:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example5</span><span class="p">(</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 410:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 410:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 410:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 411:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span> <span class="c1">// @[connectable.md 411:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 412:7]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 412:7]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+
+<h3 id="connecting-different-sub-types">Connecting different sub-types</h3>
+
+<blockquote>
+  <p>Note that in this example, it would be better to use <code class="language-plaintext highlighter-rouge">.viewAsSupertype</code>.</p>
+</blockquote>
+
+<p>Note that the connection operator requires the <code class="language-plaintext highlighter-rouge">consumer</code> and <code class="language-plaintext highlighter-rouge">producer</code> to be the same Scala type to encourage capturing more information statically, but they can always be cast to <code class="language-plaintext highlighter-rouge">Data</code> or another common supertype prior to connecting.</p>
+
+<p>In the following example, we can use <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code> and <code class="language-plaintext highlighter-rouge">waiveAs</code> to connect two different sub-types of <code class="language-plaintext highlighter-rouge">MyReadyValid</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">HasBits</span> <span class="k">extends</span> <span class="nc">MyReadyValid</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">bits</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">HasEcho</span> <span class="k">extends</span> <span class="nc">MyReadyValid</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">echo</span> <span class="k">=</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Example7</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">HasBits</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">HasEcho</span><span class="o">)</span>
+  <span class="nv">out</span><span class="o">.</span><span class="py">waiveAs</span><span class="o">[</span><span class="kt">MyReadyValid</span><span class="o">](</span><span class="nv">_</span><span class="o">.</span><span class="py">echo</span><span class="o">)</span> <span class="o">:&lt;&gt;=</span> <span class="nv">in</span><span class="o">.</span><span class="py">waiveAs</span><span class="o">[</span><span class="kt">MyReadyValid</span><span class="o">](</span><span class="nv">_</span><span class="o">.</span><span class="py">bits</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> are connected, and <code class="language-plaintext highlighter-rouge">bits</code> and <code class="language-plaintext highlighter-rouge">echo</code> are ignored:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example7</span><span class="p">(</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 436:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 436:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 436:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 437:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 437:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_echo</span> <span class="c1">// @[connectable.md 437:15]</span>
+<span class="p">);</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 438:37]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 438:37]</span>
+<span class="k">endmodule</span>
+</code></pre></div></div>
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','verilog']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script>((window.gitter = {}).chat = {}).options = {
+room: 'freechipsproject/chisel3'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/js/search.js"></script><script src="/js/main.js"></script></body></html>
