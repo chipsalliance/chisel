@@ -1,0 +1,1599 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>chisel3 3.4.4 - chisel3.util.IrrevocableIO</title>
+          <meta name="description" content="chisel3 3.4.4 - chisel3.util.IrrevocableIO" />
+          <meta name="keywords" content="chisel3 3.4.4 chisel3.util.IrrevocableIO" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../lib/index.js"></script>
+      <script type="text/javascript" src="../../index.js"></script>
+      <script type="text/javascript" src="../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../lib/template.js"></script>
+      <script type="text/javascript" src="../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">chisel3<span id="doc-version">3.4.4</span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This is the documentation for Chisel." href="../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This is the documentation for Chisel.</p><div class="fullcomment"><div class="comment cmt"><p>This is the documentation for Chisel.</p><h4> Package structure </h4><p>The <a href="../index.html" class="extype" name="chisel3">chisel3</a> package presents the public API of Chisel.
+It contains the concrete core types <a href="../UInt.html" class="extype" name="chisel3.UInt"><code>UInt</code></a>, <a href="../SInt.html" class="extype" name="chisel3.SInt"><code>SInt</code></a>, <a href="../Bool.html" class="extype" name="chisel3.Bool"><code>Bool</code></a>, <a href="../experimental/FixedPoint.html" class="extype" name="chisel3.experimental.FixedPoint"><code>FixedPoint</code></a>, <a href="../Clock.html" class="extype" name="chisel3.Clock"><code>Clock</code></a>, and <a href="../Reg$.html" class="extype" name="chisel3.Reg"><code>Reg</code></a>,
+the abstract types <a href="../Bits.html" class="extype" name="chisel3.Bits"><code>Bits</code></a>, <a href="../Aggregate.html" class="extype" name="chisel3.Aggregate"><code>Aggregate</code></a>, and <a href="../Data.html" class="extype" name="chisel3.Data"><code>Data</code></a>,
+and the aggregate types <a href="../Bundle.html" class="extype" name="chisel3.Bundle"><code>Bundle</code></a> and <a href="../Vec.html" class="extype" name="chisel3.Vec"><code>Vec</code></a>.</p><p>The <a href="../../Chisel/index.html" class="extype" name="Chisel">Chisel</a> package is a compatibility layer that attempts to provide chisel2 compatibility in chisel3.</p><p>Utility objects and methods are found in the <a href="index.html" class="extype" name="chisel3.util"><code>util</code></a> package.</p><p>The <a href="../testers/index.html" class="extype" name="chisel3.testers"><code>testers</code></a> package defines the basic interface for chisel testers.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.chisel3" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="chisel3"></a><a id="chisel3:chisel3"></a>
+      <span class="permalink">
+      <a href="../../chisel3/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This package contains the main chisel3 API." href="../index.html"><span class="name">chisel3</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This package contains the main chisel3 API.</p><div class="fullcomment"><div class="comment cmt"><p>This package contains the main chisel3 API.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="chisel3.util" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="util"></a><a id="util:util"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="The util package provides extensions to core chisel for common hardware components and utility functions" href="index.html"><span class="name">util</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The util package provides extensions to core chisel for common hardware components and utility
+functions
+</p><div class="fullcomment"><div class="comment cmt"><p>The util package provides extensions to core chisel for common hardware components and utility
+functions
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.util.experimental" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="experimental"></a><a id="experimental:experimental"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/experimental/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="experimental/index.html"><span class="name">experimental</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="index.html" class="extype" name="chisel3.util">util</a></dd></dl></div>
+    </li><li name="chisel3.util.random" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="random"></a><a id="random:random"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/random/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="random/index.html"><span class="name">random</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="index.html" class="extype" name="chisel3.util">util</a></dd></dl></div>
+    </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="Arbiter.html" title="Hardware module that is used to sequence n producers into 1 consumer."></a>
+                        <a href="Arbiter.html" title="Hardware module that is used to sequence n producers into 1 consumer.">Arbiter</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ArbiterIO.html" title="IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs (selects) at most one."></a>
+                        <a href="ArbiterIO.html" title="IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs (selects) at most one.">ArbiterIO</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="BitPat$.html" title=""></a>
+                        <a class="class" href="BitPat.html" title="Bit patterns are literals with masks, used to represent values with don't care bits."></a>
+                        <a href="BitPat.html" title="Bit patterns are literals with masks, used to represent values with don't care bits.">BitPat</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Cat$.html" title="Concatenates elements of the input, in order, together."></a>
+                        <a href="Cat$.html" title="Concatenates elements of the input, in order, together.">Cat</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Counter$.html" title=""></a>
+                        <a class="class" href="Counter.html" title="Used to generate an inline (logic directly in the containing Module, no internal Module is created) hardware counter."></a>
+                        <a href="Counter.html" title="Used to generate an inline (logic directly in the containing Module, no internal Module is created) hardware counter.">Counter</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Decoupled$.html" title="This factory adds a decoupled handshaking protocol to a data bundle."></a>
+                        <a href="Decoupled$.html" title="This factory adds a decoupled handshaking protocol to a data bundle.">Decoupled</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="DecoupledIO.html" title="A concrete subclass of ReadyValidIO signaling that the user expects a &quot;decoupled&quot; interface: 'valid' indicates that the producer has put valid data in 'bits', and 'ready' indicates that the consumer is ready to accept the data this cycle."></a>
+                        <a href="DecoupledIO.html" title="A concrete subclass of ReadyValidIO signaling that the user expects a &quot;decoupled&quot; interface: 'valid' indicates that the producer has put valid data in 'bits', and 'ready' indicates that the consumer is ready to accept the data this cycle.">DecoupledIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="DeqIO$.html" title="Consumer - drives (outputs) ready, inputs valid and bits."></a>
+                        <a href="DeqIO$.html" title="Consumer - drives (outputs) ready, inputs valid and bits.">DeqIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="EnqIO$.html" title="Producer - drives (outputs) valid and bits, inputs ready."></a>
+                        <a href="EnqIO$.html" title="Producer - drives (outputs) valid and bits, inputs ready.">EnqIO</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Enum$.html" title=""></a>
+                        <a class="trait" href="Enum.html" title="Defines a set of unique UInt constants"></a>
+                        <a href="Enum.html" title="Defines a set of unique UInt constants">Enum</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Fill$.html" title="Create repetitions of the input using a tree fanout topology."></a>
+                        <a href="Fill$.html" title="Create repetitions of the input using a tree fanout topology.">Fill</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="FillInterleaved$.html" title="Creates repetitions of each bit of the input in order."></a>
+                        <a href="FillInterleaved$.html" title="Creates repetitions of each bit of the input in order.">FillInterleaved</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasBlackBoxInline.html" title=""></a>
+                        <a href="HasBlackBoxInline.html" title="">HasBlackBoxInline</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasBlackBoxPath.html" title=""></a>
+                        <a href="HasBlackBoxPath.html" title="">HasBlackBoxPath</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasBlackBoxResource.html" title=""></a>
+                        <a href="HasBlackBoxResource.html" title="">HasBlackBoxResource</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasExtModuleInline.html" title=""></a>
+                        <a href="HasExtModuleInline.html" title="">HasExtModuleInline</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasExtModulePath.html" title=""></a>
+                        <a href="HasExtModulePath.html" title="">HasExtModulePath</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasExtModuleResource.html" title=""></a>
+                        <a href="HasExtModuleResource.html" title="">HasExtModuleResource</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="ImplicitConversions$.html" title="Implicit conversions to automatically convert scala.Boolean and scala.Int to Bool and UInt respectively"></a>
+                        <a href="ImplicitConversions$.html" title="Implicit conversions to automatically convert scala.Boolean and scala.Int to Bool and UInt respectively">ImplicitConversions</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Irrevocable$.html" title="Factory adds an irrevocable handshaking protocol to a data bundle."></a>
+                        <a href="Irrevocable$.html" title="Factory adds an irrevocable handshaking protocol to a data bundle.">Irrevocable</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="" title="A concrete subclass of ReadyValidIO that promises to not change the value of 'bits' after a cycle where 'valid' is high and 'ready' is low."></a>
+                        <a href="" title="A concrete subclass of ReadyValidIO that promises to not change the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.">IrrevocableIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="ListLookup$.html" title="For each element in a list, muxes (looks up) between cases (one per list element) based on a common address."></a>
+                        <a href="ListLookup$.html" title="For each element in a list, muxes (looks up) between cases (one per list element) based on a common address.">ListLookup</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="LockingArbiter.html" title=""></a>
+                        <a href="LockingArbiter.html" title="">LockingArbiter</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="LockingArbiterLike.html" title=""></a>
+                        <a href="LockingArbiterLike.html" title="">LockingArbiterLike</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="LockingRRArbiter.html" title=""></a>
+                        <a href="LockingRRArbiter.html" title="">LockingRRArbiter</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Log2$.html" title="Returns the base-2 integer logarithm of an UInt."></a>
+                        <a href="Log2$.html" title="Returns the base-2 integer logarithm of an UInt.">Log2</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Lookup$.html" title="Muxes between cases based on whether an address matches any pattern for a case."></a>
+                        <a href="Lookup$.html" title="Muxes between cases based on whether an address matches any pattern for a case.">Lookup</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="MixedVec$.html" title="Create a MixedVec type, given element types."></a>
+                        <a class="class" href="MixedVec.html" title="A hardware array of elements that can hold values of different types/widths, unlike Vec which can only hold elements of the same type/width."></a>
+                        <a href="MixedVec.html" title="A hardware array of elements that can hold values of different types/widths, unlike Vec which can only hold elements of the same type/width.">MixedVec</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="MixedVecInit$.html" title="Create a MixedVec wire with default values as specified, and type of each element inferred from those default values."></a>
+                        <a href="MixedVecInit$.html" title="Create a MixedVec wire with default values as specified, and type of each element inferred from those default values.">MixedVecInit</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Mux1H$.html" title="Builds a Mux tree out of the input signal vector using a one hot encoded select signal."></a>
+                        <a href="Mux1H$.html" title="Builds a Mux tree out of the input signal vector using a one hot encoded select signal.">Mux1H</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="MuxCase$.html" title="Given an association of values to enable signals, returns the first value with an associated high enable signal."></a>
+                        <a href="MuxCase$.html" title="Given an association of values to enable signals, returns the first value with an associated high enable signal.">MuxCase</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="MuxLookup$.html" title="Creates a cascade of n Muxs to search for a key value."></a>
+                        <a href="MuxLookup$.html" title="Creates a cascade of n Muxs to search for a key value.">MuxLookup</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="OHToUInt$.html" title="Returns the bit position of the sole high bit of the input bitvector."></a>
+                        <a href="OHToUInt$.html" title="Returns the bit position of the sole high bit of the input bitvector.">OHToUInt</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Pipe$.html" title="A factory to generate a hardware pipe."></a>
+                        <a class="class" href="Pipe.html" title="Pipeline module generator parameterized by data type and latency."></a>
+                        <a href="Pipe.html" title="Pipeline module generator parameterized by data type and latency.">Pipe</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PopCount$.html" title="Returns the number of bits set (value is 1 or true) in the input signal."></a>
+                        <a href="PopCount$.html" title="Returns the number of bits set (value is 1 or true) in the input signal.">PopCount</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PriorityEncoder$.html" title="Returns the bit position of the least-significant high bit of the input bitvector."></a>
+                        <a href="PriorityEncoder$.html" title="Returns the bit position of the least-significant high bit of the input bitvector.">PriorityEncoder</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PriorityEncoderOH$.html" title="Returns a bit vector in which only the least-significant 1 bit in the input vector, if any, is set."></a>
+                        <a href="PriorityEncoderOH$.html" title="Returns a bit vector in which only the least-significant 1 bit in the input vector, if any, is set.">PriorityEncoderOH</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PriorityMux$.html" title="Builds a Mux tree under the assumption that multiple select signals can be enabled."></a>
+                        <a href="PriorityMux$.html" title="Builds a Mux tree under the assumption that multiple select signals can be enabled.">PriorityMux</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Queue$.html" title="Factory for a generic hardware queue."></a>
+                        <a class="class" href="Queue.html" title="A hardware module implementing a Queue"></a>
+                        <a href="Queue.html" title="A hardware module implementing a Queue">Queue</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="QueueIO.html" title="An I/O Bundle for Queues"></a>
+                        <a href="QueueIO.html" title="An I/O Bundle for Queues">QueueIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="RRArbiter.html" title="Hardware module that is used to sequence n producers into 1 consumer."></a>
+                        <a href="RRArbiter.html" title="Hardware module that is used to sequence n producers into 1 consumer.">RRArbiter</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="ReadyValidIO$.html" title=""></a>
+                        <a class="class" href="ReadyValidIO.html" title="An I/O Bundle containing 'valid' and 'ready' signals that handshake the transfer of data stored in the 'bits' subfield."></a>
+                        <a href="ReadyValidIO.html" title="An I/O Bundle containing 'valid' and 'ready' signals that handshake the transfer of data stored in the 'bits' subfield.">ReadyValidIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="RegEnable$.html" title=""></a>
+                        <a href="RegEnable$.html" title="">RegEnable</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Reverse$.html" title="Returns the input in bit-reversed order."></a>
+                        <a href="Reverse$.html" title="Returns the input in bit-reversed order.">Reverse</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="ShiftRegister$.html" title=""></a>
+                        <a href="ShiftRegister$.html" title="">ShiftRegister</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="ShiftRegisters$.html" title=""></a>
+                        <a href="ShiftRegisters$.html" title="">ShiftRegisters</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="SwitchContext.html" title="Implementation details for switch."></a>
+                        <a href="SwitchContext.html" title="Implementation details for switch.">SwitchContext</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="TransitName$.html" title="The purpose of TransitName is to improve the naming of some object created in a different scope by &quot;transiting&quot; the name from the outer scope to the inner scope."></a>
+                        <a href="TransitName$.html" title="The purpose of TransitName is to improve the naming of some object created in a different scope by &quot;transiting&quot; the name from the outer scope to the inner scope.">TransitName</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="UIntToOH$.html" title="Returns the one hot encoding of the input UInt."></a>
+                        <a href="UIntToOH$.html" title="Returns the one hot encoding of the input UInt.">UIntToOH</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Valid$.html" title="Factory for generating &quot;valid&quot; interfaces."></a>
+                        <a class="class" href="Valid.html" title="A Bundle that adds a valid bit to some data."></a>
+                        <a href="Valid.html" title="A Bundle that adds a valid bit to some data.">Valid</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="is$.html" title="Use to specify cases in a switch block, equivalent to a when block comparing to the condition variable."></a>
+                        <a href="is$.html" title="Use to specify cases in a switch block, equivalent to a when block comparing to the condition variable.">is</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="isPow2$.html" title="Returns whether a Scala integer is a power of two."></a>
+                        <a href="isPow2$.html" title="Returns whether a Scala integer is a power of two.">isPow2</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="log2Ceil$.html" title="Compute the log2 of a Scala integer, rounded up."></a>
+                        <a href="log2Ceil$.html" title="Compute the log2 of a Scala integer, rounded up.">log2Ceil</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="log2Down$.html" title="Compute the log2 of a Scala integer, rounded down, with min value of 1."></a>
+                        <a href="log2Down$.html" title="Compute the log2 of a Scala integer, rounded down, with min value of 1.">log2Down</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="log2Floor$.html" title="Compute the log2 of a Scala integer, rounded down."></a>
+                        <a href="log2Floor$.html" title="Compute the log2 of a Scala integer, rounded down.">log2Floor</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="log2Up$.html" title="Compute the log2 of a Scala integer, rounded up, with min value of 1."></a>
+                        <a href="log2Up$.html" title="Compute the log2 of a Scala integer, rounded up, with min value of 1.">log2Up</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="pla$.html" title=""></a>
+                        <a href="pla$.html" title="">pla</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="signedBitLength$.html" title=""></a>
+                        <a href="signedBitLength$.html" title="">signedBitLength</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="switch$.html" title="Conditional logic to form a switch block."></a>
+                        <a href="switch$.html" title="Conditional logic to form a switch block.">switch</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="unless$.html" title=""></a>
+                        <a href="unless$.html" title="">unless</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="unsignedBitLength$.html" title=""></a>
+                        <a href="unsignedBitLength$.html" title="">unsignedBitLength</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="class type">
+      <div id="definition">
+        <div class="big-circle class">c</div>
+        <p id="owner"><a href="../index.html" class="extype" name="chisel3">chisel3</a>.<a href="index.html" class="extype" name="chisel3.util">util</a></p>
+        <h1>IrrevocableIO<span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        <h3><span class="morelinks"></span></h3>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">IrrevocableIO</span><span class="tparams">[<span name="T">+T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="ReadyValidIO.html" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.util.IrrevocableIO.T">T</span>]</span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A concrete subclass of ReadyValidIO that promises to not change
+the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.
+Additionally, once 'valid' is raised it will never be lowered until after
+'ready' has also been raised.</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/chipsalliance/chisel3/tree/v3.4.4/src/main/scala/chisel3/util/Decoupled.scala#L125" target="_blank">Decoupled.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><a href="ReadyValidIO.html" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.util.IrrevocableIO.T">T</span>], <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a>, <a href="../Record.html" class="extype" name="chisel3.Record">Record</a>, <a href="../Aggregate.html" class="extype" name="chisel3.Aggregate">Aggregate</a>, <a href="../Data.html" class="extype" name="chisel3.Data">Data</a>, <a href="../SourceInfoDoc.html" class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</a>, <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">internal.InstanceId</span>, <a href="../../scala/index.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.13/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              <li class="group out"><span>Grouped</span></li>
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="chisel3.util.IrrevocableIO"><span>IrrevocableIO</span></li><li class="in" name="chisel3.util.ReadyValidIO"><span>ReadyValidIO</span></li><li class="in" name="chisel3.Bundle"><span>Bundle</span></li><li class="in" name="chisel3.Record"><span>Record</span></li><li class="in" name="chisel3.Aggregate"><span>Aggregate</span></li><li class="in" name="chisel3.Data"><span>Data</span></li><li class="in" name="chisel3.SourceInfoDoc"><span>SourceInfoDoc</span></li><li class="in" name="chisel3.internal.NamedComponent"><span>NamedComponent</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="chisel3.util.IrrevocableIO#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(gen:T):chisel3.util.IrrevocableIO[T]"></a><a id="&lt;init&gt;:IrrevocableIO[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#&lt;init&gt;(gen:T):chisel3.util.IrrevocableIO[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">IrrevocableIO</span><span class="params">(<span name="gen">gen: <span class="extype" name="chisel3.util.IrrevocableIO.T">T</span></span>)</span>
+      </span>
+      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">gen</dt><dd class="cmt"><p>the type of data to be wrapped in IrrevocableIO</p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#!=(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.13/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html###():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="chisel3.Data#:=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Connect">
+      <a id=":=(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit"></a><a id=":=(⇒Data)(SourceInfo,CompileOptions):Unit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#:=(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $colon$eq" class="name">:=</span><span class="params">(<span name="that">that: ⇒ <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="connectionCompileOptions">connectionCompileOptions: <a href="../CompileOptions.html" class="extype" name="chisel3.CompileOptions">CompileOptions</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Connect this data to that data mono-directionally and element-wise.</p><div class="fullcomment"><div class="comment cmt"><p>Connect this data to that data mono-directionally and element-wise.</p><p>This uses the <span class="extype" name="MonoConnect">MonoConnect</span> algorithm.
+</p></div><dl class="paramcmts block"><dt class="param">that</dt><dd class="cmt"><p>the data to connect to</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.Data#&lt;&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Connect">
+      <a id="&lt;&gt;(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit"></a><a id="&lt;&gt;(⇒Data)(SourceInfo,CompileOptions):Unit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#&lt;&gt;(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $less$greater" class="name">&lt;&gt;</span><span class="params">(<span name="that">that: ⇒ <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="connectionCompileOptions">connectionCompileOptions: <a href="../CompileOptions.html" class="extype" name="chisel3.CompileOptions">CompileOptions</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Connect this data to that data bi-directionally and element-wise.</p><div class="fullcomment"><div class="comment cmt"><p>Connect this data to that data bi-directionally and element-wise.</p><p>This uses the <span class="extype" name="BiConnect">BiConnect</span> algorithm.
+</p></div><dl class="paramcmts block"><dt class="param">that</dt><dd class="cmt"><p>the data to connect to</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#==(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.13/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="chisel3.Bundle#_cloneTypeImpl" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_cloneTypeImpl:chisel3.Bundle"></a><a id="_cloneTypeImpl:Bundle"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#_cloneTypeImpl:chisel3.Bundle" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_cloneTypeImpl</span><span class="result">: <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Implementation of cloneType using runtime reflection.</p><div class="fullcomment"><div class="comment cmt"><p>Implementation of cloneType using runtime reflection. This should _never_ be overridden or called in user-code
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a></dd><dt>Note</dt><dd><span class="cmt"><p>This is overridden by the compiler plugin (it is never called when using the plugin)</p></span></dd></dl></div>
+    </li><li name="chisel3.Bundle#_usingPlugin" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_usingPlugin:Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#_usingPlugin:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_usingPlugin</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Indicates if a concrete Bundle class was compiled using the compiler plugin</p><div class="fullcomment"><div class="comment cmt"><p>Indicates if a concrete Bundle class was compiled using the compiler plugin</p><p>Used for optimizing Chisel's performance and testing Chisel itself</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a></dd><dt>Note</dt><dd><span class="cmt"><p>This should not be used in user code!</p></span></dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#asInstanceOf[T0]:T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="chisel3.Data#asTypeOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asTypeOf[T&lt;:chisel3.Data](that:T):T"></a><a id="asTypeOf[T&lt;:Data](T):T"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#asTypeOf[T&lt;:chisel3.Data](that:T):T" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">macro </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asTypeOf</span><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="params">(<span name="that">that: <span class="extype" name="chisel3.Data.asTypeOf.T">T</span></span>)</span><span class="result">: <span class="extype" name="chisel3.Data.asTypeOf.T">T</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Does a reinterpret cast of the bits in this node into the format that provides.</p><div class="fullcomment"><div class="comment cmt"><p>Does a reinterpret cast of the bits in this node into the format that provides.
+Returns a new Wire of that type. Does not modify existing nodes.</p><p>x.asTypeOf(that) performs the inverse operation of x := that.toBits.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd><dt>Note</dt><dd><span class="cmt"><p>bit widths are NOT checked, may pad or drop bits from input</p></span>, <span class="cmt"><p>that should have known widths</p></span></dd></dl></div>
+    </li><li name="chisel3.Data#asUInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asUInt():chisel3.UInt"></a><a id="asUInt():UInt"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#asUInt():chisel3.UInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final macro </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asUInt</span><span class="params">()</span><span class="result">: <a href="../UInt.html" class="extype" name="chisel3.UInt">UInt</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Reinterpret cast to UInt.</p><div class="fullcomment"><div class="comment cmt"><p>Reinterpret cast to UInt.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd><dt>Note</dt><dd><span class="cmt"><p>value not guaranteed to be preserved: for example, a SInt of width
+3 and value -1 (0b111) would become an UInt with value 7</p></span>, <span class="cmt"><p>Aggregates are recursively packed with the first element appearing
+in the least-significant bits of the result.</p></span></dd></dl></div>
+    </li><li name="chisel3.Data#autoSeed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="autoSeed(name:String):Data.this.type"></a><a id="autoSeed(String):IrrevocableIO.this.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#autoSeed(name:String):Data.this.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">autoSeed</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="chisel3.util.IrrevocableIO">IrrevocableIO</a>.this.type</span>
+      </span>
+      
+      <p class="shortcomment cmt">Takes the last seed suggested.</p><div class="fullcomment"><div class="comment cmt"><p>Takes the last seed suggested. Multiple calls to this function will take the last given seed, unless
+this HasId is a module port (see overridden method in Data.scala).</p><p>If the final computed name conflicts with the final name of another signal, the final name may get uniquified by
+appending a digit at the end of the name.</p><p>Is a lower priority than <a href="../Data.html#suggestName(seed:=&gt;String):HasId.this.type" class="extmbr" name="chisel3.Data#suggestName">suggestName</a>, in that regardless of whether <a href="../Data.html#autoSeed(name:String):Data.this.type" class="extmbr" name="chisel3.Data#autoSeed">autoSeed</a>
+was called, <a href="../Data.html#suggestName(seed:=&gt;String):HasId.this.type" class="extmbr" name="chisel3.Data#suggestName">suggestName</a> will always take precedence if it was called.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>this object</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a> → HasId</dd></dl></div>
+    </li><li name="chisel3.Data#binding" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="binding:Option[chisel3.internal.Binding]"></a><a id="binding:Option[Binding]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#binding:Option[chisel3.internal.Binding]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">binding</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="chisel3.internal.Binding">Binding</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../index.html" class="extype" name="chisel3">chisel3</a>] </dd><dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.Data#bindingToString" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bindingToString:String"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#bindingToString:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bindingToString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.Data#binding_=" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="binding_=(target:chisel3.internal.Binding):Unit"></a><a id="binding_=(Binding):Unit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#binding_=(target:chisel3.internal.Binding):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: binding_$eq" class="name">binding_=</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.internal.Binding">Binding</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.util.ReadyValidIO#bits" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bits:T"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#bits:T" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bits</span><span class="result">: <span class="extype" name="chisel3.util.IrrevocableIO.T">T</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ReadyValidIO.html" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a></dd></dl></div>
+    </li><li name="chisel3.internal.HasId#circuitName" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="circuitName:String"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#circuitName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">circuitName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>HasId</dd></dl></div>
+    </li><li name="chisel3.Bundle#className" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="className:String"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#className:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">className</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Name for Pretty Printing</p><div class="fullcomment"><div class="comment cmt"><p>Name for Pretty Printing</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a> → <a href="../Record.html" class="extype" name="chisel3.Record">Record</a></dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a><a id="clone():AnyRef"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#clone():Object" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../scala/index.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="chisel3.util.IrrevocableIO#cloneType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cloneType:IrrevocableIO.this.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#cloneType:IrrevocableIO.this.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cloneType</span><span class="result">: <a href="" class="extype" name="chisel3.util.IrrevocableIO">IrrevocableIO</a>.this.type</span>
+      </span>
+      
+      <p class="shortcomment cmt">Internal API; Chisel users should look at chisel3.chiselTypeOf(...).</p><div class="fullcomment"><div class="comment cmt"><p>Internal API; Chisel users should look at chisel3.chiselTypeOf(...).</p><p>cloneType must be defined for any Chisel object extending Data.
+It is responsible for constructing a basic copy of the object being cloned.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>a copy of the object.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="chisel3.util.IrrevocableIO">IrrevocableIO</a> → <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a> → <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.internal.HasId#computeName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="computeName(defaultPrefix:Option[String],defaultSeed:Option[String]):Option[String]"></a><a id="computeName(Option[String],Option[String]):Option[String]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#computeName(defaultPrefix:Option[String],defaultSeed:Option[String]):Option[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">computeName</span><span class="params">(<span name="defaultPrefix">defaultPrefix: <a href="https://www.scala-lang.org/api/2.12.13/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="defaultSeed">defaultSeed: <a href="https://www.scala-lang.org/api/2.12.13/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Computes the name of this HasId, if one exists</p><div class="fullcomment"><div class="comment cmt"><p>Computes the name of this HasId, if one exists</p></div><dl class="paramcmts block"><dt class="param">defaultPrefix</dt><dd class="cmt"><p>Optionally provide a default prefix for computing the name</p></dd><dt class="param">defaultSeed</dt><dd class="cmt"><p>Optionally provide default seed for computing the name</p></dd><dt>returns</dt><dd class="cmt"><p>the name, if it can be computed</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
+    </li><li name="chisel3.Data#do_asTypeOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="SourceInfoTransformMacro">
+      <a id="do_asTypeOf[T&lt;:chisel3.Data](that:T)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):T"></a><a id="do_asTypeOf[T&lt;:Data](T)(SourceInfo,CompileOptions):T"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#do_asTypeOf[T&lt;:chisel3.Data](that:T)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):T" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">do_asTypeOf</span><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="params">(<span name="that">that: <span class="extype" name="chisel3.Data.do_asTypeOf.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="compileOptions">compileOptions: <a href="../CompileOptions.html" class="extype" name="chisel3.CompileOptions">CompileOptions</a></span>)</span><span class="result">: <span class="extype" name="chisel3.Data.do_asTypeOf.T">T</span></span>
+      </span>
+      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.Aggregate#do_asUInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="SourceInfoTransformMacro">
+      <a id="do_asUInt(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):chisel3.UInt"></a><a id="do_asUInt(SourceInfo,CompileOptions):UInt"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#do_asUInt(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):chisel3.UInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">do_asUInt</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="compileOptions">compileOptions: <a href="../CompileOptions.html" class="extype" name="chisel3.CompileOptions">CompileOptions</a></span>)</span><span class="result">: <a href="../UInt.html" class="extype" name="chisel3.UInt">UInt</a></span>
+      </span>
+      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Aggregate.html" class="extype" name="chisel3.Aggregate">Aggregate</a> → <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.Bundle#elements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="elements:scala.collection.immutable.ListMap[String,chisel3.Data]"></a><a id="elements:ListMap[String,Data]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#elements:scala.collection.immutable.ListMap[String,chisel3.Data]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../Data.html" class="extype" name="chisel3.Data">Data</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">The collection of <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></p><div class="fullcomment"><div class="comment cmt"><p>The collection of <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></p><p>Elements defined earlier in the Bundle are higher order upon
+serialization. For example:</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a> → <a href="../Record.html" class="extype" name="chisel3.Record">Record</a></dd><div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">class</span> MyBundle <span class="kw">extends</span> Bundle {
+  <span class="kw">val</span> foo = UInt(<span class="num">16.</span>W)
+  <span class="kw">val</span> bar = UInt(<span class="num">16.</span>W)
+}
+<span class="cmt">// Note that foo is higher order because its defined earlier in the Bundle</span>
+<span class="kw">val</span> bundle = Wire(<span class="kw">new</span> MyBundle)
+bundle.foo := <span class="num">0</span>x1234.U
+bundle.bar := <span class="num">0</span>x5678.U
+<span class="kw">val</span> uint = bundle.asUInt
+assert(uint === <span class="lit">"h12345678"</span>.U) <span class="cmt">// This will pass</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../scala/index.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(that:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#equals(that:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="that">that: <a href="https://www.scala-lang.org/api/2.12.13/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#getClass():Class[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html#java.lang.Class" class="extype" name="java.lang.Class">Class</a>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="chisel3.Record#getElements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getElements:Seq[chisel3.Data]"></a><a id="getElements:Seq[Data]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#getElements:Seq[chisel3.Data]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getElements</span><span class="result">: <a href="../../scala/index.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Data.html" class="extype" name="chisel3.Data">Data</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns a Seq of the immediate contents of this Aggregate, in order.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq of the immediate contents of this Aggregate, in order.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Record.html" class="extype" name="chisel3.Record">Record</a> → <a href="../Aggregate.html" class="extype" name="chisel3.Aggregate">Aggregate</a></dd></dl></div>
+    </li><li name="chisel3.Data#getWidth" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getWidth:Int"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#getWidth:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getWidth</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the width, in bits, if currently known.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the width, in bits, if currently known.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.internal.HasId#hasSeed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasSeed:Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#hasSeed:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasSeed</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>Whether either autoName or suggestName has been called</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#hashCode():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
+    </li><li name="chisel3.Bundle#ignoreSeq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ignoreSeq:Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#ignoreSeq:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ignoreSeq</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Overridden by <a href="../IgnoreSeqInBundle.html" class="extype" name="chisel3.IgnoreSeqInBundle">IgnoreSeqInBundle</a> to allow arbitrary Seqs of Chisel elements.</p><div class="fullcomment"><div class="comment cmt"><p>Overridden by <a href="../IgnoreSeqInBundle.html" class="extype" name="chisel3.IgnoreSeqInBundle">IgnoreSeqInBundle</a> to allow arbitrary Seqs of Chisel elements.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a></dd></dl></div>
+    </li><li name="chisel3.internal.HasId#instanceName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="instanceName:String"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#instanceName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">instanceName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#isInstanceOf[T0]:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="chisel3.Data#isLit" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isLit():Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#isLit():Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isLit</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.Data#isWidthKnown" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isWidthKnown:Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#isWidthKnown:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isWidthKnown</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns whether the width is currently known.</p><div class="fullcomment"><div class="comment cmt"><p>Returns whether the width is currently known.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.Aggregate#litOption" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="litOption():Option[BigInt]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#litOption():Option[BigInt]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">litOption</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="../../scala/index.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Return an Aggregate's literal value if it is a literal, None otherwise.</p><div class="fullcomment"><div class="comment cmt"><p>Return an Aggregate's literal value if it is a literal, None otherwise.
+If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>an Aggregate's literal value if it is a literal.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Aggregate.html" class="extype" name="chisel3.Aggregate">Aggregate</a> → <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="chisel3.Data#litValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="litValue():BigInt"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#litValue():BigInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">litValue</span><span class="params">()</span><span class="result">: <a href="../../scala/index.html#BigInt=scala.math.BigInt" class="extmbr" name="scala.BigInt">BigInt</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the literal value if this is a literal that is representable as bits, otherwise crashes.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the literal value if this is a literal that is representable as bits, otherwise crashes.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../scala/index.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#notify():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#notifyAll():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="chisel3.internal.HasId#parentModName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parentModName:String"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#parentModName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parentModName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#parentPathName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parentPathName:String"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#parentPathName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parentPathName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#pathName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pathName:String"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#pathName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pathName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
+    </li><li name="chisel3.util.ReadyValidIO#ready" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ready:chisel3.Bool"></a><a id="ready:Bool"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#ready:chisel3.Bool" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ready</span><span class="result">: <a href="../Bool.html" class="extype" name="chisel3.Bool">Bool</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ReadyValidIO.html" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a></dd></dl></div>
+    </li><li name="chisel3.internal.HasId#suggestName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="suggestName(seed:=&gt;String):HasId.this.type"></a><a id="suggestName(⇒String):IrrevocableIO.this.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#suggestName(seed:=&gt;String):HasId.this.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">suggestName</span><span class="params">(<span name="seed">seed: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="chisel3.util.IrrevocableIO">IrrevocableIO</a>.this.type</span>
+      </span>
+      
+      <p class="shortcomment cmt">Takes the first seed suggested.</p><div class="fullcomment"><div class="comment cmt"><p>Takes the first seed suggested. Multiple calls to this function will be ignored.
+If the final computed name conflicts with another name, it may get uniquified by appending
+a digit at the end.</p><p>Is a higher priority than <a href="#autoSeed(name:String):Data.this.type" class="extmbr" name="chisel3.util.IrrevocableIO#autoSeed">autoSeed</a>, in that regardless of whether <a href="#autoSeed(name:String):Data.this.type" class="extmbr" name="chisel3.util.IrrevocableIO#autoSeed">autoSeed</a>
+was called, <a href="#suggestName(seed:=&gt;String):HasId.this.type" class="extmbr" name="chisel3.util.IrrevocableIO#suggestName">suggestName</a> will always take precedence.
+</p></div><dl class="paramcmts block"><dt class="param">seed</dt><dd class="cmt"><p>The seed for the name of this component</p></dd><dt>returns</dt><dd class="cmt"><p>this object</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="chisel3.internal.NamedComponent#toAbsoluteTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toAbsoluteTarget:firrtl.annotations.ReferenceTarget"></a><a id="toAbsoluteTarget:ReferenceTarget"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#toAbsoluteTarget:firrtl.annotations.ReferenceTarget" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toAbsoluteTarget</span><span class="result">: <a href="https://javadoc.io/page/edu.berkeley.cs/firrtl_2.12/1.4.4/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph</p><div class="fullcomment"><div class="comment cmt"><p>Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
+    </li><li name="chisel3.internal.NamedComponent#toNamed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toNamed:firrtl.annotations.ComponentName"></a><a id="toNamed:ComponentName"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#toNamed:firrtl.annotations.ComponentName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toNamed</span><span class="result">: <a href="https://javadoc.io/page/edu.berkeley.cs/firrtl_2.12/1.4.4/firrtl/annotations/ComponentName.html#firrtl.annotations.ComponentName" class="extype" name="firrtl.annotations.ComponentName">ComponentName</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns a FIRRTL ComponentName that references this object</p><div class="fullcomment"><div class="comment cmt"><p>Returns a FIRRTL ComponentName that references this object</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd><dt>Note</dt><dd><span class="cmt"><p>Should not be called until circuit elaboration is complete</p></span></dd></dl></div>
+    </li><li name="chisel3.Bundle#toPrintable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toPrintable:chisel3.Printable"></a><a id="toPrintable:Printable"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#toPrintable:chisel3.Printable" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toPrintable</span><span class="result">: <a href="../Printable.html" class="extype" name="chisel3.Printable">Printable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Default &quot;pretty-print&quot; implementation
+Analogous to printing a Map
+Results in &quot;<code>Bundle(elt0.name -&gt; elt0.value, ...)</code>&quot;</p><div class="fullcomment"><div class="comment cmt"><p>Default &quot;pretty-print&quot; implementation
+Analogous to printing a Map
+Results in &quot;<code>Bundle(elt0.name -&gt; elt0.value, ...)</code>&quot;</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a> → <a href="../Record.html" class="extype" name="chisel3.Record">Record</a> → <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd><dt>Note</dt><dd><span class="cmt"><p>The order is reversed from the order of elements in order to print
+  the fields in the order they were defined</p></span></dd></dl></div>
+    </li><li name="chisel3.Record#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#toString():String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">The collection of <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></p><div class="fullcomment"><div class="comment cmt"><p>The collection of <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></p><p>This underlying datastructure is a ListMap because the elements must
+remain ordered for serialization/deserialization. Elements added later
+are higher order when serialized (this is similar to <a href="../Vec.html" class="extype" name="chisel3.Vec">Vec</a>). For example:</p><pre><span class="cmt">// Assume we have some type MyRecord that creates a Record from the ListMap</span>
+<span class="kw">val</span> record = MyRecord(ListMap(<span class="lit">"fizz"</span> -&gt; UInt(<span class="num">16.</span>W), <span class="lit">"buzz"</span> -&gt; UInt(<span class="num">16.</span>W)))
+<span class="cmt">// "buzz" is higher order because it was added later than "fizz"</span>
+record(<span class="lit">"fizz"</span>) := <span class="lit">"hdead"</span>.U
+record(<span class="lit">"buzz"</span>) := <span class="lit">"hbeef"</span>.U
+<span class="kw">val</span> uint = record.asUInt
+assert(uint === <span class="lit">"hbeefdead"</span>.U) <span class="cmt">// This will pass</span></pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Record.html" class="extype" name="chisel3.Record">Record</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="chisel3.internal.NamedComponent#toTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toTarget:firrtl.annotations.ReferenceTarget"></a><a id="toTarget:ReferenceTarget"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#toTarget:firrtl.annotations.ReferenceTarget" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toTarget</span><span class="result">: <a href="https://javadoc.io/page/edu.berkeley.cs/firrtl_2.12/1.4.4/firrtl/annotations/ReferenceTarget.html#firrtl.annotations.ReferenceTarget" class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns a FIRRTL ReferenceTarget that references this object</p><div class="fullcomment"><div class="comment cmt"><p>Returns a FIRRTL ReferenceTarget that references this object</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd><dt>Note</dt><dd><span class="cmt"><p>Should not be called until circuit elaboration is complete</p></span></dd></dl></div>
+    </li><li name="chisel3.util.ReadyValidIO#valid" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="valid:chisel3.Bool"></a><a id="valid:Bool"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#valid:chisel3.Bool" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">valid</span><span class="result">: <a href="../Bool.html" class="extype" name="chisel3.Bool">Bool</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ReadyValidIO.html" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#wait():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.13/scala/Long.html#scala.Long" class="extype" name="scala.Long">Long</a></span>, <span name="arg1">arg1: <a href="https://www.scala-lang.org/api/2.12.13/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#wait(x$1:Long):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.13/scala/Long.html#scala.Long" class="extype" name="scala.Long">Long</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="chisel3.Data#widthOption" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="widthOption:Option[Int]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#widthOption:Option[Int]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">widthOption</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.13/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns Some(width) if the width is known, else None.</p><div class="fullcomment"><div class="comment cmt"><p>Returns Some(width) if the width is known, else None.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd></dl></div>
+    </li>
+              </ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="chisel3.Data#litArg" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="litArg():Option[chisel3.internal.firrtl.LitArg]"></a><a id="litArg():Option[LitArg]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html#litArg():Option[chisel3.internal.firrtl.LitArg]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) litArg is deprecated, use litOption or litTo*Option">litArg</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.13/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="chisel3.internal.firrtl.LitArg">LitArg</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Data.html" class="extype" name="chisel3.Data">Data</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@chiselRuntimeDeprecated</span><span class="args">()</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> litArg is deprecated, use litOption or litTo*Option</p></dd></dl></div>
+    </li></ol>
+            </div>
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="chisel3.util.ReadyValidIO">
+              <h3>Inherited from <a href="ReadyValidIO.html" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.util.IrrevocableIO.T">T</span>]</h3>
+            </div><div class="parent" name="chisel3.Bundle">
+              <h3>Inherited from <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a></h3>
+            </div><div class="parent" name="chisel3.Record">
+              <h3>Inherited from <a href="../Record.html" class="extype" name="chisel3.Record">Record</a></h3>
+            </div><div class="parent" name="chisel3.Aggregate">
+              <h3>Inherited from <a href="../Aggregate.html" class="extype" name="chisel3.Aggregate">Aggregate</a></h3>
+            </div><div class="parent" name="chisel3.Data">
+              <h3>Inherited from <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></h3>
+            </div><div class="parent" name="chisel3.SourceInfoDoc">
+              <h3>Inherited from <a href="../SourceInfoDoc.html" class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</a></h3>
+            </div><div class="parent" name="chisel3.internal.NamedComponent">
+              <h3>Inherited from <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span></h3>
+            </div><div class="parent" name="chisel3.internal.HasId">
+              <h3>Inherited from <span class="extype" name="chisel3.internal.HasId">HasId</span></h3>
+            </div><div class="parent" name="chisel3.internal.InstanceId">
+              <h3>Inherited from <span class="extype" name="chisel3.internal.InstanceId">internal.InstanceId</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../scala/index.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.13/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Connect">
+              <h3>Connect</h3>
+              <div class="comment cmt"><p>Utilities for connecting hardware components</p></div>
+            </div><div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div><div class="group" name="SourceInfoTransformMacro">
+              <h3>SourceInfoTransformMacro</h3>
+              <div class="comment cmt"><p>
+  <b>These internal methods are not part of the public-facing API!</b>
+  <br>
+  <br>
+  The equivalent public-facing methods do not have the <code>do_</code> prefix or have the same name. Use and look at the
+  documentation for those. If you want left shift, use <code>&lt;&lt;</code>, not <code>do_&lt;&lt;</code>. If you want conversion to a
+  <a href="https://www.scala-lang.org/api/2.12.13/scala/collection/Seq.html" class="extype" name="scala.collection.Seq">Seq</a> of <a href="../Bool.html" class="extype" name="chisel3.Bool">Bool</a>s look at the <code>asBools</code> above, not the one below. Users can safely ignore
+  every method in this group! <br> <br>
+  🐉🐉🐉 <b>Here be dragons...</b> 🐉🐉🐉
+  <br>
+  <br>
+  These <code>do_X</code> methods are used to enable both implicit passing of SourceInfo and <a href="../CompileOptions.html" class="extype" name="chisel3.CompileOptions">chisel3.CompileOptions</a>
+  while also supporting chained apply methods. In effect all &quot;normal&quot; methods that you, as a user, will use in your
+  designs, are converted to their &quot;hidden&quot;, <code>do_*</code>, via macro transformations. Without using macros here, only one
+  of the above wanted behaviors is allowed (implicit passing and chained applies)---the compiler interprets a
+  chained apply as an explicit 'implicit' argument and will throw type errors. <br> <br>
+  The &quot;normal&quot;, public-facing methods then take no SourceInfo. However, a macro transforms this public-facing method
+  into a call to an internal, hidden <code>do_*</code> that takes an explicit SourceInfo by inserting an
+  <code>implicitly[SourceInfo]</code> as the explicit argument.</p></div>
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>

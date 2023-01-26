@@ -1,0 +1,1379 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>chisel3 3.3.3 - chisel3.experimental</title>
+          <meta name="description" content="chisel3 3.3.3 - chisel3.experimental" />
+          <meta name="keywords" content="chisel3 3.3.3 chisel3.experimental" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../lib/index.js"></script>
+      <script type="text/javascript" src="../../index.js"></script>
+      <script type="text/javascript" src="../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../lib/template.js"></script>
+      <script type="text/javascript" src="../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">chisel3<span id="doc-version">3.3.3</span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This is the documentation for Chisel." href="../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This is the documentation for Chisel.</p><div class="fullcomment"><div class="comment cmt"><p>This is the documentation for Chisel.</p><h4> Package structure </h4><p>The <a href="../index.html" class="extype" name="chisel3">chisel3</a> package presents the public API of Chisel.
+It contains the concrete core types <a href="../UInt.html" class="extype" name="chisel3.UInt"><code>UInt</code></a>, <a href="../SInt.html" class="extype" name="chisel3.SInt"><code>SInt</code></a>, <a href="../Bool.html" class="extype" name="chisel3.Bool"><code>Bool</code></a>, <a href="FixedPoint.html" class="extype" name="chisel3.experimental.FixedPoint"><code>FixedPoint</code></a>, <a href="../Clock.html" class="extype" name="chisel3.Clock"><code>Clock</code></a>, and <a href="../Reg$.html" class="extype" name="chisel3.Reg"><code>Reg</code></a>,
+the abstract types <a href="../Bits.html" class="extype" name="chisel3.Bits"><code>Bits</code></a>, <a href="../Aggregate.html" class="extype" name="chisel3.Aggregate"><code>Aggregate</code></a>, and <a href="../Data.html" class="extype" name="chisel3.Data"><code>Data</code></a>,
+and the aggregate types <a href="../Bundle.html" class="extype" name="chisel3.Bundle"><code>Bundle</code></a> and <a href="../Vec.html" class="extype" name="chisel3.Vec"><code>Vec</code></a>.</p><p>The <a href="../../Chisel/index.html" class="extype" name="Chisel">Chisel</a> package is a compatibility layer that attempts to provide chisel2 compatibility in chisel3.</p><p>Utility objects and methods are found in the <a href="../util/index.html" class="extype" name="chisel3.util"><code>util</code></a> package.</p><p>The <a href="../testers/index.html" class="extype" name="chisel3.testers"><code>testers</code></a> package defines the basic interface for chisel testers.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.chisel3" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="chisel3"></a><a id="chisel3:chisel3"></a>
+      <span class="permalink">
+      <a href="../../chisel3/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This package contains the main chisel3 API." href="../index.html"><span class="name">chisel3</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This package contains the main chisel3 API.</p><div class="fullcomment"><div class="comment cmt"><p>This package contains the main chisel3 API.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="chisel3.aop" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aop"></a><a id="aop:aop"></a>
+      <span class="permalink">
+      <a href="../../chisel3/aop/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../aop/index.html"><span class="name">aop</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.core" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="core"></a><a id="core:core"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="These definitions exist to deal with those clients that relied on chisel3.core." href="../core/index.html"><span class="name">core</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">These definitions exist to deal with those clients that relied on chisel3.core.</p><div class="fullcomment"><div class="comment cmt"><p>These definitions exist to deal with those clients that relied on chisel3.core.
+They are deprecated and will be removed in the future.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.experimental" visbl="pub" class="indented2 current" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="experimental"></a><a id="experimental:experimental"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">experimental</span>
+      </span>
+      
+      <p class="shortcomment cmt">Package for experimental features, which may have their API changed, be removed, etc.</p><div class="fullcomment"><div class="comment cmt"><p>Package for experimental features, which may have their API changed, be removed, etc.</p><p>Because its contents won't necessarily have the same level of stability and support as
+non-experimental, you must explicitly import this package to use its contents.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li class="current-entities indented2">
+                        <a class="object" href="Analog$.html" title="Object that provides factory methods for Analog objects"></a>
+                        <a class="class" href="Analog.html" title="Data type for representing bidirectional bitvectors of a given width"></a>
+                        <a href="Analog.html" title="Data type for representing bidirectional bitvectors of a given width">Analog</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="BaseModule.html" title="Abstract base class for Modules, an instantiable organizational unit for RTL."></a>
+                        <a href="BaseModule.html" title="Abstract base class for Modules, an instantiable organizational unit for RTL.">BaseModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="BundleLiteralException.html" title=""></a>
+                        <a href="BundleLiteralException.html" title="">BundleLiteralException</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$BundleLiterals$.html" title=""></a>
+                        <a href="package$$BundleLiterals$.html" title="">BundleLiterals</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChiselAnnotation.html" title="Interface for Annotations in Chisel"></a>
+                        <a href="ChiselAnnotation.html" title="Interface for Annotations in Chisel">ChiselAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ChiselLegacyAnnotation.html" title=""></a>
+                        <a href="ChiselLegacyAnnotation.html" title="">ChiselLegacyAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$ChiselRange.html" title=""></a>
+                        <a href="package$$ChiselRange.html" title="">ChiselRange</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$CloneModuleAsRecord$.html" title=""></a>
+                        <a href="package$$CloneModuleAsRecord$.html" title="">CloneModuleAsRecord</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="DataMirror$.html" title="Experimental hardware construction reflection API"></a>
+                        <a href="DataMirror$.html" title="Experimental hardware construction reflection API">DataMirror</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="DoubleParam.html" title=""></a>
+                        <a href="DoubleParam.html" title="">DoubleParam</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="EnumAnnotations$.html" title=""></a>
+                        <a href="EnumAnnotations$.html" title="">EnumAnnotations</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="EnumFactory.html" title=""></a>
+                        <a href="EnumFactory.html" title="">EnumFactory</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="EnumType.html" title=""></a>
+                        <a href="EnumType.html" title="">EnumType</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ExtModule.html" title="Defines a black box, which is a module that can be referenced from within Chisel, but is not defined in the emitted Verilog."></a>
+                        <a href="ExtModule.html" title="Defines a black box, which is a module that can be referenced from within Chisel, but is not defined in the emitted Verilog.">ExtModule</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="FixedPoint$.html" title="Factory and convenience methods for the FixedPoint class IMPORTANT: The API provided here is experimental and may change in the future."></a>
+                        <a class="class" href="FixedPoint.html" title="A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point may be inferred."></a>
+                        <a href="FixedPoint.html" title="A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point may be inferred.">FixedPoint</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasBinaryPoint.html" title="Chisel types that have binary points support retrieving literal values as Double or BigDecimal"></a>
+                        <a href="HasBinaryPoint.html" title="Chisel types that have binary points support retrieving literal values as Double or BigDecimal">HasBinaryPoint</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="IO$.html" title=""></a>
+                        <a href="IO$.html" title="">IO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="IntParam.html" title=""></a>
+                        <a href="IntParam.html" title="">IntParam</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Interval$.html" title="Factory and convenience methods for the Interval class IMPORTANT: The API provided here is experimental and may change in the future."></a>
+                        <a class="class" href="Interval.html" title="A sealed class representing a fixed point number that has a range, an additional parameter that can determine a minimum and maximum supported value."></a>
+                        <a href="Interval.html" title="A sealed class representing a fixed point number that has a range, an additional parameter that can determine a minimum and maximum supported value.">Interval</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="package$$NoChiselNamePrefix.html" title="Do not name instances of this type in chiselName"></a>
+                        <a href="package$$NoChiselNamePrefix.html" title="Do not name instances of this type in chiselName">NoChiselNamePrefix</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="Param.html" title="Parameters for BlackBoxes"></a>
+                        <a href="Param.html" title="Parameters for BlackBoxes">Param</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="PrivateType.html" title="Use PrivateObject to force users to specify width and binaryPoint by name"></a>
+                        <a href="PrivateType.html" title="Use PrivateObject to force users to specify width and binaryPoint by name">PrivateType</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="RawParam.html" title="Unquoted String"></a>
+                        <a href="RawParam.html" title="Unquoted String">RawParam</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="RunFirrtlTransform.html" title="Mixin for ChiselAnnotation that instantiates an associated FIRRTL Transform when this Annotation is present during a run of Driver.execute."></a>
+                        <a href="RunFirrtlTransform.html" title="Mixin for ChiselAnnotation that instantiates an associated FIRRTL Transform when this Annotation is present during a run of Driver.execute.">RunFirrtlTransform</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="StringParam.html" title=""></a>
+                        <a href="StringParam.html" title="">StringParam</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="annotate$.html" title=""></a>
+                        <a href="annotate$.html" title="">annotate</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="attach$.html" title=""></a>
+                        <a href="attach$.html" title="">attach</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$chiselName.html" title="Experimental macro for naming Chisel hardware values"></a>
+                        <a href="package$$chiselName.html" title="Experimental macro for naming Chisel hardware values">chiselName</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="doNotDedup$.html" title="Marks that a module to be ignored in Dedup Transform in Firrtl pass"></a>
+                        <a href="doNotDedup$.html" title="Marks that a module to be ignored in Dedup Transform in Firrtl pass">doNotDedup</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$dump.html" title=""></a>
+                        <a href="package$$dump.html" title="">dump</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$treedump.html" title=""></a>
+                        <a href="package$$treedump.html" title="">treedump</a>
+                      </li><li name="chisel3.stage" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stage"></a><a id="stage:stage"></a>
+      <span class="permalink">
+      <a href="../../chisel3/stage/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../stage/index.html"><span class="name">stage</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.testers" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="testers"></a><a id="testers:testers"></a>
+      <span class="permalink">
+      <a href="../../chisel3/testers/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="The testers package provides the basic interface for chisel testers." href="../testers/index.html"><span class="name">testers</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The testers package provides the basic interface for chisel testers.</p><div class="fullcomment"><div class="comment cmt"><p>The testers package provides the basic interface for chisel testers.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.util" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="util"></a><a id="util:util"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="The util package provides extensions to core chisel for common hardware components and utility functions" href="../util/index.html"><span class="name">util</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The util package provides extensions to core chisel for common hardware components and utility
+functions
+</p><div class="fullcomment"><div class="comment cmt"><p>The util package provides extensions to core chisel for common hardware components and utility
+functions
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="package value">
+      <div id="definition">
+        <div class="big-circle package">p</div>
+        <p id="owner"><a href="../index.html" class="extype" name="chisel3">chisel3</a></p>
+        <h1>experimental<span class="permalink">
+      <a href="../../chisel3/experimental/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">experimental</span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Package for experimental features, which may have their API changed, be removed, etc.</p><p>Because its contents won't necessarily have the same level of stability and support as
+non-experimental, you must explicitly import this package to use its contents.
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/freechipsproject/chisel3/tree/v3.3.3//core/src/main/scala/chisel3/experimental/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.11/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="chisel3.experimental"><span>experimental</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="chisel3.experimental.Analog" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AnalogextendsElement"></a><a id="Analog:Analog"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/Analog.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Data type for representing bidirectional bitvectors of a given width" href="Analog.html"><span class="name">Analog</span></a><span class="result"> extends <a href="../Element.html" class="extype" name="chisel3.Element">Element</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Data type for representing bidirectional bitvectors of a given width</p><div class="fullcomment"><div class="comment cmt"><p>Data type for representing bidirectional bitvectors of a given width</p><p>Analog support is limited to allowing wiring up of Verilog BlackBoxes with bidirectional (inout)
+pins. There is currently no support for reading or writing of Analog types within Chisel code.</p><p>Given that Analog is bidirectional, it is illegal to assign a direction to any Analog type. It
+is legal to &quot;flip&quot; the direction (since Analog can be a member of aggregate types) which has no
+effect.</p><p>Analog types are generally connected using the bidirectional <a href="attach$.html" class="extype" name="chisel3.experimental.attach">attach</a> mechanism, but also
+support limited bulkconnect <code>&lt;&gt;</code>. Analog types are only allowed to be bulk connected *once* in a
+given module. This is to prevent any surprising consequences of last connect semantics.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This API is experimental and subject to change</p></span></dd></dl></div>
+    </li><li name="chisel3.experimental.BaseModule" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BaseModuleextendsHasId"></a><a id="BaseModule:BaseModule"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/BaseModule.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Abstract base class for Modules, an instantiable organizational unit for RTL." href="BaseModule.html"><span class="name">BaseModule</span></a><span class="result"> extends <span class="extype" name="chisel3.internal.HasId">HasId</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Abstract base class for Modules, an instantiable organizational unit for RTL.</p>
+    </li><li name="chisel3.experimental.BundleLiteralException" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BundleLiteralExceptionextendschisel3.ChiselException"></a><a id="BundleLiteralException:BundleLiteralException"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/BundleLiteralException.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="BundleLiteralException.html"><span class="name">BundleLiteralException</span></a><span class="result"> extends <a href="../index.html#ChiselException=chisel3.internal.ChiselException" class="extmbr" name="chisel3.ChiselException">ChiselException</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.ChiselAnnotation" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ChiselAnnotationextendsAnyRef"></a><a id="ChiselAnnotation:ChiselAnnotation"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/ChiselAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Interface for Annotations in Chisel" href="ChiselAnnotation.html"><span class="name">ChiselAnnotation</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Interface for Annotations in Chisel</p><div class="fullcomment"><div class="comment cmt"><p>Interface for Annotations in Chisel</p><p>Defines a conversion to a corresponding FIRRTL Annotation
+</p></div></div>
+    </li><li name="chisel3.experimental.ChiselEnum" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChiselEnum=chisel3.experimental.EnumFactory"></a><a id="ChiselEnum:ChiselEnum"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#ChiselEnum=chisel3.experimental.EnumFactory" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ChiselEnum</span><span class="result alias"> = <a href="EnumFactory.html" class="extype" name="chisel3.experimental.EnumFactory">EnumFactory</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.ChiselLegacyAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChiselLegacyAnnotationextendsChiselAnnotationwithRunFirrtlTransformwithProductwithSerializable"></a><a id="ChiselLegacyAnnotation:ChiselLegacyAnnotation"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/ChiselLegacyAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ChiselLegacyAnnotation.html"><span class="name">ChiselLegacyAnnotation</span></a><span class="result"> extends <a href="ChiselAnnotation.html" class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</a> with <a href="RunFirrtlTransform.html" class="extype" name="chisel3.experimental.RunFirrtlTransform">RunFirrtlTransform</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.ChiselRange" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChiselRangeextendsAnyVal"></a><a id="ChiselRange:ChiselRange"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/package$$ChiselRange.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$ChiselRange.html"><span class="name">ChiselRange</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyVal.html#scala.AnyVal" class="extype" name="scala.AnyVal">AnyVal</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.ClonePorts" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClonePorts=chisel3.internal.BaseModule.ClonePorts"></a><a id="ClonePorts:ClonePorts"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#ClonePorts=chisel3.internal.BaseModule.ClonePorts" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ClonePorts</span><span class="result alias"> = <span class="extype" name="chisel3.internal.BaseModule.ClonePorts">internal.BaseModule.ClonePorts</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">A record containing the results of CloneModuleAsRecord
+The apply method is retrieves the element with the supplied name.</p>
+    </li><li name="chisel3.experimental.Direction" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Direction=chisel3.ActualDirection"></a><a id="Direction:Direction"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#Direction=chisel3.ActualDirection" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Direction</span><span class="result alias"> = <a href="../ActualDirection.html" class="extype" name="chisel3.ActualDirection">ActualDirection</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.DoubleParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DoubleParamextendsParamwithProductwithSerializable"></a><a id="DoubleParam:DoubleParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/DoubleParam.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="DoubleParam.html"><span class="name">DoubleParam</span></a><span class="params">(<span name="value">value: <a href="https://www.scala-lang.org/api/2.12.11/scala/Double.html#scala.Double" class="extype" name="scala.Double">Double</a></span>)</span><span class="result"> extends <a href="Param.html" class="extype" name="chisel3.experimental.Param">Param</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.EnumFactory" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="EnumFactoryextendsAnyRef"></a><a id="EnumFactory:EnumFactory"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/EnumFactory.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="EnumFactory.html"><span class="name">EnumFactory</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.EnumType" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="EnumTypeextendsElement"></a><a id="EnumType:EnumType"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/EnumType.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="EnumType.html"><span class="name">EnumType</span></a><span class="result"> extends <a href="../Element.html" class="extype" name="chisel3.Element">Element</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.ExtModule" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ExtModuleextendsBaseBlackBox"></a><a id="ExtModule:ExtModule"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/ExtModule.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Defines a black box, which is a module that can be referenced from within Chisel, but is not defined in the emitted Verilog." href="ExtModule.html"><span class="name">ExtModule</span></a><span class="result"> extends <span class="extype" name="chisel3.internal.BaseBlackBox">BaseBlackBox</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Defines a black box, which is a module that can be referenced from within
+Chisel, but is not defined in the emitted Verilog.</p><div class="fullcomment"><div class="comment cmt"><p>Defines a black box, which is a module that can be referenced from within
+Chisel, but is not defined in the emitted Verilog. Useful for connecting
+to RTL modules defined outside Chisel.</p><p>A variant of BlackBox, this has a more consistent naming scheme in allowing
+multiple top-level IO and does not drop the top prefix.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p>
+Some design require a differential input clock to clock the all design.
+With the xilinx FPGA for example, a Verilog template named IBUFDS must be
+integrated to use differential input:</p><pre>IBUFDS #(.DIFF_TERM(<span class="lit">"TRUE"</span>),
+         .IOSTANDARD(<span class="lit">"DEFAULT"</span>)) ibufds (
+ .IB(ibufds_IB),
+ .I(ibufds_I),
+ .O(ibufds_O)
+);</pre><p>To instantiate it, a BlackBox can be used like following:</p><pre><span class="kw">import</span> chisel3._
+<span class="kw">import</span> chisel3.experimental._
+
+<span class="cmt">// Example with Xilinx differential buffer IBUFDS</span>
+<span class="kw">class</span> IBUFDS <span class="kw">extends</span> ExtModule(<span class="std">Map</span>(<span class="lit">"DIFF_TERM"</span> -&gt; <span class="lit">"TRUE"</span>, <span class="cmt">// Verilog parameters</span>
+                                   <span class="lit">"IOSTANDARD"</span> -&gt; <span class="lit">"DEFAULT"</span>
+                     )) {
+  <span class="kw">val</span> O = IO(Output(Clock()))
+  <span class="kw">val</span> I = IO(Input(Clock()))
+  <span class="kw">val</span> IB = IO(Input(Clock()))
+}</pre></li></ol>
+            </div><dt>Note</dt><dd><span class="cmt"><p>The parameters API is experimental and may change</p></span></dd></dl></div>
+    </li><li name="chisel3.experimental.FixedPoint" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FixedPointextendsBitswithNum[chisel3.experimental.FixedPoint]withHasBinaryPoint"></a><a id="FixedPoint:FixedPoint"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/FixedPoint.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point may be inferred." href="FixedPoint.html"><span class="name">FixedPoint</span></a><span class="result"> extends <a href="../Bits.html" class="extype" name="chisel3.Bits">Bits</a> with <a href="../Num.html" class="extype" name="chisel3.Num">Num</a>[<a href="FixedPoint.html" class="extype" name="chisel3.experimental.FixedPoint">FixedPoint</a>] with <a href="HasBinaryPoint.html" class="extype" name="chisel3.experimental.HasBinaryPoint">HasBinaryPoint</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point
+may be inferred.</p><div class="fullcomment"><div class="comment cmt"><p>A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point
+may be inferred.</p><p>IMPORTANT: The API provided here is experimental and may change in the future.
+</p></div></div>
+    </li><li name="chisel3.experimental.HasBinaryPoint" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="HasBinaryPointextendsAnyRef"></a><a id="HasBinaryPoint:HasBinaryPoint"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/HasBinaryPoint.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Chisel types that have binary points support retrieving literal values as Double or BigDecimal" href="HasBinaryPoint.html"><span class="name">HasBinaryPoint</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Chisel types that have binary points support retrieving
+literal values as <code>Double</code> or <code>BigDecimal</code>
+</p>
+    </li><li name="chisel3.experimental.IntParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IntParamextendsParamwithProductwithSerializable"></a><a id="IntParam:IntParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/IntParam.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="IntParam.html"><span class="name">IntParam</span></a><span class="params">(<span name="value">value: <span class="extype" name="scala.BigInt">BigInt</span></span>)</span><span class="result"> extends <a href="Param.html" class="extype" name="chisel3.experimental.Param">Param</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.Interval" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IntervalextendsBitswithNum[chisel3.experimental.Interval]withHasBinaryPoint"></a><a id="Interval:Interval"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/Interval.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="A sealed class representing a fixed point number that has a range, an additional parameter that can determine a minimum and maximum supported value." href="Interval.html"><span class="name">Interval</span></a><span class="result"> extends <a href="../Bits.html" class="extype" name="chisel3.Bits">Bits</a> with <a href="../Num.html" class="extype" name="chisel3.Num">Num</a>[<a href="Interval.html" class="extype" name="chisel3.experimental.Interval">Interval</a>] with <a href="HasBinaryPoint.html" class="extype" name="chisel3.experimental.HasBinaryPoint">HasBinaryPoint</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A sealed class representing a fixed point number that has a range, an additional
+parameter that can determine a minimum and maximum supported value.</p><div class="fullcomment"><div class="comment cmt"><p>A sealed class representing a fixed point number that has a range, an additional
+parameter that can determine a minimum and maximum supported value.
+The range can be used to reduce the required widths particularly in primitive
+operations with other Intervals, the canonical example being</p><pre><span class="kw">val</span> one = <span class="num">1.</span>I
+<span class="kw">val</span> six = <span class="std">Seq</span>.fill(<span class="num">6</span>)(one).reduce(_ + _)</pre><p>A UInt computed in this way would require a <span class="extype" name="Width">Width</span>
+binary point
+The width and binary point may be inferred.</p><p>IMPORTANT: The API provided here is experimental and may change in the future.
+</p></div></div>
+    </li><li name="chisel3.experimental.NoChiselNamePrefix" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="NoChiselNamePrefixextendsAnyRef"></a><a id="NoChiselNamePrefix:NoChiselNamePrefix"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/package$$NoChiselNamePrefix.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Do not name instances of this type in chiselName" href="package$$NoChiselNamePrefix.html"><span class="name">NoChiselNamePrefix</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Do not name instances of this type in <a href="package$$chiselName.html" class="extype" name="chisel3.experimental.chiselName">chiselName</a></p><div class="fullcomment"><div class="comment cmt"><p>Do not name instances of this type in <a href="package$$chiselName.html" class="extype" name="chisel3.experimental.chiselName">chiselName</a></p><p>By default, <code>chiselName</code> will include <code>val</code> names of instances of annotated classes as a
+prefix in final naming. Mixing in this trait to a <code>class</code>, <code>object</code>, or anonymous <code>class</code>
+instances will exclude the <code>val</code> name from <code>chiselName</code> naming.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">import</span> chisel3._
+<span class="kw">import</span> chisel3.experimental.{chiselName, NoChiselNamePrefix}
+
+<span class="cmt">// Note that this is not a Module</span>
+@chiselName
+<span class="kw">class</span> Counter(w: <span class="std">Int</span>) {
+  <span class="kw">val</span> myReg = RegInit(<span class="num">0.</span>U(w.W))
+  myReg := myReg + <span class="num">1.</span>U
+}
+
+@chiselName
+<span class="kw">class</span> MyModule <span class="kw">extends</span> Module {
+  <span class="kw">val</span> io = IO(<span class="kw">new</span> Bundle {
+    <span class="kw">val</span> out = Output(UInt(<span class="num">8.</span>W))
+  })
+  <span class="cmt">// Name of myReg will be "counter0_myReg"</span>
+  <span class="kw">val</span> counter0 = <span class="kw">new</span> Counter(<span class="num">8</span>)
+  <span class="cmt">// Name of myReg will be "myReg"</span>
+  <span class="kw">val</span> counter1 = <span class="kw">new</span> Counter(<span class="num">8</span>) <span class="kw">with</span> NoChiselNamePrefix
+  io.out := counter0.myReg + counter1.myReg
+}</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.experimental.Param" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ParamextendsAnyRef"></a><a id="Param:Param"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/Param.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Parameters for BlackBoxes" href="Param.html"><span class="name">Param</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Parameters for BlackBoxes</p>
+    </li><li name="chisel3.experimental.PrivateType" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PrivateTypeextendsAnyRef"></a><a id="PrivateType:PrivateType"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/PrivateType.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Use PrivateObject to force users to specify width and binaryPoint by name" href="PrivateType.html"><span class="name">PrivateType</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Use PrivateObject to force users to specify width and binaryPoint by name
+</p>
+    </li><li name="chisel3.experimental.RawParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RawParamextendsParamwithProductwithSerializable"></a><a id="RawParam:RawParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/RawParam.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="Unquoted String" href="RawParam.html"><span class="name">RawParam</span></a><span class="params">(<span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="Param.html" class="extype" name="chisel3.experimental.Param">Param</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Unquoted String</p>
+    </li><li name="chisel3.experimental.RunFirrtlTransform" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="RunFirrtlTransformextendsChiselAnnotation"></a><a id="RunFirrtlTransform:RunFirrtlTransform"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/RunFirrtlTransform.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Mixin for ChiselAnnotation that instantiates an associated FIRRTL Transform when this Annotation is present during a run of Driver.execute." href="RunFirrtlTransform.html"><span class="name">RunFirrtlTransform</span></a><span class="result"> extends <a href="ChiselAnnotation.html" class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Mixin for <a href="ChiselAnnotation.html" class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</a> that instantiates an associated FIRRTL Transform when this Annotation is present
+during a run of
+<a href="../Driver$.html#execute(args:Array[String],dut:()=&gt;chisel3.RawModule):chisel3.ChiselExecutionResult" class="extmbr" name="chisel3.Driver#execute">Driver.execute</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Mixin for <a href="ChiselAnnotation.html" class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</a> that instantiates an associated FIRRTL Transform when this Annotation is present
+during a run of
+<a href="../Driver$.html#execute(args:Array[String],dut:()=&gt;chisel3.RawModule):chisel3.ChiselExecutionResult" class="extmbr" name="chisel3.Driver#execute">Driver.execute</a>.
+Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
+FIRRTL.
+</p></div></div>
+    </li><li name="chisel3.experimental.StringParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StringParamextendsParamwithProductwithSerializable"></a><a id="StringParam:StringParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/StringParam.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="StringParam.html"><span class="name">StringParam</span></a><span class="params">(<span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="Param.html" class="extype" name="chisel3.experimental.Param">Param</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.chiselName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="chiselNameextendschiselName"></a><a id="chiselName:chiselName"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/package$$chiselName.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">macro </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Experimental macro for naming Chisel hardware values" href="package$$chiselName.html"><span class="name">chiselName</span></a><span class="result"> extends <span class="extype" name="chisel3.internal.naming.chiselName">internal.naming.chiselName</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Experimental macro for naming Chisel hardware values</p><div class="fullcomment"><div class="comment cmt"><p>Experimental macro for naming Chisel hardware values</p><p>By default, Chisel uses reflection for naming which only works for public fields of <code>Bundle</code>
+and <code>Module</code> classes. Applying this macro annotation to a <code>class</code> or <code>object</code> enables Chisel
+to name any hardware values within the annotated <code>class</code> or <code>object.
+</code></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@compileTimeOnly</span><span class="args">(<span>
+      
+      <span class="defval" name="&quot;macro annotation could not be expanded (the most common reason for that is that you need to enable the macro paradise plugin; another possibility is that you try to use macro annotation in the same compilation run that defines it)&quot;">...</span>
+    </span>)</span>
+              
+        </dd><div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">import</span> chisel3._
+<span class="kw">import</span> chisel3.experimental.chiselName
+
+@chiselName
+<span class="kw">class</span> MyModule <span class="kw">extends</span> Module {
+  <span class="kw">val</span> io = IO(<span class="kw">new</span> Bundle {
+    <span class="kw">val</span> in = Input(UInt(<span class="num">8.</span>W))
+    <span class="kw">val</span> out = Output(UInt(<span class="num">8.</span>W))
+  })
+  <span class="kw">def</span> createReg(): <span class="std">Unit</span> = {
+    <span class="cmt">// @chiselName allows Chisel to name this Reg</span>
+    <span class="kw">val</span> myReg = RegInit(io.in)
+    io.out := myReg
+  }
+  createReg()
+}</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.experimental.dump" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dumpextendsdump"></a><a id="dump:dump"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/package$$dump.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">macro </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$dump.html"><span class="name">dump</span></a><span class="result"> extends <span class="extype" name="chisel3.internal.naming.dump">internal.naming.dump</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@compileTimeOnly</span><span class="args">(<span>
+      
+      <span class="defval" name="&quot;macro annotation could not be expanded (the most common reason for that is that you need to enable the macro paradise plugin; another possibility is that you try to use macro annotation in the same compilation run that defines it)&quot;">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="chisel3.experimental.treedump" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="treedumpextendstreedump"></a><a id="treedump:treedump"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/package$$treedump.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">macro </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$treedump.html"><span class="name">treedump</span></a><span class="result"> extends <span class="extype" name="chisel3.internal.naming.treedump">internal.naming.treedump</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@compileTimeOnly</span><span class="args">(<span>
+      
+      <span class="defval" name="&quot;macro annotation could not be expanded (the most common reason for that is that you need to enable the macro paradise plugin; another possibility is that you try to use macro annotation in the same compilation run that defines it)&quot;">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="chisel3.experimental#Direction" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Direction:chisel3.ActualDirection.type"></a><a id="Direction:ActualDirection.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#Direction:chisel3.ActualDirection.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Direction</span><span class="result">: <a href="../ActualDirection$.html" class="extype" name="chisel3.ActualDirection">ActualDirection</a>.type</span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental#fromBigIntToIntParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromBigIntToIntParam(x:BigInt):chisel3.experimental.IntParam"></a><a id="fromBigIntToIntParam(BigInt):IntParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#fromBigIntToIntParam(x:BigInt):chisel3.experimental.IntParam" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromBigIntToIntParam</span><span class="params">(<span name="x">x: <span class="extype" name="scala.BigInt">BigInt</span></span>)</span><span class="result">: <a href="IntParam.html" class="extype" name="chisel3.experimental.IntParam">IntParam</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental#fromDoubleToDoubleParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromDoubleToDoubleParam(x:Double):chisel3.experimental.DoubleParam"></a><a id="fromDoubleToDoubleParam(Double):DoubleParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#fromDoubleToDoubleParam(x:Double):chisel3.experimental.DoubleParam" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromDoubleToDoubleParam</span><span class="params">(<span name="x">x: <a href="https://www.scala-lang.org/api/2.12.11/scala/Double.html#scala.Double" class="extype" name="scala.Double">Double</a></span>)</span><span class="result">: <a href="DoubleParam.html" class="extype" name="chisel3.experimental.DoubleParam">DoubleParam</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental#fromIntToIntParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromIntToIntParam(x:Int):chisel3.experimental.IntParam"></a><a id="fromIntToIntParam(Int):IntParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#fromIntToIntParam(x:Int):chisel3.experimental.IntParam" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromIntToIntParam</span><span class="params">(<span name="x">x: <a href="https://www.scala-lang.org/api/2.12.11/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="IntParam.html" class="extype" name="chisel3.experimental.IntParam">IntParam</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental#fromLongToIntParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromLongToIntParam(x:Long):chisel3.experimental.IntParam"></a><a id="fromLongToIntParam(Long):IntParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#fromLongToIntParam(x:Long):chisel3.experimental.IntParam" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromLongToIntParam</span><span class="params">(<span name="x">x: <a href="https://www.scala-lang.org/api/2.12.11/scala/Long.html#scala.Long" class="extype" name="scala.Long">Long</a></span>)</span><span class="result">: <a href="IntParam.html" class="extype" name="chisel3.experimental.IntParam">IntParam</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental#fromStringToStringParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromStringToStringParam(x:String):chisel3.experimental.StringParam"></a><a id="fromStringToStringParam(String):StringParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#fromStringToStringParam(x:String):chisel3.experimental.StringParam" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromStringToStringParam</span><span class="params">(<span name="x">x: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="StringParam.html" class="extype" name="chisel3.experimental.StringParam">StringParam</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental#requireIsChiselType" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="requireIsChiselType:chisel3.internal.requireIsChiselType.type"></a><a id="requireIsChiselType:internal.requireIsChiselType.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#requireIsChiselType:chisel3.internal.requireIsChiselType.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">requireIsChiselType</span><span class="result">: <span class="extype" name="chisel3.internal.requireIsChiselType">internal.requireIsChiselType</span>.type</span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental#requireIsHardware" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="requireIsHardware:chisel3.internal.requireIsHardware.type"></a><a id="requireIsHardware:internal.requireIsHardware.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#requireIsHardware:chisel3.internal.requireIsHardware.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">requireIsHardware</span><span class="result">: <span class="extype" name="chisel3.internal.requireIsHardware">internal.requireIsHardware</span>.type</span>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.Analog" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Analog"></a><a id="Analog:Analog"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/Analog$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Object that provides factory methods for Analog objects" href="Analog$.html"><span class="name">Analog</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Object that provides factory methods for <a href="Analog.html" class="extype" name="chisel3.experimental.Analog">Analog</a> objects
+</p><div class="fullcomment"><div class="comment cmt"><p>Object that provides factory methods for <a href="Analog.html" class="extype" name="chisel3.experimental.Analog">Analog</a> objects
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This API is experimental and subject to change</p></span></dd></dl></div>
+    </li><li name="chisel3.experimental.BundleLiterals" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BundleLiterals"></a><a id="BundleLiterals:BundleLiterals"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/package$$BundleLiterals$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$BundleLiterals$.html"><span class="name">BundleLiterals</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.CloneModuleAsRecord" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CloneModuleAsRecord"></a><a id="CloneModuleAsRecord:CloneModuleAsRecord"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/package$$CloneModuleAsRecord$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$CloneModuleAsRecord$.html"><span class="name">CloneModuleAsRecord</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.DataMirror" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DataMirror"></a><a id="DataMirror:DataMirror"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/DataMirror$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Experimental hardware construction reflection API" href="DataMirror$.html"><span class="name">DataMirror</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Experimental hardware construction reflection API
+</p>
+    </li><li name="chisel3.experimental.EnumAnnotations" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EnumAnnotations"></a><a id="EnumAnnotations:EnumAnnotations"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/EnumAnnotations$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="EnumAnnotations$.html"><span class="name">EnumAnnotations</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.FixedPoint" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FixedPoint"></a><a id="FixedPoint:FixedPoint"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/FixedPoint$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Factory and convenience methods for the FixedPoint class IMPORTANT: The API provided here is experimental and may change in the future." href="FixedPoint$.html"><span class="name">FixedPoint</span></a><span class="result"> extends <a href="../NumObject.html" class="extype" name="chisel3.NumObject">NumObject</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Factory and convenience methods for the FixedPoint class
+IMPORTANT: The API provided here is experimental and may change in the future.</p>
+    </li><li name="chisel3.experimental.IO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IO"></a><a id="IO:IO"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/IO$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="IO$.html"><span class="name">IO</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.Interval" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Interval"></a><a id="Interval:Interval"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/Interval$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Factory and convenience methods for the Interval class IMPORTANT: The API provided here is experimental and may change in the future." href="Interval$.html"><span class="name">Interval</span></a><span class="result"> extends <a href="../NumObject.html" class="extype" name="chisel3.NumObject">NumObject</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Factory and convenience methods for the Interval class
+IMPORTANT: The API provided here is experimental and may change in the future.</p>
+    </li><li name="chisel3.experimental.annotate" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="annotate"></a><a id="annotate:annotate"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/annotate$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="annotate$.html"><span class="name">annotate</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.attach" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="attach"></a><a id="attach:attach"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/attach$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="attach$.html"><span class="name">attach</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.experimental.doNotDedup" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="doNotDedup"></a><a id="doNotDedup:doNotDedup"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/doNotDedup$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Marks that a module to be ignored in Dedup Transform in Firrtl pass" href="doNotDedup$.html"><span class="name">doNotDedup</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Marks that a module to be ignored in Dedup Transform in Firrtl pass
+</p><div class="fullcomment"><div class="comment cmt"><p>Marks that a module to be ignored in Dedup Transform in Firrtl pass
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre> <span class="kw">def</span> fullAdder(a: UInt, b: UInt, myName: <span class="std">String</span>): UInt = {
+   <span class="kw">val</span> m = Module(<span class="kw">new</span> Module {
+     <span class="kw">val</span> io = IO(<span class="kw">new</span> Bundle {
+       <span class="kw">val</span> a = Input(UInt(<span class="num">32.</span>W))
+       <span class="kw">val</span> b = Input(UInt(<span class="num">32.</span>W))
+       <span class="kw">val</span> out = Output(UInt(<span class="num">32.</span>W))
+     })
+     <span class="kw">override</span> <span class="kw">def</span> desiredName = <span class="lit">"adder_"</span> + myNname
+     io.out := io.a + io.b
+   })
+   doNotDedup(m)
+   m.io.a := a
+   m.io.b := b
+   m.io.out
+ }
+
+<span class="kw">class</span> AdderTester <span class="kw">extends</span> Module
+ <span class="kw">with</span> ConstantPropagationTest {
+ <span class="kw">val</span> io = IO(<span class="kw">new</span> Bundle {
+   <span class="kw">val</span> a = Input(UInt(<span class="num">32.</span>W))
+   <span class="kw">val</span> b = Input(UInt(<span class="num">32.</span>W))
+   <span class="kw">val</span> out = Output(Vec(<span class="num">2</span>, UInt(<span class="num">32.</span>W)))
+ })
+
+ io.out(<span class="num">0</span>) := fullAdder(io.a, io.b, <span class="lit">"mod1"</span>)
+ io.out(<span class="num">1</span>) := fullAdder(io.a, io.b, <span class="lit">"mod2"</span>)
+}</pre></li></ol>
+            </div><dt>Note</dt><dd><span class="cmt"><p>Calling this on <a href="../Data.html" class="extype" name="chisel3.Data">Data</a> creates an annotation that Chisel emits to a separate annotations
+file. This file must be passed to FIRRTL independently of the <code>.fir</code> file. The execute methods
+in <a href="../Driver$.html" class="extype" name="chisel3.Driver">chisel3.Driver</a> will pass the annotations to FIRRTL automatically.</p></span></dd></dl></div>
+    </li>
+              </ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="chisel3.experimental#withClock" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withClock:chisel3.withClock.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#withClock:chisel3.withClock.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">withClock</span><span class="result">: <a href="../withClock$.html" class="extype" name="chisel3.withClock">chisel3.withClock</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.experimental#withClockAndReset" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withClockAndReset:chisel3.withClockAndReset.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#withClockAndReset:chisel3.withClockAndReset.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">withClockAndReset</span><span class="result">: <a href="../withClockAndReset$.html" class="extype" name="chisel3.withClockAndReset">chisel3.withClockAndReset</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.experimental#withReset" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withReset:chisel3.withReset.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html#withReset:chisel3.withReset.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">withReset</span><span class="result">: <a href="../withReset$.html" class="extype" name="chisel3.withReset">chisel3.withReset</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li></ol>
+            </div>
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.11/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>
