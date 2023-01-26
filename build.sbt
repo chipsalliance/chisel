@@ -4,7 +4,6 @@ enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT"
   // chiseltest intentionally excluded so that release automation does not try to set its version
   // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
   // when doing publishing and will not find a chiseltest release since chiseltest depends on
@@ -213,7 +212,6 @@ lazy val chisel = (project in file("."))
   .settings(warningSuppression: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
-    libraryDependencies += defaultVersions("treadle") % "test",
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
     // Forward doc command to unidoc
     Compile / doc := (ScalaUnidoc / doc).value,

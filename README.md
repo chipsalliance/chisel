@@ -330,7 +330,6 @@ While we recommend using the library dependency approach as described above, it 
 
 **Caveats**:
 
-* This only works for the "main" configuration; you cannot build the Chisel tests this way because `treadle` is only supported as a library dependency.
 * Do not `publishLocal` when building this way. The published artifact will be missing the FIRRTL dependency.
 
 This works by using [sbt-sriracha](http://eed3si9n.com/hot-source-dependencies-using-sbt-sriracha), an SBT plugin for toggling between source and library dependencies.
