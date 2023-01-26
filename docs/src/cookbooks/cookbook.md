@@ -471,11 +471,9 @@ won't get cloned:
 
 ```scala mdoc:crash
  class CustomBundleBroken(elts: (String, Data)*) extends Record {
- 	val elements = ListMap(elts.map {
- 		case (field, elt) =>
- 		field -> elt
- 	}: _*)
- 	def apply(elt: String): Data = elements(elt)
+   val elements = ListMap(elts: _*)
+
+   def apply(elt: String): Data = elements(elt)
  }
  
  class NewModule extends Module {
@@ -497,12 +495,13 @@ You can use `chiselTypeClone` to clone the elements as:
  import chisel3.experimental.requireIsChiselType
 
  class CustomBundleFixed(elts: (String, Data)*) extends Record {
- 	val elements = ListMap(elts.map {
- 		case (field, elt) =>
-		requireIsChiselType(elt)
-		field -> DataMirror.internal.chiselTypeClone(elt)
- 	}: _*)
- 	def apply(elt: String): Data = elements(elt)
+   val elements = ListMap(elts.map {
+     case (field, elt) =>
+       requireIsChiselType(elt)
+       field -> DataMirror.internal.chiselTypeClone(elt)
+   }: _*)
+
+   def apply(elt: String): Data = elements(elt)
  }
 ```
 
