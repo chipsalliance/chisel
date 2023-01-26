@@ -2,8 +2,6 @@
 
 package chisel3.util.circt
 
-import scala.util.hashing.MurmurHash3
-
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
 
@@ -27,7 +25,7 @@ private object SizeOfGlobalIDGen {
   * results of type inference.
   */
 private class SizeOfIntrinsic[T <: Data](gen: T) extends ExtModule {
-  val i = IO(Input(gen));
+  val i = IO(Input(gen))
   val size = IO(Output(UInt(32.W)))
   annotate(new ChiselAnnotation {
     override def toFirrtl =
@@ -48,8 +46,8 @@ object SizeOf {
     * }}}
     */
   def apply[T <: Data](gen: T): Data = {
-    val sizeOfInst = Module(new SizeOfIntrinsic(chiselTypeOf(gen)))
-    sizeOfInst.i := gen
-    sizeOfInst.size
+    val inst = Module(new SizeOfIntrinsic(chiselTypeOf(gen)))
+    inst.i := gen
+    inst.size
   }
 }
