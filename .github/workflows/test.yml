@@ -51,7 +51,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 
   doc:
-    name: Formatting and Documentation
+    name: Formatting
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -66,8 +66,6 @@ jobs:
         uses: ./.github/workflows/install-circt
       - name: Check Formatting
         run: sbt scalafmtCheckAll
-      - name: Documentation
-        run: sbt docs/mdoc unidoc
 
   integration:
     name: Integration Tests (w/ chiseltest)
@@ -185,6 +183,8 @@ jobs:
         uses: ./.github/workflows/install-circt
       - name: Build the microsite
         run: make -C website
+      - name: Print Debugging Info
+        run: echo "github.event_name is {github.event_name}"
       - name: Deploy Website to GitHub Pages (Test Branch)
         if: (github.event_name == 'push') && (github.branch == 'website-test')
         uses: JamesIves/github-pages-deploy-action@3.7.1
