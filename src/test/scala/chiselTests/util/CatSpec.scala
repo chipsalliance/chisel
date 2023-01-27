@@ -5,7 +5,7 @@ package chiselTests.util
 import chisel3._
 import chisel3.experimental.noPrefix
 import chisel3.util.Cat
-import chiselTests.ChiselFlatSpec
+import _root_.chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
 
 object CatSpec {
