@@ -21,14 +21,14 @@ private object PlusArgsValueGlobalIDGen {
 }
 
 /** Create a module which generates a verilog $plusargs$value.  This returns a
-  * single value as indicated by the format string.
+  * value as indicated by the format string and a flag for whether the value
+  * was found.
   */
 private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String) extends ExtModule(Map("FORMAT" -> str)) {
   val io = FlatIO(new Bundle {
-      val found= Output(UInt(1.W))
+    val found = Output(UInt(1.W))
     val result = Output(gen)
-  }
-  )
+  })
   annotate(new ChiselAnnotation {
     override def toFirrtl =
       Intrinsic(toTarget, "circt.plusargs.value")
@@ -38,20 +38,21 @@ private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String) extends Ext
 
 object PlusArgsValue {
 
-  /** Creates an intrinsic which returns whether the input is a verilog 'x'.
+  /** Creates an intrinsic which calls $test$plusargs.
     *
     * @example {{{
-    * b := isX(a)
+    * b := PlusArgsValue(UInt<32.W>, "FOO=%d")
+    * b.found
+    * b.value
     * }}}
     */
   def apply[T <: Data](gen: T, str: String) = {
     if (gen.isSynthesizable) {
-        val inst = Module(new PlusArgsValueIntrinsic(chiselTypeOf(gen), str))
-        inst.io
+      val inst = Module(new PlusArgsValueIntrinsic(chiselTypeOf(gen), str))
+      inst.io
     } else {
-        val inst = Module(new PlusArgsValueIntrinsic(gen, str))
-        inst.io
+      val inst = Module(new PlusArgsValueIntrinsic(gen, str))
+      inst.io
     }
   }
-
 }
