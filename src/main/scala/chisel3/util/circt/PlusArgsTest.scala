@@ -30,7 +30,7 @@ private class PlusArgsTestIntrinsic[T <: Data](gen: T, str: String) extends ExtM
     override def toFirrtl =
       Intrinsic(toTarget, "circt.plusargs.test")
   })
-  override val desiredName = "PlusArgsTest_" + PlusArgsValueGlobalIDGen.getID()
+  override val desiredName = "PlusArgsTest_" + PlusArgsTestGlobalIDGen.getID()
 }
 
 object PlusArgsTest {
