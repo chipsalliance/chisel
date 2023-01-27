@@ -351,7 +351,7 @@ private[chisel3] object Converter {
   }
 
   def convert(port: Port, topDir: SpecifiedDirection = SpecifiedDirection.Unspecified): fir.Port = {
-    val resolvedDir = SpecifiedDirection.fromParent(topDir, port.dir)
+    val resolvedDir = SpecifiedDirection.fromParent(topDir, firrtlUserDirOf(port.id))
     val dir = resolvedDir match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => fir.Output
       case SpecifiedDirection.Flip | SpecifiedDirection.Input         => fir.Input

@@ -5,7 +5,7 @@ package chiselTests
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import chisel3._
-import chisel3.experimental.OpaqueType
+import chisel3.experimental.{ExtModule, OpaqueType}
 
 import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
@@ -266,23 +266,62 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(flippedVecFlipped.head.b) == Direction.Output)
       assert(DataMirror.directionOf(flippedVecFlipped(index).a) == Direction.Input)
       assert(DataMirror.directionOf(flippedVecFlipped(index).b) == Direction.Output)
+
+      val flippedVecVecFlipped = IO(Flipped(Vec(2, Vec(1, Flipped(new MyBundle)))))
+      flippedVecVecFlipped <> DontCare
+      assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.a) == Direction.Input)
+      assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.b) == Direction.Output)
+      assert(DataMirror.directionOf(flippedVecVecFlipped(index).head.a) == Direction.Input)
+      assert(DataMirror.directionOf(flippedVecVecFlipped(index).head.b) == Direction.Output)
     }
 
-    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
-    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
 
-    // Check that emitted directions are correct.
-    Seq(emitted, firrtl).foreach { o =>
-      {
-        // Chisel Emitter formats spacing a little differently than the
-        // FIRRTL Emitter :-(
-        val s = o.replace("{flip a", "{ flip a")
-        assert(s.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("input flippedVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("output flippedVecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
-      }
+    assert(chirrtl.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("input flippedVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("output flippedVecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("output flippedVecVecFlipped : { flip a : UInt<1>, b : UInt<1>}[1][2]"))
+  }
+
+  property("Using Vec and Flipped together should calculate directions properly for an ExtModule") {
+    class MyBundle extends Bundle {
+      val a = Input(Bool())
+      val b = Output(Bool())
     }
+    class MyBlackBox extends ExtModule {
+      val regularVec = IO(Vec(2, new MyBundle))
+      assert(DataMirror.directionOf(regularVec.head.a) == Direction.Input)
+      assert(DataMirror.directionOf(regularVec.head.b) == Direction.Output)
+
+      val vecFlipped = IO(Vec(2, Flipped(new MyBundle)))
+      assert(DataMirror.directionOf(vecFlipped.head.a) == Direction.Output)
+      assert(DataMirror.directionOf(vecFlipped.head.b) == Direction.Input)
+
+      val flippedVec = IO(Flipped(Vec(2, new MyBundle)))
+      assert(DataMirror.directionOf(flippedVec.head.a) == Direction.Output)
+      assert(DataMirror.directionOf(flippedVec.head.b) == Direction.Input)
+
+      // Flipped(Vec(Flipped())) should be equal to non-flipped.
+      val flippedVecFlipped = IO(Flipped(Vec(2, Flipped(new MyBundle))))
+      assert(DataMirror.directionOf(flippedVecFlipped.head.a) == Direction.Input)
+      assert(DataMirror.directionOf(flippedVecFlipped.head.b) == Direction.Output)
+
+      val flippedVecVecFlipped = IO(Flipped(Vec(2, Vec(1, Flipped(new MyBundle)))))
+      assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.a) == Direction.Input)
+      assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.b) == Direction.Output)
+    }
+    class MyModule extends RawModule {
+      val child = Module(new MyBlackBox)
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+
+    assert(chirrtl.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("input flippedVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("output flippedVecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("output flippedVecVecFlipped : { flip a : UInt<1>, b : UInt<1>}[1][2]"))
   }
 
   property("Vec with Input/Output should calculate directions properly") {
