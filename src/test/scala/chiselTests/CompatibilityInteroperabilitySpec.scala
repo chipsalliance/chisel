@@ -19,7 +19,6 @@ object CompatibilityComponents {
   }
   class ChiselRecord extends Record {
     val elements = ListMap("a" -> UInt(width = 32), "b" -> UInt(width = 32).flip)
-    override def cloneType: this.type = (new ChiselRecord).asInstanceOf[this.type]
   }
 
   abstract class ChiselDriverModule(_io: => Record) extends Module {
@@ -54,7 +53,6 @@ object Chisel3Components {
 
   class Chisel3Record extends Record {
     val elements = ListMap("a" -> Output(UInt(32.W)), "b" -> Input(UInt(32.W)))
-    override def cloneType: this.type = (new Chisel3Record).asInstanceOf[this.type]
   }
 
   abstract class Chisel3DriverModule(_io: => Record) extends Module {
@@ -657,7 +655,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       import chisel3._
       import scala.collection.immutable.SeqMap
 
-      class MyRecord(gen: () => Data) extends Record with chisel3.experimental.AutoCloneType {
+      class MyRecord(gen: () => Data) extends Record {
         val elements = SeqMap("genDirectioned" -> Output(gen()), "genUndirectioned" -> gen())
       }
 

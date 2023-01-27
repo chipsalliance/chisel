@@ -10,7 +10,7 @@ import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
-import chisel3.experimental.{AutoCloneType, DataMirror, OpaqueType}
+import chisel3.experimental.{DataMirror, OpaqueType}
 import scala.collection.immutable.SeqMap
 
 object ConnectableSpec {
@@ -933,7 +933,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       val ready = Flipped(Bool())
       val data = if (hasData) Some(UInt(32.W)) else None
     }
-    class BundleMap(fields: SeqMap[String, () => Data]) extends Record with AutoCloneType {
+    class BundleMap(fields: SeqMap[String, () => Data]) extends Record {
       val elements = fields.map { case (name, gen) => name -> gen() }
     }
     object BundleMap {
@@ -1084,7 +1084,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       val ready = Flipped(Bool())
       val data = if (hasBigData) UInt(32.W) else UInt(8.W)
     }
-    class BundleMap(fields: SeqMap[String, () => Data]) extends Record with AutoCloneType {
+    class BundleMap(fields: SeqMap[String, () => Data]) extends Record {
       val elements = fields.map { case (name, gen) => name -> gen() }
     }
     object BundleMap {
@@ -1191,7 +1191,6 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       class OpaqueRecord(width: Int) extends Record with OpaqueType {
         private val underlying = UInt(width.W)
         val elements = SeqMap("" -> underlying)
-        override def cloneType: this.type = (new OpaqueRecord(width)).asInstanceOf[this.type]
       }
       class MyModule extends Module {
         val in = IO(Input(new OpaqueRecord(4)))
@@ -1210,7 +1209,6 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       class OpaqueRecord(width: Int) extends Record with OpaqueType {
         private val underlying = UInt(width.W)
         val elements = SeqMap("" -> underlying)
-        override def cloneType: this.type = (new OpaqueRecord(width)).asInstanceOf[this.type]
       }
       class MyModule extends Module {
         val inA = IO(Flipped(new Bundle {
@@ -1563,7 +1561,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       }
     }
     it("(8.i) Partial connect on records") {
-      class BoolRecord(fields: String*) extends Record with AutoCloneType {
+      class BoolRecord(fields: String*) extends Record {
         val elements = SeqMap(fields.map(f => f -> Bool()): _*)
       }
       class MyModule extends Module {
