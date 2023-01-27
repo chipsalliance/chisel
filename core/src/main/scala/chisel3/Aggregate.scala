@@ -946,7 +946,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
             "This likely happened because you tried nesting Data arguments inside of other data structures." +
             " Try wrapping the field(s) in Input(...), Output(...), or Flipped(...) if appropriate." +
             " As a last resort, you can call chisel3.reflect.DataMirror.internal.chiselTypeClone on any nested Data arguments." +
-            " See the cookbook entry 'How do I deal with the \"unable to clone\" error' for more details."
+            " See the cookbook entry 'How do I deal with the \"unable to clone\" error?' for more details."
         )
       }
     }
@@ -1269,7 +1269,7 @@ package experimental {
 
   /** Indicates that the compiler plugin should generate [[cloneType]] for this type
     *
-    *  All user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
+    * All user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
     */
   @deprecated("AutoCloneType is now always enabled, no need to mix it in", "Chisel 3.6")
   trait AutoCloneType { self: Record =>

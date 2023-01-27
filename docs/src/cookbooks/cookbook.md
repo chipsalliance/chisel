@@ -465,44 +465,44 @@ in `chisel3.reflect.DataMirror`. Here's an example with the Bundle whose fields
 won't get cloned:
 
 ```scala mdoc:invisible
- import chisel3._
- import scala.collection.immutable.ListMap
+import chisel3._
+import scala.collection.immutable.ListMap
 ```
 
 ```scala mdoc:crash
- class CustomBundleBroken(elts: (String, Data)*) extends Record {
-   val elements = ListMap(elts: _*)
+class CustomBundleBroken(elts: (String, Data)*) extends Record {
+  val elements = ListMap(elts: _*)
 
-   def apply(elt: String): Data = elements(elt)
- }
- 
- class NewModule extends Module {
-   val out = Output(UInt(8.W))
-   val recordType = new CustomBundleBroken("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
-   val record = Wire(recordType)
-   val uint = record.asUInt
-   val record2 = uint.asTypeOf(recordType)
-   out := record
- }
- getVerilogString(new NewModule)
+  def apply(elt: String): Data = elements(elt)
+}
+
+class NewModule extends Module {
+  val out = Output(UInt(8.W))
+  val recordType = new CustomBundleBroken("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
+  val record = Wire(recordType)
+  val uint = record.asUInt
+  val record2 = uint.asTypeOf(recordType)
+  out := record
+}
+getVerilogString(new NewModule)
 ```
 
 You can use `chiselTypeClone` to clone the elements as:
 
 
 ```scala mdoc
- import chisel3.reflect.DataMirror
- import chisel3.experimental.requireIsChiselType
+import chisel3.reflect.DataMirror
+import chisel3.experimental.requireIsChiselType
 
- class CustomBundleFixed(elts: (String, Data)*) extends Record {
-   val elements = ListMap(elts.map {
-     case (field, elt) =>
-       requireIsChiselType(elt)
-       field -> DataMirror.internal.chiselTypeClone(elt)
-   }: _*)
+class CustomBundleFixed(elts: (String, Data)*) extends Record {
+  val elements = ListMap(elts.map {
+    case (field, elt) =>
+      requireIsChiselType(elt)
+      field -> DataMirror.internal.chiselTypeClone(elt)
+  }: _*)
 
-   def apply(elt: String): Data = elements(elt)
- }
+  def apply(elt: String): Data = elements(elt)
+}
 ```
 
 ### How do I create a finite state machine (FSM)?
