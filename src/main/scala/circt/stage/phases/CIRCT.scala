@@ -5,8 +5,14 @@ package circt.stage.phases
 import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
 
-import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
-import firrtl.annotations.JsonProtocol
+import firrtl.{
+  AnnotationSeq,
+  EmittedVerilogCircuit,
+  EmittedVerilogCircuitAnnotation,
+  EmittedVerilogModule,
+  EmittedVerilogModuleAnnotation
+}
+import firrtl.annotations.{JsonProtocol, ReferenceTarget, Target}
 import firrtl.options.{
   CustomFileEmission,
   Dependency,
@@ -23,6 +29,7 @@ import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
 import _root_.logger.LogLevel
 
 import java.io.File
+import firrtl.annotations.LoadMemoryAnnotation
 
 private object Helpers {
   implicit class LogLevelHelpers(logLevel: LogLevel.Value) {
@@ -40,25 +47,27 @@ private object Helpers {
     *
     * @todo This is very janky and should be changed to something more stable.
     */
-  def extractAnnotationFile(string: String, filename: String): AnnotationSeq = {
+  def extractAnnotationFile(string: String, filename: String): (String, AnnotationSeq) = {
     var inAnno = false
-    val filtered: String = string.lines.filter {
-      case line if line.startsWith("// ----- 8< ----- FILE") && line.contains(filename) =>
+    val (irLines, annoLines) = string.lines.foldLeft((Seq.empty[String], Seq.empty[String])) {
+      case ((ir, anno), line) if line.startsWith("// ----- 8< ----- FILE") && line.contains(filename) =>
         inAnno = true
-        false
-      case line if line.startsWith("// ----- 8< ----- FILE") =>
+        (ir, anno)
+      case ((ir, anno), line) if line.startsWith("// ----- 8< ----- FILE") =>
         inAnno = false
-        false
-      case line if inAnno =>
-        true
-
-      case _ => false
-    }.toArray
-      .mkString("\n")
-    filtered.forall(_.isWhitespace) match {
-      case false => JsonProtocol.deserialize(filtered, false)
-      case true  => Seq.empty
+        (ir, anno)
+      case ((ir, anno), line) if inAnno  => (ir, line +: anno)
+      case ((ir, anno), line) if !inAnno => (line +: ir, anno)
     }
+    val filtered = annoLines.reverse.toArray
+      .mkString("\n")
+    (
+      irLines.reverse.mkString("\n"),
+      filtered.forall(_.isWhitespace) match {
+        case false => JsonProtocol.deserialize(filtered, false)
+        case true  => Seq.empty
+      }
+    )
   }
 }
 
@@ -137,6 +146,7 @@ class CIRCT extends Phase {
     var imcp = true
     var logLevel = _root_.logger.LogLevel.None
     var split = false
+    val loadMems = collection.mutable.ArrayBuffer[LoadMemoryAnnotation]()
 
     val annotationsx: AnnotationSeq = annotations.flatMap {
       case a: CustomFileEmission => {
@@ -173,6 +183,10 @@ class CIRCT extends Phase {
       /* The following can be dropped. */
       case _: firrtl.transforms.CombinationalPath   => Nil
       case _: _root_.logger.ClassLogLevelAnnotation => Nil
+      /* Specially handled */
+      case l: firrtl.annotations.LoadMemoryAnnotation =>
+        loadMems += l
+        Seq(chisel3.experimental.Trace.traceName(l.getTargets.head))
       /* Default case: leave the annotation around and let firtool warn about it. */
       case a => Seq(a)
     }
@@ -185,16 +199,16 @@ class CIRCT extends Phase {
       case Some(circuit) => circuit.serialize
     }
 
-    val chiselAnnotationFilename: Option[String] =
+    val chiselAnnotationFileName: Option[String] =
       stageOptions.annotationFileOut.map(stageOptions.getBuildFileName(_, Some(".anno.json")))
 
-    val circtAnnotationFilename = "circt.anno.json"
+    val circtAnnotationFileName = "circt.anno.json"
 
     val binary = "firtool"
 
     val cmd =
       Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-dedup") ++
-        Seq("-output-annotation-file", circtAnnotationFilename) ++
+        Seq("-output-annotation-file", circtAnnotationFileName) ++
         circtOptions.firtoolOptions ++
         logLevel.toCIRCTOptions ++
         /* The following options are on by default, so we disable them if they are false. */
@@ -210,7 +224,7 @@ class CIRCT extends Phase {
         /* The following options are off by default, so we enable them if they are true. */
         (blackbox).option("-blackbox-memory") ++
         /* Communicate the annotation file through a file. */
-        (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
+        (chiselAnnotationFileName.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
         /* Convert the target to a firtool-compatible option. */
         ((circtOptions.target, split) match {
           case (Some(CIRCTTarget.FIRRTL), false)        => Seq("-ir-fir")
@@ -253,9 +267,9 @@ class CIRCT extends Phase {
     val errors = stderrStream.toString
     if (exitValue != 0)
       throw new Exceptions.FirtoolNonZeroExitCode(binary, exitValue, result, errors)
-    if (split) {
+    val circtOutputAnnotations = if (split) {
       logger.info(result)
-      val file = new File(stageOptions.getBuildFileName(circtAnnotationFilename, Some(".anno.json")))
+      val file = new File(stageOptions.getBuildFileName(circtAnnotationFileName, Some(".anno.json")))
       file match {
         case file if !file.canRead() => Seq.empty
         case file => {
@@ -265,23 +279,73 @@ class CIRCT extends Phase {
       }
     } else { // if split it has already been written out to the file system stdout not necessary.
       val outputFileName: String = stageOptions.getBuildFileName(firrtlOptions.outputFileName.get)
-      val outputAnnotations = extractAnnotationFile(result, circtAnnotationFilename)
+      val (output, outputAnnotations) = extractAnnotationFile(result, circtAnnotationFileName)
       outputAnnotations ++ (circtOptions.target match {
         case Some(CIRCTTarget.FIRRTL) =>
-          Seq(EmittedMLIR(outputFileName, result, Some(".fir.mlir")))
+          Seq(EmittedMLIR(outputFileName, output, Some(".fir.mlir")))
         case Some(CIRCTTarget.HW) =>
-          Seq(EmittedMLIR(outputFileName, result, Some(".hw.mlir")))
+          Seq(EmittedMLIR(outputFileName, output, Some(".hw.mlir")))
         case Some(CIRCTTarget.Verilog) =>
-          Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".v")))
+          Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, output, ".v")))
         case Some(CIRCTTarget.SystemVerilog) =>
-          Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".sv")))
+          Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, output, ".sv")))
         case None =>
           throw new Exception(
             "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
           )
+
       })
     }
 
+    // -------- Handle loadMemoryFromFile annotation ----------
+    // TODO: develop a better first-class feature in MFC
+    val mapper = chisel3.experimental.Trace.finalTargetMap(circtOutputAnnotations)
+    var memoryCounter = -1
+    val allMemoryReferences = loadMems.flatMap { lm: LoadMemoryAnnotation =>
+      mapper(lm.getTargets.head).map {
+        case x: ReferenceTarget => lm.copy(target = x.encapsulatingModuleTarget.ref(x.ref).toNamed)
+      }
+    }.distinct // updated for deduplication
+    val boundMemoryFileAnnotationAndFileName = allMemoryReferences
+      .groupBy(_.target.module.name)
+      .toList
+      .sortBy(_._1) // Giving a deterministic iteration order for memoryCounter
+      .flatMap {
+        case (m: String, lms: Seq[LoadMemoryAnnotation]) =>
+          lms.sortBy(_.target.serialize) // Giving a deterministic iteration order for memoryCounter
+             .zipWithIndex.map {
+            case (lm: LoadMemoryAnnotation, i: Int) =>
+              memoryCounter += 1
+              val contents = chisel3.util.experimental.loadMemoryFromFile.buildVerilog(
+                lm.fileName,
+                lm.target,
+                memoryCounter,
+                lm.hexOrBinary.serialize
+              )
+
+              val name = s"${lm.target.serialize}"
+              val outputFileNameWithoutSuffix = stageOptions.getBuildFileName(name)
+              (
+                EmittedVerilogModuleAnnotation(new EmittedVerilogModule(outputFileNameWithoutSuffix, contents, ".v")),
+                outputFileNameWithoutSuffix
+              )
+          }
+      }
+      .toList
+
+    // Re-using the EmittedVerilogModuleAnnotation to write a ".f" file at the end of Stage/Phase serialization
+    val dotFFileName = (new File(stageOptions.getBuildFileName(chisel3.util.experimental.loadMemoryFromFile.defaultFileListName))).getAbsolutePath()
+    val dotFFileAnnotation = EmittedVerilogModuleAnnotation(
+      new EmittedVerilogModule(
+        dotFFileName,
+        boundMemoryFileAnnotationAndFileName.map { case (_, o) => new File(o + ".v").getAbsoluteFile() }.mkString("\n"),
+        ".f"
+      )
+    )
+    val boundMemoryFileAnnotations = boundMemoryFileAnnotationAndFileName.map(_._1)
+    // -------- Handled loadMemoryFromFile annotation ----------
+
+    dotFFileAnnotation +: (boundMemoryFileAnnotations ++ circtOutputAnnotations)
   }
 
 }

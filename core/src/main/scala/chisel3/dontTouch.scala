@@ -40,4 +40,9 @@ object dontTouch {
     annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
     data
   }
+
+  def apply[T <: Data](memory: MemBase[T])(implicit compileOptions: CompileOptions): MemBase[T] = {
+    annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(memory.toNamed) })
+    memory
+  }
 }

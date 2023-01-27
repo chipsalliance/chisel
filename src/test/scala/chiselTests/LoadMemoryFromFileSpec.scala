@@ -6,11 +6,13 @@ import java.io.File
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
-import chisel3.util.experimental.{loadMemoryFromFile, loadMemoryFromFileInline}
-import chisel3.util.log2Ceil
+import chisel3.util.experimental.loadMemoryFromFile
+import chisel3.util.{log2Ceil, Counter}
 import firrtl.annotations.MemoryLoadFileType
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import firrtl.util.BackendCompilationUtilities.loggingProcessLogger
+import scala.sys.process._
 
 class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
@@ -26,31 +28,6 @@ class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
   loadMemoryFromFile(memory1, "./mem1")
   loadMemoryFromFile(memory2, "./mem1")
   loadMemoryFromFile(memory3, "./mem1")
-
-  io.value1 := memory1(io.address)
-  io.value2 := memory2(io.address)
-  io.value3 := memory3(io.address)
-}
-
-class UsesThreeMemsInline(
-  memoryDepth: Int,
-  memoryType:  Data,
-  memoryFile:  String,
-  hexOrBinary: MemoryLoadFileType.FileType)
-    extends Module {
-  val io = IO(new Bundle {
-    val address = Input(UInt(memoryType.getWidth.W))
-    val value1 = Output(memoryType)
-    val value2 = Output(memoryType)
-    val value3 = Output(memoryType)
-  })
-
-  val memory1 = Mem(memoryDepth, memoryType)
-  val memory2 = Mem(memoryDepth, memoryType)
-  val memory3 = Mem(memoryDepth, memoryType)
-  loadMemoryFromFileInline(memory1, memoryFile, hexOrBinary)
-  loadMemoryFromFileInline(memory2, memoryFile, hexOrBinary)
-  loadMemoryFromFileInline(memory3, memoryFile, hexOrBinary)
 
   io.value1 := memory1(io.address)
   io.value2 := memory2(io.address)
@@ -144,12 +121,12 @@ class HasBinarySupport(memoryDepth: Int, memoryType: Data) extends Module {
 }
 
 /**
-  * The following tests are a bit incomplete and check that the output verilog is properly constructed
-  * For more complete working examples
-  * @see <a href="https://github.com/freechipsproject/chisel-testers">Chisel Testers</a> LoadMemoryFromFileSpec.scala
+  * The following tests only lint the output and check that the output verilog is properly constructed
+  *
+  * TODO: Write executable tests, and update after direct CIRCT support
   */
 class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
-  def fileExistsWithMem(file: File, mem: Option[String] = None): Unit = {
+  def fileExistsWithMem(file: File, mem: Option[String] = None, line: Option[String] = None): File = {
     info(s"$file exists")
     file.exists() should be(true)
     mem.foreach(m => {
@@ -157,134 +134,95 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
       val found = io.Source.fromFile(file).getLines.exists { _.contains(s"""readmemh("$m"""") }
       found should be(true)
     })
-    file.delete()
+    line.foreach(l => {
+      info(s"Line $l is referenced in $file")
+      val found = io.Source.fromFile(file).getLines.exists { _.contains(l) }
+      found should be(true)
+    })
+    file
+  }
+  def lints(file: File, filelist: File): Unit = {
+    require(file.exists(), s"${file.getName} should be emitted!")
+    require(filelist.exists(), s"${file.getName} should be emitted!")
+    val cmd = Seq("verilator", "--lint-only", "-sv", file.getAbsolutePath, "-f", filelist.getAbsolutePath())
+    assert(cmd.!(loggingProcessLogger) == 0, "Generated Verilog is not valid.")
+  }
+  def cleanup(files: File*): Unit = files.foreach { _.delete() }
+  def compile[T <: Module](testDirName: String, gen: () => T): Unit = {
+    (new circt.stage.ChiselStage).execute(
+      args = Array("--target", "systemverilog", "--target-dir", testDirName),
+      annotations = Seq(ChiselGeneratorAnnotation(gen))
+    )
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Users can specify a source file to load memory from" ignore {
+  "Users can specify a source file to load memory from" in {
     val testDirName = "test_run_dir/load_memory_spec"
-
-    (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() => new UsesMem(memoryDepth = 8, memoryType = UInt(16.W))),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
-    )
+    compile(testDirName, () => new UsesMem(memoryDepth = 8, memoryType = UInt(16.W)))
 
     val dir = new File(testDirName)
-    fileExistsWithMem(new File(dir, "UsesMem.UsesMem.memory.v"), Some("./mem1"))
-    fileExistsWithMem(new File(dir, "UsesMem.UsesMemLow.memory.v"), Some("./mem2"))
-    fileExistsWithMem(new File(dir, "firrtl_black_box_resource_files.f"))
+    val memV = fileExistsWithMem(new File(dir, "UsesMem.UsesMem.memory.v"), Some("./mem1"))
+    val memLowV = fileExistsWithMem(new File(dir, "UsesMem.UsesMemLow.memory.v"), Some("./mem2"))
+    val dut = new File(dir, "UsesMem.sv")
+    val fileList = new File(dir, "load_memories_from_file.f")
 
+    lints(dut, fileList)
+    cleanup(
+      memV,
+      memLowV,
+      fileList
+    ) // Remove generated files so they don't stick around if iterating, and giving false positives
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Calling a module that loads memories from a file more than once should work" ignore {
+  "Calling a module that loads memories from a file more than once should work" in {
     val testDirName = "test_run_dir/load_three_memory_spec"
-
-    (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() => new UsesThreeMems(memoryDepth = 8, memoryType = UInt(16.W))),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
-    )
+    compile(testDirName, () => new UsesThreeMems(memoryDepth = 8, memoryType = UInt(16.W)))
 
     val dir = new File(testDirName)
-    fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory1.v"), Some("./mem1"))
-    fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory2.v"), Some("./mem1"))
-    fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory3.v"), Some("./mem1"))
-    fileExistsWithMem(new File(dir, "firrtl_black_box_resource_files.f"))
+    val mem1 = fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory1.v"), Some("./mem1"))
+    val mem2 = fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory2.v"), Some("./mem1"))
+    val mem3 = fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory3.v"), Some("./mem1"))
+    val dut = new File(dir, "UsesThreeMems.sv")
+    val fileList = new File(dir, "load_memories_from_file.f")
 
+    lints(dut, fileList)
+    cleanup(
+      mem1,
+      mem2,
+      mem3,
+      fileList
+    ) // Remove generated files so they don't stick around if iterating, and giving false positives
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "In this example the memory has a complex memory type containing a bundle" ignore {
-    val complexTestDirName = "test_run_dir/complex_memory_load"
+  "In this example the memory has a complex memory type containing a bundle" in {
+    val testDirName = "test_run_dir/complex_memory_load"
+    compile(testDirName, () => new HasComplexMemory(memoryDepth = 8))
 
-    (new ChiselStage).execute(
-      args = Array("--target-dir", complexTestDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() => new HasComplexMemory(memoryDepth = 8)),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
+    val dir = new File(testDirName)
+    val mem = fileExistsWithMem(
+      new File(dir, s"HasComplexMemory.HasComplexMemory.memory.v"),
+      None,
+      Some(s"""$$readmemh("./mem", HasComplexMemory.memory_ext.Memory);""")
     )
+    val dut = new File(dir, "HasComplexMemory.sv")
+    val fileList = new File(dir, "load_memories_from_file.f")
 
-    val dir = new File(complexTestDirName)
-    val memoryElements = Seq("a", "b", "c")
-
-    memoryElements.foreach { element =>
-      val file = new File(dir, s"HasComplexMemory.HasComplexMemory.memory_$element.v")
-      file.exists() should be(true)
-      val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-      fileText should include(s"""$$readmemh("./mem_$element", HasComplexMemory.memory_$element);""")
-      file.delete()
-    }
-
+    lints(dut, fileList)
+    cleanup(mem, fileList) // Remove generated files so they don't stick around if iterating, and giving false positives
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Has binary format support" ignore {
+  "Has binary format support" in {
     val testDirName = "test_run_dir/binary_memory_load"
-
-    (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() => new HasBinarySupport(memoryDepth = 8, memoryType = UInt(16.W))),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
-    )
+    compile(testDirName, () => new HasBinarySupport(memoryDepth = 8, memoryType = UInt(16.W)))
 
     val dir = new File(testDirName)
-    val file = new File(dir, s"HasBinarySupport.HasBinarySupport.memory.v")
-    file.exists() should be(true)
-    val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include(s"""$$readmemb("./mem", HasBinarySupport.memory);""")
-    file.delete()
-  }
-
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Module with more than one hex memory inline should work" ignore {
-    val testDirName = "test_run_dir/load_three_memory_spec_inline"
-
-    (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() =>
-          new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "./testmem.h", MemoryLoadFileType.Hex)
-        ),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
+    val mem = fileExistsWithMem(
+      new File(dir, s"HasBinarySupport.HasBinarySupport.memory.v"),
+      None,
+      Some(s"""$$readmemb("./mem", HasBinarySupport.memory_ext.Memory);""")
     )
-    val dir = new File(testDirName)
-    val file = new File(dir, s"UsesThreeMemsInline.v")
-    file.exists() should be(true)
-    val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include(s"""$$readmemh("./testmem.h", memory1);""")
-    fileText should include(s"""$$readmemh("./testmem.h", memory2);""")
-    fileText should include(s"""$$readmemh("./testmem.h", memory3);""")
-  }
-
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Module with more than one bin memory inline should work" ignore {
-    val testDirName = "test_run_dir/load_three_memory_spec_inline"
-
-    (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() =>
-          new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "testmem.bin", MemoryLoadFileType.Binary)
-        ),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
-    )
-    val dir = new File(testDirName)
-    val file = new File(dir, s"UsesThreeMemsInline.v")
-    file.exists() should be(true)
-    val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include(s"""$$readmemb("testmem.bin", memory1);""")
-    fileText should include(s"""$$readmemb("testmem.bin", memory2);""")
-    fileText should include(s"""$$readmemb("testmem.bin", memory3);""")
+    val dut = new File(dir, "HasBinarySupport.sv")
+    val fileList = new File(dir, "load_memories_from_file.f")
+    lints(dut, fileList)
+    cleanup(mem, fileList)
   }
 }

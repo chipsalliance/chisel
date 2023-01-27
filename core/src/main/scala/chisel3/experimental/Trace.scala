@@ -43,6 +43,8 @@ object Trace {
     }
   }
 
+  def traceName(r: CompleteTarget): Annotation = TraceAnnotation(r, r)
+
   @deprecated("switch to using 'traceName' as 'traceNameV2' has the same behavior of 'traceName' now", "Chisel 3.6")
   def traceNameV2(x: RawModule) = traceName(x)
 
@@ -54,7 +56,7 @@ object Trace {
     * @param target target that should be renamed by [[firrtl.RenameMap]] in the firrtl transforms.
     * @param chiselTarget original annotated target in Chisel, which should not be changed or renamed in FIRRTL.
     */
-  private case class TraceAnnotation[T <: CompleteTarget](target: T, chiselTarget: T)
+  private[chisel3] case class TraceAnnotation[T <: CompleteTarget](target: T, chiselTarget: T)
       extends SingleTargetAnnotation[T] {
     def duplicate(n: T): Annotation = this.copy(target = n)
   }

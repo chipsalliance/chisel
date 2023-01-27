@@ -8,7 +8,17 @@ import firrtl.annotations._
 import firrtl.ir.{Module => _, _}
 import firrtl.transforms.BlackBoxInlineAnno
 import firrtl.Mappers._
-import firrtl.{AnnotationSeq, CircuitForm, CircuitState, EmitCircuitAnnotation, LowForm, Transform, VerilogEmitter}
+import firrtl.{
+  AnnotationSeq,
+  CircuitForm,
+  CircuitState,
+  EmitCircuitAnnotation,
+  EmittedVerilogModule,
+  EmittedVerilogModuleAnnotation,
+  LowForm,
+  Transform,
+  VerilogEmitter
+}
 
 import scala.collection.mutable
 
@@ -111,7 +121,31 @@ object loadMemoryFromFile {
     hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
   ): Unit = {
     annotate(ChiselLoadMemoryAnnotation(memory, fileName, hexOrBinary))
+    dontTouch(memory)
   }
+
+  def defaultFileListName = "load_memories_from_file.f"
+
+  // Filename, contents
+  def buildVerilog(loadMemoryFromFilePath: String, memoryTarget: ReferenceTarget, index: Int, tpe: String): String = {
+    val circuit = memoryTarget.circuit
+    val module = memoryTarget.encapsulatingModule
+    val memory = memoryTarget.ref
+    val readmem = "$readmem" + tpe
+
+    // TODO: once TraceName on memorys tracks to the instance name which replaces it, need to remove the "_ext" suffix
+    s"""module BindsTo_${index}_${module}();
+       |
+       |initial begin
+       |  $readmem("$loadMemoryFromFilePath", $module.${memory}_ext.Memory);
+       |end
+       |
+       |endmodule
+       |
+       |bind $module BindsTo_${index}_${module} BindsTo_${index}_${module}_Inst(.*);
+       |""".stripMargin
+  }
+
 }
 
 /** [[loadMemoryFromFileInline]] is an annotation generator that helps with loading a memory from a text file inlined in
@@ -181,6 +215,7 @@ object loadMemoryFromFileInline {
     * @param fileName the file used for initialization
     * @param hexOrBinary whether the file uses a hex or binary number representation
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply[T <: Data](
     memory:      MemBase[T],
     fileName:    String,
