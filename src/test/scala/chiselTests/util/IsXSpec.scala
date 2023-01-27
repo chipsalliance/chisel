@@ -1,9 +1,11 @@
 package chiselTests.util
 
+package chiselTests.util
+
 import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers.BasicTester
-import chisel3.util.circt.SizeOf
+import chisel3.util.circt.IsX
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -15,15 +17,15 @@ private class MyBundle extends Bundle {
   val b = SInt()
 }
 
-private class SizeOfTop extends Module {
+private class IsXTop extends Module {
   val io = IO(new Bundle {
     val w = Input(UInt(65.W))
     val x = Input(new MyBundle)
-    val outw = UInt(32.W)
-    val outx = UInt(32.W)
+    val outw = UInt(1.W)
+    val outx = UInt(1.W)
   })
-  io.outw := SizeOf(io.w)
-  io.outx := SizeOf(io.x)
+  io.outw := IsX(io.w)
+  io.outx := IsX(io.x)
 }
 
 /** A test for intrinsics.  Since chisel is producing intrinsics as tagged
@@ -32,7 +34,7 @@ private class SizeOfTop extends Module {
   * are implemented (for now) in a way which makes the output valid for all
   * firrtl compilers, hence we write a localized, not end-to-end test
   */
-class SizeOfSpec extends AnyFlatSpec with Matchers {
+class IsXSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitChirrtl(new SizeOfTop)
     val a1 = """extmodule SizeOf_0""".r

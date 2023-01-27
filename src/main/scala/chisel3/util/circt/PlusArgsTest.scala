@@ -1,5 +1,3 @@
-package chisel3.util.circt
-
 // SPDX-License-Identifier: Apache-2.0
 
 package chisel3.util.circt
@@ -25,7 +23,7 @@ private object PlusArgsTestGlobalIDGen {
 /** Create a module with a parameterized type which returns whether the input
   * is a verilog 'x'.
   */
-private class PlusArgsTestIntrinsic[T <: Data](gen: T) extends ExtModule {
+private class PlusArgsTestIntrinsic[T <: Data](gen: T, str: String) extends ExtModule(Map("FORMAT" -> str)) {
   val found = IO(Output(UInt(1.W)))
   annotate(new ChiselAnnotation {
     override def toFirrtl =
@@ -42,9 +40,8 @@ object PlusArgsTest {
     * b := isX(a)
     * }}}
     */
-  def apply[T <: Data](gen: T): Data = {
-    val inst = Module(new PlusArgsValueIntrinsic(chiselTypeOf(gen)))
-    inst.i := gen
-    inst.size
+  def apply[T <: Data](gen: T, str: String): Data = {
+    val inst = Module(new PlusArgsTestIntrinsic(chiselTypeOf(gen), str))
+    inst.found
   }
 }

@@ -1,5 +1,3 @@
-package chisel3.util.circt
-
 // SPDX-License-Identifier: Apache-2.0
 
 package chisel3.util.circt
@@ -25,9 +23,11 @@ private object PlusArgsValueGlobalIDGen {
 /** Create a module which generates a verilog $plusargs$value.  This returns a
   * single value as indicated by the format string.
   */
-private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String) extends ExtModule {
-  val found= IO(Output(UInt<1>))
-  val result = IO(Output(gen))
+private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String) extends ExtModule(Map("FORMAT" -> str)) {
+  val io = IO(new Bundle {
+    val found= Output(UInt(1.W))
+    val result = Output(gen)
+  })
   annotate(new ChiselAnnotation {
     override def toFirrtl =
       Intrinsic(toTarget, "circt.plusargs.value")
@@ -45,6 +45,6 @@ object PlusArgsValue {
     */
   def apply[T <: Data](gen: T, str: String): Data = {
     val inst = Module(new PlusArgsValueIntrinsic(chiselTypeOf(gen), str))
-    inst.found, inst.result
+    inst.io
   }
 }
