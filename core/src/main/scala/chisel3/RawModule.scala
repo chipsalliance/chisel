@@ -125,6 +125,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       id._onModuleClose
     }
 
+<<<<<<< HEAD
     closeUnboundIds(names)
 
     val firrtlPorts = getModulePorts.map { port: Data =>
@@ -145,6 +146,11 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       }
 
       Port(port, direction)
+=======
+    val firrtlPorts = getModulePortsAndLocators.map {
+      case (port, sourceInfo) =>
+        Port(port, port.specifiedDirection, sourceInfo)
+>>>>>>> b501b699 (Fix calculuation of firrtl directions for Vecs)
     }
     _firrtlPorts = Some(firrtlPorts)
 
