@@ -559,7 +559,6 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       val foo = Vec(1, Bool()).asInput
       val bar = Vec(1, Bool())
       val elements = ListMap("in" -> foo, "out" -> bar)
-      def cloneType = (new MyRecord).asInstanceOf[this.type]
     }
     class Foo extends Module {
       val io = IO(new MyRecord)
