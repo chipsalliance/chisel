@@ -3,14 +3,19 @@
 package chiselTests
 
 import chisel3._
+<<<<<<< HEAD
 import chisel3.stage.ChiselStage
+=======
+import chisel3.experimental.{AutoCloneType, OpaqueType}
+import chisel3.reflect.DataMirror
+>>>>>>> c4ec45b3 (Fix calculation of firrtl directions for OpaqueTypes)
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import chisel3.experimental.{DataMirror, OpaqueType}
 
 import scala.collection.immutable.SeqMap
 
-trait RecordSpecUtils {
+object RecordSpec {
   class MyBundle extends Bundle {
     val foo = UInt(32.W)
     val bar = UInt(32.W)
@@ -213,21 +218,23 @@ trait RecordSpecUtils {
       if (boxed) new Boxed(gen) else new Unboxed(gen)
     }
   }
-  class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] {
+  class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] with AutoCloneType {
     def boxed = true
-    lazy val elements = SeqMap("underlying" -> gen.cloneType)
+    lazy val elements = SeqMap("underlying" -> gen)
     def underlying = elements.head._2
     override def cloneType: this.type = (new Boxed(gen)).asInstanceOf[this.type]
   }
-  class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType {
+  class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType with AutoCloneType {
     def boxed = false
-    lazy val elements = SeqMap("" -> gen.cloneType)
+    lazy val elements = SeqMap("" -> gen)
     def underlying = elements.head._2
     override def cloneType: this.type = (new Unboxed(gen)).asInstanceOf[this.type]
   }
 }
 
-class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
+class RecordSpec extends ChiselFlatSpec with Utils {
+  import RecordSpec._
+
   behavior.of("Records")
 
   they should "bulk connect similarly to Bundles" in {

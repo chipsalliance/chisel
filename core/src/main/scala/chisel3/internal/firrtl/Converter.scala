@@ -307,6 +307,8 @@ private[chisel3] object Converter {
   private def firrtlUserDirOf(d: Data): SpecifiedDirection = d match {
     case d: Vec[_] =>
       SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
+    case d: Record if d._isOpaqueType =>
+      SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.elementsIterator.next))
     case d => d.specifiedDirection
   }
 
