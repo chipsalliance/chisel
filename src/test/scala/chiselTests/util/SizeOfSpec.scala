@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.io.Source
 
-private class MyBundle extends Bundle {
+private class SizeOfBundle extends Bundle {
   val a = UInt()
   val b = SInt()
 }
@@ -18,7 +18,7 @@ private class MyBundle extends Bundle {
 private class SizeOfTop extends Module {
   val io = IO(new Bundle {
     val w = Input(UInt(65.W))
-    val x = Input(new MyBundle)
+    val x = Input(new SizeOfBundle)
     val outw = UInt(32.W)
     val outx = UInt(32.W)
   })

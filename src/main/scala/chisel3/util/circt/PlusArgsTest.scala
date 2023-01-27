@@ -41,7 +41,12 @@ object PlusArgsTest {
     * }}}
     */
   def apply[T <: Data](gen: T, str: String): Data = {
+    if (gen.isSynthesizable) {
     val inst = Module(new PlusArgsTestIntrinsic(chiselTypeOf(gen), str))
     inst.found
+    } else {
+    val inst = Module(new PlusArgsTestIntrinsic(gen, str))
+    inst.found
+    }
   }
 }

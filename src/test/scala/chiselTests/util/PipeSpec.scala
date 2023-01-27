@@ -4,7 +4,7 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.util.{Pipe, Valid}
-import _root_.chiselTests.ChiselFlatSpec
+import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage.emitCHIRRTL
 
 class PipeSpec extends ChiselFlatSpec {

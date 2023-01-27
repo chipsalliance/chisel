@@ -30,7 +30,7 @@ private class IsXIntrinsic[T <: Data](gen: T) extends ExtModule {
     override def toFirrtl =
       Intrinsic(toTarget, "circt.isX")
   })
-  override val desiredName = "IsX_" + SizeOfGlobalIDGen.getID()
+  override val desiredName = "IsX_" + IsXGlobalIDGen.getID()
 }
 
 object IsX {

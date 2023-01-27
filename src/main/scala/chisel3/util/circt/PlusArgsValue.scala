@@ -3,7 +3,7 @@
 package chisel3.util.circt
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
+import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule, FlatIO}
 
 import circt.Intrinsic
 
@@ -24,10 +24,11 @@ private object PlusArgsValueGlobalIDGen {
   * single value as indicated by the format string.
   */
 private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String) extends ExtModule(Map("FORMAT" -> str)) {
-  val io = IO(new Bundle {
-    val found= Output(UInt(1.W))
+  val io = FlatIO(new Bundle {
+      val found= Output(UInt(1.W))
     val result = Output(gen)
-  })
+  }
+  )
   annotate(new ChiselAnnotation {
     override def toFirrtl =
       Intrinsic(toTarget, "circt.plusargs.value")
@@ -43,8 +44,14 @@ object PlusArgsValue {
     * b := isX(a)
     * }}}
     */
-  def apply[T <: Data](gen: T, str: String): Data = {
-    val inst = Module(new PlusArgsValueIntrinsic(chiselTypeOf(gen), str))
-    inst.io
+  def apply[T <: Data](gen: T, str: String) = {
+    if (gen.isSynthesizable) {
+        val inst = Module(new PlusArgsValueIntrinsic(chiselTypeOf(gen), str))
+        inst.io
+    } else {
+        val inst = Module(new PlusArgsValueIntrinsic(gen, str))
+        inst.io
+    }
   }
+
 }
