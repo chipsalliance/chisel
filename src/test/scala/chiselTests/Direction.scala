@@ -394,6 +394,52 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       }
     }
   }
+
+  property("Using OpaqueTypes and Flipped together should calculate directions properly") {
+    import RecordSpec.{Boxed, Unboxed}
+    class MyModule extends RawModule {
+      val unboxedFlipped = IO(new Unboxed(Flipped(UInt(8.W))))
+      assert(DataMirror.directionOf(unboxedFlipped.underlying) == Direction.Input)
+
+      val flippedUnboxedFlipped = IO(Flipped(new Unboxed(Flipped(UInt(8.W)))))
+      assert(DataMirror.directionOf(flippedUnboxedFlipped.underlying) == Direction.Output)
+
+      // It needs to be recursive
+      val unboxedUnboxedFlipped = IO(new Unboxed(new Unboxed(Flipped(UInt(8.W)))))
+      assert(DataMirror.directionOf(unboxedUnboxedFlipped.underlying.underlying) == Direction.Input)
+
+      val flippedUnboxedUnboxedFlipped = IO(Flipped(new Unboxed(new Unboxed(Flipped(UInt(8.W))))))
+      assert(DataMirror.directionOf(flippedUnboxedUnboxedFlipped.underlying.underlying) == Direction.Output)
+
+      // It should also work when nested inside of another Bundle
+      val boxedUnboxedFlipped = IO(new Boxed(new Unboxed(Flipped(UInt(8.W)))))
+      assert(DataMirror.directionOf(boxedUnboxedFlipped.underlying.underlying) == Direction.Input)
+
+      val flippedBoxedUnboxedFlipped = IO(Flipped(new Boxed(new Unboxed(Flipped(UInt(8.W))))))
+      assert(DataMirror.directionOf(flippedBoxedUnboxedFlipped.underlying.underlying) == Direction.Output)
+
+      // It also needs to be recursive when inside of another bundle
+      val boxedUnboxedUnboxedFlipped = IO(new Boxed(new Unboxed(new Unboxed(Flipped(UInt(8.W))))))
+      assert(DataMirror.directionOf(boxedUnboxedUnboxedFlipped.underlying.underlying.underlying) == Direction.Input)
+
+      val flippedBoxedUnboxedUnboxedFlipped = IO(Flipped(new Boxed(new Unboxed(new Unboxed(Flipped(UInt(8.W)))))))
+      assert(
+        DataMirror.directionOf(flippedBoxedUnboxedUnboxedFlipped.underlying.underlying.underlying) == Direction.Output
+      )
+
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    assert(chirrtl.contains("input unboxedFlipped : UInt<8>"))
+    assert(chirrtl.contains("output flippedUnboxedFlipped : UInt<8>"))
+    assert(chirrtl.contains("input unboxedUnboxedFlipped : UInt<8>"))
+    assert(chirrtl.contains("output flippedUnboxedUnboxedFlipped : UInt<8>"))
+    assert(chirrtl.contains("output boxedUnboxedFlipped : { flip underlying : UInt<8>}"))
+    assert(chirrtl.contains("input flippedBoxedUnboxedFlipped : { flip underlying : UInt<8>}"))
+    assert(chirrtl.contains("output boxedUnboxedUnboxedFlipped : { flip underlying : UInt<8>}"))
+    assert(chirrtl.contains("input flippedBoxedUnboxedUnboxedFlipped : { flip underlying : UInt<8>}"))
+  }
+
   property("Can now describe a Decoupled bundle using Flipped, not Input/Output in chisel3") {
     class Decoupled extends Bundle {
       val bits = UInt(3.W)
