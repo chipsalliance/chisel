@@ -130,7 +130,7 @@ object ShiftRegister {
     * @param in input to delay
     * @param n  number of cycles to delay
     * @param en enable the shift
-    * @param useDualSRAMPort dual port or single port SRAM based implementation
+    * @param useDualPortSram dual port or single port SRAM based implementation
     * @param name name of SyncReadMem object
     */
   def mem[T <: Data](in: T, n: Int, en: Bool, useDualSRAMPort: Boolean, name: Option[String]): T =
