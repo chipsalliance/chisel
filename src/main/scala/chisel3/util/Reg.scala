@@ -141,7 +141,7 @@ object ShiftRegister {
     in:              T,
     n:               Int,
     en:              Bool,
-    useDualSRAMPort: Boolean,
+    useDualPortSram: Boolean,
     name:            Option[String]
   )(
     implicit sourceInfo: SourceInfo,
