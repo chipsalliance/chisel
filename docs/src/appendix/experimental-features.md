@@ -232,7 +232,7 @@ Consider a Interval with a binary point of 3: aaa.bbb
 
 ## Loading Memories for simulation or FPGA initialization <a name="loading-memories"></a>
 
-Chisel supports multiple experimental methods for annotating memories to be loaded from a text file containing hex or binary data. When using verilog simulation it uses the `$readmemh` or `$readmemb` verilog extension. The treadle simulator can also load memories using the same annotation.
+Chisel supports multiple experimental methods for annotating memories to be loaded from a text file containing hex or binary data. When using verilog simulation it uses the `$readmemh` or `$readmemb` verilog extension.
 
 ### Inline initialization with external file
 
