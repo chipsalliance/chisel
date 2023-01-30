@@ -83,7 +83,7 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
     (chirrtl should not).include("Reg.scala")
   }
 
-  it should "have source locators when passed in, n, en, useDualSRAMPort, name" in {
+  it should "have source locators when passed in, n, en, useDualPortSram, name" in {
     class MyModule extends Module {
       val in = IO(Input(Bool()))
       val out = IO(Output(Bool()))

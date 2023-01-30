@@ -134,7 +134,7 @@ object ShiftRegister {
     * @param name name of SyncReadMem object
     */
   def mem[T <: Data](in: T, n: Int, en: Bool, useDualPortSram: Boolean, name: Option[String]): T =
-    macro SourceInfoTransform.inNEnUseDualSRAMpNameArg
+    macro SourceInfoTransform.inNEnUseDualPortSramNameArg
 
   /** @group SourceInfoTransformMacro */
   def do_mem[T <: Data](
@@ -146,13 +146,13 @@ object ShiftRegister {
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ): T = _apply_impl_mem(in, n, en, useDualSRAMPort, name)
+  ): T = _apply_impl_mem(in, n, en, useDualPortSram, name)
 
   private def _apply_impl_mem[T <: Data](
     in:              T,
     n:               Int,
     en:              Bool = true.B,
-    useDualSRAMPort: Boolean = false,
+    useDualPortSram: Boolean = false,
     name:            Option[String] = None
   )(
     implicit sourceInfo: SourceInfo,
@@ -163,7 +163,7 @@ object ShiftRegister {
     } else if (n == 1) {
       val out = RegEnable(in, en)
       out
-    } else if (useDualSRAMPort) {
+    } else if (useDualPortSram) {
       val mem = SyncReadMem(n, in.cloneType)
       if (name != None) {
         mem.suggestName(name.get)
