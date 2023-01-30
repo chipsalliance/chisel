@@ -5,10 +5,10 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.AffectsChiselPrefix
 import chisel3.internal.firrtl.UnknownWidth
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.util._
+import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.testers.BasicTester
-import org.scalatest.Assertion
+import circt.stage.ChiselStage
+import chisel3.util._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -576,7 +576,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "work with Printables" in {
-    ChiselStage.emitChirrtl(new LoadStoreExample) should include(
+    ChiselStage.emitCHIRRTL(new LoadStoreExample) should include(
       """printf(clock, UInt<1>("h1"), "%c%c%c%c%c", _chiselTestsOpcodePrintable[0], _chiselTestsOpcodePrintable[1], _chiselTestsOpcodePrintable[2], _chiselTestsOpcodePrintable[3], _chiselTestsOpcodePrintable[4])"""
     )
   }
