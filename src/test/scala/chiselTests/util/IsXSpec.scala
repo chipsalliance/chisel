@@ -21,11 +21,14 @@ private class IsXTop extends Module {
   val io = IO(new Bundle {
     val w = Input(UInt(65.W))
     val x = Input(new IsXBundle)
+    val y = Input(UInt(65.W))
     val outw = UInt(1.W)
     val outx = UInt(1.W)
+    val outy = UInt(1.W)
   })
   io.outw := IsX(io.w)
   io.outx := IsX(io.x)
+  io.outy := IsX(io.y)
 }
 
 /** A test for intrinsics.  Since chisel is producing intrinsics as tagged
@@ -37,14 +40,8 @@ private class IsXTop extends Module {
 class IsXSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitChirrtl(new IsXTop)
-    val a1 = """extmodule IsX_0""".r
+    val a1 = """(?s)extmodule IsX_(\d+).*defname = IsX_\1.*extmodule IsX_(\d+).*defname = IsX_\2.*extmodule IsX_(\d+).*defname = IsX_\3""".r
     (fir should include).regex(a1)
-    val b1 = """defname = IsX_0""".r
-    (fir should include).regex(b1)
-    val a2 = """extmodule IsX_1""".r
-    (fir should include).regex(a2)
-    val b2 = """defname = IsX_1""".r
-    (fir should include).regex(b2)
 
     // The second elaboration uses a unique name since the Builder is reused (?)
     val c = """Intrinsic\(~IsXTop\|IsX.*,circt.isX\)"""

@@ -4,21 +4,9 @@ package chisel3.util.circt
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
+import chisel3.internal.Builder
 
 import circt.Intrinsic
-
-// We have to unique designedName per type, be we can't due to name conflicts
-// on bundles.  Thus we use a globally unique id.
-private object IsXGlobalIDGen {
-  private var id: Int = 0
-  def getID() = {
-    this.synchronized {
-      val oldID = id
-      id = id + 1
-      oldID
-    }
-  }
-}
 
 /** Create a module with a parameterized type which returns whether the input
   * is a verilog 'x'.
@@ -30,7 +18,7 @@ private class IsXIntrinsic[T <: Data](gen: T) extends ExtModule {
     override def toFirrtl =
       Intrinsic(toTarget, "circt.isX")
   })
-  override val desiredName = "IsX_" + IsXGlobalIDGen.getID()
+  override val desiredName = "IsX_" + Builder.idGen.next
 }
 
 object IsX {
