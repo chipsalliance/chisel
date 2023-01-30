@@ -223,8 +223,8 @@ jobs:
       - name: Download built website
         uses: actions/download-artifact@v2
         with:
-	  name: website
-	  path: website.tar.gz
+          name: website
+          path: website.tar.gz
       - name: Untar built website
         run: tar zxf website.tar.gz
       - name: Debug Tree Print 3
