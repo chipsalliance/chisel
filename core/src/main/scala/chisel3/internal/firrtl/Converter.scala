@@ -307,6 +307,8 @@ private[chisel3] object Converter {
   private def firrtlUserDirOf(d: Data): SpecifiedDirection = d match {
     case d: Vec[_] =>
       SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
+    case d: Record if d._isOpaqueType =>
+      SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.elementsIterator.next))
     case d => d.specifiedDirection
   }
 
@@ -351,7 +353,7 @@ private[chisel3] object Converter {
   }
 
   def convert(port: Port, topDir: SpecifiedDirection = SpecifiedDirection.Unspecified): fir.Port = {
-    val resolvedDir = SpecifiedDirection.fromParent(topDir, port.dir)
+    val resolvedDir = SpecifiedDirection.fromParent(topDir, firrtlUserDirOf(port.id))
     val dir = resolvedDir match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => fir.Output
       case SpecifiedDirection.Flip | SpecifiedDirection.Input         => fir.Input
