@@ -1,6 +1,6 @@
 <!DOCTYPE html><html><head><title>Chisel/FIRRTL: Connectable Operators</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="the Chisel/FIRRTL Developers" /><meta name="description" content="Chisel/FIRRTL
 Hardware Compiler Framework" /><meta name="og:image" content="/chisel3/img/poster.png" /><meta name="image" property="og:image" content="/chisel3/img/poster.png" /><meta name="og:title" content="Chisel/FIRRTL: Connectable Operators" /><meta name="title" property="og:title" content="Chisel/FIRRTL: Connectable Operators" /><meta name="og:site_name" content="Chisel/FIRRTL" /><meta name="og:url" content="" /><meta name="og:type" content="website" /><meta name="og:description" content="Chisel/FIRRTL
-Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/chisel3/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Connectable Operators" /><meta name="twitter:image" content="http://chipsalliance.github.io//chisel3/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
+Hardware Compiler Framework" /><link rel="icon" type="image/png" href="/chisel3/img/favicon.png" /><meta name="twitter:title" content="Chisel/FIRRTL: Connectable Operators" /><meta name="twitter:image" content="https://chipsalliance.github.io//chisel3/img/poster.png" /><meta name="twitter:description" content="Chisel/FIRRTL
 Hardware Compiler Framework" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@chisel_lang" /><link rel="icon" type="image/png" sizes="16x16" href="/chisel3/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/chisel3/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/chisel3/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/chisel3/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/chisel3/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/chisel3/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/chisel3/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/chisel3/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/chisel3/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/chisel3/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/chisel3/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/chisel3/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/chisel3/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/chisel3/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/chisel3/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/chisel3/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/chisel3/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/chisel3/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/chisel3/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/chisel3/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/chisel3/highlight/styles/vs.css" /><link rel="stylesheet" href="/chisel3/css/pattern-style.css" /><script async="async">
 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -517,11 +517,10 @@ To accomplish this, use the other operators to initialize all Record members, th
 </blockquote>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.collection.immutable.SeqMap</span>
-<span class="k">import</span> <span class="nn">chisel3.experimental.AutoCloneType</span>
 
 <span class="k">class</span> <span class="nc">Example9</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="nv">abType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="k">with</span> <span class="nc">AutoCloneType</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"a"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">(),</span> <span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span> <span class="o">}</span>
-  <span class="k">val</span> <span class="nv">bcType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="k">with</span> <span class="nc">AutoCloneType</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()),</span> <span class="s">"c"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">())</span> <span class="o">}</span>
+  <span class="k">val</span> <span class="nv">abType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"a"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">(),</span> <span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span> <span class="o">}</span>
+  <span class="k">val</span> <span class="nv">bcType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()),</span> <span class="s">"c"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">())</span> <span class="o">}</span>
 
   <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="n">abType</span><span class="o">))</span>
   <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="n">bcType</span><span class="o">)</span>
@@ -536,12 +535,12 @@ To accomplish this, use the other operators to initialize all Record members, th
 <p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">p.b</code> is driven from <code class="language-plaintext highlighter-rouge">c.b</code>:</p>
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example9</span><span class="p">(</span>
-  <span class="kt">output</span>  <span class="n">p_b</span><span class="p">,</span> <span class="c1">// @[connectable.md 223:13]</span>
-  <span class="kt">input</span>   <span class="n">p_a</span><span class="p">,</span> <span class="c1">// @[connectable.md 223:13]</span>
-  <span class="kt">output</span>  <span class="n">c_c</span><span class="p">,</span> <span class="c1">// @[connectable.md 224:13]</span>
-  <span class="kt">input</span>   <span class="n">c_b</span> <span class="c1">// @[connectable.md 224:13]</span>
+  <span class="kt">output</span>  <span class="n">p_b</span><span class="p">,</span> <span class="c1">// @[connectable.md 220:13]</span>
+  <span class="kt">input</span>   <span class="n">p_a</span><span class="p">,</span> <span class="c1">// @[connectable.md 220:13]</span>
+  <span class="kt">output</span>  <span class="n">c_c</span><span class="p">,</span> <span class="c1">// @[connectable.md 221:13]</span>
+  <span class="kt">input</span>   <span class="n">c_b</span> <span class="c1">// @[connectable.md 221:13]</span>
 <span class="p">);</span>
-  <span class="k">assign</span> <span class="n">p_b</span> <span class="o">=</span> <span class="n">c_b</span><span class="p">;</span> <span class="c1">// @[connectable.md 229:27]</span>
+  <span class="k">assign</span> <span class="n">p_b</span> <span class="o">=</span> <span class="n">c_b</span><span class="p">;</span> <span class="c1">// @[connectable.md 226:27]</span>
   <span class="k">assign</span> <span class="n">c_c</span> <span class="o">=</span> <span class="mh">1'h0</span><span class="p">;</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
@@ -552,10 +551,10 @@ To accomplish this, use the other operators to initialize all Record members, th
 To accomplish this, use the other operators to initialize all Record members, then use <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code> with <code class="language-plaintext highlighter-rouge">waiveAll</code> to connect only the matching members.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.collection.immutable.SeqMap</span>
-<span class="k">import</span> <span class="nn">chisel3.experimental.AutoCloneType</span>
+
 <span class="k">class</span> <span class="nc">Example10</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="nv">abType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="k">with</span> <span class="nc">AutoCloneType</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"a"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">(),</span> <span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span> <span class="o">}</span>
-  <span class="k">val</span> <span class="nv">bcType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="k">with</span> <span class="nc">AutoCloneType</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()),</span> <span class="s">"c"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">())</span> <span class="o">}</span>
+  <span class="k">val</span> <span class="nv">abType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"a"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">(),</span> <span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()))</span> <span class="o">}</span>
+  <span class="k">val</span> <span class="nv">bcType</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Record</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">elements</span> <span class="k">=</span> <span class="nc">SeqMap</span><span class="o">(</span><span class="s">"b"</span> <span class="o">-&gt;</span> <span class="nc">Flipped</span><span class="o">(</span><span class="nc">Bool</span><span class="o">()),</span> <span class="s">"c"</span> <span class="o">-&gt;</span> <span class="nc">Bool</span><span class="o">())</span> <span class="o">}</span>
 
   <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="n">abType</span><span class="o">)</span>
   <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="n">bcType</span><span class="o">)</span>
@@ -574,10 +573,10 @@ To accomplish this, use the other operators to initialize all Record members, th
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example10</span><span class="p">(</span>
 <span class="p">);</span>
-  <span class="kt">wire</span>  <span class="n">c_b</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 253:15 259:5]</span>
-  <span class="kt">wire</span>  <span class="n">p_b</span> <span class="o">=</span> <span class="n">c_b</span><span class="p">;</span> <span class="c1">// @[connectable.md 252:15 261:28]</span>
-  <span class="kt">wire</span>  <span class="n">p_a</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 252:15 258:5]</span>
-  <span class="kt">wire</span>  <span class="n">c_c</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 253:15 259:5]</span>
+  <span class="kt">wire</span>  <span class="n">c_b</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 247:15 253:5]</span>
+  <span class="kt">wire</span>  <span class="n">p_b</span> <span class="o">=</span> <span class="n">c_b</span><span class="p">;</span> <span class="c1">// @[connectable.md 246:15 255:28]</span>
+  <span class="kt">wire</span>  <span class="n">p_a</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 246:15 252:5]</span>
+  <span class="kt">wire</span>  <span class="n">c_c</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span> <span class="c1">// @[connectable.md 247:15 253:5]</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
 
@@ -600,14 +599,14 @@ To accomplish this, use the other operators to initialize all Record members, th
 <p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> are connected, and <code class="language-plaintext highlighter-rouge">bits</code> is ignored:</p>
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example6</span><span class="p">(</span>
-  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 282:15]</span>
-  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 282:15]</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 282:15]</span>
-  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 283:15]</span>
-  <span class="kt">input</span>         <span class="n">out_ready</span> <span class="c1">// @[connectable.md 283:15]</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 276:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 276:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 276:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 277:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span> <span class="c1">// @[connectable.md 277:15]</span>
 <span class="p">);</span>
-  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 284:7]</span>
-  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 284:7]</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 278:7]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 278:7]</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
 
@@ -637,8 +636,8 @@ This is unsafe because this connection will never error on any Chisel types.</p>
 <p>This generates the following Verilog, where nothing is connected:</p>
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example11</span><span class="p">(</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_a</span><span class="p">,</span> <span class="c1">// @[connectable.md 308:15]</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_b</span> <span class="c1">// @[connectable.md 309:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_a</span><span class="p">,</span> <span class="c1">// @[connectable.md 302:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_b</span> <span class="c1">// @[connectable.md 303:15]</span>
 <span class="p">);</span>
   <span class="k">assign</span> <span class="n">out_b</span> <span class="o">=</span> <span class="mh">32'h0</span><span class="p">;</span>
 <span class="k">endmodule</span>
@@ -652,7 +651,6 @@ Connectable operators disallow this implicit truncation behavior and require the
 <p>If implicit truncation behavior is desired, then <code class="language-plaintext highlighter-rouge">Connectable</code> provides a <code class="language-plaintext highlighter-rouge">squeeze</code> mechanism which will allow the connection to continue and implicit trunction to continue.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.collection.immutable.SeqMap</span>
-<span class="k">import</span> <span class="nn">chisel3.experimental.AutoCloneType</span>
 
 <span class="k">class</span> <span class="nc">Example14</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span>
@@ -665,10 +663,10 @@ Connectable operators disallow this implicit truncation behavior and require the
 <p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">p</code> is implicitly truncated prior to driving <code class="language-plaintext highlighter-rouge">c</code>:</p>
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example14</span><span class="p">(</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">p</span><span class="p">,</span> <span class="c1">// @[connectable.md 333:13]</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">c</span> <span class="c1">// @[connectable.md 334:13]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">p</span><span class="p">,</span> <span class="c1">// @[connectable.md 324:13]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">c</span> <span class="c1">// @[connectable.md 325:13]</span>
 <span class="p">);</span>
-  <span class="k">assign</span> <span class="n">c</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">];</span> <span class="c1">// @[connectable.md 336:5]</span>
+  <span class="k">assign</span> <span class="n">c</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">];</span> <span class="c1">// @[connectable.md 327:5]</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
 
@@ -727,15 +725,15 @@ Because it changes the Chisel type to omit both <code class="language-plaintext 
 <p>Note that the <code class="language-plaintext highlighter-rouge">bits</code> fields are unconnected.</p>
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example12</span><span class="p">(</span>
-  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 358:15]</span>
-  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 358:15]</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 358:15]</span>
-  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 359:15]</span>
-  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 359:15]</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span> <span class="c1">// @[connectable.md 359:15]</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 349:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 349:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 349:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 350:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 350:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span> <span class="c1">// @[connectable.md 350:15]</span>
 <span class="p">);</span>
-  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 363:41]</span>
-  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 363:41]</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 354:41]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 354:41]</span>
   <span class="k">assign</span> <span class="n">out_bits</span> <span class="o">=</span> <span class="mh">32'h0</span><span class="p">;</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
@@ -759,16 +757,16 @@ The <code class="language-plaintext highlighter-rouge">waive(_.bits)</code> does
 <p>Note that the <code class="language-plaintext highlighter-rouge">bits</code> fields ARE connected, even though they are waived, as <code class="language-plaintext highlighter-rouge">waive</code> just changes whether an error should be thrown if they are missing, NOT to not connect them if they are structurally equivalent.</p>
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example13</span><span class="p">(</span>
-  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 380:15]</span>
-  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 380:15]</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 380:15]</span>
-  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 381:15]</span>
-  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 381:15]</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span> <span class="c1">// @[connectable.md 381:15]</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 371:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 371:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 371:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 372:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 372:15]</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span> <span class="c1">// @[connectable.md 372:15]</span>
 <span class="p">);</span>
-  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 385:37]</span>
-  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 385:37]</span>
-  <span class="k">assign</span> <span class="n">out_bits</span> <span class="o">=</span> <span class="n">in_bits</span><span class="p">;</span> <span class="c1">// @[connectable.md 385:37]</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 376:37]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 376:37]</span>
+  <span class="k">assign</span> <span class="n">out_bits</span> <span class="o">=</span> <span class="n">in_bits</span><span class="p">;</span> <span class="c1">// @[connectable.md 376:37]</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
 
@@ -797,14 +795,14 @@ The <code class="language-plaintext highlighter-rouge">waive(_.bits)</code> does
 <p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> are connected, and <code class="language-plaintext highlighter-rouge">bits</code> is ignored:</p>
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example5</span><span class="p">(</span>
-  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 410:15]</span>
-  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 410:15]</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 410:15]</span>
-  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 411:15]</span>
-  <span class="kt">input</span>         <span class="n">out_ready</span> <span class="c1">// @[connectable.md 411:15]</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 401:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 401:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 401:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 402:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span> <span class="c1">// @[connectable.md 402:15]</span>
 <span class="p">);</span>
-  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 412:7]</span>
-  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 412:7]</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 403:7]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 403:7]</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
 
@@ -834,15 +832,15 @@ The <code class="language-plaintext highlighter-rouge">waive(_.bits)</code> does
 <p>This generates the following Verilog, where <code class="language-plaintext highlighter-rouge">ready</code> and <code class="language-plaintext highlighter-rouge">valid</code> are connected, and <code class="language-plaintext highlighter-rouge">bits</code> and <code class="language-plaintext highlighter-rouge">echo</code> are ignored:</p>
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Example7</span><span class="p">(</span>
-  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 436:15]</span>
-  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 436:15]</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 436:15]</span>
-  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 437:15]</span>
-  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 437:15]</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_echo</span> <span class="c1">// @[connectable.md 437:15]</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 427:15]</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 427:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span> <span class="c1">// @[connectable.md 427:15]</span>
+  <span class="kt">output</span>        <span class="n">out_valid</span><span class="p">,</span> <span class="c1">// @[connectable.md 428:15]</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span> <span class="c1">// @[connectable.md 428:15]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_echo</span> <span class="c1">// @[connectable.md 428:15]</span>
 <span class="p">);</span>
-  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 438:37]</span>
-  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 438:37]</span>
+  <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span> <span class="c1">// @[connectable.md 429:37]</span>
+  <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span> <span class="c1">// @[connectable.md 429:37]</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/chisel3/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/chisel3/lunr/lunr.js"></script><script>
