@@ -2,7 +2,6 @@
 
 This directory provides the meta-website for the [Chisel](https://github.com/freechipsproject/chisel3) project.
 
-
 # Contributing
 
 We accept modifications to the website via Pull Requests.
