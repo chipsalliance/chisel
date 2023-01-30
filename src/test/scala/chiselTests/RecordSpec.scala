@@ -3,12 +3,8 @@
 package chiselTests
 
 import chisel3._
-<<<<<<< HEAD
 import chisel3.stage.ChiselStage
-=======
 import chisel3.experimental.{AutoCloneType, OpaqueType}
-import chisel3.reflect.DataMirror
->>>>>>> c4ec45b3 (Fix calculation of firrtl directions for OpaqueTypes)
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import chisel3.experimental.{DataMirror, OpaqueType}
@@ -222,13 +218,11 @@ object RecordSpec {
     def boxed = true
     lazy val elements = SeqMap("underlying" -> gen)
     def underlying = elements.head._2
-    override def cloneType: this.type = (new Boxed(gen)).asInstanceOf[this.type]
   }
   class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType with AutoCloneType {
     def boxed = false
     lazy val elements = SeqMap("" -> gen)
     def underlying = elements.head._2
-    override def cloneType: this.type = (new Unboxed(gen)).asInstanceOf[this.type]
   }
 }
 

@@ -4,13 +4,9 @@ package chiselTests
 
 import org.scalatest._
 import chisel3._
-<<<<<<< HEAD
-import chisel3.experimental.OpaqueType
+import chisel3.experimental.{ExtModule, OpaqueType}
 import chisel3.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
-=======
-import chisel3.experimental.{ExtModule, OpaqueType}
->>>>>>> b501b699 (Fix calculuation of firrtl directions for Vecs)
 
 import scala.collection.immutable.SeqMap
 
@@ -254,12 +250,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(flippedVecVecFlipped(index).head.b) == Direction.Output)
     }
 
-<<<<<<< HEAD
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
-    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
-=======
-    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
->>>>>>> b501b699 (Fix calculuation of firrtl directions for Vecs)
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
 
     assert(chirrtl.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
     assert(chirrtl.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
@@ -299,7 +290,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       val child = Module(new MyBlackBox)
     }
 
-    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
 
     assert(chirrtl.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
     assert(chirrtl.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
@@ -413,7 +404,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
 
     }
 
-    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val chirrtl = ChiselStage.emitChirrtl(new MyModule)
     assert(chirrtl.contains("input unboxedFlipped : UInt<8>"))
     assert(chirrtl.contains("output flippedUnboxedFlipped : UInt<8>"))
     assert(chirrtl.contains("input unboxedUnboxedFlipped : UInt<8>"))

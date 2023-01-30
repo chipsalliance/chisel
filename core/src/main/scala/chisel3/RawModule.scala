@@ -125,32 +125,10 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       id._onModuleClose
     }
 
-<<<<<<< HEAD
     closeUnboundIds(names)
 
     val firrtlPorts = getModulePorts.map { port: Data =>
-      // Special case Vec to make FIRRTL emit the direction of its
-      // element.
-      // Just taking the Vec's specifiedDirection is a bug in cases like
-      // Vec(Flipped()), since the Vec's specifiedDirection is
-      // Unspecified.
-      val direction = port match {
-        case v: Vec[_] =>
-          v.specifiedDirection match {
-            case SpecifiedDirection.Input       => SpecifiedDirection.Input
-            case SpecifiedDirection.Output      => SpecifiedDirection.Output
-            case SpecifiedDirection.Flip        => SpecifiedDirection.flip(v.sample_element.specifiedDirection)
-            case SpecifiedDirection.Unspecified => v.sample_element.specifiedDirection
-          }
-        case _ => port.specifiedDirection
-      }
-
-      Port(port, direction)
-=======
-    val firrtlPorts = getModulePortsAndLocators.map {
-      case (port, sourceInfo) =>
-        Port(port, port.specifiedDirection, sourceInfo)
->>>>>>> b501b699 (Fix calculuation of firrtl directions for Vecs)
+      Port(port, port.specifiedDirection)
     }
     _firrtlPorts = Some(firrtlPorts)
 
