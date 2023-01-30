@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        scala: [ "2.13.10", "2.12.17" ]
+        scala: [ "2.13.10"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -192,7 +192,7 @@ jobs:
   publish:
     needs: [all_tests_passed]
     runs-on: ubuntu-20.04
-    if: (github.event_name == 'push' && github.branch_name != 'website-test')
+    if: (github.event_name == 'push' && github.ref_name != 'website-test')
 
     steps:
       - name: Checkout
@@ -224,10 +224,11 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: website
-          path: website.tar.gz
+      - name: Debug Tree Print 3
+        run: tree -L 2
       - name: Untar built website
         run: tar zxf website.tar.gz
-      - name: Debug Tree Print 3
+      - name: Debug Tree Print 4
         run: tree -L 2
       - name: Deploy Website to GitHub Pages (From Master Branch)
         uses: JamesIves/github-pages-deploy-action@3.7.1
