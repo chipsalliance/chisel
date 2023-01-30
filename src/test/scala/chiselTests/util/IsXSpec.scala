@@ -40,7 +40,8 @@ private class IsXTop extends Module {
 class IsXSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitChirrtl(new IsXTop)
-    val a1 = """(?s)extmodule IsX_(\d+).*defname = IsX_\1.*extmodule IsX_(\d+).*defname = IsX_\2.*extmodule IsX_(\d+).*defname = IsX_\3""".r
+    val a1 =
+      """(?s)extmodule IsX_(\d+).*defname = IsX_\1.*extmodule IsX_(\d+).*defname = IsX_\2.*extmodule IsX_(\d+).*defname = IsX_\3""".r
     (fir should include).regex(a1)
 
     // The second elaboration uses a unique name since the Builder is reused (?)

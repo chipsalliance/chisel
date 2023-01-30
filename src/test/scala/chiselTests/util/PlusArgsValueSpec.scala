@@ -34,7 +34,8 @@ private class PlusArgsValueTop extends Module {
 class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitChirrtl(new PlusArgsValueTop)
-    val a1 = """(?s)extmodule PlusArgsValue_(\d+).*defname = PlusArgsValue_\1.*extmodule PlusArgsValue_(\d+).*defname = PlusArgsValue_\2""".r
+    val a1 =
+      """(?s)extmodule PlusArgsValue_(\d+).*defname = PlusArgsValue_\1.*extmodule PlusArgsValue_(\d+).*defname = PlusArgsValue_\2""".r
     (fir should include).regex(a1)
 
     // The second elaboration uses a unique name since the Builder is reused (?)
