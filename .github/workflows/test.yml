@@ -140,7 +140,7 @@ jobs:
       - name: Tar built website
         run: tar zcf website/build/website.tar.gz website/docs/target/site
       - name: Share Built Website
-	uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v2
         with:
           name: website
           path: website/build/website.tar.gz
