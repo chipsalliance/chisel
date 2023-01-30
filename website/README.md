@@ -147,4 +147,4 @@ for what is hosted at https://chipsalliance.github.io/chisel3/.
 
 Note that currently there is another website, https://www.chisel-lang.org/,
 the source for which is https://github.com/freechipsproject/www.chisel-lang.org.
-Following the 3.6 release, the chisel-lang.org be changed to be sourced from this repository.
+Following the 3.6 release, the chisel-lang.org URL will be changed to be sourced from this repository.
