@@ -4,13 +4,12 @@ package chisel3
 
 import scala.language.experimental.macros
 
-import chisel3.experimental.{FixedPoint, Interval}
+import chisel3.experimental.{FixedPoint, Interval, SourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{
   IntLiteralApplyTransform,
-  SourceInfo,
   SourceInfoTransform,
   SourceInfoWhiteboxTransform,
   UIntTransform

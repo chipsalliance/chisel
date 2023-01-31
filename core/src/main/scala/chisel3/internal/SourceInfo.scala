@@ -1,70 +1,58 @@
 // SPDX-License-Identifier: Apache-2.0
 
-// This file contains macros for adding source locators at the point of invocation.
+// This file contains macros for adding source locators at the point
+// of invocation.
 //
-// This is not part of coreMacros to disallow this macro from being implicitly invoked in Chisel
-// frontend (and generating source locators in Chisel core), which is almost certainly a bug.
+// This is not part of coreMacros to disallow this macro from being
+// implicitly invoked in Chisel frontend (and generating source
+// locators in Chisel core), which is almost certainly a bug.
 //
-// Note: While these functions and definitions are not private (macros can't be
-// private), these are NOT meant to be part of the public API (yet) and no
-// forward compatibility guarantees are made.
-// A future revision may stabilize the source locator API to allow library
-// writers to append source locator information at the point of a library
-// function invocation.
+// As of Chisel 3.6, these methods are deprecated in favor of the
+// public API in chisel3.experimental.
 
-package chisel3.internal.sourceinfo
+package chisel3.internal
 
-import scala.language.experimental.macros
-import scala.reflect.macros.blackbox.Context
+package object sourceinfo {
+  import chisel3.experimental._
+  import scala.language.experimental.macros
+  import scala.reflect.macros.blackbox.Context
 
-/** Abstract base class for generalized source information.
-  */
-sealed trait SourceInfo {
+  @deprecated(
+    "APIs in chisel3.internal are not intended to be public. Use chisel3.experimental.SourceInfo",
+    "Chisel 3.6"
+  )
+  type SourceInfo = chisel3.experimental.SourceInfo
 
-  /** A prettier toString
-    *
-    * Make a useful message if SourceInfo is available, nothing otherwise
-    */
-  def makeMessage(f: String => String): String
-}
+  @deprecated(
+    "APIs in chisel3.internal are not intended to be public. Use chisel3.experimental.NoSourceInfo",
+    "Chisel 3.6"
+  )
+  type NoSourceInfo = chisel3.experimental.NoSourceInfo
 
-sealed trait NoSourceInfo extends SourceInfo {
-  def makeMessage(f: String => String): String = ""
-}
+  @deprecated(
+    "APIs in chisel3.internal are not intended to be public. Use chisel3.experimental.UnlocatableSourceInfo",
+    "Chisel 3.6"
+  )
+  val UnlocatableSourceInfo = chisel3.experimental.UnlocatableSourceInfo
 
-/** For when source info can't be generated because of a technical limitation, like for Reg because
-  * Scala macros don't support named or default arguments.
-  */
-case object UnlocatableSourceInfo extends NoSourceInfo
+  @deprecated(
+    "APIs in chisel3.internal are not intended to be public. Use chisel3.experimental.DeprecatedSourceInfo",
+    "Chisel 3.6"
+  )
+  val DeprecatedSourceInfo = chisel3.experimental.DeprecatedSourceInfo
 
-/** For when source info isn't generated because the function is deprecated and we're lazy.
-  */
-case object DeprecatedSourceInfo extends NoSourceInfo
+  @deprecated(
+    "APIs in chisel3.internal are not intended to be public. Use chisel3.experimental.SourceLine",
+    "Chisel 3.6"
+  )
+  type SourceLine = chisel3.experimental.SourceLine
 
-/** For FIRRTL lines from a Scala source line.
-  */
-case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo {
-  def makeMessage(f: String => String): String = f(s"@[$filename $line:$col]")
-}
-
-/** Provides a macro that returns the source information at the invocation point.
-  */
-object SourceInfoMacro {
-  def generate_source_info(c: Context): c.Tree = {
-    import c.universe._
-    val p = c.enclosingPosition
-
-    val userDir = sys.props.get("user.dir") // Figure out what to do if not provided
-    val projectRoot = sys.props.get("chisel.project.root")
-    val root = projectRoot.orElse(userDir)
-
-    val path = root.map(r => p.source.file.canonicalPath.stripPrefix(r)).getOrElse(p.source.file.name)
-    val pathNoStartingSlash = if (path(0) == '/') path.tail else path
-
-    q"_root_.chisel3.internal.sourceinfo.SourceLine($pathNoStartingSlash, ${p.line}, ${p.column})"
+  @deprecated(
+    "APIs in chisel3.internal are not intended to be public. Use chisel3.experimental.SourceInfo",
+    "Chisel 3.6"
+  )
+  object SourceInfo {
+    implicit def materialize: SourceInfo = macro SourceInfoMacro.generate_source_info
   }
-}
 
-object SourceInfo {
-  implicit def materialize: SourceInfo = macro SourceInfoMacro.generate_source_info
 }

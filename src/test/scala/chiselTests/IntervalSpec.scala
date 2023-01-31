@@ -6,7 +6,7 @@ import scala.language.reflectiveCalls
 import _root_.firrtl.ir.{Closed, Open}
 import chisel3._
 import chisel3.internal.firrtl.{IntervalRange, KnownBinaryPoint}
-import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers.BasicTester
 import cookbook.CookbookTester

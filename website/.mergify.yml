@@ -1,0 +1,16 @@
+queue_rules:
+   - name: default
+     conditions:
+       - status-success=all tests passed
+pull_request_rules:
+  - name: Automatic merge for Dependabot
+    conditions:
+      - author~=^dependabot(|-preview)\[bot\]$
+      - status-success=all tests passed
+      - '#changes-requested-reviews-by=0'
+      - label!="DO NOT MERGE"
+    actions:
+      queue:
+        name: default
+        method: squash
+        update_method: merge

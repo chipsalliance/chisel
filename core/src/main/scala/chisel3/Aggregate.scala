@@ -9,10 +9,11 @@ import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, BundleLiteralException, OpaqueType, VecLiteralException}
+import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo._
+import chisel3.internal.sourceinfo.{CompileOptionsTransform, SourceInfoTransform, VecTransform}
 
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
@@ -937,6 +938,26 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
+  private def checkClone(clone: Record): Unit = {
+    for ((name, field) <- elements) {
+      if (clone.elements(name) eq field) {
+        throw new AutoClonetypeException(
+          s"The bundle plugin was unable to clone $clone that has field '$name' aliased with base $this." +
+            "This likely happened because you tried nesting Data arguments inside of other data structures." +
+            " Try wrapping the field(s) in Input(...), Output(...), or Flipped(...) if appropriate." +
+            " As a last resort, you can call chisel3.reflect.DataMirror.internal.chiselTypeClone on any nested Data arguments." +
+            " See the cookbook entry 'How do I deal with the \"unable to clone\" error?' for more details."
+        )
+      }
+    }
+  }
+
+  override def cloneType: this.type = {
+    val clone = _cloneTypeImpl.asInstanceOf[this.type]
+    checkClone(clone)
+    clone
+  }
+
   // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
   // of hardware created when connecting to one of these elements
   private def setElementRefs(): Unit = {
@@ -1250,6 +1271,7 @@ package experimental {
     *
     * All user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
     */
+  @deprecated("AutoCloneType is now always enabled, no need to mix it in", "Chisel 3.6")
   trait AutoCloneType { self: Record =>
 
     override def cloneType: this.type = _cloneTypeImpl.asInstanceOf[this.type]
@@ -1290,7 +1312,7 @@ package experimental {
   *   }
   * }}}
   */
-abstract class Bundle(implicit compileOptions: CompileOptions) extends Record with experimental.AutoCloneType {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
   private def mustUsePluginMsg: String =
     "The Chisel compiler plugin is now required for compiling Chisel code. " +
@@ -1394,29 +1416,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record wi
     * @note This should not be used in user code!
     */
   protected def _usingPlugin: Boolean = false
-
-  private def checkClone(clone: Bundle): Unit = {
-    for ((name, field) <- elements) {
-      if (clone.elements(name) eq field) {
-        throw new AutoClonetypeException(
-          s"Automatically cloned $clone has field '$name' aliased with base $this." +
-            " In the future, this will be solved automatically by the compiler plugin." +
-            " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
-            " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate." +
-            " As a last resort, you can override cloneType manually."
-        )
-      }
-    }
-  }
-
-  override def cloneType: this.type = {
-    val clone = _cloneTypeImpl.asInstanceOf[this.type]
-    checkClone(clone)
-    clone
-  }
-
-  // This is overriden for binary compatibility reasons in 3.5
-  override protected def _cloneTypeImpl: Bundle = super._cloneTypeImpl.asInstanceOf[Bundle]
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Map

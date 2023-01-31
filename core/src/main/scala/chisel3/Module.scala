@@ -9,8 +9,8 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo.{InstTransform}
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 

@@ -2,8 +2,7 @@
 
 package chisel3.experimental.hierarchy.core
 
-import chisel3.experimental.BaseModule
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.experimental.hierarchy.{InstanceClone, InstantiableClone, ModuleClone}
 
 import scala.annotation.implicitNotFound

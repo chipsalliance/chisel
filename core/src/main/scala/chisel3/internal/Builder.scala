@@ -14,11 +14,9 @@ import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.{AnnotationSeq, RenameMap}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
-import chisel3.internal.sourceinfo.SourceInfo
 import logger.LazyLogging
 
 import scala.collection.mutable
-import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 import scala.annotation.tailrec
 
 private[chisel3] class Namespace(keywords: Set[String]) {
@@ -119,6 +117,7 @@ private[chisel3] class IdGen {
   * currently, the node's name, the full path name, and references to its parent Module and component.
   * These are only valid once the design has been elaborated, and should not be used during its construction.
   */
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 trait InstanceId {
   def instanceName:   String
   def pathName:       String

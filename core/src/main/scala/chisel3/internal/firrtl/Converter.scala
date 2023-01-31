@@ -3,7 +3,7 @@
 package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
 
@@ -307,6 +307,8 @@ private[chisel3] object Converter {
   private def firrtlUserDirOf(d: Data): SpecifiedDirection = d match {
     case d: Vec[_] =>
       SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
+    case d: Record if d._isOpaqueType =>
+      SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.elementsIterator.next))
     case d => d.specifiedDirection
   }
 
@@ -351,7 +353,7 @@ private[chisel3] object Converter {
   }
 
   def convert(port: Port, topDir: SpecifiedDirection = SpecifiedDirection.Unspecified): fir.Port = {
-    val resolvedDir = SpecifiedDirection.fromParent(topDir, port.dir)
+    val resolvedDir = SpecifiedDirection.fromParent(topDir, firrtlUserDirOf(port.id))
     val dir = resolvedDir match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => fir.Output
       case SpecifiedDirection.Flip | SpecifiedDirection.Input         => fir.Input

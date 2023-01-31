@@ -4,12 +4,11 @@ package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
-import chisel3.experimental.{attach, Analog, BaseModule}
+import chisel3.experimental.{attach, Analog, BaseModule, SourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo._
 import _root_.firrtl.passes.CheckTypes
 
 /**

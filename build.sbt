@@ -4,7 +4,6 @@ enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT"
   // chiseltest intentionally excluded so that release automation does not try to set its version
   // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
   // when doing publishing and will not find a chiseltest release since chiseltest depends on
@@ -34,6 +33,14 @@ lazy val commonSettings = Seq(
       case _                       => compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)) :: Nil
     }
   }
+)
+
+lazy val warningSuppression = Seq(
+  scalacOptions += "-Wconf:" + Seq(
+    "msg=APIs in chisel3.internal:s",
+    "msg=Importing from firrtl:s",
+    "msg=migration to the MLIR:s"
+  ).mkString(",")
 )
 
 lazy val publishSettings = Seq(
@@ -171,6 +178,7 @@ lazy val core = (project in file("core"))
   )
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
+  .settings(warningSuppression: _*)
   .settings(
     name := "chisel3-core",
     libraryDependencies ++= Seq(
@@ -178,7 +186,6 @@ lazy val core = (project in file("core"))
       "com.lihaoyi" %% "os-lib" % "0.8.1"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
-      "-deprecation",
       "-explaintypes",
       "-feature",
       "-language:reflectiveCalls",
@@ -202,9 +209,9 @@ lazy val chisel = (project in file("."))
   .dependsOn(macros)
   .dependsOn(core)
   .aggregate(macros, core, plugin)
+  .settings(warningSuppression: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
-    libraryDependencies += defaultVersions("treadle") % "test",
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
     // Forward doc command to unidoc
     Compile / doc := (ScalaUnidoc / doc).value,

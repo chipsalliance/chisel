@@ -4,7 +4,8 @@ package chisel3.util
 
 import scala.language.experimental.macros
 import chisel3._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel3.experimental.SourceInfo
+import chisel3.internal.sourceinfo.SourceInfoTransform
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
@@ -102,7 +103,6 @@ object BitPat {
   }
 
   implicit class fromUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
-    import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
     import scala.language.experimental.macros
 

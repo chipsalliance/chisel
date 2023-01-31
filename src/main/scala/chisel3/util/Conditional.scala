@@ -10,7 +10,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox._
 
 import chisel3._
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 
 /** Implementation details for [[switch]]. See [[switch]] and [[chisel3.util.is is]] for the
   * user-facing API.

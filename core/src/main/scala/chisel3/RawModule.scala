@@ -5,12 +5,11 @@ package chisel3
 import scala.util.Try
 import scala.language.experimental.macros
 import scala.annotation.nowarn
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
 
@@ -95,23 +94,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
     val firrtlPorts = getModulePortsAndLocators.map {
       case (port, sourceInfo) =>
-        // Special case Vec to make FIRRTL emit the direction of its
-        // element.
-        // Just taking the Vec's specifiedDirection is a bug in cases like
-        // Vec(Flipped()), since the Vec's specifiedDirection is
-        // Unspecified.
-        val direction = port match {
-          case v: Vec[_] =>
-            v.specifiedDirection match {
-              case SpecifiedDirection.Input       => SpecifiedDirection.Input
-              case SpecifiedDirection.Output      => SpecifiedDirection.Output
-              case SpecifiedDirection.Flip        => SpecifiedDirection.flip(v.sample_element.specifiedDirection)
-              case SpecifiedDirection.Unspecified => v.sample_element.specifiedDirection
-            }
-          case _ => port.specifiedDirection
-        }
-
-        Port(port, direction, sourceInfo)
+        Port(port, port.specifiedDirection, sourceInfo)
     }
     _firrtlPorts = Some(firrtlPorts)
 

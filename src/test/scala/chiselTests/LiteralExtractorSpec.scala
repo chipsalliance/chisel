@@ -149,7 +149,6 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
         "a" -> UInt(8.W),
         "b" -> Bool()
       )
-      override def cloneType = (new MyRecord).asInstanceOf[this.type]
     }
 
     val myRecordLiteral = new (MyRecord).Lit(_.elements("a") -> 42.U, _.elements("b") -> true.B)
