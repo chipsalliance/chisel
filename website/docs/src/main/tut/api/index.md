@@ -9,8 +9,7 @@ section: "chisel3"
 We host only the latest minor version for each major version to keep the size down for website hosting.
 Please see the page about [Versioning](../chisel3/docs/appendix/versioning.html) for more information about major and minor versioning and binary compatibility.
 
+* [latest](latest)
 * [3.5](3.5/)
-* [3.4](3.4.4/)
-* [3.3](3.3.3/)
-* [3.2](3.2.8/)
+
 
