@@ -49,6 +49,7 @@ lazy val micrositeSettings = Seq(
           "technologies" -> technologies))
   ),
   micrositeExtraMdFilesOutput := resourceManaged.value / "main" / "jekyll",
+  micrositeStaticDirectory := file("docs/target/site/api"),
   /* Known colors:
    *   - Chisel logo: #212560
    *   - FIRRTL logo: #136527
