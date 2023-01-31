@@ -138,7 +138,7 @@ jobs:
       - name: Tar built website
         run: tar zcf website.tar.gz website/docs/target/site
       - name: Share Built Website
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: website
           path: website.tar.gz
@@ -215,7 +215,7 @@ jobs:
     if: (github.event_name == 'push') && (github.ref_type == 'branch') && ((github.ref_name == 'website-test') || (github.ref_name == 'master'))
     steps:
       - name: Download built website
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: website
       - name: Untar built website
