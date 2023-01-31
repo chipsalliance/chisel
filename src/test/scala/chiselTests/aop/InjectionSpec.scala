@@ -131,6 +131,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
   "Test" should "fail if inserted the wrong values" in {
     assertTesterFails { new AspectTester(Seq(9, 9, 9)) }
   }
+  //TODO: SFC->MFC, this test is ignored because aspects yet fully supported by CIRCT/firtool
   "Test" should "pass if pass wrong values, but correct with aspect" ignore {
     assertTesterPasses({ new AspectTester(Seq(9, 9, 9)) }, Nil, Seq(correctValueAspect) ++ TesterDriver.verilatorOnly)
   }

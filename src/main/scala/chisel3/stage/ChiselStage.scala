@@ -262,8 +262,6 @@ object ChiselStage {
     * @param gen a call-by-name Chisel module
     */
   def emitSystemVerilog(gen: => RawModule): String = {
-    //TODO:CHICK: GET RID OF THIS POISON PILL (USED TO DETECT USE OF SFC)
-    throw new Exception("chisel3.stage.ChiselStage.emitSystemVerilog not allowed")
     val phase = new PhaseManager(
       Seq(
         Dependency[chisel3.stage.phases.Checks],
