@@ -179,6 +179,8 @@ jobs:
         uses: ./.github/workflows/install-circt
       - name: Build the microsite
         run: make -C website
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Deploy Website to GitHub Pages (From Master Branch)
         if: (github.event_name == 'push') && (github.ref_type == 'branch') && (github.ref_name == 'master')
         uses: JamesIves/github-pages-deploy-action@3.7.1
