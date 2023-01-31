@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import chisel3.util.random.LFSR
-import treadle.WriteVcdAnnotation
 
 /** Test elements can be enqueued and dequeued when flush is tied to false
   *

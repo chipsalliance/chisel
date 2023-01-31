@@ -40,8 +40,7 @@ case class ChiselLoadMemoryAnnotation[T <: Data](
 }
 
 /** [[loadMemoryFromFile]] is an annotation generator that helps with loading a memory from a text file as a bind module. This relies on
-  * Verilator and Verilog's `\$readmemh` or `\$readmemb`. The [[https://github.com/freechipsproject/treadle Treadle
-  * backend]] can also recognize this annotation and load memory at run-time.
+  * Verilator and Verilog's `\$readmemh` or `\$readmemb`.
   *
   * This annotation, when the FIRRTL compiler runs, triggers the [[LoadMemoryTransform]]. That will add Verilog
   * directives to enable the specified memories to be initialized from files.
@@ -116,7 +115,6 @@ object loadMemoryFromFile {
 
 /** [[loadMemoryFromFileInline]] is an annotation generator that helps with loading a memory from a text file inlined in
   * the Verilog module. This relies on Verilator and Verilog's `\$readmemh` or `\$readmemb`.
-  * The [[https://github.com/freechipsproject/treadle Treadlebackend]] can also recognize this annotation and load memory at run-time.
   *
   * This annotation, when the FIRRTL compiler runs, triggers the [[MemoryFileInlineAnnotation]] that will add Verilog
   * directives inlined to the module enabling the specified memories to be initialized from files.
@@ -194,10 +192,7 @@ object loadMemoryFromFileInline {
 
 /** This transform only is activated if Verilog is being generated (determined by presence of the proper emit
   * annotation) when activated it creates additional Verilog files that contain modules bound to the modules that
-  * contain an initializable memory
-  *
-  * Currently the only non-Verilog based simulation that can support loading memory from a file is treadle but it does
-  * not need this transform to do that.
+  * contain an initializable memory.
   */
 class LoadMemoryTransform extends Transform {
   def inputForm:  CircuitForm = LowForm

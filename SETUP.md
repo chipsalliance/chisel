@@ -3,8 +3,7 @@ Instructions for setting up your environment to run Chisel locally.
 
 For a minimal setup, you only need to install [SBT (the Scala Build Tool)](http://www.scala-sbt.org), which will automatically fetch the appropriate version of Scala and Chisel based on on your project configuration.
 
-[Verilator](https://www.veripool.org/wiki/verilator) is optional, only if you need to run the Chisel3 regression suite, or simulate your Verilog designs.
-Note that both [PeekPokeTester](https://github.com/freechipsproject/chisel-testers) and [testers2](https://github.com/ucb-bar/chisel-testers2) both support using [treadle](https://github.com/freechipsproject/treadle) (a FIRRTL simulator written in Scala) as the simulation engine, which requires no additional installation steps.
+[Verilator](https://www.veripool.org/wiki/verilator) is installation is required to simulate your Verilog designs.
 
 ## Ubuntu Linux	
 

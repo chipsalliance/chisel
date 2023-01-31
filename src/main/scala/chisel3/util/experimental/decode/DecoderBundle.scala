@@ -47,7 +47,7 @@ trait BoolDecodeField[T <: DecodePattern] extends DecodeField[T, Bool] {
   * Output of DecoderTable
   * @param fields all fields to be decoded
   */
-class DecodeBundle(fields: Seq[DecodeField[_, _]]) extends Record with experimental.AutoCloneType {
+class DecodeBundle(fields: Seq[DecodeField[_, _]]) extends Record {
   require(fields.map(_.name).distinct.size == fields.size, "Field names must be unique")
   val elements: SeqMap[String, Data] = SeqMap(fields.map(k => k.name -> UInt(k.width.W)): _*)
 
