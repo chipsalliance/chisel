@@ -1,0 +1,2623 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>chisel3 3.3.3 - chisel3.core</title>
+          <meta name="description" content="chisel3 3.3.3 - chisel3.core" />
+          <meta name="keywords" content="chisel3 3.3.3 chisel3.core" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../lib/index.js"></script>
+      <script type="text/javascript" src="../../index.js"></script>
+      <script type="text/javascript" src="../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../lib/template.js"></script>
+      <script type="text/javascript" src="../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">chisel3<span id="doc-version">3.3.3</span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This is the documentation for Chisel." href="../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This is the documentation for Chisel.</p><div class="fullcomment"><div class="comment cmt"><p>This is the documentation for Chisel.</p><h4> Package structure </h4><p>The <a href="../index.html" class="extype" name="chisel3">chisel3</a> package presents the public API of Chisel.
+It contains the concrete core types <a href="../UInt.html" class="extype" name="chisel3.UInt"><code>UInt</code></a>, <a href="../SInt.html" class="extype" name="chisel3.SInt"><code>SInt</code></a>, <a href="../Bool.html" class="extype" name="chisel3.Bool"><code>Bool</code></a>, <a href="../experimental/FixedPoint.html" class="extype" name="chisel3.experimental.FixedPoint"><code>FixedPoint</code></a>, <a href="../Clock.html" class="extype" name="chisel3.Clock"><code>Clock</code></a>, and <a href="../Reg$.html" class="extype" name="chisel3.Reg"><code>Reg</code></a>,
+the abstract types <a href="../Bits.html" class="extype" name="chisel3.Bits"><code>Bits</code></a>, <a href="../Aggregate.html" class="extype" name="chisel3.Aggregate"><code>Aggregate</code></a>, and <a href="../Data.html" class="extype" name="chisel3.Data"><code>Data</code></a>,
+and the aggregate types <a href="../Bundle.html" class="extype" name="chisel3.Bundle"><code>Bundle</code></a> and <a href="../Vec.html" class="extype" name="chisel3.Vec"><code>Vec</code></a>.</p><p>The <a href="../../Chisel/index.html" class="extype" name="Chisel">Chisel</a> package is a compatibility layer that attempts to provide chisel2 compatibility in chisel3.</p><p>Utility objects and methods are found in the <a href="../util/index.html" class="extype" name="chisel3.util"><code>util</code></a> package.</p><p>The <a href="../testers/index.html" class="extype" name="chisel3.testers"><code>testers</code></a> package defines the basic interface for chisel testers.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.chisel3" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="chisel3"></a><a id="chisel3:chisel3"></a>
+      <span class="permalink">
+      <a href="../../chisel3/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This package contains the main chisel3 API." href="../index.html"><span class="name">chisel3</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This package contains the main chisel3 API.</p><div class="fullcomment"><div class="comment cmt"><p>This package contains the main chisel3 API.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="chisel3.aop" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aop"></a><a id="aop:aop"></a>
+      <span class="permalink">
+      <a href="../../chisel3/aop/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../aop/index.html"><span class="name">aop</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.core" visbl="pub" class="indented2 current" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="core"></a><a id="core:core"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">core</span>
+      </span>
+      
+      <p class="shortcomment cmt">These definitions exist to deal with those clients that relied on chisel3.core.</p><div class="fullcomment"><div class="comment cmt"><p>These definitions exist to deal with those clients that relied on chisel3.core.
+They are deprecated and will be removed in the future.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromDoubleToLiteral.html" title=""></a>
+                        <a href="package$$fromDoubleToLiteral.html" title="">fromDoubleToLiteral</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromIntToBinaryPoint.html" title=""></a>
+                        <a href="package$$fromIntToBinaryPoint.html" title="">fromIntToBinaryPoint</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromIntToWidth.html" title=""></a>
+                        <a href="package$$fromIntToWidth.html" title="">fromIntToWidth</a>
+                      </li><li name="chisel3.experimental" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="experimental"></a><a id="experimental:experimental"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="Package for experimental features, which may have their API changed, be removed, etc." href="../experimental/index.html"><span class="name">experimental</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Package for experimental features, which may have their API changed, be removed, etc.</p><div class="fullcomment"><div class="comment cmt"><p>Package for experimental features, which may have their API changed, be removed, etc.</p><p>Because its contents won't necessarily have the same level of stability and support as
+non-experimental, you must explicitly import this package to use its contents.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.stage" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stage"></a><a id="stage:stage"></a>
+      <span class="permalink">
+      <a href="../../chisel3/stage/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../stage/index.html"><span class="name">stage</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.testers" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="testers"></a><a id="testers:testers"></a>
+      <span class="permalink">
+      <a href="../../chisel3/testers/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="The testers package provides the basic interface for chisel testers." href="../testers/index.html"><span class="name">testers</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The testers package provides the basic interface for chisel testers.</p><div class="fullcomment"><div class="comment cmt"><p>The testers package provides the basic interface for chisel testers.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.util" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="util"></a><a id="util:util"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="The util package provides extensions to core chisel for common hardware components and utility functions" href="../util/index.html"><span class="name">util</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The util package provides extensions to core chisel for common hardware components and utility
+functions
+</p><div class="fullcomment"><div class="comment cmt"><p>The util package provides extensions to core chisel for common hardware components and utility
+functions
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="package value">
+      <div id="definition">
+        <div class="big-circle package">p</div>
+        <p id="owner"><a href="../index.html" class="extype" name="chisel3">chisel3</a></p>
+        <h1>core<span class="permalink">
+      <a href="../../chisel3/core/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">core</span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>These definitions exist to deal with those clients that relied on chisel3.core.
+They are deprecated and will be removed in the future.
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/freechipsproject/chisel3/tree/v3.3.3//core/src/main/scala/chisel3/core/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.11/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="chisel3.core"><span>core</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="chisel3.core.fromDoubleToLiteral" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromDoubleToLiteralextendsFixedPoint.Implicits.fromDoubleToLiteral"></a><a id="fromDoubleToLiteral:fromDoubleToLiteral"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/package$$fromDoubleToLiteral.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromDoubleToLiteral.html"><span class="name">fromDoubleToLiteral</span></a><span class="result"> extends <a href="../experimental/FixedPoint$$Implicits$$fromDoubleToLiteral.html" class="extype" name="chisel3.experimental.FixedPoint.Implicits.fromDoubleToLiteral">experimental.FixedPoint.Implicits.fromDoubleToLiteral</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.core.fromIntToBinaryPoint" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromIntToBinaryPointextendsfromIntToBinaryPoint"></a><a id="fromIntToBinaryPoint:fromIntToBinaryPoint"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/package$$fromIntToBinaryPoint.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromIntToBinaryPoint.html"><span class="name">fromIntToBinaryPoint</span></a><span class="result"> extends <a href="../package$$fromIntToBinaryPoint.html" class="extype" name="chisel3.fromIntToBinaryPoint">chisel3.fromIntToBinaryPoint</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.core.fromIntToWidth" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromIntToWidthextendsfromIntToWidth"></a><a id="fromIntToWidth:fromIntToWidth"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/package$$fromIntToWidth.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromIntToWidth.html"><span class="name">fromIntToWidth</span></a><span class="result"> extends <a href="../package$$fromIntToWidth.html" class="extype" name="chisel3.fromIntToWidth">chisel3.fromIntToWidth</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.core.ActualDirection" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ActualDirection=chisel3.ActualDirection"></a><a id="ActualDirection:ActualDirection"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#ActualDirection=chisel3.ActualDirection" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">ActualDirection</span><span class="result alias"> = <a href="../ActualDirection.html" class="extype" name="chisel3.ActualDirection">chisel3.ActualDirection</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Aggregate" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Aggregate=chisel3.Aggregate"></a><a id="Aggregate:Aggregate"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Aggregate=chisel3.Aggregate" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Aggregate</span><span class="result alias"> = <a href="../Aggregate.html" class="extype" name="chisel3.Aggregate">chisel3.Aggregate</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Analog" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Analog=chisel3.experimental.Analog"></a><a id="Analog:Analog"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Analog=chisel3.experimental.Analog" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">Analog</span><span class="result alias"> = <a href="../experimental/Analog.html" class="extype" name="chisel3.experimental.Analog">experimental.Analog</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.BaseModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BaseModule=chisel3.experimental.BaseModule"></a><a id="BaseModule:BaseModule"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#BaseModule=chisel3.experimental.BaseModule" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">BaseModule</span><span class="result alias"> = <a href="../experimental/BaseModule.html" class="extype" name="chisel3.experimental.BaseModule">experimental.BaseModule</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.Binary" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Binary=chisel3.Binary"></a><a id="Binary:Binary"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Binary=chisel3.Binary" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Binary</span><span class="result alias"> = <a href="../Binary.html" class="extype" name="chisel3.Binary">chisel3.Binary</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Binding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Binding=chisel3.internal.Binding"></a><a id="Binding:Binding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Binding=chisel3.internal.Binding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">Binding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.Binding">internal.Binding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.Bits" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Bits=chisel3.Bits"></a><a id="Bits:Bits"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Bits=chisel3.Bits" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Bits</span><span class="result alias"> = <a href="../Bits.html" class="extype" name="chisel3.Bits">chisel3.Bits</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.BlackBox" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BlackBox=chisel3.BlackBox"></a><a id="BlackBox:BlackBox"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#BlackBox=chisel3.BlackBox" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">BlackBox</span><span class="result alias"> = <a href="../BlackBox.html" class="extype" name="chisel3.BlackBox">chisel3.BlackBox</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Bool" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Bool=chisel3.Bool"></a><a id="Bool:Bool"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Bool=chisel3.Bool" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Bool</span><span class="result alias"> = <a href="../Bool.html" class="extype" name="chisel3.Bool">chisel3.Bool</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Bundle" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Bundle=chisel3.Bundle"></a><a id="Bundle:Bundle"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Bundle=chisel3.Bundle" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Bundle</span><span class="result alias"> = <a href="../Bundle.html" class="extype" name="chisel3.Bundle">chisel3.Bundle</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.BundleLitBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BundleLitBinding=chisel3.internal.BundleLitBinding"></a><a id="BundleLitBinding:BundleLitBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#BundleLitBinding=chisel3.internal.BundleLitBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">BundleLitBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.BundleLitBinding">internal.BundleLitBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.Character" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Character=chisel3.Character"></a><a id="Character:Character"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Character=chisel3.Character" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Character</span><span class="result alias"> = <a href="../Character.html" class="extype" name="chisel3.Character">chisel3.Character</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.ChildBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ChildBinding=chisel3.internal.ChildBinding"></a><a id="ChildBinding:ChildBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#ChildBinding=chisel3.internal.ChildBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">ChildBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.ChildBinding">internal.ChildBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.Clock" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Clock=chisel3.Clock"></a><a id="Clock:Clock"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Clock=chisel3.Clock" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Clock</span><span class="result alias"> = <a href="../Clock.html" class="extype" name="chisel3.Clock">chisel3.Clock</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.ConstrainedBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ConstrainedBinding=chisel3.internal.ConstrainedBinding"></a><a id="ConstrainedBinding:ConstrainedBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#ConstrainedBinding=chisel3.internal.ConstrainedBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">ConstrainedBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.ConstrainedBinding">internal.ConstrainedBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.Data" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Data=chisel3.Data"></a><a id="Data:Data"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Data=chisel3.Data" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Data</span><span class="result alias"> = <a href="../Data.html" class="extype" name="chisel3.Data">chisel3.Data</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Decimal" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Decimal=chisel3.Decimal"></a><a id="Decimal:Decimal"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Decimal=chisel3.Decimal" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Decimal</span><span class="result alias"> = <a href="../Decimal.html" class="extype" name="chisel3.Decimal">chisel3.Decimal</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.DontCareBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DontCareBinding=chisel3.internal.DontCareBinding"></a><a id="DontCareBinding:DontCareBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#DontCareBinding=chisel3.internal.DontCareBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">DontCareBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.DontCareBinding">internal.DontCareBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.DoubleParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DoubleParam=chisel3.experimental.DoubleParam"></a><a id="DoubleParam:DoubleParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#DoubleParam=chisel3.experimental.DoubleParam" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">DoubleParam</span><span class="result alias"> = <a href="../experimental/DoubleParam.html" class="extype" name="chisel3.experimental.DoubleParam">experimental.DoubleParam</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.Element" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Element=chisel3.Element"></a><a id="Element:Element"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Element=chisel3.Element" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Element</span><span class="result alias"> = <a href="../Element.html" class="extype" name="chisel3.Element">chisel3.Element</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.ElementLitBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ElementLitBinding=chisel3.internal.ElementLitBinding"></a><a id="ElementLitBinding:ElementLitBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#ElementLitBinding=chisel3.internal.ElementLitBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">ElementLitBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.ElementLitBinding">internal.ElementLitBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.EnumFactory" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EnumFactory=chisel3.experimental.EnumFactory"></a><a id="EnumFactory:EnumFactory"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#EnumFactory=chisel3.experimental.EnumFactory" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">EnumFactory</span><span class="result alias"> = <a href="../experimental/EnumFactory.html" class="extype" name="chisel3.experimental.EnumFactory">experimental.EnumFactory</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.EnumType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EnumType=chisel3.experimental.EnumType"></a><a id="EnumType:EnumType"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#EnumType=chisel3.experimental.EnumType" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">EnumType</span><span class="result alias"> = <a href="../experimental/EnumType.html" class="extype" name="chisel3.experimental.EnumType">experimental.EnumType</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.ExtModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExtModule=chisel3.experimental.ExtModule"></a><a id="ExtModule:ExtModule"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#ExtModule=chisel3.experimental.ExtModule" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">ExtModule</span><span class="result alias"> = <a href="../experimental/ExtModule.html" class="extype" name="chisel3.experimental.ExtModule">experimental.ExtModule</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.FirrtlFormat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FirrtlFormat=chisel3.FirrtlFormat"></a><a id="FirrtlFormat:FirrtlFormat"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#FirrtlFormat=chisel3.FirrtlFormat" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">FirrtlFormat</span><span class="result alias"> = <a href="../FirrtlFormat.html" class="extype" name="chisel3.FirrtlFormat">chisel3.FirrtlFormat</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.FixedPoint" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FixedPoint=chisel3.experimental.FixedPoint"></a><a id="FixedPoint:FixedPoint"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#FixedPoint=chisel3.experimental.FixedPoint" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">FixedPoint</span><span class="result alias"> = <a href="../experimental/FixedPoint.html" class="extype" name="chisel3.experimental.FixedPoint">experimental.FixedPoint</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.FullName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FullName=chisel3.FullName"></a><a id="FullName:FullName"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#FullName=chisel3.FullName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">FullName</span><span class="result alias"> = <a href="../FullName.html" class="extype" name="chisel3.FullName">chisel3.FullName</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Hexadecimal" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Hexadecimal=chisel3.Hexadecimal"></a><a id="Hexadecimal:Hexadecimal"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Hexadecimal=chisel3.Hexadecimal" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Hexadecimal</span><span class="result alias"> = <a href="../Hexadecimal.html" class="extype" name="chisel3.Hexadecimal">chisel3.Hexadecimal</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.IgnoreSeqInBundle" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IgnoreSeqInBundle=chisel3.IgnoreSeqInBundle"></a><a id="IgnoreSeqInBundle:IgnoreSeqInBundle"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#IgnoreSeqInBundle=chisel3.IgnoreSeqInBundle" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">IgnoreSeqInBundle</span><span class="result alias"> = <a href="../IgnoreSeqInBundle.html" class="extype" name="chisel3.IgnoreSeqInBundle">chisel3.IgnoreSeqInBundle</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.ImplicitModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ImplicitModule=chisel3.MultiIOModule"></a><a id="ImplicitModule:ImplicitModule"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#ImplicitModule=chisel3.MultiIOModule" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version since the beginning of time)">ImplicitModule</span><span class="result alias"> = <a href="../MultiIOModule.html" class="extype" name="chisel3.MultiIOModule">chisel3.MultiIOModule</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version since the beginning of time)</i></p></dd></dl></div>
+    </li><li name="chisel3.core.IntParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IntParam=chisel3.experimental.IntParam"></a><a id="IntParam:IntParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#IntParam=chisel3.experimental.IntParam" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">IntParam</span><span class="result alias"> = <a href="../experimental/IntParam.html" class="extype" name="chisel3.experimental.IntParam">experimental.IntParam</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.LitBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LitBinding=chisel3.internal.LitBinding"></a><a id="LitBinding:LitBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#LitBinding=chisel3.internal.LitBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">LitBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.LitBinding">internal.LitBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.Mem" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Mem[T&lt;:chisel3.Data]=chisel3.Mem[T]"></a><a id="Mem[T&lt;:chisel3.Data]:Mem[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Mem[T&lt;:chisel3.Data]=chisel3.Mem[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Mem</span><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">chisel3.Data</a></span>]</span><span class="result alias"> = <a href="../Mem.html" class="extype" name="chisel3.Mem">chisel3.Mem</a>[<span class="extype" name="chisel3.core.Mem.T">T</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.MemBase" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MemBase[T&lt;:chisel3.Data]=chisel3.MemBase[T]"></a><a id="MemBase[T&lt;:chisel3.Data]:MemBase[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#MemBase[T&lt;:chisel3.Data]=chisel3.MemBase[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">MemBase</span><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">chisel3.Data</a></span>]</span><span class="result alias"> = <a href="../MemBase.html" class="extype" name="chisel3.MemBase">chisel3.MemBase</a>[<span class="extype" name="chisel3.core.MemBase.T">T</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.MemoryPortBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MemoryPortBinding=chisel3.internal.MemoryPortBinding"></a><a id="MemoryPortBinding:MemoryPortBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#MemoryPortBinding=chisel3.internal.MemoryPortBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">MemoryPortBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.MemoryPortBinding">internal.MemoryPortBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.Module" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Module=chisel3.Module"></a><a id="Module:Module"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Module=chisel3.Module" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Module</span><span class="result alias"> = <span class="extype" name="chisel3.internal.LegacyModule">LegacyModule</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.MultiIOModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MultiIOModule=chisel3.MultiIOModule"></a><a id="MultiIOModule:MultiIOModule"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#MultiIOModule=chisel3.MultiIOModule" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version since the beginning of time)">MultiIOModule</span><span class="result alias"> = <a href="../MultiIOModule.html" class="extype" name="chisel3.MultiIOModule">chisel3.MultiIOModule</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version since the beginning of time)</i></p></dd></dl></div>
+    </li><li name="chisel3.core.Name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Name=chisel3.Name"></a><a id="Name:Name"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Name=chisel3.Name" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Name</span><span class="result alias"> = <a href="../Name.html" class="extype" name="chisel3.Name">chisel3.Name</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Num" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Num[T&lt;:chisel3.Data]=chisel3.Num[T]"></a><a id="Num[T&lt;:chisel3.Data]:Num[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Num[T&lt;:chisel3.Data]=chisel3.Num[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Num</span><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">chisel3.Data</a></span>]</span><span class="result alias"> = <a href="../Num.html" class="extype" name="chisel3.Num">chisel3.Num</a>[<span class="extype" name="chisel3.core.Num.T">T</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.OpBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OpBinding=chisel3.internal.OpBinding"></a><a id="OpBinding:OpBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#OpBinding=chisel3.internal.OpBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">OpBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.OpBinding">internal.OpBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.PString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PString=chisel3.PString"></a><a id="PString:PString"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#PString=chisel3.PString" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">PString</span><span class="result alias"> = <a href="../PString.html" class="extype" name="chisel3.PString">chisel3.PString</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Param" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Param=chisel3.experimental.Param"></a><a id="Param:Param"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Param=chisel3.experimental.Param" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">Param</span><span class="result alias"> = <a href="../experimental/Param.html" class="extype" name="chisel3.experimental.Param">experimental.Param</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.PortBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PortBinding=chisel3.internal.PortBinding"></a><a id="PortBinding:PortBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#PortBinding=chisel3.internal.PortBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">PortBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.PortBinding">internal.PortBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.Printable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Printable=chisel3.Printable"></a><a id="Printable:Printable"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Printable=chisel3.Printable" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Printable</span><span class="result alias"> = <a href="../Printable.html" class="extype" name="chisel3.Printable">chisel3.Printable</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.Printables" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Printables=chisel3.Printables"></a><a id="Printables:Printables"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Printables=chisel3.Printables" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Printables</span><span class="result alias"> = <a href="../Printables.html" class="extype" name="chisel3.Printables">chisel3.Printables</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.RawModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RawModule=chisel3.RawModule"></a><a id="RawModule:RawModule"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#RawModule=chisel3.RawModule" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version since the beginning of time)">RawModule</span><span class="result alias"> = <a href="../RawModule.html" class="extype" name="chisel3.RawModule">chisel3.RawModule</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version since the beginning of time)</i></p></dd></dl></div>
+    </li><li name="chisel3.core.RawParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RawParam=chisel3.experimental.RawParam"></a><a id="RawParam:RawParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#RawParam=chisel3.experimental.RawParam" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">RawParam</span><span class="result alias"> = <a href="../experimental/RawParam.html" class="extype" name="chisel3.experimental.RawParam">experimental.RawParam</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.ReadOnlyBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ReadOnlyBinding=chisel3.internal.ReadOnlyBinding"></a><a id="ReadOnlyBinding:ReadOnlyBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#ReadOnlyBinding=chisel3.internal.ReadOnlyBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">ReadOnlyBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.ReadOnlyBinding">internal.ReadOnlyBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.Record" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Record=chisel3.Record"></a><a id="Record:Record"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Record=chisel3.Record" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Record</span><span class="result alias"> = <a href="../Record.html" class="extype" name="chisel3.Record">chisel3.Record</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.RegBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RegBinding=chisel3.internal.RegBinding"></a><a id="RegBinding:RegBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#RegBinding=chisel3.internal.RegBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">RegBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.RegBinding">internal.RegBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.Reset" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Reset=chisel3.Reset"></a><a id="Reset:Reset"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Reset=chisel3.Reset" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Reset</span><span class="result alias"> = <a href="../Reset.html" class="extype" name="chisel3.Reset">chisel3.Reset</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.RunFirrtlTransform" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RunFirrtlTransform=chisel3.experimental.RunFirrtlTransform"></a><a id="RunFirrtlTransform:RunFirrtlTransform"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#RunFirrtlTransform=chisel3.experimental.RunFirrtlTransform" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">RunFirrtlTransform</span><span class="result alias"> = <a href="../experimental/RunFirrtlTransform.html" class="extype" name="chisel3.experimental.RunFirrtlTransform">experimental.RunFirrtlTransform</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.SInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SInt=chisel3.SInt"></a><a id="SInt:SInt"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#SInt=chisel3.SInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">SInt</span><span class="result alias"> = <a href="../SInt.html" class="extype" name="chisel3.SInt">chisel3.SInt</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.StringParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StringParam=chisel3.experimental.StringParam"></a><a id="StringParam:StringParam"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#StringParam=chisel3.experimental.StringParam" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">StringParam</span><span class="result alias"> = <a href="../experimental/StringParam.html" class="extype" name="chisel3.experimental.StringParam">experimental.StringParam</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core.SyncReadMem" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SyncReadMem[T&lt;:chisel3.Data]=chisel3.SyncReadMem[T]"></a><a id="SyncReadMem[T&lt;:chisel3.Data]:SyncReadMem[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#SyncReadMem[T&lt;:chisel3.Data]=chisel3.SyncReadMem[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">SyncReadMem</span><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">chisel3.Data</a></span>]</span><span class="result alias"> = <a href="../SyncReadMem.html" class="extype" name="chisel3.SyncReadMem">chisel3.SyncReadMem</a>[<span class="extype" name="chisel3.core.SyncReadMem.T">T</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.TopBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TopBinding=chisel3.internal.TopBinding"></a><a id="TopBinding:TopBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#TopBinding=chisel3.internal.TopBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">TopBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.TopBinding">internal.TopBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.UInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UInt=chisel3.UInt"></a><a id="UInt:UInt"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#UInt=chisel3.UInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">UInt</span><span class="result alias"> = <a href="../UInt.html" class="extype" name="chisel3.UInt">chisel3.UInt</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.UnconstrainedBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnconstrainedBinding=chisel3.internal.UnconstrainedBinding"></a><a id="UnconstrainedBinding:UnconstrainedBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#UnconstrainedBinding=chisel3.internal.UnconstrainedBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">UnconstrainedBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.UnconstrainedBinding">internal.UnconstrainedBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core.UserModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UserModule=chisel3.RawModule"></a><a id="UserModule:UserModule"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#UserModule=chisel3.RawModule" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version since the beginning of time)">UserModule</span><span class="result alias"> = <a href="../RawModule.html" class="extype" name="chisel3.RawModule">chisel3.RawModule</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version since the beginning of time)</i></p></dd></dl></div>
+    </li><li name="chisel3.core.Vec" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Vec[T&lt;:chisel3.core.package.Data]=chisel3.Vec[T]"></a><a id="Vec[T&lt;:Data]:Vec[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Vec[T&lt;:chisel3.core.package.Data]=chisel3.Vec[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Vec</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="chisel3.core.Data">Data</a></span>]</span><span class="result alias"> = <a href="../Vec.html" class="extype" name="chisel3.Vec">chisel3.Vec</a>[<span class="extype" name="chisel3.core.Vec.T">T</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.VecLike" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="VecLike[T&lt;:chisel3.core.package.Data]=chisel3.VecLike[T]"></a><a id="VecLike[T&lt;:Data]:VecLike[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#VecLike[T&lt;:chisel3.core.package.Data]=chisel3.VecLike[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">VecLike</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="chisel3.core.Data">Data</a></span>]</span><span class="result alias"> = <a href="../VecLike.html" class="extype" name="chisel3.VecLike">chisel3.VecLike</a>[<span class="extype" name="chisel3.core.VecLike.T">T</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.WhenContext" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="WhenContext=chisel3.WhenContext"></a><a id="WhenContext:WhenContext"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#WhenContext=chisel3.WhenContext" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">WhenContext</span><span class="result alias"> = <a href="../WhenContext.html" class="extype" name="chisel3.WhenContext">chisel3.WhenContext</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core.WireBinding" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="WireBinding=chisel3.internal.WireBinding"></a><a id="WireBinding:WireBinding"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#WireBinding=chisel3.internal.WireBinding" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">WireBinding</span><span class="result alias"> = <span class="extype" name="chisel3.internal.WireBinding">internal.WireBinding</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="chisel3.core#Hexadecimal" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Hexadecimal:chisel3.Hexadecimal.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Hexadecimal:chisel3.Hexadecimal.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Hexadecimal</span><span class="result">: <span class="extype" name="chisel3.Hexadecimal">chisel3.Hexadecimal</span>.type</span>
+      </span>
+      
+      
+    </li>
+              </ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="chisel3.core#ActualDirection" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ActualDirection:chisel3.ActualDirection.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#ActualDirection:chisel3.ActualDirection.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">ActualDirection</span><span class="result">: <a href="../ActualDirection$.html" class="extype" name="chisel3.ActualDirection">chisel3.ActualDirection</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Analog" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Analog:chisel3.experimental.Analog.type"></a><a id="Analog:experimental.Analog.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Analog:chisel3.experimental.Analog.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">Analog</span><span class="result">: <a href="../experimental/Analog$.html" class="extype" name="chisel3.experimental.Analog">experimental.Analog</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#BiConnect" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BiConnect:chisel3.internal.BiConnect.type"></a><a id="BiConnect:internal.BiConnect.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#BiConnect:chisel3.internal.BiConnect.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">BiConnect</span><span class="result">: <span class="extype" name="chisel3.internal.BiConnect">internal.BiConnect</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core#Binary" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Binary:chisel3.Binary.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Binary:chisel3.Binary.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Binary</span><span class="result">: <span class="extype" name="chisel3.Binary">chisel3.Binary</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#BindingDirection" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BindingDirection:chisel3.internal.BindingDirection.type"></a><a id="BindingDirection:internal.BindingDirection.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#BindingDirection:chisel3.internal.BindingDirection.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">BindingDirection</span><span class="result">: <span class="extype" name="chisel3.internal.BindingDirection">internal.BindingDirection</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core#Bits" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Bits:chisel3.Bits.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Bits:chisel3.Bits.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Bits</span><span class="result">: <a href="../package$$Bits$.html" class="extype" name="chisel3.Bits">chisel3.Bits</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Bool" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Bool:chisel3.Bool.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Bool:chisel3.Bool.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Bool</span><span class="result">: <a href="../package$$Bool$.html" class="extype" name="chisel3.Bool">chisel3.Bool</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Character" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Character:chisel3.Character.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Character:chisel3.Character.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Character</span><span class="result">: <span class="extype" name="chisel3.Character">chisel3.Character</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Clock" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Clock:chisel3.Clock.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Clock:chisel3.Clock.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Clock</span><span class="result">: <a href="../Clock$.html" class="extype" name="chisel3.Clock">chisel3.Clock</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#CompileOptions" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CompileOptions:chisel3.CompileOptions.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#CompileOptions:chisel3.CompileOptions.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">CompileOptions</span><span class="result">: <a href="../CompileOptions$.html" class="extype" name="chisel3.CompileOptions">chisel3.CompileOptions</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#DataMirror" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DataMirror:chisel3.experimental.DataMirror.type"></a><a id="DataMirror:experimental.DataMirror.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#DataMirror:chisel3.experimental.DataMirror.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">DataMirror</span><span class="result">: <a href="../experimental/DataMirror$.html" class="extype" name="chisel3.experimental.DataMirror">experimental.DataMirror</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#Decimal" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Decimal:chisel3.Decimal.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Decimal:chisel3.Decimal.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Decimal</span><span class="result">: <span class="extype" name="chisel3.Decimal">chisel3.Decimal</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#DoubleParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DoubleParam:chisel3.experimental.DoubleParam.type"></a><a id="DoubleParam:experimental.DoubleParam.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#DoubleParam:chisel3.experimental.DoubleParam.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">DoubleParam</span><span class="result">: <span class="extype" name="chisel3.experimental.DoubleParam">experimental.DoubleParam</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#EnumAnnotations" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EnumAnnotations:chisel3.experimental.EnumAnnotations.type"></a><a id="EnumAnnotations:experimental.EnumAnnotations.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#EnumAnnotations:chisel3.experimental.EnumAnnotations.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">EnumAnnotations</span><span class="result">: <a href="../experimental/EnumAnnotations$.html" class="extype" name="chisel3.experimental.EnumAnnotations">experimental.EnumAnnotations</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#FirrtlFormat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FirrtlFormat:chisel3.FirrtlFormat.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#FirrtlFormat:chisel3.FirrtlFormat.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">FirrtlFormat</span><span class="result">: <a href="../FirrtlFormat$.html" class="extype" name="chisel3.FirrtlFormat">chisel3.FirrtlFormat</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#FixedPoint" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FixedPoint:chisel3.experimental.FixedPoint.type"></a><a id="FixedPoint:experimental.FixedPoint.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#FixedPoint:chisel3.experimental.FixedPoint.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">FixedPoint</span><span class="result">: <a href="../experimental/FixedPoint$.html" class="extype" name="chisel3.experimental.FixedPoint">experimental.FixedPoint</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#Flipped" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Flipped:chisel3.Flipped.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Flipped:chisel3.Flipped.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Flipped</span><span class="result">: <a href="../Flipped$.html" class="extype" name="chisel3.Flipped">chisel3.Flipped</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#FullName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FullName:chisel3.FullName.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#FullName:chisel3.FullName.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">FullName</span><span class="result">: <span class="extype" name="chisel3.FullName">chisel3.FullName</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#IO" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IO:chisel3.experimental.IO.type"></a><a id="IO:experimental.IO.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#IO:chisel3.experimental.IO.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">IO</span><span class="result">: <a href="../experimental/IO$.html" class="extype" name="chisel3.experimental.IO">experimental.IO</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#Input" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Input:chisel3.Input.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Input:chisel3.Input.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Input</span><span class="result">: <a href="../Input$.html" class="extype" name="chisel3.Input">chisel3.Input</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#IntParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IntParam:chisel3.experimental.IntParam.type"></a><a id="IntParam:experimental.IntParam.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#IntParam:chisel3.experimental.IntParam.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">IntParam</span><span class="result">: <span class="extype" name="chisel3.experimental.IntParam">experimental.IntParam</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#Mem" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Mem:chisel3.Mem.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Mem:chisel3.Mem.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Mem</span><span class="result">: <a href="../Mem$.html" class="extype" name="chisel3.Mem">chisel3.Mem</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Module" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Module:chisel3.Module.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Module:chisel3.Module.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Module</span><span class="result">: <a href="../Module$.html" class="extype" name="chisel3.Module">chisel3.Module</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#MonoConnect" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MonoConnect:chisel3.internal.MonoConnect.type"></a><a id="MonoConnect:internal.MonoConnect.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#MonoConnect:chisel3.internal.MonoConnect.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">MonoConnect</span><span class="result">: <span class="extype" name="chisel3.internal.MonoConnect">internal.MonoConnect</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core#Mux" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Mux:chisel3.Mux.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Mux:chisel3.Mux.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Mux</span><span class="result">: <a href="../Mux$.html" class="extype" name="chisel3.Mux">chisel3.Mux</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Name:chisel3.Name.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Name:chisel3.Name.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Name</span><span class="result">: <span class="extype" name="chisel3.Name">chisel3.Name</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Output" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Output:chisel3.Output.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Output:chisel3.Output.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Output</span><span class="result">: <a href="../Output$.html" class="extype" name="chisel3.Output">chisel3.Output</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#PString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PString:chisel3.PString.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#PString:chisel3.PString.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">PString</span><span class="result">: <span class="extype" name="chisel3.PString">chisel3.PString</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Percent" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Percent:chisel3.Percent.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Percent:chisel3.Percent.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Percent</span><span class="result">: <a href="../Percent$.html" class="extype" name="chisel3.Percent">chisel3.Percent</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Printable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Printable:chisel3.Printable.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Printable:chisel3.Printable.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Printable</span><span class="result">: <a href="../Printable$.html" class="extype" name="chisel3.Printable">chisel3.Printable</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Printables" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Printables:chisel3.Printables.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Printables:chisel3.Printables.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Printables</span><span class="result">: <span class="extype" name="chisel3.Printables">chisel3.Printables</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#RawParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RawParam:chisel3.experimental.RawParam.type"></a><a id="RawParam:experimental.RawParam.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#RawParam:chisel3.experimental.RawParam.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">RawParam</span><span class="result">: <span class="extype" name="chisel3.experimental.RawParam">experimental.RawParam</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#Reg" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Reg:chisel3.Reg.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Reg:chisel3.Reg.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Reg</span><span class="result">: <a href="../Reg$.html" class="extype" name="chisel3.Reg">chisel3.Reg</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#RegInit" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RegInit:chisel3.RegInit.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#RegInit:chisel3.RegInit.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">RegInit</span><span class="result">: <a href="../RegInit$.html" class="extype" name="chisel3.RegInit">chisel3.RegInit</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#RegNext" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RegNext:chisel3.RegNext.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#RegNext:chisel3.RegNext.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">RegNext</span><span class="result">: <a href="../RegNext$.html" class="extype" name="chisel3.RegNext">chisel3.RegNext</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#SInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SInt:chisel3.SInt.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#SInt:chisel3.SInt.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">SInt</span><span class="result">: <a href="../package$$SInt$.html" class="extype" name="chisel3.SInt">chisel3.SInt</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#StringParam" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StringParam:chisel3.experimental.StringParam.type"></a><a id="StringParam:experimental.StringParam.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#StringParam:chisel3.experimental.StringParam.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">StringParam</span><span class="result">: <span class="extype" name="chisel3.experimental.StringParam">experimental.StringParam</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#SyncReadMem" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SyncReadMem:chisel3.SyncReadMem.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#SyncReadMem:chisel3.SyncReadMem.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">SyncReadMem</span><span class="result">: <a href="../SyncReadMem$.html" class="extype" name="chisel3.SyncReadMem">chisel3.SyncReadMem</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#UInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UInt:chisel3.UInt.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#UInt:chisel3.UInt.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">UInt</span><span class="result">: <a href="../package$$UInt$.html" class="extype" name="chisel3.UInt">chisel3.UInt</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#Vec" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Vec:chisel3.Vec.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#Vec:chisel3.Vec.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">Vec</span><span class="result">: <a href="../package$$Vec$.html" class="extype" name="chisel3.Vec">chisel3.Vec</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#VecInit" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="VecInit:chisel3.VecInit.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#VecInit:chisel3.VecInit.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">VecInit</span><span class="result">: <a href="../VecInit$.html" class="extype" name="chisel3.VecInit">chisel3.VecInit</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#WireDefault" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="WireDefault:chisel3.WireDefault.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#WireDefault:chisel3.WireDefault.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">WireDefault</span><span class="result">: <a href="../WireDefault$.html" class="extype" name="chisel3.WireDefault">chisel3.WireDefault</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#annotate" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="annotate:chisel3.experimental.annotate.type"></a><a id="annotate:experimental.annotate.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#annotate:chisel3.experimental.annotate.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">annotate</span><span class="result">: <a href="../experimental/annotate$.html" class="extype" name="chisel3.experimental.annotate">experimental.annotate</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#assert" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="assert:chisel3.assert.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#assert:chisel3.assert.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">assert</span><span class="result">: <a href="../assert$.html" class="extype" name="chisel3.assert">chisel3.assert</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#attach" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="attach:chisel3.experimental.attach.type"></a><a id="attach:experimental.attach.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#attach:chisel3.experimental.attach.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.experimental._">attach</span><span class="result">: <a href="../experimental/attach$.html" class="extype" name="chisel3.experimental.attach">experimental.attach</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.experimental._</p></dd></dl></div>
+    </li><li name="chisel3.core#chiselTypeOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="chiselTypeOf:chisel3.chiselTypeOf.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#chiselTypeOf:chisel3.chiselTypeOf.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">chiselTypeOf</span><span class="result">: <a href="../chiselTypeOf$.html" class="extype" name="chisel3.chiselTypeOf">chisel3.chiselTypeOf</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#dontTouch" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dontTouch:chisel3.dontTouch.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#dontTouch:chisel3.dontTouch.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">dontTouch</span><span class="result">: <a href="../dontTouch$.html" class="extype" name="chisel3.dontTouch">chisel3.dontTouch</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#printf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="printf:chisel3.printf.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#printf:chisel3.printf.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">printf</span><span class="result">: <a href="../printf$.html" class="extype" name="chisel3.printf">chisel3.printf</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#requireIsChiselType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="requireIsChiselType:chisel3.internal.requireIsChiselType.type"></a><a id="requireIsChiselType:internal.requireIsChiselType.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#requireIsChiselType:chisel3.internal.requireIsChiselType.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">requireIsChiselType</span><span class="result">: <span class="extype" name="chisel3.internal.requireIsChiselType">internal.requireIsChiselType</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core#requireIsHardware" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="requireIsHardware:chisel3.internal.requireIsHardware.type"></a><a id="requireIsHardware:internal.requireIsHardware.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#requireIsHardware:chisel3.internal.requireIsHardware.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3.internal._">requireIsHardware</span><span class="result">: <span class="extype" name="chisel3.internal.requireIsHardware">internal.requireIsHardware</span>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3.internal._</p></dd></dl></div>
+    </li><li name="chisel3.core#when" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="when:chisel3.when.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#when:chisel3.when.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">when</span><span class="result">: <a href="../when$.html" class="extype" name="chisel3.when">chisel3.when</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#withClock" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withClock:chisel3.withClock.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#withClock:chisel3.withClock.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">withClock</span><span class="result">: <a href="../withClock$.html" class="extype" name="chisel3.withClock">chisel3.withClock</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#withClockAndReset" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withClockAndReset:chisel3.withClockAndReset.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#withClockAndReset:chisel3.withClockAndReset.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">withClockAndReset</span><span class="result">: <a href="../withClockAndReset$.html" class="extype" name="chisel3.withClockAndReset">chisel3.withClockAndReset</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li><li name="chisel3.core#withReset" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withReset:chisel3.withReset.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html#withReset:chisel3.withReset.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) Use the version in chisel3._">withReset</span><span class="result">: <a href="../withReset$.html" class="extype" name="chisel3.withReset">chisel3.withReset</a>.type</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> Use the version in chisel3._</p></dd></dl></div>
+    </li></ol>
+            </div>
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.11/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>

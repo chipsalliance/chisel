@@ -1,0 +1,2416 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>chisel3 3.2.8 - Chisel</title>
+          <meta name="description" content="chisel3 3.2.8 - Chisel" />
+          <meta name="keywords" content="chisel3 3.2.8 Chisel" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../lib/index.js"></script>
+      <script type="text/javascript" src="../index.js"></script>
+      <script type="text/javascript" src="../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../lib/template.js"></script>
+      <script type="text/javascript" src="../lib/modernizr.custom.js"></script><script type="text/javascript" src="../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">chisel3<span id="doc-version">3.2.8</span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This is the documentation for Chisel." href="../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This is the documentation for Chisel.</p><div class="fullcomment"><div class="comment cmt"><p>This is the documentation for Chisel.</p><h4> Package structure </h4><p>The <a href="../chisel3/index.html" class="extype" name="chisel3">chisel3</a> package presents the public API of Chisel.
+It contains the concrete core types <a href="../chisel3/UInt.html" class="extype" name="chisel3.UInt"><code>UInt</code></a>, <a href="../chisel3/SInt.html" class="extype" name="chisel3.SInt"><code>SInt</code></a>, <a href="../chisel3/Bool.html" class="extype" name="chisel3.Bool"><code>Bool</code></a>, <a href="../chisel3/experimental/FixedPoint.html" class="extype" name="chisel3.experimental.FixedPoint"><code>FixedPoint</code></a>, <a href="../chisel3/Clock.html" class="extype" name="chisel3.Clock"><code>Clock</code></a>, and <a href="../chisel3/Reg$.html" class="extype" name="chisel3.Reg"><code>Reg</code></a>,
+the abstract types <a href="../chisel3/Bits.html" class="extype" name="chisel3.Bits"><code>Bits</code></a>, <a href="../chisel3/Aggregate.html" class="extype" name="chisel3.Aggregate"><code>Aggregate</code></a>, and <a href="../chisel3/Data.html" class="extype" name="chisel3.Data"><code>Data</code></a>,
+and the aggregate types <a href="../chisel3/Bundle.html" class="extype" name="chisel3.Bundle"><code>Bundle</code></a> and <a href="../chisel3/Vec.html" class="extype" name="chisel3.Vec"><code>Vec</code></a>.</p><p>The <a href="" class="extype" name="Chisel">Chisel</a> package is a compatibility layer that attempts to provide chisel2 compatibility in chisel3.</p><p>Utility objects and methods are found in the <a href="../chisel3/util/index.html" class="extype" name="chisel3.util"><code>util</code></a> package.</p><p>The <a href="../chisel3/testers/index.html" class="extype" name="chisel3.testers"><code>testers</code></a> package defines the basic interface for chisel testers.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.Chisel" visbl="pub" class="indented1 current" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Chisel"></a><a id="Chisel:Chisel"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Chisel</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$AddDirMethodToData.html" title=""></a>
+                        <a href="package$$AddDirMethodToData.html" title="">AddDirMethodToData</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$AddDirectionToData.html" title=""></a>
+                        <a href="package$$AddDirectionToData.html" title="">AddDirectionToData</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$Bits$.html" title=""></a>
+                        <a href="package$$Bits$.html" title="">Bits</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$BitsCompatibility.html" title=""></a>
+                        <a href="package$$BitsCompatibility.html" title="">BitsCompatibility</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$BitsObjectCompatibility.html" title=""></a>
+                        <a href="package$$BitsObjectCompatibility.html" title="">BitsObjectCompatibility</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$BlackBox.html" title=""></a>
+                        <a href="package$$BlackBox.html" title="">BlackBox</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$Bool$.html" title=""></a>
+                        <a href="package$$Bool$.html" title="">Bool</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="trait" href="package$$BoolFactory.html" title="This contains literal constructor factory methods that are deprecated as of Chisel3."></a>
+                        <a href="package$$BoolFactory.html" title="This contains literal constructor factory methods that are deprecated as of Chisel3.">BoolFactory</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$Clock$.html" title=""></a>
+                        <a href="package$$Clock$.html" title="">Clock</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$CompatibilityModule.html" title=""></a>
+                        <a href="package$$CompatibilityModule.html" title="">CompatibilityModule</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$DataCompatibility.html" title=""></a>
+                        <a href="package$$DataCompatibility.html" title="">DataCompatibility</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$Direction.html" title=""></a>
+                        <a href="package$$Direction.html" title="">Direction</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$Enum$.html" title=""></a>
+                        <a href="package$$Enum$.html" title="">Enum</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$Flipped$.html" title=""></a>
+                        <a href="package$$Flipped$.html" title="">Flipped</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$INPUT$.html" title=""></a>
+                        <a href="package$$INPUT$.html" title="">INPUT</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$MemCompatibility.html" title=""></a>
+                        <a href="package$$MemCompatibility.html" title="">MemCompatibility</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$NODIR$.html" title=""></a>
+                        <a href="package$$NODIR$.html" title="">NODIR</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$OUTPUT$.html" title=""></a>
+                        <a href="package$$OUTPUT$.html" title="">OUTPUT</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$QueueCompatibility.html" title=""></a>
+                        <a href="package$$QueueCompatibility.html" title="">QueueCompatibility</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$Reg$.html" title=""></a>
+                        <a href="package$$Reg$.html" title="">Reg</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$SInt$.html" title=""></a>
+                        <a href="package$$SInt$.html" title="">SInt</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="trait" href="package$$SIntFactory.html" title="This contains literal constructor factory methods that are deprecated as of Chisel3."></a>
+                        <a href="package$$SIntFactory.html" title="This contains literal constructor factory methods that are deprecated as of Chisel3.">SIntFactory</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$SeqMemCompatibility.html" title=""></a>
+                        <a href="package$$SeqMemCompatibility.html" title="">SeqMemCompatibility</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$UInt$.html" title=""></a>
+                        <a href="package$$UInt$.html" title="">UInt</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="trait" href="package$$UIntFactory.html" title="This contains literal constructor factory methods that are deprecated as of Chisel3."></a>
+                        <a href="package$$UIntFactory.html" title="This contains literal constructor factory methods that are deprecated as of Chisel3.">UIntFactory</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$Vec$.html" title=""></a>
+                        <a href="package$$Vec$.html" title="">Vec</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$VecLikeCompatibility.html" title=""></a>
+                        <a href="package$$VecLikeCompatibility.html" title="">VecLikeCompatibility</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$Wire$.html" title=""></a>
+                        <a href="package$$Wire$.html" title="">Wire</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$chiselMain$.html" title=""></a>
+                        <a href="package$$chiselMain$.html" title="">chiselMain</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$cloneTypeable.html" title=""></a>
+                        <a href="package$$cloneTypeable.html" title="">cloneTypeable</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$debug$.html" title=""></a>
+                        <a href="package$$debug$.html" title="">debug</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$experimental$.html" title="Package for experimental features, which may have their API changed, be removed, etc."></a>
+                        <a href="package$$experimental$.html" title="Package for experimental features, which may have their API changed, be removed, etc.">experimental</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromBigIntToLiteral.html" title=""></a>
+                        <a href="package$$fromBigIntToLiteral.html" title="">fromBigIntToLiteral</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromBitsable.html" title=""></a>
+                        <a href="package$$fromBitsable.html" title="">fromBitsable</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromBooleanToLiteral.html" title=""></a>
+                        <a href="package$$fromBooleanToLiteral.html" title="">fromBooleanToLiteral</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromIntToWidth.html" title=""></a>
+                        <a href="package$$fromIntToWidth.html" title="">fromIntToWidth</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromStringToLiteral.html" title=""></a>
+                        <a href="package$$fromStringToLiteral.html" title="">fromStringToLiteral</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromtIntToLiteral.html" title=""></a>
+                        <a href="package$$fromtIntToLiteral.html" title="">fromtIntToLiteral</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="class" href="package$$fromtLongToLiteral.html" title=""></a>
+                        <a href="package$$fromtLongToLiteral.html" title="">fromtLongToLiteral</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$log2Down$.html" title="Compute the log2 rounded down with min value of 1"></a>
+                        <a href="package$$log2Down$.html" title="Compute the log2 rounded down with min value of 1">log2Down</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$log2Up$.html" title="Compute the log2 rounded up with min value of 1"></a>
+                        <a href="package$$log2Up$.html" title="Compute the log2 rounded up with min value of 1">log2Up</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$testers$.html" title=""></a>
+                        <a href="package$$testers$.html" title="">testers</a>
+                      </li><li class="current-entities indented1">
+                        <span class="separator"></span>
+                        <a class="object" href="package$$throwException$.html" title=""></a>
+                        <a href="package$$throwException$.html" title="">throwException</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="package value">
+      <div id="definition">
+        <div class="big-circle package">p</div>
+        
+        <h1>Chisel<span class="permalink">
+      <a href="../Chisel/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Chisel</span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/freechipsproject/chisel3/tree/v3.2.8//src/main/scala/chisel3/compatibility.scala" target="_blank">compatibility.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="Chisel"><span>Chisel</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="Chisel.AddDirMethodToData" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AddDirMethodToData[T&lt;:Chisel.package.Data]extendsAnyRef"></a><a id="AddDirMethodToData[T&lt;:Data]:AddDirMethodToData[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$AddDirMethodToData.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$AddDirMethodToData.html"><span class="name">AddDirMethodToData</span></a><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.AddDirectionToData" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AddDirectionToData[T&lt;:Chisel.package.Data]extendsAnyRef"></a><a id="AddDirectionToData[T&lt;:Data]:AddDirectionToData[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$AddDirectionToData.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$AddDirectionToData.html"><span class="name">AddDirectionToData</span></a><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Aggregate" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Aggregate=chisel3.Aggregate"></a><a id="Aggregate:Aggregate"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Aggregate=chisel3.Aggregate" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Aggregate</span><span class="result alias"> = <a href="../chisel3/Aggregate.html" class="extype" name="chisel3.Aggregate">chisel3.Aggregate</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Arbiter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Arbiter[T&lt;:Chisel.package.Data]=chisel3.util.Arbiter[T]"></a><a id="Arbiter[T&lt;:Data]:Arbiter[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Arbiter[T&lt;:Chisel.package.Data]=chisel3.util.Arbiter[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Arbiter</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/Arbiter.html" class="extype" name="chisel3.util.Arbiter">chisel3.util.Arbiter</a>[<span class="extype" name="Chisel.Arbiter.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.ArbiterIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ArbiterIO[T&lt;:Chisel.package.Data]=chisel3.util.ArbiterIO[T]"></a><a id="ArbiterIO[T&lt;:Data]:ArbiterIO[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#ArbiterIO[T&lt;:Chisel.package.Data]=chisel3.util.ArbiterIO[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ArbiterIO</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/ArbiterIO.html" class="extype" name="chisel3.util.ArbiterIO">chisel3.util.ArbiterIO</a>[<span class="extype" name="Chisel.ArbiterIO.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.BackendCompilationUtilities" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BackendCompilationUtilities=firrtl.util.BackendCompilationUtilities"></a><a id="BackendCompilationUtilities:BackendCompilationUtilities"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#BackendCompilationUtilities=firrtl.util.BackendCompilationUtilities" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">BackendCompilationUtilities</span><span class="result alias"> = <a href="https://javadoc.io/page/edu.berkeley.cs/firrtl_2.12/1.2.8/firrtl/util/BackendCompilationUtilities.html#firrtl.util.BackendCompilationUtilities" class="extype" name="firrtl.util.BackendCompilationUtilities">firrtl.util.BackendCompilationUtilities</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.BitPat" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BitPat=chisel3.util.BitPat"></a><a id="BitPat:BitPat"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#BitPat=chisel3.util.BitPat" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">BitPat</span><span class="result alias"> = <a href="../chisel3/util/BitPat.html" class="extype" name="chisel3.util.BitPat">chisel3.util.BitPat</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Bits" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Bits=chisel3.Bits"></a><a id="Bits:Bits"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Bits=chisel3.Bits" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Bits</span><span class="result alias"> = <a href="../chisel3/Bits.html" class="extype" name="chisel3.Bits">chisel3.Bits</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.BitsCompatibility" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BitsCompatibilityextendsAnyRef"></a><a id="BitsCompatibility:BitsCompatibility"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$BitsCompatibility.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$BitsCompatibility.html"><span class="name">BitsCompatibility</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.BitsObjectCompatibility" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BitsObjectCompatibilityextendsAnyRef"></a><a id="BitsObjectCompatibility:BitsObjectCompatibility"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$BitsObjectCompatibility.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$BitsObjectCompatibility.html"><span class="name">BitsObjectCompatibility</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.BlackBox" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BlackBoxextendsBlackBox"></a><a id="BlackBox:BlackBox"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$BlackBox.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$BlackBox.html"><span class="name">BlackBox</span></a><span class="result"> extends <a href="../chisel3/BlackBox.html" class="extype" name="chisel3.BlackBox">chisel3.BlackBox</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Bool" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Bool=chisel3.Bool"></a><a id="Bool:Bool"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Bool=chisel3.Bool" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Bool</span><span class="result alias"> = <a href="../chisel3/Bool.html" class="extype" name="chisel3.Bool">chisel3.Bool</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.BoolFactory" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BoolFactoryextendsBoolFactory"></a><a id="BoolFactory:BoolFactory"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$BoolFactory.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="This contains literal constructor factory methods that are deprecated as of Chisel3." href="package$$BoolFactory.html"><span class="name">BoolFactory</span></a><span class="result"> extends <a href="../chisel3/BoolFactory.html" class="extype" name="chisel3.BoolFactory">chisel3.BoolFactory</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">This contains literal constructor factory methods that are deprecated as of Chisel3.</p>
+    </li><li name="Chisel.Bundle" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Bundle=chisel3.Bundle"></a><a id="Bundle:Bundle"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Bundle=chisel3.Bundle" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Bundle</span><span class="result alias"> = <a href="../chisel3/Bundle.html" class="extype" name="chisel3.Bundle">chisel3.Bundle</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.ChiselException" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChiselException=chisel3.internal.ChiselException"></a><a id="ChiselException:ChiselException"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#ChiselException=chisel3.internal.ChiselException" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ChiselException</span><span class="result alias"> = <span class="extype" name="chisel3.internal.ChiselException">chisel3.internal.ChiselException</span></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Clock" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Clock=chisel3.Clock"></a><a id="Clock:Clock"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Clock=chisel3.Clock" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Clock</span><span class="result alias"> = <a href="../chisel3/Clock.html" class="extype" name="chisel3.Clock">chisel3.Clock</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.CompatibilityModule" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="CompatibilityModuleextendsLegacyModule"></a><a id="CompatibilityModule:CompatibilityModule"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$CompatibilityModule.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$CompatibilityModule.html"><span class="name">CompatibilityModule</span></a><span class="result"> extends <span class="extype" name="chisel3.internal.LegacyModule">LegacyModule</span></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Counter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Counter=chisel3.util.Counter"></a><a id="Counter:Counter"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Counter=chisel3.util.Counter" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Counter</span><span class="result alias"> = <a href="../chisel3/util/Counter.html" class="extype" name="chisel3.util.Counter">chisel3.util.Counter</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Data" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Data=chisel3.Data"></a><a id="Data:Data"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Data=chisel3.Data" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Data</span><span class="result alias"> = <a href="../chisel3/Data.html" class="extype" name="chisel3.Data">chisel3.Data</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.DataCompatibility" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DataCompatibilityextendsAnyRef"></a><a id="DataCompatibility:DataCompatibility"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$DataCompatibility.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$DataCompatibility.html"><span class="name">DataCompatibility</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.DecoupledIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DecoupledIO[+T&lt;:Chisel.package.Data]=chisel3.util.DecoupledIO[T]"></a><a id="DecoupledIO[+T&lt;:Data]:DecoupledIO[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#DecoupledIO[+T&lt;:Chisel.package.Data]=chisel3.util.DecoupledIO[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">DecoupledIO</span><span class="tparams">[<span name="T">+T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/DecoupledIO.html" class="extype" name="chisel3.util.DecoupledIO">chisel3.util.DecoupledIO</a>[<span class="extype" name="Chisel.DecoupledIO.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.Direction" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DirectionextendsAnyRef"></a><a id="Direction:Direction"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$Direction.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$Direction.html"><span class="name">Direction</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Element" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Element=chisel3.Element"></a><a id="Element:Element"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Element=chisel3.Element" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Element</span><span class="result alias"> = <a href="../chisel3/Element.html" class="extype" name="chisel3.Element">chisel3.Element</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.LockingArbiter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LockingArbiter[T&lt;:Chisel.package.Data]=chisel3.util.LockingArbiter[T]"></a><a id="LockingArbiter[T&lt;:Data]:LockingArbiter[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#LockingArbiter[T&lt;:Chisel.package.Data]=chisel3.util.LockingArbiter[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LockingArbiter</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/LockingArbiter.html" class="extype" name="chisel3.util.LockingArbiter">chisel3.util.LockingArbiter</a>[<span class="extype" name="Chisel.LockingArbiter.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.LockingArbiterLike" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LockingArbiterLike[T&lt;:Chisel.package.Data]=chisel3.util.LockingArbiterLike[T]"></a><a id="LockingArbiterLike[T&lt;:Data]:LockingArbiterLike[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#LockingArbiterLike[T&lt;:Chisel.package.Data]=chisel3.util.LockingArbiterLike[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LockingArbiterLike</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/LockingArbiterLike.html" class="extype" name="chisel3.util.LockingArbiterLike">chisel3.util.LockingArbiterLike</a>[<span class="extype" name="Chisel.LockingArbiterLike.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.LockingRRArbiter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LockingRRArbiter[T&lt;:Chisel.package.Data]=chisel3.util.LockingRRArbiter[T]"></a><a id="LockingRRArbiter[T&lt;:Data]:LockingRRArbiter[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#LockingRRArbiter[T&lt;:Chisel.package.Data]=chisel3.util.LockingRRArbiter[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LockingRRArbiter</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/LockingRRArbiter.html" class="extype" name="chisel3.util.LockingRRArbiter">chisel3.util.LockingRRArbiter</a>[<span class="extype" name="Chisel.LockingRRArbiter.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.Mem" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Mem[T&lt;:Chisel.package.Data]=chisel3.Mem[T]"></a><a id="Mem[T&lt;:Data]:Mem[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Mem[T&lt;:Chisel.package.Data]=chisel3.Mem[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Mem</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/Mem.html" class="extype" name="chisel3.Mem">chisel3.Mem</a>[<span class="extype" name="Chisel.Mem.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.MemBase" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MemBase[T&lt;:Chisel.package.Data]=chisel3.MemBase[T]"></a><a id="MemBase[T&lt;:Data]:MemBase[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#MemBase[T&lt;:Chisel.package.Data]=chisel3.MemBase[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MemBase</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/MemBase.html" class="extype" name="chisel3.MemBase">chisel3.MemBase</a>[<span class="extype" name="Chisel.MemBase.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.MemCompatibility" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MemCompatibilityextendsAnyRef"></a><a id="MemCompatibility:MemCompatibility"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$MemCompatibility.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$MemCompatibility.html"><span class="name">MemCompatibility</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Module" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Module=Chisel.package.CompatibilityModule"></a><a id="Module:Module"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Module=Chisel.package.CompatibilityModule" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Module</span><span class="result alias"> = <a href="package$$CompatibilityModule.html" class="extype" name="Chisel.CompatibilityModule">CompatibilityModule</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Num" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Num[T&lt;:Chisel.package.Data]=chisel3.Num[T]"></a><a id="Num[T&lt;:Data]:Num[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Num[T&lt;:Chisel.package.Data]=chisel3.Num[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Num</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/Num.html" class="extype" name="chisel3.Num">chisel3.Num</a>[<span class="extype" name="Chisel.Num.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.Pipe" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Pipe[T&lt;:Chisel.package.Data]=chisel3.util.Pipe[T]"></a><a id="Pipe[T&lt;:Data]:Pipe[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Pipe[T&lt;:Chisel.package.Data]=chisel3.util.Pipe[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Pipe</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/Pipe.html" class="extype" name="chisel3.util.Pipe">chisel3.util.Pipe</a>[<span class="extype" name="Chisel.Pipe.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.Queue" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Queue[T&lt;:Chisel.package.Data]=Chisel.package.QueueCompatibility[T]"></a><a id="Queue[T&lt;:Data]:Queue[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Queue[T&lt;:Chisel.package.Data]=Chisel.package.QueueCompatibility[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Queue</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="package$$QueueCompatibility.html" class="extype" name="Chisel.QueueCompatibility">QueueCompatibility</a>[<span class="extype" name="Chisel.Queue.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.QueueCompatibility" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QueueCompatibility[T&lt;:Chisel.package.Data]extendsQueue[T]"></a><a id="QueueCompatibility[T&lt;:Data]:QueueCompatibility[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$QueueCompatibility.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$QueueCompatibility.html"><span class="name">QueueCompatibility</span></a><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result"> extends <a href="../chisel3/util/Queue.html" class="extype" name="chisel3.util.Queue">chisel3.util.Queue</a>[<span class="extype" name="Chisel.QueueCompatibility.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.QueueIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QueueIO[T&lt;:Chisel.package.Data]=chisel3.util.QueueIO[T]"></a><a id="QueueIO[T&lt;:Data]:QueueIO[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#QueueIO[T&lt;:Chisel.package.Data]=chisel3.util.QueueIO[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">QueueIO</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/QueueIO.html" class="extype" name="chisel3.util.QueueIO">chisel3.util.QueueIO</a>[<span class="extype" name="Chisel.QueueIO.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.RRArbiter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RRArbiter[T&lt;:Chisel.package.Data]=chisel3.util.RRArbiter[T]"></a><a id="RRArbiter[T&lt;:Data]:RRArbiter[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#RRArbiter[T&lt;:Chisel.package.Data]=chisel3.util.RRArbiter[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">RRArbiter</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/RRArbiter.html" class="extype" name="chisel3.util.RRArbiter">chisel3.util.RRArbiter</a>[<span class="extype" name="Chisel.RRArbiter.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.Record" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Record=chisel3.Record"></a><a id="Record:Record"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Record=chisel3.Record" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Record</span><span class="result alias"> = <a href="../chisel3/Record.html" class="extype" name="chisel3.Record">chisel3.Record</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Reset" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Reset=chisel3.Reset"></a><a id="Reset:Reset"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Reset=chisel3.Reset" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Reset</span><span class="result alias"> = <a href="../chisel3/Reset.html" class="extype" name="chisel3.Reset">chisel3.Reset</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.SInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SInt=chisel3.SInt"></a><a id="SInt:SInt"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#SInt=chisel3.SInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SInt</span><span class="result alias"> = <a href="../chisel3/SInt.html" class="extype" name="chisel3.SInt">chisel3.SInt</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.SIntFactory" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SIntFactoryextendsSIntFactory"></a><a id="SIntFactory:SIntFactory"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$SIntFactory.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="This contains literal constructor factory methods that are deprecated as of Chisel3." href="package$$SIntFactory.html"><span class="name">SIntFactory</span></a><span class="result"> extends <a href="../chisel3/SIntFactory.html" class="extype" name="chisel3.SIntFactory">chisel3.SIntFactory</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">This contains literal constructor factory methods that are deprecated as of Chisel3.</p>
+    </li><li name="Chisel.SeqMem" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SeqMem[T&lt;:Chisel.package.Data]=chisel3.SyncReadMem[T]"></a><a id="SeqMem[T&lt;:Data]:SeqMem[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#SeqMem[T&lt;:Chisel.package.Data]=chisel3.SyncReadMem[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SeqMem</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/SyncReadMem.html" class="extype" name="chisel3.SyncReadMem">SyncReadMem</a>[<span class="extype" name="Chisel.SeqMem.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.SeqMemCompatibility" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SeqMemCompatibilityextendsAnyRef"></a><a id="SeqMemCompatibility:SeqMemCompatibility"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$SeqMemCompatibility.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$SeqMemCompatibility.html"><span class="name">SeqMemCompatibility</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.SwitchContext" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SwitchContext[T&lt;:Chisel.package.Bits]=chisel3.util.SwitchContext[T]"></a><a id="SwitchContext[T&lt;:Bits]:SwitchContext[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#SwitchContext[T&lt;:Chisel.package.Bits]=chisel3.util.SwitchContext[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SwitchContext</span><span class="tparams">[<span name="T">T &lt;: <a href="#Bits=chisel3.Bits" class="extmbr" name="Chisel.Bits">Bits</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/SwitchContext.html" class="extype" name="chisel3.util.SwitchContext">chisel3.util.SwitchContext</a>[<span class="extype" name="Chisel.SwitchContext.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.UInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UInt=chisel3.UInt"></a><a id="UInt:UInt"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#UInt=chisel3.UInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">UInt</span><span class="result alias"> = <a href="../chisel3/UInt.html" class="extype" name="chisel3.UInt">chisel3.UInt</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.UIntFactory" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="UIntFactoryextendsUIntFactory"></a><a id="UIntFactory:UIntFactory"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$UIntFactory.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="This contains literal constructor factory methods that are deprecated as of Chisel3." href="package$$UIntFactory.html"><span class="name">UIntFactory</span></a><span class="result"> extends <a href="../chisel3/UIntFactory.html" class="extype" name="chisel3.UIntFactory">chisel3.UIntFactory</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">This contains literal constructor factory methods that are deprecated as of Chisel3.</p>
+    </li><li name="Chisel.ValidIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ValidIO[+T&lt;:Chisel.package.Data]=chisel3.util.Valid[T]"></a><a id="ValidIO[+T&lt;:Data]:ValidIO[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#ValidIO[+T&lt;:Chisel.package.Data]=chisel3.util.Valid[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ValidIO</span><span class="tparams">[<span name="T">+T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/util/Valid.html" class="extype" name="chisel3.util.Valid">Valid</a>[<span class="extype" name="Chisel.ValidIO.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.Vec" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Vec[T&lt;:Chisel.package.Data]=chisel3.Vec[T]"></a><a id="Vec[T&lt;:Data]:Vec[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Vec[T&lt;:Chisel.package.Data]=chisel3.Vec[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Vec</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/Vec.html" class="extype" name="chisel3.Vec">chisel3.Vec</a>[<span class="extype" name="Chisel.Vec.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.VecLike" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VecLike[T&lt;:Chisel.package.Data]=chisel3.VecLike[T]"></a><a id="VecLike[T&lt;:Data]:VecLike[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#VecLike[T&lt;:Chisel.package.Data]=chisel3.VecLike[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">VecLike</span><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result alias"> = <a href="../chisel3/VecLike.html" class="extype" name="chisel3.VecLike">chisel3.VecLike</a>[<span class="extype" name="Chisel.VecLike.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="Chisel.VecLikeCompatibility" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VecLikeCompatibility[T&lt;:Chisel.package.Data]extendsAnyRef"></a><a id="VecLikeCompatibility[T&lt;:Data]:VecLikeCompatibility[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$VecLikeCompatibility.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$VecLikeCompatibility.html"><span class="name">VecLikeCompatibility</span></a><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.WhenContext" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WhenContext=chisel3.WhenContext"></a><a id="WhenContext:WhenContext"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#WhenContext=chisel3.WhenContext" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">WhenContext</span><span class="result alias"> = <a href="../chisel3/WhenContext.html" class="extype" name="chisel3.WhenContext">chisel3.WhenContext</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.cloneTypeable" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="cloneTypeable[T&lt;:Chisel.package.Data]extendsAnyRef"></a><a id="cloneTypeable[T&lt;:Data]:cloneTypeable[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$cloneTypeable.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$cloneTypeable.html"><span class="name">cloneTypeable</span></a><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.fromBigIntToLiteral" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromBigIntToLiteralextendsfromBigIntToLiteral"></a><a id="fromBigIntToLiteral:fromBigIntToLiteral"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$fromBigIntToLiteral.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromBigIntToLiteral.html"><span class="name">fromBigIntToLiteral</span></a><span class="result"> extends <a href="../chisel3/package$$fromBigIntToLiteral.html" class="extype" name="chisel3.fromBigIntToLiteral">chisel3.fromBigIntToLiteral</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.fromBitsable" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromBitsable[T&lt;:Chisel.package.Data]extendsAnyRef"></a><a id="fromBitsable[T&lt;:Data]:fromBitsable[T]"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$fromBitsable.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromBitsable.html"><span class="name">fromBitsable</span></a><span class="tparams">[<span name="T">T &lt;: <a href="#Data=chisel3.Data" class="extmbr" name="Chisel.Data">Data</a></span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.fromBooleanToLiteral" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromBooleanToLiteralextendsfromBooleanToLiteral"></a><a id="fromBooleanToLiteral:fromBooleanToLiteral"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$fromBooleanToLiteral.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromBooleanToLiteral.html"><span class="name">fromBooleanToLiteral</span></a><span class="result"> extends <a href="../chisel3/package$$fromBooleanToLiteral.html" class="extype" name="chisel3.fromBooleanToLiteral">chisel3.fromBooleanToLiteral</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.fromIntToWidth" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromIntToWidthextendsfromIntToWidth"></a><a id="fromIntToWidth:fromIntToWidth"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$fromIntToWidth.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromIntToWidth.html"><span class="name">fromIntToWidth</span></a><span class="result"> extends <a href="../chisel3/package$$fromIntToWidth.html" class="extype" name="chisel3.fromIntToWidth">chisel3.fromIntToWidth</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.fromStringToLiteral" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromStringToLiteralextendsfromStringToLiteral"></a><a id="fromStringToLiteral:fromStringToLiteral"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$fromStringToLiteral.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromStringToLiteral.html"><span class="name">fromStringToLiteral</span></a><span class="result"> extends <a href="../chisel3/package$$fromStringToLiteral.html" class="extype" name="chisel3.fromStringToLiteral">chisel3.fromStringToLiteral</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.fromtIntToLiteral" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromtIntToLiteralextendsfromIntToLiteral"></a><a id="fromtIntToLiteral:fromtIntToLiteral"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$fromtIntToLiteral.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromtIntToLiteral.html"><span class="name">fromtIntToLiteral</span></a><span class="result"> extends <a href="../chisel3/package$$fromIntToLiteral.html" class="extype" name="chisel3.fromIntToLiteral">fromIntToLiteral</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.fromtLongToLiteral" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromtLongToLiteralextendsfromLongToLiteral"></a><a id="fromtLongToLiteral:fromtLongToLiteral"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$fromtLongToLiteral.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$fromtLongToLiteral.html"><span class="name">fromtLongToLiteral</span></a><span class="result"> extends <a href="../chisel3/package$$fromLongToLiteral.html" class="extype" name="chisel3.fromLongToLiteral">fromLongToLiteral</a></span>
+      </span>
+      
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="Chisel#BitPat" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BitPat:chisel3.util.BitPat.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#BitPat:chisel3.util.BitPat.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">BitPat</span><span class="result">: <a href="../chisel3/util/BitPat$.html" class="extype" name="chisel3.util.BitPat">chisel3.util.BitPat</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Cat" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Cat:chisel3.util.Cat.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Cat:chisel3.util.Cat.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Cat</span><span class="result">: <a href="../chisel3/util/Cat$.html" class="extype" name="chisel3.util.Cat">chisel3.util.Cat</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Counter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Counter:chisel3.util.Counter.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Counter:chisel3.util.Counter.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Counter</span><span class="result">: <a href="../chisel3/util/Counter$.html" class="extype" name="chisel3.util.Counter">chisel3.util.Counter</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Decoupled" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Decoupled:chisel3.util.Decoupled.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Decoupled:chisel3.util.Decoupled.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Decoupled</span><span class="result">: <a href="../chisel3/util/Decoupled$.html" class="extype" name="chisel3.util.Decoupled">chisel3.util.Decoupled</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#DecoupledIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DecoupledIO:chisel3.util.Decoupled.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#DecoupledIO:chisel3.util.Decoupled.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">DecoupledIO</span><span class="result">: <a href="../chisel3/util/Decoupled$.html" class="extype" name="chisel3.util.Decoupled">chisel3.util.Decoupled</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Driver" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Driver:chisel3.Driver.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Driver:chisel3.Driver.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Driver</span><span class="result">: <a href="../chisel3/Driver$.html" class="extype" name="chisel3.Driver">chisel3.Driver</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Fill" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Fill:chisel3.util.Fill.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Fill:chisel3.util.Fill.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Fill</span><span class="result">: <a href="../chisel3/util/Fill$.html" class="extype" name="chisel3.util.Fill">chisel3.util.Fill</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#FillInterleaved" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FillInterleaved:chisel3.util.FillInterleaved.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#FillInterleaved:chisel3.util.FillInterleaved.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FillInterleaved</span><span class="result">: <a href="../chisel3/util/FillInterleaved$.html" class="extype" name="chisel3.util.FillInterleaved">chisel3.util.FillInterleaved</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#ImplicitConversions" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ImplicitConversions:chisel3.util.ImplicitConversions.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#ImplicitConversions:chisel3.util.ImplicitConversions.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ImplicitConversions</span><span class="result">: <a href="../chisel3/util/ImplicitConversions$.html" class="extype" name="chisel3.util.ImplicitConversions">chisel3.util.ImplicitConversions</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Input" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Input:chisel3.Input.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Input:chisel3.Input.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Input</span><span class="result">: <a href="../chisel3/Input$.html" class="extype" name="chisel3.Input">chisel3.Input</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#LFSR16" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LFSR16:chisel3.util.LFSR16.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#LFSR16:chisel3.util.LFSR16.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LFSR16</span><span class="result">: <a href="../chisel3/util/LFSR16$.html" class="extype" name="chisel3.util.LFSR16">chisel3.util.LFSR16</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#ListLookup" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ListLookup:chisel3.util.ListLookup.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#ListLookup:chisel3.util.ListLookup.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ListLookup</span><span class="result">: <a href="../chisel3/util/ListLookup$.html" class="extype" name="chisel3.util.ListLookup">chisel3.util.ListLookup</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Log2" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Log2:chisel3.util.Log2.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Log2:chisel3.util.Log2.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Log2</span><span class="result">: <a href="../chisel3/util/Log2$.html" class="extype" name="chisel3.util.Log2">chisel3.util.Log2</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Lookup" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Lookup:chisel3.util.Lookup.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Lookup:chisel3.util.Lookup.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Lookup</span><span class="result">: <a href="../chisel3/util/Lookup$.html" class="extype" name="chisel3.util.Lookup">chisel3.util.Lookup</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Mem" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Mem:chisel3.Mem.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Mem:chisel3.Mem.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Mem</span><span class="result">: <a href="../chisel3/Mem$.html" class="extype" name="chisel3.Mem">chisel3.Mem</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Module" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Module:chisel3.Module.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Module:chisel3.Module.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Module</span><span class="result">: <a href="../chisel3/Module$.html" class="extype" name="chisel3.Module">chisel3.Module</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Mux" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Mux:chisel3.Mux.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Mux:chisel3.Mux.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Mux</span><span class="result">: <a href="../chisel3/Mux$.html" class="extype" name="chisel3.Mux">chisel3.Mux</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Mux1H" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Mux1H:chisel3.util.Mux1H.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Mux1H:chisel3.util.Mux1H.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Mux1H</span><span class="result">: <a href="../chisel3/util/Mux1H$.html" class="extype" name="chisel3.util.Mux1H">chisel3.util.Mux1H</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#MuxCase" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MuxCase:chisel3.util.MuxCase.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#MuxCase:chisel3.util.MuxCase.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MuxCase</span><span class="result">: <a href="../chisel3/util/MuxCase$.html" class="extype" name="chisel3.util.MuxCase">chisel3.util.MuxCase</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#MuxLookup" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MuxLookup:chisel3.util.MuxLookup.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#MuxLookup:chisel3.util.MuxLookup.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MuxLookup</span><span class="result">: <a href="../chisel3/util/MuxLookup$.html" class="extype" name="chisel3.util.MuxLookup">chisel3.util.MuxLookup</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#OHToUInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OHToUInt:chisel3.util.OHToUInt.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#OHToUInt:chisel3.util.OHToUInt.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">OHToUInt</span><span class="result">: <a href="../chisel3/util/OHToUInt$.html" class="extype" name="chisel3.util.OHToUInt">chisel3.util.OHToUInt</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Output" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Output:chisel3.Output.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Output:chisel3.Output.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Output</span><span class="result">: <a href="../chisel3/Output$.html" class="extype" name="chisel3.Output">chisel3.Output</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Pipe" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Pipe:chisel3.util.Pipe.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Pipe:chisel3.util.Pipe.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Pipe</span><span class="result">: <a href="../chisel3/util/Pipe$.html" class="extype" name="chisel3.util.Pipe">chisel3.util.Pipe</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#PopCount" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PopCount:chisel3.util.PopCount.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#PopCount:chisel3.util.PopCount.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">PopCount</span><span class="result">: <a href="../chisel3/util/PopCount$.html" class="extype" name="chisel3.util.PopCount">chisel3.util.PopCount</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#PriorityEncoder" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PriorityEncoder:chisel3.util.PriorityEncoder.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#PriorityEncoder:chisel3.util.PriorityEncoder.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">PriorityEncoder</span><span class="result">: <a href="../chisel3/util/PriorityEncoder$.html" class="extype" name="chisel3.util.PriorityEncoder">chisel3.util.PriorityEncoder</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#PriorityEncoderOH" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PriorityEncoderOH:chisel3.util.PriorityEncoderOH.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#PriorityEncoderOH:chisel3.util.PriorityEncoderOH.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">PriorityEncoderOH</span><span class="result">: <a href="../chisel3/util/PriorityEncoderOH$.html" class="extype" name="chisel3.util.PriorityEncoderOH">chisel3.util.PriorityEncoderOH</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#PriorityMux" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PriorityMux:chisel3.util.PriorityMux.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#PriorityMux:chisel3.util.PriorityMux.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">PriorityMux</span><span class="result">: <a href="../chisel3/util/PriorityMux$.html" class="extype" name="chisel3.util.PriorityMux">chisel3.util.PriorityMux</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Queue" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Queue:chisel3.util.Queue.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Queue:chisel3.util.Queue.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Queue</span><span class="result">: <a href="../chisel3/util/Queue$.html" class="extype" name="chisel3.util.Queue">chisel3.util.Queue</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#RegEnable" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RegEnable:chisel3.util.RegEnable.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#RegEnable:chisel3.util.RegEnable.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">RegEnable</span><span class="result">: <a href="../chisel3/util/RegEnable$.html" class="extype" name="chisel3.util.RegEnable">chisel3.util.RegEnable</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#RegInit" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RegInit:chisel3.RegInit.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#RegInit:chisel3.RegInit.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">RegInit</span><span class="result">: <a href="../chisel3/RegInit$.html" class="extype" name="chisel3.RegInit">chisel3.RegInit</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#RegNext" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RegNext:chisel3.RegNext.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#RegNext:chisel3.RegNext.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">RegNext</span><span class="result">: <a href="../chisel3/RegNext$.html" class="extype" name="chisel3.RegNext">chisel3.RegNext</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Reverse" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Reverse:chisel3.util.Reverse.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Reverse:chisel3.util.Reverse.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Reverse</span><span class="result">: <a href="../chisel3/util/Reverse$.html" class="extype" name="chisel3.util.Reverse">chisel3.util.Reverse</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#SeqMem" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SeqMem:chisel3.SyncReadMem.type"></a><a id="SeqMem:SyncReadMem.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#SeqMem:chisel3.SyncReadMem.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SeqMem</span><span class="result">: <a href="../chisel3/SyncReadMem$.html" class="extype" name="chisel3.SyncReadMem">SyncReadMem</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#ShiftRegister" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ShiftRegister:chisel3.util.ShiftRegister.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#ShiftRegister:chisel3.util.ShiftRegister.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ShiftRegister</span><span class="result">: <a href="../chisel3/util/ShiftRegister$.html" class="extype" name="chisel3.util.ShiftRegister">chisel3.util.ShiftRegister</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#UIntToOH" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UIntToOH:chisel3.util.UIntToOH.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#UIntToOH:chisel3.util.UIntToOH.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">UIntToOH</span><span class="result">: <a href="../chisel3/util/UIntToOH$.html" class="extype" name="chisel3.util.UIntToOH">chisel3.util.UIntToOH</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#Valid" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Valid:chisel3.util.Valid.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#Valid:chisel3.util.Valid.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Valid</span><span class="result">: <a href="../chisel3/util/Valid$.html" class="extype" name="chisel3.util.Valid">chisel3.util.Valid</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#assert" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="assert:chisel3.assert.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#assert:chisel3.assert.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">assert</span><span class="result">: <a href="../chisel3/assert$.html" class="extype" name="chisel3.assert">chisel3.assert</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#defaultCompileOptions" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defaultCompileOptions:chisel3.ExplicitCompileOptions.CompileOptionsClass"></a><a id="defaultCompileOptions:CompileOptionsClass"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#defaultCompileOptions:chisel3.ExplicitCompileOptions.CompileOptionsClass" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultCompileOptions</span><span class="result">: <a href="../chisel3/ExplicitCompileOptions$$CompileOptionsClass.html" class="extype" name="chisel3.ExplicitCompileOptions.CompileOptionsClass">CompileOptionsClass</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel#is" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="is:chisel3.util.is.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#is:chisel3.util.is.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">is</span><span class="result">: <a href="../chisel3/util/is$.html" class="extype" name="chisel3.util.is">chisel3.util.is</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#isPow2" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isPow2:chisel3.util.isPow2.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#isPow2:chisel3.util.isPow2.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isPow2</span><span class="result">: <a href="../chisel3/util/isPow2$.html" class="extype" name="chisel3.util.isPow2">chisel3.util.isPow2</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#log2Ceil" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="log2Ceil:chisel3.util.log2Ceil.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#log2Ceil:chisel3.util.log2Ceil.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log2Ceil</span><span class="result">: <a href="../chisel3/util/log2Ceil$.html" class="extype" name="chisel3.util.log2Ceil">chisel3.util.log2Ceil</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#log2Floor" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="log2Floor:chisel3.util.log2Floor.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#log2Floor:chisel3.util.log2Floor.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log2Floor</span><span class="result">: <a href="../chisel3/util/log2Floor$.html" class="extype" name="chisel3.util.log2Floor">chisel3.util.log2Floor</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#printf" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="printf:chisel3.printf.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#printf:chisel3.printf.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">printf</span><span class="result">: <a href="../chisel3/printf$.html" class="extype" name="chisel3.printf">chisel3.printf</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#resetToBool" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="resetToBool(reset:Chisel.package.Reset):Chisel.package.Bool"></a><a id="resetToBool(Reset):Bool"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#resetToBool(reset:Chisel.package.Reset):Chisel.package.Bool" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetToBool</span><span class="params">(<span name="reset">reset: <a href="#Reset=chisel3.Reset" class="extmbr" name="Chisel.Reset">Reset</a></span>)</span><span class="result">: <a href="#Bool=chisel3.Bool" class="extmbr" name="Chisel.Bool">Bool</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel#stop" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="stop:chisel3.stop.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#stop:chisel3.stop.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stop</span><span class="result">: <a href="../chisel3/stop$.html" class="extype" name="chisel3.stop">chisel3.stop</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#switch" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="switch:chisel3.util.switch.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#switch:chisel3.util.switch.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">switch</span><span class="result">: <a href="../chisel3/util/switch$.html" class="extype" name="chisel3.util.switch">chisel3.util.switch</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#unless" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="unless:chisel3.util.unless.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#unless:chisel3.util.unless.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unless</span><span class="result">: <a href="../chisel3/util/unless$.html" class="extype" name="chisel3.util.unless">chisel3.util.unless</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel#when" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="when:chisel3.when.type"></a>
+      <span class="permalink">
+      <a href="../Chisel/index.html#when:chisel3.when.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">when</span><span class="result">: <a href="../chisel3/when$.html" class="extype" name="chisel3.when">chisel3.when</a>.type</span>
+      </span>
+      
+      
+    </li><li name="Chisel.Bits" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Bits"></a><a id="Bits:Bits"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$Bits$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$Bits$.html"><span class="name">Bits</span></a><span class="result"> extends <a href="package$$UIntFactory.html" class="extype" name="Chisel.UIntFactory">UIntFactory</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Bool" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Bool"></a><a id="Bool:Bool"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$Bool$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$Bool$.html"><span class="name">Bool</span></a><span class="result"> extends <a href="package$$BoolFactory.html" class="extype" name="Chisel.BoolFactory">BoolFactory</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Clock" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Clock"></a><a id="Clock:Clock"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$Clock$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$Clock$.html"><span class="name">Clock</span></a>
+      </span>
+      
+      
+    </li><li name="Chisel.Enum" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Enum"></a><a id="Enum:Enum"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$Enum$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$Enum$.html"><span class="name">Enum</span></a><span class="result"> extends <a href="../chisel3/util/Enum.html" class="extype" name="chisel3.util.Enum">Enum</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Flipped" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Flipped"></a><a id="Flipped:Flipped"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$Flipped$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$Flipped$.html"><span class="name">Flipped</span></a>
+      </span>
+      
+      
+    </li><li name="Chisel.INPUT" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="INPUT"></a><a id="INPUT:INPUT"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$INPUT$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$INPUT$.html"><span class="name">INPUT</span></a><span class="result"> extends <a href="package$$Direction.html" class="extype" name="Chisel.Direction">Direction</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.NODIR" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NODIR"></a><a id="NODIR:NODIR"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$NODIR$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$NODIR$.html"><span class="name">NODIR</span></a><span class="result"> extends <a href="package$$Direction.html" class="extype" name="Chisel.Direction">Direction</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.OUTPUT" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OUTPUT"></a><a id="OUTPUT:OUTPUT"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$OUTPUT$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$OUTPUT$.html"><span class="name">OUTPUT</span></a><span class="result"> extends <a href="package$$Direction.html" class="extype" name="Chisel.Direction">Direction</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Reg" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Reg"></a><a id="Reg:Reg"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$Reg$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$Reg$.html"><span class="name">Reg</span></a>
+      </span>
+      
+      
+    </li><li name="Chisel.SInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SInt"></a><a id="SInt:SInt"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$SInt$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$SInt$.html"><span class="name">SInt</span></a><span class="result"> extends <a href="package$$SIntFactory.html" class="extype" name="Chisel.SIntFactory">SIntFactory</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.UInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UInt"></a><a id="UInt:UInt"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$UInt$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$UInt$.html"><span class="name">UInt</span></a><span class="result"> extends <a href="package$$UIntFactory.html" class="extype" name="Chisel.UIntFactory">UIntFactory</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Vec" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Vec"></a><a id="Vec:Vec"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$Vec$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$Vec$.html"><span class="name">Vec</span></a><span class="result"> extends <a href="../chisel3/VecFactory.html" class="extype" name="chisel3.VecFactory">VecFactory</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.Wire" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Wire"></a><a id="Wire:Wire"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$Wire$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$Wire$.html"><span class="name">Wire</span></a><span class="result"> extends <a href="../chisel3/WireFactory.html" class="extype" name="chisel3.WireFactory">WireFactory</a></span>
+      </span>
+      
+      
+    </li><li name="Chisel.chiselMain" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="chiselMain"></a><a id="chiselMain:chiselMain"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$chiselMain$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$chiselMain$.html"><span class="name">chiselMain</span></a>
+      </span>
+      
+      
+    </li><li name="Chisel.experimental" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="experimental"></a><a id="experimental:experimental"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$experimental$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Package for experimental features, which may have their API changed, be removed, etc." href="package$$experimental$.html"><span class="name">experimental</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Package for experimental features, which may have their API changed, be removed, etc.</p><div class="fullcomment"><div class="comment cmt"><p>Package for experimental features, which may have their API changed, be removed, etc.</p><p>Because its contents won't necessarily have the same level of stability and support as
+non-experimental, you must explicitly import this package to use its contents.
+</p></div></div>
+    </li><li name="Chisel.log2Down" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="log2Down"></a><a id="log2Down:log2Down"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$log2Down$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Compute the log2 rounded down with min value of 1" href="package$$log2Down$.html"><span class="name">log2Down</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Compute the log2 rounded down with min value of 1</p>
+    </li><li name="Chisel.log2Up" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="log2Up"></a><a id="log2Up:log2Up"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$log2Up$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Compute the log2 rounded up with min value of 1" href="package$$log2Up$.html"><span class="name">log2Up</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Compute the log2 rounded up with min value of 1</p>
+    </li><li name="Chisel.testers" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="testers"></a><a id="testers:testers"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$testers$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$testers$.html"><span class="name">testers</span></a>
+      </span>
+      
+      
+    </li><li name="Chisel.throwException" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="throwException"></a><a id="throwException:throwException"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$throwException$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$throwException$.html"><span class="name">throwException</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[Exception]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li>
+              </ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="Chisel.debug" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="debug"></a><a id="debug:debug"></a>
+      <span class="permalink">
+      <a href="../Chisel/package$$debug$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="package$$debug$.html"><span class="name deprecated" title="Deprecated: (Since version chisel3) debug doesn't do anything in Chisel3 as no pruning happens in the frontend">debug</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version chisel3)</i> debug doesn't do anything in Chisel3 as no pruning happens in the frontend</p></dd></dl></div>
+    </li></ol>
+            </div>
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>

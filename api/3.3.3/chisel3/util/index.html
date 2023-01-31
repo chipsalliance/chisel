@@ -1,0 +1,1991 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>chisel3 3.3.3 - chisel3.util</title>
+          <meta name="description" content="chisel3 3.3.3 - chisel3.util" />
+          <meta name="keywords" content="chisel3 3.3.3 chisel3.util" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../lib/index.js"></script>
+      <script type="text/javascript" src="../../index.js"></script>
+      <script type="text/javascript" src="../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../lib/template.js"></script>
+      <script type="text/javascript" src="../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">chisel3<span id="doc-version">3.3.3</span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This is the documentation for Chisel." href="../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This is the documentation for Chisel.</p><div class="fullcomment"><div class="comment cmt"><p>This is the documentation for Chisel.</p><h4> Package structure </h4><p>The <a href="../index.html" class="extype" name="chisel3">chisel3</a> package presents the public API of Chisel.
+It contains the concrete core types <a href="../UInt.html" class="extype" name="chisel3.UInt"><code>UInt</code></a>, <a href="../SInt.html" class="extype" name="chisel3.SInt"><code>SInt</code></a>, <a href="../Bool.html" class="extype" name="chisel3.Bool"><code>Bool</code></a>, <a href="../experimental/FixedPoint.html" class="extype" name="chisel3.experimental.FixedPoint"><code>FixedPoint</code></a>, <a href="../Clock.html" class="extype" name="chisel3.Clock"><code>Clock</code></a>, and <a href="../Reg$.html" class="extype" name="chisel3.Reg"><code>Reg</code></a>,
+the abstract types <a href="../Bits.html" class="extype" name="chisel3.Bits"><code>Bits</code></a>, <a href="../Aggregate.html" class="extype" name="chisel3.Aggregate"><code>Aggregate</code></a>, and <a href="../Data.html" class="extype" name="chisel3.Data"><code>Data</code></a>,
+and the aggregate types <a href="../Bundle.html" class="extype" name="chisel3.Bundle"><code>Bundle</code></a> and <a href="../Vec.html" class="extype" name="chisel3.Vec"><code>Vec</code></a>.</p><p>The <a href="../../Chisel/index.html" class="extype" name="Chisel">Chisel</a> package is a compatibility layer that attempts to provide chisel2 compatibility in chisel3.</p><p>Utility objects and methods are found in the <a href="" class="extype" name="chisel3.util"><code>util</code></a> package.</p><p>The <a href="../testers/index.html" class="extype" name="chisel3.testers"><code>testers</code></a> package defines the basic interface for chisel testers.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.chisel3" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="chisel3"></a><a id="chisel3:chisel3"></a>
+      <span class="permalink">
+      <a href="../../chisel3/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This package contains the main chisel3 API." href="../index.html"><span class="name">chisel3</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This package contains the main chisel3 API.</p><div class="fullcomment"><div class="comment cmt"><p>This package contains the main chisel3 API.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="chisel3.aop" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aop"></a><a id="aop:aop"></a>
+      <span class="permalink">
+      <a href="../../chisel3/aop/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../aop/index.html"><span class="name">aop</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.core" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="core"></a><a id="core:core"></a>
+      <span class="permalink">
+      <a href="../../chisel3/core/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="These definitions exist to deal with those clients that relied on chisel3.core." href="../core/index.html"><span class="name">core</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">These definitions exist to deal with those clients that relied on chisel3.core.</p><div class="fullcomment"><div class="comment cmt"><p>These definitions exist to deal with those clients that relied on chisel3.core.
+They are deprecated and will be removed in the future.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.experimental" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="experimental"></a><a id="experimental:experimental"></a>
+      <span class="permalink">
+      <a href="../../chisel3/experimental/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="Package for experimental features, which may have their API changed, be removed, etc." href="../experimental/index.html"><span class="name">experimental</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Package for experimental features, which may have their API changed, be removed, etc.</p><div class="fullcomment"><div class="comment cmt"><p>Package for experimental features, which may have their API changed, be removed, etc.</p><p>Because its contents won't necessarily have the same level of stability and support as
+non-experimental, you must explicitly import this package to use its contents.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.stage" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stage"></a><a id="stage:stage"></a>
+      <span class="permalink">
+      <a href="../../chisel3/stage/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../stage/index.html"><span class="name">stage</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.testers" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="testers"></a><a id="testers:testers"></a>
+      <span class="permalink">
+      <a href="../../chisel3/testers/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="The testers package provides the basic interface for chisel testers." href="../testers/index.html"><span class="name">testers</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The testers package provides the basic interface for chisel testers.</p><div class="fullcomment"><div class="comment cmt"><p>The testers package provides the basic interface for chisel testers.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.util" visbl="pub" class="indented2 current" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="util"></a><a id="util:util"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">util</span>
+      </span>
+      
+      <p class="shortcomment cmt">The util package provides extensions to core chisel for common hardware components and utility
+functions
+</p><div class="fullcomment"><div class="comment cmt"><p>The util package provides extensions to core chisel for common hardware components and utility
+functions
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="chisel3">chisel3</a></dd></dl></div>
+    </li><li name="chisel3.util.experimental" visbl="pub" class="indented3 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="experimental"></a><a id="experimental:experimental"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/experimental/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="experimental/index.html"><span class="name">experimental</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.util.random" visbl="pub" class="indented3 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="random"></a><a id="random:random"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/random/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="random/index.html"><span class="name">random</span></a>
+      </span>
+      
+      
+    </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="Arbiter.html" title="Hardware module that is used to sequence n producers into 1 consumer."></a>
+                        <a href="Arbiter.html" title="Hardware module that is used to sequence n producers into 1 consumer.">Arbiter</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ArbiterIO.html" title="IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs (selects) at most one."></a>
+                        <a href="ArbiterIO.html" title="IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs (selects) at most one.">ArbiterIO</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="BitPat$.html" title=""></a>
+                        <a class="class" href="BitPat.html" title="Bit patterns are literals with masks, used to represent values with don't care bits."></a>
+                        <a href="BitPat.html" title="Bit patterns are literals with masks, used to represent values with don't care bits.">BitPat</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Cat$.html" title="Concatenates elements of the input, in order, together."></a>
+                        <a href="Cat$.html" title="Concatenates elements of the input, in order, together.">Cat</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Counter$.html" title=""></a>
+                        <a class="class" href="Counter.html" title="Used to generate an inline (logic directly in the containing Module, no internal Module is created) hardware counter."></a>
+                        <a href="Counter.html" title="Used to generate an inline (logic directly in the containing Module, no internal Module is created) hardware counter.">Counter</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Decoupled$.html" title="This factory adds a decoupled handshaking protocol to a data bundle."></a>
+                        <a href="Decoupled$.html" title="This factory adds a decoupled handshaking protocol to a data bundle.">Decoupled</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="DecoupledIO.html" title="A concrete subclass of ReadyValidIO signaling that the user expects a &quot;decoupled&quot; interface: 'valid' indicates that the producer has put valid data in 'bits', and 'ready' indicates that the consumer is ready to accept the data this cycle."></a>
+                        <a href="DecoupledIO.html" title="A concrete subclass of ReadyValidIO signaling that the user expects a &quot;decoupled&quot; interface: 'valid' indicates that the producer has put valid data in 'bits', and 'ready' indicates that the consumer is ready to accept the data this cycle.">DecoupledIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="DeqIO$.html" title="Consumer - drives (outputs) ready, inputs valid and bits."></a>
+                        <a href="DeqIO$.html" title="Consumer - drives (outputs) ready, inputs valid and bits.">DeqIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="EnqIO$.html" title="Producer - drives (outputs) valid and bits, inputs ready."></a>
+                        <a href="EnqIO$.html" title="Producer - drives (outputs) valid and bits, inputs ready.">EnqIO</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Enum$.html" title=""></a>
+                        <a class="trait" href="Enum.html" title="Defines a set of unique UInt constants"></a>
+                        <a href="Enum.html" title="Defines a set of unique UInt constants">Enum</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Fill$.html" title="Create repetitions of the input using a tree fanout topology."></a>
+                        <a href="Fill$.html" title="Create repetitions of the input using a tree fanout topology.">Fill</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="FillInterleaved$.html" title="Creates repetitions of each bit of the input in order."></a>
+                        <a href="FillInterleaved$.html" title="Creates repetitions of each bit of the input in order.">FillInterleaved</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasBlackBoxInline.html" title=""></a>
+                        <a href="HasBlackBoxInline.html" title="">HasBlackBoxInline</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasBlackBoxPath.html" title=""></a>
+                        <a href="HasBlackBoxPath.html" title="">HasBlackBoxPath</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="HasBlackBoxResource.html" title=""></a>
+                        <a href="HasBlackBoxResource.html" title="">HasBlackBoxResource</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="ImplicitConversions$.html" title="Implicit conversions to automatically convert scala.Boolean and scala.Int to Bool and UInt respectively"></a>
+                        <a href="ImplicitConversions$.html" title="Implicit conversions to automatically convert scala.Boolean and scala.Int to Bool and UInt respectively">ImplicitConversions</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Irrevocable$.html" title="Factory adds an irrevocable handshaking protocol to a data bundle."></a>
+                        <a href="Irrevocable$.html" title="Factory adds an irrevocable handshaking protocol to a data bundle.">Irrevocable</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="IrrevocableIO.html" title="A concrete subclass of ReadyValidIO that promises to not change the value of 'bits' after a cycle where 'valid' is high and 'ready' is low."></a>
+                        <a href="IrrevocableIO.html" title="A concrete subclass of ReadyValidIO that promises to not change the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.">IrrevocableIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="LFSR16$.html" title="LFSR16 generates a 16-bit linear feedback shift register, returning the register contents."></a>
+                        <a href="LFSR16$.html" title="LFSR16 generates a 16-bit linear feedback shift register, returning the register contents.">LFSR16</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="ListLookup$.html" title="For each element in a list, muxes (looks up) between cases (one per list element) based on a common address."></a>
+                        <a href="ListLookup$.html" title="For each element in a list, muxes (looks up) between cases (one per list element) based on a common address.">ListLookup</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="LockingArbiter.html" title=""></a>
+                        <a href="LockingArbiter.html" title="">LockingArbiter</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="LockingArbiterLike.html" title=""></a>
+                        <a href="LockingArbiterLike.html" title="">LockingArbiterLike</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="LockingRRArbiter.html" title=""></a>
+                        <a href="LockingRRArbiter.html" title="">LockingRRArbiter</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Log2$.html" title="Returns the base-2 integer logarithm of an UInt."></a>
+                        <a href="Log2$.html" title="Returns the base-2 integer logarithm of an UInt.">Log2</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Lookup$.html" title="Muxes between cases based on whether an address matches any pattern for a case."></a>
+                        <a href="Lookup$.html" title="Muxes between cases based on whether an address matches any pattern for a case.">Lookup</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="MixedVec$.html" title="Create a MixedVec type, given element types."></a>
+                        <a class="class" href="MixedVec.html" title="A hardware array of elements that can hold values of different types/widths, unlike Vec which can only hold elements of the same type/width."></a>
+                        <a href="MixedVec.html" title="A hardware array of elements that can hold values of different types/widths, unlike Vec which can only hold elements of the same type/width.">MixedVec</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="MixedVecInit$.html" title="Create a MixedVec wire with default values as specified, and type of each element inferred from those default values."></a>
+                        <a href="MixedVecInit$.html" title="Create a MixedVec wire with default values as specified, and type of each element inferred from those default values.">MixedVecInit</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Mux1H$.html" title="Builds a Mux tree out of the input signal vector using a one hot encoded select signal."></a>
+                        <a href="Mux1H$.html" title="Builds a Mux tree out of the input signal vector using a one hot encoded select signal.">Mux1H</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="MuxCase$.html" title="Given an association of values to enable signals, returns the first value with an associated high enable signal."></a>
+                        <a href="MuxCase$.html" title="Given an association of values to enable signals, returns the first value with an associated high enable signal.">MuxCase</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="MuxLookup$.html" title="Creates a cascade of n Muxs to search for a key value."></a>
+                        <a href="MuxLookup$.html" title="Creates a cascade of n Muxs to search for a key value.">MuxLookup</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="OHToUInt$.html" title="Returns the bit position of the sole high bit of the input bitvector."></a>
+                        <a href="OHToUInt$.html" title="Returns the bit position of the sole high bit of the input bitvector.">OHToUInt</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Pipe$.html" title="A factory to generate a hardware pipe."></a>
+                        <a class="class" href="Pipe.html" title="Pipeline module generator parameterized by data type and latency."></a>
+                        <a href="Pipe.html" title="Pipeline module generator parameterized by data type and latency.">Pipe</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PopCount$.html" title="Returns the number of bits set (value is 1 or true) in the input signal."></a>
+                        <a href="PopCount$.html" title="Returns the number of bits set (value is 1 or true) in the input signal.">PopCount</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PriorityEncoder$.html" title="Returns the bit position of the least-significant high bit of the input bitvector."></a>
+                        <a href="PriorityEncoder$.html" title="Returns the bit position of the least-significant high bit of the input bitvector.">PriorityEncoder</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PriorityEncoderOH$.html" title="Returns a bit vector in which only the least-significant 1 bit in the input vector, if any, is set."></a>
+                        <a href="PriorityEncoderOH$.html" title="Returns a bit vector in which only the least-significant 1 bit in the input vector, if any, is set.">PriorityEncoderOH</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PriorityMux$.html" title="Builds a Mux tree under the assumption that multiple select signals can be enabled."></a>
+                        <a href="PriorityMux$.html" title="Builds a Mux tree under the assumption that multiple select signals can be enabled.">PriorityMux</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Queue$.html" title="Factory for a generic hardware queue."></a>
+                        <a class="class" href="Queue.html" title="A hardware module implementing a Queue"></a>
+                        <a href="Queue.html" title="A hardware module implementing a Queue">Queue</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="QueueIO.html" title="An I/O Bundle for Queues"></a>
+                        <a href="QueueIO.html" title="An I/O Bundle for Queues">QueueIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="RRArbiter.html" title="Hardware module that is used to sequence n producers into 1 consumer."></a>
+                        <a href="RRArbiter.html" title="Hardware module that is used to sequence n producers into 1 consumer.">RRArbiter</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="ReadyValidIO$.html" title=""></a>
+                        <a class="class" href="ReadyValidIO.html" title="An I/O Bundle containing 'valid' and 'ready' signals that handshake the transfer of data stored in the 'bits' subfield."></a>
+                        <a href="ReadyValidIO.html" title="An I/O Bundle containing 'valid' and 'ready' signals that handshake the transfer of data stored in the 'bits' subfield.">ReadyValidIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="RegEnable$.html" title=""></a>
+                        <a href="RegEnable$.html" title="">RegEnable</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Reverse$.html" title="Returns the input in bit-reversed order."></a>
+                        <a href="Reverse$.html" title="Returns the input in bit-reversed order.">Reverse</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="ShiftRegister$.html" title=""></a>
+                        <a href="ShiftRegister$.html" title="">ShiftRegister</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="SwitchContext.html" title="Implementation details for switch."></a>
+                        <a href="SwitchContext.html" title="Implementation details for switch.">SwitchContext</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="TransitName$.html" title="The purpose of TransitName is to improve the naming of some object created in a different scope by &quot;transiting&quot; the name from the outer scope to the inner scope."></a>
+                        <a href="TransitName$.html" title="The purpose of TransitName is to improve the naming of some object created in a different scope by &quot;transiting&quot; the name from the outer scope to the inner scope.">TransitName</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="UIntToOH$.html" title="Returns the one hot encoding of the input UInt."></a>
+                        <a href="UIntToOH$.html" title="Returns the one hot encoding of the input UInt.">UIntToOH</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="Valid$.html" title="Factory for generating &quot;valid&quot; interfaces."></a>
+                        <a class="class" href="Valid.html" title="A Bundle that adds a valid bit to some data."></a>
+                        <a href="Valid.html" title="A Bundle that adds a valid bit to some data.">Valid</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="is$.html" title="Use to specify cases in a switch block, equivalent to a when block comparing to the condition variable."></a>
+                        <a href="is$.html" title="Use to specify cases in a switch block, equivalent to a when block comparing to the condition variable.">is</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="isPow2$.html" title="Returns whether a Scala integer is a power of two."></a>
+                        <a href="isPow2$.html" title="Returns whether a Scala integer is a power of two.">isPow2</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="log2Ceil$.html" title="Compute the log2 of a Scala integer, rounded up."></a>
+                        <a href="log2Ceil$.html" title="Compute the log2 of a Scala integer, rounded up.">log2Ceil</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="log2Down$.html" title="Compute the log2 of a Scala integer, rounded down, with min value of 1."></a>
+                        <a href="log2Down$.html" title="Compute the log2 of a Scala integer, rounded down, with min value of 1.">log2Down</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="log2Floor$.html" title="Compute the log2 of a Scala integer, rounded down."></a>
+                        <a href="log2Floor$.html" title="Compute the log2 of a Scala integer, rounded down.">log2Floor</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="log2Up$.html" title="Compute the log2 of a Scala integer, rounded up, with min value of 1."></a>
+                        <a href="log2Up$.html" title="Compute the log2 of a Scala integer, rounded up, with min value of 1.">log2Up</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="signedBitLength$.html" title=""></a>
+                        <a href="signedBitLength$.html" title="">signedBitLength</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="switch$.html" title="Conditional logic to form a switch block."></a>
+                        <a href="switch$.html" title="Conditional logic to form a switch block.">switch</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="unless$.html" title=""></a>
+                        <a href="unless$.html" title="">unless</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="unsignedBitLength$.html" title=""></a>
+                        <a href="unsignedBitLength$.html" title="">unsignedBitLength</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="package value">
+      <div id="definition">
+        <div class="big-circle package">p</div>
+        <p id="owner"><a href="../index.html" class="extype" name="chisel3">chisel3</a></p>
+        <h1>util<span class="permalink">
+      <a href="../../chisel3/util/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">util</span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The util package provides extensions to core chisel for common hardware components and utility
+functions
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/freechipsproject/chisel3/tree/v3.3.3//src/main/scala/chisel3/util/util.scala" target="_blank">util.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.11/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="chisel3.util"><span>util</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="chisel3.util.Arbiter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Arbiter[T&lt;:chisel3.Data]extendschisel3.Module"></a><a id="Arbiter[T&lt;:Data]:Arbiter[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Arbiter.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Hardware module that is used to sequence n producers into 1 consumer." href="Arbiter.html"><span class="name">Arbiter</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="../index.html#Module=chisel3.internal.LegacyModule" class="extmbr" name="chisel3.Module">Module</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Hardware module that is used to sequence n producers into 1 consumer.</p><div class="fullcomment"><div class="comment cmt"><p>Hardware module that is used to sequence n producers into 1 consumer.
+Priority is given to lower producer.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@chiselName</span><span class="args">()</span>
+              
+        </dd><div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">val</span> arb = Module(<span class="kw">new</span> Arbiter(UInt(), <span class="num">2</span>))
+arb.io.in(<span class="num">0</span>) &lt;&gt; producer0.io.out
+arb.io.in(<span class="num">1</span>) &lt;&gt; producer1.io.out
+consumer.io.in &lt;&gt; arb.io.out</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.ArbiterIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ArbiterIO[T&lt;:chisel3.Data]extendsBundle"></a><a id="ArbiterIO[T&lt;:Data]:ArbiterIO[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/ArbiterIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs (selects) at most one." href="ArbiterIO.html"><span class="name">ArbiterIO</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs
+(selects) at most one.</p>
+    </li><li name="chisel3.util.BitPat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BitPatextendsSourceInfoDoc"></a><a id="BitPat:BitPat"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/BitPat.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Bit patterns are literals with masks, used to represent values with don't care bits." href="BitPat.html"><span class="name">BitPat</span></a><span class="result"> extends <a href="../SourceInfoDoc.html" class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Bit patterns are literals with masks, used to represent values with don't
+care bits.</p><div class="fullcomment"><div class="comment cmt"><p>Bit patterns are literals with masks, used to represent values with don't
+care bits. Equality comparisons will ignore don't care bits.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="lit">"b10101"</span>.U === BitPat(<span class="lit">"b101??"</span>) <span class="cmt">// evaluates to true.B</span>
+<span class="lit">"b10111"</span>.U === BitPat(<span class="lit">"b101??"</span>) <span class="cmt">// evaluates to true.B</span>
+<span class="lit">"b10001"</span>.U === BitPat(<span class="lit">"b101??"</span>) <span class="cmt">// evaluates to false.B</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.Counter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CounterextendsAnyRef"></a><a id="Counter:Counter"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Counter.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Used to generate an inline (logic directly in the containing Module, no internal Module is created) hardware counter." href="Counter.html"><span class="name">Counter</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Used to generate an inline (logic directly in the containing Module, no internal Module is created)
+hardware counter.</p><div class="fullcomment"><div class="comment cmt"><p>Used to generate an inline (logic directly in the containing Module, no internal Module is created)
+hardware counter.</p><p>Typically instantiated with apply methods in <a href="Counter$.html" class="extype" name="chisel3.util.Counter">object Counter</a></p><p>Does not create a new Chisel Module
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@chiselName</span><span class="args">()</span>
+              
+        </dd><div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">val</span> countOn = <span class="kw">true</span>.B <span class="cmt">// increment counter every clock cycle</span>
+<span class="kw">val</span> (counterValue, counterWrap) = Counter(countOn, <span class="num">4</span>)
+when (counterValue === <span class="num">3.</span>U) {
+  ...
+}</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.DecoupledIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DecoupledIO[+T&lt;:chisel3.Data]extendsReadyValidIO[T]"></a><a id="DecoupledIO[+T&lt;:Data]:DecoupledIO[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/DecoupledIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="A concrete subclass of ReadyValidIO signaling that the user expects a &quot;decoupled&quot; interface: 'valid' indicates that the producer has put valid data in 'bits', and 'ready' indicates that the consumer is ready to accept the data this cycle." href="DecoupledIO.html"><span class="name">DecoupledIO</span></a><span class="tparams">[<span name="T">+T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="ReadyValidIO.html" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.util.DecoupledIO.T">T</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">A concrete subclass of ReadyValidIO signaling that the user expects a
+&quot;decoupled&quot; interface: 'valid' indicates that the producer has
+put valid data in 'bits', and 'ready' indicates that the consumer is ready
+to accept the data this cycle.</p><div class="fullcomment"><div class="comment cmt"><p>A concrete subclass of ReadyValidIO signaling that the user expects a
+&quot;decoupled&quot; interface: 'valid' indicates that the producer has
+put valid data in 'bits', and 'ready' indicates that the consumer is ready
+to accept the data this cycle. No requirements are placed on the signaling
+of ready or valid.</p></div></div>
+    </li><li name="chisel3.util.Enum" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="EnumextendsAnyRef"></a><a id="Enum:Enum"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Enum.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Defines a set of unique UInt constants" href="Enum.html"><span class="name">Enum</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Defines a set of unique UInt constants</p><div class="fullcomment"><div class="comment cmt"><p>Defines a set of unique UInt constants</p><p>Unpack with a list to specify an enumeration. Usually used with <a href="switch$.html" class="extype" name="chisel3.util.switch">switch</a> to describe a finite
+state machine.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">val</span> state_on :: state_off :: Nil = Enum(<span class="num">2</span>)
+<span class="kw">val</span> current_state = WireDefault(state_off)
+switch (current_state) {
+  is (state_on) {
+    ...
+  }
+  is (state_off) {
+    ...
+  }
+}</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.HasBlackBoxInline" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="HasBlackBoxInlineextendsBlackBox"></a><a id="HasBlackBoxInline:HasBlackBoxInline"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/HasBlackBoxInline.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="HasBlackBoxInline.html"><span class="name">HasBlackBoxInline</span></a><span class="result"> extends <a href="../BlackBox.html" class="extype" name="chisel3.BlackBox">BlackBox</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.util.HasBlackBoxPath" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="HasBlackBoxPathextendsBlackBox"></a><a id="HasBlackBoxPath:HasBlackBoxPath"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/HasBlackBoxPath.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="HasBlackBoxPath.html"><span class="name">HasBlackBoxPath</span></a><span class="result"> extends <a href="../BlackBox.html" class="extype" name="chisel3.BlackBox">BlackBox</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.util.HasBlackBoxResource" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="HasBlackBoxResourceextendsBlackBox"></a><a id="HasBlackBoxResource:HasBlackBoxResource"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/HasBlackBoxResource.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="HasBlackBoxResource.html"><span class="name">HasBlackBoxResource</span></a><span class="result"> extends <a href="../BlackBox.html" class="extype" name="chisel3.BlackBox">BlackBox</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.util.IrrevocableIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IrrevocableIO[+T&lt;:chisel3.Data]extendsReadyValidIO[T]"></a><a id="IrrevocableIO[+T&lt;:Data]:IrrevocableIO[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/IrrevocableIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="A concrete subclass of ReadyValidIO that promises to not change the value of 'bits' after a cycle where 'valid' is high and 'ready' is low." href="IrrevocableIO.html"><span class="name">IrrevocableIO</span></a><span class="tparams">[<span name="T">+T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="ReadyValidIO.html" class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</a>[<span class="extype" name="chisel3.util.IrrevocableIO.T">T</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">A concrete subclass of ReadyValidIO that promises to not change
+the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.</p><div class="fullcomment"><div class="comment cmt"><p>A concrete subclass of ReadyValidIO that promises to not change
+the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.
+Additionally, once 'valid' is raised it will never be lowered until after
+'ready' has also been raised.</p></div></div>
+    </li><li name="chisel3.util.LockingArbiter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LockingArbiter[T&lt;:chisel3.Data]extendsLockingArbiterLike[T]"></a><a id="LockingArbiter[T&lt;:Data]:LockingArbiter[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/LockingArbiter.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="LockingArbiter.html"><span class="name">LockingArbiter</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="LockingArbiterLike.html" class="extype" name="chisel3.util.LockingArbiterLike">LockingArbiterLike</a>[<span class="extype" name="chisel3.util.LockingArbiter.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="chisel3.util.LockingArbiterLike" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="LockingArbiterLike[T&lt;:chisel3.Data]extendschisel3.Module"></a><a id="LockingArbiterLike[T&lt;:Data]:LockingArbiterLike[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/LockingArbiterLike.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="LockingArbiterLike.html"><span class="name">LockingArbiterLike</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="../index.html#Module=chisel3.internal.LegacyModule" class="extmbr" name="chisel3.Module">Module</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.util.LockingRRArbiter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LockingRRArbiter[T&lt;:chisel3.Data]extendsLockingArbiterLike[T]"></a><a id="LockingRRArbiter[T&lt;:Data]:LockingRRArbiter[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/LockingRRArbiter.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="LockingRRArbiter.html"><span class="name">LockingRRArbiter</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="LockingArbiterLike.html" class="extype" name="chisel3.util.LockingArbiterLike">LockingArbiterLike</a>[<span class="extype" name="chisel3.util.LockingRRArbiter.T">T</span>]</span>
+      </span>
+      
+      
+    </li><li name="chisel3.util.MixedVec" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MixedVec[T&lt;:chisel3.Data]extendsRecordwithIndexedSeq[T]"></a><a id="MixedVec[T&lt;:Data]:MixedVec[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/MixedVec.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="A hardware array of elements that can hold values of different types/widths, unlike Vec which can only hold elements of the same type/width." href="MixedVec.html"><span class="name">MixedVec</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="../Record.html" class="extype" name="chisel3.Record">Record</a> with <a href="https://www.scala-lang.org/api/2.12.11/scala/collection/IndexedSeq.html#scala.collection.IndexedSeq" class="extype" name="scala.collection.IndexedSeq">IndexedSeq</a>[<span class="extype" name="chisel3.util.MixedVec.T">T</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">A hardware array of elements that can hold values of different types/widths,
+unlike Vec which can only hold elements of the same type/width.</p><div class="fullcomment"><div class="comment cmt"><p>A hardware array of elements that can hold values of different types/widths,
+unlike Vec which can only hold elements of the same type/width.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">val</span> v = Wire(MixedVec(<span class="std">Seq</span>(UInt(<span class="num">8.</span>W), UInt(<span class="num">16.</span>W), UInt(<span class="num">32.</span>W))))
+v(<span class="num">0</span>) := <span class="num">100.</span>U(<span class="num">8.</span>W)
+v(<span class="num">1</span>) := <span class="num">10000.</span>U(<span class="num">16.</span>W)
+v(<span class="num">2</span>) := <span class="num">101.</span>U(<span class="num">32.</span>W)</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.Pipe" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Pipe[T&lt;:chisel3.Data]extendschisel3.Module"></a><a id="Pipe[T&lt;:Data]:Pipe[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Pipe.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Pipeline module generator parameterized by data type and latency." href="Pipe.html"><span class="name">Pipe</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="../index.html#Module=chisel3.internal.LegacyModule" class="extmbr" name="chisel3.Module">Module</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Pipeline module generator parameterized by data type and latency.</p><div class="fullcomment"><div class="comment cmt"><p>Pipeline module generator parameterized by data type and latency.</p><p>This defines a module with one input, <code>enq</code>, and one output, <code>deq</code>. The input and output are <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> interfaces
+that wrap some Chisel type, e.g., a <a href="../UInt.html" class="extype" name="chisel3.UInt">UInt</a> or a <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a>. This generator will then chain together a number of
+pipeline stages that all advance when the input <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> <code>enq</code> fires. The output <code>deq</code> <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> will fire only
+when valid data has made it all the way through the pipeline.</p><p>As an example, to construct a 4-stage pipe of 8-bit <a href="../UInt.html" class="extype" name="chisel3.UInt">UInt</a>s and connect it to a producer and consumer, you can use
+the following:</p><pre><span class="kw">val</span> foo = Module(<span class="kw">new</span> Pipe(UInt(<span class="num">8.</span>W)), <span class="num">4</span>)
+pipe.io.enq := producer.io
+consumer.io := pipe.io.deq</pre><p>If you already have the <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> input or the components of a <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> interface, it may be simpler to use the
+<a href="Pipe$.html" class="extype" name="chisel3.util.Pipe">Pipe factory</a> companion object. This, which <a href="Pipe.html" class="extype" name="chisel3.util.Pipe">Pipe</a> internally utilizes, will automatically connect the
+input for you.
+</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="Pipe$.html" class="extype" name="chisel3.util.Pipe">Pipe factory</a> for an alternative API</p></span><span class="cmt"><p><a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> interface</p></span><span class="cmt"><p><a href="Queue.html" class="extype" name="chisel3.util.Queue">Queue</a> and the <a href="Queue$.html" class="extype" name="chisel3.util.Queue">Queue factory</a> for actual queues</p></span><span class="cmt"><p>The <a href="ShiftRegister$.html" class="extype" name="chisel3.util.ShiftRegister">ShiftRegister factory</a> to generate a pipe without a <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> interface</p></span></dd></dl></div>
+    </li><li name="chisel3.util.Queue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Queue[T&lt;:chisel3.Data]extendschisel3.Module"></a><a id="Queue[T&lt;:Data]:Queue[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Queue.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="A hardware module implementing a Queue" href="Queue.html"><span class="name">Queue</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="../index.html#Module=chisel3.internal.LegacyModule" class="extmbr" name="chisel3.Module">Module</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A hardware module implementing a Queue</p><div class="fullcomment"><div class="comment cmt"><p>A hardware module implementing a Queue</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@chiselName</span><span class="args">()</span>
+              
+        </dd><div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">val</span> q = Module(<span class="kw">new</span> Queue(UInt(), <span class="num">16</span>))
+q.io.enq &lt;&gt; producer.io.out
+consumer.io.in &lt;&gt; q.io.deq</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.QueueIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QueueIO[T&lt;:chisel3.Data]extendsBundle"></a><a id="QueueIO[T&lt;:Data]:QueueIO[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/QueueIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="An I/O Bundle for Queues" href="QueueIO.html"><span class="name">QueueIO</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">An I/O Bundle for Queues</p>
+    </li><li name="chisel3.util.RRArbiter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RRArbiter[T&lt;:chisel3.Data]extendsLockingRRArbiter[T]"></a><a id="RRArbiter[T&lt;:Data]:RRArbiter[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/RRArbiter.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Hardware module that is used to sequence n producers into 1 consumer." href="RRArbiter.html"><span class="name">RRArbiter</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="LockingRRArbiter.html" class="extype" name="chisel3.util.LockingRRArbiter">LockingRRArbiter</a>[<span class="extype" name="chisel3.util.RRArbiter.T">T</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Hardware module that is used to sequence n producers into 1 consumer.</p><div class="fullcomment"><div class="comment cmt"><p>Hardware module that is used to sequence n producers into 1 consumer.
+Producers are chosen in round robin order.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@chiselName</span><span class="args">()</span>
+              
+        </dd><div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">val</span> arb = Module(<span class="kw">new</span> RRArbiter(UInt(), <span class="num">2</span>))
+arb.io.in(<span class="num">0</span>) &lt;&gt; producer0.io.out
+arb.io.in(<span class="num">1</span>) &lt;&gt; producer1.io.out
+consumer.io.in &lt;&gt; arb.io.out</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.ReadyValidIO" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ReadyValidIO[+T&lt;:chisel3.Data]extendsBundle"></a><a id="ReadyValidIO[+T&lt;:Data]:ReadyValidIO[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/ReadyValidIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="An I/O Bundle containing 'valid' and 'ready' signals that handshake the transfer of data stored in the 'bits' subfield." href="ReadyValidIO.html"><span class="name">ReadyValidIO</span></a><span class="tparams">[<span name="T">+T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">An I/O Bundle containing 'valid' and 'ready' signals that handshake
+the transfer of data stored in the 'bits' subfield.</p><div class="fullcomment"><div class="comment cmt"><p>An I/O Bundle containing 'valid' and 'ready' signals that handshake
+the transfer of data stored in the 'bits' subfield.
+The base protocol implied by the directionality is that
+the producer uses the interface as-is (outputs bits)
+while the consumer uses the flipped interface (inputs bits).
+The actual semantics of ready/valid are enforced via the use of concrete subclasses.</p></div></div>
+    </li><li name="chisel3.util.SwitchContext" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SwitchContext[T&lt;:chisel3.Element]extendsAnyRef"></a><a id="SwitchContext[T&lt;:Element]:SwitchContext[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/SwitchContext.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Implementation details for switch." href="SwitchContext.html"><span class="name">SwitchContext</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../Element.html" class="extype" name="chisel3.Element">Element</a></span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Implementation details for <a href="switch$.html" class="extype" name="chisel3.util.switch">switch</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Implementation details for <a href="switch$.html" class="extype" name="chisel3.util.switch">switch</a>. See <a href="switch$.html" class="extype" name="chisel3.util.switch">switch</a> and <a href="is$.html" class="extype" name="chisel3.util.is">is</a> for the
+user-facing API.</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>DO NOT USE. This API is subject to change without warning.</p></span></dd></dl></div>
+    </li><li name="chisel3.util.Valid" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Valid[+T&lt;:chisel3.Data]extendsBundle"></a><a id="Valid[+T&lt;:Data]:Valid[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Valid.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="A Bundle that adds a valid bit to some data." href="Valid.html"><span class="name">Valid</span></a><span class="tparams">[<span name="T">+T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result"> extends <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a> that adds a <code>valid</code> bit to some data.</p><div class="fullcomment"><div class="comment cmt"><p>A <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a> that adds a <code>valid</code> bit to some data. This indicates that the user expects a &quot;valid&quot; interface between
+a producer and a consumer. Here, the producer asserts the <code>valid</code> bit when data on the <code>bits</code> line contains valid
+data. This differs from <a href="DecoupledIO.html" class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</a> or <a href="IrrevocableIO.html" class="extype" name="chisel3.util.IrrevocableIO">IrrevocableIO</a> as there is no <code>ready</code> line that the consumer can use
+to put back pressure on the producer.</p><p>In most scenarios, the <code>Valid</code> class will <i>not</i> be used directly. Instead, users will create <code>Valid</code> interfaces
+using the <a href="Valid$.html" class="extype" name="chisel3.util.Valid">Valid factory</a>.</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>the type of the data</p></dd></dl><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="Valid$.html" class="extype" name="chisel3.util.Valid">Valid factory</a> for concrete examples</p></span></dd></dl></div>
+    </li><li name="chisel3.util.ValidIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ValidIO[+T&lt;:chisel3.Data]=chisel3.util.Valid[T]"></a><a id="ValidIO[+T&lt;:Data]:ValidIO[T]"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/index.html#ValidIO[+T&lt;:chisel3.Data]=chisel3.util.Valid[T]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ValidIO</span><span class="tparams">[<span name="T">+T &lt;: <a href="../Data.html" class="extype" name="chisel3.Data">Data</a></span>]</span><span class="result alias"> = <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a>[<span class="extype" name="chisel3.util.ValidIO.T">T</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Synonyms, moved from main package object - maintain scope.</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="chisel3.util#DecoupledIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DecoupledIO:chisel3.util.Decoupled.type"></a><a id="DecoupledIO:Decoupled.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/index.html#DecoupledIO:chisel3.util.Decoupled.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">DecoupledIO</span><span class="result">: <a href="Decoupled$.html" class="extype" name="chisel3.util.Decoupled">Decoupled</a>.type</span>
+      </span>
+      
+      
+    </li><li name="chisel3.util#ValidIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ValidIO:chisel3.util.Valid.type"></a><a id="ValidIO:Valid.type"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/index.html#ValidIO:chisel3.util.Valid.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ValidIO</span><span class="result">: <a href="Valid$.html" class="extype" name="chisel3.util.Valid">Valid</a>.type</span>
+      </span>
+      
+      
+    </li><li name="chisel3.util.BitPat" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BitPat"></a><a id="BitPat:BitPat"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/BitPat$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="BitPat$.html"><span class="name">BitPat</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.util.Cat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Cat"></a><a id="Cat:Cat"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Cat$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Concatenates elements of the input, in order, together." href="Cat$.html"><span class="name">Cat</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Concatenates elements of the input, in order, together.</p><div class="fullcomment"><div class="comment cmt"><p>Concatenates elements of the input, in order, together.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>Cat(<span class="lit">"b101"</span>.U, <span class="lit">"b11"</span>.U)  <span class="cmt">// equivalent to "b101 11".U</span>
+Cat(myUIntWire0, myUIntWire1)
+
+Cat(<span class="std">Seq</span>(<span class="lit">"b101"</span>.U, <span class="lit">"b11"</span>.U))  <span class="cmt">// equivalent to "b101 11".U</span>
+Cat(mySeqOfBits)</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.Counter" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Counter"></a><a id="Counter:Counter"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Counter$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="Counter$.html"><span class="name">Counter</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.util.Decoupled" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Decoupled"></a><a id="Decoupled:Decoupled"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Decoupled$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="This factory adds a decoupled handshaking protocol to a data bundle." href="Decoupled$.html"><span class="name">Decoupled</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This factory adds a decoupled handshaking protocol to a data bundle.</p>
+    </li><li name="chisel3.util.DeqIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DeqIO"></a><a id="DeqIO:DeqIO"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/DeqIO$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Consumer - drives (outputs) ready, inputs valid and bits." href="DeqIO$.html"><span class="name">DeqIO</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Consumer - drives (outputs) ready, inputs valid and bits.</p>
+    </li><li name="chisel3.util.EnqIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EnqIO"></a><a id="EnqIO:EnqIO"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/EnqIO$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Producer - drives (outputs) valid and bits, inputs ready." href="EnqIO$.html"><span class="name">EnqIO</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Producer - drives (outputs) valid and bits, inputs ready.</p>
+    </li><li name="chisel3.util.Enum" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Enum"></a><a id="Enum:Enum"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Enum$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="Enum$.html"><span class="name">Enum</span></a><span class="result"> extends <a href="Enum.html" class="extype" name="chisel3.util.Enum">Enum</a></span>
+      </span>
+      
+      
+    </li><li name="chisel3.util.Fill" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Fill"></a><a id="Fill:Fill"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Fill$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Create repetitions of the input using a tree fanout topology." href="Fill$.html"><span class="name">Fill</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Create repetitions of the input using a tree fanout topology.</p><div class="fullcomment"><div class="comment cmt"><p>Create repetitions of the input using a tree fanout topology.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>Fill(<span class="num">2</span>, <span class="lit">"b1000"</span>.U)  <span class="cmt">// equivalent to "b1000 1000".U</span>
+Fill(<span class="num">2</span>, <span class="lit">"b1001"</span>.U)  <span class="cmt">// equivalent to "b1001 1001".U</span>
+Fill(<span class="num">2</span>, myUIntWire)  <span class="cmt">// dynamic fill</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.FillInterleaved" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FillInterleaved"></a><a id="FillInterleaved:FillInterleaved"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/FillInterleaved$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Creates repetitions of each bit of the input in order." href="FillInterleaved$.html"><span class="name">FillInterleaved</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Creates repetitions of each bit of the input in order.</p><div class="fullcomment"><div class="comment cmt"><p>Creates repetitions of each bit of the input in order.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>FillInterleaved(<span class="num">2</span>, <span class="lit">"b1 0 0 0"</span>.U)  <span class="cmt">// equivalent to "b11 00 00 00".U</span>
+FillInterleaved(<span class="num">2</span>, <span class="lit">"b1 0 0 1"</span>.U)  <span class="cmt">// equivalent to "b11 00 00 11".U</span>
+FillInterleaved(<span class="num">2</span>, myUIntWire)  <span class="cmt">// dynamic interleaved fill</span>
+
+FillInterleaved(<span class="num">2</span>, <span class="std">Seq</span>(<span class="kw">true</span>.B, <span class="kw">false</span>.B, <span class="kw">false</span>.B, <span class="kw">false</span>.B))  <span class="cmt">// equivalent to "b11 00 00 00".U</span>
+FillInterleaved(<span class="num">2</span>, <span class="std">Seq</span>(<span class="kw">true</span>.B, <span class="kw">false</span>.B, <span class="kw">false</span>.B, <span class="kw">true</span>.B))  <span class="cmt">// equivalent to "b11 00 00 11".U</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.ImplicitConversions" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ImplicitConversions"></a><a id="ImplicitConversions:ImplicitConversions"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/ImplicitConversions$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Implicit conversions to automatically convert scala.Boolean and scala.Int to Bool and UInt respectively" href="ImplicitConversions$.html"><span class="name">ImplicitConversions</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Implicit conversions to automatically convert <a href="https://www.scala-lang.org/api/2.12.11/scala/Boolean.html" class="extype" name="scala.Boolean">scala.Boolean</a> and <a href="https://www.scala-lang.org/api/2.12.11/scala/Int.html" class="extype" name="scala.Int">scala.Int</a> to <a href="../Bool.html" class="extype" name="chisel3.Bool">Bool</a>
+ and <a href="../UInt.html" class="extype" name="chisel3.UInt">UInt</a> respectively
+</p>
+    </li><li name="chisel3.util.Irrevocable" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Irrevocable"></a><a id="Irrevocable:Irrevocable"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Irrevocable$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Factory adds an irrevocable handshaking protocol to a data bundle." href="Irrevocable$.html"><span class="name">Irrevocable</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Factory adds an irrevocable handshaking protocol to a data bundle.</p>
+    </li><li name="chisel3.util.ListLookup" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ListLookup"></a><a id="ListLookup:ListLookup"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/ListLookup$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="For each element in a list, muxes (looks up) between cases (one per list element) based on a common address." href="ListLookup$.html"><span class="name">ListLookup</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">For each element in a list, muxes (looks up) between cases (one per list element) based on a
+common address.</p><div class="fullcomment"><div class="comment cmt"><p>For each element in a list, muxes (looks up) between cases (one per list element) based on a
+common address.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>ListLookup(<span class="num">2.</span>U,  <span class="cmt">// address for comparison</span>
+                         <span class="std">List</span>(<span class="num">10.</span>U, <span class="num">11.</span>U, <span class="num">12.</span>U),   <span class="cmt">// default "row" if none of the following cases match</span>
+    <span class="std">Array</span>(BitPat(<span class="num">2.</span>U) -&gt; <span class="std">List</span>(<span class="num">20.</span>U, <span class="num">21.</span>U, <span class="num">22.</span>U),  <span class="cmt">// this "row" hardware-selected based off address 2.U</span>
+          BitPat(<span class="num">3.</span>U) -&gt; <span class="std">List</span>(<span class="num">30.</span>U, <span class="num">31.</span>U, <span class="num">32.</span>U))
+) <span class="cmt">// hardware-evaluates to List(20.U, 21.U, 22.U)</span>
+<span class="cmt">// Note: if given address 0.U, the above would hardware evaluate to List(10.U, 11.U, 12.U)</span></pre></li></ol>
+            </div><dt>Note</dt><dd><span class="cmt"><p>This appears to be an odd, specialized operator that we haven't seen used much, and seems
+      to be a holdover from chisel2. This may be deprecated and removed, usage is not
+      recommended.</p></span></dd></dl></div>
+    </li><li name="chisel3.util.Log2" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Log2"></a><a id="Log2:Log2"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Log2$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Returns the base-2 integer logarithm of an UInt." href="Log2$.html"><span class="name">Log2</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the base-2 integer logarithm of an UInt.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the base-2 integer logarithm of an UInt.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>Log2(<span class="num">8.</span>U)  <span class="cmt">// evaluates to 3.U</span>
+Log2(<span class="num">13.</span>U)  <span class="cmt">// evaluates to 3.U (truncation)</span>
+Log2(myUIntWire)</pre></li></ol>
+            </div><dt>Note</dt><dd><span class="cmt"><p>The result is truncated, so e.g. Log2(13.U) === 3.U</p></span></dd></dl></div>
+    </li><li name="chisel3.util.Lookup" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Lookup"></a><a id="Lookup:Lookup"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Lookup$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Muxes between cases based on whether an address matches any pattern for a case." href="Lookup$.html"><span class="name">Lookup</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Muxes between cases based on whether an address matches any pattern for a case.</p><div class="fullcomment"><div class="comment cmt"><p>Muxes between cases based on whether an address matches any pattern for a case.
+Similar to <a href="MuxLookup$.html" class="extype" name="chisel3.util.MuxLookup">MuxLookup</a>, but uses <a href="BitPat.html" class="extype" name="chisel3.util.BitPat">BitPat</a> for address comparison.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>This appears to be an odd, specialized operator that we haven't seen used much, and seems
+      to be a holdover from chisel2. This may be deprecated and removed, usage is not
+      recommended.</p></span></dd></dl></div>
+    </li><li name="chisel3.util.MixedVec" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MixedVec"></a><a id="MixedVec:MixedVec"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/MixedVec$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Create a MixedVec type, given element types." href="MixedVec$.html"><span class="name">MixedVec</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Create a MixedVec type, given element types.</p><div class="fullcomment"><div class="comment cmt"><p>Create a MixedVec type, given element types. Inputs must be Chisel types which have no value
+(not hardware types).
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>MixedVec with the given types.</p></dd></dl></div>
+    </li><li name="chisel3.util.MixedVecInit" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MixedVecInit"></a><a id="MixedVecInit:MixedVecInit"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/MixedVecInit$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Create a MixedVec wire with default values as specified, and type of each element inferred from those default values." href="MixedVecInit$.html"><span class="name">MixedVecInit</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Create a MixedVec wire with default values as specified, and type of each element inferred from
+those default values.</p><div class="fullcomment"><div class="comment cmt"><p>Create a MixedVec wire with default values as specified, and type of each element inferred from
+those default values.</p><p>This is analogous to <a href="../VecInit$.html" class="extype" name="chisel3.VecInit">VecInit</a>.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>MixedVec with given values assigned</p></dd></dl><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>MixedVecInit(<span class="std">Seq</span>(<span class="num">100.</span>U(<span class="num">8.</span>W), <span class="num">10000.</span>U(<span class="num">16.</span>W), <span class="num">101.</span>U(<span class="num">32.</span>W)))</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.Mux1H" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Mux1H"></a><a id="Mux1H:Mux1H"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Mux1H$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Builds a Mux tree out of the input signal vector using a one hot encoded select signal." href="Mux1H$.html"><span class="name">Mux1H</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Builds a Mux tree out of the input signal vector using a one hot encoded
+select signal.</p><div class="fullcomment"><div class="comment cmt"><p>Builds a Mux tree out of the input signal vector using a one hot encoded
+select signal. Returns the output of the Mux tree.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">val</span> hotValue = chisel3.util.Mux1H(<span class="std">Seq</span>(
+ io.selector(<span class="num">0</span>) -&gt; <span class="num">2.</span>U,
+ io.selector(<span class="num">1</span>) -&gt; <span class="num">4.</span>U,
+ io.selector(<span class="num">2</span>) -&gt; <span class="num">8.</span>U,
+ io.selector(<span class="num">4</span>) -&gt; <span class="num">11.</span>U,
+))</pre></li></ol>
+            </div><dt>Note</dt><dd><span class="cmt"><p>results unspecified unless exactly one select signal is high</p></span></dd></dl></div>
+    </li><li name="chisel3.util.MuxCase" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MuxCase"></a><a id="MuxCase:MuxCase"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/MuxCase$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Given an association of values to enable signals, returns the first value with an associated high enable signal." href="MuxCase$.html"><span class="name">MuxCase</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Given an association of values to enable signals, returns the first value with an associated
+high enable signal.</p><div class="fullcomment"><div class="comment cmt"><p>Given an association of values to enable signals, returns the first value with an associated
+high enable signal.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>MuxCase(default, <span class="std">Array</span>(c1 -&gt; a, c2 -&gt; b))</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.MuxLookup" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MuxLookup"></a><a id="MuxLookup:MuxLookup"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/MuxLookup$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Creates a cascade of n Muxs to search for a key value." href="MuxLookup$.html"><span class="name">MuxLookup</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Creates a cascade of n Muxs to search for a key value.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a cascade of n Muxs to search for a key value.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>MuxLookup(idx, default,
+    <span class="std">Array</span>(<span class="num">0.</span>U -&gt; a, <span class="num">1.</span>U -&gt; b))</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.OHToUInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OHToUInt"></a><a id="OHToUInt:OHToUInt"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/OHToUInt$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Returns the bit position of the sole high bit of the input bitvector." href="OHToUInt$.html"><span class="name">OHToUInt</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the bit position of the sole high bit of the input bitvector.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the bit position of the sole high bit of the input bitvector.</p><p>Inverse operation of <a href="UIntToOH$.html" class="extype" name="chisel3.util.UIntToOH">UIntToOH</a>.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>OHToUInt(<span class="lit">"b0100"</span>.U) <span class="cmt">// results in 2.U</span></pre></li></ol>
+            </div><dt>Note</dt><dd><span class="cmt"><p>assumes exactly one high bit, results undefined otherwise</p></span></dd></dl></div>
+    </li><li name="chisel3.util.Pipe" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Pipe"></a><a id="Pipe:Pipe"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Pipe$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="A factory to generate a hardware pipe." href="Pipe$.html"><span class="name">Pipe</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">A factory to generate a hardware pipe.</p><div class="fullcomment"><div class="comment cmt"><p>A factory to generate a hardware pipe. This can be used to delay <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> data by a design-time configurable number
+of cycles.</p><p>Here, we construct three different pipes using the different provided <code>apply</code> methods and hook them up together. The
+types are explicitly specified to show that these all communicate using <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> interfaces:</p><pre><span class="kw">val</span> in: Valid[UInt]  = Wire(Valid(UInt(<span class="num">2.</span>W)))
+
+<span class="cmt">/* A zero latency (combinational) pipe is connected to 'in' */</span>
+<span class="kw">val</span> foo: Valid[UInt] = Pipe(in.valid, in.bits, <span class="num">0</span>)
+
+<span class="cmt">/* A one-cycle pipe is connected to the output of 'foo' */</span>
+<span class="kw">val</span> bar: Valid[UInt] = Pipe(foo.valid, foo.bits)
+
+<span class="cmt">/* A two-cycle pipe is connected to the output of 'bar' */</span>
+<span class="kw">val</span> baz: Valid[UInt] = Pipe(bar, <span class="num">2</span>)</pre></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="Pipe.html" class="extype" name="chisel3.util.Pipe">Pipe class</a> for an alternative API</p></span><span class="cmt"><p><a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> interface</p></span><span class="cmt"><p><a href="Queue.html" class="extype" name="chisel3.util.Queue">Queue</a> and the <a href="Queue$.html" class="extype" name="chisel3.util.Queue">Queue factory</a> for actual queues</p></span><span class="cmt"><p>The <a href="ShiftRegister$.html" class="extype" name="chisel3.util.ShiftRegister">ShiftRegister factory</a> to generate a pipe without a <a href="Valid.html" class="extype" name="chisel3.util.Valid">Valid</a> interface</p></span></dd></dl></div>
+    </li><li name="chisel3.util.PopCount" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PopCount"></a><a id="PopCount:PopCount"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/PopCount$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Returns the number of bits set (value is 1 or true) in the input signal." href="PopCount$.html"><span class="name">PopCount</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the number of bits set (value is 1 or true) in the input signal.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the number of bits set (value is 1 or true) in the input signal.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>PopCount(<span class="std">Seq</span>(<span class="kw">true</span>.B, <span class="kw">false</span>.B, <span class="kw">true</span>.B, <span class="kw">true</span>.B))  <span class="cmt">// evaluates to 3.U</span>
+PopCount(<span class="std">Seq</span>(<span class="kw">false</span>.B, <span class="kw">false</span>.B, <span class="kw">true</span>.B, <span class="kw">false</span>.B))  <span class="cmt">// evaluates to 1.U</span>
+
+PopCount(<span class="lit">"b1011"</span>.U)  <span class="cmt">// evaluates to 3.U</span>
+PopCount(<span class="lit">"b0010"</span>.U)  <span class="cmt">// evaluates to 1.U</span>
+PopCount(myUIntWire)  <span class="cmt">// dynamic count</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.PriorityEncoder" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PriorityEncoder"></a><a id="PriorityEncoder:PriorityEncoder"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/PriorityEncoder$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Returns the bit position of the least-significant high bit of the input bitvector." href="PriorityEncoder$.html"><span class="name">PriorityEncoder</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the bit position of the least-significant high bit of the input bitvector.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the bit position of the least-significant high bit of the input bitvector.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>PriorityEncoder(<span class="lit">"b0110"</span>.U) <span class="cmt">// results in 1.U</span></pre><p>Multiple bits may be high in the input.</p></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.PriorityEncoderOH" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PriorityEncoderOH"></a><a id="PriorityEncoderOH:PriorityEncoderOH"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/PriorityEncoderOH$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Returns a bit vector in which only the least-significant 1 bit in the input vector, if any, is set." href="PriorityEncoderOH$.html"><span class="name">PriorityEncoderOH</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Returns a bit vector in which only the least-significant 1 bit in the input vector, if any,
+is set.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a bit vector in which only the least-significant 1 bit in the input vector, if any,
+is set.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>PriorityEncoderOH(<span class="std">Seq</span>(<span class="kw">false</span>.B, <span class="kw">true</span>.B, <span class="kw">true</span>.B, <span class="kw">false</span>.B)) <span class="cmt">// results in Seq(false.B, true.B, false.B, false.B)</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.PriorityMux" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PriorityMux"></a><a id="PriorityMux:PriorityMux"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/PriorityMux$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Builds a Mux tree under the assumption that multiple select signals can be enabled." href="PriorityMux$.html"><span class="name">PriorityMux</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Builds a Mux tree under the assumption that multiple select signals
+can be enabled.</p><div class="fullcomment"><div class="comment cmt"><p>Builds a Mux tree under the assumption that multiple select signals
+can be enabled. Priority is given to the first select signal.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">val</span> hotValue = chisel3.util.PriorityMux(<span class="std">Seq</span>(
+ io.selector(<span class="num">0</span>) -&gt; <span class="num">2.</span>U,
+ io.selector(<span class="num">1</span>) -&gt; <span class="num">4.</span>U,
+ io.selector(<span class="num">2</span>) -&gt; <span class="num">8.</span>U,
+ io.selector(<span class="num">4</span>) -&gt; <span class="num">11.</span>U,
+))</pre><p>Returns the output of the Mux tree.</p></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.Queue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Queue"></a><a id="Queue:Queue"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Queue$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Factory for a generic hardware queue." href="Queue$.html"><span class="name">Queue</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Factory for a generic hardware queue.</p><div class="fullcomment"><div class="comment cmt"><p>Factory for a generic hardware queue.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>output (dequeue) interface from the queue</p></dd></dl><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>consumer.io.in &lt;&gt; Queue(producer.io.out, <span class="num">16</span>)</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.ReadyValidIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReadyValidIO"></a><a id="ReadyValidIO:ReadyValidIO"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/ReadyValidIO$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ReadyValidIO$.html"><span class="name">ReadyValidIO</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.util.RegEnable" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RegEnable"></a><a id="RegEnable:RegEnable"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/RegEnable$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="RegEnable$.html"><span class="name">RegEnable</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.util.Reverse" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Reverse"></a><a id="Reverse:Reverse"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Reverse$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Returns the input in bit-reversed order." href="Reverse$.html"><span class="name">Reverse</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the input in bit-reversed order.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the input in bit-reversed order. Useful for little/big-endian conversion.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>Reverse(<span class="lit">"b1101"</span>.U)  <span class="cmt">// equivalent to "b1011".U</span>
+Reverse(<span class="lit">"b1101"</span>.U(<span class="num">8.</span>W))  <span class="cmt">// equivalent to "b10110000".U</span>
+Reverse(myUIntWire)  <span class="cmt">// dynamic reverse</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.ShiftRegister" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ShiftRegister"></a><a id="ShiftRegister:ShiftRegister"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/ShiftRegister$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ShiftRegister$.html"><span class="name">ShiftRegister</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.util.TransitName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TransitName"></a><a id="TransitName:TransitName"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/TransitName$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="The purpose of TransitName is to improve the naming of some object created in a different scope by &quot;transiting&quot; the name from the outer scope to the inner scope." href="TransitName$.html"><span class="name">TransitName</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The purpose of <code>TransitName</code> is to improve the naming of some object created in a different scope by &quot;transiting&quot;
+the name from the outer scope to the inner scope.</p><div class="fullcomment"><div class="comment cmt"><p>The purpose of <code>TransitName</code> is to improve the naming of some object created in a different scope by &quot;transiting&quot;
+the name from the outer scope to the inner scope.</p><p>Consider the example below. This shows three ways of instantiating <code>MyModule</code> and returning the IO. Normally, the
+instance will be named <code>MyModule</code>. However, it would be better if the instance was named using the name of the <code>val</code>
+that user provides for the returned IO. <code>TransitName</code> can then be used to &quot;transit&quot; the name <i>from</i> the IO <i>to</i>
+the module:</p><pre><span class="cmt">/* Assign the IO of a new MyModule instance to value "foo". The instance will be named "MyModule". */</span>
+<span class="kw">val</span> foo = Module(<span class="kw">new</span> MyModule).io
+
+<span class="cmt">/* Assign the IO of a new MyModule instance to value "bar". The instance will be named "bar". */</span>
+<span class="kw">val</span> bar = {
+  <span class="kw">val</span> x = Module(<span class="kw">new</span> MyModule)
+  TransitName(x.io, x) <span class="cmt">// TransitName returns the first argument</span>
+}
+
+<span class="cmt">/* Assign the IO of a new MyModule instance to value "baz". The instance will be named "baz_generated". */</span>
+<span class="kw">val</span> baz = {
+  <span class="kw">val</span> x = Module(<span class="kw">new</span> MyModule)
+  TransitName.withSuffix(<span class="lit">"_generated"</span>)(x.io, x) <span class="cmt">// TransitName returns the first argument</span>
+}</pre><p><code>TransitName</code> helps library writers following the <a href="https://en.wikipedia.org/wiki/Factory_method_pattern" target="_blank">Factory
+Method Pattern</a> where modules may be instantiated inside an enclosing scope. For an example of this, see how the
+<a href="Queue$.html" class="extype" name="chisel3.util.Queue">Queue</a> factory uses <code>TransitName</code> in
+<a href="https://github.com/freechipsproject/chisel3/blob/master/src/main/scala/chisel3/util/Decoupled.scala" target="_blank">Decoupled.scala</a> factory.
+</p></div></div>
+    </li><li name="chisel3.util.UIntToOH" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UIntToOH"></a><a id="UIntToOH:UIntToOH"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/UIntToOH$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Returns the one hot encoding of the input UInt." href="UIntToOH$.html"><span class="name">UIntToOH</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the one hot encoding of the input UInt.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the one hot encoding of the input UInt.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>UIntToOH(<span class="num">2.</span>U) <span class="cmt">// results in "b0100".U</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.Valid" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Valid"></a><a id="Valid:Valid"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/Valid$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Factory for generating &quot;valid&quot; interfaces." href="Valid$.html"><span class="name">Valid</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Factory for generating &quot;valid&quot; interfaces.</p><div class="fullcomment"><div class="comment cmt"><p>Factory for generating &quot;valid&quot; interfaces. A &quot;valid&quot; interface is a data-communicating interface between a producer
+and a consumer where the producer does not wait for the consumer. Concretely, this means that one additional bit is
+added to the data indicating its validity.</p><p>As an example, consider the following <a href="../Bundle.html" class="extype" name="chisel3.Bundle">Bundle</a>, <code>MyBundle</code>:</p><pre><span class="kw">class</span> MyBundle <span class="kw">extends</span> Bundle {
+  <span class="kw">val</span> foo = Output(UInt(<span class="num">8.</span>W))
+}</pre><p>To convert this to a &quot;valid&quot; interface, you wrap it with a call to the <a href="Valid$.html#apply[T&lt;:chisel3.Data](gen:T):chisel3.util.Valid[T]" class="extmbr" name="chisel3.util.Valid#apply"><code>Valid</code> companion object's
+apply method</a>:</p><pre><span class="kw">val</span> bar = Valid(<span class="kw">new</span> MyBundle)</pre><p>The resulting interface is <i>structurally</i> equivalent to the following:</p><pre><span class="kw">class</span> MyValidBundle <span class="kw">extends</span> Bundle {
+  <span class="kw">val</span> valid = Output(Bool())
+  <span class="kw">val</span> bits = Output(<span class="kw">new</span> MyBundle)
+}</pre><p>In addition to adding the <code>valid</code> bit, a <a href="Valid.html#fire(dummy:Int):chisel3.Bool" class="extmbr" name="chisel3.util.Valid#fire">Valid.fire</a> method is also added that returns the <code>valid</code> bit. This
+provides a similarly named interface to <a href="DecoupledIO.html" class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</a>'s fire.
+</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="Decoupled$.html" class="extype" name="chisel3.util.Decoupled">DecoupledIO Factory</a></p></span><span class="cmt"><p><a href="Irrevocable$.html" class="extype" name="chisel3.util.Irrevocable">IrrevocableIO Factory</a></p></span></dd></dl></div>
+    </li><li name="chisel3.util.is" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="is"></a><a id="is:is"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/is$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Use to specify cases in a switch block, equivalent to a when block comparing to the condition variable." href="is$.html"><span class="name">is</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Use to specify cases in a <a href="switch$.html" class="extype" name="chisel3.util.switch">switch</a> block, equivalent to a <a href="../when$.html" class="extype" name="chisel3.when">when</a> block comparing to
+the condition variable.</p><div class="fullcomment"><div class="comment cmt"><p>Use to specify cases in a <a href="switch$.html" class="extype" name="chisel3.util.switch">switch</a> block, equivalent to a <a href="../when$.html" class="extype" name="chisel3.when">when</a> block comparing to
+the condition variable.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>illegal outside a <a href="switch$.html" class="extype" name="chisel3.util.switch">switch</a> block</p></span>, <span class="cmt"><p>must be a literal</p></span>, <span class="cmt"><p>each is must be mutually exclusive</p></span>, <span class="cmt"><p>dummy implementation, a macro inside <a href="switch$.html" class="extype" name="chisel3.util.switch">switch</a> transforms this into the actual
+implementation</p></span></dd></dl></div>
+    </li><li name="chisel3.util.isPow2" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isPow2"></a><a id="isPow2:isPow2"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/isPow2$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Returns whether a Scala integer is a power of two." href="isPow2$.html"><span class="name">isPow2</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Returns whether a Scala integer is a power of two.</p><div class="fullcomment"><div class="comment cmt"><p>Returns whether a Scala integer is a power of two.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>isPow2(<span class="num">1</span>)  <span class="cmt">// returns true</span>
+isPow2(<span class="num">2</span>)  <span class="cmt">// returns true</span>
+isPow2(<span class="num">3</span>)  <span class="cmt">// returns false</span>
+isPow2(<span class="num">4</span>)  <span class="cmt">// returns true</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.log2Ceil" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log2Ceil"></a><a id="log2Ceil:log2Ceil"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/log2Ceil$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Compute the log2 of a Scala integer, rounded up." href="log2Ceil$.html"><span class="name">log2Ceil</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Compute the log2 of a Scala integer, rounded up.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the log2 of a Scala integer, rounded up.
+Useful for getting the number of bits needed to represent some number of states (in - 1).
+To get the number of bits needed to represent some number n, use log2Ceil(n + 1).</p><p>Note: can return zero, and should not be used in cases where it may generate unsupported
+zero-width wires.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>log2Ceil(<span class="num">1</span>)  <span class="cmt">// returns 0</span>
+log2Ceil(<span class="num">2</span>)  <span class="cmt">// returns 1</span>
+log2Ceil(<span class="num">3</span>)  <span class="cmt">// returns 2</span>
+log2Ceil(<span class="num">4</span>)  <span class="cmt">// returns 2</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.log2Down" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log2Down"></a><a id="log2Down:log2Down"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/log2Down$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Compute the log2 of a Scala integer, rounded down, with min value of 1." href="log2Down$.html"><span class="name">log2Down</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Compute the log2 of a Scala integer, rounded down, with min value of 1.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the log2 of a Scala integer, rounded down, with min value of 1.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>log2Down(<span class="num">1</span>)  <span class="cmt">// returns 1</span>
+log2Down(<span class="num">2</span>)  <span class="cmt">// returns 1</span>
+log2Down(<span class="num">3</span>)  <span class="cmt">// returns 1</span>
+log2Down(<span class="num">4</span>)  <span class="cmt">// returns 2</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.log2Floor" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log2Floor"></a><a id="log2Floor:log2Floor"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/log2Floor$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Compute the log2 of a Scala integer, rounded down." href="log2Floor$.html"><span class="name">log2Floor</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Compute the log2 of a Scala integer, rounded down.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the log2 of a Scala integer, rounded down.</p><p>Can be useful in computing the next-smallest power of two.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>log2Floor(<span class="num">1</span>)  <span class="cmt">// returns 0</span>
+log2Floor(<span class="num">2</span>)  <span class="cmt">// returns 1</span>
+log2Floor(<span class="num">3</span>)  <span class="cmt">// returns 1</span>
+log2Floor(<span class="num">4</span>)  <span class="cmt">// returns 2</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.log2Up" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log2Up"></a><a id="log2Up:log2Up"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/log2Up$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Compute the log2 of a Scala integer, rounded up, with min value of 1." href="log2Up$.html"><span class="name">log2Up</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Compute the log2 of a Scala integer, rounded up, with min value of 1.</p><div class="fullcomment"><div class="comment cmt"><p>Compute the log2 of a Scala integer, rounded up, with min value of 1.
+Useful for getting the number of bits needed to represent some number of states (in - 1),
+To get the number of bits needed to represent some number n, use log2Up(n + 1).
+with the minimum value preventing the creation of currently-unsupported zero-width wires.</p><p>Note: prefer to use log2Ceil when in is known to be &gt; 1 (where log2Ceil(in) &gt; 0).
+This will be deprecated when zero-width wires is supported.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>log2Up(<span class="num">1</span>)  <span class="cmt">// returns 1</span>
+log2Up(<span class="num">2</span>)  <span class="cmt">// returns 1</span>
+log2Up(<span class="num">3</span>)  <span class="cmt">// returns 2</span>
+log2Up(<span class="num">4</span>)  <span class="cmt">// returns 2</span></pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.signedBitLength" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="signedBitLength"></a><a id="signedBitLength:signedBitLength"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/signedBitLength$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="signedBitLength$.html"><span class="name">signedBitLength</span></a>
+      </span>
+      
+      
+    </li><li name="chisel3.util.switch" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="switch"></a><a id="switch:switch"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/switch$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Conditional logic to form a switch block." href="switch$.html"><span class="name">switch</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Conditional logic to form a switch block.</p><div class="fullcomment"><div class="comment cmt"><p>Conditional logic to form a switch block. See <a href="is$.html" class="extype" name="chisel3.util.is">is</a> for the case API.
+</p></div><dl class="attributes block"> <div class="block">Example:
+               <ol><li class="cmt"><p></p><pre>switch (myState) {
+  is (state1) {
+    <span class="cmt">// some logic here that runs when myState === state1</span>
+  }
+  is (state2) {
+    <span class="cmt">// some logic here that runs when myState === state2</span>
+  }
+}</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.unsignedBitLength" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="unsignedBitLength"></a><a id="unsignedBitLength:unsignedBitLength"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/unsignedBitLength$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="unsignedBitLength$.html"><span class="name">unsignedBitLength</span></a>
+      </span>
+      
+      
+    </li>
+              </ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="chisel3.util.LFSR16" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LFSR16"></a><a id="LFSR16:LFSR16"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/LFSR16$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="LFSR16 generates a 16-bit linear feedback shift register, returning the register contents." href="LFSR16$.html"><span class="name deprecated" title="Deprecated: (Since version 3.2) LFSR16 is deprecated in favor of the parameterized chisel3.util.random.LFSR">LFSR16</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">LFSR16 generates a 16-bit linear feedback shift register, returning the register contents.</p><div class="fullcomment"><div class="comment cmt"><p>LFSR16 generates a 16-bit linear feedback shift register, returning the register contents.
+This is useful for generating a pseudo-random sequence.</p><p>The example below, taken from the unit tests, creates two 4-sided dice using <code>LFSR16</code> primitives:</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> LFSR16 is deprecated in favor of the parameterized chisel3.util.random.LFSR</p></dd><div class="block">Example:
+               <ol><li class="cmt"><p></p><pre><span class="kw">val</span> bins = Reg(Vec(<span class="num">8</span>, UInt(<span class="num">32.</span>W)))
+
+<span class="cmt">// Create two 4 sided dice and roll them each cycle.</span>
+<span class="cmt">// Use tap points on each LFSR so values are more independent</span>
+<span class="kw">val</span> die0 = Cat(<span class="std">Seq</span>.tabulate(<span class="num">2</span>) { i <span class="kw">=&gt;</span> LFSR16()(i) })
+<span class="kw">val</span> die1 = Cat(<span class="std">Seq</span>.tabulate(<span class="num">2</span>) { i <span class="kw">=&gt;</span> LFSR16()(i + <span class="num">2</span>) })
+
+<span class="kw">val</span> rollValue = die0 +&amp; die1  <span class="cmt">// Note +& is critical because sum will need an extra bit.</span>
+
+bins(rollValue) := bins(rollValue) + <span class="num">1.</span>U</pre></li></ol>
+            </div></dl></div>
+    </li><li name="chisel3.util.unless" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unless"></a><a id="unless:unless"></a>
+      <span class="permalink">
+      <a href="../../chisel3/util/unless$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="unless$.html"><span class="name deprecated" title="Deprecated: (Since version 3.2) The unless conditional is deprecated, use when(!condition){...} instead">unless</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> The unless conditional is deprecated, use when(!condition){...} instead</p></dd></dl></div>
+    </li></ol>
+            </div>
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.11/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.11/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>
