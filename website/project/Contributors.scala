@@ -30,9 +30,9 @@ object Contributors {
       .listContributors(repo.owner, repo.repo)
       .unsafeRunSync()
       .result match {
-        case Left(e) => None // throw new Exception(s"Unable to fetch contributors for ${repo.serialize}. Did you misspell it? Did the repository move?")
-        case Right(r) => Some(r)
-      }.flatten
+        case Left(e) => Nil // throw new Exception(s"Unable to fetch contributors for ${repo.serialize}. Did you misspell it? Did the repository move?")
+        case Right(r) => r
+      }
 
   def contributorsMarkdown(contributors: Seq[(String, String)]): String =
     contributors
