@@ -182,9 +182,3 @@ options:
         url: api/chisel3/latest/
       - title: 3.5
         url: api/chisel3/3.5/
-      - title: 3.4
-        url: api/3.4.4/
-      - title: 3.3
-        url: api/3.3.3/
-      - title: 3.2
-        url: api/3.2.8/

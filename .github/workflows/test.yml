@@ -110,48 +110,8 @@ jobs:
       - name: Unit Tests
         run: sbt ++${{ matrix.scala }} standardLibrary/test
 
-  website-api-docs:
-    name: API Docs
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        project: [chisel3]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.8
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
-      - name: Calculate API Docs Cache Key
-        id: calc-key
-        run: |
-          KEY=$(make -C website --always-make --dry-run apis-${{ matrix.project }} | sha256sum | awk '{print $1}')
-          echo "::set-output name=cache_key::${KEY}"
-      - name: Cache API Docs
-        uses: actions/cache@v2
-        with:
-          path: website/build/api/${{ matrix.project }}
-          key: ${{ runner.os }}-${{ matrix.project }}-${{ steps.calc-key.outputs.cache_key }}
-          # On miss, still start from previous value for incremental rebuild
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.project }}
-      - name: ${{ matrix.project }} APIs
-        run: make -C website apis-${{ matrix.project }}
-      - name: Tar build artifacts
-        run: tar zcf website/build/api/${{ matrix.project }}.tar.gz website/build/api/${{ matrix.project }}
-      - name: Share API Docs
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.project }}-api-docs
-          path: website/build/api/${{ matrix.project }}.tar.gz
-
   website:
-    name: Build & Deploy Website
-    needs: [website-api-docs]
+    name: Build Mdoc & Website
     runs-on: ubuntu-latest
 
     steps:
@@ -169,25 +129,19 @@ jobs:
         run: |
           gem install jekyll -v 4.2.0
           gem install jekyll-redirect-from
-      - name: Download all built API docs
-        uses: actions/download-artifact@v2
-        with:
-          path: artifacts
-      - name: Untar build artifacts
-        run: for f in $(find artifacts -name "*.tar.gz"); do tar zxf "$f"; done
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
       - name: Build the microsite
         run: make -C website
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Deploy Website to GitHub Pages (From Master Branch)
-        if: (github.event_name == 'push') && (github.ref_type == 'branch') && (github.ref_name == 'master')
-        uses: JamesIves/github-pages-deploy-action@3.7.1
+      - name: Tar built website
+        run: tar zcf website.tar.gz website/docs/target/site
+      - name: Share Built Website
+        uses: actions/upload-artifact@v3
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: website/docs/target/site
+          name: website
+          path: website.tar.gz
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify. This job checks that all jobs were successful.
@@ -195,7 +149,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   check-tests:
     name: "check tests"
-    needs: [ci, integration, std, doc, website, website-api-docs]
+    needs: [ci, integration, std, doc, website]
     runs-on: ubuntu-20.04
     if: success() # only run if all tests have passed
     outputs:
@@ -232,7 +186,7 @@ jobs:
   publish:
     needs: [all_tests_passed]
     runs-on: ubuntu-20.04
-    if: github.event_name == 'push'
+    if: (github.event_name == 'push' && github.ref_name != 'website-test')
 
     steps:
       - name: Checkout
@@ -252,3 +206,23 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+
+
+  deploy_website:
+    name: Deploy Website
+    runs-on: ubuntu-latest
+    needs: [all_tests_passed]
+    if: (github.event_name == 'push') && (github.ref_type == 'branch') && ((github.ref_name == 'website-test') || (github.ref_name == 'master'))
+    steps:
+      - name: Download built website
+        uses: actions/download-artifact@v3
+        with:
+          name: website
+      - name: Untar built website
+        run: tar zxf website.tar.gz
+      - name: Deploy Website to GitHub Pages (From Master Branch)
+        uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: website/docs/target/site
