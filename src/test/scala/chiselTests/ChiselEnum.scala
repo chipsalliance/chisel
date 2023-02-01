@@ -6,9 +6,10 @@ import chisel3._
 import chisel3.experimental.AffectsChiselPrefix
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.stage.ChiselGeneratorAnnotation
-import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import chisel3.util._
+import chisel3.testers.BasicTester
+import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -802,7 +803,7 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     corrects.forall(c => annos.exists(isCorrect(_, c)))
 
   def test(strongEnumAnnotatorGen: () => Module) {
-    val annos = (new ChiselStage).execute(
+    val annos = (new chisel3.stage.ChiselStage).execute(
       Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
       Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))
     )
