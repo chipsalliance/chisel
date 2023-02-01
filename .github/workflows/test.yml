@@ -111,7 +111,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} standardLibrary/test
 
   website:
-    name: Build Website
+    name: Build Mdoc & Website
     runs-on: ubuntu-latest
 
     steps:
