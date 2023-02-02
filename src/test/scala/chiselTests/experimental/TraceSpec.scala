@@ -30,6 +30,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     (testDir, annos)
   }
 
+  //TODO: SFC->MFC, this test is ignored because MFC does not support the custom annotations used here
   "TraceFromAnnotations" should "be able to get nested name." in {
     class Bundle0 extends Bundle {
       val a = UInt(8.W)
@@ -68,7 +69,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
       val s0, s1, s2 = Value
     }
 
-    val (testDir, annos) = compile("TraceFromAnnotaions", () => new Module1)
+    val (testDir, annos) = compile("TraceFromAnnotations", () => new Module1)
     val dut = annos.collectFirst { case DesignAnnotation(dut) => dut }.get.asInstanceOf[Module1]
     // out of Builder.
 

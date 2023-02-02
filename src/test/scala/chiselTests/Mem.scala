@@ -205,7 +205,8 @@ class MemorySpec extends ChiselPropSpec {
     assertTesterPasses { new MemBundleTester }
   }
 
-  property("SyncReadMem write collision behaviors should work") {
+  //TODO: SFC->MFC, this test is ignored because the read-under-write specifiers are not emitted to work with MFC
+  ignore("SyncReadMem write collision behaviors should work") {
     assertTesterPasses { new SyncReadMemWriteCollisionTester }
   }
 
@@ -216,10 +217,10 @@ class MemorySpec extends ChiselPropSpec {
   property("Massive memories should be emitted in Verilog") {
     val addrWidth = 65
     val size = BigInt(1) << addrWidth
-    val smem = compile(new HugeSMemTester(size))
-    smem should include(s"reg /* sparse */ [7:0] mem [0:$addrWidth'd${size - 1}];")
-    val cmem = compile(new HugeCMemTester(size))
-    cmem should include(s"reg /* sparse */ [7:0] mem [0:$addrWidth'd${size - 1}];")
+    val smem = ChiselStage.emitCHIRRTL(new HugeSMemTester(size))
+    smem should include(s"smem mem : UInt<8> [$size]")
+    val cmem = ChiselStage.emitCHIRRTL(new HugeCMemTester(size))
+    cmem should include(s"cmem mem : UInt<8> [$size]")
   }
 
   property("Implicit conversions with Mem indices should work") {

@@ -48,7 +48,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   behavior.of("BoringUtils.{addSink, addSource}")
 
-  it should "connect two wires within a module" in {
+  //TODO: SFC->MFC, this test is ignored tests rely on unsupported custom annotations
+  it should "connect two wires within a module" ignore {
     runTester(
       new ShouldntAssertTester { val dut = Module(new BoringInverter) },
       annotations = TesterDriver.verilatorOnly
@@ -105,11 +106,13 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   behavior.of("BoringUtils.bore")
 
-  it should "connect across modules using BoringUtils.bore" in {
+  //TODO: SFC->MFC, this test is ignored tests rely on unsupported custom annotations
+  it should "connect across modules using BoringUtils.bore" ignore {
     runTester(new TopTester, annotations = TesterDriver.verilatorOnly) should be(true)
   }
 
-  it should "throw an exception if NoDedupAnnotations are removed" in {
+  //TODO: SFC->MFC, this test is ignored tests rely on unsupported custom annotations
+  it should "throw an exception if NoDedupAnnotations are removed" ignore {
     intercept[WiringException] {
       runTester(new TopTester with FailViaDedup, annotations = Seq(TesterDriver.VerilatorBackend))
     }.getMessage should startWith("Unable to determine source mapping for sink")
@@ -128,7 +131,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     chisel3.assert(dut.out === true.B)
   }
 
-  it should "work for an internal (same module) BoringUtils.bore" in {
+  //TODO: SFC->MFC, this test is ignored tests rely on unsupported custom annotations
+  it should "work for an internal (same module) BoringUtils.bore" ignore {
     runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be(true)
   }
 
