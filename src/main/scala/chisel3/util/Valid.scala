@@ -42,6 +42,8 @@ class Valid[+T <: Data](gen: T) extends Bundle {
     "Chisel 3.5"
   )
   def fire(dummy: Int = 0): Bool = valid
+
+  override def typeName = s"${this.getClass.getSimpleName}_${gen.typeName}"
 }
 
 /** Factory for generating "valid" interfaces. A "valid" interface is a data-communicating interface between a producer

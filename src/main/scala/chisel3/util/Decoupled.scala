@@ -40,6 +40,11 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
     * @group Signals
     */
   val bits = Output(genType)
+
+  /** A stable typeName for this `ReadyValidIO` and any of its implementations
+    * using the supplied `Data` generator's `typeName`
+    */
+  override def typeName = s"${this.getClass.simpleName}_${gen.typeName}"
 }
 
 object ReadyValidIO {
@@ -334,6 +339,10 @@ class Queue[T <: Data](
       Mux(deq_ptr.value > enq_ptr.value, entries.asUInt + ptr_diff, ptr_diff)
     )
   }
+
+  /** Give this Queue a default, stable desired name using the supplied `Data`
+   * generator's `typeName` */
+  override def desiredName = s"Queue${entries}_${gen.typeName}"
 }
 
 /** Factory for a generic hardware queue. */
