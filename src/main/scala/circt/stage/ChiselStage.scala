@@ -59,6 +59,7 @@ object ChiselStage {
   private def phase = new PhaseManager(
     Seq(
       Dependency[chisel3.stage.phases.Checks],
+      Dependency[chisel3.aop.injecting.InjectingPhase],
       Dependency[chisel3.stage.phases.Elaborate],
       Dependency[chisel3.stage.phases.Convert],
       Dependency[firrtl.stage.phases.AddImplicitOutputFile],
@@ -105,19 +106,19 @@ object ChiselStage {
     gen:         => RawModule,
     args:        Array[String] = Array.empty,
     firtoolOpts: Array[String] = Array.empty
-  ): String =
+  ): String = {
+    val annos = Seq(
+      ChiselGeneratorAnnotation(() => gen),
+      CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
+    ) ++ (new circt.stage.ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
     phase
-      .transform(
-        Seq(
-          ChiselGeneratorAnnotation(() => gen),
-          CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-        ) ++ (new circt.stage.ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
-      )
+      .transform(annos)
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a
       }
       .get
       .value
+  }
 
   /** Compile a Chisel circuit to SystemVerilog with file output
     *

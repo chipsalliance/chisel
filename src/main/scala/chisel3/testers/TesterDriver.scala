@@ -2,16 +2,16 @@
 
 package chisel3.testers
 
-import java.io._
 import chisel3._
 import chisel3.stage.phases.{Convert, Elaborate, Emitter, MaybeInjectingPhase}
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{Dependency, Phase, PhaseManager, TargetDirAnnotation, Unserializable}
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
+import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
+import java.io._
 import scala.sys.process.ProcessLogger
 
 object TesterDriver extends BackendCompilationUtilities {
@@ -26,6 +26,22 @@ object TesterDriver extends BackendCompilationUtilities {
     ): Boolean
   }
   case object VerilatorBackend extends Backend {
+    def ensureExistingAbsolutePath(name: String): os.Path = {
+      val otherPath: os.Path =
+        try {
+          os.pwd / os.RelPath(name)
+        } catch {
+          case t: Throwable =>
+            os.Path(name)
+        }
+      if (!os.exists(otherPath)) {
+        println(
+          s"Can't find '$name' check command line"
+        )
+        throw new Exception(s"Can't find path for '$name'")
+      }
+      otherPath
+    }
 
     /** For use with modules that should successfully be elaborated by the
       * frontend, and which can be turned into executables with assertions.
@@ -46,10 +62,10 @@ object TesterDriver extends BackendCompilationUtilities {
         )
       )
 
-      val annotationsx = pm.transform(ChiselGeneratorAnnotation(finishWrapper(t)) +: annotations)
+      val annotationsFromPhase1 = pm.transform(ChiselGeneratorAnnotation(finishWrapper(t)) +: annotations)
 
-      val target: String = annotationsx.collectFirst { case FirrtlCircuitAnnotation(cir) => cir.main }.get
-      val path = annotationsx.collectFirst { case TargetDirAnnotation(dir) => dir }.map(new File(_)).get
+      val target: String = annotationsFromPhase1.collectFirst { case FirrtlCircuitAnnotation(cir) => cir.main }.get
+      val path = annotationsFromPhase1.collectFirst { case TargetDirAnnotation(dir) => dir }.map(new File(_)).get
 
       // Copy CPP harness and other Verilog sources from resources into files
       val cppHarness = new File(path, "top.cpp")
@@ -62,8 +78,11 @@ object TesterDriver extends BackendCompilationUtilities {
         writeResourceToDirectory(name, path)
       })
 
-      (new FirrtlStage).execute(Array("--compiler", "verilog"), annotationsx)
-
+      val dirName = annotationsFromPhase1.collectFirst { case TargetDirAnnotation(dirName) => dirName }.getOrElse(".")
+      val args = Array("-td", dirName)
+      val verilog = circt.stage.ChiselStage.emitSystemVerilog(t(), args)
+      val verilogPath = ensureExistingAbsolutePath(path.toString) / (target + ".v")
+      os.write.over(verilogPath, verilog)
       // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
       if (
         (verilogToCpp(target, path, additionalVFiles, cppHarness) #&&
