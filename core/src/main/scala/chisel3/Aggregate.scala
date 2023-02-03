@@ -1232,14 +1232,23 @@ package experimental {
   *     val data   = UInt(32.W)
   *   }
   *   class MyModule extends Module {
-  *      val io = IO(new Bundle {
-  *        val inPacket = Input(new Packet)
-  *        val outPacket = Output(new Packet)
-  *      })
-  *      val reg = Reg(new Packet)
-  *      reg <> io.inPacket
-  *      io.outPacket <> reg
+  *     val inPacket = IO(Input(new Packet))
+  *     val outPacket = IO(Output(new Packet))
+  *     val reg = Reg(new Packet)
+  *     reg := inPacket
+  *     outPacket := reg
   *   }
+  * }}}
+  *
+  * The fields of a Bundle are stored in an ordered Map called "elements" in reverse order of
+  * definition
+  * {{{
+  *   class MyBundle extends Bundle {
+  *     val foo = UInt(8.W)
+  *     val bar = UInt(8.W)
+  *   }
+  *   val wire = Wire(new MyBundle)
+  *   wire.elements // VectorMap("bar" -> wire.bar, "foo" -> wire.foo)
   * }}}
   */
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record with experimental.AutoCloneType {
