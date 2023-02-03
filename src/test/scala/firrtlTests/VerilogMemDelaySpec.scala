@@ -188,4 +188,62 @@ class VerilogMemDelaySpec extends LeanTransformSpec(Seq(Dependency(VerilogMemDel
     res should include("m.write.clk <= clock")
     res should include("reg m_write_data_pipe_0 : UInt<8>, clock")
   }
+
+  it should "VerilogMemDelays should replace expr in connections of previous mems" in {
+    val input =
+      """
+        |circuit Test :
+        |  module Test :
+        |    input clock : Clock
+        |    input sel : UInt<1>
+        |    input en : UInt<1>
+        |    output v1 : UInt<1>
+        |    output v2 : UInt<1>
+        |
+        |    mem m1 :
+        |      data-type => UInt<1>
+        |      depth => 2
+        |      read-latency => 0
+        |      write-latency => 1
+        |      readwriter => rw1
+        |      readwriter => rw2
+        |      read-under-write => undefined
+        |    mem m2 :
+        |      data-type => UInt<1>
+        |      depth => 2
+        |      read-latency => 0
+        |      write-latency => 1
+        |      readwriter => rw1
+        |      readwriter => rw2
+        |      read-under-write => undefined
+        |    v1 <= m1.rw2.rdata
+        |    v2 <= m2.rw2.rdata
+        |    m1.rw1.addr <= UInt<1>("h0")
+        |    m2.rw1.addr <= UInt<1>("h0")
+        |    m1.rw1.en <= UInt<1>("h1")
+        |    m2.rw1.en <= UInt<1>("h1")
+        |    m1.rw1.clk <= clock
+        |    m2.rw1.clk <= clock
+        |    m1.rw1.wmode <= en
+        |    m2.rw1.wmode <= en
+        |    m1.rw1.wdata <= UInt<1>("h1")
+        |    m2.rw1.wdata <= UInt<1>("h0")
+        |    m1.rw1.wmask <= en
+        |    m2.rw1.wmask <= UInt<1>("h0")
+        |    m1.rw2.addr <= m2.rw1.rdata
+        |    m2.rw2.addr <= m2.rw1.rdata
+        |    m1.rw2.en <= UInt<1>("h1")
+        |    m2.rw2.en <= UInt<1>("h1")
+        |    m1.rw2.clk <= clock
+        |    m2.rw2.clk <= clock
+        |    m1.rw2.wmode <= en
+        |    m2.rw2.wmode <= en
+        |    m1.rw2.wdata <= UInt<1>("h0")
+        |    m2.rw2.wdata <= UInt<1>("h0")
+        |    m1.rw2.wmask <= en
+        |    m2.rw2.wmask <= UInt<1>("h0")
+      """.stripMargin
+
+    compileTwice(input)
+  }
 }

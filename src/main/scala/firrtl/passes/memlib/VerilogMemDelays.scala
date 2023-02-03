@@ -221,7 +221,18 @@ class MemDelayAndReadwriteTransformer(m: DefModule, passthroughSimpleSyncReadMem
   val transformed = m match {
     case mod: Module =>
       findMemConns(mod.body)
-      mod.copy(body = Block(transform(mod.body) +: newConns.toSeq))
+      val bodyx = transform(mod.body)
+      // Fixup any mem connections being driven by other transformed memories
+      val newConsx = newConns.map {
+        case sx if kind(sx.loc) == MemKind =>
+          val (memRef, _) = Utils.splitRef(sx.loc)
+          if (passthroughMems(WrappedExpression(memRef)))
+            sx
+          else
+            sx.mapExpr(swapMemRefs)
+        case sx => sx
+      }
+      mod.copy(body = Block(bodyx +: newConsx.toSeq))
     case mod => mod
   }
 }
