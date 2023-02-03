@@ -34,9 +34,9 @@ class PipelinedResetModule extends Module {
 
 // This relies on reset being asserted for 3 or more cycles
 class PipelinedResetTester extends BasicTester {
-  val module = Module(new PipelinedResetModule)
+  val pipelinedResetModule = Module(new PipelinedResetModule)
 
-  module.reset := RegNext(RegNext(RegNext(reset)))
+  pipelinedResetModule.reset := RegNext(RegNext(RegNext(reset)))
 
   val (_, done) = Counter(!reset.asBool, 4)
   when(done) {
