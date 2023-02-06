@@ -176,6 +176,10 @@ private object ForceNamesTransform {
           None
         case ForceNameAnnotation(rt: ReferenceTarget, name) => Some(rt.ref -> name)
         case ForceNameAnnotation(it: InstanceTarget, name) => Some(it.instance -> name)
+        case _ =>
+          throw new Exception(
+            s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: value=$value"
+          )
       }.toMap
     }.toSeq
     val renames: Map[String, Map[String, String]] = {
