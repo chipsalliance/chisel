@@ -103,6 +103,10 @@ object Hierarchy {
     def toTarget: IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toTarget
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toTarget
+      case _ =>
+        throw new Exception(
+          s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: toTarget i=$i"
+        )
     }
 
     /** Returns the toAbsoluteTarget of this hierarchy
@@ -111,6 +115,10 @@ object Hierarchy {
     def toAbsoluteTarget: IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toAbsoluteTarget
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toAbsoluteTarget
+      case _ =>
+        throw new Exception(
+          s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: toAbsoluteTarget i=$i"
+        )
     }
   }
 }

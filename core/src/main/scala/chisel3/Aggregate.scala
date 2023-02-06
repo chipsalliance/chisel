@@ -609,6 +609,8 @@ object VecInit extends SourceInfoDoc {
       // Bulk connecting two wires may not succeed because Chisel frontend does not infer
       // directions.
       (x, y) => x <> y
+    case ActualDirection.Empty =>
+      (x, y) => x <> y
   }
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]

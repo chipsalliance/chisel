@@ -260,6 +260,10 @@ object QMCMinimizer extends Minimizer {
           (maxt ++ dc, false)
         case x if !x.mask.testBit(i) => // default to ?
           (mint, true)
+        case _ =>
+          throw new Exception(
+            s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: table.default=${table.default}"
+          )
       }
 
       implicants.foreach(_.isPrime = true)

@@ -269,6 +269,10 @@ private[chisel3] object Connection {
         case List(a, b) =>
           BiConnect.markAnalogConnected(sourceInfo, a, b, currentModule)
           BiConnect.markAnalogConnected(sourceInfo, b, a, currentModule)
+        case _ =>
+          throw new Exception(
+            s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: as.toList=${as.toList}"
+          )
       }
     } catch { // convert Exceptions to Builder.error's so compilation can continue
       case attach.AttachException(message) => Builder.error(message)

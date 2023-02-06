@@ -484,6 +484,10 @@ object Select {
     case Node(id: Data) => getIntermediateAndLeafs(id)
     case Slot(imm, name)   => Seq(imm.id.asInstanceOf[Record].elements(name))
     case Index(imm, value) => getEffected(imm)
+    case _ =>
+      throw new Exception(
+        s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: a=$a"
+      )
   }
 
   // Given an arg, return the corresponding id. Don't use on a loc of a connect.
@@ -513,6 +517,10 @@ object Select {
     case e: ChiselException =>
       i.getOptionRef.get match {
         case l: LitArg => l.num.intValue.toString
+        case _ =>
+          throw new Exception(
+            s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: i.getOptionRef.get=${i.getOptionRef.get}"
+          )
       }
   }
 
