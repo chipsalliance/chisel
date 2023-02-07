@@ -3,10 +3,10 @@
 package chisel3.connectable
 
 import chisel3.{Aggregate, BiConnectException, Data, DontCare, RawModule}
-import chisel3.internal.{prefix, BiConnect, Builder}
+import chisel3.internal.{BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.DefInvalid
-import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
 import Alignment.matchingZipOfChildren
 

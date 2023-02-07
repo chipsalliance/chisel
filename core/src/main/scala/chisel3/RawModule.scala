@@ -136,6 +136,11 @@ trait ImplicitInvalidate { self: RawModule => }
 
 package object internal {
 
+  @deprecated("This function has moved to chisel3.experimental", "Chisel 3.6")
+  val prefix = chisel3.experimental.prefix
+  @deprecated("This function has moved to chisel3.experimental", "Chisel 3.6")
+  val noPrefix = chisel3.experimental.noPrefix
+
   import scala.annotation.implicitNotFound
   @implicitNotFound("You are trying to access a macro-only API. Please use the @public annotation instead.")
   trait MacroGenerated
