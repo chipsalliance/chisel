@@ -53,7 +53,7 @@ sealed trait NamingContextInterface {
     * so that actual naming calls (HasId.suggestName) can happen.
     * Recursively names descendants, for those whose return value have an associated name.
     */
-  def namePrefix(prefix: String)
+  def namePrefix(prefix: String): Unit
 }
 
 /** Dummy implementation to allow for naming annotations in a non-Builder context.
@@ -73,10 +73,10 @@ class NamingContext extends NamingContextInterface {
   var closed = false // a sanity check to ensure no more name() calls are done after namePrefix
 
   /** Adds a NamingContext object as a descendant - where its contained objects will have names
-    * prefixed with the name given to the reference object, if the reference object is named in the
+    * prefixed with the name given to the reference object, if the referennnnce object is named in the
     * scope of this context.
     */
-  def addDescendant(ref: Any, descendant: NamingContext) {
+  def addDescendant(ref: Any, descendant: NamingContext): Unit = {
     ref match {
       case ref: AnyRef =>
         // getOrElseUpdate
