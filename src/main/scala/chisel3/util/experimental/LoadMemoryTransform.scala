@@ -18,6 +18,7 @@ import scala.collection.mutable
   * @param fileName      name of input file
   * @param hexOrBinary   use \$readmemh or \$readmemb, i.e. hex or binary text input, default is hex
   */
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 case class ChiselLoadMemoryAnnotation[T <: Data](
   target:      MemBase[T],
   fileName:    String,
@@ -194,6 +195,7 @@ object loadMemoryFromFileInline {
   * annotation) when activated it creates additional Verilog files that contain modules bound to the modules that
   * contain an initializable memory.
   */
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 class LoadMemoryTransform extends Transform {
   def inputForm:  CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
