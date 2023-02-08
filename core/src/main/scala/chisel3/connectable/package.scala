@@ -2,8 +2,8 @@
 
 package chisel3
 
-import chisel3.internal.{prefix, BiConnect, Builder}
-import chisel3.experimental.SourceInfo
+import chisel3.internal.{BiConnect, Builder}
+import chisel3.experimental.{prefix, SourceInfo}
 
 package object connectable {
 
