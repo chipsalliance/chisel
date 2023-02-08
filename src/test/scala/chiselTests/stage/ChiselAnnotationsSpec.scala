@@ -33,7 +33,8 @@ class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {
     val annotation = ChiselGeneratorAnnotation(() => new ChiselAnnotationsSpecFoo)
     val res = annotation.elaborate
     res(0) shouldBe a[ChiselCircuitAnnotation]
-    res(1) shouldBe a[DesignAnnotation[ChiselAnnotationsSpecFoo]]
+    res(1) shouldBe a[DesignAnnotation[_]]
+    res(1).isInstanceOf[DesignAnnotation[ChiselAnnotationsSpecFoo]] should be (true)
   }
 
   it should "throw an exception if elaboration fails" in {
@@ -47,7 +48,8 @@ class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {
     val annotation = ChiselGeneratorAnnotation("chiselTests.stage.ChiselAnnotationsSpecFoo")
     val res = annotation.elaborate
     res(0) shouldBe a[ChiselCircuitAnnotation]
-    res(1) shouldBe a[DesignAnnotation[ChiselAnnotationsSpecFoo]]
+    res(1) shouldBe a[DesignAnnotation[_]]
+    res(1).isInstanceOf[DesignAnnotation[ChiselAnnotationsSpecFoo]] should be (true)
   }
 
   it should "throw an exception if elaboration from a String refers to nonexistant class" in {
