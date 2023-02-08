@@ -43,7 +43,7 @@ class DecoderSpec extends ChiselPropSpec {
       if (rnd.nextBoolean()) {
         a
       } else {
-        a + (if (rnd.nextBoolean()) "_" else " ")
+        a.toString + (if (rnd.nextBoolean()) "_" else " ")
       }
     }.mkString
 

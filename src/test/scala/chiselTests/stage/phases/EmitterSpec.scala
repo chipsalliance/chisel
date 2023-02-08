@@ -29,7 +29,7 @@ class EmitterSpec extends AnyFlatSpec with Matchers {
       (new Elaborate).transform(Seq(TargetDirAnnotation(dir.toString), ChiselGeneratorAnnotation(() => new FooModule)))
     val annotationsx = phase.transform(annotations)
 
-    val Seq(fooFile, barFile) = Seq("Foo.fir", "Bar.fir").map(f => new File(dir + "/" + f))
+    val Seq(fooFile, barFile) = Seq("Foo.fir", "Bar.fir").map(f => new File(dir.toString + "/" + f))
 
     info(s"$fooFile does not exist")
     fooFile should not(exist)
@@ -47,7 +47,7 @@ class EmitterSpec extends AnyFlatSpec with Matchers {
     val annotations =
       phase.transform(Seq(TargetDirAnnotation(dir.toString), circuit, ChiselOutputFileAnnotation("Baz")))
 
-    val bazFile = new File(dir + "/Baz.fir")
+    val bazFile = new File(dir.toString + "/Baz.fir")
 
     info(s"$bazFile exists")
     bazFile should (exist)
