@@ -63,7 +63,7 @@ class CIRCTStageSpec extends AnyFunSpec with Matchers {
       outputFile should exist
 
       info(s"file looks like Verilog")
-      Source.fromFile(outputFile).getLines.mkString should include("endmodule")
+      Source.fromFile(outputFile).getLines().mkString should include("endmodule")
 
     }
 

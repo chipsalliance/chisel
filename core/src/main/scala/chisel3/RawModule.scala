@@ -262,7 +262,7 @@ package object internal {
       _compatAutoWrapPorts() // pre-IO(...) compatibility hack
 
       // Restrict IO to just io, clock, and reset
-      if (_io.isEmpty || !_compatIoPortBound) {
+      if (_io.isEmpty || !_compatIoPortBound()) {
         throwException(
           s"Compatibility mode Module '$this' must have a 'val io' Bundle. " +
             "If there is such a field and you still see this error, autowrapping has failed (sorry!). " +

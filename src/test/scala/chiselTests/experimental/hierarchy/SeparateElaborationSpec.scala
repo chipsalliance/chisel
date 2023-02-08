@@ -77,7 +77,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         )
       )
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines().mkString
       tb_rtl should include("module AddOne_1(")
       tb_rtl should include("AddOne_1 mod (")
       (tb_rtl should not).include("module AddOne(")
@@ -109,7 +109,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         )
       )
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines().mkString
       tb_rtl should include("module AddOne_1(")
       tb_rtl should include("AddOne_1 inst0 (")
       (tb_rtl should not).include("module AddOne(")
@@ -182,12 +182,12 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         )
       )
 
-      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines().mkString
       dutDef0_rtl should include("module AddOneParameterized(")
-      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines.mkString
+      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines().mkString
       dutDef1_rtl should include("module AddOneParameterized_1(")
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines().mkString
       tb_rtl should include("AddOneParameterized inst0 (")
       tb_rtl should include("AddOneParameterized_1 inst1 (")
       (tb_rtl should not).include("module AddOneParameterized(")
@@ -226,9 +226,9 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
 
       // Because these elaborations have no knowledge of each other, they create
       // modules of the same name
-      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines().mkString
       dutDef0_rtl should include("module AddOneParameterized(")
-      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized.v").getLines.mkString
+      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized.v").getLines().mkString
       dutDef1_rtl should include("module AddOneParameterized(")
 
       val errMsg = intercept[ChiselException] {
@@ -280,10 +280,10 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         inst1.in := 0.U
       }
 
-      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.v").getLines.mkString
+      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.v").getLines().mkString
       dutDef0_rtl should include("module AddOne(")
       dutDef0_rtl should include("module AddTwoMixedModules(")
-      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.v").getLines.mkString
+      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.v").getLines().mkString
       dutDef1_rtl should include("module AddOne_2(")
       dutDef1_rtl should include("module AddTwoMixedModules_1(")
 
@@ -294,7 +294,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         ) ++ importDefinitionAnnos0 ++ importDefinitionAnnos1
       )
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines().mkString
       tb_rtl should include("AddTwoMixedModules inst0 (")
       tb_rtl should include("AddTwoMixedModules_1 inst1 (")
       (tb_rtl should not).include("module AddTwoMixedModules(")
@@ -335,10 +335,10 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       inst1.in := 0.U
     }
 
-    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.v").getLines.mkString
+    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.v").getLines().mkString
     dutDef0_rtl should include("module AddOne(")
     dutDef0_rtl should include("module AddTwoMixedModules(")
-    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.v").getLines.mkString
+    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.v").getLines().mkString
     dutDef1_rtl should include("module AddOne(")
     dutDef1_rtl should include("module AddTwoMixedModules_1(")
 
@@ -379,7 +379,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         )
       )
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines().mkString
 
       tb_rtl should include("module AddOne_1(")
       tb_rtl should include("AddOne_1 mod (")
@@ -429,12 +429,12 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       )
     )
 
-    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines().mkString
     dutDef0_rtl should include("module AddOneParameterized(")
-    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines.mkString
+    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines().mkString
     dutDef1_rtl should include("module AddOneParameterized_1(")
 
-    val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+    val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines().mkString
     tb_rtl should include("Inst1_Prefix_AddOnePramaterized_Inst1_Suffix inst0 (")
     tb_rtl should include("Inst2_Prefix_AddOnePrameterized_1_Inst2_Suffix inst1 (")
     (tb_rtl should not).include("module AddOneParameterized(")
@@ -475,9 +475,9 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       inst1.in := 0.U
     }
 
-    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines().mkString
     dutDef0_rtl should include("module AddOneParameterized(")
-    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines.mkString
+    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines().mkString
     dutDef1_rtl should include("module AddOneParameterized_1(")
 
     val errMsg = intercept[ChiselException] {

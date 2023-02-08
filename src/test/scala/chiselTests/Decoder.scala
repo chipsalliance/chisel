@@ -36,14 +36,14 @@ class DecoderSpec extends ChiselPropSpec {
   val bitpatPair = for (seed <- Arbitrary.arbitrary[Int]) yield {
     val rnd = new scala.util.Random(seed)
     val bs = seed.toBinaryString
-    val bp = bs.map(if (rnd.nextBoolean) _ else "?")
+    val bp = bs.map(if (rnd.nextBoolean()) _ else "?")
 
     // The following randomly throws in white space and underscores which are legal and ignored.
     val bpp = bp.map { a =>
-      if (rnd.nextBoolean) {
+      if (rnd.nextBoolean()) {
         a
       } else {
-        a + (if (rnd.nextBoolean) "_" else " ")
+        a + (if (rnd.nextBoolean()) "_" else " ")
       }
     }.mkString
 
