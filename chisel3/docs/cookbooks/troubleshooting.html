@@ -48,7 +48,7 @@ In chisel3, the above code becomes:</p>
 <p><code class="language-plaintext highlighter-rouge">UInt</code>/<code class="language-plaintext highlighter-rouge">SInt</code> literals may be created from an <code class="language-plaintext highlighter-rouge">Int</code> with the application of either the <code class="language-plaintext highlighter-rouge">U</code> or <code class="language-plaintext highlighter-rouge">S</code> method.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">UInt</span><span class="o">(</span><span class="mi">42</span><span class="o">)</span>
-<span class="c1">// error: overloaded method value apply with alternatives:</span>
+<span class="c1">// error: overloaded method apply with alternatives:</span>
 <span class="c1">//   (range: chisel3.internal.firrtl.IntervalRange)chisel3.UInt &lt;and&gt;</span>
 <span class="c1">//   (width: chisel3.internal.firrtl.Width)chisel3.UInt</span>
 <span class="c1">//  cannot be applied to (Int)</span>

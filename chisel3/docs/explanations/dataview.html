@@ -333,7 +333,7 @@ For example:</p>
 <span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$55$BadMapping$1$$anonfun$60.apply(dataview.md:232)</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$55$BadMapping$1$$anonfun$60.apply(dataview.md:232)</span>
 <span class="c1">// 	at chisel3.Data.$anonfun$$colon$eq$1(Data.scala:719)</span>
-<span class="c1">// 	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)</span>
+<span class="c1">// 	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)</span>
 <span class="c1">// 	at chisel3.internal.prefix$.apply(prefix.scala:31)</span>
 <span class="c1">// 	at chisel3.Data.$colon$eq(Data.scala:719)</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp6$$anonfun$55$BadMapping$1.&lt;init&gt;(dataview.md:232)</span>
@@ -579,11 +579,11 @@ implementation of <code class="language-plaintext highlighter-rouge">DataProduct
 <span class="c1">// error: Could not find implicit value for DataView[MdocApp1.this.BundleA, MdocApp1.this.BundleB].</span>
 <span class="c1">// Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview</span>
 <span class="c1">//    out := in.viewAs[BundleB]</span>
-<span class="c1">//                    ^</span>
+<span class="c1">//           ^^^^^^^^^^^^^^^^^^</span>
 <span class="c1">// error: Could not find implicit value for DataView[MdocApp1.this.BundleA, MdocApp1.this.BundleB].</span>
 <span class="c1">// Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview</span>
 <span class="c1">//    out := in.viewAs[BundleB]</span>
-<span class="c1">//                    ^</span>
+<span class="c1">//           ^^^^^^^^^^^^^^^^^^</span>
 <span class="c1">// error: Could not find implicit value for DataView[MdocApp1.this.BundleB, MdocApp1.this.BundleA].</span>
 <span class="c1">// Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview</span>
 <span class="c1">//    out.viewAs[BundleA] := in</span>
