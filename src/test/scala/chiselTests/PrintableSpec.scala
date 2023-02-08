@@ -17,7 +17,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   private case class Printf(str: String, args: Seq[String])
   private def getPrintfs(firrtl: String): Seq[Printf] = {
     def processArgs(str: String): Seq[String] =
-      str.split(",").map(_.trim).filter(_.nonEmpty)
+      str.split(",").toIndexedSeq.map(_.trim).filter(_.nonEmpty)
     def processBody(str: String): (String, Seq[String]) = {
       str match {
         case StringRegex(_, fmt, args) =>
@@ -25,7 +25,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
         case _ => fail(s"Regex to process Printf should work on $str!")
       }
     }
-    firrtl.split("\n").collect {
+    firrtl.split("\n").toIndexedSeq.collect {
       case PrintfRegex(matched) =>
         val (str, args) = processBody(matched)
         Printf(str, args)

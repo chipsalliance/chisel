@@ -314,7 +314,7 @@ package experimental {
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
     private val _ids = ArrayBuffer[HasId]()
-    private[chisel3] def addId(d: HasId) {
+    private[chisel3] def addId(d: HasId): Unit = {
       if (Builder.aspectModule(this).isDefined) {
         aspectModule(this).get.addId(d)
       } else {
@@ -524,7 +524,7 @@ package experimental {
       *
       * TODO: remove this, perhaps by removing Bindings checks in compatibility mode.
       */
-    def _compatAutoWrapPorts() {}
+    def _compatAutoWrapPorts(): Unit = {}
 
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
