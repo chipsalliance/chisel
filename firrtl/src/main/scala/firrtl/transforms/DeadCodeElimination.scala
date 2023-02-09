@@ -12,7 +12,6 @@ import firrtl.Mappers._
 import firrtl.Utils.{kind, throwInternalError}
 import firrtl.MemoizedHash._
 import firrtl.renamemap.MutableRenameMap
-import firrtl.backends.experimental.smt.random.DefRandom
 import firrtl.options.{Dependency, RegisteredTransform, ShellOption}
 
 import collection.mutable
@@ -120,11 +119,6 @@ class DeadCodeElimination extends Transform with RegisteredTransform with Depend
         val node = LogicNode(mod.name, name)
         depGraph.addVertex(node)
         Seq(clock, reset, init).flatMap(getDeps(_)).foreach(ref => depGraph.addPairWithEdge(node, ref))
-      case DefRandom(_, name, _, clock, en) =>
-        val node = LogicNode(mod.name, name)
-        depGraph.addVertex(node)
-        val inputs = clock ++: en +: Nil
-        inputs.flatMap(getDeps).foreach(ref => depGraph.addPairWithEdge(node, ref))
       case DefNode(_, name, value) =>
         val node = LogicNode(mod.name, name)
         depGraph.addVertex(node)
@@ -224,7 +218,6 @@ class DeadCodeElimination extends Transform with RegisteredTransform with Depend
       val tpe = decl match {
         case _: DefNode     => "node"
         case _: DefRegister => "reg"
-        case _: DefRandom   => "rand"
         case _: DefWire     => "wire"
         case _: Port        => "port"
         case _: DefMemory   => "mem"

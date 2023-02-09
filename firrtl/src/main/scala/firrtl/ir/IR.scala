@@ -4,7 +4,6 @@ package firrtl
 package ir
 
 import Utils.{dec2string, trim}
-import firrtl.backends.experimental.smt.random.DefRandom
 import dataclass.{data, since}
 import firrtl.constraint.{Constraint, IsKnown, IsVar}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
@@ -348,9 +347,6 @@ object Reference {
 
   /** Creates a Reference from a Register */
   def apply(reg: DefRegister): Reference = Reference(reg.name, reg.tpe, RegKind, UnknownFlow)
-
-  /** Creates a Reference from a Random Source */
-  def apply(rnd: DefRandom): Reference = Reference(rnd.name, rnd.tpe, RandomKind, UnknownFlow)
 
   /** Creates a Reference from a Node */
   def apply(node: DefNode): Reference = Reference(node.name, node.value.tpe, NodeKind, SourceFlow)

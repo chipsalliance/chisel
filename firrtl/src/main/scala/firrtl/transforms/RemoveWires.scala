@@ -11,7 +11,6 @@ import firrtl.WrappedExpression._
 import firrtl.graph.{CyclicException, MutableDiGraph}
 import firrtl.options.Dependency
 import firrtl.Utils.getGroundZero
-import firrtl.backends.experimental.smt.random.DefRandom
 import firrtl.passes.PadWidths
 
 import scala.collection.mutable
@@ -49,7 +48,7 @@ class RemoveWires extends Transform with DependencyAPIMigration {
     val refs = mutable.ArrayBuffer.empty[WRef]
     def rec(e: Expression): Expression = {
       e match {
-        case ref @ WRef(_, _, WireKind | NodeKind | RegKind | RandomKind, _) => refs += ref
+        case ref @ WRef(_, _, WireKind | NodeKind | RegKind, _) => refs += ref
         case nested @ (_: Mux | _: DoPrim | _: ValidIf) => nested.foreach(rec)
         case _ => // Do nothing
       }
@@ -61,9 +60,8 @@ class RemoveWires extends Transform with DependencyAPIMigration {
 
   // Transform netlist into DefNodes
   private def getOrderedNodes(
-    netlist:  mutable.LinkedHashMap[WrappedExpression, (Seq[Expression], Info)],
-    regInfo:  mutable.Map[WrappedExpression, DefRegister],
-    randInfo: mutable.Map[WrappedExpression, DefRandom]
+    netlist: mutable.LinkedHashMap[WrappedExpression, (Seq[Expression], Info)],
+    regInfo: mutable.Map[WrappedExpression, DefRegister]
   ): Try[Seq[Statement]] = {
     val digraph = new MutableDiGraph[WrappedExpression]
     for ((sink, (exprs, _)) <- netlist) {
@@ -83,8 +81,7 @@ class RemoveWires extends Transform with DependencyAPIMigration {
       ordered.map { key =>
         val WRef(name, _, kind, _) = key.e1
         kind match {
-          case RegKind    => regInfo(key)
-          case RandomKind => randInfo(key)
+          case RegKind => regInfo(key)
           case WireKind | NodeKind =>
             val (Seq(rhs), info) = netlist(key)
             DefNode(info, name, rhs)
@@ -104,8 +101,6 @@ class RemoveWires extends Transform with DependencyAPIMigration {
     val wireInfo = mutable.HashMap.empty[WrappedExpression, Info]
     // Additional info about registers
     val regInfo = mutable.HashMap.empty[WrappedExpression, DefRegister]
-    // Additional info about rand statements
-    val randInfo = mutable.HashMap.empty[WrappedExpression, DefRandom]
 
     def onStmt(stmt: Statement): Statement = {
       stmt match {
@@ -121,9 +116,6 @@ class RemoveWires extends Transform with DependencyAPIMigration {
           val initDep = Some(reg.init).filter(we(WRef(reg)) != we(_)) // Dependency exists IF reg doesn't init itself
           regInfo(we(WRef(reg))) = reg
           netlist(we(WRef(reg))) = (Seq(reg.clock) ++ resetDep ++ initDep, reg.info)
-        case rand: DefRandom =>
-          randInfo(we(Reference(rand))) = rand
-          netlist(we(Reference(rand))) = (rand.clock ++: rand.en +: List(), rand.info)
         case decl: CanBeReferenced =>
           // Keep all declarations except for nodes and non-Analog wires and "other" statements.
           // Thus this is expected to match DefInstance and DefMemory which both do not connect to
@@ -160,7 +152,7 @@ class RemoveWires extends Transform with DependencyAPIMigration {
     m match {
       case mod @ Module(info, name, ports, body) =>
         onStmt(body)
-        getOrderedNodes(netlist, regInfo, randInfo) match {
+        getOrderedNodes(netlist, regInfo) match {
           case Success(logic) =>
             Module(info, name, ports, Block(List() ++ decls ++ logic ++ otherStmts))
           // If we hit a CyclicException, just abort removing wires
