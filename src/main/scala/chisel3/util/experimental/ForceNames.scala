@@ -2,6 +2,7 @@
 
 package chisel3.util.experimental
 
+import chisel3.deprecatedMFCMessage
 import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.internal.Builder
 import firrtl.Mappers._
@@ -24,6 +25,7 @@ object forceName {
     * @param signal Signal to name
     * @param name Name to force to
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply[T <: chisel3.Element](signal: T, name: String): T = {
     if (!signal.isSynthesizable) Builder.error(s"Using forceName '$name' on non-hardware value $signal")
     annotate(new ChiselAnnotation with RunFirrtlTransform {
@@ -38,6 +40,7 @@ object forceName {
     * This will rename after potential renames from other Custom transforms during FIRRTL compilation
     * @param signal Signal to name
     */
+  @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply[T <: chisel3.Element](signal: T): T = {
     if (!signal.isSynthesizable) Builder.error(s"Using forceName on non-hardware value $signal")
     annotate(new ChiselAnnotation with RunFirrtlTransform {
@@ -83,6 +86,7 @@ object forceName {
   * @param target signal/instance to force the name
   * @param name name to force it to be
   */
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 case class ForceNameAnnotation(target: IsMember, name: String) extends SingleTargetAnnotation[IsMember] {
   def duplicate(n: IsMember): ForceNameAnnotation = this.copy(target = n, name)
 
@@ -210,6 +214,7 @@ private object ForceNamesTransform {
   * Common usages:
   *   - Use to avoid prefixing behavior on specific instances whose enclosing modules are inlined
   */
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 class ForceNamesTransform extends Transform with DependencyAPIMigration {
   override def optionalPrerequisites:  Seq[TransformDependency] = Seq(Dependency[InlineInstances])
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Forms.LowEmitters
