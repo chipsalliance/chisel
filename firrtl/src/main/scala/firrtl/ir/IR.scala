@@ -468,15 +468,6 @@ object SIntLiteral {
   def minWidth(value: BigInt): Width = IntWidth(value.bitLength + 1)
   def apply(value:    BigInt): SIntLiteral = new SIntLiteral(value, minWidth(value))
 }
-case class FixedLiteral(value: BigInt, width: Width, point: Width) extends Literal with UseSerializer {
-  def tpe = FixedType(width, point)
-  def mapExpr(f:     Expression => Expression): Expression = this
-  def mapType(f:     Type => Type):             Expression = this
-  def mapWidth(f:    Width => Width):           Expression = FixedLiteral(value, f(width), f(point))
-  def foreachExpr(f: Expression => Unit):       Unit = ()
-  def foreachType(f: Type => Unit):             Unit = ()
-  def foreachWidth(f: Width => Unit): Unit = { f(width); f(point) }
-}
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
     with UseSerializer {
@@ -1000,10 +991,6 @@ case class UIntType(width: Width) extends GroundType with UseSerializer {
 case class SIntType(width: Width) extends GroundType with UseSerializer {
   def mapWidth(f:     Width => Width): Type = SIntType(f(width))
   def foreachWidth(f: Width => Unit):  Unit = f(width)
-}
-case class FixedType(width: Width, point: Width) extends GroundType with UseSerializer {
-  def mapWidth(f: Width => Width): Type = FixedType(f(width), f(point))
-  def foreachWidth(f: Width => Unit): Unit = { f(width); f(point) }
 }
 case class IntervalType(lower: Bound, upper: Bound, point: Width) extends GroundType {
   override def serialize: String = {

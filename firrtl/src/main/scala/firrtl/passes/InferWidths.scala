@@ -69,7 +69,6 @@ class InferWidths extends Transform with ResolvedAnnotationPaths with Dependency
       Dependency(passes.ResolveKinds),
       Dependency(passes.InferTypes),
       Dependency(passes.ResolveFlows),
-      Dependency[passes.InferBinaryPoints],
       Dependency[passes.TrimIntervals]
     ) ++ firrtl.stage.Forms.MinimalHighForm
   override def invalidates(a: Transform) = false
@@ -87,9 +86,6 @@ class InferWidths extends Transform with ResolvedAnnotationPaths with Dependency
     case (UIntType(w1), UIntType(w2)) => constraintSolver.addGeq(w1, w2, r1.prettyPrint(""), r2.prettyPrint(""))
     case (SIntType(w1), SIntType(w2)) => constraintSolver.addGeq(w1, w2, r1.prettyPrint(""), r2.prettyPrint(""))
     case (ClockType, ClockType)       =>
-    case (FixedType(w1, p1), FixedType(w2, p2)) =>
-      constraintSolver.addGeq(p1, p2, r1.prettyPrint(""), r2.prettyPrint(""))
-      constraintSolver.addGeq(w1, w2, r1.prettyPrint(""), r2.prettyPrint(""))
     case (IntervalType(l1, u1, p1), IntervalType(l2, u2, p2)) =>
       constraintSolver.addGeq(p1, p2, r1.prettyPrint(""), r2.prettyPrint(""))
       constraintSolver.addLeq(l1, l2, r1.prettyPrint(""), r2.prettyPrint(""))
@@ -191,8 +187,7 @@ class InferWidths extends Transform with ResolvedAnnotationPaths with Dependency
 
       }
       IntervalType(lx, ux, fixWidth(p))
-    case FixedType(w, p) => FixedType(w, fixWidth(p))
-    case x               => x
+    case x => x
   }
   private def fixStmt(s: Statement)(implicit constraintSolver: ConstraintSolver): Statement =
     s.map(fixStmt).map(fixType)

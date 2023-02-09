@@ -67,9 +67,6 @@ class ProtoBufSpec extends FirrtlFlatSpec {
     val sint = ir.SIntType(ir.UnknownWidth)
     FromProto.convert(ToProto.convert(sint).build) should equal(sint)
 
-    val ftpe = ir.FixedType(ir.UnknownWidth, ir.UnknownWidth)
-    FromProto.convert(ToProto.convert(ftpe).build) should equal(ftpe)
-
     val atpe = ir.AnalogType(ir.UnknownWidth)
     FromProto.convert(ToProto.convert(atpe).build) should equal(atpe)
 
@@ -78,9 +75,6 @@ class ProtoBufSpec extends FirrtlFlatSpec {
 
     val slit = ir.SIntLiteral(-123, ir.UnknownWidth)
     FromProto.convert(ToProto.convert(slit).build) should equal(slit)
-
-    val flit = ir.FixedLiteral(-123, ir.UnknownWidth, ir.UnknownWidth)
-    FromProto.convert(ToProto.convert(flit).build) should equal(flit)
   }
 
   it should "support all Primops" in {
@@ -104,16 +98,6 @@ class ProtoBufSpec extends FirrtlFlatSpec {
     )
     val ext = ir.ExtModule(ir.NoInfo, "MyModule", ports, "DefNameHere", params)
     FromProto.convert(ToProto.convert(ext).build) should equal(ext)
-  }
-
-  it should "support FixedType" in {
-    val ftpe = ir.FixedType(IntWidth(8), IntWidth(4))
-    FromProto.convert(ToProto.convert(ftpe).build) should equal(ftpe)
-  }
-
-  it should "support FixedLiteral" in {
-    val flit = ir.FixedLiteral(3, IntWidth(8), IntWidth(4))
-    FromProto.convert(ToProto.convert(flit).build) should equal(flit)
   }
 
   it should "support Analog and Attach" in {

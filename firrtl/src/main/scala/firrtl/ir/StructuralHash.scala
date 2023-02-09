@@ -222,8 +222,7 @@ class StructuralHash private (h: Hasher, renameModule: String => String) {
     case SubAccess(expr, index, _, _) => id(5); hash(expr); hash(index)
     case Mux(cond, tval, fval, _)     => id(6); hash(cond); hash(tval); hash(fval)
     case ValidIf(cond, value, _)      => id(7); hash(cond); hash(value)
-    case SIntLiteral(value, width)    => id(8); hash(value); hash(width)
-    case FixedLiteral(value, width, point) => id(9); hash(value); hash(width); hash(point)
+    case SIntLiteral(value, width) => id(8); hash(value); hash(width)
     // WIR
     case firrtl.WVoid           => id(10)
     case firrtl.WInvalid        => id(11)
@@ -322,7 +321,6 @@ class StructuralHash private (h: Hasher, renameModule: String => String) {
     // Types
     case UIntType(width: Width) => id(50); hash(width)
     case SIntType(width: Width) => id(51); hash(width)
-    case FixedType(width, point)           => id(52); hash(width); hash(point)
     case BundleType(fields)                => id(53); hash(fields.length); fields.foreach(hash)
     case VectorType(tpe, size)             => id(54); hash(tpe); hash(size)
     case ClockType                         => id(55)

@@ -95,12 +95,6 @@ object FromProto {
     ir.SIntLiteral(convert(sint.getValue), width)
   }
 
-  def convert(fixed: Firrtl.Expression.FixedLiteral): ir.FixedLiteral = {
-    val width = if (fixed.hasWidth) convert(fixed.getWidth) else ir.UnknownWidth
-    val point = if (fixed.hasPoint) convert(fixed.getPoint) else ir.UnknownWidth
-    ir.FixedLiteral(convert(fixed.getValue), width, point)
-  }
-
   def convert(subfield: Firrtl.Expression.SubField): ir.SubField =
     ir.SubField(convert(subfield.getExpression), subfield.getField, ir.UnknownType)
 
@@ -125,16 +119,15 @@ object FromProto {
   def convert(expr: Firrtl.Expression): ir.Expression = {
     import Firrtl.Expression._
     expr.getExpressionCase.getNumber match {
-      case REFERENCE_FIELD_NUMBER     => ir.Reference(expr.getReference.getId, ir.UnknownType)
-      case SUB_FIELD_FIELD_NUMBER     => convert(expr.getSubField)
-      case SUB_INDEX_FIELD_NUMBER     => convert(expr.getSubIndex)
-      case SUB_ACCESS_FIELD_NUMBER    => convert(expr.getSubAccess)
-      case UINT_LITERAL_FIELD_NUMBER  => convert(expr.getUintLiteral)
-      case SINT_LITERAL_FIELD_NUMBER  => convert(expr.getSintLiteral)
-      case FIXED_LITERAL_FIELD_NUMBER => convert(expr.getFixedLiteral)
-      case PRIM_OP_FIELD_NUMBER       => convert(expr.getPrimOp)
-      case MUX_FIELD_NUMBER           => convert(expr.getMux)
-      case VALID_IF_FIELD_NUMBER      => convert(expr.getValidIf)
+      case REFERENCE_FIELD_NUMBER    => ir.Reference(expr.getReference.getId, ir.UnknownType)
+      case SUB_FIELD_FIELD_NUMBER    => convert(expr.getSubField)
+      case SUB_INDEX_FIELD_NUMBER    => convert(expr.getSubIndex)
+      case SUB_ACCESS_FIELD_NUMBER   => convert(expr.getSubAccess)
+      case UINT_LITERAL_FIELD_NUMBER => convert(expr.getUintLiteral)
+      case SINT_LITERAL_FIELD_NUMBER => convert(expr.getSintLiteral)
+      case PRIM_OP_FIELD_NUMBER      => convert(expr.getPrimOp)
+      case MUX_FIELD_NUMBER          => convert(expr.getMux)
+      case VALID_IF_FIELD_NUMBER     => convert(expr.getValidIf)
     }
   }
 
@@ -308,12 +301,6 @@ object FromProto {
     ir.SIntType(w)
   }
 
-  def convert(fixed: Firrtl.Type.FixedType): ir.FixedType = {
-    val w = if (fixed.hasWidth) convert(fixed.getWidth) else ir.UnknownWidth
-    val p = if (fixed.hasPoint) convert(fixed.getPoint) else ir.UnknownWidth
-    ir.FixedType(w, p)
-  }
-
   def convert(analog: Firrtl.Type.AnalogType): ir.AnalogType = {
     val w = if (analog.hasWidth) convert(analog.getWidth) else ir.UnknownWidth
     ir.AnalogType(w)
@@ -332,7 +319,6 @@ object FromProto {
     tpe.getTypeCase.getNumber match {
       case UINT_TYPE_FIELD_NUMBER        => convert(tpe.getUintType)
       case SINT_TYPE_FIELD_NUMBER        => convert(tpe.getSintType)
-      case FIXED_TYPE_FIELD_NUMBER       => convert(tpe.getFixedType)
       case CLOCK_TYPE_FIELD_NUMBER       => ir.ClockType
       case ASYNC_RESET_TYPE_FIELD_NUMBER => ir.AsyncResetType
       case RESET_TYPE_FIELD_NUMBER       => ir.ResetType

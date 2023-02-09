@@ -79,7 +79,6 @@ object ToProto {
     AsUInt -> Op.OP_AS_UINT,
     AsSInt -> Op.OP_AS_SINT,
     AsClock -> Op.OP_AS_CLOCK,
-    AsFixedPoint -> Op.OP_AS_FIXED_POINT,
     AsAsyncReset -> Op.OP_AS_ASYNC_RESET,
     Shl -> Op.OP_SHIFT_LEFT,
     Shr -> Op.OP_SHIFT_RIGHT,
@@ -183,13 +182,6 @@ object ToProto {
           .setValue(convertToIntegerLiteral(value))
         convert(width).foreach(sb.setWidth)
         eb.setSintLiteral(sb)
-      case ir.FixedLiteral(value, width, point) =>
-        val fb = Firrtl.Expression.FixedLiteral
-          .newBuilder()
-          .setValue(convertToBigInt(value))
-        convert(width).foreach(fb.setWidth)
-        convert(point).foreach(fb.setPoint)
-        eb.setFixedLiteral(fb)
       case ir.DoPrim(op, args, consts, _) =>
         val db = Firrtl.Expression.PrimOp
           .newBuilder()
@@ -392,11 +384,6 @@ object ToProto {
         val st = Firrtl.Type.SIntType.newBuilder()
         convert(width).foreach(st.setWidth)
         tb.setSintType(st)
-      case ir.FixedType(width, point) =>
-        val ft = Firrtl.Type.FixedType.newBuilder()
-        convert(width).foreach(ft.setWidth)
-        convert(point).foreach(ft.setPoint)
-        tb.setFixedType(ft)
       case ir.ClockType =>
         val ct = Firrtl.Type.ClockType.newBuilder()
         tb.setClockType(ct)

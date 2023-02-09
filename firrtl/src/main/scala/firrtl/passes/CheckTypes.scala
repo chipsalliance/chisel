@@ -134,7 +134,6 @@ object CheckTypes extends Pass {
       case (ClockType, ClockType) => flip1 == flip2
       case (_: UIntType, _: UIntType) => flip1 == flip2
       case (_: SIntType, _: SIntType) => flip1 == flip2
-      case (_: FixedType, _: FixedType) => flip1 == flip2
       case (i1: IntervalType, i2: IntervalType) =>
         import Implicits.width2constraint
         fits(i2.lower, i1.lower) && fits(i1.upper, i2.upper) && fits(i1.point, i2.point)
@@ -203,8 +202,7 @@ object CheckTypes extends Pass {
             expr.tpe match {
               case u: UIntType => (true, isSInt, isClock, isFix, isAsync, isInterval)
               case s: SIntType => (isUInt, true, isClock, isFix, isAsync, isInterval)
-              case ClockType => (isUInt, isSInt, true, isFix, isAsync, isInterval)
-              case f: FixedType => (isUInt, isSInt, isClock, true, isAsync, isInterval)
+              case ClockType      => (isUInt, isSInt, true, isFix, isAsync, isInterval)
               case AsyncResetType => (isUInt, isSInt, isClock, isFix, true, isInterval)
               case i: IntervalType => (isUInt, isSInt, isClock, isFix, isAsync, true)
               case UnknownType =>
@@ -224,7 +222,7 @@ object CheckTypes extends Pass {
         }
       }
       e.op match {
-        case AsUInt | AsSInt | AsClock | AsFixedPoint | AsAsyncReset | AsInterval =>
+        case AsUInt | AsSInt | AsClock | AsAsyncReset | AsInterval =>
         // All types are ok
         case Dshl | Dshr =>
           checkAllTypes(
