@@ -4,8 +4,6 @@ package firrtl
 
 import java.io.File
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.backends.experimental.smt.{Btor2Emitter, SMTLibEmitter}
-import firrtl.backends.experimental.rtlil.RtlilEmitter
 import firrtl.backends.proto.{Emitter => ProtoEmitter}
 import firrtl.options.Viewer.view
 import firrtl.options.{CustomFileEmission, Dependency, HasShellOptions, PhaseException, ShellOption}
@@ -57,12 +55,6 @@ object EmitCircuitAnnotation extends HasShellOptions {
               RunFirrtlTransformAnnotation(new SystemVerilogEmitter),
               EmitCircuitAnnotation(classOf[SystemVerilogEmitter])
             )
-          case "experimental-btor2" | "btor2" =>
-            Seq(RunFirrtlTransformAnnotation(Dependency(Btor2Emitter)), EmitCircuitAnnotation(Btor2Emitter.getClass))
-          case "experimental-smt2" | "smt2" =>
-            Seq(RunFirrtlTransformAnnotation(Dependency(SMTLibEmitter)), EmitCircuitAnnotation(SMTLibEmitter.getClass))
-          case "experimental-rtlil" =>
-            Seq(RunFirrtlTransformAnnotation(Dependency[RtlilEmitter]), EmitCircuitAnnotation(classOf[RtlilEmitter]))
           case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
         },
       helpText = "Run the specified circuit emitter (all modules in one file)",
@@ -149,8 +141,6 @@ object EmitAllModulesAnnotation extends HasShellOptions {
               RunFirrtlTransformAnnotation(new SystemVerilogEmitter),
               EmitAllModulesAnnotation(classOf[SystemVerilogEmitter])
             )
-          case "experimental-rtlil" =>
-            Seq(RunFirrtlTransformAnnotation(Dependency[RtlilEmitter]), EmitAllModulesAnnotation(classOf[RtlilEmitter]))
           case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
         },
       helpText = "Run the specified module emitter (one file per module)",
