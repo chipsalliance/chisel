@@ -376,12 +376,12 @@ private[chisel3] object BiConnect {
     val left_mod:  BaseModule = left.topBinding.location.getOrElse(context_mod)
     val right_mod: BaseModule = right.topBinding.location.getOrElse(context_mod)
 
-    val left_parent_opt  = Builder.retrieveParent(left_mod, context_mod)
+    val left_parent_opt = Builder.retrieveParent(left_mod, context_mod)
     val right_parent_opt = Builder.retrieveParent(right_mod, context_mod)
-    val context_mod_opt  = Some(context_mod)
+    val context_mod_opt = Some(context_mod)
 
-    val left_direction   = BindingDirection.from(left.topBinding, left.direction)
-    val right_direction  = BindingDirection.from(right.topBinding, right.direction)
+    val left_direction = BindingDirection.from(left.topBinding, left.direction)
+    val right_direction = BindingDirection.from(right.topBinding, right.direction)
 
     // CASE: Context is same module as left node and right node is in a child module
     if ((left_mod == context_mod) && (right_parent_opt == context_mod_opt)) {
