@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
+import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
 
 import scala.concurrent.SyncVar
@@ -131,9 +131,8 @@ object BoringUtils {
       else { Seq[ChiselAnnotation]() }
     val annotations =
       Seq(
-        new ChiselAnnotation with RunFirrtlTransform {
+        new ChiselAnnotation {
           def toFirrtl = SourceAnnotation(component.toNamed, id)
-          def transformClass = classOf[WiringTransform]
         },
         new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(component.toNamed) }
       ) ++ maybeDedup
@@ -169,9 +168,8 @@ object BoringUtils {
       if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(moduleName) }) }
       else { Seq[ChiselAnnotation]() }
     val annotations =
-      Seq(new ChiselAnnotation with RunFirrtlTransform {
+      Seq(new ChiselAnnotation {
         def toFirrtl = SinkAnnotation(component.toNamed, name)
-        def transformClass = classOf[WiringTransform]
       }) ++ maybeDedup
     annotations.foreach(annotate(_))
   }
