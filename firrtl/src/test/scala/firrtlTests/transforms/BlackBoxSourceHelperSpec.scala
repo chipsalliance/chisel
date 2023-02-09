@@ -14,8 +14,7 @@ import firrtl.util.BackendCompilationUtilities.createTestDirectory
 import _root_.logger._
 
 class ChangeBlackBoxTargetDir extends Transform with DependencyAPIMigration {
-  override def prerequisites =
-    Dependency[firrtl.passes.memlib.ReplSeqMem] +: Forms.LowFormOptimized
+  override def prerequisites = Forms.LowFormOptimized
   override def optionalPrerequisiteOf = Forms.BackendEmitters
   override def invalidates(a: Transform): Boolean = false
 

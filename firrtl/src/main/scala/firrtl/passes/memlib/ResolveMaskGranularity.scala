@@ -8,8 +8,6 @@ import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import WrappedExpression.weq
-import AnalysisUtils._
-import MemTransformUtils._
 
 object AnalysisUtils {
   type Connects = collection.mutable.HashMap[String, Expression]
@@ -75,44 +73,4 @@ object AnalysisUtils {
       }
     case _ => e
   }
-}
-
-/** Determines if a write mask is needed (wmode/en and wmask are equivalent).
-  * Populates the maskGran field of DefAnnotatedMemory
-  * Annotations:
-  *   - maskGran = (dataType size) / (number of mask bits)
-  *      - i.e. 1 if bitmask, 8 if bytemask, absent for no mask
-  * TODO(shunshou): Add floorplan info?
-  */
-object ResolveMaskGranularity extends Pass {
-
-  /** Returns the number of mask bits, if used
-    */
-  def getMaskBits(connects: Connects, wen: Expression, wmask: Expression): Option[Int] = {
-    val wenOrigin = getOrigin(connects)(wen)
-    val wmaskOrigin = connects.keys.filter(_.startsWith(wmask.serialize)).map { s: String => getOrigin(connects, s) }
-    // all wmask bits are equal to wmode/wen or all wmask bits = 1(for redundancy checking)
-    val redundantMask = wmaskOrigin.forall(x => weq(x, wenOrigin) || weq(x, one))
-    if (redundantMask) None else Some(wmaskOrigin.size)
-  }
-
-  /** Only annotate memories that are candidates for memory macro replacements
-    * i.e. rw, w + r (read, write 1 cycle delay)
-    */
-  def updateStmts(connects: Connects)(s: Statement): Statement = s match {
-    case m: DefAnnotatedMemory =>
-      val dataBits = bitWidth(m.dataType)
-      val rwMasks =
-        m.readwriters.map(rw => getMaskBits(connects, memPortField(m, rw, "wmode"), memPortField(m, rw, "wmask")))
-      val wMasks = m.writers.map(w => getMaskBits(connects, memPortField(m, w, "en"), memPortField(m, w, "mask")))
-      val maskGran = (rwMasks ++ wMasks).head match {
-        case None           => None
-        case Some(maskBits) => Some(dataBits / maskBits)
-      }
-      m.copy(maskGran = maskGran)
-    case sx => sx.map(updateStmts(connects))
-  }
-
-  def annotateModMems(m: DefModule): DefModule = m.map(updateStmts(getConnects(m)))
-  def run(c:             Circuit):   Circuit = c.copy(modules = c.modules.map(annotateModMems))
 }
