@@ -191,16 +191,6 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
           case "SInt" =>
             if (ctx.getChildCount > 1) SIntType(getWidth(ctx.intLit(0)))
             else SIntType(UnknownWidth)
-          case "Fixed" =>
-            ctx.intLit.size match {
-              case 0 => FixedType(UnknownWidth, UnknownWidth)
-              case 1 =>
-                ctx.getChild(2).getText match {
-                  case "<" => FixedType(UnknownWidth, getWidth(ctx.intLit(0)))
-                  case _   => FixedType(getWidth(ctx.intLit(0)), UnknownWidth)
-                }
-              case 2 => FixedType(getWidth(ctx.intLit(0)), getWidth(ctx.intLit(1)))
-            }
           case "Interval" =>
             ctx.boundValue.size match {
               case 0 =>

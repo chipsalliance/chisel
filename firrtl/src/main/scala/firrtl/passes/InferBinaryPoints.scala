@@ -28,8 +28,6 @@ class InferBinaryPoints extends Pass {
     case (ResetType, _)                   =>
     case (_, ResetType)                   =>
     case (AsyncResetType, AsyncResetType) =>
-    case (FixedType(w1, p1), FixedType(w2, p2)) =>
-      constraintSolver.addGeq(p1, p2, r1.prettyPrint(""), r2.prettyPrint(""))
     case (IntervalType(l1, u1, p1), IntervalType(l2, u2, p2)) =>
       constraintSolver.addGeq(p1, p2, r1.prettyPrint(""), r2.prettyPrint(""))
     case (AnalogType(w1), AnalogType(w2)) =>
@@ -91,13 +89,6 @@ class InferBinaryPoints extends Pass {
         case _                                  => sys.error("Shouldn't be here")
       }
       IntervalType(l, u, px)
-    case FixedType(w, p) =>
-      val px = constraintSolver.get(p) match {
-        case Some(Closed(x)) if trim(x).isWhole => IntWidth(x.toBigInt)
-        case None                               => p
-        case _                                  => sys.error("Shouldn't be here")
-      }
-      FixedType(w, px)
     case x => x
   }
   private def fixStmt(s: Statement): Statement = s.map(fixStmt).map(fixType)

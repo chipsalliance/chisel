@@ -170,7 +170,7 @@ trait CheckHighFormLike { this: Pass =>
           correctNum(Option(2), 0)
         case AsUInt | AsSInt | AsClock | AsAsyncReset | Cvt | Neq | Not =>
           correctNum(Option(1), 0)
-        case AsFixedPoint | SetP =>
+        case SetP =>
           correctNum(Option(1), 1)
         case Shl | Shr | Pad | Head | Tail | IncP | DecP =>
           correctNum(Option(1), 1)

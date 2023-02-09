@@ -25,9 +25,8 @@ object ZeroLengthVecs extends Pass {
   // interval type with the type alone unless you declare a component
   private def replaceWithDontCare(toReplace: Expression): Expression = {
     val default = toReplace.tpe match {
-      case UIntType(w)     => UIntLiteral(0, w)
-      case SIntType(w)     => SIntLiteral(0, w)
-      case FixedType(w, p) => FixedLiteral(0, w, p)
+      case UIntType(w) => UIntLiteral(0, w)
+      case SIntType(w) => SIntLiteral(0, w)
       case it: IntervalType =>
         val zeroType = IntervalType(Closed(0), Closed(0), IntWidth(0))
         val zeroLit = DoPrim(AsInterval, Seq(SIntLiteral(0)), Seq(0, 0, 0), zeroType)

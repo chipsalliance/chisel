@@ -14,7 +14,6 @@ object RemoveValidIf extends Pass {
   val UIntZero = Utils.zero
   val SIntZero = SIntLiteral(BigInt(0), IntWidth(1))
   val ClockZero = DoPrim(PrimOps.AsClock, Seq(UIntZero), Seq.empty, ClockType)
-  val FixedZero = FixedLiteral(BigInt(0), IntWidth(1), IntWidth(0))
   val AsyncZero = DoPrim(PrimOps.AsAsyncReset, Seq(UIntZero), Nil, AsyncResetType)
 
   /** Returns an [[firrtl.ir.Expression Expression]] equal to zero for a given [[firrtl.ir.GroundType GroundType]]

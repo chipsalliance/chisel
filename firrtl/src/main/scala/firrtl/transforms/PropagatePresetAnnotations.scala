@@ -345,8 +345,8 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
             }
           case DoPrim(op, args, _, _) =>
             op match {
-              case AsInterval | AsUInt | AsSInt | AsClock | AsFixedPoint | AsAsyncReset => getRef(args.head)
-              case _                                                                    => Target(None, None, Seq.empty)
+              case AsInterval | AsUInt | AsSInt | AsClock | AsAsyncReset => getRef(args.head)
+              case _                                                     => Target(None, None, Seq.empty)
             }
           case _ => Target(None, None, Seq.empty)
         }

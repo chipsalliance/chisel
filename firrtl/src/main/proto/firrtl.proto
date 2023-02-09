@@ -330,11 +330,6 @@ message Firrtl {
       uint32 size = 2;
     }
 
-    message FixedType {
-      Width width = 1;
-      Width point = 2;
-    }
-
     message AnalogType {
       Width width = 3;
     }
@@ -346,7 +341,6 @@ message Firrtl {
       ClockType clock_type = 4;
       BundleType bundle_type = 5;
       VectorType vector_type = 6;
-      FixedType fixed_type = 7;
       AnalogType analog_type = 8;
       AsyncResetType async_reset_type = 9;
       ResetType reset_type = 10;
@@ -391,12 +385,6 @@ message Firrtl {
       // Required.
       IntegerLiteral value = 1;
       Width width = 2;
-    }
-
-    message FixedLiteral {
-      BigInt value = 1;
-      Width width = 2;
-      Width point = 3;
     }
 
     message ValidIf {
@@ -470,7 +458,6 @@ message Firrtl {
         OP_AS_SINT = 29;
         OP_EXTRACT_BITS = 30;
         OP_AS_CLOCK = 31;
-        OP_AS_FIXED_POINT = 32;
         OP_AND_REDUCE = 33;
         OP_OR_REDUCE = 34;
         OP_INCREASE_PRECISION = 35;
@@ -496,7 +483,6 @@ message Firrtl {
       Reference reference = 1;
       UIntLiteral uint_literal = 2;
       SIntLiteral sint_literal = 3;
-      FixedLiteral fixed_literal = 11;
       ValidIf valid_if = 4;
       //ExtractBits extract_bits = 5;
       Mux mux = 6;
