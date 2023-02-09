@@ -6,11 +6,12 @@ import java.io.File
 
 import chisel3._
 import chisel3.experimental.ExtModule
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
+import circt.stage.ChiselStage
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
-import firrtl.transforms.BlackBoxNotFoundException
+import firrtl.transforms.{BlackBoxNotFoundException, BlackBoxTargetDirAnno}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -112,13 +113,14 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
 
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
-        ChiselGeneratorAnnotation(() => new UsesExtModuleAddViaInline)
+        ChiselGeneratorAnnotation(() => new UsesExtModuleAddViaInline),
+        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]),
+        BlackBoxTargetDirAnno(".")
       )
-      val newAnnotations = (new ChiselStage).transform(annotations)
+      (new ChiselStage).execute(Array("--target", "systemverilog"), annotations)
 
-      newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be(true)
       val verilogOutput = new File(targetDir, "ExtModuleAdd.v")
-      verilogOutput.exists() should be(true)
+      verilogOutput should exist
       verilogOutput.delete()
     }
 
@@ -126,33 +128,37 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
       val targetDir = "test_run_dir/extmodule-resource"
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
-        ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaResource)
+        ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaResource),
+        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]),
+        BlackBoxTargetDirAnno(".")
       )
-      val newAnnotations = (new ChiselStage).transform(annotations)
+      (new ChiselStage).execute(Array("--target", "systemverilog"), annotations)
 
-      newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be(true)
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
-      verilogOutput.exists() should be(true)
+      verilogOutput should exist
       verilogOutput.delete()
     }
 
-    "Implementations can be contained in arbitrary files" in {
+    // TODO: This is temporarily disabled until firtool 1.30.0 is released.  This requires:
+    //   - https://github.com/llvm/circt/commit/0285a98d96b8df898e02c5ed9528f869bff80dcf
+    "Implementations can be contained in arbitrary files" ignore {
       val targetDir = "test_run_dir/extmodule-path"
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
-        ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaPath)
+        ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaPath),
+        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]),
+        BlackBoxTargetDirAnno(".")
       )
-      val newAnnotations = (new ChiselStage).transform(annotations)
+      (new ChiselStage).execute(Array("--target", "systemverilog"), annotations)
 
-      newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be(true)
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
-      verilogOutput.exists() should be(true)
+      verilogOutput should exist
       verilogOutput.delete()
     }
 
     "Resource files that do not exist produce Chisel errors" in {
       assertThrows[BlackBoxNotFoundException] {
-        ChiselStage.emitChirrtl(new UsesMissingExtModuleResource)
+        ChiselStage.emitCHIRRTL(new UsesMissingExtModuleResource)
       }
     }
   }
