@@ -281,28 +281,6 @@ class StructuralHash private (h: Hasher, renameModule: String => String) {
     case firrtl.CDefMPort(_, name, _, mem, exps, direction) =>
       // the type of the MPort depends only on the memory (in well types firrtl) and can thus be ignored
       id(34); n(name); n(mem); hash(exps.length); exps.foreach(hash); hash(direction)
-    // DefAnnotatedMemory from MemIR.scala
-    case firrtl.passes.memlib.DefAnnotatedMemory(
-          _,
-          name,
-          dataType,
-          depth,
-          writeLatency,
-          readLatency,
-          readers,
-          writers,
-          readwriters,
-          readUnderWrite,
-          maskGran,
-          memRef
-        ) =>
-      id(35); n(name); hash(dataType); hash(depth); hash(writeLatency); hash(readLatency)
-      hash(readers.length); readers.foreach(hash)
-      hash(writers.length); writers.foreach(hash)
-      hash(readwriters.length); readwriters.foreach(hash)
-      hash(readUnderWrite.toString)
-      hash(maskGran.size); maskGran.foreach(hash)
-      hash(memRef.size); memRef.foreach { case (a, b) => hash(a); hash(b) }
     case Verification(op, _, clk, pred, en, msg) =>
       id(36); hash(StructuralHash.verificationOp(op)); hash(clk); hash(pred); hash(en); hash(msg.string)
     // ids 37 ... 39 are reserved for future Statement nodes

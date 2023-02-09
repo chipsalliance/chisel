@@ -25,7 +25,6 @@ trait FirrtlCli { this: Shell =>
     WarnNoScalaVersionDeprecation,
     PrettyNoExprInlining,
     DisableFold,
-    OptimizeForFPGA,
     CurrentFirrtlStateAnnotation,
     CommonSubexpressionElimination,
     AllowUnrecognizedAnnotations,
