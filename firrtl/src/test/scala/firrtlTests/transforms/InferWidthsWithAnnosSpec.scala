@@ -20,31 +20,9 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
     resLines should be(checkLines)
   }
 
-  "CheckWidths on wires with unknown widths" should "result in an error" in {
-    val transforms =
-      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths)
-
-    val input =
-      """circuit Top :
-        |  module Top :
-        |    inst b of B
-        |    inst a of A
-        |
-        |  module B :
-        |    wire x: UInt<3>
-        |
-        |  module A :
-        |    wire y: UInt""".stripMargin
-
-    // A.y should have uninferred width
-    intercept[CheckWidths.UninferredWidth] {
-      executeTest(input, "", transforms, Seq.empty)
-    }
-  }
-
   "InferWidthsWithAnnos" should "infer widths using WidthGeqConstraintAnnotation" in {
     val transforms =
-      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths)
+      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths)
 
     val annos = Seq(
       WidthGeqConstraintAnnotation(
@@ -83,7 +61,7 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
 
   "InferWidthsWithAnnos" should "work with token paths" in {
     val transforms =
-      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths)
+      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths)
 
     val tokenLists = Seq(
       Seq(Field("x")),

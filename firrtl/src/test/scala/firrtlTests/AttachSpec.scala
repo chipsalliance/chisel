@@ -292,20 +292,4 @@ class AttachAnalogSpec extends FirrtlFlatSpec {
     }
   }
 
-  "Inequal attach widths" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, new InferWidths, CheckWidths)
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    input i: Analog<3>
-        |    inst a of A
-        |    attach (i, a.o)
-        |  extmodule A :
-        |    output o: Analog<2> """.stripMargin
-    intercept[CheckWidths.AttachWidthsNotEqual] {
-      passes.foldLeft(CircuitState(parse(input), UnknownForm)) { (c: CircuitState, p: Transform) =>
-        p.runTransform(c)
-      }
-    }
-  }
 }

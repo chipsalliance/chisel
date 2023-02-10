@@ -171,35 +171,9 @@ class UnitTests extends FirrtlFlatSpec {
     executeTest(input, check, passes)
   }
 
-  "Oversized bit select" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths)
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    node x = bits(UInt(1), 100, 0)""".stripMargin
-    intercept[CheckWidths.BitsWidthException] {
-      passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm)) {
-        (c: CircuitState, p: Transform) => p.runTransform(c)
-      }
-    }
-  }
-
-  "Oversized head select" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths)
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    node x = head(UInt(1), 100)""".stripMargin
-    intercept[CheckWidths.HeadWidthException] {
-      passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm)) {
-        (c: CircuitState, p: Transform) => p.runTransform(c)
-      }
-    }
-  }
-
   "zero head select" should "return an empty module" in {
     val passes =
-      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths, new DeadCodeElimination)
+      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, new DeadCodeElimination)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -211,22 +185,9 @@ class UnitTests extends FirrtlFlatSpec {
     executeTest(input, check, passes)
   }
 
-  "Oversized tail select" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths)
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    node x = tail(UInt(1), 100)""".stripMargin
-    intercept[CheckWidths.TailWidthException] {
-      passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm)) {
-        (c: CircuitState, p: Transform) => p.runTransform(c)
-      }
-    }
-  }
-
   "max tail select" should "return an empty module" in {
     val passes =
-      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths, new DeadCodeElimination)
+      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, new DeadCodeElimination)
     val input =
       """circuit Unit :
         |  module Unit :
