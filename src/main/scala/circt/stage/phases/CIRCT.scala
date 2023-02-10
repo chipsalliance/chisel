@@ -133,7 +133,7 @@ class CIRCT extends Phase {
     val firrtlOptions = view[FirrtlOptions](annotations)
     val stageOptions = view[StageOptions](annotations)
 
-    var blackbox, inferReadWrite = false
+    var inferReadWrite = false
     var imcp = true
     var logLevel = _root_.logger.LogLevel.None
     var split = false
@@ -152,10 +152,6 @@ class CIRCT extends Phase {
         transform match {
           /* Inlining/Flattening happen by default, so these can be dropped. */
           case _: firrtl.passes.InlineInstances | _: firrtl.transforms.Flatten => Nil
-          /* ReplSeqMem is converted to a firtool option */
-          case _: firrtl.passes.memlib.ReplSeqMem =>
-            blackbox = true
-            Nil
           /* Any emitters should not be passed to firtool. */
           case _: firrtl.Emitter => Nil
           /* Default case: leave the annotation around and let firtool warn about it. */
@@ -207,8 +203,6 @@ class CIRCT extends Phase {
         circtOptions.preserveAggregate.map(_ => "-preserve-public-types=0") ++
         (!inferReadWrite).option("-disable-infer-rw") ++
         (!imcp).option("-disable-imcp") ++
-        /* The following options are off by default, so we enable them if they are true. */
-        (blackbox).option("-blackbox-memory") ++
         /* Communicate the annotation file through a file. */
         (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
         /* Convert the target to a firtool-compatible option. */
