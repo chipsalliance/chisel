@@ -39,8 +39,7 @@ lazy val warningSuppression = Seq(
   scalacOptions += "-Wconf:" + Seq(
     "msg=APIs in chisel3.internal:s",
     "msg=Importing from firrtl:s",
-    "msg=migration to the MLIR:s",
-    "msg=value Stream in package scala is deprecated:s"
+    "msg=migration to the MLIR:s"
   ).mkString(",")
 )
 

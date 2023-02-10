@@ -345,9 +345,6 @@ class ReduceTreeTester() extends BasicTester {
 }
 
 class VecSpec extends ChiselPropSpec with Utils {
-  // Disable shrinking on error.
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Vecs should be assignable") {
     forAll(safeUIntN(8)) {
