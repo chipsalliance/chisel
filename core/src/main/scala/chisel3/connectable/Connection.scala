@@ -3,11 +3,11 @@
 package chisel3.connectable
 
 import chisel3.{Aggregate, BiConnectException, Data, DontCare, RawModule}
-import chisel3.internal.{BiConnect, Builder}
+import chisel3.internal.{BiConnect, Builder, InternalErrorException}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.DefInvalid
-import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
-import chisel3.experimental.{attach, Analog}
+import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo, prefix}
+import chisel3.experimental.{Analog, attach}
 import Alignment.matchingZipOfChildren
 
 import scala.collection.mutable
@@ -269,10 +269,7 @@ private[chisel3] object Connection {
         case List(a, b) =>
           BiConnect.markAnalogConnected(sourceInfo, a, b, currentModule)
           BiConnect.markAnalogConnected(sourceInfo, b, a, currentModule)
-        case _ =>
-          throw new Exception(
-            s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: as.toList=${as.toList}"
-          )
+        case _ => throw new InternalErrorException("Match error: as.toList=${as.toList}")
       }
     } catch { // convert Exceptions to Builder.error's so compilation can continue
       case attach.AttachException(message) => Builder.error(message)

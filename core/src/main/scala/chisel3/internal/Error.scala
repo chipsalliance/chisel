@@ -82,16 +82,12 @@ object ExceptionHelpers {
     }
 
   }
-
 }
 
-object InternalError {
-  def apply(message: String, cause: Throwable = null): ChiselException = {
-    val errorString =
-      s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues:$message"
-    throw new ChiselException(errorString, cause)
-  }
-}
+class InternalErrorException(message: String, cause: Throwable = null)
+extends ChiselException(
+  "Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues:" + message,
+  cause)
 
 class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause, true, true) {
 

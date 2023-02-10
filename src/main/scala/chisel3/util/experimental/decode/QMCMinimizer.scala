@@ -3,6 +3,7 @@
 package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
+import chisel3.internal.InternalErrorException
 
 import scala.annotation.tailrec
 import scala.math.Ordered.orderingToOrdered
@@ -260,10 +261,7 @@ object QMCMinimizer extends Minimizer {
           (maxt ++ dc, false)
         case x if !x.mask.testBit(i) => // default to ?
           (mint, true)
-        case _ =>
-          throw new Exception(
-            s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: table.default=${table.default}"
-          )
+        case _ => throw new InternalErrorException("Match error: table.default=${table.default}")
       }
 
       implicants.foreach(_.isPrime = true)

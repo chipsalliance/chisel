@@ -4,7 +4,7 @@ package chisel3.util.experimental
 
 import chisel3.deprecatedMFCMessage
 import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
-import chisel3.internal.Builder
+import chisel3.internal.{Builder, InternalErrorException}
 import firrtl.Mappers._
 import firrtl._
 import firrtl.annotations._
@@ -176,10 +176,7 @@ private object ForceNamesTransform {
           None
         case ForceNameAnnotation(rt: ReferenceTarget, name) => Some(rt.ref -> name)
         case ForceNameAnnotation(it: InstanceTarget, name) => Some(it.instance -> name)
-        case _ =>
-          throw new Exception(
-            s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: value=$value"
-          )
+        case _ => throw new InternalErrorException("Match error: value=$value")
       }.toMap
     }.toSeq
     val renames: Map[String, Map[String, String]] = {
