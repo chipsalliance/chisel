@@ -33,8 +33,6 @@ object InferTypes extends Pass {
 
     def remove_unknowns(t: Type): Type = {
       t.map(remove_unknowns).map(remove_unknowns_w) match {
-        case IntervalType(l, u, p) =>
-          IntervalType(remove_unknowns_b(l), remove_unknowns_b(u), p)
         case x => x
       }
     }

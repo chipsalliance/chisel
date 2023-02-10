@@ -134,9 +134,6 @@ object CheckTypes extends Pass {
       case (ClockType, ClockType) => flip1 == flip2
       case (_: UIntType, _: UIntType) => flip1 == flip2
       case (_: SIntType, _: SIntType) => flip1 == flip2
-      case (i1: IntervalType, i2: IntervalType) =>
-        import Implicits.width2constraint
-        fits(i2.lower, i1.lower) && fits(i1.upper, i2.upper) && fits(i1.point, i2.point)
       case (_: AnalogType, _: AnalogType) => true
       case (AsyncResetType, AsyncResetType) => flip1 == flip2
       case (ResetType, tpe)                 => legalResetType(tpe) && flip1 == flip2
@@ -158,13 +155,7 @@ object CheckTypes extends Pass {
   }
 
   def validConnect(locTpe: Type, expTpe: Type): Boolean = {
-    val itFits = (locTpe, expTpe) match {
-      case (i1: IntervalType, i2: IntervalType) =>
-        import Implicits.width2constraint
-        fits(i2.lower, i1.lower) && fits(i1.upper, i2.upper) && fits(i1.point, i2.point)
-      case _ => true
-    }
-    wt(locTpe).superTypeOf(wt(expTpe)) && itFits
+    wt(locTpe).superTypeOf(wt(expTpe))
   }
 
   def validConnect(con: Connect): Boolean = validConnect(con.loc.tpe, con.expr.tpe)
@@ -189,40 +180,37 @@ object CheckTypes extends Pass {
 
     def check_types_primop(info: Info, mname: String, e: DoPrim): Unit = {
       def checkAllTypes(
-        exprs:      Seq[Expression],
-        okUInt:     Boolean,
-        okSInt:     Boolean,
-        okClock:    Boolean,
-        okFix:      Boolean,
-        okAsync:    Boolean,
-        okInterval: Boolean
+        exprs:   Seq[Expression],
+        okUInt:  Boolean,
+        okSInt:  Boolean,
+        okClock: Boolean,
+        okFix:   Boolean,
+        okAsync: Boolean
       ): Unit = {
-        exprs.foldLeft((false, false, false, false, false, false)) {
-          case ((isUInt, isSInt, isClock, isFix, isAsync, isInterval), expr) =>
+        exprs.foldLeft((false, false, false, false, false)) {
+          case ((isUInt, isSInt, isClock, isFix, isAsync), expr) =>
             expr.tpe match {
-              case u: UIntType => (true, isSInt, isClock, isFix, isAsync, isInterval)
-              case s: SIntType => (isUInt, true, isClock, isFix, isAsync, isInterval)
-              case ClockType      => (isUInt, isSInt, true, isFix, isAsync, isInterval)
-              case AsyncResetType => (isUInt, isSInt, isClock, isFix, true, isInterval)
-              case i: IntervalType => (isUInt, isSInt, isClock, isFix, isAsync, true)
+              case u: UIntType => (true, isSInt, isClock, isFix, isAsync)
+              case s: SIntType => (isUInt, true, isClock, isFix, isAsync)
+              case ClockType      => (isUInt, isSInt, true, isFix, isAsync)
+              case AsyncResetType => (isUInt, isSInt, isClock, isFix, true)
               case UnknownType =>
                 errors.append(new IllegalUnknownType(info, mname, e.serialize))
-                (isUInt, isSInt, isClock, isFix, isAsync, isInterval)
+                (isUInt, isSInt, isClock, isFix, isAsync)
               case other => throwInternalError(s"Illegal Type: ${other.serialize}")
             }
         } match {
-          //   (UInt,  SInt,  Clock, Fixed, Async, Interval)
-          case (isAll, false, false, false, false, false) if isAll == okUInt     =>
-          case (false, isAll, false, false, false, false) if isAll == okSInt     =>
-          case (false, false, isAll, false, false, false) if isAll == okClock    =>
-          case (false, false, false, isAll, false, false) if isAll == okFix      =>
-          case (false, false, false, false, isAll, false) if isAll == okAsync    =>
-          case (false, false, false, false, false, isAll) if isAll == okInterval =>
-          case x                                                                 => errors.append(new OpNotCorrectType(info, mname, e.op.serialize, exprs.map(_.tpe.serialize)))
+          //   (UInt,  SInt,  Clock, Fixed, Async)
+          case (isAll, false, false, false, false) if isAll == okUInt  =>
+          case (false, isAll, false, false, false) if isAll == okSInt  =>
+          case (false, false, isAll, false, false) if isAll == okClock =>
+          case (false, false, false, isAll, false) if isAll == okFix   =>
+          case (false, false, false, false, isAll) if isAll == okAsync =>
+          case x                                                       => errors.append(new OpNotCorrectType(info, mname, e.op.serialize, exprs.map(_.tpe.serialize)))
         }
       }
       e.op match {
-        case AsUInt | AsSInt | AsClock | AsAsyncReset | AsInterval =>
+        case AsUInt | AsSInt | AsClock | AsAsyncReset =>
         // All types are ok
         case Dshl | Dshr =>
           checkAllTypes(
@@ -231,8 +219,7 @@ object CheckTypes extends Pass {
             okSInt = true,
             okClock = false,
             okFix = true,
-            okAsync = false,
-            okInterval = true
+            okAsync = false
           )
           checkAllTypes(
             Seq(e.args(1)),
@@ -240,8 +227,7 @@ object CheckTypes extends Pass {
             okSInt = false,
             okClock = false,
             okFix = false,
-            okAsync = false,
-            okInterval = false
+            okAsync = false
           )
         case Add | Sub | Mul | Lt | Leq | Gt | Geq | Eq | Neq =>
           checkAllTypes(
@@ -250,8 +236,7 @@ object CheckTypes extends Pass {
             okSInt = true,
             okClock = false,
             okFix = true,
-            okAsync = false,
-            okInterval = true
+            okAsync = false
           )
         case Pad | Bits | Head | Tail =>
           checkAllTypes(
@@ -260,8 +245,7 @@ object CheckTypes extends Pass {
             okSInt = true,
             okClock = false,
             okFix = true,
-            okAsync = false,
-            okInterval = false
+            okAsync = false
           )
         case Shl | Shr | Cat =>
           checkAllTypes(
@@ -270,28 +254,7 @@ object CheckTypes extends Pass {
             okSInt = true,
             okClock = false,
             okFix = true,
-            okAsync = false,
-            okInterval = true
-          )
-        case IncP | DecP | SetP =>
-          checkAllTypes(
-            e.args,
-            okUInt = false,
-            okSInt = false,
-            okClock = false,
-            okFix = true,
-            okAsync = false,
-            okInterval = true
-          )
-        case Wrap | Clip | Squeeze =>
-          checkAllTypes(
-            e.args,
-            okUInt = false,
-            okSInt = false,
-            okClock = false,
-            okFix = false,
-            okAsync = false,
-            okInterval = true
+            okAsync = false
           )
         case _ =>
           checkAllTypes(
@@ -300,8 +263,7 @@ object CheckTypes extends Pass {
             okSInt = true,
             okClock = false,
             okFix = false,
-            okAsync = false,
-            okInterval = false
+            okAsync = false
           )
       }
     }

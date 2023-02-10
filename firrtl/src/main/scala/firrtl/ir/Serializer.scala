@@ -348,9 +348,7 @@ object Serializer {
     case AsyncResetType        => b ++= "AsyncReset"
     case AnalogType(width)     => b ++= "Analog"; s(width)
     case UnknownType           => b += '?'
-    // the IntervalType has a complicated custom serialization method which does not recurse
-    case i: IntervalType => b ++= i.serialize
-    case other => b ++= other.serialize // Handle user-defined nodes
+    case other                 => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Direction)(implicit b: StringBuilder, indent: Int): Unit = node match {

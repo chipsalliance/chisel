@@ -28,9 +28,6 @@ object CheckWidths extends Pass {
   class UninferredBound(info: Info, target: String, bound: String)
       extends PassException(s"""|$info : Uninferred $bound bound for target. (Did you forget to assign to it?)
                                 |$target""".stripMargin)
-  class InvalidRange(info: Info, target: String, i: IntervalType)
-      extends PassException(s"""|$info : Invalid range ${i.serialize} for target below. (Are the bounds valid?)
-                                |$target""".stripMargin)
   class WidthTooSmall(info: Info, mname: String, b: BigInt)
       extends PassException(s"$info : [target $mname]  Width too small for constant $b.")
   class WidthTooBig(info: Info, mname: String, b: BigInt)
@@ -88,25 +85,6 @@ object CheckWidths extends Pass {
     def check_width_t(info: Info, target: Target)(t: Type): Unit = {
       t match {
         case tt: BundleType => tt.fields.foreach(check_width_f(info, target))
-        //Supports when l = u (if closed)
-        case i @ IntervalType(Closed(l), Closed(u), IntWidth(_)) if l <= u => i
-        case i: IntervalType if i.range == Some(Nil) =>
-          errors.append(new InvalidRange(info, target.prettyPrint("    "), i))
-          i
-        case i @ IntervalType(KnownBound(l), KnownBound(u), IntWidth(p)) if l >= u =>
-          errors.append(new InvalidRange(info, target.prettyPrint("    "), i))
-          i
-        case i @ IntervalType(KnownBound(_), KnownBound(_), IntWidth(_)) => i
-        case i @ IntervalType(_: IsKnown, _, _) =>
-          errors.append(new UninferredBound(info, target.prettyPrint("    "), "upper"))
-          i
-        case i @ IntervalType(_, _: IsKnown, _) =>
-          errors.append(new UninferredBound(info, target.prettyPrint("    "), "lower"))
-          i
-        case i @ IntervalType(_, _, _) =>
-          errors.append(new UninferredBound(info, target.prettyPrint("    "), "lower"))
-          errors.append(new UninferredBound(info, target.prettyPrint("    "), "upper"))
-          i
         case tt => tt.foreach(check_width_t(info, target))
       }
       t.foreach(check_width_w(info, target, t))
@@ -128,9 +106,6 @@ object CheckWidths extends Pass {
           }
         case e @ DoPrim(op, Seq(a, b), _, tpe) =>
           (op, a.tpe, b.tpe) match {
-            case (Squeeze, IntervalType(Closed(la), Closed(ua), _), IntervalType(Closed(lb), Closed(ub), _))
-                if (ua < lb) || (ub < la) =>
-              errors.append(new DisjointSqueeze(info, target.serialize, e))
             case (Dshl, at, bt) if (hasWidth(at) && bitWidth(bt) >= DshlMaxWidth) =>
               errors.append(new DshlTooBig(info, target.serialize))
             case _ =>

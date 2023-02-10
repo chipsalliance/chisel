@@ -165,14 +165,12 @@ trait CheckHighFormLike { this: Pass =>
       }
 
       e.op match {
-        case Add | Sub | Mul | Div | Rem | Lt | Leq | Gt | Geq | Eq | Neq | Dshl | Dshr | And | Or | Xor | Cat | Dshlw |
-            Clip | Wrap | Squeeze =>
+        case Add | Sub | Mul | Div | Rem | Lt | Leq | Gt | Geq | Eq | Neq | Dshl | Dshr | And | Or | Xor | Cat |
+            Dshlw =>
           correctNum(Option(2), 0)
         case AsUInt | AsSInt | AsClock | AsAsyncReset | Cvt | Neq | Not =>
           correctNum(Option(1), 0)
-        case SetP =>
-          correctNum(Option(1), 1)
-        case Shl | Shr | Pad | Head | Tail | IncP | DecP =>
+        case Shl | Shr | Pad | Head | Tail =>
           correctNum(Option(1), 1)
           nonNegativeConsts()
         case Bits =>
@@ -184,8 +182,6 @@ trait CheckHighFormLike { this: Pass =>
               errors.append(new LsbLargerThanMsbException(info, mname, e.op.toString, lsb, msb))
             }
           }
-        case AsInterval =>
-          correctNum(Option(1), 3)
         case Andr | Orr | Xorr | Neg =>
           correctNum(Option(1), 0)
       }
@@ -224,7 +220,6 @@ trait CheckHighFormLike { this: Pass =>
       t match {
         case tx: VectorType if tx.size < 0 =>
           errors.append(new NegVecSizeException(info, mname))
-        case _: IntervalType =>
         case _ => t.foreach(checkHighFormW(info, mname))
       }
     }
