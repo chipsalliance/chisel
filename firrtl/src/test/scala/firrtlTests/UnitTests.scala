@@ -33,7 +33,7 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "Pull muxes" should "not be exponential in runtime" in {
-    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes, PullMuxes)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, PullMuxes)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -45,40 +45,8 @@ class UnitTests extends FirrtlFlatSpec {
     }
   }
 
-  "Connecting bundles of different types" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes)
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    input y: {a : UInt<1>}
-        |    output x: {a : UInt<1>, b : UInt<1>}
-        |    x <= y""".stripMargin
-    intercept[CheckTypes.InvalidConnect] {
-      passes.foldLeft(parse(input)) { (c: Circuit, p: Pass) =>
-        p.run(c)
-      }
-    }
-  }
-
-  "Initializing a register with a different type" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes)
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    input clock : Clock
-        |    input reset : UInt<1>
-        |    wire x : { valid : UInt<1> }
-        |    reg y : { valid : UInt<1>, bits : UInt<3> }, clock with :
-        |      reset => (reset, x)""".stripMargin
-    intercept[CheckTypes.InvalidRegInit] {
-      passes.foldLeft(parse(input)) { (c: Circuit, p: Pass) =>
-        p.run(c)
-      }
-    }
-  }
-
   "Partial connection two bundle types whose relative flips don't match but leaf node directions do" should "connect correctly" in {
-    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes, ResolveFlows, ExpandConnects)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, ExpandConnects)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -271,7 +239,7 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "Partial connecting incompatable types" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes)
     val input =
       """circuit Unit :
         |  module Unit :

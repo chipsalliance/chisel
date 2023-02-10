@@ -9,7 +9,6 @@ import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 
 import scala.language.experimental.macros
-import _root_.firrtl.passes.CheckTypes
 import scala.annotation.tailrec
 
 /**

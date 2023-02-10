@@ -29,7 +29,6 @@ object Forms {
 
   val Checks: Seq[TransformDependency] =
     Seq(
-      Dependency(passes.CheckTypes),
       Dependency(passes.CheckWidths)
     )
 

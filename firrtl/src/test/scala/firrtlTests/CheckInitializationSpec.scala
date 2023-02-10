@@ -11,7 +11,6 @@ class CheckInitializationSpec extends FirrtlFlatSpec {
     ToWorkingIR,
     ResolveKinds,
     InferTypes,
-    CheckTypes,
     ResolveFlows,
     new InferWidths,
     CheckWidths,

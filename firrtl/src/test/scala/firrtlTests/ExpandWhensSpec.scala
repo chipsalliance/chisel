@@ -11,7 +11,6 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
     ToWorkingIR,
     ResolveKinds,
     InferTypes,
-    CheckTypes,
     ResolveKinds,
     InferTypes,
     ResolveFlows,
