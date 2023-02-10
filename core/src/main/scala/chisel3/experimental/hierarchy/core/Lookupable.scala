@@ -10,7 +10,15 @@ import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifySingleData}
 import chisel3.internal.firrtl.{Arg, ILit, Index, ModuleIO, Slot, ULit}
-import chisel3.internal.{AggregateViewBinding, Builder, ChildBinding, InternalErrorException, ViewBinding, ViewParent, throwException}
+import chisel3.internal.{
+  throwException,
+  AggregateViewBinding,
+  Builder,
+  ChildBinding,
+  InternalErrorException,
+  ViewBinding,
+  ViewParent
+}
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
   *   should be tweaked to return the Instance's version
@@ -69,8 +77,7 @@ object Lookupable {
             newChild.bind(internal.CrossModuleBinding)
             newChild.setAllParents(Some(m))
             newChild
-          case _ => throw new InternalErrorException("Match error: newParent=$newParent"
-            )
+          case _ => throw new InternalErrorException("Match error: newParent=$newParent")
         }
     }
   }

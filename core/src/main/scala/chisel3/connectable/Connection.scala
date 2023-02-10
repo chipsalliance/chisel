@@ -6,8 +6,8 @@ import chisel3.{Aggregate, BiConnectException, Data, DontCare, RawModule}
 import chisel3.internal.{BiConnect, Builder, InternalErrorException}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.DefInvalid
-import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo, prefix}
-import chisel3.experimental.{Analog, attach}
+import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{attach, Analog}
 import Alignment.matchingZipOfChildren
 
 import scala.collection.mutable

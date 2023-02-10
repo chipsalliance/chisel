@@ -483,7 +483,7 @@ object Select {
     case Node(id: Data) => getIntermediateAndLeafs(id)
     case Slot(imm, name)   => Seq(imm.id.asInstanceOf[Record].elements(name))
     case Index(imm, value) => getEffected(imm)
-    case _ => throw new InternalErrorException("Match error: a=$a")
+    case _                 => throw new InternalErrorException("Match error: a=$a")
   }
 
   // Given an arg, return the corresponding id. Don't use on a loc of a connect.
