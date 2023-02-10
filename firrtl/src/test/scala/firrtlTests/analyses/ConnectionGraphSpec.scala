@@ -6,7 +6,6 @@ import firrtl.{ChirrtlForm, CircuitState, FileUtils, IRToWorkingIR, UnknownForm}
 import firrtl.analyses.{CircuitGraph, ConnectionGraph}
 import firrtl.annotations.ModuleTarget
 import firrtl.options.Dependency
-import firrtl.passes.ExpandWhensAndCheck
 import firrtl.stage.{Forms, TransformManager}
 import firrtl.testutils.FirrtlFlatSpec
 
@@ -14,7 +13,7 @@ class ConnectionGraphSpec extends FirrtlFlatSpec {
 
   "ConnectionGraph" should "build connection graph for rocket-chip" in {
     ConnectionGraph(
-      new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+      new firrtl.stage.transforms.Compiler(Seq.empty)
         .runTransform(
           CircuitState(parse(FileUtils.getTextResource("/regress/RocketCore.fir")), UnknownForm)
         )
@@ -46,7 +45,7 @@ class ConnectionGraphSpec extends FirrtlFlatSpec {
       |    out <= in
       |""".stripMargin
 
-  val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+  val circuit = new firrtl.stage.transforms.Compiler(Seq.empty)
     .runTransform(
       CircuitState(parse(input), UnknownForm)
     )

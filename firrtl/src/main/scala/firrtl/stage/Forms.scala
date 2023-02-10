@@ -32,17 +32,7 @@ object Forms {
     Resolved ++
     Deduped
 
-  val MidForm: Seq[TransformDependency] = HighForm ++
-    Seq(
-      Dependency(passes.PullMuxes),
-      Dependency(passes.ReplaceAccesses),
-      Dependency(passes.ExpandConnects),
-      Dependency(passes.RemoveAccesses),
-      Dependency(passes.ZeroLengthVecs),
-      Dependency[passes.ExpandWhensAndCheck],
-      Dependency(passes.ZeroWidth),
-      Dependency[firrtl.transforms.formal.AssertSubmoduleAssumptions]
-    )
+  val MidForm: Seq[TransformDependency] = HighForm
 
   val LowForm: Seq[TransformDependency] = MidForm ++
     Seq(

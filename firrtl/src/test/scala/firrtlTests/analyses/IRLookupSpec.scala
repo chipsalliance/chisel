@@ -8,7 +8,6 @@ import firrtl.annotations.{CircuitTarget, ModuleTarget, ReferenceTarget}
 import firrtl._
 import firrtl.ir._
 import firrtl.options.Dependency
-import firrtl.passes.ExpandWhensAndCheck
 import firrtl.stage.{Forms, TransformManager}
 import firrtl.testutils.FirrtlFlatSpec
 
@@ -39,7 +38,7 @@ class IRLookupSpec extends FirrtlFlatSpec {
         |    out <= UInt(1)
         |""".stripMargin
 
-    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+    val circuit = new firrtl.stage.transforms.Compiler(Seq.empty)
       .runTransform(
         CircuitState(parse(input), UnknownForm)
       )
@@ -161,7 +160,7 @@ class IRLookupSpec extends FirrtlFlatSpec {
     val Readwriter = Mem.field("rw")
     val allSignals = readerTargets(Reader) ++ writerTargets(Writer) ++ readwriterTargets(Readwriter)
 
-    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+    val circuit = new firrtl.stage.transforms.Compiler(Seq.empty)
       .runTransform(
         CircuitState(parse(input), UnknownForm)
       )
@@ -199,7 +198,7 @@ class IRLookupSpec extends FirrtlFlatSpec {
         |    out <= UInt(1)
         |""".stripMargin
 
-    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+    val circuit = new firrtl.stage.transforms.Compiler(Seq.empty)
       .runTransform(
         CircuitState(parse(input), UnknownForm)
       )
@@ -281,7 +280,7 @@ class IRLookupSpec extends FirrtlFlatSpec {
          |    out <= in
          |""".stripMargin
 
-    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+    val circuit = new firrtl.stage.transforms.Compiler(Seq.empty)
       .runTransform(
         CircuitState(parse(input), UnknownForm)
       )

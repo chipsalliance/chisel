@@ -8,11 +8,7 @@ import firrtl.testutils._
 
 class ChirrtlSpec extends FirrtlFlatSpec {
   def transforms = Seq(
-    ToWorkingIR,
-    PullMuxes,
-    ExpandConnects,
-    RemoveAccesses,
-    ExpandWhens
+    ToWorkingIR
   )
 
   "Chirrtl memories" should "allow ports with clocks defined after the memory" in {

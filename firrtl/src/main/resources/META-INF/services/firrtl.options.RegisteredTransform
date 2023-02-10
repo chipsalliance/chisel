@@ -1,4 +1,3 @@
 firrtl.transforms.DeadCodeElimination
 firrtl.passes.InlineInstances
-firrtl.transforms.formal.AssertSubmoduleAssumptions
 firrtl.transforms.ConstantPropagation

@@ -50,7 +50,7 @@ class PresetRegAnnotationSpec
   */
 private object MakePresetRegs extends Transform with DependencyAPIMigration {
   // run on lowered firrtl
-  override def prerequisites = Seq(Dependency(firrtl.passes.ExpandWhens), Dependency(firrtl.passes.LowerTypes))
+  override def prerequisites = Seq(Dependency(firrtl.passes.LowerTypes))
   override def invalidates(a: Transform) = false
   // since we generate PresetRegAnnotations, we need to run after preset propagation
   override def optionalPrerequisites = Seq(Dependency[PropagatePresetAnnotations])

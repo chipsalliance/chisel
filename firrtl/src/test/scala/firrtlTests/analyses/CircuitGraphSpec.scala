@@ -5,7 +5,6 @@ package firrtlTests.analyses
 import firrtl.analyses.CircuitGraph
 import firrtl.annotations.CircuitTarget
 import firrtl.options.Dependency
-import firrtl.passes.ExpandWhensAndCheck
 import firrtl.stage.{Forms, TransformManager}
 import firrtl.testutils.FirrtlFlatSpec
 import firrtl.{ChirrtlForm, CircuitState, FileUtils, UnknownForm}
@@ -37,7 +36,7 @@ class CircuitGraphSpec extends FirrtlFlatSpec {
           |""".stripMargin
       (0 until n).foreach { i => input ++= mkChild(i); input ++= "\n" }
       input ++= mkLeaf(n)
-      val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+      val circuit = new firrtl.stage.transforms.Compiler(Seq.empty)
         .runTransform(
           CircuitState(parse(input.toString()), UnknownForm)
         )
