@@ -6,7 +6,6 @@ import org.scalatest._
 import firrtl.{CircuitState, Parser, Transform, UnknownForm}
 import firrtl.ir.Circuit
 import firrtl.passes.{
-  CheckHighForm,
   CheckTypes,
   CheckWidths,
   InferTypes,
@@ -21,67 +20,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class CheckSpec extends AnyFlatSpec with Matchers {
-  val defaultPasses = Seq(ToWorkingIR, CheckHighForm)
+  val defaultPasses = Seq(ToWorkingIR)
   def checkHighInput(input: String) = {
     defaultPasses.foldLeft(Parser.parse(input.split("\n").toIterator)) { (c: Circuit, p: Pass) =>
       p.run(c)
-    }
-  }
-
-  "CheckHighForm" should "disallow Chirrtl-style memories" in {
-    val input =
-      """circuit foo :
-        |  module foo :
-        |    input clock : Clock
-        |    input addr : UInt<2>
-        |    smem mem : UInt<1>[4]""".stripMargin
-    intercept[CheckHighForm.IllegalChirrtlMemException] {
-      checkHighInput(input)
-    }
-  }
-
-  "Memories with flip in the data type" should "throw an exception" in {
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    mem m :
-        |      data-type => {a : {b : {flip c : UInt<32>}}}
-        |      depth => 32
-        |      read-latency => 0
-        |      write-latency => 1""".stripMargin
-    intercept[CheckHighForm.MemWithFlipException] {
-      checkHighInput(input)
-    }
-  }
-
-  "Memories with zero write latency" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, CheckHighForm)
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    mem m :
-        |      data-type => UInt<32>
-        |      depth => 32
-        |      read-latency => 0
-        |      write-latency => 0""".stripMargin
-    intercept[CheckHighForm.IllegalMemLatencyException] {
-      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) { (c: Circuit, p: Pass) =>
-        p.run(c)
-      }
-    }
-  }
-
-  "Registers with flip in the type" should "throw an exception" in {
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    input clk : Clock
-        |    input in : UInt<32>
-        |    output out : UInt<32>
-        |    reg r : {a : UInt<32>, flip b : UInt<32>}, clk
-        |    out <= in""".stripMargin
-    intercept[CheckHighForm.RegWithFlipException] {
-      checkHighInput(input)
     }
   }
 
@@ -185,75 +127,6 @@ class CheckSpec extends AnyFlatSpec with Matchers {
     runCheckTypes(mk("UInt<1>"))
   }
 
-  "Instance loops a -> b -> a" should "be detected" in {
-    val input =
-      """
-        |circuit Foo :
-        |  module Foo :
-        |    input a : UInt<32>
-        |    output b : UInt<32>
-        |    inst bar of Bar
-        |    bar.a <= a
-        |    b <= bar.b
-        |
-        |  module Bar :
-        |    input a : UInt<32>
-        |    output b : UInt<32>
-        |    inst foo of Foo
-        |    foo.a <= a
-        |    b <= foo.b
-      """.stripMargin
-    intercept[CheckHighForm.InstanceLoop] {
-      checkHighInput(input)
-    }
-  }
-
-  "Instance loops a -> b -> c -> a" should "be detected" in {
-    val input =
-      """
-        |circuit Dog :
-        |  module Dog :
-        |    input a : UInt<32>
-        |    output b : UInt<32>
-        |    inst bar of Cat
-        |    bar.a <= a
-        |    b <= bar.b
-        |
-        |  module Cat :
-        |    input a : UInt<32>
-        |    output b : UInt<32>
-        |    inst ik of Ik
-        |    ik.a <= a
-        |    b <= ik.b
-        |
-        |  module Ik :
-        |    input a : UInt<32>
-        |    output b : UInt<32>
-        |    inst foo of Dog
-        |    foo.a <= a
-        |    b <= foo.b
-        |      """.stripMargin
-    intercept[CheckHighForm.InstanceLoop] {
-      checkHighInput(input)
-    }
-  }
-
-  "Instance loops a -> a" should "be detected" in {
-    val input =
-      """
-        |circuit Apple :
-        |  module Apple :
-        |    input a : UInt<32>
-        |    output b : UInt<32>
-        |    inst recurse_foo of Apple
-        |    recurse_foo.a <= a
-        |    b <= recurse_foo.b
-        |      """.stripMargin
-    intercept[CheckHighForm.InstanceLoop] {
-      checkHighInput(input)
-    }
-  }
-
   "Instance loops should not have false positives" should "be detected" in {
     val input =
       """
@@ -283,7 +156,6 @@ class CheckSpec extends AnyFlatSpec with Matchers {
   "Clock Types" should "be connectable" in {
     val passes = Seq(
       ToWorkingIR,
-      CheckHighForm,
       ResolveKinds,
       InferTypes,
       CheckTypes,
@@ -322,7 +194,7 @@ class CheckSpec extends AnyFlatSpec with Matchers {
   }
 
   "Clocks with types other than ClockType" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes)
     val input =
       """
         |circuit Top :
@@ -345,7 +217,7 @@ class CheckSpec extends AnyFlatSpec with Matchers {
   }
 
   "Illegal reset type" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes)
     val input =
       """
         |circuit Top :
@@ -397,284 +269,6 @@ class CheckSpec extends AnyFlatSpec with Matchers {
       val exception = intercept[PassException] {
         checkHighInput(input)
       }
-    }
-  }
-
-  behavior.of("Uniqueness")
-  for ((description, input) <- CheckSpec.nonUniqueExamples) {
-    it should s"be asserted for $description" in {
-      assertThrows[CheckHighForm.NotUniqueException] {
-        Seq(ToWorkingIR, CheckHighForm).foldLeft(Parser.parse(input)) { case (c, tx) => tx.run(c) }
-      }
-    }
-  }
-
-  s"Duplicate module names" should "throw an exception" in {
-    val input =
-      s"""|circuit bar :
-          |  module bar :
-          |    input i : UInt<8>
-          |    output o : UInt<8>
-          |    o <= i
-          |  module dup :
-          |    input i : UInt<8>
-          |    output o : UInt<8>
-          |    o <= i
-          |  module dup :
-          |    input i : UInt<8>
-          |    output o : UInt<8>
-          |    o <= not(i)
-          |""".stripMargin
-    assertThrows[CheckHighForm.ModuleNameNotUniqueException] {
-      try {
-        checkHighInput(input)
-      } catch {
-        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
-      }
-    }
-  }
-
-  s"Defnames that conflict with pure-FIRRTL module names" should "throw an exception" in {
-    val input =
-      s"""|circuit bar :
-          |  module bar :
-          |    input i : UInt<8>
-          |    output o : UInt<8>
-          |    o <= i
-          |  extmodule dup :
-          |    input i : UInt<8>
-          |    output o : UInt<8>
-          |    defname = bar
-          |""".stripMargin
-    assertThrows[CheckHighForm.DefnameConflictException] {
-      checkHighInput(input)
-    }
-  }
-
-  "Conditionally statements" should "create a new scope" in {
-    val input =
-      s"""|circuit scopes:
-          |  module scopes:
-          |    input i: UInt<1>
-          |    output o: UInt<1>
-          |    when i:
-          |      node x = not(i)
-          |    o <= and(x, i)
-          |""".stripMargin
-    assertThrows[CheckHighForm.UndeclaredReferenceException] {
-      checkHighInput(input)
-    }
-  }
-
-  "Attempting to shadow a component name" should "throw an error" in {
-    val input =
-      s"""|circuit scopes:
-          |  module scopes:
-          |    input i: UInt<1>
-          |    output o: UInt<1>
-          |    wire x: UInt<1>
-          |    when i:
-          |      node x = not(i)
-          |    o <= and(x, i)
-          |""".stripMargin
-    assertThrows[CheckHighForm.NotUniqueException] {
-      checkHighInput(input)
-    }
-  }
-
-  "Attempting to shadow a statement name" should "throw an error" in {
-    val input =
-      s"""|circuit scopes:
-          |  module scopes:
-          |    input c: Clock
-          |    input i: UInt<1>
-          |    output o: UInt<1>
-          |    wire x: UInt<1>
-          |    when i:
-          |      stop(c, UInt(1), 1) : x
-          |    o <= and(x, i)
-          |""".stripMargin
-    assertThrows[CheckHighForm.NotUniqueException] {
-      checkHighInput(input)
-    }
-  }
-
-  "Colliding statement names" should "throw an error" in {
-    val input =
-      s"""|circuit test:
-          |  module test:
-          |    input c: Clock
-          |    stop(c, UInt(1), 1) : x
-          |    stop(c, UInt(1), 1) : x
-          |""".stripMargin
-    assertThrows[CheckHighForm.NotUniqueException] {
-      checkHighInput(input)
-    }
-  }
-
-  "Conditionally statements" should "create separate consequent and alternate scopes" in {
-    val input =
-      s"""|circuit scopes:
-          |  module scopes:
-          |    input i: UInt<1>
-          |    output o: UInt<1>
-          |    o <= i
-          |    when i:
-          |      node x = not(i)
-          |    else:
-          |      o <= and(x, i)
-          |""".stripMargin
-    assertThrows[CheckHighForm.UndeclaredReferenceException] {
-      checkHighInput(input)
-    }
-  }
-
-  behavior.of("CheckHighForm running on circuits containing ExtModules")
-
-  it should "throw an exception if parameterless ExtModules have the same ports, but different widths" in {
-    val input =
-      s"""|circuit Foo:
-          |  extmodule Bar:
-          |    input a: UInt<1>
-          |    defname = bar
-          |  extmodule Baz:
-          |    input a: UInt<2>
-          |    defname = bar
-          |  module Foo:
-          |    skip
-          |""".stripMargin
-    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
-      try {
-        checkHighInput(input)
-      } catch {
-        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
-      }
-    }
-  }
-
-  it should "throw an exception if ExtModules have different port names, but identical widths" in {
-    val input =
-      s"""|circuit Foo:
-          |  extmodule Bar:
-          |    input a: UInt<1>
-          |    defname = bar
-          |  extmodule Baz:
-          |    input b: UInt<1>
-          |    defname = bar
-          |  module Foo:
-          |    skip
-          |""".stripMargin
-    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
-      try {
-        checkHighInput(input)
-      } catch {
-        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
-      }
-    }
-  }
-
-  it should "NOT throw an exception if ExtModules have parameters, matching port names, but different widths" in {
-    val input =
-      s"""|circuit Foo:
-          |  extmodule Bar:
-          |    input a: UInt<1>
-          |    defname = bar
-          |    parameter width = 1
-          |  extmodule Baz:
-          |    input a: UInt<2>
-          |    defname = bar
-          |    parameter width = 2
-          |  module Foo:
-          |    skip
-          |""".stripMargin
-    checkHighInput(input)
-  }
-
-  it should "throw an exception if ExtModules have matching port names and widths, but a different order" in {
-    val input =
-      s"""|circuit Foo:
-          |  extmodule Bar:
-          |    input a: UInt<1>
-          |    input b: UInt<1>
-          |    defname = bar
-          |  extmodule Baz:
-          |    input b: UInt<1>
-          |    input a: UInt<1>
-          |    defname = bar
-          |  module Foo:
-          |    skip
-          |""".stripMargin
-    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
-      try {
-        checkHighInput(input)
-      } catch {
-        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
-      }
-    }
-  }
-
-  it should "throw an exception if ExtModules have matching port names, but one is a Clock and one is a UInt<1>" in {
-    val input =
-      s"""|circuit Foo:
-          |  extmodule Bar:
-          |    input a: UInt<1>
-          |    defname = bar
-          |  extmodule Baz:
-          |    input a: Clock
-          |    defname = bar
-          |  module Foo:
-          |    skip
-          |""".stripMargin
-    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
-      try {
-        checkHighInput(input)
-      } catch {
-        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
-      }
-    }
-  }
-
-  it should "throw an exception if ExtModules have differing concrete reset types" in {
-    def input(rst1: String, rst2: String) =
-      s"""|circuit Foo:
-          |  extmodule Bar:
-          |    input rst: $rst1
-          |    defname = bar
-          |  extmodule Baz:
-          |    input rst: $rst2
-          |    defname = bar
-          |  module Foo:
-          |    skip
-          |""".stripMargin
-    info("exception thrown for 'UInt<1>' compared to 'AsyncReset'")
-    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
-      try {
-        checkHighInput(input("UInt<1>", "AsyncReset"))
-      } catch {
-        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
-      }
-    }
-    info("exception thrown for 'UInt<1>' compared to 'Reset'")
-    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
-      try {
-        checkHighInput(input("UInt<1>", "Reset"))
-      } catch {
-        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
-      }
-    }
-  }
-
-  it should "throw an exception if a statement name is used as a reference" in {
-    val src = """
-                |circuit test:
-                |  module test:
-                |    input clock: Clock
-                |    output a: UInt<2>
-                |    stop(clock, UInt(1), 1) : hello
-                |    a <= hello
-                |""".stripMargin
-    assertThrows[CheckHighForm.UndeclaredReferenceException] {
-      checkHighInput(src)
     }
   }
 

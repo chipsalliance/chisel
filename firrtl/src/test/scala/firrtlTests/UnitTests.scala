@@ -33,7 +33,7 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "Pull muxes" should "not be exponential in runtime" in {
-    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes, PullMuxes)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes, PullMuxes)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -46,7 +46,7 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "Connecting bundles of different types" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -61,7 +61,7 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "Initializing a register with a different type" should "throw an exception" in {
-    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -78,7 +78,7 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "Partial connection two bundle types whose relative flips don't match but leaf node directions do" should "connect correctly" in {
-    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes, ResolveFlows, ExpandConnects)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes, ResolveFlows, ExpandConnects)
     val input =
       """circuit Unit :
         |  module Unit :

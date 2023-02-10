@@ -14,7 +14,6 @@ class RemoveAccessesSpec extends FirrtlFlatSpec {
     val manager = new TransformManager(Dependency(RemoveAccesses) :: Nil)
     val result = manager.execute(CircuitState(parse(input), Nil))
     val checks = List(
-      CheckHighForm,
       CheckTypes
     )
     for (check <- checks) { check.run(result.circuit) }

@@ -4,7 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.ir._
-import firrtl.passes.{CheckHighForm, CheckInitialization, CheckTypes}
+import firrtl.passes.{CheckInitialization, CheckTypes}
 import firrtl.transforms.{CheckCombLoops, InferResets}
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
@@ -294,30 +294,6 @@ class InferResetsSpec extends FirrtlFlatSpec {
                  |    w <= in
                  |    out <= w
                  |""".stripMargin)
-    }
-  }
-
-  it should "not allow ResetType as an Input or ExtModule output" in {
-    // TODO what exception should be thrown here?
-    an[CheckHighForm.ResetInputException] shouldBe thrownBy {
-      val result = compile(s"""
-                              |circuit top :
-                              |  module top :
-                              |    input in : { foo : Reset }
-                              |    output out : Reset
-                              |    out <= in.foo
-                              |""".stripMargin)
-    }
-    an[CheckHighForm.ResetExtModuleOutputException] shouldBe thrownBy {
-      val result = compile(s"""
-                              |circuit top :
-                              |  extmodule ext :
-                              |    output out : { foo : Reset }
-                              |  module top :
-                              |    output out : Reset
-                              |    inst e of ext
-                              |    out <= e.out.foo
-                              |""".stripMargin)
     }
   }
 

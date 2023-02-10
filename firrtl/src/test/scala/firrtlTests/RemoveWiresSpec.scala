@@ -144,50 +144,6 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
     names should be(Seq("a", "clock2", "b"))
   }
 
-  it should "order registers correctly" in {
-    val result = compileBody(s"""
-                                |input clock : Clock
-                                |input a : UInt<8>
-                                |output c : UInt<8>
-                                |wire w : UInt<8>
-                                |node n = tail(add(w, UInt(1)), 1)
-                                |reg r : UInt<8>, clock
-                                |w <= tail(add(r, a), 1)
-                                |c <= n""".stripMargin)
-    // Check declaration before use is maintained
-    firrtl.passes.CheckHighForm.execute(result)
-  }
-
-  it should "order registers with async reset correctly" in {
-    val result = compileBody(s"""
-                                |input clock : Clock
-                                |input reset : UInt<1>
-                                |input in : UInt<8>
-                                |output out : UInt<8>
-                                |wire areset : AsyncReset
-                                |reg r : UInt<8>, clock with : (reset => (areset, UInt(0)))
-                                |areset <= asAsyncReset(reset)
-                                |r <= in
-                                |out <= r
-                                |""".stripMargin)
-    // Check declaration before use is maintained
-    firrtl.passes.CheckHighForm.execute(result)
-  }
-
-  it should "order registers respecting initializations" in {
-    val result = compileBody(s"""|input clock : Clock
-                                 |input foo : UInt<2>
-                                 |output bar : UInt<2>
-                                 |wire y_fault : UInt<2>
-                                 |reg y : UInt<2>, clock with :
-                                 |  reset => (UInt<1>("h0"), y_fault)
-                                 |y_fault <= foo
-                                 |bar <= y
-                                 |""".stripMargin)
-    // Check declaration before use is maintained
-    firrtl.passes.CheckHighForm.execute(result)
-  }
-
   it should "give nodes made from invalid wires the correct type" in {
     val result = compileBody(
       s"""|input  a   : SInt<4>
