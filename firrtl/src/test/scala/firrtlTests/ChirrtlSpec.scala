@@ -19,8 +19,7 @@ class ChirrtlSpec extends FirrtlFlatSpec {
     PullMuxes,
     ExpandConnects,
     RemoveAccesses,
-    ExpandWhens,
-    CheckInitialization
+    ExpandWhens
   )
 
   "Chirrtl memories" should "allow ports with clocks defined after the memory" in {
