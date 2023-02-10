@@ -129,51 +129,6 @@ class InfoSpec extends FirrtlFlatSpec with FirrtlMatchers {
     result should containLine(s"assign out = in; //$Info1")
   }
 
-  "source locators" should "be propagated through ExpandWhens" in {
-    val input =
-      """
-        |;buildInfoPackage: chisel3, version: 3.1-SNAPSHOT, scalaVersion: 2.11.7, sbtVersion: 0.13.11, builtAtString: 2016-11-26 18:48:38.030, builtAtMillis: 1480186118030
-        |circuit GCD :
-        |  module GCD :
-        |    input clock : Clock
-        |    input reset : UInt<1>
-        |    output io : {flip a : UInt<32>, flip b : UInt<32>, flip e : UInt<1>, z : UInt<32>, v : UInt<1>}
-        |
-        |    io is invalid
-        |    io is invalid
-        |    reg x : UInt<32>, clock @[GCD.scala 15:14]
-        |    reg y : UInt<32>, clock @[GCD.scala 16:14]
-        |    node _T_14 = gt(x, y) @[GCD.scala 17:11]
-        |    when _T_14 : @[GCD.scala 17:18]
-        |      node _T_15 = sub(x, y) @[GCD.scala 17:27]
-        |      node _T_16 = tail(_T_15, 1) @[GCD.scala 17:27]
-        |      x <= _T_16 @[GCD.scala 17:22]
-        |      skip @[GCD.scala 17:18]
-        |    node _T_18 = eq(_T_14, UInt<1>("h00")) @[GCD.scala 17:18]
-        |    when _T_18 : @[GCD.scala 18:18]
-        |      node _T_19 = sub(y, x) @[GCD.scala 18:27]
-        |      node _T_20 = tail(_T_19, 1) @[GCD.scala 18:27]
-        |      y <= _T_20 @[GCD.scala 18:22]
-        |      skip @[GCD.scala 18:18]
-        |    when io.e : @[GCD.scala 19:15]
-        |      x <= io.a @[GCD.scala 19:19]
-        |      y <= io.b @[GCD.scala 19:30]
-        |      skip @[GCD.scala 19:15]
-        |    io.z <= x @[GCD.scala 20:8]
-        |    node _T_22 = eq(y, UInt<1>("h00")) @[GCD.scala 21:13]
-        |    io.v <= _T_22 @[GCD.scala 21:8]
-        |
-      """.stripMargin
-
-    val result = (new LowFirrtlCompiler).compileAndEmit(CircuitState(parse(input), ChirrtlForm), List.empty)
-    result should containLine("node _GEN_0 = mux(_T_14, _T_16, x) @[GCD.scala 15:14 17:{18,22}]")
-    result should containLine("node _GEN_2 = mux(io_e, io_a, _GEN_0) @[GCD.scala 19:{15,19}]")
-    result should containLine("x <= _GEN_2")
-    result should containLine("node _GEN_1 = mux(_T_18, _T_20, y) @[GCD.scala 16:14 18:{18,22}]")
-    result should containLine("node _GEN_3 = mux(io_e, io_b, _GEN_1) @[GCD.scala 19:{15,30}]")
-    result should containLine("y <= _GEN_3")
-  }
-
   "source locators for append option" should "use multiinfo" in {
     val input = """circuit Top :
                   |  module Top :

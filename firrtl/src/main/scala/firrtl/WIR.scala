@@ -268,8 +268,7 @@ object WrappedType {
       case (tpe, ResetType)                 => legalResetType(tpe)
       // Analog totally skips out of the Firrtl type system.
       // The only way Analog can play with another Analog component is through Attach.
-      // Otherwise, we'd need to special case it during ExpandWhens, Lowering,
-      // ExpandConnects, etc.
+      // Otherwise, we'd need to special case it during lowering.
       case (_: AnalogType, _: AnalogType) => false
       case (sink: VectorType, source: VectorType) =>
         sink.size == source.size && compare(sink.tpe, source.tpe)

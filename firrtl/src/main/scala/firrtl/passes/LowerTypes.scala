@@ -39,10 +39,7 @@ import scala.collection.mutable
   *   - the type of a module instance is still a bundle with depth 1 (instance -> port)
   */
 object LowerTypes extends Transform with DependencyAPIMigration {
-  override def prerequisites: Seq[TransformDependency] = Seq(
-    Dependency(RemoveAccesses), // we require all SubAccess nodes to have been removed
-    Dependency(ExpandConnects) // we require all PartialConnect nodes to have been expanded
-  )
+  override def prerequisites:          Seq[TransformDependency] = Seq.empty
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq.empty
   override def invalidates(a: Transform): Boolean = false
 

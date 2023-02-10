@@ -34,7 +34,7 @@ object LegalizeConnects extends Pass {
   */
 private[firrtl] object LegalizeConnectsOnly extends Pass {
 
-  override def prerequisites = Seq(Dependency(ExpandConnects))
+  override def prerequisites = Seq.empty
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Transform) = false
