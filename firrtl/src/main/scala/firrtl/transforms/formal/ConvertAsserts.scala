@@ -15,7 +15,7 @@ object ConvertAsserts extends Transform with DependencyAPIMigration {
   override def prerequisites = Nil
   override def optionalPrerequisites = Nil
   override def optionalPrerequisiteOf =
-    Seq(Dependency[VerilogEmitter], Dependency[MinimumVerilogEmitter], Dependency[RemoveVerificationStatements])
+    Seq(Dependency[VerilogEmitter], Dependency[MinimumVerilogEmitter])
 
   override def invalidates(a: Transform): Boolean = false
 
