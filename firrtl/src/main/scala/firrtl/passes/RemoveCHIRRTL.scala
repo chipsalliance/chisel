@@ -17,8 +17,7 @@ case class DataRef(exp: Expression, source: String, sink: String, mask: String, 
 
 object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
 
-  override def prerequisites = firrtl.stage.Forms.ChirrtlForm ++
-    Seq(Dependency(passes.CInferTypes), Dependency(passes.CInferMDir))
+  override def prerequisites = firrtl.stage.Forms.ChirrtlForm
 
   override def invalidates(a: Transform) = false
 
