@@ -299,10 +299,7 @@ class ExpandWhensAndCheck extends Transform with DependencyAPIMigration {
       Dependency(RemoveAccesses)
     ) ++ firrtl.stage.Forms.Deduped
 
-  override def invalidates(a: Transform): Boolean = a match {
-    case _: InferWidths => true
-    case _ => false
-  }
+  override def invalidates(a: Transform): Boolean = false
 
   override def execute(a: CircuitState): CircuitState =
     Seq(ExpandWhens).foldLeft(a) { case (acc, tx) => tx.transform(acc) }
