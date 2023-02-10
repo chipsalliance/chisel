@@ -460,14 +460,7 @@ message Firrtl {
         OP_AS_CLOCK = 31;
         OP_AND_REDUCE = 33;
         OP_OR_REDUCE = 34;
-        OP_INCREASE_PRECISION = 35;
-        OP_DECREASE_PRECISION = 36;
-        OP_SET_PRECISION = 37;
         OP_AS_ASYNC_RESET = 38;
-        OP_WRAP = 39;
-        OP_CLIP = 40;
-        OP_SQUEEZE = 41;
-        OP_AS_INTERVAL = 42;
       }
 
       // Required.

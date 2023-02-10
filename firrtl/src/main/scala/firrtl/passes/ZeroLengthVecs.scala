@@ -27,10 +27,6 @@ object ZeroLengthVecs extends Pass {
     val default = toReplace.tpe match {
       case UIntType(w) => UIntLiteral(0, w)
       case SIntType(w) => SIntLiteral(0, w)
-      case it: IntervalType =>
-        val zeroType = IntervalType(Closed(0), Closed(0), IntWidth(0))
-        val zeroLit = DoPrim(AsInterval, Seq(SIntLiteral(0)), Seq(0, 0, 0), zeroType)
-        DoPrim(Clip, Seq(zeroLit, toReplace), Nil, it)
     }
     ValidIf(UIntLiteral(0), default, toReplace.tpe)
   }

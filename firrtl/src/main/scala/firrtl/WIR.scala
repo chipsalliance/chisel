@@ -266,7 +266,6 @@ object WrappedType {
       case (AsyncResetType, AsyncResetType) => true
       case (ResetType, tpe)                 => legalResetType(tpe)
       case (tpe, ResetType)                 => legalResetType(tpe)
-      case (_: IntervalType, _: IntervalType) => true
       // Analog totally skips out of the Firrtl type system.
       // The only way Analog can play with another Analog component is through Attach.
       // Otherwise, we'd need to special case it during ExpandWhens, Lowering,

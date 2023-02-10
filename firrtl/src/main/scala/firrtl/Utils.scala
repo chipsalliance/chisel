@@ -278,7 +278,7 @@ object Utils extends LazyLogging {
   private val AsyncZero = DoPrim(PrimOps.AsAsyncReset, Seq(zero), Nil, AsyncResetType)
 
   /** Returns an [[firrtl.ir.Expression Expression]] equal to zero for a given [[firrtl.ir.GroundType GroundType]]
-    * @note Does not support [[firrtl.ir.AnalogType AnalogType]] nor [[firrtl.ir.IntervalType IntervalType]]
+    * @note Does not support [[firrtl.ir.AnalogType AnalogType]].
     */
   def getGroundZero(tpe: GroundType): Expression = tpe match {
     case u: UIntType => UIntLiteral(0, u.width)
@@ -287,8 +287,7 @@ object Utils extends LazyLogging {
     case ResetType      => Utils.zero
     case ClockType      => ClockZero
     case AsyncResetType => AsyncZero
-    // TODO Support IntervalType
-    case other => throwInternalError(s"Unexpected type $other")
+    case other          => throwInternalError(s"Unexpected type $other")
   }
 
   def create_exps(n: String, t: Type): Seq[Expression] =
@@ -414,7 +413,6 @@ object Utils extends LazyLogging {
     case (AsyncResetType, AsyncResetType) => AsyncResetType
     case (t1: UIntType, t2: UIntType) => UIntType(UnknownWidth)
     case (t1: SIntType, t2: SIntType) => SIntType(UnknownWidth)
-    case (t1: IntervalType, t2: IntervalType) => IntervalType(UnknownBound, UnknownBound, UnknownWidth)
     case (t1: VectorType, t2: VectorType) => VectorType(mux_type(t1.tpe, t2.tpe), t1.size)
     case (t1: BundleType, t2: BundleType) =>
       BundleType(t1.fields.zip(t2.fields).map {
@@ -434,8 +432,6 @@ object Utils extends LazyLogging {
       case (AsyncResetType, AsyncResetType) => AsyncResetType
       case (t1x: UIntType, t2x: UIntType) => UIntType(IsMax(t1x.width, t2x.width))
       case (t1x: SIntType, t2x: SIntType) => SIntType(IsMax(t1x.width, t2x.width))
-      case (IntervalType(l1, u1, p1), IntervalType(l2, u2, p2)) =>
-        IntervalType(IsMin(l1, l2), constraint.IsMax(u1, u2), MAX(p1, p2))
       case (t1x: VectorType, t2x: VectorType) => VectorType(mux_type_and_widths(t1x.tpe, t2x.tpe), t1x.size)
       case (t1x: BundleType, t2x: BundleType) =>
         BundleType(t1x.fields.zip(t2x.fields).map {

@@ -14,7 +14,6 @@ object CheckFlows extends Pass {
 
   override def optionalPrerequisiteOf =
     Seq(
-      Dependency[passes.TrimIntervals],
       Dependency[passes.InferWidths],
       Dependency[transforms.InferResets]
     )

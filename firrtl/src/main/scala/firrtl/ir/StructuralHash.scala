@@ -321,14 +321,13 @@ class StructuralHash private (h: Hasher, renameModule: String => String) {
     // Types
     case UIntType(width: Width) => id(50); hash(width)
     case SIntType(width: Width) => id(51); hash(width)
-    case BundleType(fields)                => id(53); hash(fields.length); fields.foreach(hash)
-    case VectorType(tpe, size)             => id(54); hash(tpe); hash(size)
-    case ClockType                         => id(55)
-    case ResetType                         => id(56)
-    case AsyncResetType                    => id(57)
-    case AnalogType(width)                 => id(58); hash(width)
-    case UnknownType                       => id(59)
-    case IntervalType(lower, upper, point) => id(60); hash(lower); hash(upper); hash(point)
+    case BundleType(fields)    => id(53); hash(fields.length); fields.foreach(hash)
+    case VectorType(tpe, size) => id(54); hash(tpe); hash(size)
+    case ClockType             => id(55)
+    case ResetType             => id(56)
+    case AsyncResetType        => id(57)
+    case AnalogType(width)     => id(58); hash(width)
+    case UnknownType           => id(59)
     // ids 61 ... 65 are reserved for future Type nodes
   }
 

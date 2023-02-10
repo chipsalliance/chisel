@@ -41,7 +41,6 @@ object Forms {
       Dependency(passes.ResolveKinds),
       Dependency(passes.InferTypes),
       Dependency(passes.ResolveFlows),
-      Dependency[passes.TrimIntervals],
       Dependency[passes.InferWidths],
       Dependency[firrtl.transforms.InferResets]
     )
@@ -65,7 +64,6 @@ object Forms {
       Dependency(passes.RemoveAccesses),
       Dependency(passes.ZeroLengthVecs),
       Dependency[passes.ExpandWhensAndCheck],
-      Dependency[passes.RemoveIntervals],
       Dependency(passes.ZeroWidth),
       Dependency[firrtl.transforms.formal.AssertSubmoduleAssumptions]
     )

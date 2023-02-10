@@ -191,31 +191,6 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
           case "SInt" =>
             if (ctx.getChildCount > 1) SIntType(getWidth(ctx.intLit(0)))
             else SIntType(UnknownWidth)
-          case "Interval" =>
-            ctx.boundValue.size match {
-              case 0 =>
-                val point = ctx.intLit.size match {
-                  case 0 => UnknownWidth
-                  case 1 => IntWidth(string2BigInt(ctx.intLit(0).getText))
-                }
-                IntervalType(UnknownBound, UnknownBound, point)
-              case 2 =>
-                val lower = ((ctx.lowerBound.getText, ctx.boundValue(0).getText): @unchecked) match {
-                  case (_, "?") => UnknownBound
-                  case ("(", v) => Open(string2BigDecimal(v))
-                  case ("[", v) => Closed(string2BigDecimal(v))
-                }
-                val upper = ((ctx.upperBound.getText, ctx.boundValue(1).getText): @unchecked) match {
-                  case (_, "?") => UnknownBound
-                  case (")", v) => Open(string2BigDecimal(v))
-                  case ("]", v) => Closed(string2BigDecimal(v))
-                }
-                val point = ctx.intLit.size match {
-                  case 0 => UnknownWidth
-                  case 1 => IntWidth(string2BigInt(ctx.intLit(0).getText))
-                }
-                IntervalType(lower, upper, point)
-            }
           case "Clock"      => ClockType
           case "AsyncReset" => AsyncResetType
           case "Reset"      => ResetType
