@@ -67,7 +67,6 @@ object Forms {
       Dependency(passes.LegalizeConnects),
       Dependency(firrtl.transforms.RemoveReset),
       Dependency[firrtl.transforms.CheckCombLoops],
-      Dependency[checks.CheckResets],
       Dependency[firrtl.transforms.RemoveWires]
     )
 

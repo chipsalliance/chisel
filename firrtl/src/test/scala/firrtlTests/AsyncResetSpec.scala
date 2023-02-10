@@ -96,20 +96,6 @@ class AsyncResetSpec extends VerilogTransformSpec {
     result should containLine("assign z = f;")
   }
 
-  "Non-literals" should "NOT be allowed as reset values for AsyncReset" in {
-    an[checks.CheckResets.NonLiteralAsyncResetValueException] shouldBe thrownBy {
-      compileBody(s"""
-                     |input clock : Clock
-                     |input reset : AsyncReset
-                     |input x : UInt<8>
-                     |input y : UInt<8>
-                     |output z : UInt<8>
-                     |reg r : UInt<8>, clock with : (reset => (reset, y))
-                     |r <= x
-                     |z <= r""".stripMargin)
-    }
-  }
-
   "Self-inits" should "NOT cause infinite loops in CheckResets" in {
     val result = compileBody(s"""
                                 |input clock : Clock
@@ -121,59 +107,6 @@ class AsyncResetSpec extends VerilogTransformSpec {
                                 |  reset => (reset, a)
                                 |out <= UInt<5>("h15")""".stripMargin)
     result should containLine("assign out = 10'h15;")
-  }
-
-  "Late non-literals connections" should "NOT be allowed as reset values for AsyncReset" in {
-    an[checks.CheckResets.NonLiteralAsyncResetValueException] shouldBe thrownBy {
-      compileBody(s"""
-                     |input clock : Clock
-                     |input reset : AsyncReset
-                     |input x : UInt<8>
-                     |input y : UInt<8>
-                     |output z : UInt<8>
-                     |wire a : UInt<8>
-                     |reg r : UInt<8>, clock with : (reset => (reset, a))
-                     |a <= y
-                     |r <= x
-                     |z <= r""".stripMargin)
-    }
-  }
-
-  "Hidden Non-literals" should "NOT be allowed as reset values for AsyncReset" in {
-    an[checks.CheckResets.NonLiteralAsyncResetValueException] shouldBe thrownBy {
-      compileBody(s"""
-                     |input clock : Clock
-                     |input reset : AsyncReset
-                     |input x : UInt<1>[4]
-                     |input y : UInt<1>
-                     |output z : UInt<1>[4]
-                     |wire literal : UInt<1>[4]
-                     |literal[0] <= UInt<1>("h00")
-                     |literal[1] <= y
-                     |literal[2] <= UInt<1>("h00")
-                     |literal[3] <= UInt<1>("h00")
-                     |reg r : UInt<1>[4], clock with : (reset => (reset, literal))
-                     |r <= x
-                     |z <= r""".stripMargin)
-    }
-  }
-  "Wire connected to non-literal" should "NOT be allowed as reset values for AsyncReset" in {
-    an[checks.CheckResets.NonLiteralAsyncResetValueException] shouldBe thrownBy {
-      compileBody(s"""
-                     |input clock : Clock
-                     |input reset : AsyncReset
-                     |input x : UInt<1>
-                     |input y : UInt<1>
-                     |input cond : UInt<1>
-                     |output z : UInt<1>
-                     |wire w : UInt<1>
-                     |w <= UInt(1)
-                     |when cond :
-                     |  w <= y
-                     |reg r : UInt<1>, clock with : (reset => (reset, w))
-                     |r <= x
-                     |z <= r""".stripMargin)
-    }
   }
 
   "Complex literals" should "be allowed as reset values for AsyncReset" in {
