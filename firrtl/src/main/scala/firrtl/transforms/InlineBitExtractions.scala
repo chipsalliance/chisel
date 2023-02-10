@@ -100,7 +100,6 @@ class InlineBitExtractionsTransform extends Transform with DependencyAPIMigratio
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq(
-      Dependency[BlackBoxSourceHelper],
       Dependency[FixAddingNegativeLiterals],
       Dependency[ReplaceTruncatingArithmetic]
     )

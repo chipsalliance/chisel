@@ -101,7 +101,6 @@ object Forms {
       (if (optimize) Seq(Dependency[firrtl.transforms.InlineBooleanExpressions]) else Seq()) ++
       Seq(
         Dependency[firrtl.transforms.LegalizeAndReductionsTransform],
-        Dependency[firrtl.transforms.BlackBoxSourceHelper],
         Dependency[firrtl.transforms.FixAddingNegativeLiterals],
         Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
         Dependency[firrtl.transforms.InlineBitExtractionsTransform],
