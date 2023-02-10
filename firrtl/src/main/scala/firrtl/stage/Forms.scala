@@ -85,7 +85,6 @@ object Forms {
 
   private def VerilogLowerings(optimize: Boolean): Seq[TransformDependency] = {
     Seq(
-      Dependency(firrtl.backends.verilog.LegalizeVerilog),
       Dependency(passes.memlib.VerilogMemDelays),
       Dependency[firrtl.transforms.CombineCats]
     ) ++
