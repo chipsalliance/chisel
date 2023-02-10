@@ -25,11 +25,7 @@ object Forms {
 
   val Resolved: Seq[TransformDependency] = MinimalHighForm ++ Checks
 
-  val Deduped: Seq[TransformDependency] = Resolved ++
-    Seq(
-      Dependency[firrtl.transforms.DedupModules],
-      Dependency[firrtl.transforms.DedupAnnotationsTransform]
-    )
+  val Deduped: Seq[TransformDependency] = Resolved
 
   val HighForm: Seq[TransformDependency] = ChirrtlForm ++
     MinimalHighForm ++

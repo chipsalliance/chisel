@@ -916,8 +916,6 @@ class ConstantPropagation extends Transform with RegisteredTransform with Depend
     val dontTouches: Seq[(OfModule, String)] = state.annotations.flatMap {
       case anno: HasDontTouches =>
         anno.dontTouches
-          // We treat all ReferenceTargets as if they were local because of limitations of
-          // EliminateTargetPaths
           .map(rt => OfModule(rt.encapsulatingModule) -> rt.ref)
       case o => Nil
     }
