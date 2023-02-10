@@ -18,7 +18,6 @@ object Forms {
 
   val MinimalHighForm: Seq[TransformDependency] = ChirrtlForm ++
     Seq(
-      Dependency(passes.CheckChirrtl),
       Dependency(passes.CInferTypes),
       Dependency(passes.CInferMDir),
       Dependency(passes.RemoveCHIRRTL),
