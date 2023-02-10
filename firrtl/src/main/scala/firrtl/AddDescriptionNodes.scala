@@ -153,7 +153,6 @@ class AddDescriptionNodes extends Transform with DependencyAPIMigration {
       Dependency[firrtl.transforms.LegalizeClocksAndAsyncResetsTransform],
       Dependency[firrtl.transforms.FlattenRegUpdate],
       Dependency(passes.VerilogModulusCleanup),
-      Dependency[firrtl.transforms.VerilogRename],
       Dependency(firrtl.passes.VerilogPrep)
     )
 
