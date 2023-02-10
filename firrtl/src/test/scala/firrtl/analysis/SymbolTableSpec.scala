@@ -66,20 +66,6 @@ class SymbolTableSpec extends AnyFlatSpec {
     assert(syms("m").tpe == mType && syms("m").kind == firrtl.MemKind)
   }
 
-  it should "find all declarations in module m after InferTypes" in {
-    val c = firrtl.Parser.parse(src)
-    val inferTypesCompiler = new firrtl.stage.TransformManager(Seq(Dependency(firrtl.passes.InferTypes)))
-    val inferredC = inferTypesCompiler.execute(firrtl.CircuitState(c, Seq())).circuit
-    val m = inferredC.modules.find(_.name == "m").get
-
-    val syms = SymbolTable.scanModule(m, new LocalSymbolTable with WithMap)
-    // The node type is now known
-    assert(syms("a").tpe == ir.UIntType(ir.IntWidth(2)) && syms("a").kind == firrtl.NodeKind)
-    // The type of the instance is now known because it has been filled in by InferTypes.
-    val iType = ir.BundleType(Seq(ir.Field("x", ir.Flip, ir.UIntType(ir.IntWidth(2)))))
-    assert(syms("i").tpe == iType && syms("i").kind == firrtl.InstanceKind)
-  }
-
   behavior.of("WithSeq")
 
   it should "preserve declaration order" in {

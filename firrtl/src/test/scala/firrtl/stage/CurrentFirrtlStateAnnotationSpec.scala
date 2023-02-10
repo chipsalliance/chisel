@@ -23,16 +23,10 @@ class CurrentFirrtlStateAnnotationSpec extends AnyFlatSpec with Matchers {
 
   behavior.of("CurrentFirrtlStateAnnotation")
 
-  it should "produce an expected transform order for minimum high FIRRTL -> Verilog" in {
-    val transforms = getTransforms("mhigh")
-    transforms should not contain (Dependency(firrtl.passes.InferTypes))
-  }
-
   it should "produce an expected transform order for high FIRRTL -> Verilog" in {
     val transforms = getTransforms("high")
     transforms should not contain (Dependency[firrtl.transforms.DedupModules])
-    (transforms should contain).allOf(
-      Dependency(firrtl.passes.InferTypes),
+    transforms should contain(
       Dependency[firrtl.passes.ExpandWhensAndCheck]
     )
   }
@@ -40,22 +34,18 @@ class CurrentFirrtlStateAnnotationSpec extends AnyFlatSpec with Matchers {
   it should "produce an expected transform order for middle FIRRTL -> Verilog" in {
     val transforms = getTransforms("middle")
     transforms should not contain (Dependency[firrtl.passes.ExpandWhensAndCheck])
-    (transforms should contain).allOf(Dependency(firrtl.passes.InferTypes), Dependency(firrtl.passes.LowerTypes))
+    transforms should contain(Dependency(firrtl.passes.LowerTypes))
   }
 
   it should "produce an expected transform order for low FIRRTL -> Verilog" in {
     val transforms = getTransforms("low")
     transforms should not contain (Dependency(firrtl.passes.LowerTypes))
-    (transforms should contain).allOf(
-      Dependency(firrtl.passes.InferTypes),
-      Dependency(firrtl.passes.CommonSubexpressionElimination)
-    )
+    transforms should contain(Dependency(firrtl.passes.CommonSubexpressionElimination))
   }
 
   it should "produce an expected transform order for optimized low FIRRTL -> Verilog" in {
     val transforms = getTransforms("low-opt")
     transforms should not contain (Dependency(firrtl.passes.CommonSubexpressionElimination))
-    transforms should contain(Dependency(firrtl.passes.InferTypes))
   }
 
 }

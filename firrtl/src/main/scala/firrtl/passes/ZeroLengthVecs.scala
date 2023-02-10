@@ -17,7 +17,7 @@ import firrtl.options.Dependency
   */
 object ZeroLengthVecs extends Pass {
   override def prerequisites =
-    Seq(Dependency(PullMuxes), Dependency(InferTypes), Dependency(ExpandConnects))
+    Seq(Dependency(PullMuxes), Dependency(ExpandConnects))
 
   override def invalidates(a: Transform) = false
 

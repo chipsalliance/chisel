@@ -9,8 +9,6 @@ import firrtl.testutils._
 class ExpandWhensSpec extends FirrtlFlatSpec {
   private val transforms = Seq(
     ToWorkingIR,
-    InferTypes,
-    InferTypes,
     ResolveFlows,
     new InferWidths,
     PullMuxes,

@@ -7,7 +7,7 @@ import firrtl.stage.PrettyNoExprInlining
 import firrtl.annotations.{NoTargetAnnotation, Target}
 import firrtl.annotations.TargetToken.{fromStringToTargetToken, OfModule, Ref}
 import firrtl.ir._
-import firrtl.passes.{InferTypes, LowerTypes, SplitExpressions}
+import firrtl.passes.{LowerTypes, SplitExpressions}
 import firrtl.options.Dependency
 import firrtl.stage.Forms
 import firrtl.PrimOps._
@@ -36,7 +36,6 @@ object InlineBooleanExpressions {
 class InlineBooleanExpressions extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Seq(
-    Dependency(InferTypes),
     Dependency(LowerTypes)
   )
 

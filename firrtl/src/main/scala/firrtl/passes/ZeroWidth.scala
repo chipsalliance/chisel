@@ -20,10 +20,7 @@ object ZeroWidth extends Transform with DependencyAPIMigration {
       Dependency[ExpandWhensAndCheck]
     ) ++ firrtl.stage.Forms.Deduped
 
-  override def invalidates(a: Transform): Boolean = a match {
-    case InferTypes => true
-    case _          => false
-  }
+  override def invalidates(a: Transform): Boolean = false
 
   private def makeZero(tpe: ir.Type): ir.Type = tpe match {
     case ClockType => UIntType(IntWidth(0))
@@ -198,8 +195,7 @@ object ZeroWidth extends Transform with DependencyAPIMigration {
   }
   def execute(state: CircuitState): CircuitState = {
     // run executeEmptyMemStmt first to remove zero-width memories
-    // then run InferTypes to update widths for addr, en, clk, etc
-    val c = InferTypes.run(executeEmptyMemStmt(state).circuit)
+    val c = executeEmptyMemStmt(state).circuit
     val renames = MutableRenameMap()
     renames.setCircuit(c.main)
     val result = c.copy(modules = c.modules.map(onModule(renames)))

@@ -22,7 +22,7 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
 
   "InferWidthsWithAnnos" should "infer widths using WidthGeqConstraintAnnotation" in {
     val transforms =
-      Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferWidths)
+      Seq(ToWorkingIR, ResolveFlows, new InferWidths)
 
     val annos = Seq(
       WidthGeqConstraintAnnotation(
@@ -61,7 +61,7 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
 
   "InferWidthsWithAnnos" should "work with token paths" in {
     val transforms =
-      Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferWidths)
+      Seq(ToWorkingIR, ResolveFlows, new InferWidths)
 
     val tokenLists = Seq(
       Seq(Field("x")),

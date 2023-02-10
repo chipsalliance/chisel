@@ -26,7 +26,7 @@ object RemoveAccesses extends Pass {
 
   override def invalidates(a: Transform): Boolean = a match {
     case ResolveFlows => true
-    case _                           => false
+    case _            => false
   }
 
   private def AND(e1: Expression, e2: Expression) =

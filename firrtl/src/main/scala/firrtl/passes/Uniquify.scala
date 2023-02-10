@@ -34,13 +34,9 @@ import MemPortUtils.memType
 @deprecated("Uniquify is now part of LowerTypes", "FIRRTL 1.4.0")
 object Uniquify extends Transform with DependencyAPIMigration {
 
-  override def prerequisites =
-    Seq(Dependency(InferTypes)) ++ firrtl.stage.Forms.MinimalHighForm
+  override def prerequisites = firrtl.stage.Forms.MinimalHighForm
 
-  override def invalidates(a: Transform): Boolean = a match {
-    case InferTypes => true
-    case _                         => false
-  }
+  override def invalidates(a: Transform): Boolean = false
 
   private case class UniquifyException(msg: String) extends FirrtlInternalException(msg)
   private def error(msg: String)(implicit sinfo: Info, mname: String) =
