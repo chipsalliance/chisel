@@ -23,10 +23,7 @@ object Forms {
 
   val Checks: Seq[TransformDependency] = Seq.empty
 
-  val Resolved: Seq[TransformDependency] = MinimalHighForm ++ Checks ++
-    Seq(
-      Dependency[firrtl.transforms.InferResets]
-    )
+  val Resolved: Seq[TransformDependency] = MinimalHighForm ++ Checks
 
   val Deduped: Seq[TransformDependency] = Resolved ++
     Seq(
