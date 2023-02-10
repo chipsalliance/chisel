@@ -101,7 +101,6 @@ class InferResets extends Transform with DependencyAPIMigration {
 
   override def prerequisites =
     Seq(
-      Dependency(passes.ResolveFlows),
       Dependency[passes.InferWidths]
     ) ++ stage.Forms.MinimalHighForm
 

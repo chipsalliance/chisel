@@ -300,7 +300,7 @@ class ExpandWhensAndCheck extends Transform with DependencyAPIMigration {
     ) ++ firrtl.stage.Forms.Deduped
 
   override def invalidates(a: Transform): Boolean = a match {
-    case ResolveFlows | _: InferWidths => true
+    case _: InferWidths => true
     case _ => false
   }
 

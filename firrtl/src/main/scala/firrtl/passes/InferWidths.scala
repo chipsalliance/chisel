@@ -66,8 +66,7 @@ class InferWidths extends Transform with ResolvedAnnotationPaths with Dependency
 
   override def prerequisites =
     Seq(
-      Dependency(passes.InferTypes),
-      Dependency(passes.ResolveFlows)
+      Dependency(passes.InferTypes)
     ) ++ firrtl.stage.Forms.MinimalHighForm
   override def invalidates(a: Transform) = false
 

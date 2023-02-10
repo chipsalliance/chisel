@@ -9,7 +9,6 @@ import firrtl.testutils._
 class ChirrtlSpec extends FirrtlFlatSpec {
   def transforms = Seq(
     ToWorkingIR,
-    ResolveFlows,
     new InferWidths,
     PullMuxes,
     ExpandConnects,
