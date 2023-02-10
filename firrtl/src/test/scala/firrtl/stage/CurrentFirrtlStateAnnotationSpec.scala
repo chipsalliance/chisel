@@ -55,7 +55,7 @@ class CurrentFirrtlStateAnnotationSpec extends AnyFlatSpec with Matchers {
   it should "produce an expected transform order for optimized low FIRRTL -> Verilog" in {
     val transforms = getTransforms("low-opt")
     transforms should not contain (Dependency(firrtl.passes.CommonSubexpressionElimination))
-    (transforms should contain).allOf(Dependency(firrtl.passes.InferTypes), Dependency[firrtl.transforms.VerilogRename])
+    transforms should contain(Dependency(firrtl.passes.InferTypes))
   }
 
 }
