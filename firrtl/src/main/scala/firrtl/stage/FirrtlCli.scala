@@ -4,7 +4,7 @@ package firrtl.stage
 
 import firrtl.options.Shell
 import firrtl.passes.CommonSubexpressionElimination
-import firrtl.transforms.{CustomRadixTransform, NoCircuitDedupAnnotation}
+import firrtl.transforms.NoCircuitDedupAnnotation
 
 /** [[firrtl.options.Shell Shell]] mixin that provides command line options for FIRRTL. This does not include any
   * [[firrtl.options.RegisteredLibrary RegisteredLibrary]] or [[firrtl.options.RegisteredTransform RegisteredTransform]]
@@ -27,8 +27,7 @@ trait FirrtlCli { this: Shell =>
     DisableFold,
     CurrentFirrtlStateAnnotation,
     CommonSubexpressionElimination,
-    AllowUnrecognizedAnnotations,
-    CustomRadixTransform
+    AllowUnrecognizedAnnotations
   )
     .map(_.addOptions(parser))
 
