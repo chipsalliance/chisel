@@ -97,7 +97,6 @@ object InferResets {
   * @note This transform should be run before [[DedupModules]] so that similar Modules from
   *   generator languages like Chisel can infer differently
   */
-// TODO should we error if a DefMemory is of type AsyncReset? In CheckTypes?
 class InferResets extends Transform with DependencyAPIMigration {
 
   override def prerequisites =
@@ -109,7 +108,7 @@ class InferResets extends Transform with DependencyAPIMigration {
     ) ++ stage.Forms.MinimalHighForm
 
   override def invalidates(a: Transform): Boolean = a match {
-    case _: checks.CheckResets | passes.CheckTypes => true
+    case _: checks.CheckResets => true
     case _ => false
   }
 

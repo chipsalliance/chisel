@@ -36,7 +36,7 @@ class LegalizeAndReductionsTransform extends Transform with DependencyAPIMigrati
 
   override def prerequisites =
     firrtl.stage.Forms.MinimalHighForm ++
-      Seq(Dependency(passes.CheckTypes), Dependency(passes.CheckWidths))
+      Seq(Dependency(passes.CheckWidths))
 
   override def optionalPrerequisites = Nil
 
