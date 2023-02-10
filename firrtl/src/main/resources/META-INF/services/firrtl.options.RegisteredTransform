@@ -1,3 +1,1 @@
-firrtl.transforms.DeadCodeElimination
 firrtl.passes.InlineInstances
-firrtl.transforms.ConstantPropagation

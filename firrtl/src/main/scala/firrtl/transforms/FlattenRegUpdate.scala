@@ -177,10 +177,7 @@ class FlattenRegUpdate extends Transform with DependencyAPIMigration {
 
   override def optionalPrerequisiteOf = Seq.empty
 
-  override def invalidates(a: Transform): Boolean = a match {
-    case _: DeadCodeElimination => true
-    case _ => false
-  }
+  override def invalidates(a: Transform): Boolean = false
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map {

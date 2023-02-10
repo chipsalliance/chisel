@@ -50,13 +50,13 @@ class PresetRegAnnotationSpec
   */
 private object MakePresetRegs extends Transform with DependencyAPIMigration {
   // run on lowered firrtl
-  override def prerequisites = Seq(Dependency(firrtl.passes.LowerTypes))
+  override def prerequisites = Seq.empty
   override def invalidates(a: Transform) = false
   // since we generate PresetRegAnnotations, we need to run after preset propagation
   override def optionalPrerequisites = Seq(Dependency[PropagatePresetAnnotations])
   // we want to run before the actual Verilog is emitted
   // we want to look at the reset value, which may be removed by the RemoveReset transform.
-  override def optionalPrerequisiteOf = Seq(Dependency[SystemVerilogEmitter], Dependency(firrtl.transforms.RemoveReset))
+  override def optionalPrerequisiteOf = Seq(Dependency[SystemVerilogEmitter])
 
   override def execute(state: CircuitState): CircuitState = {
     val c = CircuitTarget(state.circuit.main)

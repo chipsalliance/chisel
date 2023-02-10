@@ -34,27 +34,11 @@ object Forms {
 
   val MidForm: Seq[TransformDependency] = HighForm
 
-  val LowForm: Seq[TransformDependency] = MidForm ++
-    Seq(
-      Dependency(passes.LowerTypes),
-      Dependency(passes.LegalizeConnects),
-      Dependency(firrtl.transforms.RemoveReset),
-      Dependency[firrtl.transforms.RemoveWires]
-    )
+  val LowForm: Seq[TransformDependency] = MidForm
 
-  val LowFormMinimumOptimized: Seq[TransformDependency] = LowForm ++
-    Seq(
-      Dependency(passes.RemoveValidIf),
-      Dependency(passes.PadWidths),
-      Dependency(passes.SplitExpressions)
-    )
+  val LowFormMinimumOptimized: Seq[TransformDependency] = LowForm
 
-  val LowFormOptimized: Seq[TransformDependency] = LowFormMinimumOptimized ++
-    Seq(
-      Dependency[firrtl.transforms.ConstantPropagation],
-      Dependency(passes.CommonSubexpressionElimination),
-      Dependency[firrtl.transforms.DeadCodeElimination]
-    )
+  val LowFormOptimized: Seq[TransformDependency] = LowFormMinimumOptimized
 
   private def VerilogLowerings(optimize: Boolean): Seq[TransformDependency] = {
     Seq(
