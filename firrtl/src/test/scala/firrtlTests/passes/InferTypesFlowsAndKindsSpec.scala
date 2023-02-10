@@ -9,10 +9,10 @@ import firrtl.{InstanceKind, MemKind, NodeKind, PortKind, RegKind, WireKind}
 import firrtl.{ir, passes, CircuitState, SinkFlow, SourceFlow}
 import org.scalatest.flatspec.AnyFlatSpec
 
-/** Tests the combined results of ResolveKinds, InferTypes and ResolveFlows */
+/** Tests the combined results of InferTypes and ResolveFlows */
 class InferTypesFlowsAndKindsSpec extends AnyFlatSpec {
   private val deps =
-    Seq(Dependency(passes.ResolveKinds), Dependency(passes.InferTypes), Dependency(passes.ResolveFlows))
+    Seq(Dependency(passes.InferTypes), Dependency(passes.ResolveFlows))
   private val manager = new TransformManager(deps)
   private def infer(src: String): ir.Circuit =
     manager.execute(CircuitState(firrtl.Parser.parse(src), Seq())).circuit

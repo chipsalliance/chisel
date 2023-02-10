@@ -369,7 +369,6 @@ private[stage] object CurrentFirrtlStateAnnotation extends HasShellOptions {
   /** This is just the transforms necessary for resolving types and checking that everything is okay. */
   private val dontSkip: Set[TransformDependency] = Set(
     Dependency[firrtl.stage.transforms.CheckScalaVersion],
-    Dependency(passes.ResolveKinds),
     Dependency(passes.InferTypes),
     Dependency(passes.ResolveFlows)
   ) ++ Forms.Checks

@@ -310,7 +310,6 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     // reaches the VerilogEmitter and isn't removed by an optimization transform
     val passes = Seq(
       ToWorkingIR,
-      ResolveKinds,
       InferTypes
     )
     def input(n: Int) =
@@ -507,7 +506,7 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
           |    tmp <= mux(eq(sel, UInt<2>(0)), in_0, _GEN_1)
           |    out <= tmp
           |""".stripMargin
-    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val circuit = Seq(ToWorkingIR, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
     val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
     val result = (new VerilogEmitter).execute(state)
     result should containLine("if (sel == 2'h0) begin")
@@ -528,7 +527,7 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
           |    tmp <= mux(eq(sel, UInt<1>(0)), in, tmp)
           |    out <= tmp
           |""".stripMargin
-    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val circuit = Seq(ToWorkingIR, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
     val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
     val result = (new VerilogEmitter).execute(state)
     result should not(containLine("tmp <= tmp"))
@@ -546,7 +545,7 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
           |    tmp <= mux(eq(sel, UInt<1>(0)), tmp, in)
           |    out <= tmp
           |""".stripMargin
-    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val circuit = Seq(ToWorkingIR, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
     val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
     val result = (new VerilogEmitter).execute(state)
     result should containLine("if (!(sel == 1'h0)) begin")
@@ -565,7 +564,7 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
           |    tmp <= mux(eq(sel, UInt<1>(0)), tmp, tmp)
           |    out <= tmp
           |""".stripMargin
-    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val circuit = Seq(ToWorkingIR, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
     val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
     val result = (new VerilogEmitter).execute(state)
     result should not(containLine("tmp <= tmp"))
@@ -604,7 +603,7 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
           |    tmp <= mux(reset, m0, m1)
           |    out <= tmp
           |""".stripMargin
-    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val circuit = Seq(ToWorkingIR, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
     val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
     val result = (new VerilogEmitter).execute(state)
     /* The Verilog string is used to check for no whitespace between "else" and "if". */
@@ -874,7 +873,7 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
           |    mem.r.clk <= clock
           |    out <= mem.r.data
           |""".stripMargin
-    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val circuit = Seq(ToWorkingIR, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
     val state = CircuitState(
       circuit,
       LowForm,
