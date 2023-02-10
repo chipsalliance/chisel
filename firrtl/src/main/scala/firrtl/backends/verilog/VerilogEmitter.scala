@@ -404,33 +404,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
     new VerilogRender(m, moduleMap)(writer)
   }
 
-  /**
-    * Gets a reference to a verilog renderer. This is used by the current standard verilog emission process
-    * but allows access to individual portions, in particular, this function can be used to generate
-    * the header for a verilog file without generating anything else.
-    *
-    * @param descriptions comments to be emitted
-    * @param m            the start module
-    * @param moduleMap    a way of finding other modules
-    * @param writer       where rendering will be placed
-    * @return             the render reference
-    */
-  def getRenderer(
-    descriptions: Seq[DescriptionAnnotation],
-    m:            Module,
-    moduleMap:    Map[String, DefModule]
-  )(
-    implicit writer: Writer
-  ): VerilogRender = {
-    val newMod = new AddDescriptionNodes().executeModule(m, descriptions)
-
-    newMod match {
-      case DescribedMod(d, pds, m: Module) =>
-        new VerilogRender(d, pds, m, moduleMap, "", new EmissionOptions(Seq.empty))(writer)
-      case m: Module => new VerilogRender(m, moduleMap)(writer)
-    }
-  }
-
   def addFormalStatement(
     formals: mutable.Map[Expression, ArrayBuffer[Seq[Any]]],
     clk:     Expression,
@@ -563,27 +536,15 @@ class VerilogEmitter extends SeqTransform with Emitter {
     * @param writer           where rendered information is placed.
     */
   class VerilogRender(
-    description:      Seq[Description],
-    portDescriptions: Map[String, Seq[Description]],
-    m:                Module,
-    moduleMap:        Map[String, DefModule],
-    circuitName:      String,
-    emissionOptions:  EmissionOptions
+    m:               Module,
+    moduleMap:       Map[String, DefModule],
+    circuitName:     String,
+    emissionOptions: EmissionOptions
   )(
     implicit writer: Writer) {
 
-    def this(
-      m:               Module,
-      moduleMap:       Map[String, DefModule],
-      circuitName:     String,
-      emissionOptions: EmissionOptions
-    )(
-      implicit writer: Writer
-    ) = {
-      this(Seq(), Map.empty, m, moduleMap, circuitName, emissionOptions)(writer)
-    }
     def this(m: Module, moduleMap: Map[String, DefModule])(implicit writer: Writer) = {
-      this(Seq(), Map.empty, m, moduleMap, "", new EmissionOptions(Seq.empty))(writer)
+      this(m, moduleMap, "", new EmissionOptions(Seq.empty))(writer)
     }
 
     val netlist = mutable.LinkedHashMap[WrappedExpression, InfoExpr]()
@@ -941,25 +902,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
       Seq("$fwrite(32'h80000002,", strx, ");")
     }
 
-    // turn strings into Seq[String] verilog comments
-    def build_comment(desc: String): Seq[Seq[String]] = {
-      val lines = desc.split("\n").toSeq
-
-      if (lines.size > 1) {
-        val lineSeqs = lines.tail.map {
-          case ""       => Seq(" *")
-          case nonEmpty => Seq(" * ", nonEmpty)
-        }
-        Seq("/* ", lines.head) +: lineSeqs :+ Seq(" */")
-      } else {
-        Seq(Seq("// ", lines(0)))
-      }
-    }
-
-    def build_attribute(attrs: String): Seq[Seq[String]] = {
-      Seq(Seq("(* ") ++ Seq(attrs) ++ Seq(" *)"))
-    }
-
     // Turn ports into Seq[String] and add to portdefs
     def build_ports(): Unit = {
       def padToMax(strs: Seq[String]): Seq[String] = {
@@ -985,12 +927,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
       // dirs are already padded
       (dirs, padToMax(tpes), m.ports).zipped.toSeq.zipWithIndex.foreach {
         case ((dir, tpe, Port(info, name, _, _)), i) =>
-          portDescriptions.get(name).map {
-            case d =>
-              portdefs += Seq("")
-              portdefs ++= build_description(d)
-          }
-
           if (i != m.ports.size - 1) {
             portdefs += Seq(dir, " ", tpe, " ", name, ",", info)
           } else {
@@ -999,20 +935,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
       }
     }
 
-    def build_description(d: Seq[Description]): Seq[Seq[String]] = d.flatMap {
-      case DocString(desc) => build_comment(desc.string)
-      case Attribute(attr) => build_attribute(attr.string)
-    }
-
     def build_streams(s: Statement): Unit = {
       val withoutDescription = s match {
-        case DescribedStmt(d, stmt) =>
-          stmt match {
-            case sx: IsDeclaration =>
-              declares ++= build_description(d)
-            case _ =>
-          }
-          stmt
         case stmt => stmt
       }
       withoutDescription.foreach(build_streams)
@@ -1057,10 +981,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
           attachAliases += Seq("alias ", sx.exprs.flatMap(e => Seq(e, " = ")).init, ";", sx.info)
         case sx: WDefInstanceConnector =>
           val (module, params) = moduleMap(sx.module) match {
-            case DescribedMod(_, _, ExtModule(_, _, _, extname, params)) => (extname, params)
-            case DescribedMod(_, _, Module(_, name, _, _))               => (name, Seq.empty)
-            case ExtModule(_, _, _, extname, params)                     => (extname, params)
-            case Module(_, name, _, _)                                   => (name, Seq.empty)
+            case ExtModule(_, _, _, extname, params) => (extname, params)
+            case Module(_, name, _, _)               => (name, Seq.empty)
           }
           val ps = if (params.nonEmpty) params.map(stringify).mkString("#(", ", ", ") ") else ""
           instdeclares += Seq(module, " ", ps, sx.name, " (", sx.info)
@@ -1175,7 +1097,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
     }
 
     def emit_streams(): Unit = {
-      build_description(description).foreach(emit(_))
       emit(Seq("module ", m.name, "(", m.info))
       for (x <- portdefs) emit(Seq(tab, x))
       emit(Seq(");"))
@@ -1330,8 +1251,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
       build_netlist(m.body)
       build_ports()
 
-      build_description(description).foreach(emit(_))
-
       emit(Seq("module ", overrideName, "(", m.info))
       for (x <- portdefs) emit(Seq(tab, x))
 
@@ -1350,9 +1269,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
     val emissionOptions = new EmissionOptions(cs.annotations)
     val moduleMap = cs.circuit.modules.map(m => m.name -> m).toMap
     cs.circuit.modules.foreach {
-      case dm @ DescribedMod(d, pds, m: Module) =>
-        val renderer = new VerilogRender(d, pds, m, moduleMap, cs.circuit.main, emissionOptions)(writer)
-        renderer.emit_verilog()
       case m: Module =>
         val renderer = new VerilogRender(m, moduleMap, cs.circuit.main, emissionOptions)(writer)
         renderer.emit_verilog()
@@ -1380,13 +1296,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
         val moduleMap = cs.circuit.modules.map(m => m.name -> m).toMap
 
         cs.circuit.modules.flatMap {
-          case dm @ DescribedMod(d, pds, module: Module) =>
-            val writer = new java.io.StringWriter
-            val renderer = new VerilogRender(d, pds, module, moduleMap, cs.circuit.main, emissionOptions)(writer)
-            renderer.emit_verilog()
-            Some(
-              EmittedVerilogModuleAnnotation(EmittedVerilogModule(module.name, writerToString(writer), outputSuffix))
-            )
           case module: Module =>
             val writer = new java.io.StringWriter
             val renderer = new VerilogRender(module, moduleMap, cs.circuit.main, emissionOptions)(writer)

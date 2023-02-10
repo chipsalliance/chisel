@@ -99,8 +99,7 @@ object Forms {
         Dependency[firrtl.transforms.LegalizeClocksAndAsyncResetsTransform],
         Dependency[firrtl.transforms.FlattenRegUpdate],
         Dependency(passes.VerilogModulusCleanup),
-        Dependency(passes.VerilogPrep),
-        Dependency[firrtl.AddDescriptionNodes]
+        Dependency(passes.VerilogPrep)
       )
   }
 
