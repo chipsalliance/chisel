@@ -29,7 +29,6 @@ class RemoveWires extends Transform with DependencyAPIMigration {
       Dependency(passes.LowerTypes),
       Dependency(passes.ResolveKinds),
       Dependency(transforms.RemoveReset),
-      Dependency[transforms.CheckCombLoops],
       Dependency(passes.LegalizeConnects)
     )
 

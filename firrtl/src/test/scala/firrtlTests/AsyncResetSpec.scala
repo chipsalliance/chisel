@@ -209,22 +209,6 @@ class AsyncResetSpec extends VerilogTransformSpec {
     intervalResult should containLine("r <= 4'sh0;")
   }
 
-  "CheckResets" should "NOT raise StackOverflow Exception on Combinational Loops (should be caught by firrtl.transforms.CheckCombLoops)" in {
-    an[firrtl.transforms.CheckCombLoops.CombLoopException] shouldBe thrownBy {
-      compileBody(s"""
-                     |input clock : Clock
-                     |input reset : AsyncReset
-                     |wire x : UInt<1>
-                     |wire y : UInt<2>
-                     |x <= UInt<1>("h01")
-                     |node ad = add(x, y)
-                     |node adt = tail(ad, 1)
-                     |y <= adt
-                     |reg r : UInt, clock with : (reset => (reset, y))
-                     |""".stripMargin)
-    }
-  }
-
   "Every async reset reg" should "generate its own always block" in {
     val result = compileBody(s"""
                                 |input clock0 : Clock
