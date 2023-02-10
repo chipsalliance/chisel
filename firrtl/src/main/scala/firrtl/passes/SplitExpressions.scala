@@ -22,7 +22,6 @@ object SplitExpressions extends Pass {
     Seq(Dependency[SystemVerilogEmitter], Dependency[VerilogEmitter])
 
   override def invalidates(a: Transform) = a match {
-    case ResolveKinds => true
     case _: InlineBooleanExpressions => true // SplitExpressions undoes the inlining!
     case _ => false
   }

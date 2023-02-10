@@ -25,7 +25,6 @@ object Forms {
 
   val Resolved: Seq[TransformDependency] = MinimalHighForm ++ Checks ++
     Seq(
-      Dependency(passes.ResolveKinds),
       Dependency(passes.InferTypes),
       Dependency(passes.ResolveFlows),
       Dependency[passes.InferWidths],

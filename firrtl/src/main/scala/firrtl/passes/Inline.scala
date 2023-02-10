@@ -55,7 +55,7 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Forms.LowEmitters
 
-  override def invalidates(a: Transform): Boolean = a == ResolveKinds
+  override def invalidates(a: Transform): Boolean = false
 
   private[firrtl] val inlineDelim: String = "_"
 

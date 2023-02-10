@@ -27,7 +27,6 @@ class RemoveWires extends Transform with DependencyAPIMigration {
   override def prerequisites = firrtl.stage.Forms.MidForm ++
     Seq(
       Dependency(passes.LowerTypes),
-      Dependency(passes.ResolveKinds),
       Dependency(transforms.RemoveReset),
       Dependency(passes.LegalizeConnects)
     )
@@ -36,10 +35,7 @@ class RemoveWires extends Transform with DependencyAPIMigration {
 
   override def optionalPrerequisiteOf = Seq.empty
 
-  override def invalidates(a: Transform) = a match {
-    case passes.ResolveKinds => true
-    case _                   => false
-  }
+  override def invalidates(a: Transform) = false
 
   // Extract all expressions that are references to a Node, Wire, Reg or Rand
   // Since we are operating on LowForm, they can only be WRefs

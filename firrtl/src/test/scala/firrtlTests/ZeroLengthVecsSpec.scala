@@ -7,7 +7,7 @@ import firrtl.passes._
 import firrtl.testutils.FirrtlFlatSpec
 
 class ZeroLengthVecsSpec extends FirrtlFlatSpec {
-  val transforms = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, ZeroLengthVecs)
+  val transforms = Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferWidths, ZeroLengthVecs)
   protected def exec(input: String) = {
     transforms
       .foldLeft(CircuitState(parse(input), UnknownForm)) { (c: CircuitState, t: Transform) =>

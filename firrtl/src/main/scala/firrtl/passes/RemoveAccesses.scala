@@ -25,7 +25,7 @@ object RemoveAccesses extends Pass {
     ) ++ firrtl.stage.Forms.Deduped
 
   override def invalidates(a: Transform): Boolean = a match {
-    case ResolveKinds | ResolveFlows => true
+    case ResolveFlows => true
     case _                           => false
   }
 
