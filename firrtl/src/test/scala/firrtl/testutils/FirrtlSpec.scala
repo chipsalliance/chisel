@@ -25,14 +25,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 
-class CheckLowForm extends SeqTransform {
-  def inputForm = LowForm
-  def outputForm = LowForm
-  def transforms = Seq(
-    passes.CheckHighForm
-  )
-}
-
 case class RenameTopAnnotation(newTopName: String) extends NoTargetAnnotation
 
 object RenameTop extends Transform {
@@ -76,9 +68,6 @@ trait FirrtlRunners {
 
   val cppHarnessResourceName: String = "/firrtl/testTop.cpp"
 
-  /** Extra transforms to run by default */
-  val extraCheckTransforms = Seq(new CheckLowForm)
-
   /** Check equivalence of Firrtl transforms using yosys
     *
     * @param input string containing Firrtl source
@@ -99,7 +88,7 @@ trait FirrtlRunners {
     def toAnnos(xforms: Seq[Transform]) = xforms.map(RunFirrtlTransformAnnotation(_))
 
     def getBaseAnnos(topName: String) = {
-      val baseTransforms = RenameTop +: extraCheckTransforms
+      val baseTransforms = Seq(RenameTop)
       TargetDirAnnotation(testDir.toString) +:
         InfoModeAnnotation("ignore") +:
         RenameTopAnnotation(topName) +:
@@ -175,7 +164,7 @@ trait FirrtlRunners {
   def compileToVerilogCircuitState(input: String, annotations: AnnotationSeq = Seq.empty): CircuitState = {
     val circuit = Parser.parse(input.split("\n").toIterator)
     val compiler = new VerilogCompiler
-    compiler.compileAndEmit(CircuitState(circuit, HighForm, annotations), extraCheckTransforms)
+    compiler.compileAndEmit(CircuitState(circuit, HighForm, annotations))
   }
 
   /** Run Verilator lint on some Verilog text
@@ -215,7 +204,7 @@ trait FirrtlRunners {
         TargetDirAnnotation(testDir.toString) +:
         InfoModeAnnotation("ignore") +:
         annotations ++:
-        (customTransforms ++ extraCheckTransforms).map(RunFirrtlTransformAnnotation(_))
+        (customTransforms).map(RunFirrtlTransformAnnotation(_))
 
     (new firrtl.stage.FirrtlStage).execute(Array.empty, annos)
 

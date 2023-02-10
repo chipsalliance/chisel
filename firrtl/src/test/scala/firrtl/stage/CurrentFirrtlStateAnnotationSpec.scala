@@ -26,7 +26,6 @@ class CurrentFirrtlStateAnnotationSpec extends AnyFlatSpec with Matchers {
   it should "produce an expected transform order for minimum high FIRRTL -> Verilog" in {
     val transforms = getTransforms("mhigh")
     transforms should not contain (Dependency(firrtl.passes.InferTypes))
-    transforms should contain(Dependency(firrtl.passes.CheckHighForm))
   }
 
   it should "produce an expected transform order for high FIRRTL -> Verilog" in {

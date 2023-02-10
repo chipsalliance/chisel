@@ -12,7 +12,6 @@ class ChirrtlSpec extends FirrtlFlatSpec {
     CInferMDir,
     RemoveCHIRRTL,
     ToWorkingIR,
-    CheckHighForm,
     ResolveKinds,
     InferTypes,
     CheckTypes,
@@ -66,14 +65,6 @@ class ChirrtlSpec extends FirrtlFlatSpec {
     }
   }
 
-  behavior.of("Uniqueness")
-  for ((description, input) <- CheckSpec.nonUniqueExamples) {
-    it should s"be asserted for $description" in {
-      assertThrows[CheckHighForm.NotUniqueException] {
-        Seq(ToWorkingIR, CheckHighForm).foldLeft(Parser.parse(input)) { case (c, tx) => tx.run(c) }
-      }
-    }
-  }
 }
 
 class ChirrtlMemsExecutionTest extends ExecutionTest("ChirrtlMems", "/features")
