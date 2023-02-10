@@ -245,10 +245,7 @@ object VerilogMemDelays extends Pass {
   override val optionalPrerequisiteOf =
     Seq(Dependency[VerilogEmitter], Dependency[SystemVerilogEmitter])
 
-  override def invalidates(a: Transform): Boolean = a match {
-    case ResolveFlows => true
-    case _            => false
-  }
+  override def invalidates(a: Transform): Boolean = false
 
   private def transform(m: DefModule): DefModule = (new MemDelayAndReadwriteTransformer(m)).transformed
 

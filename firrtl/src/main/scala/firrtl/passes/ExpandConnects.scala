@@ -13,10 +13,7 @@ object ExpandConnects extends Pass {
   override def prerequisites =
     Seq(Dependency(PullMuxes), Dependency(ReplaceAccesses)) ++ firrtl.stage.Forms.Deduped
 
-  override def invalidates(a: Transform) = a match {
-    case ResolveFlows => true
-    case _            => false
-  }
+  override def invalidates(a: Transform) = false
 
   def run(c: Circuit): Circuit = {
     def expand_connects(m: Module): Module = {

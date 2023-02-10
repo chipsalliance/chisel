@@ -44,10 +44,7 @@ object LowerTypes extends Transform with DependencyAPIMigration {
     Dependency(ExpandConnects) // we require all PartialConnect nodes to have been expanded
   )
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq.empty
-  override def invalidates(a: Transform): Boolean = a match {
-    case ResolveFlows => true // we generate UnknownFlow for now (could be fixed)
-    case _            => false
-  }
+  override def invalidates(a: Transform): Boolean = false
 
   /** Delimiter used in lowering names */
   val delim = "_"
