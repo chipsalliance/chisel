@@ -368,9 +368,6 @@ class GroupComponents extends Transform with DependencyAPIMigration {
   */
 class GroupAndDedup extends GroupComponents {
 
-  override def invalidates(a: Transform): Boolean = a match {
-    case _: DedupModules => true
-    case _ => super.invalidates(a)
-  }
+  override def invalidates(a: Transform): Boolean = super.invalidates(a)
 
 }

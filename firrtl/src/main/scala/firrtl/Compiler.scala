@@ -12,10 +12,8 @@ import scala.util.control.NonFatal
 import firrtl.annotations._
 import firrtl.ir.Circuit
 import firrtl.Utils.throwInternalError
-import firrtl.annotations.transforms.{EliminateTargetPaths, ResolvePaths}
 import firrtl.options.{Dependency, DependencyAPI, StageUtils, TransformLike}
 import firrtl.stage.Forms
-import firrtl.transforms.DedupAnnotationsTransform
 
 /** Container of all annotations for a Firrtl compiler */
 class AnnotationSeq private (underlying: Seq[Annotation]) {
@@ -58,28 +56,6 @@ case class CircuitState(
     annotations.collect { case emitted: EmittedAnnotation[_] => emitted.value }
   def deletedAnnotations: Seq[Annotation] =
     annotations.collect { case anno: DeletedAnnotation => anno }
-
-  /** Returns a new CircuitState with all targets being resolved.
-    * Paths through instances are replaced with a uniquified final target
-    * Includes modifying the circuit and annotations
-    * @param targets
-    * @return
-    */
-  def resolvePaths(targets: Seq[CompleteTarget]): CircuitState = targets match {
-    case Nil => this
-    case _ =>
-      val newCS = new EliminateTargetPaths().runTransform(this.copy(annotations = ResolvePaths(targets) +: annotations))
-      newCS.copy(form = form)
-  }
-
-  /** Returns a new CircuitState with the targets of every annotation of a type in annoClasses
-    * @param annoClasses
-    * @return
-    */
-  def resolvePathsOf(annoClasses: Class[_]*): CircuitState = {
-    val targets = getAnnotationsOf(annoClasses: _*).flatMap(_.getTargets)
-    if (targets.nonEmpty) resolvePaths(targets.flatMap { _.getComplete }) else this
-  }
 
   /** Returns all annotations which are of a class in annoClasses
     * @param annoClasses
@@ -370,22 +346,6 @@ abstract class SeqTransform extends Transform with SeqTransformBased {
   }
 }
 
-/** Extend for transforms that require resolved targets in their annotations
-  * Ensures all targets in annotations of a class in annotationClasses are resolved before the execute method
-  */
-trait ResolvedAnnotationPaths {
-  this: Transform =>
-
-  val annotationClasses: Traversable[Class[_]]
-
-  override def prepare(state: CircuitState): CircuitState = {
-    state.resolvePathsOf(annotationClasses.toSeq: _*)
-  }
-
-  // Any transform with this trait invalidates DedupAnnotationsTransform
-  override def invalidates(a: Transform) = a.isInstanceOf[DedupAnnotationsTransform]
-}
-
 /** Defines old API for Emission. Deprecated */
 trait Emitter extends Transform {
 
@@ -423,7 +383,6 @@ object CompilerUtils extends LazyLogging {
           Seq(
             new IRToWorkingIR,
             new ResolveAndCheck,
-            new firrtl.transforms.DedupModules,
             new HighFirrtlToMiddleFirrtl
           ) ++
             getLoweringTransforms(MidForm, outputForm)

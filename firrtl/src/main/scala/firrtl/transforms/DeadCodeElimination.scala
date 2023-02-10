@@ -362,8 +362,6 @@ class DeadCodeElimination extends Transform with RegisteredTransform with Depend
     val dontTouches: Seq[LogicNode] = state.annotations.flatMap {
       case anno: HasDontTouches =>
         anno.dontTouches
-          // We treat all ReferenceTargets as if they were local because of limitations of
-          // EliminateTargetPaths
           .map(rt => LogicNode(rt.encapsulatingModule, rt.ref))
       case o => Nil
     }
