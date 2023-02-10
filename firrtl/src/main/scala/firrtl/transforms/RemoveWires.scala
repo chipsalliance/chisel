@@ -33,7 +33,7 @@ class RemoveWires extends Transform with DependencyAPIMigration {
       Dependency(passes.LegalizeConnects)
     )
 
-  override def optionalPrerequisites = Seq(Dependency[checks.CheckResets])
+  override def optionalPrerequisites = Seq.empty
 
   override def optionalPrerequisiteOf = Seq.empty
 
