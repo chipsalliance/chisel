@@ -39,7 +39,6 @@ class DeadCodeElimination extends Transform with RegisteredTransform with Depend
 
   override def optionalPrerequisiteOf =
     Seq(
-      Dependency[firrtl.transforms.BlackBoxSourceHelper],
       Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
       Dependency[firrtl.transforms.FlattenRegUpdate],
       Dependency(passes.VerilogModulusCleanup),

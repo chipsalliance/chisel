@@ -112,7 +112,7 @@ object FixAddingNegativeLiterals {
   */
 class FixAddingNegativeLiterals extends Transform with DependencyAPIMigration {
 
-  override def prerequisites = Forms.LowFormMinimumOptimized :+ Dependency[BlackBoxSourceHelper]
+  override def prerequisites = Forms.LowFormMinimumOptimized
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 

@@ -145,7 +145,6 @@ class AddDescriptionNodes extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq(
-      Dependency[firrtl.transforms.BlackBoxSourceHelper],
       Dependency[firrtl.transforms.FixAddingNegativeLiterals],
       Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
       Dependency[firrtl.transforms.InlineBitExtractionsTransform],

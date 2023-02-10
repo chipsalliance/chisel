@@ -33,7 +33,6 @@ class VerilogRename extends RemoveKeywordCollisions(v_keywords) {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq(
-      Dependency[BlackBoxSourceHelper],
       Dependency[FixAddingNegativeLiterals],
       Dependency[ReplaceTruncatingArithmetic],
       Dependency[InlineBitExtractionsTransform],
