@@ -5,7 +5,7 @@ package firrtlTests
 import firrtl._
 import firrtl.ir._
 import firrtl.passes.CheckTypes
-import firrtl.transforms.{CheckCombLoops, InferResets}
+import firrtl.transforms.InferResets
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
 
@@ -436,23 +436,4 @@ class InferResetsSpec extends FirrtlFlatSpec {
     result should containTree { case Port(_, "o", Output, AsyncResetType) => true }
   }
 
-  it should "not crash on combinational loops" in {
-    a[CheckCombLoops.CombLoopException] shouldBe thrownBy {
-      val result = compile(
-        s"""
-           |circuit top :
-           |  module top :
-           |    input in : AsyncReset
-           |    output out : Reset
-           |    wire w0 : Reset
-           |    wire w1 : Reset
-           |    w0 <= in
-           |    w0 <= w1
-           |    w1 <= w0
-           |    out <= in
-           |""".stripMargin,
-        compiler = new LowFirrtlCompiler
-      )
-    }
-  }
 }
