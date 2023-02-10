@@ -7,7 +7,6 @@ import firrtl.stage.PrettyNoExprInlining
 import firrtl.annotations.{NoTargetAnnotation, Target}
 import firrtl.annotations.TargetToken.{fromStringToTargetToken, OfModule, Ref}
 import firrtl.ir._
-import firrtl.passes.{LowerTypes, SplitExpressions}
 import firrtl.options.Dependency
 import firrtl.stage.Forms
 import firrtl.PrimOps._
@@ -35,20 +34,13 @@ object InlineBooleanExpressions {
   */
 class InlineBooleanExpressions extends Transform with DependencyAPIMigration {
 
-  override def prerequisites = Seq(
-    Dependency(LowerTypes)
-  )
+  override def prerequisites = Seq.empty
 
-  override def optionalPrerequisites = Seq(
-    Dependency(SplitExpressions)
-  )
+  override def optionalPrerequisites = Seq.empty
 
   override def optionalPrerequisiteOf = Forms.BackendEmitters
 
-  override def invalidates(a: Transform) = a match {
-    case _: DeadCodeElimination => true // this transform does not remove nodes that are unused after inlining
-    case _ => false
-  }
+  override def invalidates(a: Transform) = false
 
   type Netlist = mutable.HashMap[WrappedExpression, (Expression, Info)]
 

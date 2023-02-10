@@ -61,14 +61,8 @@ class HwachaSequencerCompilationTest extends CompilationTest("HwachaSequencer", 
 
 abstract class CommonSubexprEliminationEquivTest(name: String, dir: String)
     extends EquivalenceTest(Seq(firrtl.passes.CommonSubexpressionElimination), name, dir)
-abstract class DeadCodeEliminationEquivTest(name: String, dir: String)
-    extends EquivalenceTest(Seq(new firrtl.transforms.DeadCodeElimination), name, dir)
-abstract class ConstantPropagationEquivTest(name: String, dir: String)
-    extends EquivalenceTest(Seq(new firrtl.transforms.ConstantPropagation), name, dir)
 abstract class LowFirrtlOptimizationEquivTest(name: String, dir: String)
     extends EquivalenceTest(Seq(new LowFirrtlOptimization), name, dir)
 
 class OpsCommonSubexprEliminationTest extends CommonSubexprEliminationEquivTest("Ops", "/regress")
-class OpsDeadCodeEliminationTest extends DeadCodeEliminationEquivTest("Ops", "/regress")
-class OpsConstantPropagationTest extends ConstantPropagationEquivTest("Ops", "/regress")
 class OpsLowFirrtlOptimizationTest extends LowFirrtlOptimizationEquivTest("Ops", "/regress")

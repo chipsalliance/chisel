@@ -42,8 +42,7 @@ object PropagatePresetAnnotations {
   */
 class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
-  override def prerequisites = firrtl.stage.Forms.LowForm :+
-    Dependency(firrtl.passes.RemoveValidIf)
+  override def prerequisites = firrtl.stage.Forms.LowForm
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 

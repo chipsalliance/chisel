@@ -23,14 +23,8 @@ class CurrentFirrtlStateAnnotationSpec extends AnyFlatSpec with Matchers {
 
   behavior.of("CurrentFirrtlStateAnnotation")
 
-  it should "produce an expected transform order for middle FIRRTL -> Verilog" in {
-    val transforms = getTransforms("middle")
-    transforms should contain(Dependency(firrtl.passes.LowerTypes))
-  }
-
   it should "produce an expected transform order for low FIRRTL -> Verilog" in {
     val transforms = getTransforms("low")
-    transforms should not contain (Dependency(firrtl.passes.LowerTypes))
     transforms should contain(Dependency(firrtl.passes.CommonSubexpressionElimination))
   }
 
