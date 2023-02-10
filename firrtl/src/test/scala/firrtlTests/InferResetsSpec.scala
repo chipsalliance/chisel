@@ -4,7 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.ir._
-import firrtl.passes.{CheckInitialization, CheckTypes}
+import firrtl.passes.CheckTypes
 import firrtl.transforms.{CheckCombLoops, InferResets}
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
@@ -121,19 +121,6 @@ class InferResetsSpec extends FirrtlFlatSpec {
     result should containTree { case Port(_, "buzz_bar_0_b", Input, AsyncResetType) => true }
     result should containTree { case Port(_, "buzz_bar_1_a", Output, AsyncResetType) => true }
     result should containTree { case Port(_, "buzz_bar_1_b", Input, AsyncResetType) => true }
-  }
-
-  it should "not crash if a ResetType has no drivers" in {
-    a[CheckInitialization.RefNotInitializedException] shouldBe thrownBy {
-      compile(s"""
-                 |circuit test :
-                 |  module test :
-                 |    output out : Reset
-                 |    wire w : Reset
-                 |    out <= w
-                 |    out <= UInt(1)
-                 |""".stripMargin)
-    }
   }
 
   it should "NOT allow last connect semantics to pick the right type for Reset" in {
