@@ -135,10 +135,10 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
         io.out := true.B
       }
     }
-    val exception = intercept[RefNotInitializedException] {
-      compileFirrtl(new ModuleWithIncompleteAssignment)
+    val exception = intercept[RuntimeException] {
+      circt.stage.ChiselStage.emitSystemVerilog(new ModuleWithIncompleteAssignment)
     }
-    exception.getMessage should include("is not fully initialized")
+    exception.getMessage should include("not fully initialized")
   }
 
   property(
@@ -155,7 +155,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
         io.out := true.B
       }
     }
-    compileFirrtl(new ModuleWithUnconditionalAssignment)
+    circt.stage.ChiselStage.emitSystemVerilog(new ModuleWithUnconditionalAssignment)
   }
 
   property(
@@ -174,7 +174,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
       }
     }
 
-    compileFirrtl(new ModuleWithConditionalAndOtherwiseAssignment)
+    circt.stage.ChiselStage.emitSystemVerilog(new ModuleWithConditionalAndOtherwiseAssignment)
   }
 
   property(
