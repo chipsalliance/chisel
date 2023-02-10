@@ -6,7 +6,6 @@ import org.scalatest._
 import firrtl.{CircuitState, Parser, Transform, UnknownForm}
 import firrtl.ir.Circuit
 import firrtl.passes.{
-  CheckFlows,
   CheckHighForm,
   CheckTypes,
   CheckWidths,
@@ -289,7 +288,6 @@ class CheckSpec extends AnyFlatSpec with Matchers {
       InferTypes,
       CheckTypes,
       ResolveFlows,
-      CheckFlows,
       new InferWidths,
       CheckWidths
     )

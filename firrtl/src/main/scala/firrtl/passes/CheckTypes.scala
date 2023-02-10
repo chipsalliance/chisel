@@ -18,7 +18,6 @@ object CheckTypes extends Pass {
   override def optionalPrerequisiteOf =
     Seq(
       Dependency(passes.ResolveFlows),
-      Dependency(passes.CheckFlows),
       Dependency[passes.InferWidths],
       Dependency(passes.CheckWidths)
     )
