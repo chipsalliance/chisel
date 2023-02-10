@@ -16,13 +16,7 @@ object Forms {
 
   val ChirrtlForm: Seq[TransformDependency] = Seq.empty
 
-  val MinimalHighForm: Seq[TransformDependency] = ChirrtlForm ++
-    Seq(
-      Dependency(passes.CInferTypes),
-      Dependency(passes.CInferMDir),
-      Dependency(passes.RemoveCHIRRTL),
-      Dependency[annotations.transforms.CleanupNamedTargets]
-    )
+  val MinimalHighForm: Seq[TransformDependency] = Seq.empty
 
   @deprecated("Use firrtl.stage.forms.MinimalHighForm", "FIRRTL 1.4.2")
   val WorkingIR: Seq[TransformDependency] = MinimalHighForm

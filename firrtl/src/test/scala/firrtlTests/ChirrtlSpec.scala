@@ -8,9 +8,6 @@ import firrtl.testutils._
 
 class ChirrtlSpec extends FirrtlFlatSpec {
   def transforms = Seq(
-    CInferTypes,
-    CInferMDir,
-    RemoveCHIRRTL,
     ToWorkingIR,
     ResolveKinds,
     InferTypes,
