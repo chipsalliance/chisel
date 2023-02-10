@@ -253,8 +253,6 @@ class StructuralHash private (h: Hasher, renameModule: String => String) {
       // Module is in the global namespace which is why we cannot replace it with a numeric id.
       // However, it might have been renamed as part of the dedup consolidation.
       id(30); n(name); hash(renameModule(module))
-    // descriptions on statements are ignores
-    case firrtl.DescribedStmt(_, stmt) => hash(stmt)
     case DefMemory(
           _,
           name,

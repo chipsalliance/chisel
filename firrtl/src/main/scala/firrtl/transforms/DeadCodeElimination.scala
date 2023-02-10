@@ -42,8 +42,7 @@ class DeadCodeElimination extends Transform with RegisteredTransform with Depend
       Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
       Dependency[firrtl.transforms.FlattenRegUpdate],
       Dependency(passes.VerilogModulusCleanup),
-      Dependency(passes.VerilogPrep),
-      Dependency[firrtl.AddDescriptionNodes]
+      Dependency(passes.VerilogPrep)
     )
 
   override def invalidates(a: Transform) = false
