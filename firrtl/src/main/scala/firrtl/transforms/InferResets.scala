@@ -99,10 +99,7 @@ object InferResets {
   */
 class InferResets extends Transform with DependencyAPIMigration {
 
-  override def prerequisites =
-    Seq(
-      Dependency[passes.InferWidths]
-    ) ++ stage.Forms.MinimalHighForm
+  override def prerequisites = stage.Forms.MinimalHighForm
 
   override def invalidates(a: Transform): Boolean = a match {
     case _ => false
