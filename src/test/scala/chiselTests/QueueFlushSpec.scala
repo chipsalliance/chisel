@@ -231,9 +231,6 @@ class DequeueFullQueueEdgecaseTester(
 }
 
 class QueueFlushSpec extends ChiselPropSpec {
-  // Disable shrinking on error.
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Queue should have things pass through") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
