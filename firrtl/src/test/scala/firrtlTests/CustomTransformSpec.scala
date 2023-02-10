@@ -8,9 +8,8 @@ import firrtl.passes.Pass
 import firrtl.ir._
 import firrtl.stage.{FirrtlSourceAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
 import firrtl.options.Dependency
-import firrtl.transforms.{IdentityTransform, LegalizeAndReductionsTransform}
+import firrtl.transforms.IdentityTransform
 import firrtl.testutils._
-import firrtl.transforms.formal.ConvertAsserts
 
 import scala.reflect.runtime
 

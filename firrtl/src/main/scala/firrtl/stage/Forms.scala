@@ -40,34 +40,11 @@ object Forms {
 
   val LowFormOptimized: Seq[TransformDependency] = LowFormMinimumOptimized
 
-  private def VerilogLowerings(optimize: Boolean): Seq[TransformDependency] = {
-    Seq(
-      Dependency(passes.memlib.VerilogMemDelays),
-      Dependency[firrtl.transforms.CombineCats]
-    ) ++
-      (if (optimize) Seq(Dependency[firrtl.transforms.InlineBooleanExpressions]) else Seq()) ++
-      Seq(
-        Dependency[firrtl.transforms.LegalizeAndReductionsTransform],
-        Dependency[firrtl.transforms.FixAddingNegativeLiterals],
-        Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
-        Dependency[firrtl.transforms.InlineBitExtractionsTransform],
-        Dependency[firrtl.transforms.InlineAcrossCastsTransform],
-        Dependency[firrtl.transforms.LegalizeClocksAndAsyncResetsTransform],
-        Dependency[firrtl.transforms.FlattenRegUpdate],
-        Dependency(passes.VerilogModulusCleanup),
-        Dependency(passes.VerilogPrep)
-      )
-  }
+  val VerilogMinimumOptimized: Seq[TransformDependency] = LowFormMinimumOptimized
 
-  val VerilogMinimumOptimized: Seq[TransformDependency] = LowFormMinimumOptimized ++ VerilogLowerings(optimize = false)
+  val VerilogOptimized: Seq[TransformDependency] = LowFormOptimized
 
-  val VerilogOptimized: Seq[TransformDependency] = LowFormOptimized ++ VerilogLowerings(optimize = true)
-
-  val AssertsRemoved: Seq[TransformDependency] =
-    Seq(
-      Dependency(firrtl.transforms.formal.ConvertAsserts),
-      Dependency[firrtl.transforms.formal.RemoveVerificationStatements]
-    )
+  val AssertsRemoved: Seq[TransformDependency] = Seq.empty
 
   val BackendEmitters =
     Seq(
