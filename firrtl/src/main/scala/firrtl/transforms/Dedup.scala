@@ -8,7 +8,7 @@ import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
 import firrtl.analyses.InstanceKeyGraph
 import firrtl.annotations._
-import firrtl.passes.{InferTypes, MemPortUtils}
+import firrtl.passes.MemPortUtils
 import firrtl.Utils.{kind, splitRef, throwInternalError}
 import firrtl.annotations.transforms.DupedResult
 import firrtl.annotations.TargetToken.{Instance, OfModule}
@@ -255,7 +255,7 @@ class DedupModules extends Transform with DependencyAPIMigration {
     }
 
     val finalRenameMap = instanceify.andThen(componentRenameMap).andThen(moduleRenameMap)
-    (InferTypes.run(c.copy(modules = dedupedModules)), finalRenameMap, dedupAnnotations.toList)
+    (c.copy(modules = dedupedModules), finalRenameMap, dedupAnnotations.toList)
   }
 }
 

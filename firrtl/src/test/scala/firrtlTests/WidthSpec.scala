@@ -21,7 +21,7 @@ class WidthSpec extends FirrtlFlatSpec {
   }
 
   private val inferPasses =
-    Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferWidths)
+    Seq(ToWorkingIR, ResolveFlows, new InferWidths)
 
   private val inferAndCheckPasses = inferPasses
 

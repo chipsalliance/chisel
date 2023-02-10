@@ -9,7 +9,7 @@ import firrtl.traversals.Foreachers._
 import firrtl.annotations.{ReferenceTarget, TargetToken}
 import firrtl.Utils.{throwInternalError, toTarget}
 import firrtl.options.Dependency
-import firrtl.passes.{InferTypes, Pass, PassException}
+import firrtl.passes.{Pass, PassException}
 import firrtl.graph.MutableDiGraph
 
 import scala.collection.mutable
@@ -101,7 +101,6 @@ class InferResets extends Transform with DependencyAPIMigration {
 
   override def prerequisites =
     Seq(
-      Dependency(passes.InferTypes),
       Dependency(passes.ResolveFlows),
       Dependency[passes.InferWidths]
     ) ++ stage.Forms.MinimalHighForm
@@ -308,9 +307,7 @@ class InferResets extends Transform with DependencyAPIMigration {
     c.map(onMod)
   }
 
-  private def fixupPasses: Seq[Pass] = Seq(
-    InferTypes
-  )
+  private def fixupPasses: Seq[Pass] = Seq.empty
 
   def execute(state: CircuitState): CircuitState = {
     val c = state.circuit

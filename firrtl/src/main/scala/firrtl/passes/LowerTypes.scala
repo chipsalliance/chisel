@@ -41,7 +41,6 @@ import scala.collection.mutable
 object LowerTypes extends Transform with DependencyAPIMigration {
   override def prerequisites: Seq[TransformDependency] = Seq(
     Dependency(RemoveAccesses), // we require all SubAccess nodes to have been removed
-    Dependency(InferTypes), // we require instance types to be resolved (i.e., DefInstance.tpe != UnknownType)
     Dependency(ExpandConnects) // we require all PartialConnect nodes to have been expanded
   )
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq.empty

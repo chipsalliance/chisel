@@ -646,7 +646,7 @@ class LowerTypesOfMemorySpec extends AnyFlatSpec {
 }
 
 private object LowerTypesSpecUtils {
-  private val typedCompiler = new TransformManager(Seq(Dependency(InferTypes)))
+  private val typedCompiler = new TransformManager(Seq.empty)
   def parseType(tpe: String): firrtl.ir.Type = {
     val src =
       s"""circuit c:

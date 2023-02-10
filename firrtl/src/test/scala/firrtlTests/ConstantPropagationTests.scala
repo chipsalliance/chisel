@@ -11,7 +11,7 @@ import firrtl.stage.DisableFold
 
 class ConstantPropagationSpec extends FirrtlFlatSpec {
   val transforms: Seq[Transform] =
-    Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferWidths, new ConstantPropagation)
+    Seq(ToWorkingIR, ResolveFlows, new InferWidths, new ConstantPropagation)
   protected def exec(input: String, annos: Seq[Annotation] = Nil) = {
     transforms
       .foldLeft(CircuitState(parse(input), UnknownForm, AnnotationSeq(annos))) { (c: CircuitState, t: Transform) =>

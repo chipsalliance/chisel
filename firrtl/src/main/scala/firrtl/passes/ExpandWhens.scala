@@ -35,10 +35,7 @@ object ExpandWhens extends Pass {
       Dependency(RemoveAccesses)
     ) ++ firrtl.stage.Forms.Resolved
 
-  override def invalidates(a: Transform): Boolean = a match {
-    case InferTypes => true
-    case _                         => false
-  }
+  override def invalidates(a: Transform): Boolean = false
 
   /** Returns circuit with when and last connection semantics resolved */
   def run(c: Circuit): Circuit = {
@@ -303,7 +300,7 @@ class ExpandWhensAndCheck extends Transform with DependencyAPIMigration {
     ) ++ firrtl.stage.Forms.Deduped
 
   override def invalidates(a: Transform): Boolean = a match {
-    case InferTypes | ResolveFlows | _: InferWidths => true
+    case ResolveFlows | _: InferWidths => true
     case _ => false
   }
 
