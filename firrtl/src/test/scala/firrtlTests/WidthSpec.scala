@@ -23,7 +23,7 @@ class WidthSpec extends FirrtlFlatSpec {
   private val inferPasses =
     Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths)
 
-  private val inferAndCheckPasses = inferPasses :+ CheckWidths
+  private val inferAndCheckPasses = inferPasses
 
   case class LiteralWidthCheck(lit: BigInt, uIntWidth: Option[BigInt], sIntWidth: BigInt)
   val litChecks = Seq(
@@ -64,54 +64,6 @@ class WidthSpec extends FirrtlFlatSpec {
     }
   }
 
-  "Casting a multi-bit signal to Clock" should "result in error" in {
-    val input =
-      s"""circuit Unit :
-         |  module Unit :
-         |    input i: UInt<2>
-         |    node x = asClock(i)""".stripMargin
-    intercept[CheckWidths.MultiBitAsClock] {
-      executeTest(input, Nil, inferAndCheckPasses)
-    }
-  }
-
-  "Casting a multi-bit signal to AsyncReset" should "result in error" in {
-    val input =
-      s"""circuit Unit :
-         |  module Unit :
-         |    input i: UInt<2>
-         |    node x = asAsyncReset(i)""".stripMargin
-    intercept[CheckWidths.MultiBitAsAsyncReset] {
-      executeTest(input, Nil, inferAndCheckPasses)
-    }
-  }
-
-  "Width >= MaxWidth" should "result in an error" in {
-    val input =
-      s"""circuit Unit :
-         |  module Unit :
-         |    input x: UInt<${CheckWidths.MaxWidth}>
-      """.stripMargin
-    intercept[CheckWidths.WidthTooBig] {
-      executeTest(input, Nil, inferAndCheckPasses)
-    }
-  }
-  "Circular reg depending on reg + 1" should "error" in {
-    val input =
-      """circuit Unit :
-        |  module Unit :
-        |    input clock: Clock
-        |    input reset: UInt<1>
-        |    reg r : UInt, clock with :
-        |      reset => (reset, UInt(3))
-        |    node T_7 = add(r, r)
-        |    r <= T_7
-        |""".stripMargin
-    intercept[CheckWidths.UninferredWidth] {
-      executeTest(input, Nil, inferAndCheckPasses)
-    }
-  }
-
   "Add of UInt<2> and SInt<2>" should "error" in {
     val input =
       """circuit Unit :
@@ -140,21 +92,4 @@ class WidthSpec extends FirrtlFlatSpec {
     }
   }
 
-  behavior.of("CheckWidths.UniferredWidth")
-
-  it should "provide a good error message with a full target if a user forgets an assign" in {
-    val input =
-      """|circuit Foo :
-         |  module Foo :
-         |    input clock : Clock
-         |    inst bar of Bar
-         |  module Bar :
-         |    wire a: { b : UInt<1>, c : { d : UInt<1>, e : UInt } }
-         |""".stripMargin
-    val msg = intercept[CheckWidths.UninferredWidth] {
-      executeTest(input, Nil, inferAndCheckPasses)
-    }.getMessage should include("""|    circuit Foo:
-                                   |    └── module Bar:
-                                   |        └── a.c.e""".stripMargin)
-  }
 }

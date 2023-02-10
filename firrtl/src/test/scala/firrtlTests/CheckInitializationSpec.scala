@@ -13,7 +13,6 @@ class CheckInitializationSpec extends FirrtlFlatSpec {
     InferTypes,
     ResolveFlows,
     new InferWidths,
-    CheckWidths,
     PullMuxes,
     ExpandConnects,
     RemoveAccesses,

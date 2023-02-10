@@ -15,7 +15,6 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
     InferTypes,
     ResolveFlows,
     new InferWidths,
-    CheckWidths,
     PullMuxes,
     ExpandConnects,
     RemoveAccesses,

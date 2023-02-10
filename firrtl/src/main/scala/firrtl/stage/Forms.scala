@@ -27,10 +27,7 @@ object Forms {
   @deprecated("Use firrtl.stage.forms.MinimalHighForm", "FIRRTL 1.4.2")
   val WorkingIR: Seq[TransformDependency] = MinimalHighForm
 
-  val Checks: Seq[TransformDependency] =
-    Seq(
-      Dependency(passes.CheckWidths)
-    )
+  val Checks: Seq[TransformDependency] = Seq.empty
 
   val Resolved: Seq[TransformDependency] = MinimalHighForm ++ Checks ++
     Seq(
