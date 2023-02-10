@@ -15,8 +15,7 @@ class RemoveAccessesSpec extends FirrtlFlatSpec {
     val result = manager.execute(CircuitState(parse(input), Nil))
     val checks = List(
       CheckHighForm,
-      CheckTypes,
-      CheckFlows
+      CheckTypes
     )
     for (check <- checks) { check.run(result.circuit) }
     result.circuit.serialize

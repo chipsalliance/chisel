@@ -31,7 +31,6 @@ object Forms {
     Seq(
       Dependency(passes.CheckHighForm),
       Dependency(passes.CheckTypes),
-      Dependency(passes.CheckFlows),
       Dependency(passes.CheckWidths)
     )
 
