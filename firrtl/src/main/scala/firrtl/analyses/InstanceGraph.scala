@@ -108,18 +108,6 @@ class InstanceGraph(c: Circuit) {
     instances.flatMap { i => fullHierarchy.getOrElse(i, Nil) }
   }
 
-  /** An [[firrtl.graph.EulerTour EulerTour]] representation of the [[firrtl.graph.DiGraph DiGraph]] */
-  @deprecated("Should have been private. Do not use outside of InstanceGraph.", "FIRRTL 1.4")
-  lazy val tour = EulerTour(graph, trueTopInstance)
-
-  /** Finds the lowest common ancestor instances for two module names in
-    * a design
-    */
-  @deprecated("Use InstanceKeyGraph and EulerTour(iGraph.graph, iGraph.top).rmq(moduleA, moduleB).", "FIRRTL 1.4")
-  def lowestCommonAncestor(moduleA: Seq[DefInstance], moduleB: Seq[DefInstance]): Seq[DefInstance] = {
-    tour.rmq(moduleA, moduleB)
-  }
-
   /**
     * Module order from highest module to leaf module
     * @return sequence of modules in order from top to leaf

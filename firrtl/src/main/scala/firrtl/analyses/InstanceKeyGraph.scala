@@ -4,7 +4,7 @@ package firrtl.analyses
 
 import firrtl.annotations._
 import firrtl.annotations.TargetToken._
-import firrtl.graph.{DiGraph, EulerTour, MutableDiGraph}
+import firrtl.graph.{DiGraph, MutableDiGraph}
 import firrtl.ir
 
 import scala.collection.mutable
