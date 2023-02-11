@@ -6,7 +6,7 @@ import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
 import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
-import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.sourceinfo._
@@ -869,7 +869,7 @@ object Data {
           (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
         case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
           (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
-        case (lOpt, rOpt) if isElement(lOpt, rOpt) => Nil
+        case (lOpt: Option[Element @unchecked], rOpt: Option[Element @unchecked]) if isElement(lOpt, rOpt) => Nil
       }
   }
 
