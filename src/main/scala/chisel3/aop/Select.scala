@@ -3,7 +3,7 @@
 package chisel3.aop
 
 import chisel3._
-import chisel3.internal.{HasId, InternalErrorException, PseudoModule}
+import chisel3.internal.{HasId, PseudoModule}
 import chisel3.experimental.BaseModule
 import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}

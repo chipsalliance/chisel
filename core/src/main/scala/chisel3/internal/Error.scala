@@ -84,70 +84,11 @@ object ExceptionHelpers {
   }
 }
 
-class InternalErrorException(message: String, cause: Throwable = null)
-    extends ChiselException(
-      "Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues:" + message,
-      cause
-    )
-
-class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause, true, true) {
-
-  /** Examine a [[Throwable]], to extract all its causes. Innermost cause is first.
-    * @param throwable an exception to examine
-    * @return a sequence of all the causes with innermost cause first
-    */
-  @tailrec
-  private def getCauses(throwable: Throwable, acc: Seq[Throwable] = Seq.empty): Seq[Throwable] =
-    throwable.getCause() match {
-      case null => throwable +: acc
-      case a    => getCauses(a, throwable +: acc)
-    }
-
-  /** Returns true if an exception contains */
-  private def containsBuilder(throwable: Throwable): Boolean =
-    throwable
-      .getStackTrace()
-      .collectFirst {
-        case ste if ste.getClassName().startsWith(ExceptionHelpers.builderName) => throwable
-      }
-      .isDefined
-
-  /** Examine this [[ChiselException]] and it's causes for the first [[Throwable]] that contains a stack trace including
-    * a stack trace element whose declaring class is the [[ExceptionHelpers.builderName]]. If no such element exists, return this
-    * [[ChiselException]].
-    */
-  private lazy val likelyCause: Throwable =
-    getCauses(this).collectFirst { case a if containsBuilder(a) => a }.getOrElse(this)
-
-  /** For an exception, return a stack trace trimmed to user code only
-    *
-    * This does the following actions:
-    *
-    *   1. Trims the top of the stack trace while elements match [[ExceptionHelpers.packageTrimlist]]
-    *   2. Trims the bottom of the stack trace until an element matches [[ExceptionHelpers.builderName]]
-    *   3. Trims from the [[ExceptionHelpers.builderName]] all [[ExceptionHelpers.packageTrimlist]]
-    *
-    * @param throwable the exception whose stack trace should be trimmed
-    * @return an array of stack trace elements
-    */
-  private def trimmedStackTrace(throwable: Throwable): Array[StackTraceElement] = {
-    def isBlacklisted(ste: StackTraceElement) = {
-      val packageName = ste.getClassName().takeWhile(_ != '.')
-      ExceptionHelpers.packageTrimlist.contains(packageName)
-    }
-
-    val trimmedLeft = throwable.getStackTrace().view.dropWhile(isBlacklisted)
-    val trimmedReverse = trimmedLeft.toIndexedSeq.reverse.view
-      .dropWhile(ste => !ste.getClassName.startsWith(ExceptionHelpers.builderName))
-      .dropWhile(isBlacklisted)
-    trimmedReverse.toIndexedSeq.reverse.toArray
-  }
-}
-private[chisel3] class Errors(message: String) extends ChiselException(message) with NoStackTrace
+private[chisel3] class Errors(message: String) extends chisel3.ChiselException(message) with NoStackTrace
 
 private[chisel3] object throwException {
   def apply(s: String, t: Throwable = null): Nothing =
-    throw new ChiselException(s, t)
+    throw new chisel3.ChiselException(s, t)
 }
 
 /** Records and reports runtime errors and warnings. */

@@ -2,7 +2,6 @@
 
 package chisel3
 
-import chisel3.internal.ChiselException
 import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint}
 import chisel3.internal.sourceinfo.SourceInfoTransform
 import scala.language.experimental.macros

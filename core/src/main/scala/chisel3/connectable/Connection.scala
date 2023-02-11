@@ -2,8 +2,8 @@
 
 package chisel3.connectable
 
-import chisel3.{Aggregate, BiConnectException, Data, DontCare, RawModule}
-import chisel3.internal.{BiConnect, Builder, InternalErrorException}
+import chisel3.{Aggregate, BiConnectException, Data, DontCare, InternalErrorException, RawModule}
+import chisel3.internal.{BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.DefInvalid
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}

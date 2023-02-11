@@ -8,7 +8,7 @@ import firrtl.options.Viewer.view
 
 import chisel3.stage._
 import chisel3.stage.CircuitSerializationAnnotation._
-import chisel3.internal.ChiselException
+import chisel3.ChiselException
 
 /** Adds [[stage.CircuitSerializationAnnotation]]s based on [[ChiselOutputFileAnnotation]]
   */

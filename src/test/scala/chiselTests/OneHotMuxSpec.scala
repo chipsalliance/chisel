@@ -4,7 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.FixedPoint
-import chisel3.internal.ChiselException
 import chisel3.testers.BasicTester
 import chisel3.util.{Mux1H, UIntToOH}
 import org.scalatest._

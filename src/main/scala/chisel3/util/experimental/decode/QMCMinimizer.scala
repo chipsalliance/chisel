@@ -3,7 +3,7 @@
 package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
-import chisel3.internal.InternalErrorException
+import chisel3.InternalErrorException
 
 import scala.annotation.tailrec
 import scala.math.Ordered.orderingToOrdered
