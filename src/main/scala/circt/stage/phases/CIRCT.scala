@@ -167,7 +167,6 @@ class CIRCT extends Phase {
         logLevel = anno.globalLogLevel
         Nil
       /* The following can be dropped. */
-      case _: firrtl.transforms.CombinationalPath   => Nil
       case _: _root_.logger.ClassLogLevelAnnotation => Nil
       /* Default case: leave the annotation around and let firtool warn about it. */
       case a => Seq(a)
