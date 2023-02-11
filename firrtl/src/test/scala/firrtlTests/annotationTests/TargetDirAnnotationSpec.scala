@@ -56,18 +56,4 @@ class TargetDirAnnotationSpec extends FirrtlFlatSpec {
     dir.exists should be(true)
     FileUtils.deleteDirectoryHierarchy("a") should be(true)
   }
-
-  it should "NOT be available as an annotation when using a raw compiler" in {
-    val findTargetDir = new FindTargetDirTransform // looks for the annotation
-    val compiler = new VerilogCompiler
-    val circuit = Parser.parse(input.split("\n"))
-
-    val annotations: Seq[Annotation] = compiler
-      .compileAndEmit(CircuitState(circuit, HighForm), Seq(findTargetDir))
-      .annotations
-
-    // Check that FindTargetDirTransform does not find the annotation
-    annotations should contain(FoundTargetDirTransformRanAnnotation)
-    annotations should not contain (FoundTargetDirTransformFoundTargetDirAnnotation)
-  }
 }

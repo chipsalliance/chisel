@@ -151,8 +151,6 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
     case _: firrtl.HighFirrtlCompiler   => Forms.MinimalHighForm
     case _: firrtl.MiddleFirrtlCompiler => Forms.MidForm
     case _: firrtl.LowFirrtlCompiler    => Forms.LowForm
-    case _: firrtl.VerilogCompiler | _: firrtl.SystemVerilogCompiler => Forms.LowFormOptimized
-    case _: firrtl.MinimumVerilogCompiler => Forms.LowFormMinimumOptimized
   }
 
 }

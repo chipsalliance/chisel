@@ -20,11 +20,6 @@ class AddDefaultsSpec extends AnyFlatSpec with Matchers {
   it should "add expected default annotations and nothing else" in new Fixture {
     val expected = Seq(
       (a: Annotation) => a match { case BlackBoxTargetDirAnno(b) => b == TargetDirAnnotation().directory },
-      (a: Annotation) =>
-        a match {
-          case RunFirrtlTransformAnnotation(e: firrtl.Emitter) =>
-            Dependency.fromTransform(e) == Dependency[firrtl.VerilogEmitter]
-        },
       (a: Annotation) => a match { case InfoModeAnnotation(b) => b == InfoModeAnnotation().modeName }
     )
 

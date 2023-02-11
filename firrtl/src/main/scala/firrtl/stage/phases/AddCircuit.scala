@@ -27,9 +27,9 @@ import firrtl.options.{Dependency, Phase, PhasePrerequisiteException}
   */
 class AddCircuit extends Phase {
 
-  override val prerequisites = Seq(Dependency[AddDefaults], Dependency[Checks])
+  override val prerequisites = Seq(Dependency[AddDefaults])
 
-  override val optionalPrerequisiteOf = Seq.empty
+  override val optionalPrerequisiteOf = Seq(Dependency[Checks])
 
   override def invalidates(a: Phase) = false
 

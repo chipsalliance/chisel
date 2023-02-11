@@ -273,8 +273,7 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
   private lazy val fullCompilerSet = new mutable.LinkedHashSet[Dependency[Transform]] ++ Forms.VerilogOptimized
 
   override def optionalPrerequisiteOf: Seq[Dependency[Transform]] = {
-    val lowEmitters = Dependency[LowFirrtlEmitter] :: Dependency[VerilogEmitter] :: Dependency[MinimumVerilogEmitter] ::
-      Dependency[SystemVerilogEmitter] :: Nil
+    val lowEmitters = Dependency[LowFirrtlEmitter] :: Nil
 
     val emitters = inputForm match {
       case C =>

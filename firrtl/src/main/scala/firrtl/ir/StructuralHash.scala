@@ -227,8 +227,6 @@ class StructuralHash private (h: Hasher, renameModule: String => String) {
     case firrtl.WVoid           => id(10)
     case firrtl.WInvalid        => id(11)
     case firrtl.EmptyExpression => id(12)
-    // VRandom is used in the Emitter
-    case firrtl.VRandom(width) => id(13); hash(width)
     // ids 14 ... 19 are reserved for future Expression nodes
   }
 

@@ -4,7 +4,7 @@ package circt.stage.phases
 
 import circt.stage.CIRCTTargetAnnotation
 
-import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, Emitter, SystemVerilogEmitter}
+import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, Emitter}
 import firrtl.annotations.Annotation
 import firrtl.options.{Dependency, OptionsException, Phase, TargetDirAnnotation}
 import firrtl.stage.OutputFileAnnotation

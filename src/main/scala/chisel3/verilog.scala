@@ -1,9 +1,24 @@
 package chisel3
 
-import chisel3.stage.ChiselStage
-import firrtl.AnnotationSeq
+import chisel3.stage.ChiselGeneratorAnnotation
+import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
+import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import firrtl.options.{Dependency, PhaseManager}
 
 object getVerilogString {
+
+  final def phase = new PhaseManager(
+    Seq(
+      Dependency[chisel3.stage.phases.Checks],
+      Dependency[chisel3.aop.injecting.InjectingPhase],
+      Dependency[chisel3.stage.phases.Elaborate],
+      Dependency[chisel3.stage.phases.Convert],
+      Dependency[firrtl.stage.phases.AddImplicitOutputFile],
+      Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+      Dependency[circt.stage.phases.Checks],
+      Dependency[circt.stage.phases.CIRCT]
+    )
+  )
 
   /**
     * Returns a string containing the Verilog for the module specified by
@@ -13,7 +28,7 @@ object getVerilogString {
     * @return a string containing the Verilog for the module specified by
     *         the target
     */
-  def apply(gen: => RawModule): String = ChiselStage.emitVerilog(gen)
+  def apply(gen: => RawModule): String = ChiselStage.emitSystemVerilog(gen)
 
   /**
     * Returns a string containing the Verilog for the module specified by
@@ -25,12 +40,32 @@ object getVerilogString {
     * @return a string containing the Verilog for the module specified by
     *         the target
     */
-  def apply(gen: => RawModule, args: Array[String] = Array.empty, annotations: AnnotationSeq = Seq.empty): String =
-    (new ChiselStage).emitVerilog(gen, args, annotations)
+  def apply(gen: => RawModule, args: Array[String] = Array.empty, annotations: AnnotationSeq = Seq.empty): String = {
+    val annos = Seq(
+      ChiselGeneratorAnnotation(() => gen),
+      CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
+    ) ++ (new circt.stage.ChiselStage).shell.parse(args) ++ annotations
+    phase
+      .transform(annos)
+      .collectFirst {
+        case EmittedVerilogCircuitAnnotation(a) => a
+      }
+      .get
+      .value
+  }
 }
 
 object emitVerilog {
-  def apply(gen: => RawModule, args: Array[String] = Array.empty, annotations: AnnotationSeq = Seq.empty): Unit = {
-    (new ChiselStage).emitVerilog(gen, args, annotations)
+  def apply(gen: => RawModule, args: Array[String] = Array.empty, annotations: AnnotationSeq = Seq.empty): String = {
+    (new ChiselStage)
+      .execute(
+        Array("--target", "systemverilog") ++ args,
+        ChiselGeneratorAnnotation(() => gen) +: annotations
+      )
+      .collectFirst {
+        case EmittedVerilogCircuitAnnotation(a) => a
+      }
+      .get
+      .value
   }
 }

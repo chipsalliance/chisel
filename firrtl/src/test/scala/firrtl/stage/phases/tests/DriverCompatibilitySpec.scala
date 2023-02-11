@@ -140,13 +140,11 @@ class DriverCompatibilitySpec extends AnyFlatSpec with Matchers with PrivateMeth
 
   behavior.of(classOf[AddImplicitEmitter].toString)
 
-  val (nc, hfc, mfc, lfc, vc, svc) = (
+  val (nc, hfc, mfc, lfc) = (
     new NoneCompiler,
     new HighFirrtlCompiler,
     new MiddleFirrtlCompiler,
-    new LowFirrtlCompiler,
-    new VerilogCompiler,
-    new SystemVerilogCompiler
+    new LowFirrtlCompiler
   )
 
   it should "convert CompilerAnnotations into EmitCircuitAnnotations without EmitOneFilePerModuleAnnotation" in
@@ -155,9 +153,7 @@ class DriverCompatibilitySpec extends AnyFlatSpec with Matchers with PrivateMeth
         CompilerAnnotation(nc),
         CompilerAnnotation(hfc),
         CompilerAnnotation(mfc),
-        CompilerAnnotation(lfc),
-        CompilerAnnotation(vc),
-        CompilerAnnotation(svc)
+        CompilerAnnotation(lfc)
       )
       val expected = annotations
         .flatMap(a =>
@@ -174,9 +170,7 @@ class DriverCompatibilitySpec extends AnyFlatSpec with Matchers with PrivateMeth
         CompilerAnnotation(nc),
         CompilerAnnotation(hfc),
         CompilerAnnotation(mfc),
-        CompilerAnnotation(lfc),
-        CompilerAnnotation(vc),
-        CompilerAnnotation(svc)
+        CompilerAnnotation(lfc)
       )
       val expected = annotations.flatMap {
         case a: CompilerAnnotation =>

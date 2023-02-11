@@ -14,8 +14,7 @@ import firrtl.options.Dependency
 object ConvertAsserts extends Transform with DependencyAPIMigration {
   override def prerequisites = Nil
   override def optionalPrerequisites = Nil
-  override def optionalPrerequisiteOf =
-    Seq(Dependency[VerilogEmitter], Dependency[MinimumVerilogEmitter])
+  override def optionalPrerequisiteOf = Nil
 
   override def invalidates(a: Transform): Boolean = false
 

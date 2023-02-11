@@ -836,9 +836,11 @@ class Foo extends Module {
 
 The above code loses the `x` name, instead using `_GEN_3` (the other `_GEN_*` signals are expected).
 
+{% raw %}
 ```scala mdoc:verilog
 getVerilogString(new Foo)
 ```
+{% endraw %}
 
 This can be worked around by creating a wire and connecting the dynamic index to the wire:
 ```scala
@@ -861,9 +863,11 @@ class Foo2 extends Module {
 ```
 
 Which produces:
+{% raw %}
 ```scala mdoc:verilog
 getVerilogString(new Foo2)
 ```
+{% endraw %}
 
 ### How can I dynamically set/parametrize the name of a module?
 

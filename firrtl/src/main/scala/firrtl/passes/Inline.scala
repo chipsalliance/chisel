@@ -14,7 +14,7 @@ case class InlineAnnotation(target: Named) extends SingleTargetAnnotation[Named]
 
 object InlineAnnotation extends HasShellOptions {
 
-  override   val options = Seq(
+  override val options = Seq(
     new ShellOption[Seq[String]](
       longOption = "inline",
       toAnnotationSeq = (a: Seq[String]) =>

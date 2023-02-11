@@ -29,33 +29,18 @@ class CompilerSpec extends AnyFlatSpec with Matchers {
         |    foo.bar <= UInt<4>("h0")
         |""".stripMargin
 
-  it should "compile a circuit to Low FIRRTL when using the Verilog compiler" in new Fixture {
-    val compiler = new VerilogCompiler
-
-    val circuitIn = Parser.parse(chirrtl("top"))
-    val circuitOut = compiler.compile(CircuitState(circuitIn, ChirrtlForm), Seq.empty).circuit
-
-    val input = Seq(FirrtlCircuitAnnotation(circuitIn), CompilerAnnotation(compiler))
-
-    phase.transform(input).toSeq should be(Seq(FirrtlCircuitAnnotation(circuitOut)))
-  }
-
   it should "compile multiple FirrtlCircuitAnnotations" in new Fixture {
-    val (nc, hfc, mfc, lfc, vc, svc) = (
+    val (nc, hfc, mfc, lfc) = (
       new NoneCompiler,
       new HighFirrtlCompiler,
       new MiddleFirrtlCompiler,
-      new LowFirrtlCompiler,
-      new VerilogCompiler,
-      new SystemVerilogCompiler
+      new LowFirrtlCompiler
     )
-    val (ce, hfe, mfe, lfe, ve, sve) = (
+    val (ce, hfe, mfe, lfe) = (
       new ChirrtlEmitter,
       new HighFirrtlEmitter,
       new MiddleFirrtlEmitter,
-      new LowFirrtlEmitter,
-      new VerilogEmitter,
-      new SystemVerilogEmitter
+      new LowFirrtlEmitter
     )
 
     val a = Seq(
@@ -91,33 +76,7 @@ class CompilerSpec extends AnyFlatSpec with Matchers {
       RunFirrtlTransformAnnotation(mfe),
       EmitCircuitAnnotation(mfe.getClass),
       RunFirrtlTransformAnnotation(lfe),
-      EmitCircuitAnnotation(lfe.getClass),
-      /* Fifth compiler group, use VerilogCompiler */
-      FirrtlCircuitAnnotation(Parser.parse(chirrtl("e"))),
-      CompilerAnnotation(vc),
-      RunFirrtlTransformAnnotation(ce),
-      EmitCircuitAnnotation(ce.getClass),
-      RunFirrtlTransformAnnotation(hfe),
-      EmitCircuitAnnotation(hfe.getClass),
-      RunFirrtlTransformAnnotation(mfe),
-      EmitCircuitAnnotation(mfe.getClass),
-      RunFirrtlTransformAnnotation(lfe),
-      EmitCircuitAnnotation(lfe.getClass),
-      RunFirrtlTransformAnnotation(ve),
-      EmitCircuitAnnotation(ve.getClass),
-      /* Sixth compiler group, use SystemVerilogCompiler */
-      FirrtlCircuitAnnotation(Parser.parse(chirrtl("f"))),
-      CompilerAnnotation(svc),
-      RunFirrtlTransformAnnotation(ce),
-      EmitCircuitAnnotation(ce.getClass),
-      RunFirrtlTransformAnnotation(hfe),
-      EmitCircuitAnnotation(hfe.getClass),
-      RunFirrtlTransformAnnotation(mfe),
-      EmitCircuitAnnotation(mfe.getClass),
-      RunFirrtlTransformAnnotation(lfe),
-      EmitCircuitAnnotation(lfe.getClass),
-      RunFirrtlTransformAnnotation(sve),
-      EmitCircuitAnnotation(sve.getClass)
+      EmitCircuitAnnotation(lfe.getClass)
     )
 
     val output = phase.transform(a)
@@ -136,7 +95,6 @@ class CompilerSpec extends AnyFlatSpec with Matchers {
     val annotations =
       Seq(
         FirrtlCircuitAnnotation(circuitIn),
-        CompilerAnnotation(new VerilogCompiler),
         RunFirrtlTransformAnnotation(new FirstTransform),
         RunFirrtlTransformAnnotation(new SecondTransform)
       )
