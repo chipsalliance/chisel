@@ -86,7 +86,7 @@ package object Chisel {
   }
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
-  type ChiselException = chisel3.internal.ChiselException
+  type ChiselException = chisel3.ChiselException
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   type Data = chisel3.Data
