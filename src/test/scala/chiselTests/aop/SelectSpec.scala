@@ -68,7 +68,8 @@ class SelectSpec extends ChiselFlatSpec {
   )(
     implicit tTag: TypeTag[T]
   ): Unit = {
-    val ret = new chisel3.stage.ChiselStage().run(
+    val ret = new circt.stage.ChiselStage().execute(
+      Array("--target", "systemverilog"),
       Seq(
         new chisel3.stage.ChiselGeneratorAnnotation(dut),
         SelectAspect(selector, desired),

@@ -153,7 +153,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
         case b: Bundle => enumFields(b)
         case _ => Seq()
       }
-    case b: Bundle =>
+    case b: Record =>
       b.elements.collect {
         case (name, e: EnumType) if this.typeEquivalent(e) => Seq(Seq(name))
         case (name, v: Vec[_]) if this.typeEquivalent(v.sample_element) => Seq(Seq(name))
