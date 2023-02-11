@@ -362,7 +362,6 @@ class IsOneOfTester extends BasicTester {
 }
 
 class ChiselEnumSpec extends ChiselFlatSpec with Utils {
-  import chisel3.internal.ChiselException
 
   behavior.of("ChiselEnum")
 
