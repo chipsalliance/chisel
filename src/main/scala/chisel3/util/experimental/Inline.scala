@@ -42,7 +42,7 @@ import firrtl.annotations.Annotation
 trait InlineInstance { self: BaseModule =>
   Seq(
     new ChiselAnnotation {
-      def toFirrtl:       Annotation = InlineAnnotation(self.toNamed)
+      def toFirrtl: Annotation = InlineAnnotation(self.toNamed)
     },
     new ChiselAnnotation {
       def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed)
@@ -80,7 +80,7 @@ trait InlineInstance { self: BaseModule =>
 trait FlattenInstance { self: BaseModule =>
   Seq(
     new ChiselAnnotation {
-      def toFirrtl:       Annotation = FlattenAnnotation(self.toNamed)
+      def toFirrtl: Annotation = FlattenAnnotation(self.toNamed)
     },
     new ChiselAnnotation {
       def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed)

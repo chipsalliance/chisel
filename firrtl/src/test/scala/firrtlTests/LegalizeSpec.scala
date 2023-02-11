@@ -2,8 +2,6 @@
 
 package firrtlTests
 
-import firrtl.testutils.{ExecutionTest, ExecutionTestNoOpt}
+import firrtl.testutils.ExecutionTest
 
 class LegalizeExecutionTest extends ExecutionTest("Legalize", "/passes/Legalize")
-// Legalize also needs to work when optimizations are turned off
-class LegalizeExecutionTestNoOpt extends ExecutionTestNoOpt("Legalize", "/passes/Legalize")

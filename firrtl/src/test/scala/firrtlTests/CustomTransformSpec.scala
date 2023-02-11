@@ -155,10 +155,7 @@ class CustomTransformSpec extends FirrtlFlatSpec {
   they should "run right before the emitter* when inputForm=LowForm" in {
 
     Seq(
-      Dependency[LowFirrtlEmitter],
-      Dependency[MinimumVerilogEmitter],
-      Dependency[VerilogEmitter],
-      Dependency[SystemVerilogEmitter]
+      Dependency[LowFirrtlEmitter]
     ).foreach { emitter =>
       val custom = Dependency[IdentityLowForm]
       val tm = new firrtl.stage.transforms.Compiler(custom :: emitter :: Nil)

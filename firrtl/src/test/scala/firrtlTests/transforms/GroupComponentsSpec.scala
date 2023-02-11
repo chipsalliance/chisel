@@ -375,35 +375,3 @@ class GroupComponentsSpec extends MiddleTransformSpec {
     execute(input, check, groups)
   }
 }
-
-class GroupComponentsIntegrationSpec extends FirrtlFlatSpec {
-  def topComp(name: String): ComponentName = ComponentName(name, ModuleName("Top", CircuitName("Top")))
-  "Grouping" should "properly set kinds" in {
-    val input =
-      """circuit Top :
-        |  module Top :
-        |    input clk: Clock
-        |    input data: UInt<16>
-        |    output out: UInt<16>
-        |    reg r: UInt<16>, clk
-        |    r <= data
-        |    out <= r
-      """.stripMargin
-    val groups = Seq(
-      GroupAnnotation(Seq(topComp("r")), "MyModule", "inst", Some("_OUT"), Some("_IN"))
-    )
-    val result = (new VerilogCompiler).compileAndEmit(
-      CircuitState(parse(input), ChirrtlForm, groups),
-      Seq(new GroupComponents)
-    )
-    result should containTree {
-      case Connect(_, WSubField(WRef("inst", _, InstanceKind, _), "data_IN", _, _), WRef("data", _, _, _)) => true
-    }
-    result should containTree {
-      case Connect(_, WSubField(WRef("inst", _, InstanceKind, _), "clk_IN", _, _), WRef("clk", _, _, _)) => true
-    }
-    result should containTree {
-      case Connect(_, WRef("out", _, _, _), WSubField(WRef("inst", _, InstanceKind, _), "r_OUT", _, _)) => true
-    }
-  }
-}

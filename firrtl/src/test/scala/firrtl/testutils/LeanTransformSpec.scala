@@ -9,7 +9,6 @@ import firrtl.stage.TransformManager.TransformDependency
 import logger.LazyLogging
 import org.scalatest.flatspec.AnyFlatSpec
 
-class VerilogTransformSpec extends LeanTransformSpec(Seq(Dependency[firrtl.VerilogEmitter]))
 class LowFirrtlTransformSpec extends LeanTransformSpec(Seq(Dependency[firrtl.LowFirrtlEmitter]))
 
 /** The new cool kid on the block, creates a custom compiler for your transform. */
@@ -50,10 +49,6 @@ private object LeanTransformSpec {
 
 /** Use this if you just need to create a standard compiler and want to save some typing. */
 trait MakeCompiler {
-  protected def makeVerilogCompiler(transforms: Seq[TransformDependency] = Seq()) =
-    new firrtl.stage.transforms.Compiler(Seq(Dependency[firrtl.VerilogEmitter]) ++ transforms)
-  protected def makeMinimumVerilogCompiler(transforms: Seq[TransformDependency] = Seq()) =
-    new firrtl.stage.transforms.Compiler(Seq(Dependency[firrtl.MinimumVerilogEmitter]) ++ transforms)
   protected def makeLowFirrtlCompiler(transforms: Seq[TransformDependency] = Seq()) =
     new firrtl.stage.transforms.Compiler(Seq(Dependency[firrtl.LowFirrtlEmitter]) ++ transforms)
 }

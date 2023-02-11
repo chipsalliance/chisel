@@ -12,8 +12,7 @@ import scala.collection.mutable
 /** Tests the use of the [[firrtl.annotations.PresetRegAnnotation]]
   * from a pass that needs to create a register with an initial value.
   */
-class PresetRegAnnotationSpec
-    extends LeanTransformSpec(Seq(Dependency(MakePresetRegs), Dependency[SystemVerilogEmitter])) {
+class PresetRegAnnotationSpec extends LeanTransformSpec(Seq(Dependency(MakePresetRegs))) {
   behavior.of("PresetRegAnnotation")
 
   val src =
@@ -56,7 +55,7 @@ private object MakePresetRegs extends Transform with DependencyAPIMigration {
   override def optionalPrerequisites = Seq(Dependency[PropagatePresetAnnotations])
   // we want to run before the actual Verilog is emitted
   // we want to look at the reset value, which may be removed by the RemoveReset transform.
-  override def optionalPrerequisiteOf = Seq(Dependency[SystemVerilogEmitter])
+  override def optionalPrerequisiteOf = Seq.empty
 
   override def execute(state: CircuitState): CircuitState = {
     val c = CircuitTarget(state.circuit.main)

@@ -15,7 +15,7 @@ object CommonSubexpressionElimination extends Transform with HasShellOptions wit
 
   override def prerequisites = firrtl.stage.Forms.LowForm
   override def optionalPrerequisiteOf =
-    Seq(Dependency[SystemVerilogEmitter], Dependency[VerilogEmitter])
+    Seq(Dependency[VerilogEmitter])
 
   override def invalidates(a: Transform) = false
 

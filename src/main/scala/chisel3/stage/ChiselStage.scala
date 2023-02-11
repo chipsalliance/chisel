@@ -9,9 +9,7 @@ import firrtl.{
   EmittedFirrtlModuleAnnotation,
   EmittedVerilogCircuitAnnotation,
   EmittedVerilogModuleAnnotation,
-  HighFirrtlEmitter,
-  VerilogEmitter,
-  SystemVerilogEmitter
+  HighFirrtlEmitter
 }
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.options.phases.DeletedWrapper
@@ -106,25 +104,6 @@ class ChiselStage extends Stage {
 
   }
 
-  /** Convert a Chisel module to SystemVerilog
-    * @param gen a call-by-name Chisel module
-    * @param args additional command line arguments to pass to Chisel
-    * @param annotations additional annotations to pass to Chisel
-    * @return a string containing the SystemVerilog output
-    */
-  final def emitSystemVerilog(
-    gen:         => RawModule,
-    args:        Array[String] = Array.empty,
-    annotations: AnnotationSeq = Seq.empty
-  ): String = {
-
-    execute(Array("-X", "sverilog") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations).collectFirst {
-      case EmittedVerilogCircuitAnnotation(a) => a
-      case EmittedVerilogModuleAnnotation(a)  => a
-    }.map(_.value)
-      .mkString("")
-
-  }
 }
 
 @deprecated(pleaseSwitchToCIRCT, "Chisel 3.6")
@@ -232,63 +211,6 @@ object ChiselStage {
       .get
       .value
 
-  }
-
-  /** Return a Verilog string for a Chisel module
-    * @param gen a call-by-name Chisel module
-    */
-  def emitVerilog(gen: => RawModule): String = {
-    val phase = new PhaseManager(
-      Seq(
-        Dependency[chisel3.stage.phases.Checks],
-        Dependency[chisel3.stage.phases.Elaborate],
-        Dependency[chisel3.stage.phases.AddImplicitOutputFile],
-        Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-        Dependency[chisel3.stage.phases.MaybeAspectPhase],
-        Dependency[chisel3.stage.phases.Convert],
-        Dependency[firrtl.stage.phases.Compiler]
-      )
-    )
-
-    phase
-      .transform(
-        Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new VerilogEmitter))
-      )
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a
-      }
-      .get
-      .value
-  }
-
-  /** Return a SystemVerilog string for a Chisel module
-    * @param gen a call-by-name Chisel module
-    */
-  def emitSystemVerilog(gen: => RawModule): String = {
-    val phase = new PhaseManager(
-      Seq(
-        Dependency[chisel3.stage.phases.Checks],
-        Dependency[chisel3.stage.phases.Elaborate],
-        Dependency[chisel3.stage.phases.AddImplicitOutputFile],
-        Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-        Dependency[chisel3.stage.phases.MaybeAspectPhase],
-        Dependency[chisel3.stage.phases.Convert],
-        Dependency[firrtl.stage.phases.Compiler]
-      )
-    )
-
-    phase
-      .transform(
-        Seq(
-          ChiselGeneratorAnnotation(() => gen),
-          RunFirrtlTransformAnnotation(new SystemVerilogEmitter)
-        )
-      )
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a
-      }
-      .get
-      .value
   }
 
 }

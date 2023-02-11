@@ -149,32 +149,3 @@ class LowFirrtlCompiler extends Compiler {
   val emitter = new LowFirrtlEmitter
   def transforms: Seq[Transform] = Forms.LowForm.map(_.getObject())
 }
-
-/** Emits Verilog */
-@deprecated(
-  "Use stage.{FirrtlStage, FirrtlMain} stage.transforms.Compiler(Dependency[VerilogEmitter])",
-  "FIRRTL 1.3"
-)
-class VerilogCompiler extends Compiler {
-  val emitter = new VerilogEmitter
-  def transforms: Seq[Transform] = Forms.LowFormOptimized.map(_.getObject())
-}
-
-/** Emits Verilog without optimizations */
-@deprecated(
-  "Use stage.{FirrtlStage, FirrtlMain} stage.transforms.Compiler(Dependency[MinimumVerilogEmitter])",
-  "FIRRTL 1.3"
-)
-class MinimumVerilogCompiler extends Compiler {
-  val emitter = new MinimumVerilogEmitter
-  def transforms: Seq[Transform] = Forms.LowFormMinimumOptimized.map(_.getObject())
-}
-
-/** Currently just an alias for the [[VerilogCompiler]] */
-@deprecated(
-  "Use stage.{FirrtlStage, FirrtlMain} stage.transforms.Compiler(Dependency[SystemVerilogEmitter])",
-  "FIRRTL 1.3"
-)
-class SystemVerilogCompiler extends VerilogCompiler {
-  override val emitter = new SystemVerilogEmitter
-}

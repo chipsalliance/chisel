@@ -48,19 +48,12 @@ object EmitCircuitAnnotation extends HasShellOptions {
               RunFirrtlTransformAnnotation(Dependency(LowFirrtlOptimizedEmitter)),
               EmitCircuitAnnotation(LowFirrtlOptimizedEmitter.getClass)
             )
-          case "verilog" | "mverilog" =>
-            Seq(RunFirrtlTransformAnnotation(new VerilogEmitter), EmitCircuitAnnotation(classOf[VerilogEmitter]))
-          case "sverilog" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new SystemVerilogEmitter),
-              EmitCircuitAnnotation(classOf[SystemVerilogEmitter])
-            )
           case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
         },
       helpText = "Run the specified circuit emitter (all modules in one file)",
       shortOption = Some("E"),
       // the experimental options are intentionally excluded from the help message
-      helpValueName = Some("<chirrtl|high|middle|low|verilog|mverilog|sverilog>")
+      helpValueName = Some("<chirrtl|high|middle|low>")
     ),
     new ShellOption[String](
       longOption = "emit-circuit-protobuf",
@@ -134,18 +127,11 @@ object EmitAllModulesAnnotation extends HasShellOptions {
             )
           case "low" =>
             Seq(RunFirrtlTransformAnnotation(new LowFirrtlEmitter), EmitAllModulesAnnotation(classOf[LowFirrtlEmitter]))
-          case "verilog" | "mverilog" =>
-            Seq(RunFirrtlTransformAnnotation(new VerilogEmitter), EmitAllModulesAnnotation(classOf[VerilogEmitter]))
-          case "sverilog" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new SystemVerilogEmitter),
-              EmitAllModulesAnnotation(classOf[SystemVerilogEmitter])
-            )
           case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
         },
       helpText = "Run the specified module emitter (one file per module)",
       shortOption = Some("e"),
-      helpValueName = Some("<chirrtl|high|middle|low|verilog|mverilog|sverilog>")
+      helpValueName = Some("<chirrtl|high|middle|low>")
     ),
     new ShellOption[String](
       longOption = "emit-modules-protobuf",

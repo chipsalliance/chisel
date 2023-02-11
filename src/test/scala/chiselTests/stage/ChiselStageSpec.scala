@@ -70,18 +70,6 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
       .emitFirrtl(new Foo, args) should include("module Bar")
   }
 
-  behavior.of("ChiselStage$.emitVerilog")
-
-  it should "return a Verilog string" in {
-    ChiselStage.emitVerilog(new Foo) should include("endmodule")
-  }
-
-  it should "return a flattened Verilog string with '-e verilog'" in {
-    val args = Array("-e", "verilog", "-td", createTestDirectory(this.getClass.getSimpleName).toString)
-    (new ChiselStage)
-      .emitVerilog(new Foo, args) should include("module Bar")
-  }
-
   behavior.of("ChiselStage$.elaborate")
 
   ignore should "generate a Chisel circuit from a Chisel module" in {
@@ -125,29 +113,6 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
     info("returned string looks like FIRRTL")
     wrapped.toOption.get should include("circuit")
-  }
-
-  behavior.of("ChiselStage$.emitVerilog")
-
-  ignore should "generate a Verilog string from a Chisel module" in {
-    val wrapped = catchWrites { ChiselStage.emitVerilog(new Foo) }
-
-    info("no files were written")
-    wrapped shouldBe a[Right[_, _]]
-
-    info("returned string looks like Verilog")
-    wrapped.toOption.get should include("endmodule")
-  }
-
-  behavior.of("ChiselStage$.emitSystemVerilog")
-
-  ignore should "generate a SystemvVerilog string from a Chisel module" in {
-    val wrapped = catchWrites { ChiselStage.emitSystemVerilog(new Foo) }
-    info("no files were written")
-    wrapped shouldBe a[Right[_, _]]
-
-    info("returned string looks like Verilog")
-    wrapped.toOption.get should include("endmodule")
   }
 
   behavior.of("ChiselStage phase ordering")

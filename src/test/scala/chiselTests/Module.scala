@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.reflect.DataMirror
 import chisel3.stage.ChiselGeneratorAnnotation
-import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
+import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage, FirtoolOption}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{TargetDirAnnotation, Unserializable}
 
@@ -263,7 +263,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   }
 
   property("getVerilogString(new PlusOne() should produce a valid Verilog string with arguments") {
-    val s = getVerilogString(new PlusOne(), Array("--emission-options=disableRegisterRandomization"))
+    val s = getVerilogString(new PlusOne(), annotations = Seq(FirtoolOption("-disable-reg-randomization")))
     assert(s.contains("assign io_out = io_in + 32'h1"))
     assert(!s.contains("RANDOMIZE_REG_INIT"))
   }
@@ -271,7 +271,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   property("emitVerilog((new PlusOne()..) shall produce a valid Verilog file in a subfolder") {
     val testDir = "test_run_dir/emit_verilog_test"
     emitVerilog(new PlusOne(), Array("--target-dir", testDir))
-    val s = Source.fromFile(s"$testDir/PlusOne.v").mkString("")
+    val s = Source.fromFile(s"$testDir/PlusOne.sv").mkString("")
     assert(s.contains("assign io_out = io_in + 32'h1"))
   }
 }
