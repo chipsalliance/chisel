@@ -5,20 +5,27 @@ package chiselTests
 import java.io.File
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
-import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
+import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage, FirtoolOption}
 import chisel3.util.experimental.{loadMemoryFromFile, loadMemoryFromFileInline}
-import chisel3.util.log2Ceil
+import chisel3.util.log2Up
 import firrtl.annotations.MemoryLoadFileType
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
+class Read[A <: Data](depth: Int, tpe: => A) extends Bundle {
+  val en = Input(Bool())
+  val data = Output(tpe)
+  val addr = Input(UInt(log2Up(depth).W))
+  def connectToMemory(mem: chisel3.Mem[A]): Unit = {
+    data := DontCare
+    when(en) {
+      data := mem.read(addr)
+    }
+  }
+}
+
 class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
-  val io = IO(new Bundle {
-    val address = Input(UInt(memoryType.getWidth.W))
-    val value1 = Output(memoryType)
-    val value2 = Output(memoryType)
-    val value3 = Output(memoryType)
-  })
+  val io = Seq.fill(3)(IO(new Read(memoryDepth, memoryType)))
 
   val memory1 = Mem(memoryDepth, memoryType)
   val memory2 = Mem(memoryDepth, memoryType)
@@ -27,9 +34,9 @@ class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
   loadMemoryFromFile(memory2, "./mem1")
   loadMemoryFromFile(memory3, "./mem1")
 
-  io.value1 := memory1(io.address)
-  io.value2 := memory2(io.address)
-  io.value3 := memory3(io.address)
+  io(0).connectToMemory(memory1)
+  io(1).connectToMemory(memory2)
+  io(2).connectToMemory(memory3)
 }
 
 class UsesThreeMemsInline(
@@ -38,12 +45,7 @@ class UsesThreeMemsInline(
   memoryFile:  String,
   hexOrBinary: MemoryLoadFileType.FileType)
     extends Module {
-  val io = IO(new Bundle {
-    val address = Input(UInt(memoryType.getWidth.W))
-    val value1 = Output(memoryType)
-    val value2 = Output(memoryType)
-    val value3 = Output(memoryType)
-  })
+  val io = Seq.fill(3)(IO(new Read(memoryDepth, memoryType)))
 
   val memory1 = Mem(memoryDepth, memoryType)
   val memory2 = Mem(memoryDepth, memoryType)
@@ -52,63 +54,48 @@ class UsesThreeMemsInline(
   loadMemoryFromFileInline(memory2, memoryFile, hexOrBinary)
   loadMemoryFromFileInline(memory3, memoryFile, hexOrBinary)
 
-  io.value1 := memory1(io.address)
-  io.value2 := memory2(io.address)
-  io.value3 := memory3(io.address)
+  io(0).connectToMemory(memory1)
+  io(1).connectToMemory(memory2)
+  io(2).connectToMemory(memory3)
 }
 
 class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
-  val io = IO(new Bundle {
-    val address = Input(UInt(memoryType.getWidth.W))
-    val value = Output(memoryType)
-    val value1 = Output(memoryType)
-    val value2 = Output(memoryType)
-  })
+  val io = Seq.fill(3)(IO(new Read(memoryDepth, memoryType)))
 
-  val memory = Mem(memoryDepth, memoryType)
-  loadMemoryFromFile(memory, "./mem1")
+  val memory_UsesMem = Mem(memoryDepth, memoryType)
+  loadMemoryFromFile(memory_UsesMem, "./mem1")
 
-  io.value := memory(io.address)
+  io(0).connectToMemory(memory_UsesMem)
 
   val low1 = Module(new UsesMemLow(memoryDepth, memoryType))
   val low2 = Module(new UsesMemLow(memoryDepth, memoryType))
 
-  low2.io.address := io.address
-  low1.io.address := io.address
-  io.value1 := low1.io.value
-  io.value2 := low2.io.value
+  low1.io <> io(1)
+  low2.io <> io(2)
 }
 
 class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
-  val io = IO(new Bundle {
-    val address = Input(UInt(memoryType.getWidth.W))
-    val value = Output(memoryType)
-  })
+  val io = IO(new Read(memoryDepth, memoryType))
 
-  val memory = Mem(memoryDepth, memoryType)
+  val memory_UsesMemLow = Mem(memoryDepth, memoryType)
 
-  loadMemoryFromFile(memory, "./mem2")
+  loadMemoryFromFile(memory_UsesMemLow, "./mem2")
 
-  io.value := memory(io.address)
+  io.connectToMemory(memory_UsesMemLow)
 }
 
 class FileHasSuffix(memoryDepth: Int, memoryType: Data) extends Module {
-  val io = IO(new Bundle {
-    val address = Input(UInt(memoryType.getWidth.W))
-    val value = Output(memoryType)
-    val value2 = Output(memoryType)
-  })
+  val io = Seq.fill(2)(IO(new Read(memoryDepth, memoryType)))
 
   val memory = Mem(memoryDepth, memoryType)
 
   loadMemoryFromFile(memory, "./mem1.txt")
 
-  io.value := memory(io.address)
+  io(0).connectToMemory(memory)
 
   val low = Module(new UsesMemLow(memoryDepth, memoryType))
 
-  low.io.address := io.address
-  io.value2 := low.io.value
+  low.io := io(1)
 }
 
 class MemoryShape extends Bundle {
@@ -118,29 +105,23 @@ class MemoryShape extends Bundle {
 }
 
 class HasComplexMemory(memoryDepth: Int) extends Module {
-  val io = IO(new Bundle {
-    val address = Input(UInt(log2Ceil(memoryDepth).W))
-    val value = Output(new MemoryShape)
-  })
+  val io = IO(new Read(memoryDepth, new MemoryShape))
 
   val memory = Mem(memoryDepth, new MemoryShape)
 
   loadMemoryFromFile(memory, "./mem", MemoryLoadFileType.Hex)
 
-  io.value := memory(io.address)
+  io.connectToMemory(memory)
 }
 
 class HasBinarySupport(memoryDepth: Int, memoryType: Data) extends Module {
-  val io = IO(new Bundle {
-    val address = Input(UInt(memoryType.getWidth.W))
-    val value = Output(memoryType)
-  })
+  val io = IO(new Read(memoryDepth, memoryType))
 
   val memory = Mem(memoryDepth, memoryType)
 
   loadMemoryFromFile(memory, "./mem", MemoryLoadFileType.Binary)
 
-  io.value := memory(io.address)
+  io.connectToMemory(memory)
 }
 
 /**
@@ -151,140 +132,110 @@ class HasBinarySupport(memoryDepth: Int, memoryType: Data) extends Module {
 class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   def fileExistsWithMem(file: File, mem: Option[String] = None): Unit = {
     info(s"$file exists")
-    file.exists() should be(true)
+    file should exist
     mem.foreach(m => {
       info(s"Memory $m is referenced in $file")
       val found = io.Source.fromFile(file).getLines.exists { _.contains(s"""readmemh("$m"""") }
       found should be(true)
     })
-    file.delete()
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Users can specify a source file to load memory from" ignore {
-    val testDirName = "test_run_dir/load_memory_spec"
-
-    (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() => new UsesMem(memoryDepth = 8, memoryType = UInt(16.W))),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
-    )
-
-    val dir = new File(testDirName)
-    fileExistsWithMem(new File(dir, "UsesMem.UsesMem.memory.v"), Some("./mem1"))
-    fileExistsWithMem(new File(dir, "UsesMem.UsesMemLow.memory.v"), Some("./mem2"))
-    fileExistsWithMem(new File(dir, "firrtl_black_box_resource_files.f"))
-
+  def deleteRecursively(path: File): Unit = path match {
+    case dir if dir.isDirectory() =>
+      dir.listFiles().foreach(deleteRecursively)
+      dir.delete()
+    case file => file.delete()
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Calling a module that loads memories from a file more than once should work" ignore {
-    val testDirName = "test_run_dir/load_three_memory_spec"
-
+  def compile(gen: => RawModule, targetDirName: File, splitVerilog: Boolean = true): Unit = {
+    deleteRecursively(targetDirName)
     (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() => new UsesThreeMems(memoryDepth = 8, memoryType = UInt(16.W))),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
+      args = Array("--target-dir", targetDirName.getPath(), "--target", "systemverilog"),
+      annotations = {
+        val annos = scala.collection.mutable.ArrayBuffer[firrtl.annotations.Annotation](
+          ChiselGeneratorAnnotation(() => gen),
+          FirtoolOption("-disable-all-randomization"),
+          FirtoolOption("-strip-debug-info")
+        )
+        if (splitVerilog)
+          annos.append(firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]))
+        annos.toSeq
+      }
     )
+  }
 
-    val dir = new File(testDirName)
-    fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory1.v"), Some("./mem1"))
-    fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory2.v"), Some("./mem1"))
-    fileExistsWithMem(new File(dir, "UsesThreeMems.UsesThreeMems.memory3.v"), Some("./mem1"))
-    fileExistsWithMem(new File(dir, "firrtl_black_box_resource_files.f"))
+  "Users can specify a source file to load memory from" in {
+    val dir = new File("test_run_dir/load_memory_spec")
+
+    compile(new UsesMem(memoryDepth = 8, memoryType = UInt(16.W)), dir)
+
+    fileExistsWithMem(new File(dir, "memory_UsesMem_combMem_init.sv"), Some("./mem1"))
+    fileExistsWithMem(new File(dir, "memory_UsesMemLow_combMem_init.sv"), Some("./mem2"))
 
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "In this example the memory has a complex memory type containing a bundle" ignore {
-    val complexTestDirName = "test_run_dir/complex_memory_load"
+  "Calling a module that loads memories from a file more than once should work" in {
+    val dir = new File("test_run_dir/load_three_memory_spec")
 
-    (new ChiselStage).execute(
-      args = Array("--target-dir", complexTestDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() => new HasComplexMemory(memoryDepth = 8)),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
-    )
+    compile(new UsesThreeMems(memoryDepth = 8, memoryType = UInt(16.W)), dir)
 
-    val dir = new File(complexTestDirName)
+    fileExistsWithMem(new File(dir, "memory1_combMem_init.sv"), Some("./mem1"))
+
+  }
+
+  "In this example the memory has a complex memory type containing a bundle" in {
+    val dir = new File("test_run_dir/complex_memory_load")
+
+    compile(new HasComplexMemory(memoryDepth = 8), dir)
+
     val memoryElements = Seq("a", "b", "c")
 
-    memoryElements.foreach { element =>
-      val file = new File(dir, s"HasComplexMemory.HasComplexMemory.memory_$element.v")
-      file.exists() should be(true)
-      val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-      fileText should include(s"""$$readmemh("./mem_$element", HasComplexMemory.memory_$element);""")
-      file.delete()
-    }
+    // MFC emits a single memory for a memory of aggregate type.
+    fileExistsWithMem(new File(dir, "memory_combMem_init.sv"), Some("./mem"))
 
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Has binary format support" ignore {
-    val testDirName = "test_run_dir/binary_memory_load"
+  "Has binary format support" in {
+    val dir = new File("test_run_dir/binary_memory_load")
 
-    (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() => new HasBinarySupport(memoryDepth = 8, memoryType = UInt(16.W))),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
-    )
+    compile(new HasBinarySupport(memoryDepth = 8, memoryType = UInt(16.W)), dir)
 
-    val dir = new File(testDirName)
-    val file = new File(dir, s"HasBinarySupport.HasBinarySupport.memory.v")
-    file.exists() should be(true)
+    val file = new File(dir, s"memory_combMem_init.sv")
+    file should exist
+
     val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include(s"""$$readmemb("./mem", HasBinarySupport.memory);""")
-    file.delete()
+    fileText should include(s"""$$readmemb("./mem", memory_combMem.Memory);""")
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Module with more than one hex memory inline should work" ignore {
-    val testDirName = "test_run_dir/load_three_memory_spec_inline"
+  "Module with more than one hex memory inline should work" in {
+    val dir = new File("test_run_dir/load_three_memory_spec_inline_hex")
 
-    (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() =>
-          new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "./testmem.h", MemoryLoadFileType.Hex)
-        ),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
+    compile(
+      new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "./testmem.h", MemoryLoadFileType.Hex),
+      dir,
+      splitVerilog = false
     )
-    val dir = new File(testDirName)
-    val file = new File(dir, s"UsesThreeMemsInline.v")
-    file.exists() should be(true)
+
+    val file = new File(dir, s"UsesThreeMemsInline.sv")
+    file should exist
+
     val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include(s"""$$readmemh("./testmem.h", memory1);""")
-    fileText should include(s"""$$readmemh("./testmem.h", memory2);""")
-    fileText should include(s"""$$readmemh("./testmem.h", memory3);""")
+    fileText should include(s"""$$readmemh("./testmem.h", Memory);""")
   }
 
-  //TODO: SFC->MFC, this test is ignored because loadmem not yet supported by CIRCT/firtool
-  "Module with more than one bin memory inline should work" ignore {
-    val testDirName = "test_run_dir/load_three_memory_spec_inline"
+  "Module with more than one bin memory inline should work" in {
+    val dir = new File("test_run_dir/load_three_memory_spec_inline_bin")
 
-    (new ChiselStage).execute(
-      args = Array("--target-dir", testDirName),
-      annotations = Seq(
-        ChiselGeneratorAnnotation(() =>
-          new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "testmem.bin", MemoryLoadFileType.Binary)
-        ),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-      )
+    compile(
+      new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "testmem.bin", MemoryLoadFileType.Binary),
+      dir,
+      splitVerilog = false
     )
-    val dir = new File(testDirName)
-    val file = new File(dir, s"UsesThreeMemsInline.v")
-    file.exists() should be(true)
+
+    val file = new File(dir, s"UsesThreeMemsInline.sv")
+    file should exist
+
     val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include(s"""$$readmemb("testmem.bin", memory1);""")
-    fileText should include(s"""$$readmemb("testmem.bin", memory2);""")
-    fileText should include(s"""$$readmemb("testmem.bin", memory3);""")
+    fileText should include(s"""$$readmemb("testmem.bin", Memory);""")
   }
 }
