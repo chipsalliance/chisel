@@ -8,7 +8,6 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.reflect.runtime.universe.TypeTag
 import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.IsModule
-import chisel3.internal.InternalErrorException
 
 import scala.annotation.implicitNotFound
 

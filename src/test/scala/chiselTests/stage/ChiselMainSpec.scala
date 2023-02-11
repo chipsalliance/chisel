@@ -241,12 +241,12 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
   info("I screw up and compile some bad code")
   Feature("Stack trace trimming of ChiselException") {
     Seq(
-      ChiselMainExceptionTest[chisel3.internal.ChiselException](
+      ChiselMainExceptionTest[ChiselException](
         args = Array("-X", "low"),
         generator = Some(classOf[DifferentTypesModule]),
         stackTrace = Seq(Left("java"), Right(classOf[DifferentTypesModule].getName))
       ),
-      ChiselMainExceptionTest[chisel3.internal.ChiselException](
+      ChiselMainExceptionTest[ChiselException](
         args = Array("-X", "low", "--full-stacktrace"),
         generator = Some(classOf[DifferentTypesModule]),
         stackTrace = Seq(Right("java"), Right(classOf[DifferentTypesModule].getName))
@@ -269,7 +269,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
   }
   Feature("Builder.error errors with source info") {
     runStageExpectException(
-      ChiselMainExceptionTest[chisel3.internal.ChiselException](
+      ChiselMainExceptionTest[ChiselException](
         args = Array("-X", "low"),
         generator = Some(classOf[BuilderErrorModule]),
         message = Seq(Right("Fatal errors during hardware elaboration")),
@@ -283,7 +283,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
   }
   Feature("Stack trace trimming and Builder.error errors") {
     runStageExpectException(
-      ChiselMainExceptionTest[chisel3.internal.ChiselException](
+      ChiselMainExceptionTest[ChiselException](
         args = Array("-X", "low"),
         generator = Some(classOf[BuilderErrorNoSourceInfoModule]),
         message = Seq(Right("Fatal errors during hardware elaboration")),
