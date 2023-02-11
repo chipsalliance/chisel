@@ -6,7 +6,6 @@ import circt.stage.ChiselStage
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-import org.scalacheck.Shrink
 import org.scalatest.matchers.should.Matchers
 
 class UIntOps extends Module {
@@ -207,9 +206,6 @@ class UIntLitZeroWidthTester extends BasicTester {
 }
 
 class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
-  // Disable shrinking on error.
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Bools can be created from 1 bit UInts") {
     ChiselStage.elaborate(new GoodBoolConversion)
