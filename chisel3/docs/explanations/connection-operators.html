@@ -218,7 +218,7 @@ We replace all instances of <code class="language-plaintext highlighter-rouge">&
 </code></pre></div></div>
 <p>Below we can see the resulting error message for this example:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
-<span class="c1">// chisel3.internal.ChiselException: Connection between sink (PipelineStage.io.a: IO[DecoupledIO]) and source (PipelineStage.io.b: IO[DecoupledIO]) failed @: .bitsio.a.bits in PipelineStage cannot be written from module PipelineStage.</span>
+<span class="c1">// chisel3.package$ChiselException: Connection between sink (PipelineStage.io.a: IO[DecoupledIO]) and source (PipelineStage.io.b: IO[DecoupledIO]) failed @: .bitsio.a.bits in PipelineStage cannot be written from module PipelineStage.</span>
 <span class="c1">// 	at ... ()</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp3$PipelineStage.&lt;init&gt;(connection-operators.md:133)</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp3$Wrapper$$anonfun$30$$anonfun$apply$20.apply(connection-operators.md:117)</span>
@@ -629,7 +629,7 @@ We will find out using the sample codes below:
 </code></pre></div></div>
 <p>Below we can see the resulting error for this example:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Wrapper</span><span class="o">)</span>
-<span class="c1">// chisel3.internal.ChiselException: Connection between left (PipelineStage.io.a: IO[DecoupledIO]) and source (Wrapper.io.in: IO[MockDecoupledIO]) failed @.bits: Right Record missing field (bits).</span>
+<span class="c1">// chisel3.package$ChiselException: Connection between left (PipelineStage.io.a: IO[DecoupledIO]) and source (Wrapper.io.in: IO[MockDecoupledIO]) failed @.bits: Right Record missing field (bits).</span>
 <span class="c1">// 	at ... ()</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp12$Wrapper.&lt;init&gt;(connection-operators.md:381)</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp12$$anonfun$119$$anonfun$apply$79.apply(connection-operators.md:402)</span>

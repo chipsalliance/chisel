@@ -121,7 +121,7 @@ Vecs must still be exactly the same size.</p>
 </code></pre></div></div>
 <p>Below we can see the resulting error for this example:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">Block2</span><span class="o">)</span>
-<span class="c1">// chisel3.internal.ChiselException: Connection between left (Block2.io1: IO[FilterIO]) and source (Block2.io2: IO[NotReallyAFilterIO]) failed @.z: Left Record missing field (z).</span>
+<span class="c1">// chisel3.package$ChiselException: Connection between left (Block2.io1: IO[FilterIO]) and source (Block2.io2: IO[NotReallyAFilterIO]) failed @.z: Left Record missing field (z).</span>
 <span class="c1">// 	at ... ()</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp$Block2.&lt;init&gt;(interfaces-and-connections.md:89)</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp$$anonfun$22$$anonfun$apply$20.apply(interfaces-and-connections.md:97)</span>
@@ -149,7 +149,7 @@ For example, putting two temporary wires and connecting them here will not work,
 </code></pre></div></div>
 <p>Below we can see the resulting error for this example:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">BlockWithTemporaryWires</span><span class="o">)</span>
-<span class="c1">// chisel3.internal.ChiselException: Connection between left (Filter.io.y: IO[PLink]) and source (BlockWithTemporaryWires.tmp1: Wire[FilterIO]) failed @.y: Left Record missing field (y).</span>
+<span class="c1">// chisel3.package$ChiselException: Connection between left (Filter.io.y: IO[PLink]) and source (BlockWithTemporaryWires.tmp1: Wire[FilterIO]) failed @.y: Left Record missing field (y).</span>
 <span class="c1">// 	at ... ()</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp$BlockWithTemporaryWires.&lt;init&gt;(interfaces-and-connections.md:113)</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp$$anonfun$33$$anonfun$apply$29.apply(interfaces-and-connections.md:124)</span>

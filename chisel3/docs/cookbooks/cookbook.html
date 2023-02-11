@@ -606,7 +606,7 @@ Below, the left-hand side connection to <code class="language-plaintext highligh
 
 <p>If you try to compile this, you will get an error.</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">getVerilogString</span><span class="o">(</span><span class="k">new</span> <span class="nc">Foo</span><span class="o">)</span>
-<span class="c1">// chisel3.internal.ChiselException: Cannot reassign to read-only Foo.?: OpResult[Bool]</span>
+<span class="c1">// chisel3.package$ChiselException: Cannot reassign to read-only Foo.?: OpResult[Bool]</span>
 <span class="c1">// 	at ... ()</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp26$Foo.&lt;init&gt;(cookbook.md:589)</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp26$$anonfun$103$$anonfun$apply$87.apply(cookbook.md:597)</span>
