@@ -2,9 +2,9 @@
 
 package chisel3.util.experimental
 
-import chisel3.deprecatedMFCMessage
+import chisel3.{deprecatedMFCMessage, InternalErrorException}
 import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
-import chisel3.internal.{Builder, InternalErrorException}
+import chisel3.internal.Builder
 import firrtl.Mappers._
 import firrtl._
 import firrtl.annotations._
