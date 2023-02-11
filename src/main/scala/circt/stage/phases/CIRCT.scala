@@ -148,15 +148,6 @@ class CIRCT extends Phase {
         split = true
         Nil
       }
-      case a @ RunFirrtlTransformAnnotation(transform) =>
-        transform match {
-          /* Inlining/Flattening happen by default, so these can be dropped. */
-          case _: firrtl.passes.InlineInstances | _: firrtl.transforms.Flatten => Nil
-          /* Any emitters should not be passed to firtool. */
-          case _: firrtl.Emitter => Nil
-          /* Default case: leave the annotation around and let firtool warn about it. */
-          case _ => Seq(a)
-        }
       case firrtl.passes.memlib.InferReadWriteAnnotation =>
         inferReadWrite = true
         Nil
