@@ -157,8 +157,6 @@ package object chisel3 {
     def W: Width = Width(int)
   }
 
-  val WireInit = WireDefault
-
   object Vec extends VecFactory
 
   // Some possible regex replacements for the literal specifier deprecation:
