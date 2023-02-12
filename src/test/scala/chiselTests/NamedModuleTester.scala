@@ -4,7 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.AffectsChiselPrefix
-import chisel3.internal.InstanceId
 
 import scala.collection.mutable.ListBuffer
 
