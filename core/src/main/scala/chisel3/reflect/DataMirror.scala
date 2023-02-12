@@ -42,6 +42,21 @@ object DataMirror {
     */
   def isReg(x: Data): Boolean = hasBinding[RegBinding](x)
 
+  /** Get an early guess for the name of this [[Data]]
+    *
+    * '''Warning: it is not guaranteed that this name will end up in the output FIRRTL or Verilog.'''
+    *
+    * Name guesses are not stable and may change due to a subsequent [[Data.suggestName]] or
+    * plugin-related naming.
+    * Name guesses are not necessarily legal Verilog identifiers.
+    * Name guesses for elements of Bundles or Records will include periods, and guesses for elements
+    * of Vecs will include square brackets.
+    */
+  def queryNameGuess(x: Data): String = {
+    requireIsHardware(x, "To queryNameGuess,")
+    x.earlyName
+  }
+
   /** Check if two Chisel types are the same type.
     * Internally, this is dispatched to each Chisel type's
     * `typeEquivalent` function for each type to determine
