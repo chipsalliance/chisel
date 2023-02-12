@@ -533,5 +533,7 @@ package object experimental {
       "_10" -> _10
     )
   }
+
+  @deprecated("This value has moved to chisel3.reflect", "Chisel 3.6")
   val DataMirror = chisel3.reflect.DataMirror
 }

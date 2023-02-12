@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import firrtl.annotations.{IsMember, Named}
 import chisel3.internal.firrtl.BinaryPoint
 import chisel3.internal.ExceptionHelpers
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
@@ -181,7 +182,25 @@ package object chisel3 {
   object SInt extends SIntFactory
   object Bool extends BoolFactory
 
-  type InstanceId = internal.InstanceId
+  /** Public API to access Node/Signal names.
+    * currently, the node's name, the full path name, and references to its parent Module and component.
+    * These are only valid once the design has been elaborated, and should not be used during its construction.
+    */
+  trait InstanceId {
+    def instanceName:   String
+    def pathName:       String
+    def parentPathName: String
+    def parentModName:  String
+
+    /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
+    def toNamed: Named
+
+    /** Returns a FIRRTL IsMember that refers to this object in the elaborated hardware graph */
+    def toTarget: IsMember
+
+    /** Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph */
+    def toAbsoluteTarget: IsMember
+  }
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {

@@ -113,27 +113,6 @@ private[chisel3] class IdGen {
   def value: Long = counter
 }
 
-/** Public API to access Node/Signal names.
-  * currently, the node's name, the full path name, and references to its parent Module and component.
-  * These are only valid once the design has been elaborated, and should not be used during its construction.
-  */
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-trait InstanceId {
-  def instanceName:   String
-  def pathName:       String
-  def parentPathName: String
-  def parentModName:  String
-
-  /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
-  def toNamed: Named
-
-  /** Returns a FIRRTL IsMember that refers to this object in the elaborated hardware graph */
-  def toTarget: IsMember
-
-  /** Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph */
-  def toAbsoluteTarget: IsMember
-}
-
 private[chisel3] trait HasId extends InstanceId {
   // using nullable var for better memory usage
   private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
