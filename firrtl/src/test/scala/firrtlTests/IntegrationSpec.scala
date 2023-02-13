@@ -59,10 +59,7 @@ class ICacheCompilationTest extends CompilationTest("ICache", "/regress")
 class FPUCompilationTest extends CompilationTest("FPU", "/regress")
 class HwachaSequencerCompilationTest extends CompilationTest("HwachaSequencer", "/regress")
 
-abstract class CommonSubexprEliminationEquivTest(name: String, dir: String)
-    extends EquivalenceTest(Seq(firrtl.passes.CommonSubexpressionElimination), name, dir)
 abstract class LowFirrtlOptimizationEquivTest(name: String, dir: String)
     extends EquivalenceTest(Seq(new LowFirrtlOptimization), name, dir)
 
-class OpsCommonSubexprEliminationTest extends CommonSubexprEliminationEquivTest("Ops", "/regress")
 class OpsLowFirrtlOptimizationTest extends LowFirrtlOptimizationEquivTest("Ops", "/regress")

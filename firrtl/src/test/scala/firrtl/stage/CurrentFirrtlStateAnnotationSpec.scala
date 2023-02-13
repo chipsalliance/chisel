@@ -21,16 +21,4 @@ class CurrentFirrtlStateAnnotationSpec extends AnyFlatSpec with Matchers {
     new Compiler(Forms.VerilogOptimized, currentState).flattenedTransformOrder.map(Dependency.fromTransform)
   }
 
-  behavior.of("CurrentFirrtlStateAnnotation")
-
-  it should "produce an expected transform order for low FIRRTL -> Verilog" in {
-    val transforms = getTransforms("low")
-    transforms should contain(Dependency(firrtl.passes.CommonSubexpressionElimination))
-  }
-
-  it should "produce an expected transform order for optimized low FIRRTL -> Verilog" in {
-    val transforms = getTransforms("low-opt")
-    transforms should not contain (Dependency(firrtl.passes.CommonSubexpressionElimination))
-  }
-
 }
