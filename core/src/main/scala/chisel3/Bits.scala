@@ -1086,7 +1086,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ) {
+  ): Unit = {
     this := that.asSInt
   }
 }

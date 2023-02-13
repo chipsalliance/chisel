@@ -418,7 +418,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private def _binding:    Option[Binding] = Option(_bindingVar)
   // Only valid after node is bound (synthesizable), crashes otherwise
   protected[chisel3] def binding: Option[Binding] = _binding
-  protected def binding_=(target: Binding) {
+  protected def binding_=(target: Binding): Unit = {
     if (_binding.isDefined) {
       throw RebindingException(s"Attempted reassignment of binding to $this, from: ${target}")
     }
@@ -468,7 +468,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private def _direction:    Option[ActualDirection] = Option(_directionVar)
 
   private[chisel3] def direction: ActualDirection = _direction.get
-  private[chisel3] def direction_=(actualDirection: ActualDirection) {
+  private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
     if (_direction.isDefined) {
       throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }

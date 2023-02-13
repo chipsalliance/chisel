@@ -62,7 +62,7 @@ package object experimental {
   object requireIsHardware {
     def apply(node: Data, msg: String = ""): Unit = {
       node._parent match { // Compatibility layer hack
-        case Some(x: BaseModule) => x._compatAutoWrapPorts
+        case Some(x) => x._compatAutoWrapPorts
         case _ =>
       }
       if (!node.isSynthesizable) {
