@@ -30,7 +30,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
   property("basic equality check should work") {
     val fir = ChiselStage.emitCHIRRTL(new SimpleTest)
-    val lines = fir.split("\n").map(_.trim)
+    val lines = fir.split("\n").map(_.trim).toIndexedSeq
 
     // reset guard around the verification statement
     assertContains(lines, "when _T_2 : ")
@@ -64,7 +64,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     // read in FIRRTL file
     val svFile = new File(testDir, "AnnotationTest.sv")
     svFile should exist
-    val svLines = scala.io.Source.fromFile(svFile).getLines.toList
+    val svLines = scala.io.Source.fromFile(svFile).getLines().toList
 
     // check that verification appear in verilog output
     exactly(1, svLines) should include("cover__cov: cov")

@@ -60,7 +60,7 @@ class InlineSpec extends AnyFreeSpec with ChiselRunners with Matchers {
             case FirrtlCircuitAnnotation(circuit) => circuit
           }
           .map(collectInstances(_, Some("Top")))
-          .getOrElse(fail)
+          .getOrElse(fail())
 
       instanceNames should contain theSameElementsAs Set("Top", "Top.x_sub", "Top.y_sub", "Top.z", "Top.z.sub")
     }
@@ -88,7 +88,7 @@ class InlineSpec extends AnyFreeSpec with ChiselRunners with Matchers {
             case FirrtlCircuitAnnotation(circuit) => circuit
           }
           .map(collectInstances(_, Some("Top")))
-          .getOrElse(fail)
+          .getOrElse(fail())
 
       instanceNames should contain theSameElementsAs Set("Top", "Top.x")
     }
