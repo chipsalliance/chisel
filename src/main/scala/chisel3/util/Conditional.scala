@@ -66,19 +66,19 @@ object is {
   // TODO: Begin deprecation of non-type-parameterized is statements.
   /** Executes `block` if the switch condition is equal to any of the values in `v`.
     */
-  def apply(v: Iterable[Element])(block: => Any) {
+  def apply(v: Iterable[Element])(block: => Any): Unit = {
     require(false, "The 'is' keyword may not be used outside of a switch.")
   }
 
   /** Executes `block` if the switch condition is equal to `v`.
     */
-  def apply(v: Element)(block: => Any) {
+  def apply(v: Element)(block: => Any): Unit = {
     require(false, "The 'is' keyword may not be used outside of a switch.")
   }
 
   /** Executes `block` if the switch condition is equal to any of the values in the argument list.
     */
-  def apply(v: Element, vr: Element*)(block: => Any) {
+  def apply(v: Element, vr: Element*)(block: => Any): Unit = {
     require(false, "The 'is' keyword may not be used outside of a switch.")
   }
 }
