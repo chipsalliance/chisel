@@ -131,7 +131,8 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     })
   }
 
-  import chisel3.experimental.{DataMirror, Direction}
+  import chisel3.experimental.Direction
+  import chisel3.reflect.DataMirror
 
   property("Flipped should flip the specified direction of a Bundle") {
     class MyBundle extends Bundle {

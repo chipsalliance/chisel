@@ -6,7 +6,8 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.{requireIsChiselType, DataMirror, Direction}
+import chisel3.experimental.{requireIsChiselType, Direction}
+import chisel3.reflect.DataMirror
 
 import scala.annotation.nowarn
 

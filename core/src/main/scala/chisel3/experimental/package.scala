@@ -92,7 +92,7 @@ package object experimental {
     import dataview._
     def coerceDirection(d: Data) = {
       import chisel3.{SpecifiedDirection => SD}
-      DataMirror.specifiedDirectionOf(gen) match {
+      chisel3.reflect.DataMirror.specifiedDirectionOf(gen) match {
         case SD.Flip   => Flipped(d)
         case SD.Input  => Input(d)
         case SD.Output => Output(d)
