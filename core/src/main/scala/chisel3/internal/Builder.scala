@@ -469,6 +469,8 @@ private[chisel3] class DynamicContext(
 
   val instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = mutable.HashMap()
 
+  val contextCache: BuilderContextCache = BuilderContextCache.empty
+
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
@@ -531,6 +533,8 @@ private[chisel3] object Builder extends LazyLogging {
 
   def instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = dynamicContext.instantiateCache
   def enumAnnos:        mutable.HashSet[ChiselAnnotation] = dynamicContext.enumAnnos
+
+  def contextCache: BuilderContextCache = dynamicContext.contextCache
 
   // TODO : Unify this with annotations in the future - done this way for backward compatability
   def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
