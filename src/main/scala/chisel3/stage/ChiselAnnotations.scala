@@ -141,7 +141,7 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
   def apply(name: String): ChiselGeneratorAnnotation = {
     val gen = () =>
       try {
-        Class.forName(name).asInstanceOf[Class[_ <: RawModule]].newInstance()
+        Class.forName(name).asInstanceOf[Class[_ <: RawModule]].getDeclaredConstructor().newInstance()
       } catch {
         case e: ClassNotFoundException =>
           throw new OptionsException(s"Unable to locate module '$name'! (Did you misspell it?)", e)

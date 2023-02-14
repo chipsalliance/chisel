@@ -85,7 +85,9 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         case other => other
       }
 
-      val annotations: Seq[Annotation] = chiselIR.firrtlAnnotations.toSeq.filterNot { a => a.isInstanceOf[DesignAnnotation[_]] }
+      val annotations: Seq[Annotation] = chiselIR.firrtlAnnotations.toSeq.filterNot { a =>
+        a.isInstanceOf[DesignAnnotation[_]]
+      }
 
       /** Statements to be injected via aspect. */
       val stmts = mutable.ArrayBuffer[ir.Statement]()

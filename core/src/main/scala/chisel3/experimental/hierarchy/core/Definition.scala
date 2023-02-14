@@ -9,7 +9,6 @@ import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
 import chisel3.experimental.{BaseModule, SourceInfo}
-import chisel3.experimental.hierarchy.Definition
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
 
 /** User-facing Definition type.

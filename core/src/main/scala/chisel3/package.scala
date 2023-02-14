@@ -301,7 +301,7 @@ package object chisel3 {
       }
 
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
-      val parts = sc.parts.map(StringContext.treatEscapes)
+      val parts = sc.parts.map(StringContext.processEscapes)
       // The 1st part is assumed never to contain a format specifier.
       // If the 1st part of a string is an argument - then the 1st part will be an empty String.
       // So we need to parse parts following the 1st one to get the format specifiers if any

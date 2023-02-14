@@ -261,7 +261,7 @@ object DataMirror {
         case (Some(l), Some(r)) =>
           collector.lift((l, r)) match {
             case Some(x) => Some((Some(x), None))
-            case None => None
+            case None    => None
           }
         case other => None
       }
@@ -270,7 +270,7 @@ object DataMirror {
       case (Some(l), Some(r)) =>
         collector.lift((l, r)) match {
           case Some(x) => Some((Some(x), None))
-          case None => None
+          case None    => None
         }
       case other => None
     }.collect {
@@ -295,7 +295,7 @@ object DataMirror {
       case (lOpt: Option[D], rOpt: Option[D]) =>
         collector.lift((lOpt, rOpt)) match {
           case Some(x) => Some((Some(x), None))
-          case None => None
+          case None    => None
         }
     }.collect {
       case (Some(x), None) => x

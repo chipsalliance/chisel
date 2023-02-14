@@ -102,7 +102,9 @@ private[chisel3] object Converter {
       val lit = bp.asInstanceOf[KnownBinaryPoint].value
       fir.DoPrim(firrtl.PrimOps.AsInterval, Seq(uint), Seq(n, n, lit), fir.UnknownType)
     case lit: ILit =>
-      throwException(s"Internal Error! Unexpected ILit: $lit")
+      throw new InternalErrorException(s"Unexpected ILit: $lit")
+    case other =>
+      throw new InternalErrorException(s"Unexpected type in convert $other")
   }
 
   /** Convert Commands that map 1:1 to Statements */

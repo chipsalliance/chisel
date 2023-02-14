@@ -13,6 +13,7 @@ import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleNa
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.renamemap.MutableRenameMap
+import _root_.firrtl.util.BackendCompilationUtilities._
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
@@ -114,7 +115,7 @@ private[chisel3] class IdGen {
   def value: Long = counter
 }
 
-private[chisel3] trait HasId extends InstanceId {
+private[chisel3] trait HasId extends chisel3.InstanceId {
   // using nullable var for better memory usage
   private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
@@ -203,7 +204,7 @@ private[chisel3] trait HasId extends InstanceId {
   // wrapping
   private[chisel3] def forceFinalName(seed: String): this.type = {
     // This could be called with user prefixes, ignore them
-    noPrefix {
+    chisel3.experimental.noPrefix {
       suggested_seedVar = seed
       this.suggestName(seed)
     }
@@ -558,6 +559,8 @@ private[chisel3] object Builder extends LazyLogging {
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing
         case ModuleIO(_, n) => Some(n) // BlackBox port
+        case f =>
+          throw new InternalErrorException(s"Match Error: field=$f")
       }
       def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
         a.flatMap(ax => b.map(f(ax, _)))
@@ -777,7 +780,7 @@ private[chisel3] object Builder extends LazyLogging {
     *
     * @param m exception message
     */
-  @throws(classOf[ChiselException])
+  @throws(classOf[chisel3.ChiselException])
   def exception(m: => String)(implicit sourceInfo: SourceInfo): Nothing = {
     error(m)
     throwException(m)

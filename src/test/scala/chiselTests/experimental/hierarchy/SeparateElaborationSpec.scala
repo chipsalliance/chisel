@@ -10,6 +10,7 @@ import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
 import firrtl.AnnotationSeq
 import firrtl.options.TargetDirAnnotation
+import firrtl.util.BackendCompilationUtilities.createTestDirectory
 
 import java.nio.file.Paths
 import scala.io.Source

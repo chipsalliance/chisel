@@ -16,6 +16,7 @@ import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation}
 import firrtl.annotations.Annotation
 import firrtl.ir.Circuit
 import firrtl.stage.FirrtlCircuitAnnotation
+import firrtl.util.BackendCompilationUtilities
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import org.scalacheck._
 import org.scalatest._
@@ -31,7 +32,7 @@ import java.security.Permission
 import scala.reflect.ClassTag
 
 /** Common utility functions for Chisel unit tests. */
-trait ChiselRunners extends Assertions with BackendCompilationUtilities {
+trait ChiselRunners extends Assertions {
   def runTester(
     t:                    => BasicTester,
     additionalVResources: Seq[String] = Seq(),
@@ -94,7 +95,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   def compile(t: => RawModule): String = {
     (new circt.stage.ChiselStage)
       .execute(
-        Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
+        Array("--target-dir", BackendCompilationUtilities.createTestDirectory(this.getClass.getSimpleName).toString),
         Seq(ChiselGeneratorAnnotation(() => t), CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
       )
       .collectFirst {
