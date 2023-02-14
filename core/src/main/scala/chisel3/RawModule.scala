@@ -183,6 +183,16 @@ package object internal {
     }
   }
 
+  // Sanitizes a name, e.g. from a `HasId`, by stripping all non ANSI-C characters
+  def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
+    // TODO what character set does FIRRTL truly support? using ANSI C for now
+    def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+    def legal(c:      Char) = legalStart(c) || (c >= '0' && c <= '9')
+    val res = if (s.forall(legal)) s else s.filter(legal)
+    val headOk = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
+    if (headOk) res else s"_$res"
+  }
+
   // Private reflective version of "val io" to maintain Chisel.Module semantics without having
   // io as a virtual method. See https://github.com/freechipsproject/chisel3/pull/1550 for more
   // information about the removal of "val io"

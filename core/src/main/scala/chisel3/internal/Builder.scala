@@ -42,15 +42,6 @@ private[chisel3] class Namespace(keywords: Set[String]) {
     }
   }
 
-  private def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
-    // TODO what character set does FIRRTL truly support? using ANSI C for now
-    def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
-    def legal(c:      Char) = legalStart(c) || (c >= '0' && c <= '9')
-    val res = if (s.forall(legal)) s else s.filter(legal)
-    val headOk = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
-    if (headOk) res else s"_$res"
-  }
-
   /** Checks if `n` ends in `_\d+` and returns the substring before `_` if so, null otherwise */
   // TODO can and should this be folded in to sanitize? Same iteration as the forall?
   private def prefix(n: String): Int = {
@@ -260,10 +251,18 @@ private[chisel3] trait HasId extends InstanceId {
     refBuilder: String => Arg = Ref(_)
   ): Unit =
     if (_ref.isEmpty) {
-      val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).get
+      val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).getOrElse {
+        throwException(s"Default names are not allowed for IO ports. Use suggestName to seed a unique name for $this instead")
+      }
+
+      val sanitized = sanitize(candidate_name)
       val available_name = namespace.name(candidate_name)
-      if (errorIfDup && (available_name != candidate_name)) {
-        Builder.error(s"Cannot have duplicate names $available_name and $candidate_name")(UnlocatableSourceInfo)
+      // Check if characters were stripped from the candidate name and the resulting sanitized name results conflicts with an existing name
+      if (errorIfDup && (candidate_name != sanitized) && (available_name != sanitized)) {
+        Builder.error(s"Attempted to name $this with an unsanitary name '$candidate_name': sanitization results in a duplicated name '$sanitized'. Please seed a more unique name")(UnlocatableSourceInfo)
+      }
+      if (errorIfDup && (available_name != sanitized)) {
+        Builder.error(s"Attempted to name $this with a duplicated name '$candidate_name'. Use suggestName to seed a unique name")(UnlocatableSourceInfo)
       }
       setRef(refBuilder(available_name))
       // Clear naming prefix to free memory
