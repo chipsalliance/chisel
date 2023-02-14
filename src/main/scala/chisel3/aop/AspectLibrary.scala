@@ -18,7 +18,7 @@ final class AspectLibrary() extends RegisteredLibrary {
       // If a regular class, instantiate, otherwise try as a singleton object
       try {
         val x = Class.forName(aspectName).asInstanceOf[Class[_ <: Aspect[RawModule]]]
-        x.newInstance()
+        x.getDeclaredConstructor().newInstance()
       } catch {
         case e: InstantiationException =>
           val rm = runtimeMirror(getClass.getClassLoader)

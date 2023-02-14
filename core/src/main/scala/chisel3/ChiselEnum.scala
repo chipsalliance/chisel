@@ -3,6 +3,7 @@
 package chisel3
 
 import scala.language.experimental.macros
+import scala.language.existentials
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
 import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}

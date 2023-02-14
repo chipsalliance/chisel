@@ -11,7 +11,7 @@ import scala.collection.mutable
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 package object dataview {
-  case class InvalidViewException(message: String) extends ChiselException(message)
+  case class InvalidViewException(message: String) extends chisel3.ChiselException(message)
 
   /** Provides `viewAs` for types that have an implementation of [[DataProduct]]
     *
