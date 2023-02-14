@@ -260,7 +260,7 @@ object DataMirror {
       (lOpt, rOpt) match {
         case (Some(l), Some(r)) =>
           collector.lift((l, r)) match {
-            case Some(x: T) => Some((Some(x), None))
+            case Some(x) => Some((Some(x), None))
             case None => None
           }
         case other => None
@@ -269,12 +269,12 @@ object DataMirror {
     collectMembersOverAllForAnyFunction(Some(left), Some(right)) {
       case (Some(l), Some(r)) =>
         collector.lift((l, r)) match {
-          case Some(x: T) => Some((Some(x), None))
+          case Some(x) => Some((Some(x), None))
           case None => None
         }
       case other => None
     }.collect {
-      case (Some(x: T), None) => (x)
+      case (Some(x), None) => (x)
     }
   }
 
@@ -294,11 +294,11 @@ object DataMirror {
     collectMembersOverAllForAnyFunction(Some(left), Some(right)) {
       case (lOpt: Option[D], rOpt: Option[D]) =>
         collector.lift((lOpt, rOpt)) match {
-          case Some(x: T) => Some((Some(x), None))
+          case Some(x) => Some((Some(x), None))
           case None => None
         }
     }.collect {
-      case (Some(x: T), None) => x
+      case (Some(x), None) => x
     }
   }
 

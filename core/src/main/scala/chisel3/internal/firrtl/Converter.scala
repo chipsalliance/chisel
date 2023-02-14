@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal.firrtl
+
 import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
-
+import chisel3.EnumType
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.{Queue, VectorBuilder}
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
@@ -46,7 +47,7 @@ private[chisel3] object Converter {
 
   def convert(info: SourceInfo): fir.Info = info match {
     case _: NoSourceInfo => fir.NoInfo
-    case SourceLine(fn, line, col) => fir.FileInfo(fir.StringLit(s"$fn $line:$col"))
+    case SourceLine(fn, line, col) => fir.FileInfo.fromUnescaped(s"$fn $line:$col")
   }
 
   def convert(op: PrimOp): fir.PrimOp = firrtl.PrimOps.fromString(op.name)

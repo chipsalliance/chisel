@@ -18,7 +18,7 @@ import chisel3.internal.sourceinfo.{CompileOptionsTransform, SourceInfoTransform
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
 
-class AliasedAggregateFieldException(message: String) extends ChiselException(message)
+class AliasedAggregateFieldException(message: String) extends chisel3.ChiselException(message)
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -1262,12 +1262,12 @@ trait IgnoreSeqInBundle {
   override def ignoreSeq: Boolean = true
 }
 
-class AutoClonetypeException(message: String) extends ChiselException(message)
+class AutoClonetypeException(message: String) extends chisel3.ChiselException(message)
 
 package experimental {
 
-  class BundleLiteralException(message: String) extends ChiselException(message)
-  class VecLiteralException(message: String) extends ChiselException(message)
+  class BundleLiteralException(message: String) extends chisel3.ChiselException(message)
+  class VecLiteralException(message: String) extends chisel3.ChiselException(message)
 
   /** Indicates that the compiler plugin should generate [[cloneType]] for this type
     *

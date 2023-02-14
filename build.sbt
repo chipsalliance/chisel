@@ -16,6 +16,7 @@ lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "3.6-SNAPSHOT",
   autoAPIMappings := true,
+//  scalaVersion := "2.12.17",
   scalaVersion := "2.13.10",
   crossScalaVersions := Seq("2.13.10", "2.12.17"),
   scalacOptions := Seq("-deprecation", "-feature"),
@@ -39,7 +40,8 @@ lazy val warningSuppression = Seq(
   scalacOptions += "-Wconf:" + Seq(
     "msg=APIs in chisel3.internal:s",
     "msg=Importing from firrtl:s",
-    "msg=migration to the MLIR:s"
+    "msg=migration to the MLIR:s",
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s"  // replacement `knownSize` is not in 2.12
   ).mkString(",")
 )
 
