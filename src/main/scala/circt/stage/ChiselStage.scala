@@ -29,7 +29,7 @@ class ChiselStage extends Stage {
         Dependency[chisel3.stage.ChiselStage],
         Dependency[firrtl.stage.phases.AddImplicitOutputFile],
         Dependency[circt.stage.phases.Checks],
-        Dependency[circt.stage.CIRCTStage]
+        Dependency[circt.stage.phases.CIRCT]
       ),
       currentState = Seq(
         Dependency[firrtl.stage.phases.AddDefaults],

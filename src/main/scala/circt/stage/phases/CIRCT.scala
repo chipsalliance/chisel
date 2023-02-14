@@ -120,8 +120,6 @@ class CIRCT extends Phase {
   import scala.sys.process._
 
   override def prerequisites = Seq(
-    Dependency[firrtl.stage.phases.AddDefaults],
-    Dependency[firrtl.stage.phases.AddImplicitEmitter],
     Dependency[firrtl.stage.phases.AddImplicitOutputFile]
   )
   override def optionalPrerequisites = Seq.empty
