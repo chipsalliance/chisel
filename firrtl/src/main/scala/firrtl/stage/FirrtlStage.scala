@@ -38,5 +38,3 @@ class FirrtlStage extends Stage {
   override protected def run(annotations: AnnotationSeq): AnnotationSeq = phase.transform(annotations)
 
 }
-
-object FirrtlMain extends StageMain(new FirrtlStage)
