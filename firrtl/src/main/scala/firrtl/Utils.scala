@@ -11,7 +11,7 @@ import firrtl.WrappedExpression._
 import scala.collection.mutable
 import scala.util.matching.Regex
 
-import Implicits.{constraint2bound, constraint2width, width2constraint}
+import Implicits.{constraint2width, width2constraint}
 import firrtl.constraint.{IsMax, IsMin}
 import firrtl.annotations.{ReferenceTarget, TargetToken}
 import _root_.logger.LazyLogging
@@ -24,22 +24,6 @@ object seqCat {
     case _ =>
       val (high, low) = args.splitAt(args.length / 2)
       DoPrim(PrimOps.Cat, Seq(seqCat(high), seqCat(low)), Nil, UIntType(UnknownWidth))
-  }
-}
-
-/** Given an expression, return an expression consisting of all sub-expressions
-  * concatenated (or flattened).
-  */
-object toBits {
-  def apply(e: Expression): Expression = e match {
-    case ex @ (_: WRef | _: WSubField | _: WSubIndex) => hiercat(ex)
-    case t => Utils.error(s"Invalid operand expression for toBits: $e")
-  }
-  private def hiercat(e: Expression): Expression = e.tpe match {
-    case t: VectorType => seqCat((0 until t.size).reverse.map(i => hiercat(WSubIndex(e, i, t.tpe, UnknownFlow))))
-    case t: BundleType => seqCat(t.fields.map(f => hiercat(WSubField(e, f.name, f.tpe, UnknownFlow))))
-    case t: GroundType => DoPrim(AsUInt, Seq(e), Seq.empty, UnknownType)
-    case t => Utils.error(s"Unknown type encountered in toBits: $e")
   }
 }
 
@@ -70,66 +54,6 @@ object bitWidth {
     case GroundType(IntWidth(width)) => width
     case t                           => Utils.error(s"Unknown type encountered in bitWidth: $dt")
   }
-}
-
-object castRhs {
-  def apply(lhst: Type, rhs: Expression) = {
-    (lhst, rhs.tpe) match {
-      case (x: GroundType, y: GroundType) if WrappedType(x) == WrappedType(y) =>
-        rhs
-      case (_: SIntType, _) =>
-        DoPrim(AsSInt, Seq(rhs), Seq.empty, lhst)
-      case (ClockType, _) =>
-        DoPrim(AsClock, Seq(rhs), Seq.empty, lhst)
-      case (_: UIntType, _) =>
-        DoPrim(AsUInt, Seq(rhs), Seq.empty, lhst)
-      case (_, _) => Utils.error("castRhs lhst, rhs type combination is invalid")
-    }
-  }
-}
-
-object fromBits {
-  def apply(lhs: Expression, rhs: Expression): Statement = {
-    val fbits = lhs match {
-      case ex @ (_: WRef | _: WSubField | _: WSubIndex) => getPart(ex, ex.tpe, rhs, 0)
-      case _ => Utils.error("Invalid LHS expression for fromBits!")
-    }
-    Block(fbits._2)
-  }
-  private def getPartGround(lhs: Expression, lhst: Type, rhs: Expression, offset: BigInt): (BigInt, Seq[Statement]) = {
-    val intWidth = bitWidth(lhst)
-    val sel = DoPrim(PrimOps.Bits, Seq(rhs), Seq(offset + intWidth - 1, offset), UnknownType)
-    val rhsConnect = castRhs(lhst, sel)
-    (offset + intWidth, Seq(Connect(NoInfo, lhs, rhsConnect)))
-  }
-  private def getPart(lhs: Expression, lhst: Type, rhs: Expression, offset: BigInt): (BigInt, Seq[Statement]) =
-    lhst match {
-      case t: VectorType =>
-        ((0 until t.size).foldLeft((offset, Seq[Statement]()))) {
-          case ((curOffset, stmts), i) =>
-            val subidx = WSubIndex(lhs, i, t.tpe, UnknownFlow)
-            val (tmpOffset, substmts) = getPart(subidx, t.tpe, rhs, curOffset)
-            (tmpOffset, stmts ++ substmts)
-        }
-      case t: BundleType =>
-        (t.fields.foldRight((offset, Seq[Statement]()))) {
-          case (f, (curOffset, stmts)) =>
-            val subfield = WSubField(lhs, f.name, f.tpe, UnknownFlow)
-            val (tmpOffset, substmts) = getPart(subfield, f.tpe, rhs, curOffset)
-            (tmpOffset, stmts ++ substmts)
-        }
-      case t: GroundType => getPartGround(lhs, t, rhs, offset)
-      case t => Utils.error(s"Unknown type encountered in fromBits: $lhst")
-    }
-}
-
-object connectFields {
-  def apply(lref: Expression, lname: String, rref: Expression, rname: String): Connect =
-    Connect(NoInfo, WSubField(lref, lname), WSubField(rref, rname))
-}
-
-object flattenType {
-  def apply(t: Type) = UIntType(IntWidth(bitWidth(t)))
 }
 
 object Utils extends LazyLogging {
@@ -194,18 +118,6 @@ object Utils extends LazyLogging {
         case _ => Block(newStmts)
       }
     case sx => sx
-  }
-
-  /** Returns true if PrimOp is a cast, false otherwise */
-  def isCast(op: PrimOp): Boolean = op match {
-    case AsUInt | AsSInt | AsClock | AsAsyncReset => true
-    case _                                        => false
-  }
-
-  /** Returns true if Expression is a casting PrimOp, false otherwise */
-  def isCast(expr: Expression): Boolean = expr match {
-    case DoPrim(op, _, _, _) if isCast(op) => true
-    case _                                 => false
   }
 
   /** Returns true if PrimOp is a BitExtraction, false otherwise */
@@ -732,198 +644,6 @@ object Utils extends LazyLogging {
     }
   }
 
-  /** Creates a Bundle Type from a Stmt */
-  def stmtToType(s: Statement): BundleType = {
-    // Recursive helper
-    def recStmtToType(s: Statement): Seq[Field] = s match {
-      case sx: DefWire     => Seq(Field(sx.name, Default, sx.tpe))
-      case sx: DefRegister => Seq(Field(sx.name, Default, sx.tpe))
-      case sx: WDefInstance => Seq(Field(sx.name, Default, sx.tpe))
-      case sx: DefMemory =>
-        sx.dataType match {
-          case (_: UIntType | _: SIntType) =>
-            Seq(Field(sx.name, Default, passes.MemPortUtils.memType(sx)))
-          case tpe: BundleType =>
-            val newFields = tpe.fields
-              .map(f =>
-                DefMemory(
-                  sx.info,
-                  f.name,
-                  f.tpe,
-                  sx.depth,
-                  sx.writeLatency,
-                  sx.readLatency,
-                  sx.readers,
-                  sx.writers,
-                  sx.readwriters
-                )
-              )
-              .flatMap(recStmtToType)
-            Seq(Field(sx.name, Default, BundleType(newFields)))
-          case tpe: VectorType =>
-            val newFields =
-              (0 until tpe.size).map(i => sx.copy(name = i.toString, dataType = tpe.tpe)).flatMap(recStmtToType)
-            Seq(Field(sx.name, Default, BundleType(newFields)))
-        }
-      case sx: DefNode       => Seq(Field(sx.name, Default, sx.value.tpe))
-      case sx: Conditionally => recStmtToType(sx.conseq) ++ recStmtToType(sx.alt)
-      case sx: Block         => (sx.stmts.map(recStmtToType)).flatten
-      case sx => Seq()
-    }
-    BundleType(recStmtToType(s))
-  }
-
-  // format: off
-  val v_keywords = Set(
-    "alias", "always", "always_comb", "always_ff", "always_latch",
-    "and", "assert", "assign", "assume", "attribute", "automatic",
-
-    "before", "begin", "bind", "bins", "binsof", "bit", "break",
-    "buf", "bufif0", "bufif1", "byte",
-
-    "case", "casex", "casez", "cell", "chandle", "checker", "class", "clocking",
-    "cmos", "config", "const", "constraint", "context", "continue",
-    "cover", "covergroup", "coverpoint", "cross",
-
-    "deassign", "default", "defparam", "design", "disable", "dist", "do",
-
-    "edge", "else", "end", "endattribute", "endcase", "endclass",
-    "endclocking", "endconfig", "endfunction", "endgenerate",
-    "endgroup", "endinterface", "endmodule", "endpackage",
-    "endprimitive", "endprogram", "endproperty", "endspecify",
-    "endsequence", "endtable", "endtask",
-    "enum", "event", "expect", "export", "extends", "extern",
-
-    "final", "first_match", "for", "force", "foreach", "forever",
-    "fork", "forkjoin", "function",
-    "generate", "genvar",
-    "highz0", "highz1",
-    "if", "iff", "ifnone", "ignore_bins", "illegal_bins", "import",
-    "incdir", "include", "initial", "initvar", "inout", "input",
-    "inside", "instance", "int", "integer", "interconnect",
-    "interface", "intersect",
-
-    "join", "join_any", "join_none", "large", "liblist", "library",
-    "local", "localparam", "logic", "longint",
-
-    "macromodule", "matches", "medium", "modport", "module",
-
-    "nand", "negedge", "new", "nmos", "nor", "noshowcancelled",
-    "not", "notif0", "notif1", "null",
-
-    "or", "output",
-
-    "package", "packed", "parameter", "pmos", "posedge",
-    "primitive", "priority", "program", "property", "protected",
-    "pull0", "pull1", "pulldown", "pullup",
-    "pulsestyle_onevent", "pulsestyle_ondetect", "pure",
-
-    "rand", "randc", "randcase", "randsequence", "rcmos",
-    "real", "realtime", "ref", "reg", "release", "repeat",
-    "return", "rnmos", "rpmos", "rtran", "rtranif0", "rtranif1",
-
-    "scalared", "sequence", "shortint", "shortreal", "showcancelled",
-    "signed", "small", "solve", "specify", "specparam", "static",
-    "strength", "string", "strong", "strong0", "strong1", "struct", "super",
-    "supply0", "supply1",
-
-    "table", "tagged", "task", "this", "throughout", "time", "timeprecision",
-    "timeunit", "tran", "tranif0", "tranif1", "tri", "tri0", "tri1", "triand",
-    "trior", "trireg", "type","typedef",
-
-    "union", "unique", "unsigned", "use",
-
-    "var", "vectored", "virtual", "void",
-
-    "wait", "wait_order", "wand", "weak", "weak0", "weak1", "while",
-    "wildcard", "wire", "with", "within", "wor",
-
-    "xnor", "xor",
-
-    "SYNTHESIS",
-    "PRINTF_COND",
-    "VCS")
-  // format: on
-
-  /** Expand a name into its prefixes, e.g., 'foo_bar__baz' becomes 'Seq[foo_, foo_bar__, foo_bar__baz]'. This can be used
-    * to produce better names when generating prefix unique names.
-    * @param name a signal name
-    * @param prefixDelim a prefix delimiter (default is "_")
-    * @return the signal name and any prefixes
-    */
-  def expandPrefixes(name: String, prefixDelim: String = "_"): Seq[String] = {
-    val regex = ("(" + Regex.quote(prefixDelim) + ")+[A-Za-z0-9$]").r
-
-    name +: regex
-      .findAllMatchIn(name)
-      .map(_.end - 1)
-      .toSeq
-      .foldLeft(Seq[String]()) { case (seq, id) => seq :+ name.splitAt(id)._1 }
-  }
-
-  /** Returns the value masked with the width.
-    *
-    * This supports truncating negative values as well as values that are too
-    * wide for the width
-    */
-  def maskBigInt(value: BigInt, width: Int): BigInt = {
-    value & ((BigInt(1) << width) - 1)
-  }
-
-  /** Returns true iff the expression is a Literal or a Literal cast to a different type. */
-  def isLiteral(e: Expression): Boolean = e match {
-    case _: Literal => true
-    case DoPrim(op, args, _, _) if isCast(op) => args.exists(isLiteral)
-    case _                                    => false
-  }
-
-  /** Applies the firrtl And primop. Automatically constant propagates when one of the expressions is True or False. */
-  def and(e1: Expression, e2: Expression): Expression = {
-    assert(e1.tpe == e2.tpe)
-    (e1, e2) match {
-      case (a: UIntLiteral, b: UIntLiteral) => UIntLiteral(a.value | b.value, a.width)
-      case (True(), b)      => b
-      case (a, True())      => a
-      case (False(), _)     => False()
-      case (_, False())     => False()
-      case (a, b) if a == b => a
-      case (a, b)           => DoPrim(PrimOps.And, Seq(a, b), Nil, BoolType)
-    }
-  }
-
-  /** Applies the firrtl Eq primop. */
-  def eq(e1: Expression, e2: Expression): Expression = DoPrim(PrimOps.Eq, Seq(e1, e2), Nil, BoolType)
-
-  /** Applies the firrtl Or primop. Automatically constant propagates when one of the expressions is True or False. */
-  def or(e1: Expression, e2: Expression): Expression = {
-    assert(e1.tpe == e2.tpe)
-    (e1, e2) match {
-      case (a: UIntLiteral, b: UIntLiteral) => UIntLiteral(a.value | b.value, a.width)
-      case (True(), _)      => True()
-      case (_, True())      => True()
-      case (False(), b)     => b
-      case (a, False())     => a
-      case (a, b) if a == b => a
-      case (a, b)           => DoPrim(PrimOps.Or, Seq(a, b), Nil, BoolType)
-    }
-  }
-
-  /** Applies the firrtl Not primop. Automatically constant propagates when the expressions is True or False. */
-  def not(e: Expression): Expression = e match {
-    case True()  => False()
-    case False() => True()
-    case a       => DoPrim(PrimOps.Not, Seq(a), Nil, BoolType)
-  }
-
-  /** implies(e1, e2) = or(not(e1), e2). Automatically constant propagates when one of the expressions is True or False. */
-  def implies(e1: Expression, e2: Expression): Expression = or(not(e1), e2)
-
-  /** Builds a Mux expression with the correct type. */
-  def mux(cond: Expression, tval: Expression, fval: Expression): Expression = {
-    require(tval.tpe == fval.tpe)
-    Mux(cond, tval, fval, tval.tpe)
-  }
-
   /** Similar to Seq.groupBy except that it preserves ordering of elements within each group */
   def groupByIntoSeq[A, K](xs: Iterable[A])(f: A => K): Seq[(K, Seq[A])] = {
     val map = mutable.LinkedHashMap.empty[K, mutable.ListBuffer[A]]
@@ -994,87 +714,4 @@ object Utils extends LazyLogging {
     ir.Circuit(NoInfo, top +: res.toSeq, top.name)
   }
 
-  object True {
-    private val _True = UIntLiteral(1, IntWidth(1))
-
-    /** Matches `UInt<1>(1)` */
-    def unapply(e: UIntLiteral): Boolean = e.value == 1 && e.width == _True.width
-
-    /** Returns `UInt<1>(1)` */
-    def apply(): UIntLiteral = _True
-  }
-  object False {
-    private val _False = UIntLiteral(0, IntWidth(1))
-
-    /** Matches `UInt<1>(0)` */
-    def unapply(e: UIntLiteral): Boolean = e.value == 0 && e.width == _False.width
-
-    /** Returns `UInt<1>(0)` */
-    def apply(): UIntLiteral = _False
-  }
-}
-
-object MemoizedHash {
-  implicit def convertTo[T](e:   T):               MemoizedHash[T] = new MemoizedHash(e)
-  implicit def convertFrom[T](f: MemoizedHash[T]): T = f.t
-}
-
-class MemoizedHash[T](val t: T) {
-  override lazy val hashCode = t.hashCode
-  override def equals(that: Any) = that match {
-    case x: MemoizedHash[_] => t.equals(x.t)
-    case _ => false
-  }
-}
-
-/**
-  * Maintains a one to many graph of each modules instantiated child module.
-  * This graph can be searched for a path from a child module back to one of
-  * it's parents.  If one is found a recursive loop has happened
-  * The graph is a map between the name of a node to set of names of that nodes children
-  */
-class ModuleGraph {
-  val nodes = mutable.HashMap[String, mutable.HashSet[String]]()
-
-  /**
-    * Add a child to a parent node
-    * A parent node is created if it does not already exist
-    *
-    * @param parent module that instantiates another module
-    * @param child  module instantiated by parent
-    * @return a list indicating a path from child to parent, empty if no such path
-    */
-  def add(parent: String, child: String): List[String] = {
-    val childSet = nodes.getOrElseUpdate(parent, new mutable.HashSet[String])
-    childSet += child
-    pathExists(child, parent, List(child, parent))
-  }
-
-  /**
-    * Starting at the name of a given child explore the tree of all children in depth first manner.
-    * Return the first path (a list of strings) that goes from child to parent,
-    * or an empty list of no such path is found.
-    *
-    * @param child  starting name
-    * @param parent name to find in children (recursively)
-    * @param path   path being investigated as possible route
-    * @return
-    */
-  def pathExists(child: String, parent: String, path: List[String] = Nil): List[String] = {
-    nodes.get(child) match {
-      case Some(children) =>
-        if (children(parent)) {
-          parent :: path
-        } else {
-          children.foreach { grandchild =>
-            val newPath = pathExists(grandchild, parent, grandchild :: path)
-            if (newPath.nonEmpty) {
-              return newPath
-            }
-          }
-          Nil
-        }
-      case _ => Nil
-    }
-  }
 }
