@@ -53,7 +53,7 @@ object EmitCircuitAnnotation extends HasShellOptions {
       shortOption = Some("E"),
       // the experimental options are intentionally excluded from the help message
       helpValueName = Some("<chirrtl|high|middle|low>")
-    ),
+    )
   )
 }
 
@@ -88,20 +88,6 @@ object EmitAllModulesAnnotation extends HasShellOptions {
       helpText = "Run the specified module emitter (one file per module)",
       shortOption = Some("e"),
       helpValueName = Some("<chirrtl|high|middle|low>")
-    ),
-    new ShellOption[String](
-      longOption = "emission-options",
-      toAnnotationSeq = s =>
-        s.split(",")
-          .map {
-            case "disableRegisterRandomization" =>
-              CustomDefaultRegisterEmission(useInitAsPreset = false, disableRandomization = true)
-            case "disableMemRandomization" => CustomDefaultMemoryEmission(MemoryNoInit)
-            case a                         => throw new PhaseException(s"Unknown emission options '$a'! (Did you misspell it?)")
-          }
-          .toSeq,
-      helpText = "Options to disable random initialization for memory and registers",
-      helpValueName = Some("<disableMemRandomization,disableRegisterRandomization>")
     )
   )
 
