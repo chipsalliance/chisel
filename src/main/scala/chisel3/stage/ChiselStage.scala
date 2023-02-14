@@ -24,6 +24,7 @@ import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 
 import java.io.{PrintWriter, StringWriter}
 
+@deprecated(pleaseSwitchToCIRCT, "Chisel 3.6")
 class ChiselStage extends Stage {
 
   override def prerequisites = Seq.empty
@@ -126,9 +127,11 @@ class ChiselStage extends Stage {
   }
 }
 
+@deprecated(pleaseSwitchToCIRCT, "Chisel 3.6")
 object ChiselMain extends StageMain(new ChiselStage)
 
 /** Helper methods for working with [[ChiselStage]] */
+@deprecated(pleaseSwitchToCIRCT, "Chisel 3.6")
 object ChiselStage {
 
   /** Return a Chisel circuit for a Chisel module
