@@ -28,6 +28,7 @@ import firrtl.transforms.{GroupAnnotation, GroupComponents}
   *       because they are also connected to their module's clock port. This means that if you want
   *       a register to be included in a group, it must be explicitly referred to in the input list.
   */
+@deprecated(deprecatedMFCMessage, "Chisel 3.6")
 object group {
 
   /** Marks a set of components (and their interconnected components) to be included in a new
