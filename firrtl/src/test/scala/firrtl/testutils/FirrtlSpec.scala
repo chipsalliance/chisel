@@ -18,50 +18,12 @@ import firrtl.options.Dependency
 import firrtl.stage.{FirrtlFileAnnotation, InfoModeAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.analyses.{GetNamespace, ModuleNamespaceAnnotation}
 import firrtl.annotations._
-import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation, RenameModules}
+import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.renamemap.MutableRenameMap
 import firrtl.util.BackendCompilationUtilities
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-
-case class RenameTopAnnotation(newTopName: String) extends NoTargetAnnotation
-
-object RenameTop extends Transform {
-  def inputForm = UnknownForm
-  def outputForm = UnknownForm
-  override def invalidates(a: Transform) = false
-
-  override val optionalPrerequisites = Seq(Dependency[RenameModules])
-
-  override val optionalPrerequisiteOf = Seq.empty
-
-  def execute(state: CircuitState): CircuitState = {
-    val c = state.circuit
-    val ns = Namespace(c)
-
-    val newTopName = state.annotations
-      .collectFirst({
-        case RenameTopAnnotation(name) =>
-          require(ns.tryName(name))
-          name
-      })
-      .getOrElse(c.main)
-
-    state.annotations.collect {
-      case ModuleNamespaceAnnotation(mustNotCollideNS) => require(mustNotCollideNS.tryName(newTopName))
-    }
-
-    val modulesx = c.modules.map {
-      case m: Module if (m.name == c.main) => m.copy(name = newTopName)
-      case m => m
-    }
-
-    val renames = MutableRenameMap()
-    renames.record(CircuitTarget(c.main), CircuitTarget(newTopName))
-    state.copy(circuit = c.copy(main = newTopName, modules = modulesx), renames = Some(renames))
-  }
-}
 
 trait FirrtlRunners {
   import BackendCompilationUtilities._
@@ -88,14 +50,11 @@ trait FirrtlRunners {
     def toAnnos(xforms: Seq[Transform]) = xforms.map(RunFirrtlTransformAnnotation(_))
 
     def getBaseAnnos(topName: String) = {
-      val baseTransforms = Seq(RenameTop)
       TargetDirAnnotation(testDir.toString) +:
         InfoModeAnnotation("ignore") +:
-        RenameTopAnnotation(topName) +:
         stage.FirrtlCircuitAnnotation(circuit) +:
         stage.RunFirrtlTransformAnnotation.stringToEmitter("mverilog") +:
-        stage.OutputFileAnnotation(topName) +:
-        toAnnos(baseTransforms)
+        Seq(stage.OutputFileAnnotation(topName))
     }
 
     val customName = s"${prefix}_custom"
@@ -105,7 +64,7 @@ trait FirrtlRunners {
     val nsAnno = customResult.collectFirst { case m: ModuleNamespaceAnnotation => m }.get
 
     val refSuggestedName = s"${prefix}_ref"
-    val refAnnos = Seq(RunFirrtlTransformAnnotation(new RenameModules), nsAnno) ++: getBaseAnnos(refSuggestedName)
+    val refAnnos = Seq(nsAnno) ++: getBaseAnnos(refSuggestedName)
 
     val refResult = (new firrtl.stage.FirrtlStage).execute(Array.empty, refAnnos)
     val refName =
