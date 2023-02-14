@@ -516,7 +516,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       chisel3.assert(vec.read(UInt(1)) === UInt(3))
 
       val (_, done) = Counter(Bool(true), 4)
-      when(done) { stop }
+      when(done) { stop() }
     }
 
     assertTesterPasses(new Foo)

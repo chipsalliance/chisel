@@ -5,6 +5,7 @@ package chiselTests
 import circt.stage.ChiselStage
 import chisel3._
 import chisel3.experimental._
+import chisel3.reflect.DataMirror
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 

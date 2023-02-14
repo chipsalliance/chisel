@@ -10,8 +10,8 @@ import scala.collection.mutable
 
 import chisel3._
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
-import chisel3.experimental.DataMirror
-import chisel3.experimental.DataMirror.internal.isSynthesizable
+import chisel3.reflect.DataMirror
+import chisel3.reflect.DataMirror.internal.isSynthesizable
 import chisel3.internal.Builder
 import chisel3.ExplicitCompileOptions
 

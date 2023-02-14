@@ -135,7 +135,7 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     file should exist
     mem.foreach(m => {
       info(s"Memory $m is referenced in $file")
-      val found = io.Source.fromFile(file).getLines.exists { _.contains(s"""readmemh("$m"""") }
+      val found = io.Source.fromFile(file).getLines().exists { _.contains(s"""readmemh("$m"""") }
       found should be(true)
     })
   }

@@ -25,7 +25,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   // Perhaps this should be an ArrayBuffer (or ArrayBuilder), but DefModule is public and has Seq[Command]
   // so our best option is to share a single Seq datastructure with that
   private val _commands = new VectorBuilder[Command]()
-  private[chisel3] def addCommand(c: Command) {
+  private[chisel3] def addCommand(c: Command): Unit = {
     require(!_closed, "Can't write to module after module close")
     _commands += c
   }
