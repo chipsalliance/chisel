@@ -3,7 +3,6 @@
 package firrtl
 package transforms
 
-import firrtl.ir._
 import firrtl.annotations._
 import firrtl.options.{HasShellOptions, ShellOption}
 
@@ -26,21 +25,4 @@ case object NoCircuitDedupAnnotation extends NoTargetAnnotation with HasShellOpt
     )
   )
 
-}
-
-/** Holds the mapping from original module to the instances the original module pointed to
-  * The original module target is unaffected by renaming
-  * @param duplicate Instance target of what the original module now points to
-  * @param original Original module
-  * @param index the normalized position of the original module in the original module list, fraction between 0 and 1
-  */
-case class DedupedResult(original: ModuleTarget, duplicate: Option[IsModule], index: Double)
-    extends MultiTargetAnnotation {
-  override val targets: Seq[Seq[Target]] = Seq(Seq(original), duplicate.toList)
-  override def duplicate(n: Seq[Seq[Target]]): Annotation = {
-    n.toList match {
-      case Seq(_, List(dup: IsModule)) => DedupedResult(original, Some(dup), index)
-      case _ => DedupedResult(original, None, -1)
-    }
-  }
 }
