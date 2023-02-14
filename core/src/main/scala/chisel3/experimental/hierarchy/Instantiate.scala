@@ -105,6 +105,10 @@ object Instantiate {
     case other => other
   }
 
+  import chisel3.internal.BuilderContextCache
+  private case class CacheKey[A <: BaseModule](args: Any, tt: ru.WeakTypeTag[A], co: CompileOptions)
+      extends BuilderContextCache.Key[Definition[A]]
+
   /** This is not part of the public API, do not call directly! */
   def _impl[K, A <: BaseModule: ru.WeakTypeTag](
     args: K,
@@ -116,8 +120,8 @@ object Instantiate {
     val tag = implicitly[ru.WeakTypeTag[A]]
     // Include type of module in key since different modules could have the same arguments
     // CompileOptions need to be included but are likely a source of confusion for users
-    val key = (boxAllData(args), tag, compileOptions)
-    val defn = Builder.instantiateCache
+    val key = CacheKey(boxAllData(args), tag, compileOptions)
+    val defn = Builder.contextCache
       .getOrElseUpdate(
         key, {
           // The definition needs to have no source locator because otherwise it will be unstably

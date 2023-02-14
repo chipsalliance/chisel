@@ -467,8 +467,6 @@ private[chisel3] class DynamicContext(
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
 
-  val instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = mutable.HashMap()
-
   val contextCache: BuilderContextCache = BuilderContextCache.empty
 
   // Set by object Module.apply before calling class Module constructor
@@ -531,8 +529,7 @@ private[chisel3] object Builder extends LazyLogging {
   def components:      ArrayBuffer[Component] = dynamicContext.components
   def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
-  def instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = dynamicContext.instantiateCache
-  def enumAnnos:        mutable.HashSet[ChiselAnnotation] = dynamicContext.enumAnnos
+  def enumAnnos: mutable.HashSet[ChiselAnnotation] = dynamicContext.enumAnnos
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
