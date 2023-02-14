@@ -28,7 +28,4 @@ trait FirrtlCli { this: Shell =>
     AllowUnrecognizedAnnotations
   )
     .map(_.addOptions(parser))
-
-  phases.DriverCompatibility.TopNameAnnotation.addOptions(parser)
-  phases.DriverCompatibility.EmitOneFilePerModuleAnnotation.addOptions(parser)
 }
