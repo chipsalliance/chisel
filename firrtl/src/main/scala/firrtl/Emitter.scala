@@ -4,7 +4,6 @@ package firrtl
 
 import java.io.File
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.backends.proto.{Emitter => ProtoEmitter}
 import firrtl.options.Viewer.view
 import firrtl.options.{CustomFileEmission, Dependency, HasShellOptions, PhaseException, ShellOption}
 import firrtl.passes.PassException
@@ -55,49 +54,6 @@ object EmitCircuitAnnotation extends HasShellOptions {
       // the experimental options are intentionally excluded from the help message
       helpValueName = Some("<chirrtl|high|middle|low>")
     ),
-    new ShellOption[String](
-      longOption = "emit-circuit-protobuf",
-      toAnnotationSeq = (a: String) =>
-        a match {
-          case "chirrtl" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.Chirrtl),
-              EmitCircuitAnnotation(classOf[ProtoEmitter.Chirrtl])
-            )
-          case "mhigh" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.MHigh),
-              EmitCircuitAnnotation(classOf[ProtoEmitter.MHigh])
-            )
-          case "high" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.High),
-              EmitCircuitAnnotation(classOf[ProtoEmitter.High])
-            )
-          case "middle" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.Middle),
-              EmitCircuitAnnotation(classOf[ProtoEmitter.Middle])
-            )
-          case "low" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.Low),
-              EmitCircuitAnnotation(classOf[ProtoEmitter.Low])
-            )
-          case "low-opt" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.OptLow),
-              EmitCircuitAnnotation(classOf[ProtoEmitter.OptLow])
-            )
-          case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
-        },
-      helpText = "Run the specified circuit emitter generating a Protocol Buffer format",
-      shortOption = Some("P"),
-      // the experimental options are intentionally excluded from the help message
-      helpValueName = Some(
-        "<chirrtl|mhigh|high|middle|low|low-opt>"
-      )
-    )
   )
 }
 
@@ -132,43 +88,6 @@ object EmitAllModulesAnnotation extends HasShellOptions {
       helpText = "Run the specified module emitter (one file per module)",
       shortOption = Some("e"),
       helpValueName = Some("<chirrtl|high|middle|low>")
-    ),
-    new ShellOption[String](
-      longOption = "emit-modules-protobuf",
-      toAnnotationSeq = (a: String) =>
-        a match {
-          case "chirrtl" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.Chirrtl),
-              EmitAllModulesAnnotation(classOf[ProtoEmitter.Chirrtl])
-            )
-          case "mhigh" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.MHigh),
-              EmitAllModulesAnnotation(classOf[ProtoEmitter.MHigh])
-            )
-          case "high" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.High),
-              EmitAllModulesAnnotation(classOf[ProtoEmitter.High])
-            )
-          case "middle" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.Middle),
-              EmitAllModulesAnnotation(classOf[ProtoEmitter.Middle])
-            )
-          case "low" =>
-            Seq(RunFirrtlTransformAnnotation(new ProtoEmitter.Low), EmitAllModulesAnnotation(classOf[ProtoEmitter.Low]))
-          case "low-opt" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new ProtoEmitter.OptLow),
-              EmitAllModulesAnnotation(classOf[ProtoEmitter.OptLow])
-            )
-          case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
-        },
-      helpText = "Run the specified module emitter (one protobuf per module)",
-      shortOption = Some("p"),
-      helpValueName = Some("<chirrtl|mhigh|high|middle|low|low-opt>")
     ),
     new ShellOption[String](
       longOption = "emission-options",
