@@ -16,7 +16,6 @@ import firrtl.ir._
 import firrtl.Parser.UseInfo
 import firrtl.options.Dependency
 import firrtl.stage.{FirrtlFileAnnotation, InfoModeAnnotation, RunFirrtlTransformAnnotation}
-import firrtl.analyses.{GetNamespace, ModuleNamespaceAnnotation}
 import firrtl.annotations._
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.renamemap.MutableRenameMap
@@ -58,13 +57,12 @@ trait FirrtlRunners {
     }
 
     val customName = s"${prefix}_custom"
-    val customAnnos = customAnnotations ++: toAnnos((new GetNamespace) +: customTransforms) ++: getBaseAnnos(customName)
+    val customAnnos = customAnnotations ++: toAnnos(customTransforms) ++: getBaseAnnos(customName)
 
     val customResult = (new firrtl.stage.FirrtlStage).execute(Array.empty, customAnnos)
-    val nsAnno = customResult.collectFirst { case m: ModuleNamespaceAnnotation => m }.get
 
     val refSuggestedName = s"${prefix}_ref"
-    val refAnnos = Seq(nsAnno) ++: getBaseAnnos(refSuggestedName)
+    val refAnnos = getBaseAnnos(refSuggestedName)
 
     val refResult = (new firrtl.stage.FirrtlStage).execute(Array.empty, refAnnos)
     val refName =
