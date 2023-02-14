@@ -3,12 +3,7 @@
 package firrtl.passes
 package wiring
 
-import firrtl._
-import firrtl.Utils._
-import scala.collection.mutable
 import firrtl.annotations._
-import firrtl.options.Dependency
-import firrtl.stage.Forms
 
 /** A component, e.g. register etc. Must be declared only once under the TopAnnotation */
 case class SourceAnnotation(target: ComponentName, pin: String) extends SingleTargetAnnotation[ComponentName] {

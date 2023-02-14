@@ -6,42 +6,6 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 
-/** Given a mask, return a bitmask corresponding to the desired datatype.
-  *  Requirements:
-  *    - The mask type and datatype must be equivalent, except any ground type in
-  *         datatype must be matched by a 1-bit wide UIntType.
-  *    - The mask must be a reference, subfield, or subindex
-  *  The bitmask is a series of concatenations of the single mask bit over the
-  *    length of the corresponding ground type, e.g.:
-  * {{{
-  * wire mask: {x: UInt<1>, y: UInt<1>}
-  * wire data: {x: UInt<2>, y: SInt<2>}
-  * // this would return:
-  * cat(cat(mask.x, mask.x), cat(mask.y, mask.y))
-  * }}}
-  */
-object toBitMask {
-  def apply(mask: Expression, dataType: Type): Expression = mask match {
-    case ex @ (_: WRef | _: WSubField | _: WSubIndex) => hiermask(ex, dataType)
-    case t => error("Invalid operand expression for toBits!")
-  }
-  private def hiermask(mask: Expression, dataType: Type): Expression =
-    (mask.tpe, dataType) match {
-      case (mt: VectorType, dt: VectorType) =>
-        seqCat((0 until mt.size).reverse.map { i =>
-          hiermask(WSubIndex(mask, i, mt.tpe, UnknownFlow), dt.tpe)
-        })
-      case (mt: BundleType, dt: BundleType) =>
-        seqCat((mt.fields.zip(dt.fields)).map {
-          case (mf, df) =>
-            hiermask(WSubField(mask, mf.name, mf.tpe, UnknownFlow), df.tpe)
-        })
-      case (UIntType(width), dt: GroundType) if width == IntWidth(BigInt(1)) =>
-        seqCat(List.fill(bitWidth(dt).intValue)(mask))
-      case (mt, dt) => error("Invalid type for mask component!")
-    }
-}
-
 object createMask {
   def apply(dt: Type): Type = dt match {
     case t: VectorType => VectorType(apply(t.tpe), t.size)
