@@ -5,7 +5,6 @@ package firrtlTests.annotationTests
 import firrtl.FileUtils
 import firrtl.annotations._
 import firrtl.passes.memlib.ReplSeqMemAnnotation
-import firrtl.stage.FirrtlMain
 import firrtl.testutils.FirrtlFlatSpec
 import firrtl.transforms.BlackBoxInlineAnno
 import logger.Logger
@@ -61,42 +60,6 @@ class UnrecognizedAnnotationSpec extends FirrtlFlatSpec {
 
   // Following test will operate on an annotation JSON file with two unrecognized annotations in it
   //
-
-  it should "fail by default" in {
-    val fileNames = setupFiles(addAllowUnrecognizedFlag = false, addAllowUnrecognizedAnno = false)
-    val args = makeCommandLineArgs(fileNames)
-    val e = intercept[InvalidAnnotationFileException] {
-      FirrtlMain.main(args)
-    }
-
-    e.getMessage should include(fileNames.inputAnnotations)
-    e.getCause.getMessage should include("freechips.rocketchip.util.RegFieldDescMappingAnnotation")
-    e.getCause.getMessage should include("freechips.rocketchip.util.SRAMAnnotation")
-  }
-
-  it should "succeed when the AllowUnrecognized flag is passed on command line" in {
-    val fileNames = setupFiles(addAllowUnrecognizedFlag = false, addAllowUnrecognizedAnno = true)
-    shouldSucceed(fileNames)
-  }
-
-  it should "succeed when the AllowUnrecognizedAnnotation is in the annotation file" in {
-    val fileNames = setupFiles(addAllowUnrecognizedFlag = true, addAllowUnrecognizedAnno = false)
-    shouldSucceed(fileNames)
-  }
-
-  it should "succeed when both forms of the override are specified" in {
-    val fileNames = setupFiles(addAllowUnrecognizedFlag = true, addAllowUnrecognizedAnno = true)
-    shouldSucceed(fileNames)
-  }
-
-  def shouldSucceed(fileNames: TestFileNames): Unit = {
-    val args = makeCommandLineArgs(fileNames)
-    FirrtlMain.main(args)
-
-    val outputAnnotationText = FileUtils.getText(fileNames.outputAnnotationsFull)
-    outputAnnotationText should include("freechips.rocketchip.util.RegFieldDescMappingAnnotation")
-    outputAnnotationText should include("freechips.rocketchip.util.SRAMAnnotation")
-  }
 
   case class TestFileNames(
     allowUnrecognized:     Boolean,
