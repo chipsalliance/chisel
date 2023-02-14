@@ -7,8 +7,6 @@ import Utils.trim
 import firrtl.constraint.Constraint
 
 object Implicits {
-  implicit def int2WInt(i:         Int): WrappedInt = WrappedInt(BigInt(i))
-  implicit def bigint2WInt(i:      BigInt): WrappedInt = WrappedInt(i)
   implicit def constraint2bound(c: Constraint): Bound = c match {
     case x: Bound => x
     case x => CalcBound(x)
@@ -23,8 +21,4 @@ object Implicits {
     case UnknownWidth => UnknownBound
     case v: Constraint => v
   }
-}
-case class WrappedInt(value: BigInt) {
-  def U: Expression = UIntLiteral(value, IntWidth(Utils.getUIntWidth(value)))
-  def S: Expression = SIntLiteral(value, IntWidth(Utils.getSIntWidth(value)))
 }
