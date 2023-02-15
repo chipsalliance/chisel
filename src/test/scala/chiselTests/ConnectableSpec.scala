@@ -10,7 +10,8 @@ import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
-import chisel3.experimental.{DataMirror, OpaqueType}
+import chisel3.experimental.OpaqueType
+import chisel3.reflect.DataMirror
 import scala.collection.immutable.SeqMap
 
 object ConnectableSpec {

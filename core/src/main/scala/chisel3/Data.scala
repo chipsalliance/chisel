@@ -418,7 +418,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private def _binding:    Option[Binding] = Option(_bindingVar)
   // Only valid after node is bound (synthesizable), crashes otherwise
   protected[chisel3] def binding: Option[Binding] = _binding
-  protected def binding_=(target: Binding) {
+  protected def binding_=(target: Binding): Unit = {
     if (_binding.isDefined) {
       throw RebindingException(s"Attempted reassignment of binding to $this, from: ${target}")
     }
@@ -468,7 +468,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private def _direction:    Option[ActualDirection] = Option(_directionVar)
 
   private[chisel3] def direction: ActualDirection = _direction.get
-  private[chisel3] def direction_=(actualDirection: ActualDirection) {
+  private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
     if (_direction.isDefined) {
       throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
@@ -869,7 +869,7 @@ object Data {
           (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
         case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
           (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
-        case (lOpt, rOpt) if isElement(lOpt, rOpt) => Nil
+        case (lOpt: Option[Element @unchecked], rOpt: Option[Element @unchecked]) if isElement(lOpt, rOpt) => Nil
       }
   }
 
@@ -995,6 +995,57 @@ trait WireFactory {
   */
 object Wire extends WireFactory
 
+private[chisel3] sealed trait WireDefaultImpl {
+
+  private def applyImpl[T <: Data](
+    t:    T,
+    init: Data
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
+    val x = Wire(t)
+    requireIsHardware(init, "wire initializer")
+    x := init
+    x
+  }
+
+  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
+    */
+  def apply[T <: Data](
+    t:    T,
+    init: DontCare.type
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
+    applyImpl(t, init)
+  }
+
+  /** Construct a [[Wire]] with a type template and a default connection
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The hardware value that will serve as the default value
+    */
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
+  }
+
+  /** Construct a [[Wire]] with a default connection
+    * @param init The hardware value that will serve as a type template and default value
+    */
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init match {
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
+      case _ => init.cloneTypeFull
+    }).asInstanceOf[T]
+    apply(model, init)
+  }
+}
+
 /** Utility for constructing hardware wires with a default connection
   *
   * The two forms of `WireDefault` differ in how the type and width of the resulting [[Wire]] are
@@ -1050,60 +1101,17 @@ object Wire extends WireFactory
   *   x
   * }
   * }}}
+  */
+object WireDefault extends WireDefaultImpl
+
+/** Utility for constructing hardware wires with a default connection
   *
-  * @note The `Default` in `WireDefault` refers to a `default` connection. This is in contrast to
+  * Alias for [[WireDefault]].
+  *
+  * @note The `Init` in `WireInit` refers to a "default" connection. This is in contrast to
   * [[RegInit]] where the `Init` refers to a value on reset.
   */
-object WireDefault {
-
-  private def applyImpl[T <: Data](
-    t:    T,
-    init: Data
-  )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
-  ): T = {
-    val x = Wire(t)
-    requireIsHardware(init, "wire initializer")
-    x := init
-    x
-  }
-
-  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
-    * @param t The type template used to construct this [[Wire]]
-    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
-    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
-    */
-  def apply[T <: Data](
-    t:    T,
-    init: DontCare.type
-  )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
-  ): T = {
-    applyImpl(t, init)
-  }
-
-  /** Construct a [[Wire]] with a type template and a default connection
-    * @param t The type template used to construct this [[Wire]]
-    * @param init The hardware value that will serve as the default value
-    */
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    applyImpl(t, init)
-  }
-
-  /** Construct a [[Wire]] with a default connection
-    * @param init The hardware value that will serve as a type template and default value
-    */
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init match {
-      // If init is a literal without forced width OR any non-literal, let width be inferred
-      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
-      case _ => init.cloneTypeFull
-    }).asInstanceOf[T]
-    apply(model, init)
-  }
-}
+object WireInit extends WireDefaultImpl
 
 /** RHS (source) for Invalidate API.
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).

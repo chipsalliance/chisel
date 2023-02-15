@@ -62,8 +62,8 @@ package object experimental {
   object requireIsHardware {
     def apply(node: Data, msg: String = ""): Unit = {
       node._parent match { // Compatibility layer hack
-        case Some(x: BaseModule) => x._compatAutoWrapPorts
-        case _ =>
+        case Some(x) => x._compatAutoWrapPorts
+        case _       =>
       }
       if (!node.isSynthesizable) {
         val prefix = if (msg.nonEmpty) s"$msg " else ""
@@ -92,7 +92,7 @@ package object experimental {
     import dataview._
     def coerceDirection(d: Data) = {
       import chisel3.{SpecifiedDirection => SD}
-      DataMirror.specifiedDirectionOf(gen) match {
+      chisel3.reflect.DataMirror.specifiedDirectionOf(gen) match {
         case SD.Flip   => Flipped(d)
         case SD.Input  => Input(d)
         case SD.Output => Output(d)
@@ -533,5 +533,7 @@ package object experimental {
       "_10" -> _10
     )
   }
+
+  @deprecated("This value has moved to chisel3.reflect", "Chisel 3.6")
   val DataMirror = chisel3.reflect.DataMirror
 }

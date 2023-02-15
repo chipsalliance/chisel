@@ -362,7 +362,6 @@ class IsOneOfTester extends BasicTester {
 }
 
 class ChiselEnumSpec extends ChiselFlatSpec with Utils {
-  import chisel3.internal.ChiselException
 
   behavior.of("ChiselEnum")
 
@@ -745,7 +744,7 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     CorrectVecAnno("bund.inner_bundle1.v", enumExampleName, Set())
   )
 
-  def printAnnos(annos: Seq[Annotation]) {
+  def printAnnos(annos: Seq[Annotation]): Unit = {
     println("Enum definitions:")
     annos.foreach {
       case EnumDefAnnotation(enumTypeName, definition) => println(s"\t$enumTypeName: $definition")
@@ -802,7 +801,7 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
   def allCorrectVecs(annos: Seq[EnumVecAnnotation], corrects: Seq[CorrectVecAnno]): Boolean =
     corrects.forall(c => annos.exists(isCorrect(_, c)))
 
-  def test(strongEnumAnnotatorGen: () => Module) {
+  def test(strongEnumAnnotatorGen: () => Module): Unit = {
     val annos = (new chisel3.stage.ChiselStage).execute(
       Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
       Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))

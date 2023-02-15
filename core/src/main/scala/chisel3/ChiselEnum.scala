@@ -5,12 +5,12 @@ package chisel3
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
-import chisel3.experimental.{annotate, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{throwException, Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId}
+import chisel3.internal.{throwException, Binding, Builder, BuilderContextCache, ChildBinding, ConstrainedBinding}
 
 import chisel3.experimental.EnumAnnotations._
 
@@ -153,7 +153,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
         case b: Bundle => enumFields(b)
         case _ => Seq()
       }
-    case b: Bundle =>
+    case b: Record =>
       b.elements.collect {
         case (name, e: EnumType) if this.typeEquivalent(e) => Seq(Seq(name))
         case (name, v: Vec[_]) if this.typeEquivalent(v.sample_element) => Seq(Seq(name))
@@ -183,13 +183,16 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
       case None    => EnumComponentChiselAnnotation(this, enumTypeName)
     }
 
-    if (!Builder.enumAnnos.contains(anno)) {
-      Builder.enumAnnos += anno
+    // Enum annotations are added every time a ChiselEnum is bound
+    // To keep the number down, we keep them unique in the annotations
+    val enumAnnos = Builder.contextCache.getOrElseUpdate(ChiselEnum.CacheKey, mutable.HashSet.empty[ChiselAnnotation])
+    if (!enumAnnos.contains(anno)) {
+      enumAnnos += anno
       annotate(anno)
     }
 
-    if (!Builder.enumAnnos.contains(factory.globalAnnotation)) {
-      Builder.enumAnnos += factory.globalAnnotation
+    if (!enumAnnos.contains(factory.globalAnnotation)) {
+      enumAnnos += factory.globalAnnotation
       annotate(factory.globalAnnotation)
     }
   }
@@ -218,6 +221,10 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
     }
     result.map(Character(_)).foldLeft(p"")(_ + _)
   }
+}
+
+private[chisel3] object ChiselEnum {
+  private[chisel3] case object CacheKey extends BuilderContextCache.Key[mutable.HashSet[ChiselAnnotation]]
 }
 
 abstract class ChiselEnum {

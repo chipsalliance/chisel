@@ -120,8 +120,6 @@ class CIRCT extends Phase {
   import scala.sys.process._
 
   override def prerequisites = Seq(
-    Dependency[firrtl.stage.phases.AddDefaults],
-    Dependency[firrtl.stage.phases.AddImplicitEmitter],
     Dependency[firrtl.stage.phases.AddImplicitOutputFile]
   )
   override def optionalPrerequisites = Seq.empty
@@ -148,15 +146,6 @@ class CIRCT extends Phase {
         split = true
         Nil
       }
-      case a @ RunFirrtlTransformAnnotation(transform) =>
-        transform match {
-          /* Inlining/Flattening happen by default, so these can be dropped. */
-          case _: firrtl.passes.InlineInstances | _: firrtl.transforms.Flatten => Nil
-          /* Any emitters should not be passed to firtool. */
-          case _: firrtl.Emitter => Nil
-          /* Default case: leave the annotation around and let firtool warn about it. */
-          case _ => Seq(a)
-        }
       case firrtl.passes.memlib.InferReadWriteAnnotation =>
         inferReadWrite = true
         Nil
@@ -167,7 +156,6 @@ class CIRCT extends Phase {
         logLevel = anno.globalLogLevel
         Nil
       /* The following can be dropped. */
-      case _: firrtl.transforms.CombinationalPath   => Nil
       case _: _root_.logger.ClassLogLevelAnnotation => Nil
       /* Default case: leave the annotation around and let firtool warn about it. */
       case a => Seq(a)

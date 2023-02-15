@@ -8,7 +8,6 @@ import chisel3.reflect.DataMirror
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
-import chisel3.reflect.DataMirror
 
 import scala.collection.immutable.{ListMap, SeqMap}
 
@@ -282,7 +281,7 @@ class RecordSpec extends ChiselFlatSpec with Utils {
   they should "work correctly with DataMirror in nested OpaqueType Records" in {
     var mod: NestedRecordModule = null
     ChiselStage.elaborate { mod = new NestedRecordModule; mod }
-    val ports = chisel3.experimental.DataMirror.fullModulePorts(mod.inst)
+    val ports = DataMirror.fullModulePorts(mod.inst)
     val expectedPorts = Seq(
       ("clock", mod.inst.clock),
       ("reset", mod.inst.reset),

@@ -6,19 +6,18 @@ import scala.util.hashing.MurmurHash3
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
+import chisel3.internal.{Builder, BuilderContextCache}
 
 import circt.Intrinsic
 
 // We have to unique designedName per type, be we can't due to name conflicts
 // on bundles.  Thus we use a globally unique id.
 private object SizeOfGlobalIDGen {
-  private var id: Int = 0
+  private case object CacheKey extends BuilderContextCache.Key[Int]
   def getID() = {
-    this.synchronized {
-      val oldID = id
-      id = id + 1
-      oldID
-    }
+    val oldID = Builder.contextCache.getOrElse(CacheKey, 0)
+    Builder.contextCache.put(CacheKey, oldID + 1)
+    oldID
   }
 }
 

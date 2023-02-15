@@ -95,7 +95,7 @@ class ValueTester(w: Int, values: List[Int]) extends BasicTester {
 
 class TabulateTester(n: Int) extends BasicTester {
   val v = VecInit(Range(0, n).map(i => (i * 2).asUInt))
-  val x = VecInit(Array.tabulate(n) { i => (i * 2).asUInt })
+  val x = VecInit(Array.tabulate(n) { i => (i * 2).asUInt }.toIndexedSeq)
   val u = VecInit.tabulate(n)(i => (i * 2).asUInt)
 
   assert(v.asUInt === x.asUInt)
@@ -106,7 +106,7 @@ class TabulateTester(n: Int) extends BasicTester {
 }
 
 class FillTester(n: Int, value: Int) extends BasicTester {
-  val x = VecInit(Array.fill(n)(value.U))
+  val x = VecInit(Array.fill(n)(value.U).toIndexedSeq)
   val u = VecInit.fill(n)(value.U)
 
   assert(x.asUInt === u.asUInt, cf"Expected Vec to be filled like $x, instead VecInit.fill created $u")
@@ -345,9 +345,6 @@ class ReduceTreeTester() extends BasicTester {
 }
 
 class VecSpec extends ChiselPropSpec with Utils {
-  // Disable shrinking on error.
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Vecs should be assignable") {
     forAll(safeUIntN(8)) {

@@ -104,27 +104,6 @@ private[chisel3] class IdGen {
   def value: Long = counter
 }
 
-/** Public API to access Node/Signal names.
-  * currently, the node's name, the full path name, and references to its parent Module and component.
-  * These are only valid once the design has been elaborated, and should not be used during its construction.
-  */
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-trait InstanceId {
-  def instanceName:   String
-  def pathName:       String
-  def parentPathName: String
-  def parentModName:  String
-
-  /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
-  def toNamed: Named
-
-  /** Returns a FIRRTL IsMember that refers to this object in the elaborated hardware graph */
-  def toTarget: IsMember
-
-  /** Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph */
-  def toAbsoluteTarget: IsMember
-}
-
 private[chisel3] trait HasId extends InstanceId {
   // using nullable var for better memory usage
   private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
@@ -475,10 +454,6 @@ private[chisel3] class DynamicContext(
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   var currentModule: Option[BaseModule] = None
 
-  // Enum annotations are added every time a ChiselEnum is bound
-  // To keep the number down, we keep them unique in the annotations
-  val enumAnnos = mutable.HashSet[ChiselAnnotation]()
-
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
     */
@@ -487,7 +462,7 @@ private[chisel3] class DynamicContext(
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
 
-  val instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = mutable.HashMap()
+  val contextCache: BuilderContextCache = BuilderContextCache.empty
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -549,8 +524,7 @@ private[chisel3] object Builder extends LazyLogging {
   def components:      ArrayBuffer[Component] = dynamicContext.components
   def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
-  def instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = dynamicContext.instantiateCache
-  def enumAnnos:        mutable.HashSet[ChiselAnnotation] = dynamicContext.enumAnnos
+  def contextCache: BuilderContextCache = dynamicContext.contextCache
 
   // TODO : Unify this with annotations in the future - done this way for backward compatability
   def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
@@ -892,7 +866,7 @@ object DynamicNamingStack {
     prefixRef
   }
 
-  def length(): Int = Builder.namingStackOption.get.length
+  def length(): Int = Builder.namingStackOption.get.length()
 }
 
 /** Casts BigInt to Int, issuing an error when the input isn't representable. */

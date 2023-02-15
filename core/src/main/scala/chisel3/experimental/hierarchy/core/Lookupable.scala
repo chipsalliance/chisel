@@ -69,6 +69,7 @@ object Lookupable {
             newChild.bind(internal.CrossModuleBinding)
             newChild.setAllParents(Some(m))
             newChild
+          case _ => throw new InternalErrorException("Match error: newParent=$newParent")
         }
     }
   }
@@ -197,6 +198,7 @@ object Lookupable {
                 AggregateViewBinding(newMap)
             }
         }
+      case _ => throw new InternalErrorException("Match error: data.topBinding=${data.topBinding}")
     }
 
     // TODO Unify the following with `.viewAs`
@@ -213,6 +215,7 @@ object Lookupable {
             Builder.unnamedViews += agg
           case _ => // Do nothing
         }
+      case _ => throw new InternalErrorException("Match error: newBinding=$newBinding")
     }
 
     result.bind(newBinding)
@@ -256,6 +259,11 @@ object Lookupable {
             case Proto(p) => Proto(m)
             case Clone(p: BaseModule) =>
               clone(m, Some(p), () => m.instanceName)
+            case _ =>
+              throw new Exception(
+                s"Match Error: cloneModuleToContext(Proto(m._parent.get), context)=" +
+                  s"${cloneModuleToContext(Proto(m._parent.get), context)}"
+              )
           }
       }
     }
@@ -268,6 +276,7 @@ object Lookupable {
             val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
             Clone(newChild)
+          case _ => throw new InternalErrorException("Match error: rec(m)=${rec(m)}")
         }
       case Clone(m: InstanceClone[_]) =>
         rec(m) match {
@@ -276,7 +285,9 @@ object Lookupable {
             val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
             Clone(newChild)
+          case _ => throw new InternalErrorException("Match error: rec(m)=${rec(m)}")
         }
+      case _ => throw new InternalErrorException("Match error: module=$module")
     }
   }
 
@@ -381,6 +392,8 @@ object Lookupable {
             Builder.currentModule = existingMod
             newChild.setRef(mem.getRef, true)
             newChild
+          case _ =>
+            throw new InternalErrorException("Match error: newParent=$newParent")
         }
     }
   }

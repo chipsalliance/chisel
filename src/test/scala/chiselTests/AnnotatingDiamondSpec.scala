@@ -4,7 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
-import chisel3.internal.InstanceId
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers.BasicTester
 import firrtl.{CircuitForm, CircuitState, DependencyAPIMigration, LowForm, Transform}
