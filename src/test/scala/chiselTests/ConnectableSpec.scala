@@ -57,6 +57,9 @@ object ConnectableSpec {
   def flippedBarBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
     val bar = Flipped(fieldType)
   }
+  def opaqueType[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Record with OpaqueType {
+    lazy val elements = SeqMap("" -> Flipped(Flipped(fieldType)))
+  }
 
   def allElementTypes(): Seq[() => Data] = Seq(() => UInt(3.W))
   def allFieldModifiers(fieldType: () => Data): Seq[() => Data] = {
@@ -317,6 +320,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(Bool(), Bool(), "cannot be written")
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
+    it("(0.p): Emit '<=' between wires of OpaqueTypes") {
+      implicit val nTmps = 1
+      test(opaqueType(UInt(8.W)), Seq("io.out <= wiresOut_0", "wiresOut_0 <= wiresIn_0", "wiresIn_0 <= io.in"))
+      // Note that this test inverts Wires
+      test(opaqueType(Flipped(UInt(8.W))), Seq("wiresOut_0 <= io.out", "wiresIn_0 <= wiresOut_0", "io.in <= wiresIn_0"))
+    }
     // TODO Write test that demonstrates multiple evaluation of producer: => T
   }
   describe("(1): :<= ") {
@@ -527,6 +536,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(Bool(), Bool(), "cannot be written")
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
+    it("(1.p): Emit '<=' for wires of OpaqueTypes with aligned elements") {
+      implicit val nTmps = 1
+      test(opaqueType(UInt(8.W)), Seq("io.out <= wiresOut_0", "wiresOut_0 <= wiresIn_0", "wiresIn_0 <= io.in"))
+    }
+    it("(1.q): Emit nothing between wires of OpaqueTypes with flipped elements") {
+      implicit val nTmps = 1
+      test(opaqueType(Flipped(UInt(8.W))), Nil, Seq("<="))
+    }
   }
   describe("(2): :>= ") {
     implicit val op: (Data, Data) => Unit = { _ :>= _ }
@@ -691,6 +708,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(2.o): Error with 'cannot be written' if driving module input") {
       implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<= x }
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
+    }
+    it("(2.p): Emit nothing for wires of OpaqueTypes with aligned elements") {
+      implicit val nTmps = 1
+      test(opaqueType(UInt(8.W)), Nil, Seq("<="))
+    }
+    it("(2.q): Emit '<=' between wires of OpaqueTypes with flipped elements") {
+      implicit val nTmps = 1
+      test(opaqueType(Flipped(UInt(8.W))), Seq("wiresOut_0 <= io.out", "wiresIn_0 <= wiresOut_0", "io.in <= wiresIn_0"))
     }
   }
   describe("(3): :#= ") {
