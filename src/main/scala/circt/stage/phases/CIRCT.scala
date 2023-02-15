@@ -2,6 +2,8 @@
 
 package circt.stage.phases
 
+import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+
 import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
 
@@ -143,12 +145,20 @@ class CIRCT extends Phase {
     var logLevel = _root_.logger.LogLevel.None
     var split = false
 
-    val annotationsx: AnnotationSeq = annotations.flatMap {
+    // Partition the annotations into those that will be passed to CIRCT and
+    // those that are not.  The annotations that are in the passhtrough set will
+    // be returned without modification.
+    val (passthroughAnnotations, circtAnnotations) = annotations.partition {
+      case _: ImportDefinitionAnnotation[_] | _: chisel3.stage.DesignAnnotation[_] => true
+      case _ => false
+    }
+
+    val annotationsx: AnnotationSeq = circtAnnotations.flatMap {
       case a: CustomFileEmission => {
         val filename = a.filename(annotations)
         a.replacements(filename)
       }
-      case _: firrtl.EmitCircuitAnnotation => Nil
+      case _: firrtl.EmitCircuitAnnotation | _: ImportDefinitionAnnotation[_] => Nil
       case _: firrtl.EmitAllModulesAnnotation => {
         split = true
         Nil
@@ -241,7 +251,7 @@ class CIRCT extends Phase {
     val errors = stderrStream.toString
     if (exitValue != 0)
       throw new Exceptions.FirtoolNonZeroExitCode(binary, exitValue, result, errors)
-    if (split) {
+    val finalAnnotations = if (split) {
       logger.info(result)
       val file = new File(stageOptions.getBuildFileName(circtAnnotationFilename, Some(".anno.json")))
       file match {
@@ -270,6 +280,8 @@ class CIRCT extends Phase {
       })
     }
 
+    // Return the passthrough annotations and the output annotations from CIRCT.
+    passthroughAnnotations ++ finalAnnotations
   }
 
 }
