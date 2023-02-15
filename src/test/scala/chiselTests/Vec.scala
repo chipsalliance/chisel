@@ -7,7 +7,8 @@ import chisel3._
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import org.scalacheck._
-import scala.annotation.tailrec
+
+import scala.annotation.{nowarn, tailrec}
 
 class LitTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
@@ -238,10 +239,11 @@ class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
   stop()
 }
 
+@nowarn("msg=value lazyZip is not a member of chisel3.Vec")
 class ShiftRegisterTester(n: Int) extends BasicTester {
   val (cnt, wrap) = Counter(true.B, n * 2)
   val shifter = Reg(Vec(n, UInt((log2Ceil(n).max(1)).W)))
-  shifter.lazyZip(shifter.drop(1)).foreach(_ := _)
+  (shifter, shifter.drop(1)).zipped.foreach(_ := _) //TODO: update this when 2.12 is EOL
   shifter(n - 1) := cnt
   when(cnt >= n.asUInt) {
     val expected = cnt - n.asUInt
