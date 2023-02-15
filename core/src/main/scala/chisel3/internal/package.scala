@@ -67,7 +67,7 @@ package object internal {
   private[chisel3] def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
     // TODO what character set does FIRRTL truly support? using ANSI C for now
     def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
-    def legal(c:      Char) = legalStart(c) || (c >= '1' && c <= '9')
+    def legal(c:      Char) = legalStart(c) || (c >= '0' && c <= '9')
     val res = if (s.forall(legal)) s else s.filter(legal)
     val headOk = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
     if (headOk) res else s"_$res"
