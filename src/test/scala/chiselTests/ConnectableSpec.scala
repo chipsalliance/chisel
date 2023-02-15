@@ -8,7 +8,7 @@ import chisel3._
 import chisel3.experimental.{Analog, FixedPoint}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
@@ -117,8 +117,6 @@ object ConnectableSpec {
 class ConnectableSpec extends ChiselFunSpec with Utils {
   import ConnectableSpec._
 
-  val chiselStage = (new ChiselStage)
-
   def testCheck(firrtl: String, matches: Seq[String], nonMatches: Seq[String]): String = {
     val unmatched = matches.collect {
       case m if !firrtl.contains(m) => m
@@ -139,7 +137,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     op:                   (Data, Data) => Unit,
     monitorOp:            Option[(Data, Data) => Unit]
   ): String = {
-    chiselStage.emitChirrtl(
+    ChiselStage.emitCHIRRTL(
       gen = new ConnectionTest(outType, inType, inDrivesOut, op, monitorOp, nTmps),
       args = Array("--full-stacktrace", "--throw-on-first-error")
     )
@@ -983,7 +981,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.toSeq }
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.foo.valid <= in.foo.valid",
           "in.foo.ready <= out.foo.ready"
@@ -998,7 +996,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.waive(_.data.get)
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.valid <= in.valid",
           "in.ready <= out.ready"
@@ -1026,7 +1024,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.valid <= in.valid",
           "in.ready <= out.ready",
@@ -1056,7 +1054,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.valid <= in.valid",
           "in.ready <= out.ready",
@@ -1094,7 +1092,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         )
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "in2.v[0].ready <= out3.v[0].ready",
           "in2.v[1].ready <= out3.v[1].ready"
@@ -1134,7 +1132,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.squeezeEach { case d: Decoupled => Seq(d.data) }
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.foo.valid <= in.foo.valid",
           "in.foo.ready <= out.foo.ready",
@@ -1150,7 +1148,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.squeeze
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out <= in"
         ),
@@ -1177,7 +1175,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         BundleMap.waive(out) :<>= BundleMap.waive(in).squeezeAll
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.valid <= in.valid",
           "in.ready <= out.ready",
@@ -1204,7 +1202,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out3.squeezeAll :>= in3
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "in3.v[0].ready <= out3.v[0].ready",
           "in3.v[1].ready <= out3.v[1].ready",
@@ -1224,7 +1222,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.squeeze
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out <= in"
         ),
@@ -1251,7 +1249,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= inB.squeezeEach { case d: OpaqueRecord => Seq(d) }
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.opaque <= inA.opaque",
           "out.opaque <= inB.opaque"
@@ -1286,7 +1284,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         io.bar := DontCare
         io.bar :<>= io.foo.viewAsSupertype(Input((new SmallBundle)))
       }
-      val out = (new ChiselStage).emitChirrtl(gen = new ConnectSupertype(), args = Array("--full-stacktrace"))
+      val out = ChiselStage.emitCHIRRTL(gen = new ConnectSupertype(), args = Array("--full-stacktrace"))
       assert(out.contains("io.out.f1 <= io.in.f1"))
       assert(out.contains("io.out.f2 <= io.in.f2"))
       assert(!out.contains("io.out.f3 <= io.in.f3"))
@@ -1322,7 +1320,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         io.out := DontCare
         io.out.viewAsSupertype(new SmallBundle) :<>= io.in.viewAsSupertype(Flipped(new SmallBundle))
       }
-      val out = ChiselStage.emitChirrtl { new ConnectCommonTrait() }
+      val out = ChiselStage.emitCHIRRTL { new ConnectCommonTrait() }
       assert(!out.contains("io.out <= io.in"))
       assert(!out.contains("io.out <- io.in"))
       assert(out.contains("io.out.common <= io.in.common"))
@@ -1340,7 +1338,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         a :<>= Seq(0.U, 1.U, 2.U)
         b :<>= VecInit(0.U, 1.U, 2.U)
       }
-      val out = ChiselStage.emitChirrtl { new ConnectVecSeqAndVecVec() }
+      val out = ChiselStage.emitCHIRRTL { new ConnectVecSeqAndVecVec() }
       assert(out.contains("""a[0] <= UInt<1>("h0")"""))
       assert(out.contains("""a[1] <= UInt<1>("h1")"""))
       assert(out.contains("""a[2] <= UInt<2>("h2")"""))
@@ -1368,7 +1366,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         w1 :<>= w0
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1408,7 +1406,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         hasOptional.waive(_.optional.get) :<>= lacksOptional
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1432,7 +1430,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.waiveAs[ReadyValid](_.data)
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1459,7 +1457,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out.waiveAs[ReadyValid](_.data) :<>= in
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1486,7 +1484,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         (out: ReadyValid) :<>= in
       }
       intercept[Exception] {
-        (new ChiselStage).emitVerilog({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       }
     }
     it("(8.e) A structurally identical but fully aligned monitor version of a bundle can easily be connected to") {
@@ -1503,7 +1501,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         monitor :#= in
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1532,7 +1530,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         monitor :#= in.waiveAs[ReadyValid](_.data)
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1557,7 +1555,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out.waiveAs[Decoupled](_.echo) :<>= in
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1583,7 +1581,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         (out: Decoupled) :<>= in
       }
       intercept[Exception] {
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       }
     }
     it("(8.i) Partial connect on records") {
@@ -1596,7 +1594,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out.waiveAll :<>= in.waiveAll
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq("out.b <= in.b"),
         Nil
       )
@@ -1610,7 +1608,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out.waiveAllAs[Bundle] :<>= in.waiveAllAs[Bundle]
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq("out.foo <= in.foo"),
         Nil
       )
@@ -1624,7 +1622,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         (out: Bundle) :<>= in.waiveEach[Bundle] { case x: Bool => Seq(x) }
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq("out.foo <= in.foo"),
         Nil
       )
