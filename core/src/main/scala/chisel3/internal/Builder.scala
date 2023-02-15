@@ -252,7 +252,7 @@ private[chisel3] trait HasId extends InstanceId {
   ): Unit =
     if (_ref.isEmpty) {
       val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).getOrElse {
-        throwException(s"Default names are not allowed for IO ports. Use suggestName to seed a unique name for $this instead")
+        throwException(s"Attempted to name a nameless IO port ($this): this is usually caused by instantiating an IO but not assigning it to a val.\nAssign $this to a val, or explicitly call suggestName to seed a unique name")
       }
 
       val sanitized = sanitize(candidate_name)
