@@ -81,6 +81,27 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
   describe("ChiselStage") {
 
+    it("should elaborate a Chisel module and emit specification FIRRTL (CHIRRTL)") {
+
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      val expectedOutput = new File(targetDir, "Foo.fir")
+      expectedOutput.delete()
+
+      (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo)))
+
+      info(s"'$expectedOutput' exists")
+      expectedOutput should (exist)
+
+    }
+
     it("should compile a Chisel module to FIRRTL dialect") {
 
       val targetDir = new File("test_run_dir/ChiselStageSpec")
@@ -559,6 +580,18 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
   }
 
   describe("ChiselStage$") {
+
+    it("should convert a module to FIRRTL IR") {
+
+      ChiselStage.convert(new ChiselStageSpec.Foo).main should be("Foo")
+
+    }
+
+    it("should emit specification FIRRTL (CHIRRTL)") {
+
+      ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo) should include("circuit Foo")
+
+    }
 
     it("should emit FIRRTL dialect") {
 
