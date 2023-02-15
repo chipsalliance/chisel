@@ -3,6 +3,7 @@
 package circt.stage.phases
 
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation}
 
 import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
@@ -149,7 +150,8 @@ class CIRCT extends Phase {
     // those that are not.  The annotations that are in the passhtrough set will
     // be returned without modification.
     val (passthroughAnnotations, circtAnnotations) = annotations.partition {
-      case _: ImportDefinitionAnnotation[_] | _: chisel3.stage.DesignAnnotation[_] => true
+      case _: ImportDefinitionAnnotation[_] | _: DesignAnnotation[_] | _: ChiselCircuitAnnotation =>
+        true
       case _ => false
     }
 
