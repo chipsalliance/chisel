@@ -231,17 +231,23 @@ private[chisel3] trait HasId extends InstanceId {
   ): Unit =
     if (_ref.isEmpty) {
       val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).getOrElse {
-        throwException(s"Attempted to name a nameless IO port ($this): this is usually caused by instantiating an IO but not assigning it to a val.\nAssign $this to a val, or explicitly call suggestName to seed a unique name")
+        throwException(
+          s"Attempted to name a nameless IO port ($this): this is usually caused by instantiating an IO but not assigning it to a val.\nAssign $this to a val, or explicitly call suggestName to seed a unique name"
+        )
       }
 
       val sanitized = sanitize(candidate_name)
       val available_name = namespace.name(candidate_name)
       // Check if characters were stripped from the candidate name and the resulting sanitized name results conflicts with an existing name
       if (errorIfDup && (candidate_name != sanitized) && (available_name != sanitized)) {
-        Builder.error(s"Attempted to name $this with an unsanitary name '$candidate_name': sanitization results in a duplicated name '$sanitized'. Please seed a more unique name")(UnlocatableSourceInfo)
+        Builder.error(
+          s"Attempted to name $this with an unsanitary name '$candidate_name': sanitization results in a duplicated name '$sanitized'. Please seed a more unique name"
+        )(UnlocatableSourceInfo)
       }
       if (errorIfDup && (available_name != sanitized)) {
-        Builder.error(s"Attempted to name $this with a duplicated name '$candidate_name'. Use suggestName to seed a unique name")(UnlocatableSourceInfo)
+        Builder.error(
+          s"Attempted to name $this with a duplicated name '$candidate_name'. Use suggestName to seed a unique name"
+        )(UnlocatableSourceInfo)
       }
       setRef(refBuilder(available_name))
       // Clear naming prefix to free memory
