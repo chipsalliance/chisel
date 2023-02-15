@@ -8,7 +8,7 @@ import scala.collection.mutable.Stack
 import scala.collection.mutable.ListBuffer
 
 import java.util.IdentityHashMap
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters._  //TODO: Remove when alternative is clear or 2.12 is EOL
 
 /** Recursive Function Namer overview
   *

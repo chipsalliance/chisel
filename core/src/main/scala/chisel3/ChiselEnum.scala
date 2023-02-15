@@ -253,7 +253,7 @@ abstract class ChiselEnum {
   }
 
   private[chisel3] def globalAnnotation: EnumDefChiselAnnotation =
-    EnumDefChiselAnnotation(enumTypeName, (enumNames, enumValues).zipped.toMap)
+    EnumDefChiselAnnotation(enumTypeName, enumNames.zip(enumValues).toMap)
 
   def getWidth: Int = width.get
 

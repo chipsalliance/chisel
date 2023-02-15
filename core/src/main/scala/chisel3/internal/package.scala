@@ -6,8 +6,9 @@ import firrtl.annotations.{IsModule, ModuleTarget}
 import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
 import chisel3.internal.firrtl.{Component, DefModule}
 import chisel3.internal.Builder.Prefix
+
 import scala.util.Try
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, nowarn}
 
 package object internal {
 
@@ -107,6 +108,8 @@ package object internal {
     * '''Do not use this class in user code'''. Use whichever `Module` is imported by your wildcard
     * import (preferably `import chisel3._`).
     */
+
+  @nowarn("msg=in class Module is deprecated")
   abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions) extends Module {
     // Provide a non-deprecated constructor
     def this(
@@ -116,8 +119,8 @@ package object internal {
       implicit moduleCompileOptions: CompileOptions
     ) = {
       this()
-      this.override_clock = override_clock
-      this.override_reset = override_reset
+      this.override_clock = override_clock //TODO: Replace with a better override strategy
+      this.override_reset = override_reset //TODO: Replace with a better override strategy
     }
     def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), None)(moduleCompileOptions)

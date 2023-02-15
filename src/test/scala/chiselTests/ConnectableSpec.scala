@@ -3,7 +3,6 @@
 package chiselTests
 
 import org.scalatest._
-
 import chisel3._
 import chisel3.experimental.{Analog, FixedPoint}
 import chisel3.experimental.BundleLiterals._
@@ -12,6 +11,8 @@ import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
+
+import scala.annotation.nowarn
 import scala.collection.immutable.SeqMap
 
 object ConnectableSpec {
@@ -74,7 +75,7 @@ object ConnectableSpec {
     allFieldModifiers(fieldType).flatMap(x => allFieldModifiers(x))
   }
   object InCompatibility {
-    implicit val c = Chisel.defaultCompileOptions
+    implicit val c = Chisel.defaultCompileOptions : @nowarn // here until 3.6
     class MyCompatibilityBundle(f: () => Data) extends Bundle {
       val foo = f()
     }

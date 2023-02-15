@@ -60,7 +60,7 @@ case class ScalaIntervalSimulator(intervalRange: IntervalRange) {
   }
 
   def allValues: Iterator[BigDecimal] = {
-    (lower to upper by epsilon).toIterator
+    (lower to upper by epsilon).iterator
   }
 
   def makeLit(value: BigDecimal): Interval = {
