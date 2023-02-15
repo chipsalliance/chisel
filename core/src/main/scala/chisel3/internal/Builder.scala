@@ -238,17 +238,22 @@ private[chisel3] trait HasId extends InstanceId {
 
       val sanitized = sanitize(candidate_name)
       val available_name = namespace.name(candidate_name)
-      // Check if characters were stripped from the candidate name and the resulting sanitized name results conflicts with an existing name
-      if (errorIfDup && (candidate_name != sanitized) && (available_name != sanitized)) {
-        Builder.error(
-          s"Attempted to name $this with an unsanitary name '$candidate_name': sanitization results in a duplicated name '$sanitized'. Please seed a more unique name"
-        )(UnlocatableSourceInfo)
-      }
+
+      // Check for both cases of name duplication
       if (errorIfDup && (available_name != sanitized)) {
-        Builder.error(
-          s"Attempted to name $this with a duplicated name '$candidate_name'. Use suggestName to seed a unique name"
-        )(UnlocatableSourceInfo)
+        // If sanitization occurred, then the sanitized name duplicate an existing name
+        if ((candidate_name != sanitized)) {
+          Builder.error(
+            s"Attempted to name $this with an unsanitary name '$candidate_name': sanitization results in a duplicated name '$sanitized'. Please seed a more unique name"
+          )(UnlocatableSourceInfo)
+        // Otherwise the candidate name duplicates an existing name
+        } else {
+          Builder.error(
+            s"Attempted to name $this with a duplicated name '$candidate_name'. Use suggestName to seed a unique name"
+          )(UnlocatableSourceInfo)
+        }
       }
+
       setRef(refBuilder(available_name))
       // Clear naming prefix to free memory
       naming_prefix = Nil
