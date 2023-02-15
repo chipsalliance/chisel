@@ -109,7 +109,7 @@ object Definition extends SourceInfoDoc {
     dynamicContext.inDefinition = true
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
     Builder.components ++= ir.components
-    Builder.annotations ++= ir.annotations : @nowarn // this will go away when firrtl is merged
+    Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
     module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     new Definition(Proto(module))

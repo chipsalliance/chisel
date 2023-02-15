@@ -467,7 +467,7 @@ private object VerificationStatement {
 //  @nowarn("msg=lineContent is deprecated but has no obvious replacement")
   def getLine(c: blackbox.Context): SourceLineInfo = {
     val p = c.enclosingPosition
-    (p.source.file.name, p.line, p.lineContent.trim) : @nowarn // suppress, there's no clear replacement
+    (p.source.file.name, p.line, p.lineContent.trim): @nowarn // suppress, there's no clear replacement
   }
 
   def failureMessage(

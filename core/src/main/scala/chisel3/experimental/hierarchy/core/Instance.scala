@@ -5,7 +5,7 @@ package chisel3.experimental.hierarchy.core
 import scala.language.experimental.macros
 import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
-import chisel3.internal.{Builder, throwException}
+import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo}
 import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefModule, Port}
@@ -136,7 +136,7 @@ object Instance extends SourceInfoDoc {
           _closed = true
           val firrtlPorts = definition.proto.getModulePortsAndLocators.map {
             case (port, sourceInfo) =>
-              Port(port, port.specifiedDirection, sourceInfo) : @nowarn // Deprecated code allowed for internal use
+              Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
           }
           val component = DefBlackBox(this, definition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
           Some(component)

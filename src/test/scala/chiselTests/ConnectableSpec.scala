@@ -75,7 +75,7 @@ object ConnectableSpec {
     allFieldModifiers(fieldType).flatMap(x => allFieldModifiers(x))
   }
   object InCompatibility {
-    implicit val c = Chisel.defaultCompileOptions : @nowarn // here until 3.6
+    implicit val c = Chisel.defaultCompileOptions: @nowarn // here until 3.6
     class MyCompatibilityBundle(f: () => Data) extends Bundle {
       val foo = f()
     }
