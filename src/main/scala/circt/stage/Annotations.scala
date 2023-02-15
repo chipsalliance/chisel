@@ -42,6 +42,9 @@ object CIRCTTarget {
   /** The parent type of all CIRCT targets */
   sealed trait Type
 
+  /** Specification FIRRTL */
+  case object CHIRRTL extends Type
+
   /** The FIRRTL dialect */
   case object FIRRTL extends Type
 
@@ -65,6 +68,7 @@ object CIRCTTargetAnnotation extends HasShellOptions {
     new ShellOption[String](
       longOption = "target",
       toAnnotationSeq = _ match {
+        case "chirrtl"       => Seq(CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL))
         case "firrtl"        => Seq(CIRCTTargetAnnotation(CIRCTTarget.FIRRTL))
         case "hw"            => Seq(CIRCTTargetAnnotation(CIRCTTarget.HW))
         case "verilog"       => Seq(CIRCTTargetAnnotation(CIRCTTarget.Verilog))
@@ -72,7 +76,7 @@ object CIRCTTargetAnnotation extends HasShellOptions {
         case a               => throw new OptionsException(s"Unknown target name '$a'! (Did you misspell it?)")
       },
       helpText = "The CIRCT",
-      helpValueName = Some("{firrtl|rtl|systemverilog}")
+      helpValueName = Some("{chirrtl|firrtl|hw|verilog|systemverilog}")
     )
   )
 

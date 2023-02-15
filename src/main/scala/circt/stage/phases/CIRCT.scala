@@ -128,6 +128,13 @@ class CIRCT extends Phase {
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val circtOptions = view[CIRCTOptions](annotations)
+
+    // Early exit (do not run firtool) if the target is "CHIRRTL", i.e., specification FIRRTL.
+    circtOptions.target match {
+      case Some(CIRCTTarget.CHIRRTL) => return annotations
+      case _                         =>
+    }
+
     val firrtlOptions = view[FirrtlOptions](annotations)
     val stageOptions = view[StageOptions](annotations)
 
