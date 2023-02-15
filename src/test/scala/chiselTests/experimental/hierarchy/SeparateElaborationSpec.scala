@@ -24,7 +24,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   private def getDesignAnnotation[T <: RawModule](annos: AnnotationSeq): DesignAnnotation[T] = {
     val designAnnos = annos.flatMap { a =>
       a match {
-        case a: DesignAnnotation[T] => Some(a)  //TODO: cleanup, T is necessary to make type of designAnnos right
+        case a: DesignAnnotation[T] => Some(a) //TODO: cleanup, T is necessary to make type of designAnnos right
         case _ => None
       }
     }
