@@ -802,8 +802,8 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     corrects.forall(c => annos.exists(isCorrect(_, c)))
 
   def test(strongEnumAnnotatorGen: () => Module): Unit = {
-    val annos = (new chisel3.stage.ChiselStage).execute(
-      Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
+    val annos = (new ChiselStage).execute(
+      Array("--target-dir", "test_run_dir", "--target", "chirrtl"),
       Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))
     )
 

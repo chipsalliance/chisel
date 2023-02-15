@@ -5,7 +5,9 @@
   */
 import chisel3._ // required for implicit conversions.
 import chisel3.util.random.FibonacciLFSR
-import chisel3.stage.{phases, ChiselCircuitAnnotation, ChiselOutputFileAnnotation, ChiselStage}
+import chisel3.stage.{phases, ChiselCircuitAnnotation, ChiselOutputFileAnnotation}
+
+import circt.stage.ChiselStage
 
 import scala.annotation.nowarn
 

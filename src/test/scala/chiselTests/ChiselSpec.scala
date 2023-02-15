@@ -5,14 +5,9 @@ package chiselTests
 import _root_.logger.Logger
 import chisel3._
 import chisel3.aop.Aspect
-import chisel3.stage.{
-  ChiselGeneratorAnnotation,
-  ChiselStage,
-  NoRunFirrtlCompilerAnnotation,
-  PrintFullStackTraceAnnotation
-}
+import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.testers._
-import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation}
+import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
 import firrtl.annotations.Annotation
 import firrtl.ir.Circuit
 import firrtl.stage.FirrtlCircuitAnnotation
@@ -93,7 +88,7 @@ trait ChiselRunners extends Assertions {
     * @return the Verilog code as a string.
     */
   def compile(t: => RawModule): String = {
-    (new circt.stage.ChiselStage)
+    (new ChiselStage)
       .execute(
         Array("--target-dir", BackendCompilationUtilities.createTestDirectory(this.getClass.getSimpleName).toString),
         Seq(ChiselGeneratorAnnotation(() => t), CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
@@ -303,7 +298,11 @@ trait Utils {
     // Runs chisel stage
     def run[T <: RawModule](gen: () => T, annotations: AnnotationSeq): AnnotationSeq = {
       new ChiselStage().run(
-        Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation) ++ annotations
+        Seq(
+          ChiselGeneratorAnnotation(gen),
+          CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL),
+          PrintFullStackTraceAnnotation
+        ) ++ annotations
       )
     }
     // Creates a wrapping aspect to contain checking function
