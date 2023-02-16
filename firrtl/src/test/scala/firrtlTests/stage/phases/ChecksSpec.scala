@@ -14,14 +14,14 @@ class ChecksSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new Checks }
 
-  val inputFile = FirrtlFileAnnotation("foo")
+  val inputCircuit = FirrtlCircuitAnnotation(firrtl.ir.Circuit(firrtl.ir.NoInfo, Seq.empty, "Foo"))
   val outputFile = OutputFileAnnotation("bar")
   val emitAllModules = EmitAllModulesAnnotation(classOf[ChirrtlEmitter])
   val outputAnnotationFile = OutputAnnotationFileAnnotation("baz")
   val goodCompiler = RunFirrtlTransformAnnotation(new ChirrtlEmitter)
   val infoMode = InfoModeAnnotation("ignore")
 
-  val min = Seq(inputFile, goodCompiler, infoMode)
+  val min = Seq(inputCircuit, goodCompiler, infoMode)
 
   def checkExceptionMessage(phase: Phase, annotations: AnnotationSeq, messageStart: String): Unit =
     intercept[OptionsException] { phase.transform(annotations) }.getMessage should startWith(messageStart)
@@ -33,7 +33,7 @@ class ChecksSpec extends AnyFlatSpec with Matchers {
     checkExceptionMessage(phase, Seq.empty, "Unable to determine FIRRTL source to read")
 
     info("2 input sources causes an exception")
-    val in = min :+ FirrtlSourceAnnotation("circuit Foo:")
+    val in = min :+ inputCircuit
     checkExceptionMessage(phase, in, "Multiply defined input FIRRTL sources")
   }
 
@@ -56,7 +56,7 @@ class ChecksSpec extends AnyFlatSpec with Matchers {
 
   it should "enforce one or more compilers (at this point these are emitters)" in new Fixture {
     info("0 compilers should throw an exception")
-    val inZero = Seq(inputFile, infoMode)
+    val inZero = Seq(inputCircuit, infoMode)
     checkExceptionMessage(phase, inZero, "At least one compiler must be specified")
 
     info("2 compilers should not throw an exception")
@@ -68,14 +68,14 @@ class ChecksSpec extends AnyFlatSpec with Matchers {
   it should "validate info mode names" in new Fixture {
     info("Good info mode names should work")
     Seq("ignore", "use", "gen", "append")
-      .map(info => phase.transform(Seq(inputFile, goodCompiler, InfoModeAnnotation(info))))
+      .map(info => phase.transform(Seq(inputCircuit, goodCompiler, InfoModeAnnotation(info))))
   }
 
   it should "enforce exactly one info mode" in new Fixture {
     info("0 info modes should throw an exception")
     checkExceptionMessage(
       phase,
-      Seq(inputFile, goodCompiler),
+      Seq(inputCircuit, goodCompiler),
       "Exactly one info mode must be specified, but none found"
     )
 

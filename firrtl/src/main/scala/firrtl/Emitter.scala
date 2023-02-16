@@ -7,7 +7,7 @@ import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Viewer.view
 import firrtl.options.{CustomFileEmission, Dependency, HasShellOptions, PhaseException, ShellOption}
 import firrtl.passes.PassException
-import firrtl.stage.{FirrtlFileAnnotation, FirrtlOptions, RunFirrtlTransformAnnotation}
+import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
 
 case class EmitterException(message: String) extends PassException(message)
 
@@ -128,10 +128,7 @@ sealed trait EmittedModuleAnnotation[T <: EmittedModule] extends EmittedAnnotati
 case class EmittedFirrtlModuleAnnotation(value: EmittedFirrtlModule)
     extends EmittedModuleAnnotation[EmittedFirrtlModule]
 case class EmittedFirrtlCircuitAnnotation(value: EmittedFirrtlCircuit)
-    extends EmittedCircuitAnnotation[EmittedFirrtlCircuit] {
-
-  override def replacements(file: File): AnnotationSeq = Seq(FirrtlFileAnnotation(file.toString))
-}
+    extends EmittedCircuitAnnotation[EmittedFirrtlCircuit]
 
 final case class EmittedFirrtlCircuit(name: String, value: String, outputSuffix: String) extends EmittedCircuit
 final case class EmittedFirrtlModule(name: String, value: String, outputSuffix: String) extends EmittedModule

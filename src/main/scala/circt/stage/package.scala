@@ -6,7 +6,7 @@ import circt.stage.{CIRCTOption, CIRCTTargetAnnotation, PreserveAggregate}
 
 import firrtl.AnnotationSeq
 import firrtl.options.OptionsView
-import firrtl.stage.{FirrtlFileAnnotation, FirrtlOption, OutputFileAnnotation}
+import firrtl.stage.{FirrtlOption, OutputFileAnnotation}
 
 import java.io.File
 
@@ -16,13 +16,11 @@ package object stage {
 
     def view(annotations: AnnotationSeq): CIRCTOptions =
       annotations.collect {
-        case a: CIRCTOption          => a
-        case a: FirrtlOption         => a
-        case a: FirrtlFileAnnotation => a
+        case a: CIRCTOption  => a
+        case a: FirrtlOption => a
       }
         .foldLeft(new CIRCTOptions()) { (acc, c) =>
           c match {
-            case FirrtlFileAnnotation(a)  => acc.copy(inputFile = Some(new File(a)))
             case OutputFileAnnotation(a)  => acc.copy(outputFile = Some(new File(a)))
             case CIRCTTargetAnnotation(a) => acc.copy(target = Some(a))
             case PreserveAggregate(a)     => acc.copy(preserveAggregate = Some(a))
