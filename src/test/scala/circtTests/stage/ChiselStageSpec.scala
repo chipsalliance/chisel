@@ -47,6 +47,13 @@ object ChiselStageSpec {
     val out = IO(Output(new BazBundle))
     out := in
   }
+  class Qux extends Module {
+    val in = IO(Input(UInt(3.W)))
+    val out = IO(Output(UInt(32.W)))
+    val reg = RegNext(in)
+    val mem = Mem(8, UInt(32.W))
+    out := mem(reg)
+  }
 }
 
 /** A fixture used that exercises features of the Trace API.
@@ -373,6 +380,41 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
     }
 
+  }
+
+  describe("ChiselStage TraceName support") {
+    import chisel3.aop.Select
+    import chisel3.aop.injecting.InjectingAspect
+    import chisel3.experimental.Trace
+    val targetDir = new File("test_run_dir/ChiselStageSpec")
+    val args: Array[String] = Array(
+      "--target",
+      "systemverilog",
+      "--target-dir",
+      targetDir.toString
+    )
+
+    val verilog = (new ChiselStage)
+      .execute(
+        args,
+        Seq(
+          ChiselGeneratorAnnotation(() => new ChiselStageSpec.Qux),
+          InjectingAspect(
+            { dut: ChiselStageSpec.Qux => Select.collectDeep(dut) { case dut: ChiselStageSpec.Qux => dut } },
+            { dut: ChiselStageSpec.Qux =>
+              Trace.traceName(dut.reg)
+              Trace.traceName(dut.mem)
+            }
+          )
+        )
+      )
+      .collectFirst {
+        case EmittedVerilogCircuitAnnotation(a) => a
+      }
+      .get
+      .value
+    verilog should include(""""target": "~Qux|Qux>reg"""")
+    verilog should include(""""target": "~Qux|Qux>mem"""")
   }
 
   describe("ChiselStage DontTouchAnnotation support") {

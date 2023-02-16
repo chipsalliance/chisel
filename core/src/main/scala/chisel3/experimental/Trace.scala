@@ -1,7 +1,7 @@
 package chisel3.experimental
 
 import chisel3.internal.HasId
-import chisel3.{Aggregate, Data, Element, RawModule}
+import chisel3.{Aggregate, Data, Element, MemBase, RawModule}
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, CompleteTarget, SingleTargetAnnotation}
 import firrtl.transforms.DontTouchAllTargets
@@ -43,6 +43,12 @@ object Trace {
     }
   }
 
+  /** Trace a memory instance. */
+  def traceName(x: MemBase[_]): Unit = {
+    annotate(new ChiselAnnotation {
+      def toFirrtl: Annotation = TraceAnnotation(x.toAbsoluteTarget, x.toAbsoluteTarget)
+    })
+  }
   @deprecated("switch to using 'traceName' as 'traceNameV2' has the same behavior of 'traceName' now", "Chisel 3.6")
   def traceNameV2(x: RawModule) = traceName(x)
 
