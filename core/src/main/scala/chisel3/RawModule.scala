@@ -48,7 +48,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
       if (port._computeName(None).isEmpty) {
         Builder.error(
           s"Unable to name port $port in $this, " +
-            s"try making it a public field of the Module $source"
+            s"try making it a public field of the Module ${source.makeMessage(x => x)}"
         )(UnlocatableSourceInfo)
       }
     }
