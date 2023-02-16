@@ -22,7 +22,7 @@ import firrtl.stage.{FirrtlOptions, OutputFileAnnotation}
   */
 class AddImplicitOutputFile extends Phase {
 
-  override def prerequisites = Seq(Dependency[AddCircuit])
+  override def prerequisites = Seq.empty
 
   override def optionalPrerequisiteOf = Seq.empty
 
