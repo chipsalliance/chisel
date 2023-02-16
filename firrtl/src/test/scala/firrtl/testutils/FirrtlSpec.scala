@@ -24,154 +24,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 
-trait FirrtlRunners {
-  import BackendCompilationUtilities._
-
-  val cppHarnessResourceName: String = "/firrtl/testTop.cpp"
-
-  /** Check equivalence of Firrtl transforms using yosys
-    *
-    * @param input string containing Firrtl source
-    * @param customTransforms Firrtl transforms to test for equivalence
-    * @param customAnnotations Optional Firrtl annotations
-    * @param timesteps the maximum number of timesteps to consider
-    */
-  def firrtlEquivalenceTest(
-    input:             String,
-    customTransforms:  Seq[Transform] = Seq.empty,
-    customAnnotations: AnnotationSeq = Seq.empty,
-    timesteps:         Int = 1
-  ): Unit = {
-    val circuit = Parser.parse(input.split("\n").toIterator)
-    val prefix = circuit.main
-    val testDir = createTestDirectory(prefix + "_equivalence_test")
-
-    def toAnnos(xforms: Seq[Transform]) = xforms.map(RunFirrtlTransformAnnotation(_))
-
-    def getBaseAnnos(topName: String) = {
-      TargetDirAnnotation(testDir.toString) +:
-        InfoModeAnnotation("ignore") +:
-        stage.FirrtlCircuitAnnotation(circuit) +:
-        stage.RunFirrtlTransformAnnotation.stringToEmitter("mverilog") +:
-        Seq(stage.OutputFileAnnotation(topName))
-    }
-
-    val customName = s"${prefix}_custom"
-    val customAnnos = customAnnotations ++: toAnnos(customTransforms) ++: getBaseAnnos(customName)
-
-    val customResult = (new firrtl.stage.FirrtlStage).execute(Array.empty, customAnnos)
-
-    val refSuggestedName = s"${prefix}_ref"
-    val refAnnos = getBaseAnnos(refSuggestedName)
-
-    val refResult = (new firrtl.stage.FirrtlStage).execute(Array.empty, refAnnos)
-    val refName =
-      refResult.collectFirst({ case stage.FirrtlCircuitAnnotation(c) => c.main }).getOrElse(refSuggestedName)
-
-    assert(BackendCompilationUtilities.yosysExpectSuccess(customName, refName, testDir, timesteps))
-  }
-
-  /** Check equivalence of Firrtl with reference Verilog
-    *
-    * @note the name of the reference Verilog module is grabbed via regex
-    * @param inputFirrtl string containing Firrtl source
-    * @param referenceVerilog Verilog that will be used as reference for LEC
-    * @param timesteps the maximum number of timesteps to consider
-    */
-  def firrtlEquivalenceWithVerilog(
-    inputFirrtl:      String,
-    referenceVerilog: String,
-    timesteps:        Int = 1
-  ): Unit = {
-    val VerilogModule = """(?s).*module\s(\w+).*""".r
-    val refName = referenceVerilog match {
-      case VerilogModule(name) => name
-      case _                   => throw new Exception(s"Reference Verilog must match simple regex! $VerilogModule")
-    }
-    val circuit = Parser.parse(inputFirrtl.split("\n").toIterator)
-    val inputName = circuit.main
-    require(refName != inputName, s"Name of reference Verilog must not match name of input FIRRTL: $refName")
-
-    val testDir = createTestDirectory(inputName + "_equivalence_test")
-
-    val annos = List(
-      TargetDirAnnotation(testDir.toString),
-      InfoModeAnnotation("ignore"),
-      stage.FirrtlCircuitAnnotation(circuit),
-      stage.RunFirrtlTransformAnnotation.stringToEmitter("verilog"),
-      stage.OutputFileAnnotation(inputName)
-    )
-
-    (new firrtl.stage.FirrtlStage).execute(Array(), annos)
-
-    // Write reference
-    val w = new FileWriter(new File(testDir, s"$refName.v"))
-    w.write(referenceVerilog)
-    w.close()
-
-    assert(BackendCompilationUtilities.yosysExpectSuccess(inputName, refName, testDir, timesteps))
-  }
-
-  /** Compile a Firrtl file
-    *
-    * @param prefix is the name of the Firrtl file without path or file extension
-    * @param srcDir directory where all Resources for this test are located
-    * @param annotations Optional Firrtl annotations
-    */
-  def compileFirrtlTest(
-    prefix:           String,
-    srcDir:           String,
-    customTransforms: Seq[Transform] = Seq.empty,
-    annotations:      AnnotationSeq = Seq.empty
-  ): File = {
-    val testDir = createTestDirectory(prefix)
-    val inputFile = new File(testDir, s"${prefix}.fir")
-    copyResourceToFile(s"${srcDir}/${prefix}.fir", inputFile)
-
-    val annos =
-      FirrtlFileAnnotation(inputFile.toString) +:
-        TargetDirAnnotation(testDir.toString) +:
-        InfoModeAnnotation("ignore") +:
-        annotations ++:
-        (customTransforms).map(RunFirrtlTransformAnnotation(_))
-
-    (new firrtl.stage.FirrtlStage).execute(Array.empty, annos)
-
-    testDir
-  }
-
-  /** Execute a Firrtl Test
-    *
-    * @param prefix is the name of the Firrtl file without path or file extension
-    * @param srcDir directory where all Resources for this test are located
-    * @param verilogPrefixes names of option Verilog resources without path or file extension
-    * @param annotations Optional Firrtl annotations
-    */
-  def runFirrtlTest(
-    prefix:           String,
-    srcDir:           String,
-    verilogPrefixes:  Seq[String] = Seq.empty,
-    customTransforms: Seq[Transform] = Seq.empty,
-    annotations:      AnnotationSeq = Seq.empty
-  ) = {
-    val testDir = compileFirrtlTest(prefix, srcDir, customTransforms, annotations)
-    val harness = new File(testDir, s"top.cpp")
-    copyResourceToFile(cppHarnessResourceName, harness)
-
-    // Note file copying side effect
-    val verilogFiles = verilogPrefixes.map { vprefix =>
-      val file = new File(testDir, s"$vprefix.v")
-      copyResourceToFile(s"$srcDir/$vprefix.v", file)
-      file
-    }
-
-    verilogToCpp(prefix, testDir, verilogFiles, harness) #&&
-      cppToExe(prefix, testDir) !
-      loggingProcessLogger
-    assert(executeExpectingSuccess(prefix, testDir))
-  }
-}
-
 trait FirrtlMatchers extends Matchers {
   def dontTouch(ref: ReferenceTarget): DontTouchAnnotation = {
     DontTouchAnnotation(ref)
@@ -284,9 +136,9 @@ object FirrtlCheckers extends FirrtlMatchers {
   }
 }
 
-abstract class FirrtlPropSpec extends AnyPropSpec with ScalaCheckPropertyChecks with FirrtlRunners with LazyLogging
+abstract class FirrtlPropSpec extends AnyPropSpec with ScalaCheckPropertyChecks with LazyLogging
 
-abstract class FirrtlFlatSpec extends AnyFlatSpec with FirrtlRunners with FirrtlMatchers with LazyLogging
+abstract class FirrtlFlatSpec extends AnyFlatSpec with FirrtlMatchers with LazyLogging
 
 // Who tests the testers?
 class TestFirrtlFlatSpec extends FirrtlFlatSpec {
@@ -335,25 +187,6 @@ class TestFirrtlFlatSpec extends FirrtlFlatSpec {
     compiled should containTree { case Port(_, "in", Input, UInt8) => true }
     compiled should containTree { case Port(_, "out", Output, UInt8) => true }
     compiled should containTree { case Connect(_, WRef("out", _, _, _), WRef("in", _, _, _)) => true }
-  }
-}
-
-/** Super class for execution driven Firrtl tests */
-abstract class ExecutionTest(
-  name:        String,
-  dir:         String,
-  vFiles:      Seq[String] = Seq.empty,
-  annotations: AnnotationSeq = Seq.empty)
-    extends FirrtlPropSpec {
-  property(s"$name should execute correctly") {
-    runFirrtlTest(name, dir, vFiles, annotations = annotations)
-  }
-}
-
-/** Super class for compilation driven Firrtl tests */
-abstract class CompilationTest(name: String, dir: String) extends FirrtlPropSpec {
-  property(s"$name should compile correctly") {
-    compileFirrtlTest(name, dir)
   }
 }
 
@@ -436,23 +269,5 @@ trait Utils {
     } finally {
       System.setSecurityManager(null)
     }
-  }
-}
-
-/** Super class for equivalence driven Firrtl tests */
-abstract class EquivalenceTest(transforms: Seq[Transform], name: String, dir: String) extends FirrtlFlatSpec {
-  val fileName = s"$dir/$name.fir"
-  val in = getClass.getResourceAsStream(fileName)
-  if (in == null) {
-    throw new FileNotFoundException(s"Resource '$fileName'")
-  }
-  val source = scala.io.Source.fromInputStream(in)
-  val input =
-    try source.mkString
-    finally source.close()
-
-  s"$name with ${transforms.map(_.name).mkString(", ")}" should
-    s"be equivalent to $name without ${transforms.map(_.name).mkString(", ")}" in {
-    firrtlEquivalenceTest(input, transforms)
   }
 }

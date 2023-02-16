@@ -4,7 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.ir._
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation}
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
 import org.scalacheck.Gen
@@ -359,7 +359,7 @@ class ParserSpec extends FirrtlFlatSpec {
 
                    |""".stripMargin
     a[SyntaxErrorsException] shouldBe thrownBy {
-      (new FirrtlStage).execute(Array(), Seq(FirrtlSourceAnnotation(input)))
+      firrtl.Parser.parse(input)
     }
   }
 
@@ -379,7 +379,7 @@ class ParserSpec extends FirrtlFlatSpec {
                    |    b <- bar.b
       """.stripMargin
     a[SyntaxErrorsException] shouldBe thrownBy {
-      (new FirrtlStage).execute(Array(), Seq(FirrtlSourceAnnotation(input)))
+      firrtl.Parser.parse(input)
     }
   }
 
