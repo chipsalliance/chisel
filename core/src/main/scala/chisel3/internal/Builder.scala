@@ -232,7 +232,8 @@ private[chisel3] trait HasId extends InstanceId {
     if (_ref.isEmpty) {
       val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).getOrElse {
         throwException(
-          s"Attempted to name a nameless IO port ($this): this is usually caused by instantiating an IO but not assigning it to a val.\nAssign $this to a val, or explicitly call suggestName to seed a unique name"
+          s"Attempted to name a nameless IO port ($this): this is usually caused by instantiating an IO but not assigning it to a val.\n" +
+          s"Assign $this to a val, or explicitly call suggestName to seed a unique name"
         )
       }
 
@@ -246,8 +247,8 @@ private[chisel3] trait HasId extends InstanceId {
           Builder.error(
             s"Attempted to name $this with an unsanitary name '$candidate_name': sanitization results in a duplicated name '$sanitized'. Please seed a more unique name"
           )(UnlocatableSourceInfo)
-          // Otherwise the candidate name duplicates an existing name
         } else {
+         // Otherwise the candidate name duplicates an existing name
           Builder.error(
             s"Attempted to name $this with a duplicated name '$candidate_name'. Use suggestName to seed a unique name"
           )(UnlocatableSourceInfo)

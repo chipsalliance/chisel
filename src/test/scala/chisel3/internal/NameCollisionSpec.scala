@@ -3,14 +3,14 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class NameCollisionSpec extends ChiselFlatSpec with Utils {
   behavior.of("Builder")
 
   it should "error on duplicated names with a correct message" in {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
-      (new ChiselStage).emitChirrtl(
+      (new ChiselStage).elaborate(
         new Module {
           val foo, bar = IO(Input(UInt(8.W)))
           val out = IO(Output(UInt(8.W)))
@@ -31,7 +31,7 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
   it should "error on sanitization resulting in duplicated names with a helpful message" in {
     // Case one: An unsanitary name that results in a collision with an existing name once sanitized
     (the[ChiselException] thrownBy extractCause[ChiselException] {
-      (new ChiselStage).emitChirrtl(
+      (new ChiselStage).elaborate(
         new Module {
           val foo, bar = IO(Input(UInt(8.W)))
           val out = IO(Output(UInt(8.W)))
@@ -50,7 +50,7 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
     )
 
     // Case two: An unsanitary name which does not collide with any names once sanitized. No error is raised
-    (new ChiselStage).emitChirrtl(
+    (new ChiselStage).elaborate(
       new Module {
         val foo, bar = IO(Input(UInt(8.W)))
         val out = IO(Output(UInt(8.W)))
@@ -66,15 +66,13 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
   it should "error on nameless ports being assigned default names" in {
 
     (the[ChiselException] thrownBy extractCause[ChiselException] {
-      val chirrtl = (new ChiselStage).emitChirrtl(
+      (new ChiselStage).elaborate(
         new Module {
           // Write to an output port that isn't assigned to a val, and so doesn't get prefixed
           IO(Output(UInt(8.W))) := 123.U
         },
         Array("--throw-on-first-error")
       )
-
-      println(chirrtl)
     }).getMessage should include("Default names are not allowed for IO ports.")
   }
 }
