@@ -33,7 +33,7 @@ trait CLI { this: Shell =>
 class CIRCTStage extends Stage {
 
   override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Seq(Dependency[firrtl.stage.phases.Compiler])
+  override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
 
