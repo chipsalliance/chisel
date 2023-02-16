@@ -19,6 +19,7 @@ import chisel3.internal.Builder
 import chisel3.internal.firrtl.{Circuit, Emitter => OldEmitter}
 import firrtl.AnnotationSeq
 import java.io.File
+import java.lang.reflect.InvocationTargetException
 
 /** Mixin that indicates that this is an [[firrtl.annotations.Annotation]] used to generate a [[ChiselOptions]] view.
   */
@@ -143,9 +144,15 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
       try {
         Class.forName(name).asInstanceOf[Class[_ <: RawModule]].getDeclaredConstructor().newInstance()
       } catch {
+        // The reflective instantiation will box any exceptions thrown, unbox them here.
+        // Note that this does *not* need to chain with the catches below which are triggered by an
+        // invalid name or a constructor that takes arguments rather than by the code being run
+        // itself.
+        case e: InvocationTargetException =>
+          throw e.getCause
         case e: ClassNotFoundException =>
           throw new OptionsException(s"Unable to locate module '$name'! (Did you misspell it?)", e)
-        case e: InstantiationException =>
+        case e: NoSuchMethodException =>
           throw new OptionsException(
             s"Unable to create instance of module '$name'! (Does this class take parameters?)",
             e

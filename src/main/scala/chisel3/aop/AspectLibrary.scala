@@ -20,7 +20,7 @@ final class AspectLibrary() extends RegisteredLibrary {
         val x = Class.forName(aspectName).asInstanceOf[Class[_ <: Aspect[RawModule]]]
         x.getDeclaredConstructor().newInstance()
       } catch {
-        case e: InstantiationException =>
+        case e: NoSuchMethodException =>
           val rm = runtimeMirror(getClass.getClassLoader)
           val x = rm.staticModule(aspectName)
           try {

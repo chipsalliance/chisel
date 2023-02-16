@@ -18,7 +18,7 @@ lazy val commonSettings = Seq(
   autoAPIMappings := true,
   scalaVersion := "2.13.10",
   crossScalaVersions := Seq("2.13.10", "2.12.17"),
-  scalacOptions := Seq("-deprecation", "-feature", "-Ypatmat-exhaust-depth", "100"),
+  scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
   scalacOptions ++= {
