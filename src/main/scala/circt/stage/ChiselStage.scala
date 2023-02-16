@@ -3,9 +3,11 @@
 package circt.stage
 
 import chisel3.RawModule
-import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation}
-import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
+import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
+import firrtl.stage.FirrtlCircuitAnnotation
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
@@ -26,7 +28,13 @@ class ChiselStage extends Stage {
 
     val pm = new PhaseManager(
       targets = Seq(
-        Dependency[chisel3.stage.ChiselStage],
+        Dependency[chisel3.stage.phases.Checks],
+        Dependency[chisel3.stage.phases.AddImplicitOutputFile],
+        Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+        Dependency[chisel3.stage.phases.MaybeAspectPhase],
+        Dependency[chisel3.stage.phases.AddSerializationAnnotations],
+        Dependency[chisel3.stage.phases.Convert],
+        Dependency[chisel3.stage.phases.MaybeInjectingPhase],
         Dependency[firrtl.stage.phases.AddImplicitOutputFile],
         Dependency[circt.stage.phases.Checks],
         Dependency[circt.stage.phases.CIRCT]
@@ -36,24 +44,13 @@ class ChiselStage extends Stage {
         Dependency[firrtl.stage.phases.Checks]
       )
     )
-    pm.transform(NoRunFirrtlCompilerAnnotation +: annotations)
+    pm.transform(annotations)
   }
 
 }
 
 /** Utilities for compiling Chisel */
 object ChiselStage {
-
-  /** Elaborate a Chisel circuit into a CHIRRTL string */
-  def emitCHIRRTL(gen: => RawModule): String = chisel3.stage.ChiselStage.emitChirrtl(gen)
-
-  /** Return a CHIRRTL circuit for a Chisel module
-    *
-    * @param gen a call-by-name Chisel module
-    */
-  def convert(gen: => RawModule): firrtl.ir.Circuit = {
-    chisel3.stage.ChiselStage.convert(gen)
-  }
 
   /** A phase shared by all the CIRCT backends */
   private def phase = new PhaseManager(
@@ -69,31 +66,84 @@ object ChiselStage {
     )
   )
 
+  /** Elaborate a Chisel circuit into a CHIRRTL string */
+  def emitCHIRRTL(
+    gen:  => RawModule,
+    args: Array[String] = Array.empty
+  ): String = {
+    val annos = Seq(
+      ChiselGeneratorAnnotation(() => gen),
+      CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
+    ) ++ (new ChiselStage).shell.parse(args)
+
+    phase
+      .transform(annos)
+      .collectFirst {
+        case a: ChiselCircuitAnnotation => CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat).getBytes
+      }
+      .get
+      .map(_.toChar)
+      .mkString
+  }
+
+  /** Return a CHIRRTL circuit for a Chisel module
+    *
+    * @param gen a call-by-name Chisel module
+    */
+  def convert(
+    gen:  => RawModule,
+    args: Array[String] = Array.empty
+  ): firrtl.ir.Circuit = {
+    val annos = Seq(
+      ChiselGeneratorAnnotation(() => gen),
+      CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
+    ) ++ (new ChiselStage).shell.parse(args)
+
+    phase
+      .transform(annos)
+      .collectFirst {
+        case FirrtlCircuitAnnotation(a) => a
+      }
+      .get
+  }
+
   /** Compile a Chisel circuit to FIRRTL dialect */
-  def emitFIRRTLDialect(gen: => RawModule): String = phase
-    .transform(
-      Seq(
-        ChiselGeneratorAnnotation(() => gen),
-        CIRCTTargetAnnotation(CIRCTTarget.FIRRTL)
-      )
-    )
-    .collectFirst {
-      case EmittedMLIR(_, a, _) => a
-    }
-    .get
+  def emitFIRRTLDialect(
+    gen:         => RawModule,
+    args:        Array[String] = Array.empty,
+    firtoolOpts: Array[String] = Array.empty
+  ): String = {
+    val annos = Seq(
+      ChiselGeneratorAnnotation(() => gen),
+      CIRCTTargetAnnotation(CIRCTTarget.FIRRTL)
+    ) ++ (new ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+
+    phase
+      .transform(annos)
+      .collectFirst {
+        case EmittedMLIR(_, a, _) => a
+      }
+      .get
+  }
 
   /** Compile a Chisel circuit to HWS dialect */
-  def emitHWDialect(gen: => RawModule): String = phase
-    .transform(
-      Seq(
-        ChiselGeneratorAnnotation(() => gen),
-        CIRCTTargetAnnotation(CIRCTTarget.HW)
-      )
-    )
-    .collectFirst {
-      case EmittedMLIR(_, a, _) => a
-    }
-    .get
+  def emitHWDialect(
+    gen:         => RawModule,
+    args:        Array[String] = Array.empty,
+    firtoolOpts: Array[String] = Array.empty
+  ): String = {
+    val annos = Seq(
+      ChiselGeneratorAnnotation(() => gen),
+      CIRCTTargetAnnotation(CIRCTTarget.HW)
+    ) ++ (new ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+
+    phase
+      .transform(annos)
+      .collectFirst {
+        case EmittedMLIR(_, a, _) => a
+      }
+      .get
+  }
 
   /** Compile a Chisel circuit to SystemVerilog
     *
@@ -131,23 +181,33 @@ object ChiselStage {
     gen:         => RawModule,
     args:        Array[String] = Array.empty,
     firtoolOpts: Array[String] = Array.empty
-  ) = {
-    val chiselArgs = Array("--target", "systemverilog") ++ args
+  ) =
     (new circt.stage.ChiselStage).execute(
-      chiselArgs,
+      Array("--target", "systemverilog") ++ args,
       Seq(ChiselGeneratorAnnotation(() => gen)) ++ firtoolOpts.map(FirtoolOption(_))
     )
-  }
 
   /** Return a Chisel circuit for a Chisel module
     *
     * @param gen a call-by-name Chisel module
     */
   def elaborate(
-    gen: => RawModule
+    gen:  => RawModule,
+    args: Array[String] = Array.empty
   ): chisel3.internal.firrtl.Circuit = {
-    chisel3.stage.ChiselStage.elaborate(gen)
+    val annos = Seq(
+      ChiselGeneratorAnnotation(() => gen),
+      CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
+    ) ++ (new ChiselStage).shell.parse(args)
+
+    phase
+      .transform(annos)
+      .collectFirst {
+        case ChiselCircuitAnnotation(a) => a
+      }
+      .get
   }
+
 }
 
 /** Command line entry point to [[ChiselStage]] */
