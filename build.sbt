@@ -23,7 +23,7 @@ lazy val commonSettings = Seq(
   // Macros paradise is integrated into 2.13 but requires a scalacOption
   scalacOptions ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
+      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: "-Werror" :: Nil
       case _                       => Nil
     }
   },
