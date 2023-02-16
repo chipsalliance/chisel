@@ -4,8 +4,9 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.{ChiselGeneratorAnnotation}
 import chisel3.testers.BasicTester
+import circt.stage.ChiselStage
 import firrtl.{CircuitForm, CircuitState, DependencyAPIMigration, LowForm, Transform}
 import firrtl.annotations.{CircuitName, CircuitTarget, SingleTargetAnnotation, Target}
 import firrtl.stage.Forms
@@ -143,7 +144,7 @@ class AnnotatingDiamondSpec extends AnyFreeSpec with Matchers {
 
       val annos = (new ChiselStage)
         .execute(
-          Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
+          Array("--target-dir", "test_run_dir", "--target", "chirrtl"),
           Seq(ChiselGeneratorAnnotation(() => new TopOfDiamond))
         )
         .filter {

@@ -3,21 +3,22 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util.Counter
 import firrtl.passes.CheckInitialization.RefNotInitializedException
 import firrtl.util.BackendCompilationUtilities._
+import circt.stage.ChiselStage
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 
 class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
 
-  def myGenerateFirrtl(t: => Module): String = ChiselStage.emitChirrtl(t)
+  def myGenerateFirrtl(t: => Module): String = ChiselStage.emitCHIRRTL(t)
   def compileFirrtl(t: => Module): Unit = {
     val testDir = createTestDirectory(this.getClass.getSimpleName)
 
     (new ChiselStage).execute(
-      Array[String]("-td", testDir.getAbsolutePath, "--compiler", "verilog"),
+      Array[String]("-td", testDir.getAbsolutePath, "--target", "verilog"),
       Seq(ChiselGeneratorAnnotation(() => t))
     )
   }
