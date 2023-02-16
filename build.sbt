@@ -23,7 +23,7 @@ lazy val commonSettings = Seq(
   // Macros paradise is integrated into 2.13 but requires a scalacOption
   scalacOptions ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: "-Werror" :: Nil
+      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
       case _                       => Nil
     }
   },
@@ -31,6 +31,15 @@ lazy val commonSettings = Seq(
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 => Nil
       case _                       => compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)) :: Nil
+    }
+  }
+)
+
+lazy val fatalWarningsSettings = Seq(
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 => "-Werror" :: Nil
+      case _                       => Nil
     }
   }
 )
@@ -181,6 +190,7 @@ lazy val core = (project in file("core"))
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
   .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     name := "chisel3-core",
     libraryDependencies ++= Seq(
@@ -212,6 +222,7 @@ lazy val chisel = (project in file("."))
   .dependsOn(core)
   .aggregate(macros, core, plugin)
   .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
@@ -263,6 +274,8 @@ lazy val integrationTests = (project in file("integration-tests"))
   .dependsOn(chisel)
   .dependsOn(standardLibrary)
   .settings(commonSettings: _*)
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(chiselSettings: _*)
   .settings(usePluginSettings: _*)
   .settings(

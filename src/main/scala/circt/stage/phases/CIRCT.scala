@@ -46,7 +46,7 @@ private object Helpers {
     */
   def extractAnnotationFile(string: String, filename: String): AnnotationSeq = {
     var inAnno = false
-    val filtered: String = string.lines.filter {
+    val filtered: String = string.linesIterator.filter {
       case line if line.startsWith("// ----- 8< ----- FILE") && line.contains(filename) =>
         inAnno = true
         false
