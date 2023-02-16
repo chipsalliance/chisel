@@ -3,11 +3,33 @@
 package circt.stage
 
 import chisel3.RawModule
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
+import chisel3.stage.{
+  ChiselCircuitAnnotation,
+  ChiselGeneratorAnnotation,
+  CircuitSerializationAnnotation,
+  PrintFullStackTraceAnnotation,
+  SourceRootAnnotation,
+  ThrowOnFirstErrorAnnotation,
+  WarningsAsErrorsAnnotation
+}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.stage.FirrtlCircuitAnnotation
+
+trait CLI { this: Shell =>
+  parser.note("CIRCT (MLIR FIRRTL Compiler) options")
+  Seq(
+    CIRCTTargetAnnotation,
+    PreserveAggregate,
+    ChiselGeneratorAnnotation,
+    PrintFullStackTraceAnnotation,
+    ThrowOnFirstErrorAnnotation,
+    WarningsAsErrorsAnnotation,
+    SourceRootAnnotation,
+    SplitVerilog
+  ).foreach(_.addOptions(parser))
+}
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
