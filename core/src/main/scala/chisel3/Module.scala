@@ -381,14 +381,14 @@ package experimental {
             if (_namespace.contains(name)) {
               Builder.error(
                 s"""Unable to name port $port to "$name" in $this,""" +
-                  s" name is already taken by another port! ${source}"
+                  s" name is already taken by another port! ${source.makeMessage(x => x)}"
               )(UnlocatableSourceInfo)
             }
             port.setRef(ModuleIO(this, _namespace.name(name)))
           case None =>
             Builder.error(
               s"Unable to name port $port in $this, " +
-                s"try making it a public field of the Module $source"
+                s"try making it a public field of the Module ${source.makeMessage(x => x)}"
             )(UnlocatableSourceInfo)
             port.setRef(ModuleIO(this, "<UNNAMED>"))
         }
