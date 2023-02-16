@@ -13,7 +13,7 @@ import firrtl.options.{
   Unserializable
 }
 import firrtl.options.Viewer.view
-import chisel3.{ChiselException, Module}
+import chisel3.{deprecatedMFCMessage, ChiselException, Module}
 import chisel3.RawModule
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.{Circuit, Emitter => OldEmitter}
@@ -27,6 +27,7 @@ sealed trait ChiselOption { this: Annotation => }
 
 /** Disable the execution of the FIRRTL compiler by Chisel
   */
+@deprecated(deprecatedMFCMessage + """ Use "--target chirrtl" with circt.stage.ChiselStage.""", "Chisel 3.6")
 case object NoRunFirrtlCompilerAnnotation
     extends NoTargetAnnotation
     with ChiselOption
