@@ -10,10 +10,6 @@ import firrtl.stage.{FirrtlOptions, FirrtlOptionsView}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class BazCompiler extends NoneCompiler
-
-class Baz_Compiler extends NoneCompiler
-
 class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
 
   behavior.of(FirrtlOptionsView.getClass.getName)
@@ -28,7 +24,6 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
   val annotations = Seq(
     /* FirrtlOptions */
     OutputFileAnnotation("bar"),
-    CompilerAnnotation(new BazCompiler()),
     InfoModeAnnotation("use"),
     FirrtlCircuitAnnotation(grault)
   )
@@ -49,7 +44,6 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
 
     val overwrites = Seq(
       OutputFileAnnotation("bar_"),
-      CompilerAnnotation(new Baz_Compiler()),
       InfoModeAnnotation("gen"),
       FirrtlCircuitAnnotation(grault_)
     )

@@ -4,7 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.ir._
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation}
+import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
 import org.scalacheck.Gen
