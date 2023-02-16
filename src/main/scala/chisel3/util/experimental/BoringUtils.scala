@@ -99,7 +99,7 @@ class BoringUtilsException(message: String) extends Exception(message)
 object BoringUtils {
   /* A global namespace for boring ids */
   private[chisel3] case object CacheKey extends BuilderContextCache.Key[Namespace]
-  private val boringNamespace = Builder.contextCache.getOrElseUpdate(CacheKey, Namespace.empty)
+  private def boringNamespace = Builder.contextCache.getOrElseUpdate(CacheKey, Namespace.empty)
 
   /* Get a new name (value) from the namespace */
   private def newName(value: String): String = {
