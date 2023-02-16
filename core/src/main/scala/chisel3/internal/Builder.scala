@@ -11,14 +11,14 @@ import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
-import _root_.firrtl.{AnnotationSeq, RenameMap}
+import _root_.firrtl.AnnotationSeq
+import _root_.firrtl.renamemap.MutableRenameMap
+import _root_.firrtl.util.BackendCompilationUtilities._
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
-import chisel3.internal.sourceinfo.SourceInfo
 import logger.LazyLogging
 
 import scala.collection.mutable
-import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 import scala.annotation.tailrec
 
 private[chisel3] class Namespace(keywords: Set[String]) {
@@ -42,15 +42,6 @@ private[chisel3] class Namespace(keywords: Set[String]) {
       names(n) = index + 1
       tryName
     }
-  }
-
-  private def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
-    // TODO what character set does FIRRTL truly support? using ANSI C for now
-    def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
-    def legal(c:      Char) = legalStart(c) || (c >= '0' && c <= '9')
-    val res = if (s.forall(legal)) s else s.filter(legal)
-    val headOk = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
-    if (headOk) res else s"_$res"
   }
 
   /** Checks if `n` ends in `_\d+` and returns the substring before `_` if so, null otherwise */
@@ -115,27 +106,7 @@ private[chisel3] class IdGen {
   def value: Long = counter
 }
 
-/** Public API to access Node/Signal names.
-  * currently, the node's name, the full path name, and references to its parent Module and component.
-  * These are only valid once the design has been elaborated, and should not be used during its construction.
-  */
-trait InstanceId {
-  def instanceName:   String
-  def pathName:       String
-  def parentPathName: String
-  def parentModName:  String
-
-  /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
-  def toNamed: Named
-
-  /** Returns a FIRRTL IsMember that refers to this object in the elaborated hardware graph */
-  def toTarget: IsMember
-
-  /** Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph */
-  def toAbsoluteTarget: IsMember
-}
-
-private[chisel3] trait HasId extends InstanceId {
+private[chisel3] trait HasId extends chisel3.InstanceId {
   // using nullable var for better memory usage
   private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
@@ -224,7 +195,7 @@ private[chisel3] trait HasId extends InstanceId {
   // wrapping
   private[chisel3] def forceFinalName(seed: String): this.type = {
     // This could be called with user prefixes, ignore them
-    noPrefix {
+    chisel3.experimental.noPrefix {
       suggested_seedVar = seed
       this.suggestName(seed)
     }
@@ -261,11 +232,31 @@ private[chisel3] trait HasId extends InstanceId {
     refBuilder: String => Arg = Ref(_)
   ): Unit =
     if (_ref.isEmpty) {
-      val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).get
-      val available_name = namespace.name(candidate_name)
-      if (errorIfDup && (available_name != candidate_name)) {
-        Builder.error(s"Cannot have duplicate names $available_name and $candidate_name")(UnlocatableSourceInfo)
+      val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).getOrElse {
+        throwException(
+          s"Attempted to name a nameless IO port ($this): this is usually caused by instantiating an IO but not assigning it to a val.\n" +
+            s"Assign $this to a val, or explicitly call suggestName to seed a unique name"
+        )
       }
+
+      val sanitized = sanitize(candidate_name)
+      val available_name = namespace.name(candidate_name)
+
+      // Check for both cases of name duplication
+      if (errorIfDup && (available_name != sanitized)) {
+        // If sanitization occurred, then the sanitized name duplicate an existing name
+        if ((candidate_name != sanitized)) {
+          Builder.error(
+            s"Attempted to name $this with an unsanitary name '$candidate_name': sanitization results in a duplicated name '$sanitized'. Please seed a more unique name"
+          )(UnlocatableSourceInfo)
+        } else {
+          // Otherwise the candidate name duplicates an existing name
+          Builder.error(
+            s"Attempted to name $this with a duplicated name '$candidate_name'. Use suggestName to seed a unique name"
+          )(UnlocatableSourceInfo)
+        }
+      }
+
       setRef(refBuilder(available_name))
       // Clear naming prefix to free memory
       naming_prefix = Nil
@@ -292,17 +283,25 @@ private[chisel3] trait HasId extends InstanceId {
   private def refName(c: Component): String = _ref match {
     case Some(arg) => arg.fullName(c)
     case None => {
-      val nameGuess = _computeName(None) match {
-        case Some(name) => s": '$name'"
-        case None       => ""
-      }
-      val parentGuess = _parent match {
-        case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
-        case Some(p)          => s", in module '${p.pathName}'"
-        case None             => ""
-      }
-      throwException("You cannot access the .instanceName or .toTarget of non-hardware Data" + nameGuess + parentGuess)
+      throwException(
+        "You cannot access the .instanceName or .toTarget of non-hardware Data" + _errorContext
+      )
     }
+  }
+
+  private[chisel3] def _errorContext: String = {
+    val nameGuess: String = _computeName(None) match {
+      case Some(name) => s": '$name'"
+      case None       => ""
+    }
+
+    val parentGuess: String = _parent match {
+      case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
+      case Some(p)          => s", in module '${p.pathName}'"
+      case None             => ""
+    }
+
+    nameGuess + parentGuess
   }
 
   // Helper for reifying views if they map to a single Target
@@ -321,7 +320,7 @@ private[chisel3] trait HasId extends InstanceId {
       (p._component, this) match {
         case (Some(c), _) => refName(c)
         case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
-        case (None, _: MemBase[Data]) => _ref.get.localName
+        case (None, _: MemBase[_]) => _ref.get.localName
         case (None, _) =>
           throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }
@@ -360,13 +359,16 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  final def toNamed: ComponentName =
+  final def toNamed: ComponentName = {
+    assertValidTarget()
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+  }
 
   /** Returns a FIRRTL ReferenceTarget that references this object
     * @note Should not be called until circuit elaboration is complete
     */
   final def toTarget: ReferenceTarget = {
+    assertValidTarget()
     val name = this.instanceName
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
@@ -388,6 +390,21 @@ private[chisel3] trait NamedComponent extends HasId {
       case Some(ViewParent) => makeTarget(reifyParent)
       case Some(parent)     => makeTarget(parent)
       case None             => localTarget
+    }
+  }
+
+  private def assertValidTarget(): Unit = {
+    val isVecSubaccess = getOptionRef.map {
+      case Index(_, _: ULit) => true // Vec literal indexing
+      case Index(_, _: Node) => true // Vec dynamic indexing
+      case _ => false
+    }.getOrElse(false)
+
+    if (isVecSubaccess) {
+      throwException(
+        s"You cannot target Vec subaccess" + _errorContext +
+          ". Instead, assign it to a temporary (for example, with WireInit) and target the temporary."
+      )
     }
   }
 }
@@ -459,6 +476,8 @@ private[chisel3] class DynamicContext(
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
 
+  val contextCache: BuilderContextCache = BuilderContextCache.empty
+
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
@@ -519,6 +538,8 @@ private[chisel3] object Builder extends LazyLogging {
   def components:      ArrayBuffer[Component] = dynamicContext.components
   def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
+  def contextCache: BuilderContextCache = dynamicContext.contextCache
+
   // TODO : Unify this with annotations in the future - done this way for backward compatability
   def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
 
@@ -549,6 +570,8 @@ private[chisel3] object Builder extends LazyLogging {
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing
         case ModuleIO(_, n) => Some(n) // BlackBox port
+        case f =>
+          throw new InternalErrorException(s"Match Error: field=$f")
       }
       def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
         a.flatMap(ax => b.map(f(ax, _)))
@@ -768,7 +791,7 @@ private[chisel3] object Builder extends LazyLogging {
     *
     * @param m exception message
     */
-  @throws(classOf[ChiselException])
+  @throws(classOf[chisel3.ChiselException])
   def exception(m: => String)(implicit sourceInfo: SourceInfo): Nothing = {
     error(m)
     throwException(m)
@@ -779,20 +802,11 @@ private[chisel3] object Builder extends LazyLogging {
     major.toInt
   }
 
-  def checkScalaVersion(): Unit = {
-    if (getScalaMajorVersion == 11) {
-      val url = _root_.firrtl.stage.transforms.CheckScalaVersion.migrationDocumentLink
-      val msg = s"Chisel 3.4 is the last version that will support Scala 2.11. " +
-        s"Please upgrade to Scala 2.12. See $url"
-      deprecated(msg, Some(""))
-    }
-  }
-
   // Builds a RenameMap for all Views that do not correspond to a single Data
   // These Data give a fake ReferenceTarget for .toTarget and .toReferenceTarget that the returned
   // RenameMap can split into the constituent parts
-  private[chisel3] def makeViewRenameMap: RenameMap = {
-    val renames = RenameMap()
+  private[chisel3] def makeViewRenameMap: MutableRenameMap = {
+    val renames = MutableRenameMap()
     for (view <- unnamedViews) {
       val localTarget = view.toTarget
       val absTarget = view.toAbsoluteTarget
@@ -812,9 +826,8 @@ private[chisel3] object Builder extends LazyLogging {
     forceModName:   Boolean = true
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
-      ViewParent // Must initialize the singleton in a Builder context or weird things can happen
+      ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal
-      checkScalaVersion()
       logger.info("Elaborating design...")
       val mod = f
       if (forceModName) { // This avoids definition name index skipping with D/I
@@ -859,7 +872,7 @@ object DynamicNamingStack {
     prefixRef
   }
 
-  def length(): Int = Builder.namingStackOption.get.length
+  def length(): Int = Builder.namingStackOption.get.length()
 }
 
 /** Casts BigInt to Int, issuing an error when the input isn't representable. */

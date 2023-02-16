@@ -3,11 +3,11 @@
 package chiselTests
 
 import org.scalatest._
-import chisel3._
-import chisel3.experimental.OpaqueType
-import chisel3.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
+import chisel3._
+import chisel3.experimental.{ExtModule, OpaqueType}
 
+import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
 
 class DirectionedBundle extends Bundle {
@@ -131,7 +131,8 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     })
   }
 
-  import chisel3.experimental.{DataMirror, Direction}
+  import chisel3.experimental.Direction
+  import chisel3.reflect.DataMirror
 
   property("Flipped should flip the specified direction of a Bundle") {
     class MyBundle extends Bundle {
@@ -152,7 +153,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       DataMirror.directionOf(fizz) should be(Direction.Bidirectional(Direction.Default))
       DataMirror.directionOf(buzz) should be(Direction.Bidirectional(Direction.Default))
     }
-    val chirrtl = ChiselStage.emitChirrtl(new Top)
+    val chirrtl = ChiselStage.emitCHIRRTL(new Top)
     chirrtl should include("input foo")
     chirrtl should include("output fizz")
     chirrtl should include("output buzz")
@@ -266,23 +267,62 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(flippedVecFlipped.head.b) == Direction.Output)
       assert(DataMirror.directionOf(flippedVecFlipped(index).a) == Direction.Input)
       assert(DataMirror.directionOf(flippedVecFlipped(index).b) == Direction.Output)
+
+      val flippedVecVecFlipped = IO(Flipped(Vec(2, Vec(1, Flipped(new MyBundle)))))
+      flippedVecVecFlipped <> DontCare
+      assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.a) == Direction.Input)
+      assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.b) == Direction.Output)
+      assert(DataMirror.directionOf(flippedVecVecFlipped(index).head.a) == Direction.Input)
+      assert(DataMirror.directionOf(flippedVecVecFlipped(index).head.b) == Direction.Output)
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
-    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
 
-    // Check that emitted directions are correct.
-    Seq(emitted, firrtl).foreach { o =>
-      {
-        // Chisel Emitter formats spacing a little differently than the
-        // FIRRTL Emitter :-(
-        val s = o.replace("{flip a", "{ flip a")
-        assert(s.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("input flippedVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("output flippedVecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
-      }
+    assert(chirrtl.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("input flippedVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("output flippedVecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("output flippedVecVecFlipped : { flip a : UInt<1>, b : UInt<1>}[1][2]"))
+  }
+
+  property("Using Vec and Flipped together should calculate directions properly for an ExtModule") {
+    class MyBundle extends Bundle {
+      val a = Input(Bool())
+      val b = Output(Bool())
     }
+    class MyBlackBox extends ExtModule {
+      val regularVec = IO(Vec(2, new MyBundle))
+      assert(DataMirror.directionOf(regularVec.head.a) == Direction.Input)
+      assert(DataMirror.directionOf(regularVec.head.b) == Direction.Output)
+
+      val vecFlipped = IO(Vec(2, Flipped(new MyBundle)))
+      assert(DataMirror.directionOf(vecFlipped.head.a) == Direction.Output)
+      assert(DataMirror.directionOf(vecFlipped.head.b) == Direction.Input)
+
+      val flippedVec = IO(Flipped(Vec(2, new MyBundle)))
+      assert(DataMirror.directionOf(flippedVec.head.a) == Direction.Output)
+      assert(DataMirror.directionOf(flippedVec.head.b) == Direction.Input)
+
+      // Flipped(Vec(Flipped())) should be equal to non-flipped.
+      val flippedVecFlipped = IO(Flipped(Vec(2, Flipped(new MyBundle))))
+      assert(DataMirror.directionOf(flippedVecFlipped.head.a) == Direction.Input)
+      assert(DataMirror.directionOf(flippedVecFlipped.head.b) == Direction.Output)
+
+      val flippedVecVecFlipped = IO(Flipped(Vec(2, Vec(1, Flipped(new MyBundle)))))
+      assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.a) == Direction.Input)
+      assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.b) == Direction.Output)
+    }
+    class MyModule extends RawModule {
+      val child = Module(new MyBlackBox)
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+
+    assert(chirrtl.contains("output regularVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("input vecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("input flippedVec : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("output flippedVecFlipped : { flip a : UInt<1>, b : UInt<1>}[2]"))
+    assert(chirrtl.contains("output flippedVecVecFlipped : { flip a : UInt<1>, b : UInt<1>}[1][2]"))
   }
 
   property("Vec with Input/Output should calculate directions properly") {
@@ -337,7 +377,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(vecOutputFlipped(index).b) == Direction.Output)
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
     val firrtl:  String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
@@ -355,6 +395,52 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       }
     }
   }
+
+  property("Using OpaqueTypes and Flipped together should calculate directions properly") {
+    import RecordSpec.{Boxed, Unboxed}
+    class MyModule extends RawModule {
+      val unboxedFlipped = IO(new Unboxed(Flipped(UInt(8.W))))
+      assert(DataMirror.directionOf(unboxedFlipped.underlying) == Direction.Input)
+
+      val flippedUnboxedFlipped = IO(Flipped(new Unboxed(Flipped(UInt(8.W)))))
+      assert(DataMirror.directionOf(flippedUnboxedFlipped.underlying) == Direction.Output)
+
+      // It needs to be recursive
+      val unboxedUnboxedFlipped = IO(new Unboxed(new Unboxed(Flipped(UInt(8.W)))))
+      assert(DataMirror.directionOf(unboxedUnboxedFlipped.underlying.underlying) == Direction.Input)
+
+      val flippedUnboxedUnboxedFlipped = IO(Flipped(new Unboxed(new Unboxed(Flipped(UInt(8.W))))))
+      assert(DataMirror.directionOf(flippedUnboxedUnboxedFlipped.underlying.underlying) == Direction.Output)
+
+      // It should also work when nested inside of another Bundle
+      val boxedUnboxedFlipped = IO(new Boxed(new Unboxed(Flipped(UInt(8.W)))))
+      assert(DataMirror.directionOf(boxedUnboxedFlipped.underlying.underlying) == Direction.Input)
+
+      val flippedBoxedUnboxedFlipped = IO(Flipped(new Boxed(new Unboxed(Flipped(UInt(8.W))))))
+      assert(DataMirror.directionOf(flippedBoxedUnboxedFlipped.underlying.underlying) == Direction.Output)
+
+      // It also needs to be recursive when inside of another bundle
+      val boxedUnboxedUnboxedFlipped = IO(new Boxed(new Unboxed(new Unboxed(Flipped(UInt(8.W))))))
+      assert(DataMirror.directionOf(boxedUnboxedUnboxedFlipped.underlying.underlying.underlying) == Direction.Input)
+
+      val flippedBoxedUnboxedUnboxedFlipped = IO(Flipped(new Boxed(new Unboxed(new Unboxed(Flipped(UInt(8.W)))))))
+      assert(
+        DataMirror.directionOf(flippedBoxedUnboxedUnboxedFlipped.underlying.underlying.underlying) == Direction.Output
+      )
+
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    assert(chirrtl.contains("input unboxedFlipped : UInt<8>"))
+    assert(chirrtl.contains("output flippedUnboxedFlipped : UInt<8>"))
+    assert(chirrtl.contains("input unboxedUnboxedFlipped : UInt<8>"))
+    assert(chirrtl.contains("output flippedUnboxedUnboxedFlipped : UInt<8>"))
+    assert(chirrtl.contains("output boxedUnboxedFlipped : { flip underlying : UInt<8>}"))
+    assert(chirrtl.contains("input flippedBoxedUnboxedFlipped : { flip underlying : UInt<8>}"))
+    assert(chirrtl.contains("output boxedUnboxedUnboxedFlipped : { flip underlying : UInt<8>}"))
+    assert(chirrtl.contains("input flippedBoxedUnboxedUnboxedFlipped : { flip underlying : UInt<8>}"))
+  }
+
   property("Can now describe a Decoupled bundle using Flipped, not Input/Output in chisel3") {
     class Decoupled extends Bundle {
       val bits = UInt(3.W)
@@ -368,7 +454,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       outgoing <> incoming
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
 
     // Check that emitted directions are correct.
     assert(emitted.contains("input incoming : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
@@ -395,7 +481,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       io.monitor.ready := io.driver.ready
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
 
     assert(
       emitted.contains(
@@ -423,7 +509,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       val sink = IO(Input(Vec(1, new Decoupled())))
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
 
     assert(
       emitted.contains(
@@ -451,13 +537,12 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     class MyOpaqueType extends Record with OpaqueType {
       val k = new Decoupled()
       val elements = SeqMap("" -> k)
-      override def cloneType: this.type = (new MyOpaqueType).asInstanceOf[this.type]
     }
     class MyModule extends RawModule {
       val w = Wire(new MyOpaqueType())
     }
 
-    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
 
     assert(
       emitted.contains(

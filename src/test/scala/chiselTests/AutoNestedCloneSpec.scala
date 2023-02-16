@@ -2,8 +2,7 @@
 
 package chiselTests
 import chisel3._
-import chisel3.testers.TestUtils
-import chisel3.stage.ChiselStage.elaborate
+import circt.stage.ChiselStage.elaborate
 import org.scalatest.matchers.should.Matchers
 
 class BundleWithAnonymousInner(val w: Int) extends Bundle {

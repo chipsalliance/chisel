@@ -6,7 +6,7 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 
 object when {
 

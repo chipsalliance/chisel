@@ -413,11 +413,10 @@ To accomplish this, use the other operators to initialize all Record members, th
 
 ```scala mdoc:silent
 import scala.collection.immutable.SeqMap
-import chisel3.experimental.AutoCloneType
 
 class Example9 extends RawModule {
-  val abType = new Record with AutoCloneType { val elements = SeqMap("a" -> Bool(), "b" -> Flipped(Bool())) }
-  val bcType = new Record with AutoCloneType { val elements = SeqMap("b" -> Flipped(Bool()), "c" -> Bool()) }
+  val abType = new Record { val elements = SeqMap("a" -> Bool(), "b" -> Flipped(Bool())) }
+  val bcType = new Record { val elements = SeqMap("b" -> Flipped(Bool()), "c" -> Bool()) }
 
   val p = IO(Flipped(abType))
   val c = IO(bcType)
@@ -443,10 +442,10 @@ To accomplish this, use the other operators to initialize all Record members, th
 
 ```scala mdoc:silent
 import scala.collection.immutable.SeqMap
-import chisel3.experimental.AutoCloneType
+
 class Example10 extends RawModule {
-  val abType = new Record with AutoCloneType { val elements = SeqMap("a" -> Bool(), "b" -> Flipped(Bool())) }
-  val bcType = new Record with AutoCloneType { val elements = SeqMap("b" -> Flipped(Bool()), "c" -> Bool()) }
+  val abType = new Record { val elements = SeqMap("a" -> Bool(), "b" -> Flipped(Bool())) }
+  val bcType = new Record { val elements = SeqMap("b" -> Flipped(Bool()), "c" -> Bool()) }
 
   val p = Wire(abType)
   val c = Wire(bcType)
@@ -529,7 +528,6 @@ If implicit truncation behavior is desired, then `Connectable` provides a `squee
 
 ```scala mdoc:silent
 import scala.collection.immutable.SeqMap
-import chisel3.experimental.AutoCloneType
 
 class Example14 extends RawModule {
   val p = IO(Flipped(UInt(4.W)))

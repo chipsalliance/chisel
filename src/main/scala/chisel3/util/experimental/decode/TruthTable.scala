@@ -3,9 +3,10 @@
 package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
+import scala.util.hashing.MurmurHash3
 import scala.collection.mutable
 
-sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat, val sort: Boolean) {
+sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat) {
   def inputWidth = table.head._1.getWidth
 
   def outputWidth = table.head._2.getWidth
@@ -17,15 +18,17 @@ sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: 
     (table.map(writeRow) ++ Seq(s"${" " * (inputWidth + 2)}${default.rawString}")).mkString("\n")
   }
 
-  def copy(table: Seq[(BitPat, BitPat)] = this.table, default: BitPat = this.default, sort: Boolean = this.sort) =
-    TruthTable(table, default, sort)
+  def copy(table: Seq[(BitPat, BitPat)] = this.table, default: BitPat = this.default) =
+    TruthTable(table, default)
 
   override def equals(y: Any): Boolean = {
     y match {
-      case y: TruthTable => toString == y.toString
+      case that: TruthTable => this.table == that.table && this.default == that.default
       case _ => false
     }
   }
+
+  override lazy val hashCode: Int = MurmurHash3.productHash((table, default))
 }
 
 object TruthTable {
@@ -112,7 +115,7 @@ object TruthTable {
     }
 
     import BitPat.bitPatOrder
-    new TruthTable(if (sort) finalTable.sorted else finalTable, default, sort)
+    new TruthTable(if (sort) finalTable.sorted else finalTable, default)
   }
 
   /** Parse TruthTable from its string representation. */

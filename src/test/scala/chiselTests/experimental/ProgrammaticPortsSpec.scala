@@ -4,7 +4,7 @@ package chiselTests
 package experimental
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 // NOTE This is currently an experimental API and subject to change
 // Example using a private port
@@ -15,7 +15,6 @@ class PrivatePort extends NamedModuleTester {
 
 // Example of using composition to add ports to a Module
 class CompositionalPort(module: NamedModuleTester, name: String) {
-  import chisel3.experimental.IO
   val foo = module.expectName(IO(Output(Bool())), name)
   foo.suggestName(name)
   foo := true.B

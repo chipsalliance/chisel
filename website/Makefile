@@ -1,0 +1,58 @@
+buildDir ?= build
+subprojects = $(buildDir)/subprojects
+docs = $(buildDir)/docs
+chisel3 = ../
+
+www-docs = \
+	$(shell find $(chisel3)/docs/ -name "*.md")
+
+www-src = \
+	$(shell find docs/src/main/resources) \
+	docs/src/main/tut/chisel3/docs \
+	docs/src/main/tut/chisel3/index.md \
+	$(chisel3)/README.md
+
+# Get the latest version of some sequence of version strings
+# Usage: $(call getTags,$(foo))
+define latest
+$(shell echo $(1) | tr " " "\n" | sort -Vr | head -n1 | sed 's/^v//')
+endef
+
+
+.PHONY: all clean mrproper publish serve
+.PRECIOUS: \
+	$(subprojects)/chisel3/%/.git $(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html
+
+# Build the site into the default directory (docs/target/site)
+all: docs/target/site/index.html
+
+# Remove the output of all build targets
+clean:
+	rm -rf docs/target docs/src/main/tut/contributors.md docs/src/main/tut/chisel3/docs
+
+# Remove everything
+mrproper:
+	rm -rf $(buildDir) target project/target
+
+# Publish Microsite
+publish: all
+	sbt docs/ghpagesPushSite
+
+# Start a Jekyll server for the site
+serve: all
+	(cd docs/target/site && jekyll serve)
+
+# Build the sbt-microsite
+docs/target/site/index.html: build.sbt docs/src/main/tut/contributors.md $(www-src)
+	sbt docs/makeMicrosite
+
+# Determine contributors
+docs/src/main/tut/contributors.md: build.sbt
+	sbt contributors/determineContributors
+
+# Build docs in subproject with a specific tag.
+# This command is brittle as it assumes chisel3 is up one dir from here in the path to where
+# we want to put the website docs.
+docs/src/main/tut/chisel3/docs: $(chisel3)/docs/ $(www-docs)
+	(cd $(chisel3) && sbt docs/mdoc && cp -r docs/generated website/docs/src/main/tut/chisel3/docs)
+

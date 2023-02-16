@@ -1,77 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental
+package chisel3
 
 import scala.language.experimental.macros
+import scala.language.existentials
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
-import chisel3._
+import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{throwException, Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId}
-import firrtl.annotations._
+import chisel3.internal.{throwException, Binding, Builder, BuilderContextCache, ChildBinding, ConstrainedBinding}
 
-object EnumAnnotations {
+import chisel3.experimental.EnumAnnotations._
 
-  /** An annotation for strong enum instances that are ''not'' inside of Vecs
-    *
-    * @param target the enum instance being annotated
-    * @param enumTypeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
-    */
-  case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
-    def duplicate(n: Named): EnumComponentAnnotation = this.copy(target = n)
-  }
-
-  case class EnumComponentChiselAnnotation(target: InstanceId, enumTypeName: String) extends ChiselAnnotation {
-    def toFirrtl: EnumComponentAnnotation = EnumComponentAnnotation(target.toNamed, enumTypeName)
-  }
-
-  /** An annotation for Vecs of strong enums.
-    *
-    * The ''fields'' parameter deserves special attention, since it may be difficult to understand. Suppose you create a the following Vec:
-    *
-    *               {{{
-    *               VecInit(new Bundle {
-    *                 val e = MyEnum()
-    *                 val b = new Bundle {
-    *                   val inner_e = MyEnum()
-    *                 }
-    *                 val v = Vec(3, MyEnum())
-    *               }
-    *               }}}
-    *
-    *               Then, the ''fields'' parameter will be: ''Seq(Seq("e"), Seq("b", "inner_e"), Seq("v"))''. Note that for any Vec that doesn't contain Bundles, this field will simply be an empty Seq.
-    *
-    * @param target the Vec being annotated
-    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
-    * @param fields a list of all chains of elements leading from the Vec instance to its inner enum fields.
-    */
-  case class EnumVecAnnotation(target: Named, typeName: String, fields: Seq[Seq[String]])
-      extends SingleTargetAnnotation[Named] {
-    def duplicate(n: Named): EnumVecAnnotation = this.copy(target = n)
-  }
-
-  case class EnumVecChiselAnnotation(target: InstanceId, typeName: String, fields: Seq[Seq[String]])
-      extends ChiselAnnotation {
-    override def toFirrtl: EnumVecAnnotation = EnumVecAnnotation(target.toNamed, typeName, fields)
-  }
-
-  /** An annotation for enum types (rather than enum ''instances'').
-    *
-    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
-    * @param definition a map describing which integer values correspond to which enum names
-    */
-  case class EnumDefAnnotation(typeName: String, definition: Map[String, BigInt]) extends NoTargetAnnotation
-
-  case class EnumDefChiselAnnotation(typeName: String, definition: Map[String, BigInt]) extends ChiselAnnotation {
-    override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
-  }
-}
-import EnumAnnotations._
-
-abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
+abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true) extends Element {
 
   // Use getSimpleName instead of enumTypeName because for debugging purposes
   //   the fully qualified name isn't necessary (compared to for the
@@ -210,7 +154,7 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
         case b: Bundle => enumFields(b)
         case _ => Seq()
       }
-    case b: Bundle =>
+    case b: Record =>
       b.elements.collect {
         case (name, e: EnumType) if this.typeEquivalent(e) => Seq(Seq(name))
         case (name, v: Vec[_]) if this.typeEquivalent(v.sample_element) => Seq(Seq(name))
@@ -240,11 +184,16 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
       case None    => EnumComponentChiselAnnotation(this, enumTypeName)
     }
 
-    if (!Builder.annotations.contains(anno)) {
+    // Enum annotations are added every time a ChiselEnum is bound
+    // To keep the number down, we keep them unique in the annotations
+    val enumAnnos = Builder.contextCache.getOrElseUpdate(ChiselEnum.CacheKey, mutable.HashSet.empty[ChiselAnnotation])
+    if (!enumAnnos.contains(anno)) {
+      enumAnnos += anno
       annotate(anno)
     }
 
-    if (!Builder.annotations.contains(factory.globalAnnotation)) {
+    if (!enumAnnos.contains(factory.globalAnnotation)) {
+      enumAnnos += factory.globalAnnotation
       annotate(factory.globalAnnotation)
     }
   }
@@ -275,10 +224,14 @@ abstract class EnumType(private[chisel3] val factory: EnumFactory, selfAnnotatin
   }
 }
 
-abstract class EnumFactory {
+private[chisel3] object ChiselEnum {
+  private[chisel3] case object CacheKey extends BuilderContextCache.Key[mutable.HashSet[ChiselAnnotation]]
+}
+
+abstract class ChiselEnum {
   class Type extends EnumType(this)
   object Type {
-    def apply(): Type = EnumFactory.this.apply()
+    def apply(): Type = ChiselEnum.this.apply()
   }
 
   private var id:             BigInt = 0
@@ -300,7 +253,7 @@ abstract class EnumFactory {
   }
 
   private[chisel3] def globalAnnotation: EnumDefChiselAnnotation =
-    EnumDefChiselAnnotation(enumTypeName, (enumNames, enumValues).zipped.toMap)
+    EnumDefChiselAnnotation(enumTypeName, enumNames.zip(enumValues).toMap)
 
   def getWidth: Int = width.get
 
@@ -431,11 +384,11 @@ private[chisel3] object EnumMacros {
 private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum, selfAnnotating = false) {
   override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
 }
-private object UnsafeEnum extends EnumFactory
+private object UnsafeEnum extends ChiselEnum
 
 /** Suppress enum cast warnings
   *
-  * Users should use [[EnumFactory.safe <EnumType>.safe]] when possible.
+  * Users should use [[ChiselEnum.safe <EnumType>.safe]] when possible.
   *
   * This is primarily used for casting from [[UInt]] to a Bundle type that contains an Enum.
   * {{{

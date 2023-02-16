@@ -3,7 +3,7 @@
 package chisel3
 package connectable
 
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 import chisel3.reflect.DataMirror
 import experimental.{prefix, requireIsHardware}
 
@@ -258,6 +258,23 @@ object Connectable {
       }
     }
 
+    /** There are cases when we need to reverse a FIRRTL connection
+      *
+      * Namely, OpaqueTypes of flipped fields since the flip is not present in the emitted FIRRTL
+      * @todo when refactoring internals, this firrtl-specific behavior should probably be moved
+      *   into Chisel IR lowering to FIRRTL IR. Such a change will likely conflict with the logic in
+      *   BiConnect which uses AbsoluteDirection to "Do the right thing"TM.
+      */
+    private def doFirrtlConnect[S <: Data](consumer: T, producer: S)(implicit sourceInfo: SourceInfo): Unit = {
+      val flip = consumer match {
+        case rec: Record if rec._isOpaqueType =>
+          rec.elementsIterator.next().specifiedDirection == SpecifiedDirection.Flip
+        case _ => false
+      }
+      val (lhs, rhs) = if (flip) (producer, consumer) else (consumer, producer)
+      lhs.firrtlConnect(rhs)
+    }
+
     /** $colonLessGreaterEq
       *
       * @group connection
@@ -266,7 +283,7 @@ object Connectable {
     final def :<>=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
-        consumer.base.firrtlConnect(producer)
+        doFirrtlConnect(consumer.base, producer)
       } else {
         connect(consumer, producer, ColonLessGreaterEq)
       }
@@ -280,7 +297,7 @@ object Connectable {
     final def :<>=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
-          consumer.base.firrtlConnect(producer.base)
+          doFirrtlConnect(consumer.base, producer.base)
         } else {
           connect(consumer, producer, ColonLessGreaterEq)
         }

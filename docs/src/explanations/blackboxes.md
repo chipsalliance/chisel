@@ -147,12 +147,3 @@ to look.
 The [dsptools project](https://github.com/ucb-bar/dsptools) is a good example of using this feature to build a real
 number simulation tester based on black boxes.
 
-### The interpreter
-
-***Note that the FIRRTL Interpreter is deprecated. Please use Treadle, the new Chisel/FIRRTL simulator***
-The [firrtl interpreter](https://github.com/ucb-bar/firrtl-interpreter) uses a separate system that allows users to
-construct scala implementations of the black boxes.  The scala implementation code built into a BlackBoxFactory which is
-passed down to the interpreter by the execution harness.  The interpreter is a scala simulation tester.  Once again the
-dsptools project uses this mechanism and is a good place to look at it.
-> It is planned that the BlackBoxFactory will be replaced by integration with the annotation based blackbox methods
-> stuff soon.

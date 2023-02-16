@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import firrtl.annotations.{IsMember, Named}
 import chisel3.internal.firrtl.BinaryPoint
+import chisel3.internal.ExceptionHelpers
+
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 import scala.collection.mutable
+import scala.annotation.{nowarn, tailrec}
 
 /** This package contains the main chisel3 API.
   */
 package object chisel3 {
   import internal.chiselRuntimeDeprecated
-  import internal.sourceinfo.{DeprecatedSourceInfo, UnlocatableSourceInfo}
+  import experimental.{DeprecatedSourceInfo, UnlocatableSourceInfo}
   import internal.firrtl.{Port, Width}
   import internal.Builder
 
@@ -155,8 +159,6 @@ package object chisel3 {
     def W: Width = Width(int)
   }
 
-  val WireInit = WireDefault
-
   object Vec extends VecFactory
 
   // Some possible regex replacements for the literal specifier deprecation:
@@ -181,7 +183,25 @@ package object chisel3 {
   object SInt extends SIntFactory
   object Bool extends BoolFactory
 
-  type InstanceId = internal.InstanceId
+  /** Public API to access Node/Signal names.
+    * currently, the node's name, the full path name, and references to its parent Module and component.
+    * These are only valid once the design has been elaborated, and should not be used during its construction.
+    */
+  trait InstanceId {
+    def instanceName:   String
+    def pathName:       String
+    def parentPathName: String
+    def parentModName:  String
+
+    /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
+    def toNamed: Named
+
+    /** Returns a FIRRTL IsMember that refers to this object in the elaborated hardware graph */
+    def toTarget: IsMember
+
+    /** Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph */
+    def toAbsoluteTarget: IsMember
+  }
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {
@@ -246,6 +266,7 @@ package object chisel3 {
       *         if the number of `parts` in the enclosing `StringContext` does not exceed
       *         the number of arguments `arg` by exactly 1.
       */
+    @nowarn("msg=checkLengths in class StringContext is deprecated")
     def cf(args: Any*): Printable = {
 
       // Handle literal %
@@ -281,8 +302,9 @@ package object chisel3 {
 
       }
 
+      //TODO: Update this to current API when 2.12 is EOL
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
-      val parts = sc.parts.map(StringContext.treatEscapes)
+      val parts = sc.parts.map(StringContext.processEscapes)
       // The 1st part is assumed never to contain a format specifier.
       // If the 1st part of a string is an argument - then the 1st part will be an empty String.
       // So we need to parse parts following the 1st one to get the format specifiers if any
@@ -332,7 +354,65 @@ package object chisel3 {
 
   implicit def string2Printable(str: String): Printable = PString(str)
 
-  type ChiselException = internal.ChiselException
+  class InternalErrorException(message: String, cause: Throwable = null)
+      extends ChiselException(
+        "Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues:" + message,
+        cause
+      )
+
+  class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause, true, true) {
+
+    /** Examine a [[Throwable]], to extract all its causes. Innermost cause is first.
+      * @param throwable an exception to examine
+      * @return a sequence of all the causes with innermost cause first
+      */
+    @tailrec
+    private def getCauses(throwable: Throwable, acc: Seq[Throwable] = Seq.empty): Seq[Throwable] =
+      throwable.getCause() match {
+        case null => throwable +: acc
+        case a    => getCauses(a, throwable +: acc)
+      }
+
+    /** Returns true if an exception contains */
+    private def containsBuilder(throwable: Throwable): Boolean =
+      throwable
+        .getStackTrace()
+        .collectFirst {
+          case ste if ste.getClassName().startsWith(ExceptionHelpers.builderName) => throwable
+        }
+        .isDefined
+
+    /** Examine this [[ChiselException]] and it's causes for the first [[Throwable]] that contains a stack trace including
+      * a stack trace element whose declaring class is the [[ExceptionHelpers.builderName]]. If no such element exists, return this
+      * [[ChiselException]].
+      */
+    private lazy val likelyCause: Throwable =
+      getCauses(this).collectFirst { case a if containsBuilder(a) => a }.getOrElse(this)
+
+    /** For an exception, return a stack trace trimmed to user code only
+      *
+      * This does the following actions:
+      *
+      *   1. Trims the top of the stack trace while elements match [[ExceptionHelpers.packageTrimlist]]
+      *   2. Trims the bottom of the stack trace until an element matches [[ExceptionHelpers.builderName]]
+      *   3. Trims from the [[ExceptionHelpers.builderName]] all [[ExceptionHelpers.packageTrimlist]]
+      *
+      * @param throwable the exception whose stack trace should be trimmed
+      * @return an array of stack trace elements
+      */
+    private def trimmedStackTrace(throwable: Throwable): Array[StackTraceElement] = {
+      def isBlacklisted(ste: StackTraceElement) = {
+        val packageName = ste.getClassName().takeWhile(_ != '.')
+        ExceptionHelpers.packageTrimlist.contains(packageName)
+      }
+
+      val trimmedLeft = throwable.getStackTrace().view.dropWhile(isBlacklisted)
+      val trimmedReverse = trimmedLeft.toIndexedSeq.reverse.view
+        .dropWhile(ste => !ste.getClassName.startsWith(ExceptionHelpers.builderName))
+        .dropWhile(isBlacklisted)
+      trimmedReverse.toIndexedSeq.reverse.toArray
+    }
+  }
 
   // Debugger/Tester access to internal Chisel data structures and methods.
   def getDataElements(a: Aggregate): Seq[Element] = {
@@ -361,4 +441,6 @@ package object chisel3 {
 
   final val deprecatedMFCMessage =
     "this feature will not be supported as part of the migration to the MLIR-based FIRRTL Compiler (MFC). For more information about this migration, please see the Chisel ROADMAP.md."
+
+  final val deprecatedPublicAPIMsg = "APIs in chisel3.internal are not intended to be public"
 }

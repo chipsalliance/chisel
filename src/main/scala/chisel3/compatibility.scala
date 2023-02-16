@@ -5,7 +5,9 @@
   */
 import chisel3._ // required for implicit conversions.
 import chisel3.util.random.FibonacciLFSR
-import chisel3.stage.{phases, ChiselCircuitAnnotation, ChiselOutputFileAnnotation, ChiselStage}
+import chisel3.stage.{phases, ChiselCircuitAnnotation, ChiselOutputFileAnnotation}
+
+import circt.stage.ChiselStage
 
 import scala.annotation.nowarn
 
@@ -86,7 +88,7 @@ package object Chisel {
   }
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
-  type ChiselException = chisel3.internal.ChiselException
+  type ChiselException = chisel3.ChiselException
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   type Data = chisel3.Data
@@ -120,7 +122,7 @@ package object Chisel {
   @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class fromBitsable[T <: Data](data: T) {
     import chisel3.CompileOptions
-    import chisel3.internal.sourceinfo.SourceInfo
+    import chisel3.experimental.SourceInfo
 
     /** Creates an new instance of this type, unpacking the input Bits into
       * structured data.
@@ -143,7 +145,8 @@ package object Chisel {
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   object Vec extends chisel3.VecFactory {
     import chisel3.CompileOptions
-    import chisel3.internal.sourceinfo._
+    import chisel3.experimental._
+    import chisel3.internal.sourceinfo.VecTransform
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
@@ -376,7 +379,7 @@ package object Chisel {
   type Mem[T <: Data] = chisel3.Mem[T]
 
   implicit class MemCompatibility(a: Mem.type) {
-    import chisel3.internal.sourceinfo.UnlocatableSourceInfo
+    import chisel3.experimental.UnlocatableSourceInfo
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def apply[T <: Data](t: T, size: BigInt)(implicit compileOptions: CompileOptions): Mem[T] =
@@ -394,7 +397,7 @@ package object Chisel {
   type SeqMem[T <: Data] = chisel3.SyncReadMem[T]
 
   implicit class SeqMemCompatibility(a: SeqMem.type) {
-    import chisel3.internal.sourceinfo.SourceInfo
+    import chisel3.experimental.SourceInfo
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def apply[T <: Data](
@@ -437,7 +440,7 @@ package object Chisel {
   @nowarn("msg=Chisel compatibility mode is deprecated")
   object Reg {
     import chisel3.CompileOptions
-    import chisel3.internal.sourceinfo.SourceInfo
+    import chisel3.experimental.SourceInfo
 
     // Passthrough for chisel3.Reg
     // Single-element constructor to avoid issues caused by null default args in a type
@@ -649,15 +652,17 @@ package object Chisel {
     implicit compileOptions: chisel3.CompileOptions)
       extends chisel3.util.Queue[T](gen, entries, pipe, flow)(compileOptions) {
 
+    @nowarn("msg=method override_reset_= in class Module is deprecated")
     def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
       this(gen, entries, pipe, flow)
-      this.override_reset = override_reset
+      this.override_reset = override_reset // TODO: Find a better way to do this
     }
 
+    @nowarn("msg=method override_reset_= in class Module is deprecated")
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) = {
       this(gen, entries, pipe, flow)
-      this.override_reset = Some(_reset)
+      this.override_reset = Some(_reset) // TODO: Find a better way to do this
     }
 
   }
@@ -811,7 +816,7 @@ package object Chisel {
 
   @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class DataCompatibility(a: Data) {
-    import chisel3.internal.sourceinfo.DeprecatedSourceInfo
+    import chisel3.experimental.DeprecatedSourceInfo
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def toBits(implicit compileOptions: CompileOptions): UInt = a.do_asUInt(DeprecatedSourceInfo, compileOptions)
@@ -820,7 +825,7 @@ package object Chisel {
 
   @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class VecLikeCompatibility[T <: Data](a: VecLike[T]) {
-    import chisel3.internal.sourceinfo.DeprecatedSourceInfo
+    import chisel3.experimental.DeprecatedSourceInfo
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def read(idx: UInt)(implicit compileOptions: CompileOptions): T = a.do_apply(idx)(compileOptions)
@@ -833,7 +838,7 @@ package object Chisel {
 
   @nowarn("msg=Chisel compatibility mode is deprecated")
   implicit class BitsCompatibility(a: Bits) {
-    import chisel3.internal.sourceinfo.DeprecatedSourceInfo
+    import chisel3.experimental.DeprecatedSourceInfo
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     final def asBits(implicit compileOptions: CompileOptions): Bits = a.do_asUInt(DeprecatedSourceInfo, compileOptions)

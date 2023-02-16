@@ -2,9 +2,9 @@
 
 package chiselTests
 
+import circt.stage.ChiselStage
 import chisel3._
 import chisel3.testers.BasicTester
-import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class LastAssignTester() extends BasicTester {
@@ -33,7 +33,7 @@ class MultiAssignSpec extends ChiselFlatSpec {
 
 class IllegalAssignSpec extends ChiselFlatSpec with Utils {
   "Reassignments to literals" should "be disallowed" in {
-    intercept[chisel3.internal.ChiselException] {
+    intercept[ChiselException] {
       extractCause[ChiselException] {
         ChiselStage.elaborate {
           new BasicTester {
@@ -45,7 +45,7 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
   }
 
   "Reassignments to ops" should "be disallowed" in {
-    intercept[chisel3.internal.ChiselException] {
+    intercept[ChiselException] {
       extractCause[ChiselException] {
         ChiselStage.elaborate {
           new BasicTester {
@@ -57,7 +57,7 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
   }
 
   "Reassignments to bit slices" should "be disallowed" in {
-    intercept[chisel3.internal.ChiselException] {
+    intercept[ChiselException] {
       extractCause[ChiselException] {
         ChiselStage.elaborate {
           new BasicTester {
@@ -69,7 +69,7 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
   }
 
   "Bulk-connecting two read-only nodes" should "be disallowed" in {
-    intercept[chisel3.internal.ChiselException] {
+    intercept[ChiselException] {
       extractCause[ChiselException] {
         ChiselStage.elaborate {
           new BasicTester {

@@ -17,7 +17,7 @@ lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "3.6.0-RC1",
   autoAPIMappings := true,
-  scalaVersion := "2.12.17",
+  scalaVersion := "2.13.10",
   crossScalaVersions := Seq("2.13.10", "2.12.17"),
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -34,6 +34,16 @@ lazy val commonSettings = Seq(
       case _                       => compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)) :: Nil
     }
   }
+)
+
+lazy val warningSuppression = Seq(
+  scalacOptions += "-Wconf:" + Seq(
+    "msg=APIs in chisel3.internal:s",
+    "msg=Importing from firrtl:s",
+    "msg=migration to the MLIR:s",
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s",  // replacement `knownSize` is not in 2.12
+    "msg=object JavaConverters in package collection is deprecated:s"
+  ).mkString(",")
 )
 
 lazy val publishSettings = Seq(
@@ -70,7 +80,7 @@ lazy val publishSettings = Seq(
 lazy val chiselSettings = Seq(
   name := "chisel3",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.14" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.15" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "upickle" % "2.0.0"
   )
@@ -171,6 +181,7 @@ lazy val core = (project in file("core"))
   )
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
+  .settings(warningSuppression: _*)
   .settings(
     name := "chisel3-core",
     libraryDependencies ++= Seq(
@@ -178,7 +189,6 @@ lazy val core = (project in file("core"))
       "com.lihaoyi" %% "os-lib" % "0.8.1"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
-      "-deprecation",
       "-explaintypes",
       "-feature",
       "-language:reflectiveCalls",
@@ -202,9 +212,9 @@ lazy val chisel = (project in file("."))
   .dependsOn(macros)
   .dependsOn(core)
   .aggregate(macros, core, plugin)
+  .settings(warningSuppression: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
-    libraryDependencies += defaultVersions("treadle") % "test",
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
     // Forward doc command to unidoc
     Compile / doc := (ScalaUnidoc / doc).value,
@@ -242,11 +252,11 @@ lazy val chisel = (project in file("."))
       // See https://github.com/sbt/sbt-unidoc/issues/107
       (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
       ++ {
-           CrossVersion.partialVersion(scalaVersion.value) match {
-             case Some((2, n)) if n >= 13 => "-implicits" :: Nil
-             case _                       => Nil
-           }
-         }
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, n)) if n >= 13 => "-implicits" :: Nil
+          case _                       => Nil
+        }
+      }
   )
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest

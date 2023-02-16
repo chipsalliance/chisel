@@ -4,11 +4,10 @@ package cookbook
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.ChiselEnum
 
 /* ### How do I create a finite state machine?
  *
- * Use Chisel StrongEnum to construct the states and switch & is to construct the FSM
+ * Use ChiselEnum to construct the states and switch & is to construct the FSM
  * control logic
  */
 

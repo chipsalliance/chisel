@@ -2,12 +2,10 @@
 
 package chiselTests
 
-import org.scalatest._
-
 import chisel3._
 import chisel3.experimental.{Analog, FixedPoint}
-import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import circt.stage.ChiselStage
 
 abstract class CrossCheck extends Bundle {
   val in:  Data
@@ -50,13 +48,6 @@ class ConnectSpec extends ChiselPropSpec with Utils {
       }
     }
   }
-  property("SInt := FixedPoint should fail") {
-    intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(FixedPoint(16.W, 8.BP), UInt(16.W)) }
-      }
-    }
-  }
   property("UInt := UInt should succeed") {
     assertTesterPasses { new CrossConnectTester(UInt(16.W), UInt(16.W)) }
   }
@@ -86,42 +77,10 @@ class ConnectSpec extends ChiselPropSpec with Utils {
     }
   }
 
-  property("FixedPoint := FixedPoint should succeed") {
-    assertTesterPasses { new CrossConnectTester(FixedPoint(16.W, 8.BP), FixedPoint(16.W, 8.BP)) }
-  }
-  property("FixedPoint := SInt should fail") {
-    intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(SInt(16.W), FixedPoint(16.W, 8.BP)) }
-      }
-    }
-  }
-  property("FixedPoint := UInt should fail") {
-    intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(UInt(16.W), FixedPoint(16.W, 8.BP)) }
-      }
-    }
-  }
-
   property("Analog := Analog should fail") {
     intercept[ChiselException] {
       extractCause[ChiselException] {
         ChiselStage.elaborate { new CrossConnectTester(Analog(16.W), Analog(16.W)) }
-      }
-    }
-  }
-  property("Analog := FixedPoint should fail") {
-    intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(Analog(16.W), FixedPoint(16.W, 8.BP)) }
-      }
-    }
-  }
-  property("FixedPoint := Analog should fail") {
-    intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(FixedPoint(16.W, 8.BP), Analog(16.W)) }
       }
     }
   }

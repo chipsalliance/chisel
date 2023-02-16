@@ -112,7 +112,7 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     wrapped shouldBe a[Right[_, _]]
 
     info("returned string looks like FIRRTL")
-    wrapped.right.get should include("circuit")
+    wrapped.toOption.get should include("circuit")
   }
 
   behavior.of("ChiselStage$.emitFirrtl")
@@ -124,7 +124,7 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     wrapped shouldBe a[Right[_, _]]
 
     info("returned string looks like FIRRTL")
-    wrapped.right.get should include("circuit")
+    wrapped.toOption.get should include("circuit")
   }
 
   behavior.of("ChiselStage$.emitVerilog")
@@ -136,7 +136,7 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     wrapped shouldBe a[Right[_, _]]
 
     info("returned string looks like Verilog")
-    wrapped.right.get should include("endmodule")
+    wrapped.toOption.get should include("endmodule")
   }
 
   behavior.of("ChiselStage$.emitSystemVerilog")
@@ -147,7 +147,7 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     wrapped shouldBe a[Right[_, _]]
 
     info("returned string looks like Verilog")
-    wrapped.right.get should include("endmodule")
+    wrapped.toOption.get should include("endmodule")
   }
 
   behavior.of("ChiselStage phase ordering")

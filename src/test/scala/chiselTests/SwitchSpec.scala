@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util.{is, switch}
+import circt.stage.ChiselStage
 
 class SwitchSpec extends ChiselFlatSpec with Utils {
   "switch" should "require literal conditions" in {
@@ -33,7 +33,7 @@ class SwitchSpec extends ChiselFlatSpec with Utils {
     }
   }
   it should "provide useful source locators" in {
-    val chirrtl = ChiselStage.emitChirrtl(new Module {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(2.W))
         val out = Output(UInt(2.W))

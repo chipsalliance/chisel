@@ -3,21 +3,22 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util.Counter
 import firrtl.passes.CheckInitialization.RefNotInitializedException
-import firrtl.util.BackendCompilationUtilities
+import firrtl.util.BackendCompilationUtilities._
+import circt.stage.ChiselStage
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 
-class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities with Utils {
+class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
 
-  def myGenerateFirrtl(t: => Module): String = ChiselStage.emitChirrtl(t)
+  def myGenerateFirrtl(t: => Module): String = ChiselStage.emitCHIRRTL(t)
   def compileFirrtl(t: => Module): Unit = {
     val testDir = createTestDirectory(this.getClass.getSimpleName)
 
     (new ChiselStage).execute(
-      Array[String]("-td", testDir.getAbsolutePath, "--compiler", "verilog"),
+      Array[String]("-td", testDir.getAbsolutePath, "--target", "verilog"),
       Seq(ChiselGeneratorAnnotation(() => t))
     )
   }
@@ -118,7 +119,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
     }
     val exception = intercept[BiConnectException] {
       extractCause[BiConnectException] {
-        ChiselStage.elaborate(new ModuleWithDontCareSink)
+        circt.stage.ChiselStage.elaborate(new ModuleWithDontCareSink)
       }
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
@@ -135,10 +136,10 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
         io.out := true.B
       }
     }
-    val exception = intercept[RefNotInitializedException] {
-      compileFirrtl(new ModuleWithIncompleteAssignment)
+    val exception = intercept[RuntimeException] {
+      circt.stage.ChiselStage.emitSystemVerilog(new ModuleWithIncompleteAssignment)
     }
-    exception.getMessage should include("is not fully initialized")
+    exception.getMessage should include("not fully initialized")
   }
 
   property(
@@ -155,7 +156,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
         io.out := true.B
       }
     }
-    compileFirrtl(new ModuleWithUnconditionalAssignment)
+    circt.stage.ChiselStage.emitSystemVerilog(new ModuleWithUnconditionalAssignment)
   }
 
   property(
@@ -174,7 +175,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
       }
     }
 
-    compileFirrtl(new ModuleWithConditionalAndOtherwiseAssignment)
+    circt.stage.ChiselStage.emitSystemVerilog(new ModuleWithConditionalAndOtherwiseAssignment)
   }
 
   property(

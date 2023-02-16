@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import circt.stage.ChiselStage
 
 class UnclockedPlusOne extends RawModule {
   val in = IO(Input(UInt(32.W)))
@@ -73,7 +73,7 @@ class RawModuleSpec extends ChiselFlatSpec with Utils {
   }
 
   "ImplicitModule directly in a RawModule" should "fail" in {
-    intercept[chisel3.internal.ChiselException] {
+    intercept[ChiselException] {
       extractCause[ChiselException] {
         ChiselStage.elaborate { new RawModuleWithDirectImplicitModule }
       }
@@ -81,7 +81,7 @@ class RawModuleSpec extends ChiselFlatSpec with Utils {
   }
 
   "ImplicitModule directly in a RawModule in an ImplicitModule" should "fail" in {
-    intercept[chisel3.internal.ChiselException] {
+    intercept[ChiselException] {
       extractCause[ChiselException] {
         ChiselStage.elaborate { new ImplicitModuleDirectlyInRawModuleTester }
       }

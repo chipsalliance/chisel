@@ -2,7 +2,12 @@
 
 package circt.stage
 
-import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.stage.{
+  ChiselGeneratorAnnotation,
+  PrintFullStackTraceAnnotation,
+  ThrowOnFirstErrorAnnotation,
+  WarningsAsErrorsAnnotation
+}
 
 import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
@@ -13,7 +18,10 @@ trait CLI { this: Shell =>
   Seq(
     CIRCTTargetAnnotation,
     PreserveAggregate,
-    ChiselGeneratorAnnotation
+    ChiselGeneratorAnnotation,
+    PrintFullStackTraceAnnotation,
+    ThrowOnFirstErrorAnnotation,
+    WarningsAsErrorsAnnotation
   ).foreach(_.addOptions(parser))
 }
 

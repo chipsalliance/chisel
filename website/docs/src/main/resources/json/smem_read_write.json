@@ -1,0 +1,20 @@
+{
+signal: [
+  ['in',
+    {name: 'clk', wave: 'p......'},
+    {name: 'waddr', wave: 'x=x....', data:['waddr'], phase: 0.5},
+    {name: 'raddr', wave: 'x...=x.', data:['raddr'], phase: 0.5},
+    {name: 'en', wave: '010.10.', phase: 0.5},
+    {name: 'wdata', wave: 'x=x....', data:['wdata'], phase: 0.5},
+    {name: 'wmask', wave: 'x=x....', data:['wmask'], phase: 0.5},
+  ],
+  ['out',
+   {name: 'rdata', wave: 'x....=x', data:['rdata'], phase: 0.5},
+  ]
+],
+head:{
+  tick:0,
+},
+config: { hscale: 2 }
+}
+

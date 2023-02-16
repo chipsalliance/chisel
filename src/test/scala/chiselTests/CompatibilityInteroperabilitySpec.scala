@@ -3,7 +3,7 @@
 package chiselTests
 
 import scala.collection.immutable.ListMap
-import chisel3.stage.ChiselStage.emitChirrtl
+import circt.stage.ChiselStage.emitCHIRRTL
 
 import scala.annotation.nowarn
 
@@ -19,7 +19,6 @@ object CompatibilityComponents {
   }
   class ChiselRecord extends Record {
     val elements = ListMap("a" -> UInt(width = 32), "b" -> UInt(width = 32).flip)
-    override def cloneType: this.type = (new ChiselRecord).asInstanceOf[this.type]
   }
 
   abstract class ChiselDriverModule(_io: => Record) extends Module {
@@ -54,7 +53,6 @@ object Chisel3Components {
 
   class Chisel3Record extends Record {
     val elements = ListMap("a" -> Output(UInt(32.W)), "b" -> Input(UInt(32.W)))
-    override def cloneType: this.type = (new Chisel3Record).asInstanceOf[this.type]
   }
 
   abstract class Chisel3DriverModule(_io: => Record) extends Module {
@@ -657,7 +655,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
       import chisel3._
       import scala.collection.immutable.SeqMap
 
-      class MyRecord(gen: () => Data) extends Record with chisel3.experimental.AutoCloneType {
+      class MyRecord(gen: () => Data) extends Record {
         val elements = SeqMap("genDirectioned" -> Output(gen()), "genUndirectioned" -> gen())
       }
 
@@ -701,7 +699,7 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         foo.io <> mirror.io
       }
     }
-    val chirrtl = emitChirrtl(new Chisel3.Top)
+    val chirrtl = emitCHIRRTL(new Chisel3.Top)
     chirrtl should include("foo.io.bar <= mirror.bar")
     chirrtl should include("mirror.foo <= foo.io.foo")
     chirrtl should include("foo.io.quz.q.bits <- mirror.quz.q.bits")
@@ -727,10 +725,10 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         out <> in
       }
     }
-    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl0 = emitCHIRRTL(new Chisel3.MyModule(true))
     chirrtl0 shouldNot include("<=")
     chirrtl0 should include("out <- in")
-    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl1 = emitCHIRRTL(new Chisel3.MyModule(true))
     chirrtl1 shouldNot include("<=")
     chirrtl1 should include("out <- in")
   }
@@ -756,10 +754,10 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         out <> in
       }
     }
-    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl0 = emitCHIRRTL(new Chisel3.MyModule(true))
     chirrtl0 shouldNot include("<=")
     chirrtl0 should include("out <- in")
-    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl1 = emitCHIRRTL(new Chisel3.MyModule(true))
     chirrtl1 shouldNot include("<=")
     chirrtl1 should include("out <- in")
   }
@@ -785,10 +783,10 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         out <> in
       }
     }
-    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl0 = emitCHIRRTL(new Chisel3.MyModule(true))
     chirrtl0 shouldNot include("<=")
     chirrtl0 should include("out <- in")
-    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl1 = emitCHIRRTL(new Chisel3.MyModule(true))
     chirrtl1 shouldNot include("<=")
     chirrtl1 should include("out <- in")
   }
@@ -814,10 +812,10 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         out <> in
       }
     }
-    val chirrtl0 = emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl0 = emitCHIRRTL(new Chisel3.MyModule(true))
     chirrtl0 should include("out <= in")
     chirrtl0 shouldNot include("out <- in")
-    val chirrtl1 = emitChirrtl(new Chisel3.MyModule(true))
+    val chirrtl1 = emitCHIRRTL(new Chisel3.MyModule(true))
     chirrtl1 should include("out <= in")
     chirrtl1 shouldNot include("out <- in")
   }

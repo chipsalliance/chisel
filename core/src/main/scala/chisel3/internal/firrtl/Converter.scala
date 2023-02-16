@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal.firrtl
+
 import chisel3._
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
-
+import chisel3.EnumType
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.{Queue, VectorBuilder}
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
@@ -46,7 +47,7 @@ private[chisel3] object Converter {
 
   def convert(info: SourceInfo): fir.Info = info match {
     case _: NoSourceInfo => fir.NoInfo
-    case SourceLine(fn, line, col) => fir.FileInfo(fir.StringLit(s"$fn $line:$col"))
+    case SourceLine(fn, line, col) => fir.FileInfo.fromUnescaped(s"$fn $line:$col")
   }
 
   def convert(op: PrimOp): fir.PrimOp = firrtl.PrimOps.fromString(op.name)
@@ -101,7 +102,9 @@ private[chisel3] object Converter {
       val lit = bp.asInstanceOf[KnownBinaryPoint].value
       fir.DoPrim(firrtl.PrimOps.AsInterval, Seq(uint), Seq(n, n, lit), fir.UnknownType)
     case lit: ILit =>
-      throwException(s"Internal Error! Unexpected ILit: $lit")
+      throw new InternalErrorException(s"Unexpected ILit: $lit")
+    case other =>
+      throw new InternalErrorException(s"Unexpected type in convert $other")
   }
 
   /** Convert Commands that map 1:1 to Statements */
@@ -307,6 +310,8 @@ private[chisel3] object Converter {
   private def firrtlUserDirOf(d: Data): SpecifiedDirection = d match {
     case d: Vec[_] =>
       SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
+    case d: Record if d._isOpaqueType =>
+      SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.elementsIterator.next()))
     case d => d.specifiedDirection
   }
 
@@ -351,7 +356,7 @@ private[chisel3] object Converter {
   }
 
   def convert(port: Port, topDir: SpecifiedDirection = SpecifiedDirection.Unspecified): fir.Port = {
-    val resolvedDir = SpecifiedDirection.fromParent(topDir, port.dir)
+    val resolvedDir = SpecifiedDirection.fromParent(topDir, firrtlUserDirOf(port.id))
     val dir = resolvedDir match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => fir.Output
       case SpecifiedDirection.Flip | SpecifiedDirection.Input         => fir.Input

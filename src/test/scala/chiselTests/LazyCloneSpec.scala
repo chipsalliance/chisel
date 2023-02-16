@@ -3,9 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.AutoCloneType
-import chisel3.stage.ChiselStage
-
+import circt.stage.ChiselStage
 import collection.immutable.VectorMap
 
 class LazyCloneSpec extends ChiselFlatSpec {
@@ -23,7 +21,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
     Counter.count += 1
   }
 
-  class GenRecord(gen: UInt) extends Record with AutoCloneType {
+  class GenRecord(gen: UInt) extends Record {
     lazy val elements = VectorMap("foo" -> gen)
     Counter.count += 1
   }

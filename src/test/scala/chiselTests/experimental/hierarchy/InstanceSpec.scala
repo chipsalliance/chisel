@@ -20,8 +20,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val definition = Definition(new AddOne)
         val i0 = Instance(definition)
       }
-      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include("inst i0 of AddOne")
+      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      chirrtl should include("inst i0 of AddOne")
     }
     it("(0.b): name of an instanceclone should not error") {
       class Top extends Module {
@@ -29,8 +29,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0 = Instance(definition)
         val i = i0.i0 // This should not error
       }
-      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include("inst i0 of AddTwo")
+      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      chirrtl should include("inst i0 of AddTwo")
     }
     it("(0.c): accessing internal fields through non-generated means is hard to do") {
       class Top extends Module {
@@ -40,8 +40,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         //"You are trying to access a macro-only API. Please use the @public annotation instead."
         i0.in
       }
-      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include("inst i0 of AddOne")
+      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      chirrtl should include("inst i0 of AddOne")
     }
     it("0.3: BlackBoxes should be supported") {
       class Top extends Module {
@@ -58,7 +58,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         out := i0.io.out
         io <> i1.io
       }
-      val chirrtl = getFirrtlAndAnnos(new Top)._1.serialize
+      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst i0 of AddOneBlackBox")
       chirrtl should include("inst i1 of AddOneBlackBox")
       chirrtl should include("i0.in <= in")

@@ -7,10 +7,11 @@ import chisel3._
 
 import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
-import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
-import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.Definition
+import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
+import chisel3.experimental.{BaseModule, SourceInfo}
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
+
+import scala.annotation.nowarn
 
 /** User-facing Definition type.
   * Represents a definition of an object of type [[A]] which are marked as @instantiable
@@ -51,7 +52,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
     case value: BaseModule =>
       val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value))(
-        chisel3.internal.sourceinfo.UnlocatableSourceInfo,
+        chisel3.experimental.UnlocatableSourceInfo,
         chisel3.ExplicitCompileOptions.Strict
       )
       newChild._circuit = value._circuit.orElse(Some(value))
@@ -108,7 +109,7 @@ object Definition extends SourceInfoDoc {
     dynamicContext.inDefinition = true
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
     Builder.components ++= ir.components
-    Builder.annotations ++= ir.annotations
+    Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
     module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     new Definition(Proto(module))

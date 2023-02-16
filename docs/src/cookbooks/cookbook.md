@@ -23,6 +23,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
   * [How do I partially reset an Aggregate Reg?](#how-do-i-partially-reset-an-aggregate-reg)
 * Bundles
   * [How do I deal with aliased Bundle fields?](#aliased-bundle-fields)
+  * [How do I deal with the "unable to clone" error?](#bundle-unable-to-clone)
 * [How do I create a finite state machine?](#how-do-i-create-a-finite-state-machine-fsm)
 * [How do I unpack a value ("reverse concatenation") like in Verilog?](#how-do-i-unpack-a-value-reverse-concatenation-like-in-verilog)
 * [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
@@ -443,15 +444,75 @@ class UsingCloneTypeBundle[T <: Data](gen: T) extends Bundle {
 getVerilogString(new Top(new UsingCloneTypeBundle(UInt(8.W))))
 ```
 
+### <a name="bundle-unable-to-clone"></a> How do I deal with the "unable to clone" error?
+
+Most Chisel objects need to be cloned in order to differentiate between the
+software representation of the bundle field from its "bound" hardware
+representation, where "binding" is the process of generating a hardware
+component. For Bundle fields, this cloning is supposed to happen automatically
+with a compiler plugin.
+
+In some cases though, the plugin may not be able to clone the Bundle fields. The
+most common case for when this happens is when the `chisel3.Data` part of the
+Bundle field is nested inside some other data structure and the compiler plugin
+is unable to figure out how to clone the entire structure. It is best to avoid
+such nested structures.
+
+There are a few ways around this issue - you can try wrapping the problematic
+fields in Input(...), Output(...), or Flipped(...) if appropriate. You can also
+try manually cloning each field in the Bundle using the `chiselTypeClone` method
+in `chisel3.reflect.DataMirror`. Here's an example with the Bundle whose fields
+won't get cloned:
+
+```scala mdoc:invisible
+import chisel3._
+import scala.collection.immutable.ListMap
+```
+
+```scala mdoc:crash
+class CustomBundleBroken(elts: (String, Data)*) extends Record {
+  val elements = ListMap(elts: _*)
+
+  def apply(elt: String): Data = elements(elt)
+}
+
+class NewModule extends Module {
+  val out = Output(UInt(8.W))
+  val recordType = new CustomBundleBroken("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
+  val record = Wire(recordType)
+  val uint = record.asUInt
+  val record2 = uint.asTypeOf(recordType)
+  out := record
+}
+getVerilogString(new NewModule)
+```
+
+You can use `chiselTypeClone` to clone the elements as:
+
+
+```scala mdoc
+import chisel3.reflect.DataMirror
+import chisel3.experimental.requireIsChiselType
+
+class CustomBundleFixed(elts: (String, Data)*) extends Record {
+  val elements = ListMap(elts.map {
+    case (field, elt) =>
+      requireIsChiselType(elt)
+      field -> DataMirror.internal.chiselTypeClone(elt)
+  }: _*)
+
+  def apply(elt: String): Data = elements(elt)
+}
+```
+
 ### How do I create a finite state machine (FSM)?
 
-The advised way is to use [`ChiselEnum`](https://www.chisel-lang.org/api/latest/chisel3/experimental/index.html#ChiselEnum=chisel3.experimental.EnumFactory) to construct enumerated types representing the state of the FSM.
-State transitions are then handled with [`switch`](https://www.chisel-lang.org/api/latest/chisel3/util/switch$.html)/[`is`](https://www.chisel-lang.org/api/latest/chisel3/util/is$.html) and [`when`](https://www.chisel-lang.org/api/latest/chisel3/when$.html)/[`.elsewhen`](https://www.chisel-lang.org/api/latest/chisel3/WhenContext.html#elsewhen(elseCond:=%3Echisel3.Bool)(block:=%3EUnit)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):chisel3.WhenContext)/[`.otherwise`](https://www.chisel-lang.org/api/latest/chisel3/WhenContext.html#otherwise(block:=%3EUnit)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):Unit).
+The advised way is to use `ChiselEnum` to construct enumerated types representing the state of the FSM.
+State transitions are then handled with `switch`/`is` and `when`/`.elsewhen`/`.otherwise`.
 
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.{switch, is}
-import chisel3.experimental.ChiselEnum
 
 object DetectTwoOnes {
   object State extends ChiselEnum {

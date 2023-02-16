@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.internal
+package chisel3.experimental
+
+import chisel3.internal.{Builder, HasId}
 
 /** Use to add a prefix to any components generated in the provided scope.
   *
@@ -16,7 +18,7 @@ package chisel3.internal
   *
   * }}}
   */
-private[chisel3] object prefix { // scalastyle:ignore
+object prefix {
 
   /** Use to add a prefix to any components generated in the provided scope
     * The prefix is the name of the provided which, which may not be known yet.
@@ -65,7 +67,7 @@ private[chisel3] object prefix { // scalastyle:ignore
   *
   * }}}
   */
-private[chisel3] object noPrefix {
+object noPrefix {
 
   /** Use to clear existing prefixes so no signals within the scope are prefixed by signals/names
     * outside the scope

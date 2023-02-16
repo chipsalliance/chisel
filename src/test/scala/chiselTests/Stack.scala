@@ -2,8 +2,8 @@
 
 package chiselTests
 
+import circt.stage.ChiselStage
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class ChiselStack(val depth: Int) extends Module {

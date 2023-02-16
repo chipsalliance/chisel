@@ -3,10 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.TestUtils
 import chisel3.util.QueueIO
-import chisel3.stage.ChiselStage.elaborate
-import chisel3.experimental.AutoCloneType
+import circt.stage.ChiselStage.elaborate
+
 import scala.collection.immutable.ListMap
 
 class BundleWithIntArg(val i: Int) extends Bundle {
@@ -74,7 +73,7 @@ class InheritingBundle extends QueueIO(UInt(8.W), 8) {
   val error = Output(Bool())
 }
 
-class RecordAutoCloneType[T <: Data](gen: T) extends Record with AutoCloneType {
+class RecordAutoCloneType[T <: Data](gen: T) extends Record {
   lazy val elements = ListMap("value" -> gen)
   // This is a weird thing to do, but as only Bundles have these methods, it should be legal
   protected def _elementsImpl: Iterable[(String, Any)] = elements
@@ -85,10 +84,8 @@ class RecordAutoCloneType[T <: Data](gen: T) extends Record with AutoCloneType {
 // NOTE: This is a very weird thing to do, don't do it.
 class RecordWithVerbotenMethods(w: Int) extends Record {
   lazy val elements = ListMap("value" -> UInt(w.W))
-  override def cloneType: this.type = (new RecordWithVerbotenMethods(w)).asInstanceOf[this.type]
   // Verboten methods
   protected def _usingPlugin = false
-  protected override def _cloneTypeImpl = this.cloneType
 
   protected def _elementsImpl: Iterable[(String, Any)] = Nil
 }

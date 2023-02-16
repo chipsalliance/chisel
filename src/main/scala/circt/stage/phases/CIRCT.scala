@@ -2,6 +2,9 @@
 
 package circt.stage.phases
 
+import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation}
+
 import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
 
@@ -120,8 +123,6 @@ class CIRCT extends Phase {
   import scala.sys.process._
 
   override def prerequisites = Seq(
-    Dependency[firrtl.stage.phases.AddDefaults],
-    Dependency[firrtl.stage.phases.AddImplicitEmitter],
     Dependency[firrtl.stage.phases.AddImplicitOutputFile]
   )
   override def optionalPrerequisites = Seq.empty
@@ -130,37 +131,40 @@ class CIRCT extends Phase {
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val circtOptions = view[CIRCTOptions](annotations)
+
+    // Early exit (do not run firtool) if the target is "CHIRRTL", i.e., specification FIRRTL.
+    circtOptions.target match {
+      case Some(CIRCTTarget.CHIRRTL) => return annotations
+      case _                         =>
+    }
+
     val firrtlOptions = view[FirrtlOptions](annotations)
     val stageOptions = view[StageOptions](annotations)
 
-    var blackbox, inferReadWrite = false
+    var inferReadWrite = false
     var imcp = true
     var logLevel = _root_.logger.LogLevel.None
     var split = false
 
-    val annotationsx: AnnotationSeq = annotations.flatMap {
+    // Partition the annotations into those that will be passed to CIRCT and
+    // those that are not.  The annotations that are in the passhtrough set will
+    // be returned without modification.
+    val (passthroughAnnotations, circtAnnotations) = annotations.partition {
+      case _: ImportDefinitionAnnotation[_] | _: DesignAnnotation[_] | _: ChiselCircuitAnnotation =>
+        true
+      case _ => false
+    }
+
+    val annotationsx: AnnotationSeq = circtAnnotations.flatMap {
       case a: CustomFileEmission => {
         val filename = a.filename(annotations)
         a.replacements(filename)
       }
-      case _: firrtl.EmitCircuitAnnotation => Nil
+      case _: firrtl.EmitCircuitAnnotation | _: ImportDefinitionAnnotation[_] => Nil
       case _: firrtl.EmitAllModulesAnnotation => {
         split = true
         Nil
       }
-      case a @ RunFirrtlTransformAnnotation(transform) =>
-        transform match {
-          /* Inlining/Flattening happen by default, so these can be dropped. */
-          case _: firrtl.passes.InlineInstances | _: firrtl.transforms.Flatten => Nil
-          /* ReplSeqMem is converted to a firtool option */
-          case _: firrtl.passes.memlib.ReplSeqMem =>
-            blackbox = true
-            Nil
-          /* Any emitters should not be passed to firtool. */
-          case _: firrtl.Emitter => Nil
-          /* Default case: leave the annotation around and let firtool warn about it. */
-          case _ => Seq(a)
-        }
       case firrtl.passes.memlib.InferReadWriteAnnotation =>
         inferReadWrite = true
         Nil
@@ -171,7 +175,6 @@ class CIRCT extends Phase {
         logLevel = anno.globalLogLevel
         Nil
       /* The following can be dropped. */
-      case _: firrtl.transforms.CombinationalPath   => Nil
       case _: _root_.logger.ClassLogLevelAnnotation => Nil
       /* Default case: leave the annotation around and let firtool warn about it. */
       case a => Seq(a)
@@ -193,7 +196,7 @@ class CIRCT extends Phase {
     val binary = "firtool"
 
     val cmd =
-      Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-verify-each=false", "-dedup") ++
+      Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-dedup") ++
         Seq("-output-annotation-file", circtAnnotationFilename) ++
         circtOptions.firtoolOptions ++
         logLevel.toCIRCTOptions ++
@@ -207,8 +210,6 @@ class CIRCT extends Phase {
         circtOptions.preserveAggregate.map(_ => "-preserve-public-types=0") ++
         (!inferReadWrite).option("-disable-infer-rw") ++
         (!imcp).option("-disable-imcp") ++
-        /* The following options are off by default, so we enable them if they are true. */
-        (blackbox).option("-blackbox-memory") ++
         /* Communicate the annotation file through a file. */
         (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
         /* Convert the target to a firtool-compatible option. */
@@ -234,7 +235,6 @@ class CIRCT extends Phase {
         })
 
     logger.info(s"""Running CIRCT: '${cmd.mkString(" ")} < $$input'""")
-    println(s"""Running CIRCT: '${cmd.mkString(" ")} < $$input'""")
     val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
     val stdoutWriter = new java.io.PrintWriter(stdoutStream)
     val stderrWriter = new java.io.PrintWriter(stderrStream)
@@ -253,7 +253,7 @@ class CIRCT extends Phase {
     val errors = stderrStream.toString
     if (exitValue != 0)
       throw new Exceptions.FirtoolNonZeroExitCode(binary, exitValue, result, errors)
-    if (split) {
+    val finalAnnotations = if (split) {
       logger.info(result)
       val file = new File(stageOptions.getBuildFileName(circtAnnotationFilename, Some(".anno.json")))
       file match {
@@ -282,6 +282,8 @@ class CIRCT extends Phase {
       })
     }
 
+    // Return the passthrough annotations and the output annotations from CIRCT.
+    passthroughAnnotations ++ finalAnnotations
   }
 
 }

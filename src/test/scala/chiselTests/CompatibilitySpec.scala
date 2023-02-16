@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 import org.scalacheck.Gen
@@ -22,7 +22,7 @@ object CompatibilityCustomCompileOptions {
   }
 }
 
-@nowarn("msg=Chisel compatibility mode is deprecated")
+@nowarn("msg=.*") // This is going away, all warnings suppressed
 class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
   import Chisel._
 
@@ -516,7 +516,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       chisel3.assert(vec.read(UInt(1)) === UInt(3))
 
       val (_, done) = Counter(Bool(true), 4)
-      when(done) { stop }
+      when(done) { stop() }
     }
 
     assertTesterPasses(new Foo)
@@ -559,13 +559,12 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       val foo = Vec(1, Bool()).asInput
       val bar = Vec(1, Bool())
       val elements = ListMap("in" -> foo, "out" -> bar)
-      def cloneType = (new MyRecord).asInstanceOf[this.type]
     }
     class Foo extends Module {
       val io = IO(new MyRecord)
       io.bar := io.foo
     }
-    val verilog = ChiselStage.emitVerilog(new Foo)
+    val verilog = ChiselStage.emitSystemVerilog(new Foo)
     // Check that the names are correct (and that the FIRRTL is valid)
     verilog should include("assign io_out_0 = io_in_0;")
   }
@@ -579,7 +578,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       io.suggestName("potato")
       io.bar := io.foo
     }
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     verilog should include("input  [7:0] io_foo")
     verilog should include("output [7:0] io_bar")
   }
@@ -593,7 +592,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       val wire = Wire(init = io.foo)
       io.bar := wire
     }
-    val verilog = ChiselStage.emitVerilog(new MyModule)
+    val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     verilog should include("input  [7:0] io_foo")
     verilog should include("output [7:0] io_bar")
   }
@@ -635,7 +634,7 @@ class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChec
       io.out := inst.io.out
     }
 
-    val chirrtl = ChiselStage.emitChirrtl(new ExtModuleInvalidatedTester)
+    val chirrtl = ChiselStage.emitCHIRRTL(new ExtModuleInvalidatedTester)
     chirrtl should include("inst.in is invalid")
     chirrtl should include("inst.out is invalid")
   }

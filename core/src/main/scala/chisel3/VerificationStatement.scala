@@ -7,8 +7,9 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 
+import scala.annotation.nowarn
 import scala.reflect.macros.blackbox
 
 /** Scaladoc information for internal verification statement macros
@@ -465,7 +466,7 @@ private object VerificationStatement {
 
   def getLine(c: blackbox.Context): SourceLineInfo = {
     val p = c.enclosingPosition
-    (p.source.file.name, p.line, p.lineContent.trim)
+    (p.source.file.name, p.line, p.lineContent.trim): @nowarn // suppress, there's no clear replacement
   }
 
   def failureMessage(

@@ -2,12 +2,10 @@
 
 package chiselTests
 
+import circt.stage.ChiselStage
 import chisel3._
-import org.scalatest._
-import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util._
-import org.scalacheck.Shrink
 import org.scalatest.matchers.should.Matchers
 
 class UIntOps extends Module {
@@ -108,6 +106,14 @@ class BadBoolConversion extends Module {
   io.b := io.u.asBool
 }
 
+class ZeroWidthBoolConversion extends Module {
+  val io = IO(new Bundle {
+    val u = Input(UInt(0.W))
+    val b = Output(Bool())
+  })
+  io.b := io.u.asBool
+}
+
 class NegativeShift(t: => Bits) extends Module {
   val io = IO(new Bundle {})
   Reg(t) >> -1
@@ -186,13 +192,27 @@ class UIntLitExtractTester extends BasicTester {
   stop()
 }
 
+class UIntLitZeroWidthTester extends BasicTester {
+  assert(-0.U(0.W) === 0.U)
+  assert(~0.U(0.W) === 0.U)
+  assert(0.U(0.W) + 0.U(0.W) === 0.U)
+  assert(5.U * 0.U(0.W) === 0.U)
+  assert(0.U(0.W) / 5.U === 0.U)
+  assert(0.U(0.W).head(0) === 0.U)
+  assert(0.U(0.W).tail(0) === 0.U)
+  assert(0.U(0.W).pad(2) === 0.U)
+  assert("b0".U(0.W)(0, 0) === "b0".U)
+  stop()
+}
+
 class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
-  // Disable shrinking on error.
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Bools can be created from 1 bit UInts") {
     ChiselStage.elaborate(new GoodBoolConversion)
+  }
+
+  property("Bools cannot be created from 0 bit UInts") {
+    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new ZeroWidthBoolConversion) }
   }
 
   property("Bools cannot be created from >1 bit UInts") {
@@ -213,6 +233,24 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
       ChiselStage.elaborate(new RawModule {
         val u = IO(Input(UInt(2.W)))
         u(2)
+      })
+    }
+  }
+
+  property("Out-of-bounds extraction from known-zero-width UInts") {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new RawModule {
+        val u = IO(Input(UInt(0.W)))
+        u(0, 0)
+      })
+    }
+  }
+
+  property("Out-of-bounds single-bit extraction from known-zero-width UInts") {
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new RawModule {
+        val u = IO(Input(UInt(0.W)))
+        u(0)
       })
     }
   }
@@ -245,6 +283,10 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     assertTesterPasses(new UIntLitExtractTester)
   }
 
+  property("Basic arithmetic and bit operations with zero-width literals should return correct result (0)") {
+    assertTesterPasses(new UIntLitZeroWidthTester)
+  }
+
   property("asBools should support chained apply") {
     ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
@@ -271,6 +313,18 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
       val op = x % y
       WireDefault(chiselTypeOf(op), op)
     }
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(0.W), DontCare)
+      val y = WireDefault(UInt(8.W), DontCare)
+      val op = x % y
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(8.W), DontCare)
+      val y = WireDefault(UInt(0.W), DontCare)
+      val op = x % y
+      WireDefault(chiselTypeOf(op), op)
+    }
   }
 
   property("division should give the width of the numerator") {
@@ -284,6 +338,46 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
       val x = WireDefault(UInt(4.W), DontCare)
       val y = WireDefault(UInt(8.W), DontCare)
       val op = x / y
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(0.W), DontCare)
+      val y = WireDefault(UInt(8.W), DontCare)
+      val op = x / y
+      WireDefault(chiselTypeOf(op), op)
+    }
+  }
+
+  property("head and tail should be zero-width on zero-width wires") {
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(0.W), DontCare)
+      val op = x.tail(0)
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(0.W), DontCare)
+      val op = x.head(0)
+      WireDefault(chiselTypeOf(op), op)
+    }
+  }
+
+  property("basic arithmetic operations be supported on zero-width wires") {
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(0.W), DontCare)
+      val y = WireDefault(UInt(0.W), DontCare)
+      val op = x + y
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(0.W), DontCare)
+      val y = WireDefault(UInt(0.W), DontCare)
+      val op = x - y
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(0.W), DontCare)
+      val y = WireDefault(UInt(0.W), DontCare)
+      val op = x * y
       WireDefault(chiselTypeOf(op), op)
     }
   }

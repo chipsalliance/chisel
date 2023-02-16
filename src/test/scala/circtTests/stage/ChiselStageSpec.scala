@@ -47,6 +47,18 @@ object ChiselStageSpec {
     val out = IO(Output(new BazBundle))
     out := in
   }
+
+  class UserExceptionModule extends RawModule {
+    assert(false, "User threw an exception")
+  }
+
+  class UserExceptionNoStackTrace extends RawModule {
+    throw new Exception("Something bad happened") with scala.util.control.NoStackTrace
+  }
+
+  class RecoverableError extends RawModule {
+    3.U >> -1
+  }
 }
 
 /** A fixture used that exercises features of the Trace API.
@@ -77,9 +89,30 @@ class TraceSpec {
 
 }
 
-class ChiselStageSpec extends AnyFunSpec with Matchers {
+class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
   describe("ChiselStage") {
+
+    it("should elaborate a Chisel module and emit specification FIRRTL (CHIRRTL)") {
+
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      val expectedOutput = new File(targetDir, "Foo.fir")
+      expectedOutput.delete()
+
+      (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo)))
+
+      info(s"'$expectedOutput' exists")
+      expectedOutput should (exist)
+
+    }
 
     it("should compile a Chisel module to FIRRTL dialect") {
 
@@ -197,6 +230,119 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
         .get
         .value should include("struct")
     }
+  }
+
+  describe("ChiselStage exception handling") {
+
+    it("should truncate a user exception") {
+      info("The user's java.lang.AssertionError was thrown")
+      val exception = intercept[java.lang.AssertionError] {
+        (new ChiselStage)
+          .execute(
+            Array("--target", "chirrtl"),
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserExceptionModule))
+          )
+      }
+
+      info(s""" -  Exception was a ${exception.getClass.getName}""")
+
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("User threw an exception")
+
+      val stackTrace = exception.getStackTrace.mkString("\n")
+      info("The stack trace is trimmed")
+      (stackTrace should not).include("java")
+
+      info("The stack trace include information about running --full-stacktrace")
+      stackTrace should include("--full-stacktrace")
+    }
+
+    it("""should not truncate a user exception with "--full-stacktrace"""") {
+      info("The user's java.lang.AssertionError was thrown")
+      val exception = intercept[java.lang.AssertionError] {
+        (new ChiselStage).execute(
+          Array("--target", "chirrtl", "--full-stacktrace"),
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserExceptionModule))
+        )
+      }
+
+      info(s""" -  Exception was a ${exception.getClass.getName}""")
+
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("User threw an exception")
+
+      info("The stack trace is not trimmed")
+      exception.getStackTrace.mkString("\n") should include("java")
+    }
+
+    it("should NOT add a stack trace to an exception with no stack trace") {
+      val exception = intercept[java.lang.Exception] {
+        (new ChiselStage)
+          .execute(
+            Array("--target", "chirrtl"),
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserExceptionNoStackTrace))
+          )
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("Something bad happened")
+
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
+    }
+
+    it("should NOT include a stack trace for recoverable errors") {
+      val exception = intercept[java.lang.Exception] {
+        (new ChiselStage)
+          .execute(
+            Array("--target", "chirrtl"),
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+          )
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the standard error message")
+      message should include("Fatal errors during hardware elaboration. Look above for error list.")
+
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
+    }
+
+    it("should include a stack trace for recoverable errors with '--throw-on-first-error'") {
+      val exception = intercept[java.lang.Exception] {
+        (new ChiselStage).execute(
+          Array("--target", "chirrtl", "--throw-on-first-error"),
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+        )
+      }
+
+      val stackTrace = exception.getStackTrace.mkString("\n")
+      info("The exception should contain a truncated stack trace")
+      stackTrace shouldNot include("java")
+
+      info("The stack trace include information about running --full-stacktrace")
+      stackTrace should include("--full-stacktrace")
+    }
+
+    it(
+      "include an untruncated stack trace for recoverable errors when given both '--throw-on-first-error' and '--full-stacktrace'"
+    ) {
+      val exception = intercept[java.lang.Exception] {
+        val args = Array("--throw-on-first-error", "--full-stacktrace")
+        (new ChiselStage).execute(
+          Array("--target", "chirrtl", "--throw-on-first-error", "--full-stacktrace"),
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+        )
+      }
+
+      val stackTrace = exception.getStackTrace.mkString("\n")
+      info("The exception should contain a truncated stack trace")
+      stackTrace should include("java")
+    }
+
   }
 
   describe("ChiselStage custom transform support") {
@@ -560,6 +706,18 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
   describe("ChiselStage$") {
 
+    it("should convert a module to FIRRTL IR") {
+
+      ChiselStage.convert(new ChiselStageSpec.Foo).main should be("Foo")
+
+    }
+
+    it("should emit specification FIRRTL (CHIRRTL)") {
+
+      ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo) should include("circuit Foo")
+
+    }
+
     it("should emit FIRRTL dialect") {
 
       ChiselStage.emitFIRRTLDialect(new ChiselStageSpec.Foo) should include(" firrtl.module")
@@ -622,6 +780,50 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
       val expectedOutput = new File(targetDir, "Bar.sv")
       expectedOutput should (exist)
       info(s"'$expectedOutput' exists")
+    }
+
+  }
+
+  describe("ChiselStage$ exception handling") {
+
+    it("should truncate a user exception") {
+      info("The user's java.lang.AssertionError was thrown")
+      val exception = intercept[java.lang.AssertionError] {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.UserExceptionModule)
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("User threw an exception")
+
+      info("The stack trace is trimmed")
+      (exception.getStackTrace.mkString("\n") should not).include("java")
+    }
+
+    it("should NOT add a stack trace to an exception with no stack trace") {
+      val exception = intercept[java.lang.Exception] {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.UserExceptionNoStackTrace)
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("Something bad happened")
+
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
+    }
+
+    it("should NOT include a stack trace for recoverable errors") {
+      val exception = intercept[java.lang.Exception] {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.RecoverableError)
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the standard error message")
+      message should include("Fatal errors during hardware elaboration. Look above for error list.")
+
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
     }
 
   }

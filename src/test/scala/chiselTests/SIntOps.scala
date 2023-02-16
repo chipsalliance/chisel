@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import circt.stage.ChiselStage
 
 class SIntOps extends Module {
   val io = IO(new Bundle {
@@ -98,6 +98,19 @@ class SIntLitExtractTester extends BasicTester {
   stop()
 }
 
+class SIntLitZeroWidthTester extends BasicTester {
+  assert(-0.S(0.W) === 0.S)
+  assert(~0.S(0.W) === 0.S)
+  assert(0.S(0.W) + 0.S(0.W) === 0.S)
+  assert(5.S * 0.S(0.W) === 0.S)
+  assert(0.S(0.W) / 5.S === 0.S)
+  assert(0.S(0.W).head(0) === 0.U)
+  assert(0.S(0.W).tail(0) === 0.U)
+  assert(0.S(0.W).pad(1) === 0.S)
+  assert(-0.S(0.W)(0, 0) === "b0".U)
+  stop()
+}
+
 class SIntOpsSpec extends ChiselPropSpec with Utils {
 
   property("SIntOps should elaborate") {
@@ -114,6 +127,10 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
 
   property("Bit extraction on literals should work for all non-negative indices") {
     assertTesterPasses(new SIntLitExtractTester)
+  }
+
+  property("Basic arithmetic and bit operations with zero-width literals should return correct result (0)") {
+    assertTesterPasses(new SIntLitZeroWidthTester)
   }
 
   // We use WireDefault with 2 arguments because of
@@ -143,6 +160,12 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
     }
     assertKnownWidth(5) {
       val x = WireDefault(SInt(4.W), DontCare)
+      val y = WireDefault(SInt(8.W), DontCare)
+      val op = x / y
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(1) {
+      val x = WireDefault(SInt(0.W), DontCare)
       val y = WireDefault(SInt(8.W), DontCare)
       val op = x / y
       WireDefault(chiselTypeOf(op), op)

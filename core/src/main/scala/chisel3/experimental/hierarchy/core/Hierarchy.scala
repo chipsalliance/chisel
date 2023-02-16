@@ -3,10 +3,12 @@
 package chisel3.experimental.hierarchy.core
 
 import chisel3._
+
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.reflect.runtime.universe.TypeTag
 import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.IsModule
+
 import scala.annotation.implicitNotFound
 
 /** Super-trait for Instance and Definition
@@ -16,7 +18,7 @@ import scala.annotation.implicitNotFound
 sealed trait Hierarchy[+A] {
   private[chisel3] def underlying: Underlying[A]
   private[chisel3] def proto: A = underlying match {
-    case Proto(value: A) => value
+    case Proto(value) => value
     case Clone(i: IsClone[A]) => i.getProto
   }
 
@@ -103,6 +105,7 @@ object Hierarchy {
     def toTarget: IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toTarget
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toTarget
+      case _ => throw new InternalErrorException("Match error: toTarget i=$i")
     }
 
     /** Returns the toAbsoluteTarget of this hierarchy
@@ -111,6 +114,7 @@ object Hierarchy {
     def toAbsoluteTarget: IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toAbsoluteTarget
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toAbsoluteTarget
+      case _ => throw new InternalErrorException("Match error: toAbsoluteTarget i=$i")
     }
   }
 }

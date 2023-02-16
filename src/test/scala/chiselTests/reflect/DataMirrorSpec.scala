@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.experimental
+package chiselTests.reflect
 
 import chisel3._
-import chisel3.util.Valid
-import chisel3.stage.ChiselStage
 import chisel3.reflect.DataMirror
 import chiselTests.ChiselFlatSpec
+import circt.stage.ChiselStage
 
 object DataMirrorSpec {
   import org.scalatest.matchers.should.Matchers._
@@ -87,5 +86,29 @@ class DataMirrorSpec extends ChiselFlatSpec {
       DataMirror.getParent(this) should be(None)
     }
     ChiselStage.elaborate(new Top)
+  }
+
+  it should "support getting name guesses even though they may change" in {
+    import DataMirror.queryNameGuess
+    class MyModule extends Module {
+      val io = {
+        val port = IO(new Bundle {
+          val foo = Output(UInt(8.W))
+        })
+        queryNameGuess(port) should be("io_port")
+        queryNameGuess(port.foo) should be("io_port.foo")
+        port
+      }
+      queryNameGuess(io) should be("io")
+      queryNameGuess(io.foo) should be("io.foo")
+      io.suggestName("potato")
+      queryNameGuess(io) should be("potato")
+      queryNameGuess(io.foo) should be("potato.foo")
+    }
+    ChiselStage.elaborate(new MyModule)
+  }
+
+  it should "not support name guesses for non-hardware" in {
+    an[ExpectedHardwareException] should be thrownBy DataMirror.queryNameGuess(UInt(8.W))
   }
 }

@@ -3,14 +3,12 @@
 package chisel3
 
 import scala.language.experimental.macros
-
-import chisel3.experimental.{FixedPoint, Interval}
-import chisel3.internal._
+import chisel3.experimental.{requireIsHardware, FixedPoint, Interval, SourceInfo}
+import chisel3.internal.{throwException, BaseModule}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{
   IntLiteralApplyTransform,
-  SourceInfo,
   SourceInfoTransform,
   SourceInfoWhiteboxTransform,
   UIntTransform
@@ -18,6 +16,7 @@ import chisel3.internal.sourceinfo.{
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
+import chisel3.internal.{castToInt, Builder}
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
@@ -109,6 +108,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       requireIsHardware(this, "bits to be indexed")
 
       widthOption match {
+        case Some(w) if w == 0 => Builder.error(s"Cannot extract from zero-width")
         case Some(w) if x >= w => Builder.error(s"High index $x is out of range [0, ${w - 1}]")
         case _                 =>
       }
@@ -190,6 +190,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       requireIsHardware(this, "bits to be sliced")
 
       widthOption match {
+        case Some(w) if w == 0 => Builder.error(s"Cannot extract from zero-width")
         case Some(w) if y >= w => Builder.error(s"High and low indices $x and $y are both out of range [0, ${w - 1}]")
         case Some(w) if x >= w => Builder.error(s"High index $x is out of range [0, ${w - 1}]")
         case _                 =>
@@ -1085,7 +1086,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   )(
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
-  ) {
+  ): Unit = {
     this := that.asSInt
   }
 }
@@ -1307,7 +1308,6 @@ sealed class Bool() extends UInt(1.W) with Reset {
 package experimental {
 
   import chisel3.internal.firrtl.BinaryPoint
-  import chisel3.internal.requireIsHardware // Fix ambiguous import
 
   /** Chisel types that have binary points support retrieving
     * literal values as `Double` or `BigDecimal`

@@ -5,7 +5,6 @@ package chisel3.internal.firrtl
 import firrtl.{ir => fir}
 import chisel3._
 import chisel3.internal._
-import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
@@ -15,10 +14,12 @@ import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class PrimOp(name: String) {
   override def toString: String = name
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object PrimOp {
   val AddOp = PrimOp("add")
   val SubOp = PrimOp("sub")
@@ -71,6 +72,7 @@ sealed abstract class Arg {
   def name: String
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Node(id: HasId) extends Arg {
   override def contextualName(ctx: Component): String = id.getOptionRef match {
     case Some(arg) => arg.contextualName(ctx)
@@ -86,6 +88,7 @@ case class Node(id: HasId) extends Arg {
   }
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Arg {
   def earlyLocalName(id: HasId): String = id.getOptionRef match {
     case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
@@ -101,6 +104,7 @@ object Arg {
   }
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
@@ -129,13 +133,15 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   }
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ILit(n: BigInt) extends Arg {
   def name: String = n.toString
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name:     String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
-  def minWidth: Int = 1.max(n.bitLength)
+  def minWidth: Int = (if (w.known) 0 else 1).max(n.bitLength)
 
   def cloneWithWidth(newWidth: Width): this.type = {
     ULit(n, newWidth).asInstanceOf[this.type]
@@ -144,18 +150,20 @@ case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asSInt(${ULit(unsigned, width).name})"
   }
-  def minWidth: Int = 1 + n.bitLength
+  def minWidth: Int = (if (w.known) 0 else 1) + n.bitLength
 
   def cloneWithWidth(newWidth: Width): this.type = {
     SLit(n, newWidth).asInstanceOf[this.type]
   }
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
@@ -188,12 +196,14 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
   }
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Ref(name: String) extends Arg
 
 /** Arg for ports of Modules
   * @param mod the module this port belongs to
   * @param name the name of the port
   */
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   override def contextualName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
@@ -203,12 +213,14 @@ case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   * @param mod The original module for which these ports are a clone
   * @param name the name of the module instance
   */
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ModuleCloneIO(mod: BaseModule, name: String) extends Arg {
   override def localName = ""
   override def contextualName(ctx: Component): String =
     // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
     if (mod eq ctx.id) localName else name
 }
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Slot(imm: Node, name: String) extends Arg {
   override def contextualName(ctx: Component): String = {
     val immName = imm.contextualName(ctx)
@@ -220,17 +232,20 @@ case class Slot(imm: Node, name: String) extends Arg {
   }
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class OpaqueSlot(imm: Node) extends Arg {
   override def contextualName(ctx: Component): String = imm.contextualName(ctx)
   override def name: String = imm.name
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Index(imm: Arg, value: Arg) extends Arg {
   def name: String = s"[$value]"
   override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
   override def localName: String = s"${imm.localName}[${value.localName}]"
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Width {
   def apply(x: Int): Width = KnownWidth(x)
   def apply(): Width = UnknownWidth()
@@ -269,6 +284,7 @@ sealed case class KnownWidth(value: Int) extends Width {
   override def toString: String = s"<${value.toString}>"
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object BinaryPoint {
   @deprecated(deprecatedMFCMessage, "Chisel 3.6")
   def apply(x: Int): BinaryPoint = KnownBinaryPoint(x)
@@ -291,6 +307,7 @@ sealed abstract class BinaryPoint {
   protected def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case object UnknownBinaryPoint extends BinaryPoint {
   def known: Boolean = false
   def get:   Int = None.get
@@ -811,19 +828,36 @@ sealed class IntervalRange(
   }
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 abstract class Command {
   def sourceInfo: SourceInfo
 }
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 abstract class Definition extends Command {
   def id: HasId
   def name: String = id.getRef.name
 }
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefSeqMemory(
   sourceInfo:     SourceInfo,
   id:             HasId,
@@ -831,6 +865,8 @@ case class DefSeqMemory(
   size:           BigInt,
   readUnderWrite: fir.ReadUnderWrite.Value)
     extends Definition
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefMemPort[T <: Data](
   sourceInfo: SourceInfo,
   id:         T,
@@ -840,15 +876,25 @@ case class DefMemPort[T <: Data](
   clock:      Arg)
     extends Definition
 @nowarn("msg=class Port") // delete when Port becomes private
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class AltBegin(sourceInfo: SourceInfo) extends Command
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class PartialConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
 // Note this is just deprecated which will cause deprecation warnings, use @nowarn
 @deprecated(
@@ -856,12 +902,15 @@ case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) ext
   "Chisel 3.5"
 )
 case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Formal extends Enumeration {
   val Assert = Value("assert")
   val Assume = Value("assume")
   val Cover = Value("cover")
 }
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Verification[T <: VerificationStatement](
   id:         T,
   op:         Formal.Value,
@@ -877,8 +926,10 @@ abstract class Component extends Arg {
   def ports: Seq[Port]
 }
 @nowarn("msg=class Port") // delete when Port becomes private
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 @nowarn("msg=class Port") // delete when Port becomes private
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefBlackBox(
   id:     BaseBlackBox,
   name:   String,
@@ -887,6 +938,7 @@ case class DefBlackBox(
   params: Map[String, Param])
     extends Component
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Circuit(
   name:       String,
   components: Seq[Component],
@@ -915,6 +967,8 @@ case class Circuit(
   ) = Circuit(name, components, annotations, renames, newAnnotations)
 
 }
+
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Circuit
     extends scala.runtime.AbstractFunction4[String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Circuit] {
   def unapply(c: Circuit): Option[(String, Seq[Component], Seq[ChiselAnnotation], RenameMap)] = {
