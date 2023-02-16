@@ -8,7 +8,7 @@ import chisel3.util.experimental.{FlattenInstance, InlineInstance}
 import firrtl.passes.InlineAnnotation
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.transforms.FlattenAnnotation
-import firrtl.analyses.InstanceGraph
+import firrtl.analyses.{InstanceGraph, InstanceKeyGraph}
 import firrtl.{ir => fir}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -30,7 +30,7 @@ class InlineSpec extends AnyFreeSpec with ChiselRunners with Matchers {
   class Qux extends Module with Internals with HasSub
 
   def collectInstances(c: fir.Circuit, top: Option[String] = None): Seq[String] =
-    new InstanceGraph(c).fullHierarchy.values.flatten.toSeq
+    InstanceKeyGraph(c).fullHierarchy.values.flatten.toSeq
       .map(v => (top.getOrElse(v.head.name) +: v.tail.map(_.name)).mkString("."))
 
   val chiselStage = new ChiselStage

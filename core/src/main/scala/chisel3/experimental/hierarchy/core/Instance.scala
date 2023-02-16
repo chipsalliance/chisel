@@ -11,6 +11,8 @@ import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefModule, Port}
 import firrtl.annotations.IsModule
 
+import scala.annotation.nowarn
+
 /** User-facing Instance type.
   * Represents a unique instance of type [[A]] which are marked as @instantiable
   * Can be created using Instance.apply method.
@@ -134,7 +136,7 @@ object Instance extends SourceInfoDoc {
           _closed = true
           val firrtlPorts = definition.proto.getModulePortsAndLocators.map {
             case (port, sourceInfo) =>
-              Port(port, port.specifiedDirection, sourceInfo)
+              Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
           }
           val component = DefBlackBox(this, definition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
           Some(component)

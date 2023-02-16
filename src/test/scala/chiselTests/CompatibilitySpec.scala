@@ -22,7 +22,7 @@ object CompatibilityCustomCompileOptions {
   }
 }
 
-@nowarn("msg=Chisel compatibility mode is deprecated")
+@nowarn("msg=.*") // This is going away, all warnings suppressed
 class CompatibilitySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
   import Chisel._
 

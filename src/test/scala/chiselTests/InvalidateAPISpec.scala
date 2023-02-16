@@ -6,11 +6,11 @@ import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.Counter
 import firrtl.passes.CheckInitialization.RefNotInitializedException
-import firrtl.util.BackendCompilationUtilities
+import firrtl.util.BackendCompilationUtilities._
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 
-class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities with Utils {
+class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
 
   def myGenerateFirrtl(t: => Module): String = ChiselStage.emitChirrtl(t)
   def compileFirrtl(t: => Module): Unit = {
@@ -118,7 +118,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
     }
     val exception = intercept[BiConnectException] {
       extractCause[BiConnectException] {
-        ChiselStage.elaborate(new ModuleWithDontCareSink)
+        circt.stage.ChiselStage.elaborate(new ModuleWithDontCareSink)
       }
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")

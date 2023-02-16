@@ -3,9 +3,8 @@
 package chisel3
 
 import scala.language.experimental.macros
-
-import chisel3.experimental.{FixedPoint, Interval, SourceInfo}
-import chisel3.internal._
+import chisel3.experimental.{requireIsHardware, FixedPoint, Interval, SourceInfo}
+import chisel3.internal.{throwException, BaseModule}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{
@@ -17,6 +16,7 @@ import chisel3.internal.sourceinfo.{
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
+import chisel3.internal.{castToInt, Builder}
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
@@ -1308,7 +1308,6 @@ sealed class Bool() extends UInt(1.W) with Reset {
 package experimental {
 
   import chisel3.internal.firrtl.BinaryPoint
-  import chisel3.internal.requireIsHardware // Fix ambiguous import
 
   /** Chisel types that have binary points support retrieving
     * literal values as `Double` or `BigDecimal`

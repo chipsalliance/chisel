@@ -10,18 +10,21 @@ import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
 import firrtl.AnnotationSeq
 import firrtl.options.TargetDirAnnotation
+import firrtl.util.BackendCompilationUtilities.createTestDirectory
 
 import java.nio.file.Paths
+import scala.annotation.nowarn
 import scala.io.Source
 
 class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   import Examples._
 
   /** Return a [[DesignAnnotation]] from a list of annotations. */
+  @nowarn("msg=is unchecked since it is eliminated by erasure")
   private def getDesignAnnotation[T <: RawModule](annos: AnnotationSeq): DesignAnnotation[T] = {
     val designAnnos = annos.flatMap { a =>
       a match {
-        case a: DesignAnnotation[T] => Some(a)
+        case a: DesignAnnotation[T] => Some(a) //TODO: cleanup, T is necessary to make type of designAnnos right
         case _ => None
       }
     }

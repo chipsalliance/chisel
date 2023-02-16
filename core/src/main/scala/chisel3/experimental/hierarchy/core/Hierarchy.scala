@@ -18,7 +18,7 @@ import scala.annotation.implicitNotFound
 sealed trait Hierarchy[+A] {
   private[chisel3] def underlying: Underlying[A]
   private[chisel3] def proto: A = underlying match {
-    case Proto(value: A) => value
+    case Proto(value) => value
     case Clone(i: IsClone[A]) => i.getProto
   }
 

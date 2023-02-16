@@ -105,16 +105,16 @@ class AsChiselEnumTester extends BasicTester {
 
   // In aggregate
   class OtherBundle extends Bundle {
-    val enum = MyEnum()
+    val myEnum = MyEnum()
     val foo = Bool()
   }
   val wire = Wire(new OtherBundle)
-  wire.enum := MyEnum.fizz
+  wire.myEnum := MyEnum.fizz
   wire.foo := true.B
 
   assert(wire.asUInt === 5.U)
   val other = 5.U.asTypeOf(new OtherBundle)
-  assert(other.enum === MyEnum.fizz)
+  assert(other.myEnum === MyEnum.fizz)
   assert(other.foo === true.B)
 
   stop()

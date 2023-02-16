@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals._
-import chisel3.experimental.{ChiselEnum, FixedPoint, VecLiteralException}
+import chisel3.experimental.VecLiteralException
 import chisel3.testers.BasicTester
 import chisel3.util.Counter
 import circt.stage.ChiselStage

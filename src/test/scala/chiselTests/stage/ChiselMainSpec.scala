@@ -185,8 +185,8 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
         }
 
       Then("the expected exception was thrown")
-      (result should be).a('right)
-      val exception = result.right.get
+      (result should be).a(Symbol("right"))
+      val exception = result.toOption.get
       info(s"""  - Exception was a "${exception.getClass.getName}"""")
 
       val message = exception.getMessage

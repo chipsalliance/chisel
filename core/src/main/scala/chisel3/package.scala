@@ -3,9 +3,10 @@
 import firrtl.annotations.{IsMember, Named}
 import chisel3.internal.firrtl.BinaryPoint
 import chisel3.internal.ExceptionHelpers
+
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 import scala.collection.mutable
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 
 /** This package contains the main chisel3 API.
   */
@@ -265,6 +266,7 @@ package object chisel3 {
       *         if the number of `parts` in the enclosing `StringContext` does not exceed
       *         the number of arguments `arg` by exactly 1.
       */
+    @nowarn("msg=checkLengths in class StringContext is deprecated")
     def cf(args: Any*): Printable = {
 
       // Handle literal %
@@ -300,8 +302,9 @@ package object chisel3 {
 
       }
 
+      //TODO: Update this to current API when 2.12 is EOL
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
-      val parts = sc.parts.map(StringContext.treatEscapes)
+      val parts = sc.parts.map(StringContext.processEscapes)
       // The 1st part is assumed never to contain a format specifier.
       // If the 1st part of a string is an argument - then the 1st part will be an empty String.
       // So we need to parse parts following the 1st one to get the format specifiers if any
