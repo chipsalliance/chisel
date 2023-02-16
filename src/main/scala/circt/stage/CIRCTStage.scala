@@ -2,6 +2,7 @@
 
 package circt.stage
 
+import chisel3.deprecatedMFCMessage
 import chisel3.stage.{
   ChiselGeneratorAnnotation,
   PrintFullStackTraceAnnotation,
@@ -30,6 +31,7 @@ trait CLI { this: Shell =>
   *
   * @see [[https://github.com/llvm/circt llvm/circt]]
   */
+@deprecated(deprecatedMFCMessage + " Please use circt.stage.Chiselstage.", "Chisel 3.6")
 class CIRCTStage extends Stage {
 
   override def prerequisites = Seq.empty
@@ -53,4 +55,5 @@ class CIRCTStage extends Stage {
 }
 
 /** Command line utility for [[CIRCTStage]]. */
+@deprecated(deprecatedMFCMessage + " Please use circt.stage.Chiselstage.", "Chisel 3.6")
 object CIRCTMain extends StageMain(new CIRCTStage)
