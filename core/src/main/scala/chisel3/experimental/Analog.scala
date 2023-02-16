@@ -3,7 +3,6 @@
 package chisel3.experimental
 
 import chisel3.internal.firrtl.Width
-import chisel3.experimental.SourceInfo
 import chisel3.internal._
 import chisel3.{
   ActualDirection,

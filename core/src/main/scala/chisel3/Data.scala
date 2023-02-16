@@ -5,12 +5,13 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
+import chisel3.experimental.{Analog, BaseModule, FixedPoint, Interval}
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl._
+import chisel3.reflect.DataMirror
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 import scala.reflect.ClassTag
@@ -870,6 +871,8 @@ object Data {
         case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
           (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
         case (lOpt: Option[Element @unchecked], rOpt: Option[Element @unchecked]) if isElement(lOpt, rOpt) => Nil
+        case _ =>
+          throw new InternalErrorException(s"Match Error: left=$left, right=$right")
       }
   }
 
@@ -929,7 +932,7 @@ object Data {
                 try {
                   thisData === thatData
                 } catch {
-                  case e: ChiselException =>
+                  case e: chisel3.ChiselException =>
                     throwException(
                       s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
                     )

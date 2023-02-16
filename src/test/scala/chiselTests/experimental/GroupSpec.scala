@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.RawModule
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.experimental.group
-import firrtl.analyses.InstanceGraph
+import firrtl.analyses.{InstanceGraph, InstanceKeyGraph}
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.CompilerAnnotation
 import firrtl.{LowFirrtlCompiler, ir => fir}
@@ -17,7 +17,7 @@ import scala.collection.mutable
 class GroupSpec extends ChiselFlatSpec {
 
   def collectInstances(c: fir.Circuit, top: Option[String] = None): Seq[String] =
-    new InstanceGraph(c).fullHierarchy.values.flatten.toSeq
+    InstanceKeyGraph(c).fullHierarchy.values.flatten.toSeq
       .map(v => (top.getOrElse(v.head.name) +: v.tail.map(_.name)).mkString("."))
 
   def collectDeclarations(m: fir.DefModule): Set[String] = {

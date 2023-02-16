@@ -9,6 +9,8 @@ import chisel3.util.experimental.InlineInstance
 import firrtl.AnnotationSeq
 import firrtl.annotations.TargetToken.{Instance, OfModule, Ref}
 import firrtl.annotations.{CompleteTarget, InstanceTarget, ReferenceTarget}
+import firrtl.util.BackendCompilationUtilities.createTestDirectory
+
 import org.scalatest.matchers.should.Matchers
 
 class TraceSpec extends ChiselFlatSpec with Matchers {

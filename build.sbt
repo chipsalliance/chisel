@@ -39,7 +39,9 @@ lazy val warningSuppression = Seq(
   scalacOptions += "-Wconf:" + Seq(
     "msg=APIs in chisel3.internal:s",
     "msg=Importing from firrtl:s",
-    "msg=migration to the MLIR:s"
+    "msg=migration to the MLIR:s",
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s",  // replacement `knownSize` is not in 2.12
+    "msg=object JavaConverters in package collection is deprecated:s"
   ).mkString(",")
 )
 

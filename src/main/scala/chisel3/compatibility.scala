@@ -650,15 +650,17 @@ package object Chisel {
     implicit compileOptions: chisel3.CompileOptions)
       extends chisel3.util.Queue[T](gen, entries, pipe, flow)(compileOptions) {
 
+    @nowarn("msg=method override_reset_= in class Module is deprecated")
     def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
       this(gen, entries, pipe, flow)
-      this.override_reset = override_reset
+      this.override_reset = override_reset // TODO: Find a better way to do this
     }
 
+    @nowarn("msg=method override_reset_= in class Module is deprecated")
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) = {
       this(gen, entries, pipe, flow)
-      this.override_reset = Some(_reset)
+      this.override_reset = Some(_reset) // TODO: Find a better way to do this
     }
 
   }

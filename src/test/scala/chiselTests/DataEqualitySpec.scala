@@ -3,7 +3,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.VecLiterals._
 import chisel3.experimental.BundleLiterals._
-import chisel3.experimental.{Analog, ChiselEnum, ChiselRange, FixedPoint, Interval}
+import chisel3.experimental.{Analog, FixedPoint}
 import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util.Valid

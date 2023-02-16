@@ -9,8 +9,9 @@ import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
 import chisel3.experimental.{BaseModule, SourceInfo}
-import chisel3.experimental.hierarchy.Definition
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
+
+import scala.annotation.nowarn
 
 /** User-facing Definition type.
   * Represents a definition of an object of type [[A]] which are marked as @instantiable
@@ -108,7 +109,7 @@ object Definition extends SourceInfoDoc {
     dynamicContext.inDefinition = true
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
     Builder.components ++= ir.components
-    Builder.annotations ++= ir.annotations
+    Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
     module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     new Definition(Proto(module))

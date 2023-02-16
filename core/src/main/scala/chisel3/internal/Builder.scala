@@ -11,7 +11,9 @@ import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
-import _root_.firrtl.{AnnotationSeq, RenameMap}
+import _root_.firrtl.AnnotationSeq
+import _root_.firrtl.renamemap.MutableRenameMap
+import _root_.firrtl.util.BackendCompilationUtilities._
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
@@ -113,7 +115,7 @@ private[chisel3] class IdGen {
   def value: Long = counter
 }
 
-private[chisel3] trait HasId extends InstanceId {
+private[chisel3] trait HasId extends chisel3.InstanceId {
   // using nullable var for better memory usage
   private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
@@ -202,7 +204,7 @@ private[chisel3] trait HasId extends InstanceId {
   // wrapping
   private[chisel3] def forceFinalName(seed: String): this.type = {
     // This could be called with user prefixes, ignore them
-    noPrefix {
+    chisel3.experimental.noPrefix {
       suggested_seedVar = seed
       this.suggestName(seed)
     }
@@ -307,7 +309,7 @@ private[chisel3] trait HasId extends InstanceId {
       (p._component, this) match {
         case (Some(c), _) => refName(c)
         case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
-        case (None, _: MemBase[Data]) => _ref.get.localName
+        case (None, _: MemBase[_]) => _ref.get.localName
         case (None, _) =>
           throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }
@@ -557,6 +559,8 @@ private[chisel3] object Builder extends LazyLogging {
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing
         case ModuleIO(_, n) => Some(n) // BlackBox port
+        case f =>
+          throw new InternalErrorException(s"Match Error: field=$f")
       }
       def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
         a.flatMap(ax => b.map(f(ax, _)))
@@ -776,7 +780,7 @@ private[chisel3] object Builder extends LazyLogging {
     *
     * @param m exception message
     */
-  @throws(classOf[ChiselException])
+  @throws(classOf[chisel3.ChiselException])
   def exception(m: => String)(implicit sourceInfo: SourceInfo): Nothing = {
     error(m)
     throwException(m)
@@ -787,20 +791,11 @@ private[chisel3] object Builder extends LazyLogging {
     major.toInt
   }
 
-  def checkScalaVersion(): Unit = {
-    if (getScalaMajorVersion == 11) {
-      val url = _root_.firrtl.stage.transforms.CheckScalaVersion.migrationDocumentLink
-      val msg = s"Chisel 3.4 is the last version that will support Scala 2.11. " +
-        s"Please upgrade to Scala 2.12. See $url"
-      deprecated(msg, Some(""))
-    }
-  }
-
   // Builds a RenameMap for all Views that do not correspond to a single Data
   // These Data give a fake ReferenceTarget for .toTarget and .toReferenceTarget that the returned
   // RenameMap can split into the constituent parts
-  private[chisel3] def makeViewRenameMap: RenameMap = {
-    val renames = RenameMap()
+  private[chisel3] def makeViewRenameMap: MutableRenameMap = {
+    val renames = MutableRenameMap()
     for (view <- unnamedViews) {
       val localTarget = view.toTarget
       val absTarget = view.toAbsoluteTarget
@@ -820,9 +815,8 @@ private[chisel3] object Builder extends LazyLogging {
     forceModName:   Boolean = true
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
-      ViewParent // Must initialize the singleton in a Builder context or weird things can happen
+      ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal
-      checkScalaVersion()
       logger.info("Elaborating design...")
       val mod = f
       if (forceModName) { // This avoids definition name index skipping with D/I

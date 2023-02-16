@@ -3,6 +3,7 @@
 package chisel3
 
 import scala.language.experimental.macros
+import scala.language.existentials
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
 import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}
@@ -252,7 +253,7 @@ abstract class ChiselEnum {
   }
 
   private[chisel3] def globalAnnotation: EnumDefChiselAnnotation =
-    EnumDefChiselAnnotation(enumTypeName, (enumNames, enumValues).zipped.toMap)
+    EnumDefChiselAnnotation(enumTypeName, enumNames.zip(enumValues).toMap)
 
   def getWidth: Int = width.get
 
