@@ -5,7 +5,7 @@ package chiselTests
 import _root_.logger.Logger
 import chisel3._
 import chisel3.aop.Aspect
-import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
+import chisel3.stage.{ChiselGeneratorAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.testers._
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
 import firrtl.annotations.Annotation

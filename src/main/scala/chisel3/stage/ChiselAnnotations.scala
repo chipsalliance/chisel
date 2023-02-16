@@ -25,26 +25,6 @@ import java.lang.reflect.InvocationTargetException
   */
 sealed trait ChiselOption { this: Annotation => }
 
-/** Disable the execution of the FIRRTL compiler by Chisel
-  */
-@deprecated(deprecatedMFCMessage + """ Use "--target chirrtl" with circt.stage.ChiselStage.""", "Chisel 3.6")
-case object NoRunFirrtlCompilerAnnotation
-    extends NoTargetAnnotation
-    with ChiselOption
-    with HasShellOptions
-    with Unserializable {
-
-  val options = Seq(
-    new ShellOption[Unit](
-      longOption = "no-run-firrtl",
-      toAnnotationSeq = _ => Seq(NoRunFirrtlCompilerAnnotation),
-      helpText = "Do not run the FIRRTL compiler (generate FIRRTL IR from Chisel and exit)",
-      shortOption = Some("chnrf")
-    )
-  )
-
-}
-
 /** On an exception, this will cause the full stack trace to be printed as opposed to a pruned stack trace.
   */
 case object PrintFullStackTraceAnnotation
