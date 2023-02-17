@@ -190,6 +190,10 @@ object CircuitSerializationAnnotation {
   case object FirrtlFileFormat extends Format {
     def extension = ".fir"
   }
+  @deprecated(
+    deprecatedMFCMessage + " Protobuf emission is deprecated and the MFC does not support reading Protobuf. Please switch to FIRRTL text emission.",
+    "Chisel 3.6"
+  )
   case object ProtoBufFileFormat extends Format {
     def extension = ".pb"
   }
