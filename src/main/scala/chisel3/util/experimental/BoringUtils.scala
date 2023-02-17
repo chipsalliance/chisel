@@ -108,9 +108,6 @@ object BoringUtils {
   /* True if the requested name (value) exists in the namespace */
   private def checkName(value: String): Boolean = boringNamespace.contains(value)
 
-  /* True if the requested name (value) exists in the namespace */
-  //  private def checkName(value: String): Boolean = namespace.get.contains(value)
-
   /** Add a named source cross module reference
     * @param component source circuit component
     * @param name unique identifier for this source
