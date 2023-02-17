@@ -45,9 +45,6 @@ class CIRCTStage extends Stage {
   final val phaseManager = new PhaseManager(
     targets = Seq(
       Dependency[circt.stage.phases.CIRCT]
-    ),
-    currentState = Seq(
-      Dependency[firrtl.stage.phases.AddImplicitEmitter]
     )
   )
 
