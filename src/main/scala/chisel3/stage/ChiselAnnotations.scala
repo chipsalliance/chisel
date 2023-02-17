@@ -171,13 +171,6 @@ object CircuitSerializationAnnotation {
   case object FirrtlFileFormat extends Format {
     def extension = ".fir"
   }
-  @deprecated(
-    deprecatedMFCMessage + " Protobuf emission is deprecated and the MFC does not support reading Protobuf. Please switch to FIRRTL text emission.",
-    "Chisel 3.6"
-  )
-  case object ProtoBufFileFormat extends Format {
-    def extension = ".pb"
-  }
 }
 
 import CircuitSerializationAnnotation._
@@ -204,12 +197,6 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
       OldEmitter
         .emitLazily(circuit)
         .map(_.getBytes)
-    // TODO Use lazy Iterables so that we don't have to materialize full intermediate data structures
-    case ProtoBufFileFormat =>
-      val ostream = new java.io.ByteArrayOutputStream
-      val modules = circuit.components.map(m => () => chisel3.internal.firrtl.Converter.convert(m))
-      firrtl.proto.ToProto.writeToStreamFast(ostream, firrtl.ir.NoInfo, modules, circuit.name)
-      List(ostream.toByteArray)
   }
 }
 

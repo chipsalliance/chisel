@@ -36,5 +36,3 @@ addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.10.4")
 
 addSbtPlugin("com.simplytyped" % "sbt-antlr4" % "0.8.2")
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.0.0")
-addSbtPlugin("com.github.sbt" % "sbt-protobuf" % "0.7.2")
-libraryDependencies += "com.github.os72" % "protoc-jar" % "3.11.4"
