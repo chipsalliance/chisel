@@ -11,27 +11,19 @@ import org.scalatest.matchers.should.Matchers
 object SerializerSpec {
   case class WrapStmt(stmt: Statement) extends Statement {
     def serialize: String = s"wrap(${stmt.serialize})"
-    def foreachExpr(f:   Expression => Unit):       Unit = stmt.foreachExpr(f)
-    def foreachInfo(f:   Info => Unit):             Unit = stmt.foreachInfo(f)
-    def foreachStmt(f:   Statement => Unit):        Unit = stmt.foreachStmt(f)
-    def foreachString(f: String => Unit):           Unit = stmt.foreachString(f)
-    def foreachType(f:   Type => Unit):             Unit = stmt.foreachType(f)
-    def mapExpr(f:       Expression => Expression): Statement = this.copy(stmt.mapExpr(f))
-    def mapInfo(f:       Info => Info):             Statement = this.copy(stmt.mapInfo(f))
-    def mapStmt(f:       Statement => Statement):   Statement = this.copy(stmt.mapStmt(f))
-    def mapString(f:     String => String):         Statement = this.copy(stmt.mapString(f))
-    def mapType(f:       Type => Type):             Statement = this.copy(stmt.mapType(f))
+    def foreachExpr(f:   Expression => Unit): Unit = stmt.foreachExpr(f)
+    def foreachInfo(f:   Info => Unit):       Unit = stmt.foreachInfo(f)
+    def foreachStmt(f:   Statement => Unit):  Unit = stmt.foreachStmt(f)
+    def foreachString(f: String => Unit):     Unit = stmt.foreachString(f)
+    def foreachType(f:   Type => Unit):       Unit = stmt.foreachType(f)
   }
 
   case class WrapExpr(expr: Expression) extends Expression {
     def serialize: String = s"wrap(${expr.serialize})"
     def tpe:       Type = expr.tpe
-    def foreachExpr(f:  Expression => Unit):       Unit = expr.foreachExpr(f)
-    def foreachType(f:  Type => Unit):             Unit = expr.foreachType(f)
-    def foreachWidth(f: Width => Unit):            Unit = expr.foreachWidth(f)
-    def mapExpr(f:      Expression => Expression): Expression = this.copy(expr.mapExpr(f))
-    def mapType(f:      Type => Type):             Expression = this.copy(expr.mapType(f))
-    def mapWidth(f:     Width => Width):           Expression = this.copy(expr.mapWidth(f))
+    def foreachExpr(f:  Expression => Unit): Unit = expr.foreachExpr(f)
+    def foreachType(f:  Type => Unit):       Unit = expr.foreachType(f)
+    def foreachWidth(f: Width => Unit):      Unit = expr.foreachWidth(f)
   }
 
   private def tab(s: String): String = {
