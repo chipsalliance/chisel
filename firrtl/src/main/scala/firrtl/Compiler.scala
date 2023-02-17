@@ -13,7 +13,6 @@ import firrtl.annotations._
 import firrtl.ir.Circuit
 import firrtl.Utils.throwInternalError
 import firrtl.options.{Dependency, DependencyAPI, StageUtils, TransformLike}
-import firrtl.stage.Forms
 
 /** Container of all annotations for a Firrtl compiler */
 class AnnotationSeq private (underlying: Seq[Annotation]) {
@@ -93,75 +92,6 @@ sealed abstract class CircuitForm(private val value: Int) extends Ordered[Circui
 
   /** Defines a suffix to use if this form is written to a file */
   def outputSuffix: String
-}
-private[firrtl] object CircuitForm {
-  // Private internal utils to reduce number of deprecation warnings
-  val ChirrtlForm = firrtl.ChirrtlForm
-  val HighForm = firrtl.HighForm
-  val MidForm = firrtl.MidForm
-  val LowForm = firrtl.LowForm
-  val UnknownForm = firrtl.UnknownForm
-}
-
-// These magic numbers give an ordering to CircuitForm
-/** Chirrtl Form
-  *
-  * The form of the circuit emitted by Chisel. Not a true Firrtl form.
-  * Includes cmem, smem, and mport IR nodes which enable declaring memories
-  * separately form their ports. A "Higher" form than [[HighForm]]
-  *
-  * See [[CDefMemory]] and [[CDefMPort]]
-  */
-@deprecated(
-  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
-  "FIRRTL 1.3"
-)
-final case object ChirrtlForm extends CircuitForm(value = 3) {
-  val outputSuffix: String = ".fir"
-}
-
-/** High Form
-  *
-  * As detailed in the Firrtl specification
-  * [[https://github.com/ucb-bar/firrtl/blob/master/spec/spec.pdf]]
-  *
-  * Also see [[firrtl.ir]]
-  */
-@deprecated(
-  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
-  "FIRRTL 1.3"
-)
-final case object HighForm extends CircuitForm(2) {
-  val outputSuffix: String = ".hi.fir"
-}
-
-/** Middle Form
-  *
-  * A "lower" form than [[HighForm]] with the following restrictions:
-  *  - All widths must be explicit
-  *  - All whens must be removed
-  *  - There can only be a single connection to any element
-  */
-@deprecated(
-  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
-  "FIRRTL 1.3"
-)
-final case object MidForm extends CircuitForm(1) {
-  val outputSuffix: String = ".mid.fir"
-}
-
-/** Low Form
-  *
-  * The "lowest" form. In addition to the restrictions in [[MidForm]]:
-  *  - All aggregate types (vector/bundle) must have been removed
-  *  - All implicit truncations must be made explicit
-  */
-@deprecated(
-  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
-  "FIRRTL 1.3"
-)
-final case object LowForm extends CircuitForm(0) {
-  val outputSuffix: String = ".lo.fir"
 }
 
 /** Unknown Form
@@ -255,59 +185,13 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
 
   def transform(state: CircuitState): CircuitState = execute(state)
 
-  import firrtl.CircuitForm.{ChirrtlForm => C, HighForm => H, MidForm => M, LowForm => L, UnknownForm => U}
+  override def prerequisites: Seq[Dependency[Transform]] = Seq.empty
 
-  override def prerequisites: Seq[Dependency[Transform]] = inputForm match {
-    case C => Nil
-    case H => Forms.Deduped
-    case M => Forms.MidForm
-    case L => Forms.LowForm
-    case U => Nil
-  }
+  override def optionalPrerequisites: Seq[Dependency[Transform]] = Seq.empty
 
-  override def optionalPrerequisites: Seq[Dependency[Transform]] = inputForm match {
-    case L => Forms.LowFormOptimized ++ Forms.AssertsRemoved
-    case _ => Seq.empty
-  }
+  override def optionalPrerequisiteOf: Seq[Dependency[Transform]] = Seq.empty
 
-  private lazy val fullCompilerSet = new mutable.LinkedHashSet[Dependency[Transform]] ++ Forms.VerilogOptimized
-
-  override def optionalPrerequisiteOf: Seq[Dependency[Transform]] = {
-    val lowEmitters = Dependency[LowFirrtlEmitter] :: Nil
-
-    val emitters = inputForm match {
-      case C =>
-        Dependency[ChirrtlEmitter] :: Dependency[HighFirrtlEmitter] :: Dependency[MiddleFirrtlEmitter] :: lowEmitters
-      case H => Dependency[HighFirrtlEmitter] :: Dependency[MiddleFirrtlEmitter] :: lowEmitters
-      case M => Dependency[MiddleFirrtlEmitter] :: lowEmitters
-      case L => lowEmitters
-      case U => Nil
-    }
-
-    val selfDep = Dependency.fromTransform(this)
-
-    inputForm match {
-      case C => (fullCompilerSet ++ emitters - selfDep).toSeq
-      case H => (fullCompilerSet -- Forms.Deduped ++ emitters - selfDep).toSeq
-      case M => (fullCompilerSet -- Forms.MidForm ++ emitters - selfDep).toSeq
-      case L => (fullCompilerSet -- Forms.LowFormOptimized ++ emitters - selfDep).toSeq
-      case U => Nil
-    }
-  }
-
-  private lazy val highOutputInvalidates = fullCompilerSet -- Forms.MinimalHighForm
-  private lazy val midOutputInvalidates = fullCompilerSet -- Forms.MidForm
-
-  override def invalidates(a: Transform): Boolean = {
-    (inputForm, outputForm) match {
-      case (U, _) | (_, U)  => true // invalidate everything
-      case (i, o) if i >= o => false // invalidate nothing
-      case (_, C)           => true // invalidate everything
-      case (_, H)           => highOutputInvalidates(Dependency.fromTransform(a))
-      case (_, M)           => midOutputInvalidates(Dependency.fromTransform(a))
-      case (_, L)           => false // invalidate nothing
-    }
-  }
+  override def invalidates(a: Transform): Boolean = false
 
   /** Executes before any transform's execute method
     * @param state
