@@ -25,28 +25,6 @@ case class AnAnnotation(
     extends NoTargetAnnotation
 
 class JsonProtocolSpec extends AnyFlatSpec with Matchers {
-  "JsonProtocol" should "serialize and deserialize FIRRTL types" in {
-
-    val circuit =
-      """circuit Top: @[FPU.scala 509:25]
-        |  module Top:
-        |    input x: UInt
-        |    output y: UInt
-        |    y <= add(x, x)
-        |""".stripMargin
-    val cir = Parser.parse(circuit)
-    val mod = cir.modules.head
-    val port = mod.ports.head
-    val stmt = mod.asInstanceOf[Module].body
-    val expr = stmt.asInstanceOf[Block].stmts.head.asInstanceOf[Connect].expr
-    val tpe = port.tpe
-    val groundType = port.tpe.asInstanceOf[GroundType]
-    val inputAnnos = Seq(AnAnnotation(cir.info, cir, mod, port, stmt, expr, tpe, groundType))
-    val annosString = JsonProtocol.serialize(inputAnnos)
-    val outputAnnos = JsonProtocol.deserialize(annosString)
-    inputAnnos should be(outputAnnos)
-  }
-
   "Trying to serialize annotations that cannot be serialized" should "tell you why" in {
     case class MyAnno(x: Int) extends NoTargetAnnotation
     inside(JsonProtocol.serializeTry(MyAnno(3) :: Nil)) {

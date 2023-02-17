@@ -2,6 +2,7 @@
 
 package firrtlTests.stage.phases
 
+import firrtl.ir
 import firrtl.{ChirrtlEmitter, EmitAllModulesAnnotation, Parser}
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
@@ -13,12 +14,24 @@ class AddImplicitOutputFileSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new AddImplicitOutputFile }
 
-  val foo = """|circuit Foo:
-               |  module Foo:
-               |    node a = UInt<1>("h0")
-               |""".stripMargin
-
-  val circuit = Parser.parse(foo)
+  val circuit = ir.Circuit(
+    ir.NoInfo,
+    Seq(
+      ir.Module(
+        ir.NoInfo,
+        "foo",
+        Seq.empty,
+        ir.Block(
+          ir.DefNode(
+            ir.NoInfo,
+            "a",
+            ir.UIntLiteral(0, ir.IntWidth(1))
+          )
+        )
+      )
+    ),
+    "foo"
+  )
 
   behavior.of(classOf[AddImplicitOutputFile].toString)
 
