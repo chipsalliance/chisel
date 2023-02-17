@@ -14,7 +14,7 @@ class FileUtilsSpec extends AnyFlatSpec with Matchers {
   behavior.of("FileUtils.getLines")
 
   it should "read from a Java file" in {
-    FileUtils.getLines(new java.io.File(sampleAnnotationsFileName)).size should be > 0
+    FileUtils.getLines(sampleAnnotationsFileName).size should be > 0
   }
 
   behavior.of("FileUtils.getText")

@@ -9,26 +9,6 @@ import scala.sys.process.{stringSeqToProcess, BasicIO, ProcessLogger}
 
 object FileUtils {
 
-  /**
-    * recursively delete all directories in a relative path
-    * DO NOT DELETE absolute paths
-    *
-    * @param directoryPathName a directory hierarchy to delete
-    */
-  def deleteDirectoryHierarchy(directoryPathName: String): Boolean = {
-    os.FilePath(directoryPathName) match {
-      case path: os.Path =>
-        StageUtils.dramaticError(s"delete directory $path will not delete absolute paths")
-        false
-      case rel: os.RelPath =>
-        val path = os.pwd / rel
-        os.exists(path) && { os.remove.all(path); true }
-      case sub: os.SubPath =>
-        val path = os.pwd / sub
-        os.exists(path) && { os.remove.all(path); true }
-    }
-  }
-
   /** Read a text file and return it as a Seq of strings
     * Closes the file after read to avoid dangling file handles
     *
