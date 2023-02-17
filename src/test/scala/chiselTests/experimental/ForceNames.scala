@@ -10,7 +10,6 @@ import chisel3.util.experimental.{forceName, InlineInstance}
 import circt.stage.ChiselStage
 import firrtl.annotations.{Annotation, ReferenceTarget}
 import firrtl.options.{Dependency, TargetDirAnnotation}
-import firrtl.stage.RunFirrtlTransformAnnotation
 import logger.{LogLevel, LogLevelAnnotation}
 
 /** Object containing Modules used for testing */

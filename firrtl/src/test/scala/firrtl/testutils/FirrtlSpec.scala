@@ -15,7 +15,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Parser.UseInfo
 import firrtl.options.Dependency
-import firrtl.stage.{InfoModeAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.stage.InfoModeAnnotation
 import firrtl.annotations._
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.renamemap.MutableRenameMap

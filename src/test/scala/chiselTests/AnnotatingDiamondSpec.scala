@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import chisel3.stage.{ChiselGeneratorAnnotation}
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage

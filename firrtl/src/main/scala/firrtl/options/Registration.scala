@@ -2,7 +2,7 @@
 
 package firrtl.options
 
-import firrtl.{AnnotationSeq, Transform}
+import firrtl.AnnotationSeq
 
 import scopt.{OptionDef, OptionParser, Read}
 
@@ -51,13 +51,6 @@ trait HasShellOptions {
   final def addOptions(p: OptionParser[AnnotationSeq]): Unit = options.foreach(_.addOption(p))
 
 }
-
-/** A [[Transform]] that includes an option that should be exposed at the top level.
-  *
-  * @note To complete registration, include an entry in
-  * src/main/resources/META-INF/services/firrtl.options.RegisteredTransform
-  */
-trait RegisteredTransform extends HasShellOptions { this: Transform => }
 
 /** A class that includes options that should be exposed as a group at the top level.
   *

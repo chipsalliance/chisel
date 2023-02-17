@@ -3,7 +3,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
+import chisel3.experimental.ChiselAnnotation
 import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxNotFoundException, BlackBoxPathAnno}
 import firrtl.annotations.ModuleName
 import logger.LazyLogging

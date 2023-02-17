@@ -2,12 +2,11 @@
 
 package chisel3.stage.phases
 
-import chisel3.experimental.RunFirrtlTransform
 import chisel3.internal.firrtl.Converter
 import chisel3.stage.ChiselCircuitAnnotation
 import firrtl.{AnnotationSeq, Transform}
 import firrtl.options.{Dependency, Phase}
-import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.stage.FirrtlCircuitAnnotation
 
 import scala.annotation.nowarn
 
@@ -31,12 +30,7 @@ class Convert extends Phase {
         Some(FirrtlCircuitAnnotation(Converter.convert(a.circuit))) ++
         /* Convert all Chisel Annotations to FIRRTL Annotations */
         //TODO: clean up this code when firrtl is merged
-        a.circuit.firrtlAnnotations ++
-        a.circuit.annotations.collect {
-          case anno: RunFirrtlTransform => anno.transformClass
-        }.distinct.map { c: Class[_ <: Transform] =>
-          RunFirrtlTransformAnnotation(c.getDeclaredConstructor().newInstance())
-        }
+        a.circuit.firrtlAnnotations
     case a => Some(a)
   }
 

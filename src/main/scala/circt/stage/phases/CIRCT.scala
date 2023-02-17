@@ -22,7 +22,7 @@ import firrtl.options.{
 }
 import firrtl.options.phases.WriteOutputAnnotations
 import firrtl.options.Viewer.view
-import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
+import firrtl.stage.FirrtlOptions
 import _root_.logger.LogLevel
 import chisel3.InternalErrorException
 
