@@ -2,7 +2,6 @@
 
 package firrtl
 
-import firrtl.annotations.DeletedAnnotation
 import firrtl.options.OptionsView
 import logger.LazyLogging
 
