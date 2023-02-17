@@ -46,12 +46,6 @@ trait FirrtlMatchers extends Matchers {
     s.replaceAll("\\s+", " ").trim
   }
 
-  /** Helper to make circuits that are the same appear the same */
-  def canonicalize(circuit: Circuit): Circuit = {
-    import firrtl.Mappers._
-    def onModule(mod: DefModule) = mod.map(firrtl.Utils.squashEmpty)
-    circuit.map(onModule)
-  }
   def parse(str: String) = Parser.parse(str.split("\n").toIterator, UseInfo)
 
 }

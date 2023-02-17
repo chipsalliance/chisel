@@ -10,22 +10,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class UtilsSpec extends AnyFlatSpec {
 
-  "expandRef" should "return intermediate expressions" in {
-    val bTpe = VectorType(Utils.BoolType, 2)
-    val topTpe = BundleType(Seq(Field("a", Default, Utils.BoolType), Field("b", Default, bTpe)))
-    val wr = WRef("out", topTpe, PortKind, SourceFlow)
-
-    val expected = Seq(
-      wr,
-      WSubField(wr, "a", Utils.BoolType, SourceFlow),
-      WSubField(wr, "b", bTpe, SourceFlow),
-      WSubIndex(WSubField(wr, "b", bTpe, SourceFlow), 0, Utils.BoolType, SourceFlow),
-      WSubIndex(WSubField(wr, "b", bTpe, SourceFlow), 1, Utils.BoolType, SourceFlow)
-    )
-
-    (Utils.expandRef(wr)) should be(expected)
-  }
-
   def combineTest(circuits: Seq[String], expected: String) = {
     (Utils.orderAgnosticEquality(Utils.combine(circuits.map(c => Parser.parse(c))), Parser.parse(expected))) should be(
       true
