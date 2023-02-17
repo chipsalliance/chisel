@@ -26,17 +26,7 @@ class AddSerializationAnnotations extends Phase {
         s"Unable to locate the elaborated circuit, did ${classOf[Elaborate].getName} run correctly"
       )
     }
-    val baseFilename = chiselOptions.outputFile.getOrElse(circuit.name)
-
-    val (filename, format) = baseFilename match {
-      case _ if baseFilename.endsWith(".pb") =>
-        logger.warn(
-          """[warn] Protobuf emission is deprecated in Chisel 3.6 and unsupported by the MFC. Change to an output file which does not include a ".pb" suffix. This behavior will change in Chisel 5 to emit FIRRTL text even if you provide a ".pb" suffix."""
-        )
-        (baseFilename.stripSuffix(".pb"), ProtoBufFileFormat)
-      case _ => (baseFilename.stripSuffix(".fir"), FirrtlFileFormat)
-    }
-
-    CircuitSerializationAnnotation(circuit, filename, format) +: annotations
+    val filename = chiselOptions.outputFile.getOrElse(circuit.name).stripSuffix(".fir")
+    CircuitSerializationAnnotation(circuit, filename, FirrtlFileFormat) +: annotations
   }
 }
