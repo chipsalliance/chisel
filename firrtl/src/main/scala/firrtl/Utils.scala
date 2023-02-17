@@ -4,7 +4,6 @@ package firrtl
 
 import firrtl.ir._
 import firrtl.PrimOps._
-import firrtl.traversals.Foreachers._
 
 import scala.collection.mutable
 
@@ -90,29 +89,5 @@ object Utils extends LazyLogging {
 
 // =================================
   def error(str: String, cause: Throwable = null) = throw new FirrtlInternalException(str, cause)
-
-// =========== ACCESSORS =========
-  /** Similar to Seq.groupBy except that it preserves ordering of elements within each group */
-  def groupByIntoSeq[A, K](xs: Iterable[A])(f: A => K): Seq[(K, Seq[A])] = {
-    val map = mutable.LinkedHashMap.empty[K, mutable.ListBuffer[A]]
-    for (x <- xs) {
-      val key = f(x)
-      val l = map.getOrElseUpdate(key, mutable.ListBuffer.empty[A])
-      l += x
-    }
-    map.view.map({ case (k, vs) => k -> vs.toList }).toList
-  }
-
-  // For a given module, returns a Seq of all instantiated modules inside of it
-  private[firrtl] def collectInstantiatedModules(mod: Module, map: Map[String, DefModule]): Seq[DefModule] = {
-    // Use list instead of set to maintain order
-    val modules = mutable.ArrayBuffer.empty[DefModule]
-    def onStmt(stmt: Statement): Unit = stmt match {
-      case DefInstance(_, _, name, _) => modules += map(name)
-      case other                      => other.foreach(onStmt)
-    }
-    onStmt(mod.body)
-    modules.distinct.toSeq
-  }
 
 }
