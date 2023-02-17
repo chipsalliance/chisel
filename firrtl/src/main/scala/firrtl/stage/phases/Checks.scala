@@ -31,14 +31,13 @@ class Checks extends Phase {
     * @throws firrtl.options.OptionsException if any checks fail
     */
   def transform(annos: AnnotationSeq): AnnotationSeq = {
-    val eam, ec, outF, emitter, im, inC = collection.mutable.ListBuffer[Annotation]()
+    val eam, ec, outF, im, inC = collection.mutable.ListBuffer[Annotation]()
     annos.foreach(_ match {
       case a: EmitAllModulesAnnotation => a +=: eam
       case a: EmitCircuitAnnotation    => a +=: ec
       case a: OutputFileAnnotation     => a +=: outF
       case a: InfoModeAnnotation       => a +=: im
       case a: FirrtlCircuitAnnotation  => a +=: inC
-      case a @ RunFirrtlTransformAnnotation(_: firrtl.Emitter) => a +=: emitter
       case _ =>
     })
 
@@ -73,15 +72,6 @@ class Checks extends Phase {
       throw new OptionsException(
         s"""|No more than one output file can be specified, but found '${x.mkString(", ")}' specified via:
             |    - option or annotation: -o, --output-file, OutputFileAnnotation""".stripMargin
-      )
-    }
-
-    /* At least one emitter must be specified */
-    if (emitter.isEmpty) {
-      throw new OptionsException(
-        s"""|At least one compiler must be specified, but none found. Specify a compiler via:
-            |    - a RunFirrtlTransformAnnotation targeting a specific emitter, e.g., VerilogEmitter
-            |    - a command line option: -X, --compiler""".stripMargin
       )
     }
 
