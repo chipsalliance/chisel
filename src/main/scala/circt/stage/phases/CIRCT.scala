@@ -125,7 +125,7 @@ class CIRCT extends Phase {
   import scala.sys.process._
 
   override def prerequisites = Seq(
-    Dependency[firrtl.stage.phases.AddImplicitOutputFile]
+    Dependency[circt.stage.phases.AddImplicitOutputFile]
   )
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
@@ -163,14 +163,7 @@ class CIRCT extends Phase {
         val filename = a.filename(annotations)
         a.replacements(filename)
       }
-      case _: firrtl.EmitCircuitAnnotation | _: ImportDefinitionAnnotation[_] => Nil
-      case _: firrtl.EmitAllModulesAnnotation => {
-        logger.warn(
-          """[warn] Please switch from "firrtl.EmitAllModulesAnnotation" to "--split-verilog" when using "ChiselStage"."""
-        )
-        split = true
-        Nil
-      }
+      case _: ImportDefinitionAnnotation[_] => Nil
       case firrtl.passes.memlib.InferReadWriteAnnotation =>
         inferReadWrite = true
         Nil

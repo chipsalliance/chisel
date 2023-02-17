@@ -4,7 +4,7 @@ package firrtl.stage.phases
 
 import firrtl.stage._
 
-import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, EmitCircuitAnnotation}
+import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 import firrtl.options.{Dependency, OptionsException, Phase}
 
@@ -31,13 +31,11 @@ class Checks extends Phase {
     * @throws firrtl.options.OptionsException if any checks fail
     */
   def transform(annos: AnnotationSeq): AnnotationSeq = {
-    val eam, ec, outF, im, inC = collection.mutable.ListBuffer[Annotation]()
+    val outF, im, inC = collection.mutable.ListBuffer[Annotation]()
     annos.foreach(_ match {
-      case a: EmitAllModulesAnnotation => a +=: eam
-      case a: EmitCircuitAnnotation    => a +=: ec
-      case a: OutputFileAnnotation     => a +=: outF
-      case a: InfoModeAnnotation       => a +=: im
-      case a: FirrtlCircuitAnnotation  => a +=: inC
+      case a: OutputFileAnnotation    => a +=: outF
+      case a: InfoModeAnnotation      => a +=: im
+      case a: FirrtlCircuitAnnotation => a +=: inC
       case _ =>
     })
 
@@ -54,15 +52,6 @@ class Checks extends Phase {
       throw new OptionsException(
         s"""|Multiply defined input FIRRTL sources. More than one of the following was found:
             |    - FIRRTL circuit (${inC.size} times):                        FirrtlCircuitAnnotation""".stripMargin
-      )
-    }
-
-    /* Specifying an output file and one-file-per module conflict */
-    if (eam.nonEmpty && outF.nonEmpty) {
-      throw new OptionsException(
-        s"""|Output file is incompatible with emit all modules annotation, but multiples were found:
-            |    - explicit output file (${outF.size} times): -o, --output-file, OutputFileAnnotation
-            |    - one file per module (${eam.size} times):  -e, --emit-modules, EmitAllModulesAnnotation""".stripMargin
       )
     }
 

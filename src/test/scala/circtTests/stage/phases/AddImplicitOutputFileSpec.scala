@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package firrtlTests.stage.phases
+package circtTests.stage.phases
 
 import firrtl.ir
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
-import firrtl.stage.phases.AddImplicitOutputFile
+import circt.stage.phases.AddImplicitOutputFile
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

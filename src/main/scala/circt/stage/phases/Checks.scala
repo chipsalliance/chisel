@@ -2,9 +2,9 @@
 
 package circt.stage.phases
 
-import circt.stage.CIRCTTargetAnnotation
+import circt.stage.{CIRCTTargetAnnotation, SplitVerilog}
 
-import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, Emitter}
+import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 import firrtl.options.{Dependency, OptionsException, Phase, TargetDirAnnotation}
 import firrtl.stage.OutputFileAnnotation
@@ -20,14 +20,15 @@ class Checks extends Phase {
     val target, outputFile, split, targetDir = collection.mutable.ArrayBuffer[Annotation]()
 
     annotations.foreach {
-      case a: OutputFileAnnotation     => outputFile += a
-      case a: EmitAllModulesAnnotation => split += a
-      case a: TargetDirAnnotation      => targetDir += a
-      case a: CIRCTTargetAnnotation    => target += a
+      case a: OutputFileAnnotation => outputFile += a
+      case a @ SplitVerilog => split += a
+      case a: TargetDirAnnotation   => targetDir += a
+      case a: CIRCTTargetAnnotation => target += a
       case _ =>
     }
+
     if ((split.size > 0) && (outputFile.size != 0)) {
-      throw new OptionsException("Cannot specify both an OutputFileAnnotation and an EmitAllModulesAnnotation")
+      throw new OptionsException("Cannot specify both SplitVerilog and an EmitAllModulesAnnotation")
     }
     if ((split.size == 0) && (outputFile.size != 1)) {
       throw new OptionsException("An output file must be specified")
