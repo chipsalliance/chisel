@@ -150,17 +150,18 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   def compile(gen: => RawModule, targetDirName: File, splitVerilog: Boolean = true): Unit = {
     deleteRecursively(targetDirName)
     (new ChiselStage).execute(
-      args = Array("--target-dir", targetDirName.getPath(), "--target", "systemverilog"),
-      annotations = {
-        val annos = scala.collection.mutable.ArrayBuffer[firrtl.annotations.Annotation](
-          ChiselGeneratorAnnotation(() => gen),
-          FirtoolOption("-disable-all-randomization"),
-          FirtoolOption("-strip-debug-info")
-        )
+      args = {
+        val args = scala.collection.mutable
+          .ArrayBuffer[String]("--target-dir", targetDirName.getPath(), "--target", "systemverilog")
         if (splitVerilog)
-          annos.append(firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]))
-        annos.toSeq
-      }
+          args.append("--split-verilog")
+        args.toArray
+      },
+      annotations = Seq(
+        ChiselGeneratorAnnotation(() => gen),
+        FirtoolOption("-disable-all-randomization"),
+        FirtoolOption("-strip-debug-info")
+      )
     )
   }
 

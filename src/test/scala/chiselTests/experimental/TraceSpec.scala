@@ -25,10 +25,9 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
   def compile(testName: String, gen: () => Module): (os.Path, AnnotationSeq) = {
     val testDir = os.Path(createTestDirectory(testName).getAbsolutePath)
     val annos = (new ChiselStage).execute(
-      Array("--target-dir", s"$testDir", "--target", "systemverilog"),
+      Array("--target-dir", s"$testDir", "--target", "systemverilog", "--split-verilog"),
       Seq(
-        ChiselGeneratorAnnotation(gen),
-        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter])
+        ChiselGeneratorAnnotation(gen)
       )
     )
     (testDir, annos)

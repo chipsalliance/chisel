@@ -48,6 +48,20 @@ object ChiselStageSpec {
     out := in
   }
 
+  class Qux extends RawModule {
+    val a = IO(Input(Bool()))
+    val b = IO(Output(Bool()))
+    b := a
+  }
+
+  class Quz extends RawModule {
+    val a = IO(Input(Bool()))
+    val b = IO(Output(Bool()))
+    val qux = Module(new Qux)
+    qux.a := a
+    b := qux.b
+  }
+
   class UserExceptionModule extends RawModule {
     assert(false, "User threw an exception")
   }
@@ -229,6 +243,33 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         }
         .get
         .value should include("struct")
+    }
+
+    it("should support split Verilog output") {
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString,
+        "--split-verilog"
+      )
+
+      val expectedOutputs = Seq(new File(targetDir, "Qux.sv"), new File(targetDir, "Qux.sv"))
+      expectedOutputs.foreach(_.delete)
+
+      info("output contains multiple Verilog files")
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Quz), PreserveAggregate(PreserveAggregate.All))
+        )
+
+      expectedOutputs.foreach { file =>
+        info(s"'$file' exists")
+        file should exist
+      }
     }
   }
 

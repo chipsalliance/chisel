@@ -176,12 +176,11 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       }
 
       (new ChiselStage).execute(
-        Array("--target-dir", testDir, "--target", "systemverilog"),
+        Array("--target-dir", testDir, "--target", "systemverilog", "--split-verilog"),
         Seq(
           ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
           ImportDefinitionAnnotation(dutDef0),
-          ImportDefinitionAnnotation(dutDef1),
-          firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter])
+          ImportDefinitionAnnotation(dutDef1)
         )
       )
 

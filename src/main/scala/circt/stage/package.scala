@@ -27,6 +27,7 @@ package object stage {
             case CIRCTTargetAnnotation(a) => acc.copy(target = Some(a))
             case PreserveAggregate(a)     => acc.copy(preserveAggregate = Some(a))
             case FirtoolOption(a)         => acc.copy(firtoolOptions = acc.firtoolOptions :+ a)
+            case SplitVerilog             => acc.copy(splitVerilog = true)
             case _                        => acc
           }
         }
