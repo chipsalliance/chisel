@@ -14,6 +14,3 @@ case class SourceAnnotation(target: ComponentName, pin: String) extends SingleTa
 case class SinkAnnotation(target: Named, pin: String) extends SingleTargetAnnotation[Named] {
   def duplicate(n: Named) = this.copy(target = n)
 }
-
-/** A class for all exceptions originating from firrtl.passes.wiring */
-case class WiringException(msg: String) extends PassException(msg)
