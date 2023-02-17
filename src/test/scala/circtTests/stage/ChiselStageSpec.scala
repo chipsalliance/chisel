@@ -477,14 +477,14 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         "--target",
         "systemverilog",
         "--target-dir",
-        targetDir.toString
+        targetDir.toString,
+        "--split-verilog"
       )
 
       val annos = (new ChiselStage).execute(
         args,
         Seq(
-          ChiselGeneratorAnnotation(() => new fixture.Foo),
-          firrtl.EmitAllModulesAnnotation(classOf[firrtl.SystemVerilogEmitter])
+          ChiselGeneratorAnnotation(() => new fixture.Foo)
         )
       )
 

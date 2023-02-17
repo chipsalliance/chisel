@@ -22,7 +22,8 @@ trait CLI { this: Shell =>
     ChiselGeneratorAnnotation,
     PrintFullStackTraceAnnotation,
     ThrowOnFirstErrorAnnotation,
-    WarningsAsErrorsAnnotation
+    WarningsAsErrorsAnnotation,
+    SplitVerilog
   ).foreach(_.addOptions(parser))
 }
 
