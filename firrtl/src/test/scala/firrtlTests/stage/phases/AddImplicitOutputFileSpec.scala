@@ -3,7 +3,6 @@
 package firrtlTests.stage.phases
 
 import firrtl.ir
-import firrtl.{ChirrtlEmitter, EmitAllModulesAnnotation, Parser}
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
 import firrtl.stage.phases.AddImplicitOutputFile
@@ -51,9 +50,6 @@ class AddImplicitOutputFileSpec extends AnyFlatSpec with Matchers {
     val outputFile = Seq(OutputFileAnnotation("Bar"), FirrtlCircuitAnnotation(circuit))
     phase.transform(outputFile).toSeq should be(outputFile)
 
-    info("EmitAllModulesAnnotation works")
-    val eam = Seq(EmitAllModulesAnnotation(classOf[ChirrtlEmitter]), FirrtlCircuitAnnotation(circuit))
-    phase.transform(eam).toSeq should be(eam)
   }
 
 }

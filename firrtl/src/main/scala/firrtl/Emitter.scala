@@ -21,76 +21,11 @@ case class EmitCircuitAnnotation(emitter: Class[_ <: Emitter]) extends EmitAnnot
 case class EmitAllModulesAnnotation(emitter: Class[_ <: Emitter]) extends EmitAnnotation
 
 object EmitCircuitAnnotation extends HasShellOptions {
-  val options = Seq(
-    new ShellOption[String](
-      longOption = "emit-circuit",
-      toAnnotationSeq = (a: String) =>
-        a match {
-          case "chirrtl" =>
-            Seq(RunFirrtlTransformAnnotation(new ChirrtlEmitter), EmitCircuitAnnotation(classOf[ChirrtlEmitter]))
-          case "mhigh" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new MinimumHighFirrtlEmitter),
-              EmitCircuitAnnotation(classOf[MinimumHighFirrtlEmitter])
-            )
-          case "high" =>
-            Seq(RunFirrtlTransformAnnotation(new HighFirrtlEmitter), EmitCircuitAnnotation(classOf[HighFirrtlEmitter]))
-          case "middle" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new MiddleFirrtlEmitter),
-              EmitCircuitAnnotation(classOf[MiddleFirrtlEmitter])
-            )
-          case "low" =>
-            Seq(RunFirrtlTransformAnnotation(new LowFirrtlEmitter), EmitCircuitAnnotation(classOf[LowFirrtlEmitter]))
-          case "low-opt" =>
-            Seq(
-              RunFirrtlTransformAnnotation(Dependency(LowFirrtlOptimizedEmitter)),
-              EmitCircuitAnnotation(LowFirrtlOptimizedEmitter.getClass)
-            )
-          case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
-        },
-      helpText = "Run the specified circuit emitter (all modules in one file)",
-      shortOption = Some("E"),
-      // the experimental options are intentionally excluded from the help message
-      helpValueName = Some("<chirrtl|high|middle|low>")
-    )
-  )
+  val options = Seq.empty
 }
 
 object EmitAllModulesAnnotation extends HasShellOptions {
-
-  val options = Seq(
-    new ShellOption[String](
-      longOption = "emit-modules",
-      toAnnotationSeq = (a: String) =>
-        a match {
-          case "chirrtl" =>
-            Seq(RunFirrtlTransformAnnotation(new ChirrtlEmitter), EmitAllModulesAnnotation(classOf[ChirrtlEmitter]))
-          case "mhigh" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new MinimumHighFirrtlEmitter),
-              EmitAllModulesAnnotation(classOf[MinimumHighFirrtlEmitter])
-            )
-          case "high" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new HighFirrtlEmitter),
-              EmitAllModulesAnnotation(classOf[HighFirrtlEmitter])
-            )
-          case "middle" =>
-            Seq(
-              RunFirrtlTransformAnnotation(new MiddleFirrtlEmitter),
-              EmitAllModulesAnnotation(classOf[MiddleFirrtlEmitter])
-            )
-          case "low" =>
-            Seq(RunFirrtlTransformAnnotation(new LowFirrtlEmitter), EmitAllModulesAnnotation(classOf[LowFirrtlEmitter]))
-          case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
-        },
-      helpText = "Run the specified module emitter (one file per module)",
-      shortOption = Some("e"),
-      helpValueName = Some("<chirrtl|high|middle|low>")
-    )
-  )
-
+  val options = Seq.empty
 }
 
 // ***** Annotations for results of emission *****

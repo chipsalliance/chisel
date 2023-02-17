@@ -2,7 +2,7 @@
 
 package firrtl.stage.phases
 
-import firrtl.{AnnotationSeq, EmitAllModulesAnnotation}
+import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, Viewer}
 import firrtl.stage.{FirrtlOptions, OutputFileAnnotation}
 
@@ -30,7 +30,7 @@ class AddImplicitOutputFile extends Phase {
 
   /** Add an [[OutputFileAnnotation]] to an [[AnnotationSeq]] */
   def transform(annotations: AnnotationSeq): AnnotationSeq =
-    annotations.collectFirst { case _: OutputFileAnnotation | _: EmitAllModulesAnnotation => annotations }.getOrElse {
+    annotations.collectFirst { case _: OutputFileAnnotation => annotations }.getOrElse {
       val topName = Viewer[FirrtlOptions]
         .view(annotations)
         .firrtlCircuit
