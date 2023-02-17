@@ -144,7 +144,7 @@ class CIRCT extends Phase {
     var inferReadWrite = false
     var imcp = true
     var logLevel = _root_.logger.LogLevel.None
-    var split = false
+    var split = circtOptions.splitVerilog
 
     // Partition the annotations into those that will be passed to CIRCT and
     // those that are not.  The annotations that are in the passhtrough set will
@@ -162,6 +162,9 @@ class CIRCT extends Phase {
       }
       case _: firrtl.EmitCircuitAnnotation | _: ImportDefinitionAnnotation[_] => Nil
       case _: firrtl.EmitAllModulesAnnotation => {
+        logger.warn(
+          """[warn] Please switch from "firrtl.EmitAllModulesAnnotation" to "--split-verilog" when using "ChiselStage"."""
+        )
         split = true
         Nil
       }
