@@ -9,8 +9,6 @@ import firrtl.options.{Dependency, HasShellOptions, OptionsException, ShellOptio
 import java.io.{File, FileNotFoundException}
 import java.nio.file.{NoSuchFileException, NotDirectoryException}
 
-import firrtl.stage.TransformManager.TransformDependency
-
 /** Indicates that this is an [[firrtl.annotations.Annotation Annotation]] directly used in the construction of a
   * [[FirrtlOptions]] view.
   */

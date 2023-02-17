@@ -4,7 +4,7 @@ package chisel3.stage.phases
 
 import chisel3.internal.firrtl.Converter
 import chisel3.stage.ChiselCircuitAnnotation
-import firrtl.{AnnotationSeq, Transform}
+import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase}
 import firrtl.stage.FirrtlCircuitAnnotation
 
