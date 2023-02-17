@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package firrtl.stage.phases
+package circt.stage.phases
+
+import circt.stage.SplitVerilog
 
 import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, Viewer}
@@ -30,7 +32,7 @@ class AddImplicitOutputFile extends Phase {
 
   /** Add an [[OutputFileAnnotation]] to an [[AnnotationSeq]] */
   def transform(annotations: AnnotationSeq): AnnotationSeq =
-    annotations.collectFirst { case _: OutputFileAnnotation => annotations }.getOrElse {
+    annotations.collectFirst { case _: OutputFileAnnotation | SplitVerilog => annotations }.getOrElse {
       val topName = Viewer[FirrtlOptions]
         .view(annotations)
         .firrtlCircuit

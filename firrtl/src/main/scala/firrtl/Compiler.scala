@@ -210,15 +210,3 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
   }
 
 }
-
-/** Defines old API for Emission. Deprecated */
-trait Emitter extends Transform {
-
-  override def invalidates(a: Transform) = false
-
-  @deprecated("Use emission annotations instead", "FIRRTL 1.0")
-  def emit(state: CircuitState, writer: Writer): Unit
-
-  /** An output suffix to use if the output of this [[Emitter]] was written to a file */
-  def outputSuffix: String
-}
