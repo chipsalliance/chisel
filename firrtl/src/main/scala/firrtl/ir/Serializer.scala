@@ -113,11 +113,7 @@ object Serializer {
     case ValidIf(cond, value, _) => b ++= "validif("; s(cond); b ++= ", "; s(value); b += ')'
     case SIntLiteral(value, width) =>
       b ++= "SInt"; s(width); b ++= "(\"h"; b ++= value.toString(16); b ++= "\")"
-    // WIR
-    case firrtl.WVoid           => b ++= "VOID"
-    case firrtl.WInvalid        => b ++= "INVALID"
-    case firrtl.EmptyExpression => b ++= "EMPTY"
-    case other                  => b ++= other.serialize // Handle user-defined nodes
+    case other => b ++= other.serialize // Handle user-defined nodes
   }
 
   // Helper for some not-real Statements that only exist for Serialization
@@ -301,9 +297,6 @@ object Serializer {
     case firrtl.CDefMPort(info, name, _, mem, exps, direction) =>
       b ++= direction.serialize; b ++= " mport "; b ++= name; b ++= " = "; b ++= mem
       b += '['; s(exps.head); b ++= "], "; s(exps(1)); s(info)
-    case firrtl.WDefInstanceConnector(info, name, module, tpe, portCons) =>
-      b ++= "inst "; b ++= name; b ++= " of "; b ++= module; b ++= " with "; s(tpe); b ++= " connected to ("
-      s(portCons.map(_._2), ",  "); b += ')'; s(info)
     case other => b ++= other.serialize // Handle user-defined nodes
   }
 

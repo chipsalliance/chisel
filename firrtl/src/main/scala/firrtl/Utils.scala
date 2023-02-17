@@ -109,8 +109,7 @@ object Utils extends LazyLogging {
     val modules = mutable.ArrayBuffer.empty[DefModule]
     def onStmt(stmt: Statement): Unit = stmt match {
       case DefInstance(_, _, name, _) => modules += map(name)
-      case _: WDefInstanceConnector => throwInternalError(s"unrecognized statement: $stmt")
-      case other => other.foreach(onStmt)
+      case other                      => other.foreach(onStmt)
     }
     onStmt(mod.body)
     modules.distinct.toSeq
