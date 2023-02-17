@@ -4,7 +4,7 @@ package firrtlTests.stage
 
 import firrtl.stage._
 
-import firrtl.{ir, NoneCompiler, Parser}
+import firrtl.{ir, Parser}
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlOptions, FirrtlOptionsView}
 import org.scalatest.flatspec.AnyFlatSpec

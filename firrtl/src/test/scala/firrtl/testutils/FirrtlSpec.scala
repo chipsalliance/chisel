@@ -54,22 +54,6 @@ trait FirrtlMatchers extends Matchers {
   }
   def parse(str: String) = Parser.parse(str.split("\n").toIterator, UseInfo)
 
-  /** Helper for executing tests
-    * compiler will be run on input then emitted result will each be split into
-    * lines and normalized.
-    */
-  def executeTest(
-    input:       String,
-    expected:    Seq[String],
-    compiler:    Compiler,
-    annotations: Seq[Annotation] = Seq.empty
-  ) = {
-    val finalState = compiler.compileAndEmit(CircuitState(parse(input), ChirrtlForm, annotations))
-    val lines = finalState.getEmittedCircuit.value.split("\n").map(normalized)
-    for (e <- expected) {
-      lines should contain(e)
-    }
-  }
 }
 
 object FirrtlCheckers extends FirrtlMatchers {
@@ -139,56 +123,6 @@ object FirrtlCheckers extends FirrtlMatchers {
 abstract class FirrtlPropSpec extends AnyPropSpec with ScalaCheckPropertyChecks with LazyLogging
 
 abstract class FirrtlFlatSpec extends AnyFlatSpec with FirrtlMatchers with LazyLogging
-
-// Who tests the testers?
-class TestFirrtlFlatSpec extends FirrtlFlatSpec {
-  import FirrtlCheckers._
-
-  val c = parse("""
-                  |circuit Test:
-                  |  module Test :
-                  |    input in : UInt<8>
-                  |    output out : UInt<8>
-                  |    out <= in
-                  |""".stripMargin)
-  val state = CircuitState(c, ChirrtlForm)
-  val compiled = (new LowFirrtlCompiler).compileAndEmit(state, List.empty)
-
-  // While useful, ScalaTest helpers should be used over search
-  behavior.of("Search")
-
-  it should "be supported on Circuit" in {
-    assert(c.search {
-      case Connect(_, Reference("out", _, _, _), Reference("in", _, _, _)) => true
-    })
-  }
-  it should "be supported on CircuitStates" in {
-    assert(state.search {
-      case Connect(_, Reference("out", _, _, _), Reference("in", _, _, _)) => true
-    })
-  }
-  it should "be supported on the results of compilers" in {
-    assert(compiled.search {
-      case Connect(_, WRef("out", _, _, _), WRef("in", _, _, _)) => true
-    })
-  }
-
-  // Use these!!!
-  behavior.of("ScalaTest helpers")
-
-  they should "work for lines of emitted text" in {
-    compiled should containLine(s"input in : UInt<8>")
-    compiled should containLine(s"output out : UInt<8>")
-    compiled should containLine(s"out <= in")
-  }
-
-  they should "work for partial functions matching on subtrees" in {
-    val UInt8 = UIntType(IntWidth(8)) // BigInt unapply is weird
-    compiled should containTree { case Port(_, "in", Input, UInt8) => true }
-    compiled should containTree { case Port(_, "out", Output, UInt8) => true }
-    compiled should containTree { case Connect(_, WRef("out", _, _, _), WRef("in", _, _, _)) => true }
-  }
-}
 
 trait Utils {
 
