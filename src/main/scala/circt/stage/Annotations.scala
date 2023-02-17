@@ -102,3 +102,24 @@ case class EmittedMLIR(
 }
 
 case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption
+
+/** Annotation that indicates that firtool should run using the
+  * `--split-verilog` option.  This has two effects: (1) Verilog will be emitted
+  * as one-file-per-module and (2) any other output file attributes created
+  * along the way will have their operations written to other files.  Without
+  * this option, output file attributes will have their operations emitted
+  * inline in the single-file Verilog produced.
+  */
+private[circt] case object SplitVerilog extends NoTargetAnnotation with CIRCTOption with HasShellOptions {
+
+  override def options = Seq(
+    new ShellOption[Unit](
+      longOption = "split-verilog",
+      toAnnotationSeq = _ => Seq(this),
+      helpText =
+        """Indicates that "firtool" should emit one-file-per-module and write separate outputs to separate files""",
+      helpValueName = None
+    )
+  )
+
+}

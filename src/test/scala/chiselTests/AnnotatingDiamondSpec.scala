@@ -7,9 +7,7 @@ import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.stage.{ChiselGeneratorAnnotation}
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
-import firrtl.{CircuitForm, CircuitState, DependencyAPIMigration, LowForm, Transform}
-import firrtl.annotations.{CircuitName, CircuitTarget, SingleTargetAnnotation, Target}
-import firrtl.stage.Forms
+import firrtl.annotations.{CircuitTarget, SingleTargetAnnotation, Target}
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -22,31 +20,13 @@ case class IdentityAnnotation(target: Target, value: String) extends SingleTarge
 }
 
 /** ChiselAnnotation that corresponds to the above FIRRTL annotation */
-case class IdentityChiselAnnotation(target: InstanceId, value: String)
-    extends ChiselAnnotation
-    with RunFirrtlTransform {
-  def toFirrtl:       IdentityAnnotation = IdentityAnnotation(target.toNamed, value)
-  def transformClass: Class[IdentityTransform] = classOf[IdentityTransform]
+case class IdentityChiselAnnotation(target: InstanceId, value: String) extends ChiselAnnotation {
+  def toFirrtl: IdentityAnnotation = IdentityAnnotation(target.toNamed, value)
 }
 object identify {
   def apply(component: InstanceId, value: String): Unit = {
     val anno = IdentityChiselAnnotation(component, value)
     annotate(anno)
-  }
-}
-
-class IdentityTransform extends Transform with DependencyAPIMigration {
-  override def prerequisites = Forms.LowForm
-  override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Forms.LowEmitters
-  override def invalidates(a: Transform) = false
-
-  def execute(state: CircuitState): CircuitState = {
-    val annosx = state.annotations.map {
-      case IdentityAnnotation(t, value) => IdentityAnnotation(t, value + ":seen")
-      case other                        => other
-    }
-    state.copy(annotations = annosx)
   }
 }
 
