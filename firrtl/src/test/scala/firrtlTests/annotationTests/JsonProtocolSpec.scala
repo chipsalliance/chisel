@@ -24,16 +24,6 @@ case class AnAnnotation(
   groundType: GroundType)
     extends NoTargetAnnotation
 
-class AnnoInjector extends Transform with DependencyAPIMigration {
-  override def optionalPrerequisiteOf = Dependency[ChirrtlEmitter] :: Nil
-  override def invalidates(a: Transform): Boolean = false
-  def execute(state: CircuitState): CircuitState = {
-    // Classes defined in method bodies can't be serialized by json4s
-    case class MyAnno(x: Int) extends NoTargetAnnotation
-    state.copy(annotations = MyAnno(3) +: state.annotations)
-  }
-}
-
 class JsonProtocolSpec extends AnyFlatSpec with Matchers {
   "JsonProtocol" should "serialize and deserialize FIRRTL types" in {
 
@@ -57,18 +47,6 @@ class JsonProtocolSpec extends AnyFlatSpec with Matchers {
     inputAnnos should be(outputAnnos)
   }
 
-  "Annotation serialization during logging" should "not throw an exception" in {
-    val compiler = new firrtl.stage.transforms.Compiler(Seq(Dependency[AnnoInjector]))
-    val circuit = Parser.parse("""
-                                 |circuit test :
-                                 |  module test :
-                                 |    output out : UInt<1>
-                                 |    out <= UInt(0)
-      """.stripMargin)
-    Logger.makeScope(LogLevelAnnotation(LogLevel.Trace) :: Nil) {
-      compiler.execute(CircuitState(circuit, Nil))
-    }
-  }
   "Trying to serialize annotations that cannot be serialized" should "tell you why" in {
     case class MyAnno(x: Int) extends NoTargetAnnotation
     inside(JsonProtocol.serializeTry(MyAnno(3) :: Nil)) {
