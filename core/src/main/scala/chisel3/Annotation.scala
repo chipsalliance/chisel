@@ -5,7 +5,6 @@ package chisel3.experimental
 import scala.language.existentials
 import chisel3.internal.Builder
 import chisel3.{CompileOptions, Data, InstanceId, RawModule}
-import firrtl.Transform
 import firrtl.annotations._
 import firrtl.options.Unserializable
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
@@ -26,12 +25,6 @@ trait ChiselAnnotation {
   */
 trait ChiselMultiAnnotation {
   def toFirrtl: Seq[Annotation]
-}
-
-/** Mixin for [[ChiselAnnotation]] that instantiates an associated Transform when this Annotation is present
-  */
-trait RunFirrtlTransform extends ChiselAnnotation {
-  def transformClass: Class[_ <: Transform]
 }
 
 object annotate {

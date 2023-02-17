@@ -4,7 +4,6 @@ package chisel3.util.experimental
 
 import chisel3._
 import chisel3.experimental.{BaseModule, ChiselAnnotation}
-import firrtl.Transform
 import firrtl.passes.InlineAnnotation
 import firrtl.transforms.{FlattenAnnotation, NoDedupAnnotation}
 import firrtl.annotations.Annotation
