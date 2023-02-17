@@ -86,18 +86,6 @@ object RunFirrtlTransformAnnotation extends HasShellOptions {
   def apply(transform: TransformDependency): RunFirrtlTransformAnnotation =
     RunFirrtlTransformAnnotation(transform.getObject())
 
-  private[firrtl] def stringToEmitter(a: String): RunFirrtlTransformAnnotation = {
-    val emitter = a match {
-      case "none"   => new ChirrtlEmitter
-      case "mhigh"  => new MinimumHighFirrtlEmitter
-      case "high"   => new HighFirrtlEmitter
-      case "low"    => new LowFirrtlEmitter
-      case "middle" => new MiddleFirrtlEmitter
-      case _        => throw new OptionsException(s"Unknown compiler name '$a'! (Did you misspell it?)")
-    }
-    RunFirrtlTransformAnnotation(emitter)
-  }
-
   val options = Seq(
     new ShellOption[Seq[String]](
       longOption = "custom-transforms",
@@ -119,13 +107,6 @@ object RunFirrtlTransformAnnotation extends HasShellOptions {
       helpText = "Run these transforms during compilation",
       shortOption = Some("fct"),
       helpValueName = Some("<package>.<class>")
-    ),
-    new ShellOption[String](
-      longOption = "compiler",
-      toAnnotationSeq = a => Seq(stringToEmitter(a)),
-      helpText = "The FIRRTL compiler to use",
-      shortOption = Some("X"),
-      helpValueName = Some("<none|high|middle|low>")
     )
   )
 

@@ -51,9 +51,9 @@ sealed abstract class FirrtlEmitter(form: Seq[TransformDependency], val outputSu
   def emit(state: CircuitState, writer: Writer): Unit = writer.write(state.circuit.serialize)
 }
 
-class ChirrtlEmitter extends FirrtlEmitter(stage.Forms.ChirrtlForm, ".fir")
-class MinimumHighFirrtlEmitter extends FirrtlEmitter(stage.Forms.MinimalHighForm, ".mhi.fir")
-class HighFirrtlEmitter extends FirrtlEmitter(stage.Forms.HighForm, ".hi.fir")
-class MiddleFirrtlEmitter extends FirrtlEmitter(stage.Forms.MidForm, ".mid.fir")
-class LowFirrtlEmitter extends FirrtlEmitter(stage.Forms.LowForm, ".lo.fir")
-object LowFirrtlOptimizedEmitter extends FirrtlEmitter(stage.Forms.LowFormOptimized, ".opt.lo.fir")
+class ChirrtlEmitter extends FirrtlEmitter(Seq.empty, ".fir")
+class MinimumHighFirrtlEmitter extends FirrtlEmitter(Seq.empty, ".mhi.fir")
+class HighFirrtlEmitter extends FirrtlEmitter(Seq.empty, ".hi.fir")
+class MiddleFirrtlEmitter extends FirrtlEmitter(Seq.empty, ".mid.fir")
+class LowFirrtlEmitter extends FirrtlEmitter(Seq.empty, ".lo.fir")
+object LowFirrtlOptimizedEmitter extends FirrtlEmitter(Seq.empty, ".opt.lo.fir")

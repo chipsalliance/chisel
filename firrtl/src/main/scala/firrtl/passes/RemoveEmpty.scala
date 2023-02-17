@@ -4,13 +4,12 @@ package firrtl
 package passes
 
 import firrtl.ir._
-import firrtl.stage.Forms
 
 object RemoveEmpty extends Pass with DependencyAPIMigration {
 
   override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Forms.LowFormOptimized
-  override def optionalPrerequisiteOf = Forms.ChirrtlEmitters
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Transform) = false
 
   private def onModule(m: DefModule): DefModule = {
