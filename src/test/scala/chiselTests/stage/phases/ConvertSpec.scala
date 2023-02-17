@@ -7,7 +7,7 @@ import chisel3.experimental.ChiselAnnotation
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{Convert, Elaborate}
 
-import firrtl.{AnnotationSeq, CircuitForm, CircuitState}
+import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Phase
 import firrtl.stage.FirrtlCircuitAnnotation
