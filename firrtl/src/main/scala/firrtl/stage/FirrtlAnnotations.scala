@@ -75,43 +75,6 @@ object InfoModeAnnotation extends HasShellOptions {
 
 }
 
-/** Holds the unambiguous class name of a [[Transform]] to run
-  *  - set with `-fct/--custom-transforms`
-  * @param transform the full class name of the transform
-  */
-case class RunFirrtlTransformAnnotation(transform: Transform) extends NoTargetAnnotation
-
-object RunFirrtlTransformAnnotation extends HasShellOptions {
-
-  def apply(transform: TransformDependency): RunFirrtlTransformAnnotation =
-    RunFirrtlTransformAnnotation(transform.getObject())
-
-  val options = Seq(
-    new ShellOption[Seq[String]](
-      longOption = "custom-transforms",
-      toAnnotationSeq = _.map(txName =>
-        try {
-          val tx = Class.forName(txName).asInstanceOf[Class[_ <: Transform]].newInstance()
-          RunFirrtlTransformAnnotation(tx)
-        } catch {
-          case e: ClassNotFoundException =>
-            throw new OptionsException(s"Unable to locate custom transform $txName (did you misspell it?)", e)
-          case e: InstantiationException =>
-            throw new OptionsException(
-              s"Unable to create instance of Transform $txName (is this an anonymous class?)",
-              e
-            )
-          case e: Throwable => throw new OptionsException(s"Unknown error when instantiating class $txName", e)
-        }
-      ),
-      helpText = "Run these transforms during compilation",
-      shortOption = Some("fct"),
-      helpValueName = Some("<package>.<class>")
-    )
-  )
-
-}
-
 /** Holds a FIRRTL [[firrtl.ir.Circuit Circuit]]
   * @param circuit a circuit
   */

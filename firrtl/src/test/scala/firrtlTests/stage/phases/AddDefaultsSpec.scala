@@ -5,7 +5,7 @@ package firrtlTests.stage.phases
 import firrtl.annotations.Annotation
 import firrtl.stage.phases.AddDefaults
 import firrtl.transforms.BlackBoxTargetDirAnno
-import firrtl.stage.{InfoModeAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.stage.InfoModeAnnotation
 import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
