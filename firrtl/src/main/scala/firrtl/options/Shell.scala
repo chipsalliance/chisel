@@ -32,27 +32,12 @@ class Shell(val applicationName: String) {
     libraries.toSeq
   }
 
-  /** Contains all discovered [[RegisteredTransform]] */
-  final lazy val registeredTransforms: Seq[RegisteredTransform] = {
-    val transforms = scala.collection.mutable.ArrayBuffer[RegisteredTransform]()
-    val iter = ServiceLoader.load(classOf[RegisteredTransform]).iterator()
-    if (iter.hasNext) { parser.note("FIRRTL Transform Options") }
-    while (iter.hasNext) {
-      val tx = iter.next()
-      transforms += tx
-      tx.addOptions(parser)
-    }
-
-    transforms.toSeq
-  }
-
   /** The [[AnnotationSeq]] generated from command line arguments
     *
     * This requires lazy evaluation as subclasses will mixin new command
     * line options via methods of [[Shell.parser]]
     */
   def parse(args: Array[String], initAnnos: AnnotationSeq = Seq.empty): AnnotationSeq = {
-    registeredTransforms
     registeredLibraries
     parser
       .parse(args, initAnnos.reverse)
@@ -68,11 +53,9 @@ class Shell(val applicationName: String) {
   parser
     .opt[Unit]("show-registrations")
     .action { (_, c) =>
-      val rtString = registeredTransforms.map(r => s"\n  - ${r.getClass.getName}").mkString
       val rlString = registeredLibraries.map(l => s"\n  - ${l.getClass.getName}").mkString
 
-      println(s"""|The following FIRRTL transforms registered command line options:$rtString
-                  |The following libraries registered command line options:$rlString""".stripMargin)
+      println(s"""The following libraries registered command line options:$rlString""")
       c
     }
     .unbounded()
