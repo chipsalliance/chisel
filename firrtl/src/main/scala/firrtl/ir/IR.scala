@@ -317,12 +317,9 @@ abstract class PrimOp extends FirrtlNode {
 
 abstract class Expression extends FirrtlNode {
   def tpe: Type
-  def mapExpr(f:      Expression => Expression): Expression
-  def mapType(f:      Type => Type):             Expression
-  def mapWidth(f:     Width => Width):           Expression
-  def foreachExpr(f:  Expression => Unit):       Unit
-  def foreachType(f:  Type => Unit):             Unit
-  def foreachWidth(f: Width => Unit):            Unit
+  def foreachExpr(f:  Expression => Unit): Unit
+  def foreachType(f:  Type => Unit):       Unit
+  def foreachWidth(f: Width => Unit):      Unit
 }
 
 /** Represents reference-like expression nodes: SubField, SubIndex, SubAccess and Reference
@@ -366,12 +363,9 @@ case class Reference(name: String, tpe: Type = UnknownType, kind: Kind = Unknown
     with HasName
     with UseSerializer
     with RefLikeExpression {
-  def mapExpr(f:      Expression => Expression): Expression = this
-  def mapType(f:      Type => Type):             Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f:     Width => Width):           Expression = this
-  def foreachExpr(f:  Expression => Unit):       Unit = ()
-  def foreachType(f:  Type => Unit):             Unit = f(tpe)
-  def foreachWidth(f: Width => Unit):            Unit = ()
+  def foreachExpr(f:  Expression => Unit): Unit = ()
+  def foreachType(f:  Type => Unit):       Unit = f(tpe)
+  def foreachWidth(f: Width => Unit):      Unit = ()
 }
 
 case class SubField(expr: Expression, name: String, tpe: Type = UnknownType, flow: Flow = UnknownFlow)
@@ -379,33 +373,24 @@ case class SubField(expr: Expression, name: String, tpe: Type = UnknownType, flo
     with HasName
     with UseSerializer
     with RefLikeExpression {
-  def mapExpr(f:      Expression => Expression): Expression = this.copy(expr = f(expr))
-  def mapType(f:      Type => Type):             Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f:     Width => Width):           Expression = this
-  def foreachExpr(f:  Expression => Unit):       Unit = f(expr)
-  def foreachType(f:  Type => Unit):             Unit = f(tpe)
-  def foreachWidth(f: Width => Unit):            Unit = ()
+  def foreachExpr(f:  Expression => Unit): Unit = f(expr)
+  def foreachType(f:  Type => Unit):       Unit = f(tpe)
+  def foreachWidth(f: Width => Unit):      Unit = ()
 }
 
 case class SubIndex(expr: Expression, value: Int, tpe: Type, flow: Flow = UnknownFlow)
     extends Expression
     with UseSerializer
     with RefLikeExpression {
-  def mapExpr(f:      Expression => Expression): Expression = this.copy(expr = f(expr))
-  def mapType(f:      Type => Type):             Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f:     Width => Width):           Expression = this
-  def foreachExpr(f:  Expression => Unit):       Unit = f(expr)
-  def foreachType(f:  Type => Unit):             Unit = f(tpe)
-  def foreachWidth(f: Width => Unit):            Unit = ()
+  def foreachExpr(f:  Expression => Unit): Unit = f(expr)
+  def foreachType(f:  Type => Unit):       Unit = f(tpe)
+  def foreachWidth(f: Width => Unit):      Unit = ()
 }
 
 case class SubAccess(expr: Expression, index: Expression, tpe: Type, flow: Flow = UnknownFlow)
     extends Expression
     with UseSerializer
     with RefLikeExpression {
-  def mapExpr(f:  Expression => Expression): Expression = this.copy(expr = f(expr), index = f(index))
-  def mapType(f:  Type => Type):             Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f: Width => Width):           Expression = this
   def foreachExpr(f: Expression => Unit): Unit = { f(expr); f(index) }
   def foreachType(f:  Type => Unit):  Unit = f(tpe)
   def foreachWidth(f: Width => Unit): Unit = ()
@@ -414,17 +399,11 @@ case class SubAccess(expr: Expression, index: Expression, tpe: Type, flow: Flow 
 case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type = UnknownType)
     extends Expression
     with UseSerializer {
-  def mapExpr(f:  Expression => Expression): Expression = Mux(f(cond), f(tval), f(fval), tpe)
-  def mapType(f:  Type => Type):             Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f: Width => Width):           Expression = this
   def foreachExpr(f: Expression => Unit): Unit = { f(cond); f(tval); f(fval) }
   def foreachType(f:  Type => Unit):  Unit = f(tpe)
   def foreachWidth(f: Width => Unit): Unit = ()
 }
 case class ValidIf(cond: Expression, value: Expression, tpe: Type) extends Expression with UseSerializer {
-  def mapExpr(f:  Expression => Expression): Expression = ValidIf(f(cond), f(value), tpe)
-  def mapType(f:  Type => Type):             Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f: Width => Width):           Expression = this
   def foreachExpr(f: Expression => Unit): Unit = { f(cond); f(value) }
   def foreachType(f:  Type => Unit):  Unit = f(tpe)
   def foreachWidth(f: Width => Unit): Unit = ()
@@ -435,12 +414,9 @@ abstract class Literal extends Expression {
 }
 case class UIntLiteral(value: BigInt, width: Width) extends Literal with UseSerializer {
   def tpe = UIntType(width)
-  def mapExpr(f:      Expression => Expression): Expression = this
-  def mapType(f:      Type => Type):             Expression = this
-  def mapWidth(f:     Width => Width):           Expression = UIntLiteral(value, f(width))
-  def foreachExpr(f:  Expression => Unit):       Unit = ()
-  def foreachType(f:  Type => Unit):             Unit = ()
-  def foreachWidth(f: Width => Unit):            Unit = f(width)
+  def foreachExpr(f:  Expression => Unit): Unit = ()
+  def foreachType(f:  Type => Unit):       Unit = ()
+  def foreachWidth(f: Width => Unit):      Unit = f(width)
 }
 object UIntLiteral {
   def minWidth(value: BigInt): Width = IntWidth(math.max(value.bitLength, 1))
@@ -457,12 +433,9 @@ object UIntLiteral {
 }
 case class SIntLiteral(value: BigInt, width: Width) extends Literal with UseSerializer {
   def tpe = SIntType(width)
-  def mapExpr(f:      Expression => Expression): Expression = this
-  def mapType(f:      Type => Type):             Expression = this
-  def mapWidth(f:     Width => Width):           Expression = SIntLiteral(value, f(width))
-  def foreachExpr(f:  Expression => Unit):       Unit = ()
-  def foreachType(f:  Type => Unit):             Unit = ()
-  def foreachWidth(f: Width => Unit):            Unit = f(width)
+  def foreachExpr(f:  Expression => Unit): Unit = ()
+  def foreachType(f:  Type => Unit):       Unit = ()
+  def foreachWidth(f: Width => Unit):      Unit = f(width)
 }
 object SIntLiteral {
   def minWidth(value: BigInt): Width = IntWidth(value.bitLength + 1)
@@ -471,41 +444,28 @@ object SIntLiteral {
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
     with UseSerializer {
-  def mapExpr(f:      Expression => Expression): Expression = this.copy(args = args.map(f))
-  def mapType(f:      Type => Type):             Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f:     Width => Width):           Expression = this
-  def foreachExpr(f:  Expression => Unit):       Unit = args.foreach(f)
-  def foreachType(f:  Type => Unit):             Unit = f(tpe)
-  def foreachWidth(f: Width => Unit):            Unit = ()
+  def foreachExpr(f:  Expression => Unit): Unit = args.foreach(f)
+  def foreachType(f:  Type => Unit):       Unit = f(tpe)
+  def foreachWidth(f: Width => Unit):      Unit = ()
 }
 
 abstract class Statement extends FirrtlNode {
-  def mapStmt(f:       Statement => Statement):   Statement
-  def mapExpr(f:       Expression => Expression): Statement
-  def mapType(f:       Type => Type):             Statement
-  def mapString(f:     String => String):         Statement
-  def mapInfo(f:       Info => Info):             Statement
-  def foreachStmt(f:   Statement => Unit):        Unit
-  def foreachExpr(f:   Expression => Unit):       Unit
-  def foreachType(f:   Type => Unit):             Unit
-  def foreachString(f: String => Unit):           Unit
-  def foreachInfo(f:   Info => Unit):             Unit
+  def foreachStmt(f:   Statement => Unit):  Unit
+  def foreachExpr(f:   Expression => Unit): Unit
+  def foreachType(f:   Type => Unit):       Unit
+  def foreachString(f: String => Unit):     Unit
+  def foreachInfo(f:   Info => Unit):       Unit
 }
 case class DefWire(info: Info, name: String, tpe: Type)
     extends Statement
     with IsDeclaration
     with CanBeReferenced
     with UseSerializer {
-  def mapStmt(f:       Statement => Statement):   Statement = this
-  def mapExpr(f:       Expression => Expression): Statement = this
-  def mapType(f:       Type => Type):             Statement = DefWire(info, name, f(tpe))
-  def mapString(f:     String => String):         Statement = DefWire(info, f(name), tpe)
-  def mapInfo(f:       Info => Info):             Statement = this.copy(info = f(info))
-  def foreachStmt(f:   Statement => Unit):        Unit = ()
-  def foreachExpr(f:   Expression => Unit):       Unit = ()
-  def foreachType(f:   Type => Unit):             Unit = f(tpe)
-  def foreachString(f: String => Unit):           Unit = f(name)
-  def foreachInfo(f:   Info => Unit):             Unit = f(info)
+  def foreachStmt(f:   Statement => Unit):  Unit = ()
+  def foreachExpr(f:   Expression => Unit): Unit = ()
+  def foreachType(f:   Type => Unit):       Unit = f(tpe)
+  def foreachString(f: String => Unit):     Unit = f(name)
+  def foreachInfo(f:   Info => Unit):       Unit = f(info)
 }
 case class DefRegister(
   info:  Info,
@@ -518,12 +478,6 @@ case class DefRegister(
     with IsDeclaration
     with CanBeReferenced
     with UseSerializer {
-  def mapStmt(f: Statement => Statement): Statement = this
-  def mapExpr(f: Expression => Expression): Statement =
-    DefRegister(info, name, tpe, f(clock), f(reset), f(init))
-  def mapType(f:     Type => Type):      Statement = this.copy(tpe = f(tpe))
-  def mapString(f:   String => String):  Statement = this.copy(name = f(name))
-  def mapInfo(f:     Info => Info):      Statement = this.copy(info = f(info))
   def foreachStmt(f: Statement => Unit): Unit = ()
   def foreachExpr(f: Expression => Unit): Unit = { f(clock); f(reset); f(init) }
   def foreachType(f:   Type => Unit):   Unit = f(tpe)
@@ -540,16 +494,11 @@ case class DefInstance(info: Info, name: String, module: String, tpe: Type = Unk
     with IsDeclaration
     with CanBeReferenced
     with UseSerializer {
-  def mapExpr(f:       Expression => Expression): Statement = this
-  def mapStmt(f:       Statement => Statement):   Statement = this
-  def mapType(f:       Type => Type):             Statement = this.copy(tpe = f(tpe))
-  def mapString(f:     String => String):         Statement = this.copy(name = f(name))
-  def mapInfo(f:       Info => Info):             Statement = this.copy(f(info))
-  def foreachStmt(f:   Statement => Unit):        Unit = ()
-  def foreachExpr(f:   Expression => Unit):       Unit = ()
-  def foreachType(f:   Type => Unit):             Unit = f(tpe)
-  def foreachString(f: String => Unit):           Unit = f(name)
-  def foreachInfo(f:   Info => Unit):             Unit = f(info)
+  def foreachStmt(f:   Statement => Unit):  Unit = ()
+  def foreachExpr(f:   Expression => Unit): Unit = ()
+  def foreachType(f:   Type => Unit):       Unit = f(tpe)
+  def foreachString(f: String => Unit):     Unit = f(name)
+  def foreachInfo(f:   Info => Unit):       Unit = f(info)
 }
 
 object ReadUnderWrite extends Enumeration {
@@ -574,32 +523,22 @@ case class DefMemory(
     with IsDeclaration
     with CanBeReferenced
     with UseSerializer {
-  def mapStmt(f:       Statement => Statement):   Statement = this
-  def mapExpr(f:       Expression => Expression): Statement = this
-  def mapType(f:       Type => Type):             Statement = this.copy(dataType = f(dataType))
-  def mapString(f:     String => String):         Statement = this.copy(name = f(name))
-  def mapInfo(f:       Info => Info):             Statement = this.copy(info = f(info))
-  def foreachStmt(f:   Statement => Unit):        Unit = ()
-  def foreachExpr(f:   Expression => Unit):       Unit = ()
-  def foreachType(f:   Type => Unit):             Unit = f(dataType)
-  def foreachString(f: String => Unit):           Unit = f(name)
-  def foreachInfo(f:   Info => Unit):             Unit = f(info)
+  def foreachStmt(f:   Statement => Unit):  Unit = ()
+  def foreachExpr(f:   Expression => Unit): Unit = ()
+  def foreachType(f:   Type => Unit):       Unit = f(dataType)
+  def foreachString(f: String => Unit):     Unit = f(name)
+  def foreachInfo(f:   Info => Unit):       Unit = f(info)
 }
 case class DefNode(info: Info, name: String, value: Expression)
     extends Statement
     with IsDeclaration
     with CanBeReferenced
     with UseSerializer {
-  def mapStmt(f:       Statement => Statement):   Statement = this
-  def mapExpr(f:       Expression => Expression): Statement = DefNode(info, name, f(value))
-  def mapType(f:       Type => Type):             Statement = this
-  def mapString(f:     String => String):         Statement = DefNode(info, f(name), value)
-  def mapInfo(f:       Info => Info):             Statement = this.copy(info = f(info))
-  def foreachStmt(f:   Statement => Unit):        Unit = ()
-  def foreachExpr(f:   Expression => Unit):       Unit = f(value)
-  def foreachType(f:   Type => Unit):             Unit = ()
-  def foreachString(f: String => Unit):           Unit = f(name)
-  def foreachInfo(f:   Info => Unit):             Unit = f(info)
+  def foreachStmt(f:   Statement => Unit):  Unit = ()
+  def foreachExpr(f:   Expression => Unit): Unit = f(value)
+  def foreachType(f:   Type => Unit):       Unit = ()
+  def foreachString(f: String => Unit):     Unit = f(name)
+  def foreachInfo(f:   Info => Unit):       Unit = f(info)
 }
 case class Conditionally(
   info:   Info,
@@ -609,11 +548,6 @@ case class Conditionally(
     extends Statement
     with HasInfo
     with UseSerializer {
-  def mapStmt(f:   Statement => Statement):   Statement = Conditionally(info, pred, f(conseq), f(alt))
-  def mapExpr(f:   Expression => Expression): Statement = Conditionally(info, f(pred), conseq, alt)
-  def mapType(f:   Type => Type):             Statement = this
-  def mapString(f: String => String):         Statement = this
-  def mapInfo(f:   Info => Info):             Statement = this.copy(info = f(info))
   def foreachStmt(f: Statement => Unit): Unit = { f(conseq); f(alt) }
   def foreachExpr(f:   Expression => Unit): Unit = f(pred)
   def foreachType(f:   Type => Unit):       Unit = ()
@@ -626,85 +560,42 @@ object Block {
 }
 
 case class Block(stmts: Seq[Statement]) extends Statement with UseSerializer {
-  def mapStmt(f: Statement => Statement): Statement = {
-    val res = new scala.collection.mutable.ArrayBuffer[Statement]()
-    var its = stmts.iterator :: Nil
-    while (its.nonEmpty) {
-      val it = its.head
-      if (it.hasNext) {
-        it.next() match {
-          case EmptyStmt => // flatten out
-          case b: Block =>
-            its = b.stmts.iterator :: its
-          case other =>
-            res.append(f(other))
-        }
-      } else {
-        its = its.tail
-      }
-    }
-    Block(res.toSeq)
-  }
-  def mapExpr(f:       Expression => Expression): Statement = this
-  def mapType(f:       Type => Type):             Statement = this
-  def mapString(f:     String => String):         Statement = this
-  def mapInfo(f:       Info => Info):             Statement = this
-  def foreachStmt(f:   Statement => Unit):        Unit = stmts.foreach(f)
-  def foreachExpr(f:   Expression => Unit):       Unit = ()
-  def foreachType(f:   Type => Unit):             Unit = ()
-  def foreachString(f: String => Unit):           Unit = ()
-  def foreachInfo(f:   Info => Unit):             Unit = ()
+  def foreachStmt(f:   Statement => Unit):  Unit = stmts.foreach(f)
+  def foreachExpr(f:   Expression => Unit): Unit = ()
+  def foreachType(f:   Type => Unit):       Unit = ()
+  def foreachString(f: String => Unit):     Unit = ()
+  def foreachInfo(f:   Info => Unit):       Unit = ()
 }
 case class PartialConnect(info: Info, loc: Expression, expr: Expression)
     extends Statement
     with HasInfo
     with UseSerializer {
-  def mapStmt(f:     Statement => Statement):   Statement = this
-  def mapExpr(f:     Expression => Expression): Statement = PartialConnect(info, f(loc), f(expr))
-  def mapType(f:     Type => Type):             Statement = this
-  def mapString(f:   String => String):         Statement = this
-  def mapInfo(f:     Info => Info):             Statement = this.copy(info = f(info))
-  def foreachStmt(f: Statement => Unit):        Unit = ()
+  def foreachStmt(f: Statement => Unit): Unit = ()
   def foreachExpr(f: Expression => Unit): Unit = { f(loc); f(expr) }
   def foreachType(f:   Type => Unit):   Unit = ()
   def foreachString(f: String => Unit): Unit = ()
   def foreachInfo(f:   Info => Unit):   Unit = f(info)
 }
 case class Connect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer {
-  def mapStmt(f:     Statement => Statement):   Statement = this
-  def mapExpr(f:     Expression => Expression): Statement = Connect(info, f(loc), f(expr))
-  def mapType(f:     Type => Type):             Statement = this
-  def mapString(f:   String => String):         Statement = this
-  def mapInfo(f:     Info => Info):             Statement = this.copy(info = f(info))
-  def foreachStmt(f: Statement => Unit):        Unit = ()
+  def foreachStmt(f: Statement => Unit): Unit = ()
   def foreachExpr(f: Expression => Unit): Unit = { f(loc); f(expr) }
   def foreachType(f:   Type => Unit):   Unit = ()
   def foreachString(f: String => Unit): Unit = ()
   def foreachInfo(f:   Info => Unit):   Unit = f(info)
 }
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo with UseSerializer {
-  def mapStmt(f:       Statement => Statement):   Statement = this
-  def mapExpr(f:       Expression => Expression): Statement = IsInvalid(info, f(expr))
-  def mapType(f:       Type => Type):             Statement = this
-  def mapString(f:     String => String):         Statement = this
-  def mapInfo(f:       Info => Info):             Statement = this.copy(info = f(info))
-  def foreachStmt(f:   Statement => Unit):        Unit = ()
-  def foreachExpr(f:   Expression => Unit):       Unit = f(expr)
-  def foreachType(f:   Type => Unit):             Unit = ()
-  def foreachString(f: String => Unit):           Unit = ()
-  def foreachInfo(f:   Info => Unit):             Unit = f(info)
+  def foreachStmt(f:   Statement => Unit):  Unit = ()
+  def foreachExpr(f:   Expression => Unit): Unit = f(expr)
+  def foreachType(f:   Type => Unit):       Unit = ()
+  def foreachString(f: String => Unit):     Unit = ()
+  def foreachInfo(f:   Info => Unit):       Unit = f(info)
 }
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo with UseSerializer {
-  def mapStmt(f:       Statement => Statement):   Statement = this
-  def mapExpr(f:       Expression => Expression): Statement = Attach(info, exprs.map(f))
-  def mapType(f:       Type => Type):             Statement = this
-  def mapString(f:     String => String):         Statement = this
-  def mapInfo(f:       Info => Info):             Statement = this.copy(info = f(info))
-  def foreachStmt(f:   Statement => Unit):        Unit = ()
-  def foreachExpr(f:   Expression => Unit):       Unit = exprs.foreach(f)
-  def foreachType(f:   Type => Unit):             Unit = ()
-  def foreachString(f: String => Unit):           Unit = ()
-  def foreachInfo(f:   Info => Unit):             Unit = f(info)
+  def foreachStmt(f:   Statement => Unit):  Unit = ()
+  def foreachExpr(f:   Expression => Unit): Unit = exprs.foreach(f)
+  def foreachType(f:   Type => Unit):       Unit = ()
+  def foreachString(f: String => Unit):     Unit = ()
+  def foreachInfo(f:   Info => Unit):       Unit = f(info)
 }
 
 @data class Stop(info: Info, ret: Int, clk: Expression, en: Expression, @since("FIRRTL 1.5") name: String = "")
@@ -712,12 +603,7 @@ case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with Has
     with HasInfo
     with IsDeclaration
     with UseSerializer {
-  def mapStmt(f:     Statement => Statement):   Statement = this
-  def mapExpr(f:     Expression => Expression): Statement = Stop(info, ret, f(clk), f(en), name)
-  def mapType(f:     Type => Type):             Statement = this
-  def mapString(f:   String => String):         Statement = withName(f(name))
-  def mapInfo(f:     Info => Info):             Statement = this.copy(info = f(info))
-  def foreachStmt(f: Statement => Unit):        Unit = ()
+  def foreachStmt(f: Statement => Unit): Unit = ()
   def foreachExpr(f: Expression => Unit): Unit = { f(clk); f(en) }
   def foreachType(f:   Type => Unit):   Unit = ()
   def foreachString(f: String => Unit): Unit = f(name)
@@ -743,12 +629,7 @@ object Stop {
     with HasInfo
     with IsDeclaration
     with UseSerializer {
-  def mapStmt(f:     Statement => Statement):   Statement = this
-  def mapExpr(f:     Expression => Expression): Statement = Print(info, string, args.map(f), f(clk), f(en), name)
-  def mapType(f:     Type => Type):             Statement = this
-  def mapString(f:   String => String):         Statement = withName(f(name))
-  def mapInfo(f:     Info => Info):             Statement = this.copy(info = f(info))
-  def foreachStmt(f: Statement => Unit):        Unit = ()
+  def foreachStmt(f: Statement => Unit): Unit = ()
   def foreachExpr(f: Expression => Unit): Unit = { args.foreach(f); f(clk); f(en) }
   def foreachType(f:   Type => Unit):   Unit = ()
   def foreachString(f: String => Unit): Unit = f(name)
@@ -789,12 +670,6 @@ object Formal extends Enumeration {
     with HasInfo
     with IsDeclaration
     with UseSerializer {
-  def mapStmt(f: Statement => Statement): Statement = this
-  def mapExpr(f: Expression => Expression): Statement =
-    copy(clk = f(clk), pred = f(pred), en = f(en))
-  def mapType(f:     Type => Type):      Statement = this
-  def mapString(f:   String => String):  Statement = withName(f(name))
-  def mapInfo(f:     Info => Info):      Statement = copy(info = f(info))
   def foreachStmt(f: Statement => Unit): Unit = ()
   def foreachExpr(f: Expression => Unit): Unit = { f(clk); f(pred); f(en); }
   def foreachType(f:   Type => Unit):   Unit = ()
@@ -819,16 +694,11 @@ object Verification {
 // end formal
 
 case object EmptyStmt extends Statement with UseSerializer {
-  def mapStmt(f:       Statement => Statement):   Statement = this
-  def mapExpr(f:       Expression => Expression): Statement = this
-  def mapType(f:       Type => Type):             Statement = this
-  def mapString(f:     String => String):         Statement = this
-  def mapInfo(f:       Info => Info):             Statement = this
-  def foreachStmt(f:   Statement => Unit):        Unit = ()
-  def foreachExpr(f:   Expression => Unit):       Unit = ()
-  def foreachType(f:   Type => Unit):             Unit = ()
-  def foreachString(f: String => Unit):           Unit = ()
-  def foreachInfo(f:   Info => Unit):             Unit = ()
+  def foreachStmt(f:   Statement => Unit):  Unit = ()
+  def foreachExpr(f:   Expression => Unit): Unit = ()
+  def foreachType(f:   Type => Unit):       Unit = ()
+  def foreachString(f: String => Unit):     Unit = ()
+  def foreachInfo(f:   Info => Unit):       Unit = ()
 }
 
 abstract class Width extends FirrtlNode {
@@ -967,66 +837,51 @@ case class Closed(value: BigDecimal) extends IsKnown with Bound {
 
 /** Types of [[FirrtlNode]] */
 abstract class Type extends FirrtlNode {
-  def mapType(f:      Type => Type):   Type
-  def mapWidth(f:     Width => Width): Type
-  def foreachType(f:  Type => Unit):   Unit
-  def foreachWidth(f: Width => Unit):  Unit
+  def foreachType(f:  Type => Unit):  Unit
+  def foreachWidth(f: Width => Unit): Unit
 }
 abstract class GroundType extends Type {
   val width: Width
-  def mapType(f:     Type => Type): Type = this
   def foreachType(f: Type => Unit): Unit = ()
 }
 object GroundType {
   def unapply(ground: GroundType): Option[Width] = Some(ground.width)
 }
 abstract class AggregateType extends Type {
-  def mapWidth(f:     Width => Width): Type = this
-  def foreachWidth(f: Width => Unit):  Unit = ()
+  def foreachWidth(f: Width => Unit): Unit = ()
 }
 case class UIntType(width: Width) extends GroundType with UseSerializer {
-  def mapWidth(f:     Width => Width): Type = UIntType(f(width))
-  def foreachWidth(f: Width => Unit):  Unit = f(width)
+  def foreachWidth(f: Width => Unit): Unit = f(width)
 }
 case class SIntType(width: Width) extends GroundType with UseSerializer {
-  def mapWidth(f:     Width => Width): Type = SIntType(f(width))
-  def foreachWidth(f: Width => Unit):  Unit = f(width)
+  def foreachWidth(f: Width => Unit): Unit = f(width)
 }
 
 case class BundleType(fields: Seq[Field]) extends AggregateType with UseSerializer {
-  def mapType(f: Type => Type): Type =
-    BundleType(fields.map(x => x.copy(tpe = f(x.tpe))))
   def foreachType(f: Type => Unit): Unit = fields.foreach { x => f(x.tpe) }
 }
 case class VectorType(tpe: Type, size: Int) extends AggregateType with UseSerializer {
-  def mapType(f:     Type => Type): Type = this.copy(tpe = f(tpe))
   def foreachType(f: Type => Unit): Unit = f(tpe)
 }
 case object ClockType extends GroundType with UseSerializer {
   val width = IntWidth(1)
-  def mapWidth(f:     Width => Width): Type = this
-  def foreachWidth(f: Width => Unit):  Unit = ()
+  def foreachWidth(f: Width => Unit): Unit = ()
 }
 /* Abstract reset, will be inferred to UInt<1> or AsyncReset */
 case object ResetType extends GroundType with UseSerializer {
   val width = IntWidth(1)
-  def mapWidth(f:     Width => Width): Type = this
-  def foreachWidth(f: Width => Unit):  Unit = ()
+  def foreachWidth(f: Width => Unit): Unit = ()
 }
 case object AsyncResetType extends GroundType with UseSerializer {
   val width = IntWidth(1)
-  def mapWidth(f:     Width => Width): Type = this
-  def foreachWidth(f: Width => Unit):  Unit = ()
+  def foreachWidth(f: Width => Unit): Unit = ()
 }
 case class AnalogType(width: Width) extends GroundType with UseSerializer {
-  def mapWidth(f:     Width => Width): Type = AnalogType(f(width))
-  def foreachWidth(f: Width => Unit):  Unit = f(width)
+  def foreachWidth(f: Width => Unit): Unit = f(width)
 }
 case object UnknownType extends Type with UseSerializer {
-  def mapType(f:      Type => Type):   Type = this
-  def mapWidth(f:     Width => Width): Type = this
-  def foreachType(f:  Type => Unit):   Unit = ()
-  def foreachWidth(f: Width => Unit):  Unit = ()
+  def foreachType(f:  Type => Unit):  Unit = ()
+  def foreachWidth(f: Width => Unit): Unit = ()
 }
 
 /** [[Port]] Direction */
@@ -1047,10 +902,7 @@ case class Port(
     extends FirrtlNode
     with IsDeclaration
     with CanBeReferenced
-    with UseSerializer {
-  def mapType(f:   Type => Type):     Port = Port(info, name, direction, f(tpe))
-  def mapString(f: String => String): Port = Port(info, f(name), direction, tpe)
-}
+    with UseSerializer {}
 
 /** Parameters for external modules */
 sealed abstract class Param extends FirrtlNode {
@@ -1077,14 +929,10 @@ abstract class DefModule extends FirrtlNode with IsDeclaration {
   val info:  Info
   val name:  String
   val ports: Seq[Port]
-  def mapStmt(f:       Statement => Statement): DefModule
-  def mapPort(f:       Port => Port):           DefModule
-  def mapString(f:     String => String):       DefModule
-  def mapInfo(f:       Info => Info):           DefModule
-  def foreachStmt(f:   Statement => Unit):      Unit
-  def foreachPort(f:   Port => Unit):           Unit
-  def foreachString(f: String => Unit):         Unit
-  def foreachInfo(f:   Info => Unit):           Unit
+  def foreachStmt(f:   Statement => Unit): Unit
+  def foreachPort(f:   Port => Unit):      Unit
+  def foreachString(f: String => Unit):    Unit
+  def foreachInfo(f:   Info => Unit):      Unit
 }
 
 /** Internal Module
@@ -1092,14 +940,10 @@ abstract class DefModule extends FirrtlNode with IsDeclaration {
   * An instantiable hardware block
   */
 case class Module(info: Info, name: String, ports: Seq[Port], body: Statement) extends DefModule with UseSerializer {
-  def mapStmt(f:       Statement => Statement): DefModule = this.copy(body = f(body))
-  def mapPort(f:       Port => Port):           DefModule = this.copy(ports = ports.map(f))
-  def mapString(f:     String => String):       DefModule = this.copy(name = f(name))
-  def mapInfo(f:       Info => Info):           DefModule = this.copy(f(info))
-  def foreachStmt(f:   Statement => Unit):      Unit = f(body)
-  def foreachPort(f:   Port => Unit):           Unit = ports.foreach(f)
-  def foreachString(f: String => Unit):         Unit = f(name)
-  def foreachInfo(f:   Info => Unit):           Unit = f(info)
+  def foreachStmt(f:   Statement => Unit): Unit = f(body)
+  def foreachPort(f:   Port => Unit):      Unit = ports.foreach(f)
+  def foreachString(f: String => Unit):    Unit = f(name)
+  def foreachInfo(f:   Info => Unit):      Unit = f(info)
 }
 
 /** External Module
@@ -1115,24 +959,17 @@ case class ExtModule(
   params:  Seq[Param])
     extends DefModule
     with UseSerializer {
-  def mapStmt(f:       Statement => Statement): DefModule = this
-  def mapPort(f:       Port => Port):           DefModule = this.copy(ports = ports.map(f))
-  def mapString(f:     String => String):       DefModule = this.copy(name = f(name))
-  def mapInfo(f:       Info => Info):           DefModule = this.copy(f(info))
-  def foreachStmt(f:   Statement => Unit):      Unit = ()
-  def foreachPort(f:   Port => Unit):           Unit = ports.foreach(f)
-  def foreachString(f: String => Unit):         Unit = f(name)
-  def foreachInfo(f:   Info => Unit):           Unit = f(info)
+  def foreachStmt(f:   Statement => Unit): Unit = ()
+  def foreachPort(f:   Port => Unit):      Unit = ports.foreach(f)
+  def foreachString(f: String => Unit):    Unit = f(name)
+  def foreachInfo(f:   Info => Unit):      Unit = f(info)
 }
 
 case class Circuit(info: Info, modules: Seq[DefModule], main: String)
     extends FirrtlNode
     with HasInfo
     with UseSerializer {
-  def mapModule(f:     DefModule => DefModule): Circuit = this.copy(modules = modules.map(f))
-  def mapString(f:     String => String):       Circuit = this.copy(main = f(main))
-  def mapInfo(f:       Info => Info):           Circuit = this.copy(f(info))
-  def foreachModule(f: DefModule => Unit):      Unit = modules.foreach(f)
-  def foreachString(f: String => Unit):         Unit = f(main)
-  def foreachInfo(f:   Info => Unit):           Unit = f(info)
+  def foreachModule(f: DefModule => Unit): Unit = modules.foreach(f)
+  def foreachString(f: String => Unit):    Unit = f(main)
+  def foreachInfo(f:   Info => Unit):      Unit = f(info)
 }
