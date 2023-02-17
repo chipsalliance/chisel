@@ -13,9 +13,6 @@ class FirrtlUserException(message: String, cause: Throwable = null)
     extends RuntimeException(message, cause)
     with NoStackTrace
 
-/** Wraps exceptions from CustomTransforms so they can be reported appropriately */
-case class CustomTransformException(cause: Throwable) extends Exception("", cause)
-
 /** Exception indicating something went wrong *within* Firrtl itself
   *
   * These exceptions indicate a problem inside the compiler and include a stack trace to help
