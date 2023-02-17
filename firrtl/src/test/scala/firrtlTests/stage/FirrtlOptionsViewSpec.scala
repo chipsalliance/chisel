@@ -14,12 +14,26 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
 
   behavior.of(FirrtlOptionsView.getClass.getName)
 
-  def circuitString(main: String): String = s"""|circuit $main:
-                                                |  module $main:
-                                                |    node x = UInt<1>("h0")
-                                                |""".stripMargin
+  def circuitIR(main: String): ir.Circuit = ir.Circuit(
+    ir.NoInfo,
+    Seq(
+      ir.Module(
+        ir.NoInfo,
+        main,
+        Seq.empty,
+        ir.Block(
+          ir.DefNode(
+            ir.NoInfo,
+            "x",
+            ir.UIntLiteral(0, ir.IntWidth(1))
+          )
+        )
+      )
+    ),
+    main
+  )
 
-  val grault: ir.Circuit = Parser.parse(circuitString("grault"))
+  val grault: ir.Circuit = circuitIR("grault")
 
   val annotations = Seq(
     /* FirrtlOptions */
@@ -40,7 +54,7 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
    * behavior, only that modifications to existing code will not change behavior that people may expect.
    */
   it should "overwrite or append to earlier annotation information with later annotation information" in {
-    val grault_ = Parser.parse(circuitString("thud_"))
+    val grault_ = circuitIR("thud_")
 
     val overwrites = Seq(
       OutputFileAnnotation("bar_"),

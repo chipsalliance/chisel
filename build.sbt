@@ -160,24 +160,14 @@ lazy val testAssemblySettings = Seq(
   Test / assembly / assemblyOutputPath := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
 )
 
-lazy val antlrSettings = Seq(
-  Antlr4 / antlr4GenVisitor := true,
-  Antlr4 / antlr4GenListener := true,
-  Antlr4 / antlr4PackageName := Option("firrtl.antlr"),
-  Antlr4 / antlr4Version := "4.9.3",
-  Antlr4 / javaSource := (Compile / sourceManaged).value
-)
-
 lazy val firrtl = (project in file("firrtl"))
   .enablePlugins(ScalaUnidocPlugin)
-  .enablePlugins(Antlr4Plugin)
   .settings(
     fork := true,
     Test / testForkedParallel := true
   )
   .settings(commonSettings)
   .settings(firrtlSettings)
-  .settings(antlrSettings)
   .settings(assemblySettings)
   .settings(inConfig(Test)(baseAssemblySettings))
   .settings(testAssemblySettings)
