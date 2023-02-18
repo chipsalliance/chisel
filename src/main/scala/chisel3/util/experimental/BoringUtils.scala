@@ -4,7 +4,7 @@ package chisel3.util.experimental
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
-import chisel3.internal.{NamedComponent, Namespace}
+import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
 import firrtl.annotations.{ComponentName, ModuleName}
@@ -98,19 +98,15 @@ class BoringUtilsException(message: String) extends Exception(message)
   */
 object BoringUtils {
   /* A global namespace for boring ids */
-  private val namespace: SyncVar[Namespace] = new SyncVar
-  namespace.put(Namespace.empty)
+  private[chisel3] case object CacheKey extends BuilderContextCache.Key[Namespace]
+  private def boringNamespace = Builder.contextCache.getOrElseUpdate(CacheKey, Namespace.empty)
 
   /* Get a new name (value) from the namespace */
   private def newName(value: String): String = {
-    val ns = namespace.take()
-    val valuex = ns.name(value)
-    namespace.put(ns)
-    valuex
+    boringNamespace.name(value)
   }
-
   /* True if the requested name (value) exists in the namespace */
-  private def checkName(value: String): Boolean = namespace.get.contains(value)
+  private def checkName(value: String): Boolean = boringNamespace.contains(value)
 
   /** Add a named source cross module reference
     * @param component source circuit component
@@ -199,5 +195,4 @@ object BoringUtils {
     sinks.foreach(addSink(_, genName, true, true))
     genName
   }
-
 }

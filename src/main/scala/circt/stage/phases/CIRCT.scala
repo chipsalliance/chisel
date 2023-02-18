@@ -24,6 +24,7 @@ import firrtl.options.phases.WriteOutputAnnotations
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
 import _root_.logger.LogLevel
+import chisel3.InternalErrorException
 
 import java.io.File
 
@@ -45,7 +46,7 @@ private object Helpers {
     */
   def extractAnnotationFile(string: String, filename: String): AnnotationSeq = {
     var inAnno = false
-    val filtered: String = string.lines.filter {
+    val filtered: String = string.linesIterator.filter {
       case line if line.startsWith("// ----- 8< ----- FILE") && line.contains(filename) =>
         inAnno = true
         false
@@ -282,6 +283,8 @@ class CIRCT extends Phase {
           throw new Exception(
             "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
           )
+        case unknown =>
+          throw new InternalErrorException(s"Match Error: Unknon CIRCTTarget: $unknown")
       })
     }
 

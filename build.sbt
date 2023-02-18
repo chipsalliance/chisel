@@ -35,6 +35,15 @@ lazy val commonSettings = Seq(
   }
 )
 
+lazy val fatalWarningsSettings = Seq(
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 => "-Werror" :: Nil
+      case _                       => Nil
+    }
+  }
+)
+
 lazy val warningSuppression = Seq(
   scalacOptions += "-Wconf:" + Seq(
     "msg=APIs in chisel3.internal:s",
@@ -181,6 +190,7 @@ lazy val core = (project in file("core"))
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
   .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     name := "chisel3-core",
     libraryDependencies ++= Seq(
@@ -212,6 +222,7 @@ lazy val chisel = (project in file("."))
   .dependsOn(core)
   .aggregate(macros, core, plugin)
   .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
@@ -263,6 +274,8 @@ lazy val integrationTests = (project in file("integration-tests"))
   .dependsOn(chisel)
   .dependsOn(standardLibrary)
   .settings(commonSettings: _*)
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(chiselSettings: _*)
   .settings(usePluginSettings: _*)
   .settings(
