@@ -96,11 +96,12 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         case acc: ValDef if acc.symbol.isParamAccessor =>
           paramAccessors += acc.symbol
         case con: DefDef if con.symbol.isPrimaryConstructor =>
-          if (con.symbol.isPrivate) { // distinguish between package private and private
-            val msg = "Private bundle constructors cannot automatically be cloned"
+          if (con.symbol.isPrivate) {
+            val msg = "Private bundle constructors cannot automatically be cloned, try making it package private"
             global.reporter.error(con.pos, msg)
+          } else {
+            primaryConstructor = Some(con)
           }
-          primaryConstructor = Some(con)
 
         case d: DefDef if isNullaryMethodNamed("_cloneTypeImpl", d) =>
           val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it."
