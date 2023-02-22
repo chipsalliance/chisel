@@ -38,7 +38,13 @@ lazy val commonSettings = Seq(
 lazy val fatalWarningsSettings = Seq(
   scalacOptions ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 => "-Werror" :: Nil
+      case Some((2, n)) if n >= 13 =>
+          if (sys.props.contains("disableFatalWarnings")) {
+            Nil
+          } else {
+            "-Werror" :: Nil
+          }
+
       case _                       => Nil
     }
   }
@@ -144,7 +150,6 @@ lazy val plugin = (project in file("plugin"))
   .settings(publishSettings: _*)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    scalacOptions += "-Xfatal-warnings",
     crossScalaVersions := pluginScalaVersions,
     // Must be published for Scala minor version
     crossVersion := CrossVersion.full,
@@ -153,6 +158,7 @@ lazy val plugin = (project in file("plugin"))
       target.value / s"scala-${scalaVersion.value}"
     }
   )
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := {
       Set()
@@ -299,7 +305,6 @@ lazy val docs = project // new documentation project
   .settings(commonSettings)
   .settings(
     scalacOptions ++= Seq(
-      "-Xfatal-warnings",
       "-language:reflectiveCalls",
       "-language:implicitConversions",
       "-Wconf:msg=firrtl:s"
@@ -312,6 +317,7 @@ lazy val docs = project // new documentation project
       "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )
   )
+  .settings(fatalWarningsSettings: _*)
 
 addCommandAlias("com", "all compile")
 addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
