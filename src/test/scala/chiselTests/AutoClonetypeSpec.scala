@@ -441,4 +441,19 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     }
     elaborate(new MyModule)
   }
+
+  it should "compile with package private default bundle constructors" in {
+    class PrivateDefaultConsBundle private[chiselTests] (w: Int) extends Bundle {
+      val x = UInt(w.W)
+    }
+    object PrivateDefaultConsBundle {
+      def apply(w: Int): PrivateDefaultConsBundle = new PrivateDefaultConsBundle(w)
+    }
+    class MyModule extends Module {
+      val in = IO(Input(PrivateDefaultConsBundle(8)))
+      val out = IO(Output(PrivateDefaultConsBundle(8)))
+      out := in
+    }
+    elaborate(new MyModule)
+  }
 }
