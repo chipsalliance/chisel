@@ -405,9 +405,10 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     Seq(
       grabLog(ChiselStage.elaborate(new TooWide)),
       grabLog(ChiselStage.elaborate(new TooNarrow)),
-      grabLog(ChiselStage.elaborate(new IndexBool)),
-    ).foreach { case (log, _) =>
-      log should include("warn")
+      grabLog(ChiselStage.elaborate(new IndexBool))
+    ).foreach {
+      case (log, _) =>
+        log should include("warn")
     }
 
     class Ok extends Module {
@@ -423,9 +424,10 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     }
 
     Seq(
-      grabLog(ChiselStage.elaborate(new Ok)),
-    ).foreach { case (log, _) =>
-      log should be ("")
+      grabLog(ChiselStage.elaborate(new Ok))
+    ).foreach {
+      case (log, _) =>
+        log should be("")
     }
   }
 }

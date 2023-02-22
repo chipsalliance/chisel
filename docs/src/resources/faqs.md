@@ -19,6 +19,7 @@ section: "chisel3"
 * [Why doesn't Chisel tell me which wires aren't connected?](#why-doesnt-chisel-tell-me-which-wires-arent-connected)
 * [What does `Reference ... is not fully initialized.` mean?](#what-does-reference--is-not-fully-initialized-mean)
 * [Can I specify behavior before and after generated initial blocks?](#can-i-specify-behavior-before-and-after-generated-initial-blocks)
+* [How can I resolve `Dynamic index ... is too wide/narrow`?](#how-can-i-resolve-dynamic-index--is-too-wide-narrow)
 
 ### Where should I start if I want to learn Chisel?
 
@@ -216,3 +217,26 @@ Users may define the following macros if they wish to specify behavior before or
 * `AFTER_INITIAL`, which is called after the emitted (non-empty) initial block if it is defined
 
 These macros may be useful for turning coverage on and off.
+
+### How can I resolve `Dynamic index ... is too wide/narrow`?
+
+If the index is too narrow you can use `.pad` to increase the width.
+```scala
+  val extractee = Wire(UInt(extracteeWidth.W))
+  val index = Wire(UInt(indexWidth.W))
+  extractee(index.pad(log2Up(extracteeWidth)))
+```
+
+If the index is too wide you can use a bit extract to select the correct bits.
+```scala
+  val extractee = Wire(UInt(extracteeWidth.W))
+  val index = Wire(UInt(indexWidth.W))
+  extractee(index(log2Up(extracteeWidth) - 1, 0))
+```
+
+Or use both if you are working on a generator where the widths may be too wide or too narrow under different circumstances.
+```scala
+  val extractee = Wire(UInt(extracteeWidth.W))
+  val index = Wire(UInt(indexWidth.W))
+  extractee(index.pad(log2Up)(log2Up(extracteeWidth) - 1, 0))
+```
