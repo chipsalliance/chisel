@@ -131,6 +131,9 @@ jobs:
           gem install jekyll-redirect-from
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
+        #TODO: make the microsite building include building ScalaDoc
+      - name: Build the docs
+        run: sbt -DdisableFatalWarnings doc
       - name: Build the microsite
         run: make -C website
         env:
@@ -200,7 +203,7 @@ jobs:
       - name: Setup GPG (for Publish)
         uses: olafurpg/setup-gpg@v3
       - name: Publish
-        run: sbt ci-release
+        run: sbt -DdisableFatalWarnings ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
