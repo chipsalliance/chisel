@@ -381,4 +381,51 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
       WireDefault(chiselTypeOf(op), op)
     }
   }
+
+  property("emit warning if dynamic index is too wide or too narrow") {
+    class TooWide extends Module {
+      val in = IO(Input(UInt(2.W)))
+      val index = IO(Input(UInt(2.W)))
+      val out = IO(Output(Bool()))
+      out := in(index)
+    }
+    class TooNarrow extends Module {
+      val in = IO(Input(UInt(3.W)))
+      val index = IO(Input(UInt(1.W)))
+      val out = IO(Output(Bool()))
+      out := in(index)
+    }
+    class IndexBool extends Module {
+      val in = IO(Input(Bool()))
+      val index = IO(Input(UInt(0.W)))
+      val out = IO(Output(Bool()))
+      out := in(index)
+    }
+
+    Seq(
+      grabLog(ChiselStage.elaborate(new TooWide)),
+      grabLog(ChiselStage.elaborate(new TooNarrow)),
+      grabLog(ChiselStage.elaborate(new IndexBool)),
+    ).foreach { case (log, _) =>
+      log should include("warn")
+    }
+
+    class Ok extends Module {
+      val in1 = IO(Input(UInt(9.W)))
+      val index1 = IO(Input(UInt(4.W)))
+      val out1 = IO(Output(Bool()))
+      out1 := in1(index1)
+
+      val in2 = IO(Input(UInt(8.W)))
+      val index2 = IO(Input(UInt(3.W)))
+      val out2 = IO(Output(Bool()))
+      out2 := in2(index2)
+    }
+
+    Seq(
+      grabLog(ChiselStage.elaborate(new Ok)),
+    ).foreach { case (log, _) =>
+      log should be ("")
+    }
+  }
 }
