@@ -35,7 +35,7 @@ lazy val commonSettings = Seq(
   }
 )
 
-lazy val disableFatalWarnings = Seq(
+lazy val fatalWarningsSettings = Seq(
   scalacOptions ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 =>
@@ -158,7 +158,7 @@ lazy val plugin = (project in file("plugin"))
       target.value / s"scala-${scalaVersion.value}"
     }
   )
-  .settings(disableFatalWarnings: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := {
       Set()
@@ -196,7 +196,7 @@ lazy val core = (project in file("core"))
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
   .settings(warningSuppression: _*)
-  .settings(disableFatalWarnings: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     name := "chisel3-core",
     libraryDependencies ++= Seq(
@@ -228,7 +228,7 @@ lazy val chisel = (project in file("."))
   .dependsOn(core)
   .aggregate(macros, core, plugin)
   .settings(warningSuppression: _*)
-  .settings(disableFatalWarnings: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
@@ -281,7 +281,7 @@ lazy val integrationTests = (project in file("integration-tests"))
   .dependsOn(standardLibrary)
   .settings(commonSettings: _*)
   .settings(warningSuppression: _*)
-  .settings(disableFatalWarnings: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(chiselSettings: _*)
   .settings(usePluginSettings: _*)
   .settings(
@@ -317,7 +317,7 @@ lazy val docs = project // new documentation project
       "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )
   )
-  .settings(disableFatalWarnings: _*)
+  .settings(fatalWarningsSettings: _*)
 
 addCommandAlias("com", "all compile")
 addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
