@@ -19,7 +19,7 @@ section: "chisel3"
 * [Why doesn't Chisel tell me which wires aren't connected?](#why-doesnt-chisel-tell-me-which-wires-arent-connected)
 * [What does `Reference ... is not fully initialized.` mean?](#what-does-reference--is-not-fully-initialized-mean)
 * [Can I specify behavior before and after generated initial blocks?](#can-i-specify-behavior-before-and-after-generated-initial-blocks)
-* [How can I resolve `Dynamic index ... is too wide/narrow`?](#how-can-i-resolve-dynamic-index--is-too-wide-narrow)
+* [How can I resolve `Dynamic index ... is too wide/narrow`?](#how-can-i-resolve-dynamic-index--is-too-widenarrow)
 
 ### Where should I start if I want to learn Chisel?
 
