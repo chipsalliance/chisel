@@ -92,14 +92,14 @@ object Serializer {
   private def s(str: StringLit)(implicit b: StringBuilder, indent: Int): Unit = b ++= str.serialize
 
   private def s(node: Expression)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case Reference(name, _, _, _) => b ++= name
+    case Reference(name, _) => b ++= name
     case DoPrim(op, args, consts, _) =>
       b ++= op.toString; b += '('; s(args, ", ", consts.isEmpty); s(consts, ", "); b += ')'
     case UIntLiteral(value, width) =>
       b ++= "UInt"; s(width); b ++= "(\"h"; b ++= value.toString(16); b ++= "\")"
-    case SubField(expr, name, _, _)   => s(expr); b += '.'; b ++= name
-    case SubIndex(expr, value, _, _)  => s(expr); b += '['; b ++= value.toString; b += ']'
-    case SubAccess(expr, index, _, _) => s(expr); b += '['; s(index); b += ']'
+    case SubField(expr, name, _)   => s(expr); b += '.'; b ++= name
+    case SubIndex(expr, value, _)  => s(expr); b += '['; b ++= value.toString; b += ']'
+    case SubAccess(expr, index, _) => s(expr); b += '['; s(index); b += ']'
     case Mux(cond, tval, fval, _) =>
       b ++= "mux("; s(cond); b ++= ", "; s(tval); b ++= ", "; s(fval); b += ')'
     case ValidIf(cond, value, _) => b ++= "validif("; s(cond); b ++= ", "; s(value); b += ')'

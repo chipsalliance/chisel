@@ -4,23 +4,6 @@ package firrtl
 
 import firrtl.ir._
 
-trait Kind
-case object WireKind extends Kind
-case object PoisonKind extends Kind
-case object RegKind extends Kind
-case object InstanceKind extends Kind
-case object PortKind extends Kind
-case object NodeKind extends Kind
-case object MemKind extends Kind
-case object ExpKind extends Kind
-case object UnknownKind extends Kind
-
-trait Flow
-case object SourceFlow extends Flow
-case object SinkFlow extends Flow
-case object DuplexFlow extends Flow
-case object UnknownFlow extends Flow
-
 abstract class MPortDir extends FirrtlNode
 case object MInfer extends MPortDir {
   def serialize: String = "infer"
