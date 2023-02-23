@@ -3,7 +3,6 @@
 package firrtl
 package ir
 
-import Utils.{dec2string, trim}
 import dataclass.{data, since}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
