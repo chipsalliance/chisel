@@ -3,7 +3,6 @@
 package firrtl.ir
 
 import firrtl.Utils
-import firrtl.constraint.Constraint
 
 case class Version(major: Int, minor: Int, patch: Int) {
   def serialize: String = s"$major.$minor.$patch"
@@ -68,13 +67,6 @@ object Serializer {
       case n: Circuit   => sIt(n)(indent)
       case other => Iterator(serialize(other, indent))
     }
-  }
-
-  /** Converts a `Constraint` into its string representation. */
-  def serialize(con: Constraint): String = {
-    val builder = new StringBuilder()
-    s(con)(builder)
-    builder.toString()
   }
 
   private def flattenInfo(infos: Seq[Info]): Seq[FileInfo] = infos.flatMap {
@@ -307,16 +299,12 @@ object Serializer {
   private def s(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case IntWidth(width) => b += '<'; b ++= width.toString(); b += '>'
     case UnknownWidth    => // empty string
-    case CalcWidth(arg)  => b ++= "calcw("; s(arg); b += ')'
-    case VarWidth(name)  => b += '<'; b ++= name; b += '>'
     case other           => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def sPoint(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case IntWidth(width) => b ++= "<<"; b ++= width.toString(); b ++= ">>"
     case UnknownWidth    => // empty string
-    case CalcWidth(arg)  => b ++= "calcw("; s(arg); b += ')'
-    case VarWidth(name)  => b ++= "<<"; b ++= name; b ++= ">>"
     case other           => b ++= other.serialize // Handle user-defined nodes
   }
 
@@ -402,17 +390,6 @@ object Serializer {
             newline ++ sIt(m)(indent + 1)
         } ++
         Iterator(s"$NewLine")
-  }
-
-  // serialize constraints
-  private def s(const: Constraint)(implicit b: StringBuilder): Unit = const match {
-    // Bounds
-    case UnknownBound   => b += '?'
-    case CalcBound(arg) => b ++= "calcb("; s(arg); b += ')'
-    case VarBound(name) => b ++= name
-    case Open(value)    => b ++ "o("; b ++= value.toString; b += ')'
-    case Closed(value)  => b ++ "c("; b ++= value.toString; b += ')'
-    case other          => b ++= other.serialize // Handle user-defined nodes
   }
 
   /** create a new line with the appropriate indent */

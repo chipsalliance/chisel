@@ -15,7 +15,6 @@ import chisel3.internal.sourceinfo.{
 }
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
-import _root_.firrtl.{constraint => firrtlconstraint}
 import chisel3.internal.{castToInt, Builder}
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
