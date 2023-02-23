@@ -44,7 +44,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
   /** A stable typeName for this `ReadyValidIO` and any of its implementations
     * using the supplied `Data` generator's `typeName`
     */
-  override def typeName = s"${this.getClass.simpleName}_${gen.typeName}"
+  override def typeName = s"${this.getClass.getSimpleName}_${gen.typeName}"
 }
 
 object ReadyValidIO {
