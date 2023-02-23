@@ -4,8 +4,6 @@ package chisel3
 
 import chisel3.internal.firrtl.{KnownWidth, ULit, UnknownWidth, Width}
 import firrtl.Utils
-import firrtl.constraint.IsKnown
-import firrtl.ir.{Closed, IntWidth, Open}
 
 // This is currently a factory because both Bits and UInt inherit it.
 trait UIntFactory {

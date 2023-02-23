@@ -5,7 +5,6 @@ package ir
 
 import Utils.{dec2string, trim}
 import dataclass.{data, since}
-import firrtl.constraint.{Constraint, IsKnown, IsVar}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
 import scala.collection.JavaConverters._
@@ -625,12 +624,6 @@ class IntWidth(val width: BigInt) extends Width with Product with UseSerializer 
 }
 case object UnknownWidth extends Width with UseSerializer
 
-case class CalcWidth(arg: Constraint) extends Width with UseSerializer
-
-case class VarWidth(name: String) extends Width with IsVar {
-  override def serialize: String = name
-}
-
 /** Orientation of [[Field]] */
 abstract class Orientation extends FirrtlNode
 case object Default extends Orientation {
@@ -642,67 +635,6 @@ case object Flip extends Orientation {
 
 /** Field of [[BundleType]] */
 case class Field(name: String, flip: Orientation, tpe: Type) extends FirrtlNode with HasName with UseSerializer
-
-/** Bounds of [[IntervalType]] */
-
-trait Bound extends Constraint
-case object UnknownBound extends Bound {
-  def serialize: String = Serializer.serialize(this)
-  def map(f: Constraint => Constraint): Constraint = this
-  override def reduce(): Constraint = this
-  val children = Vector()
-}
-case class CalcBound(arg: Constraint) extends Bound {
-  def serialize: String = Serializer.serialize(this)
-  def map(f: Constraint => Constraint): Constraint = f(arg)
-  override def reduce(): Constraint = arg
-  val children = Vector(arg)
-}
-case class VarBound(name: String) extends IsVar with Bound {
-  override def serialize: String = Serializer.serialize(this)
-}
-object KnownBound {
-  def unapply(b: Constraint): Option[BigDecimal] = b match {
-    case k: IsKnown => Some(k.value)
-    case _ => None
-  }
-  def unapply(b: Bound): Option[BigDecimal] = b match {
-    case k: IsKnown => Some(k.value)
-    case _ => None
-  }
-}
-case class Open(value: BigDecimal) extends IsKnown with Bound {
-  def serialize: String = Serializer.serialize(this)
-  def +(that: IsKnown): IsKnown = Open(value + that.value)
-  def *(that: IsKnown): IsKnown = that match {
-    case Closed(x) if x == 0 => Closed(x)
-    case _                   => Open(value * that.value)
-  }
-  def min(that: IsKnown): IsKnown = if (value < that.value) this else that
-  def max(that: IsKnown): IsKnown = if (value > that.value) this else that
-  def neg:   IsKnown = Open(-value)
-  def floor: IsKnown = Open(value.setScale(0, BigDecimal.RoundingMode.FLOOR))
-  def pow: IsKnown =
-    if (value.isBinaryDouble) Open(BigDecimal(BigInt(1) << value.toInt)) else sys.error("Shouldn't be here")
-}
-case class Closed(value: BigDecimal) extends IsKnown with Bound {
-  def serialize: String = Serializer.serialize(this)
-  def +(that: IsKnown): IsKnown = that match {
-    case Open(x)   => Open(value + x)
-    case Closed(x) => Closed(value + x)
-  }
-  def *(that: IsKnown): IsKnown = that match {
-    case IsKnown(x) if value == BigInt(0) => Closed(0)
-    case Open(x)                          => Open(value * x)
-    case Closed(x)                        => Closed(value * x)
-  }
-  def min(that: IsKnown): IsKnown = if (value <= that.value) this else that
-  def max(that: IsKnown): IsKnown = if (value >= that.value) this else that
-  def neg:   IsKnown = Closed(-value)
-  def floor: IsKnown = Closed(value.setScale(0, BigDecimal.RoundingMode.FLOOR))
-  def pow: IsKnown =
-    if (value.isBinaryDouble) Closed(BigDecimal(BigInt(1) << value.toInt)) else sys.error("Shouldn't be here")
-}
 
 /** Types of [[FirrtlNode]] */
 abstract class Type extends FirrtlNode
