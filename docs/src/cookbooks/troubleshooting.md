@@ -62,35 +62,3 @@ Use:
 1.S(8.W)
 ```
 to create an 8-bit wide (signed) literal with value 1.
-
-
-### `Dynamic index ... is too wide/narrow for extractee ...`?
-
-If the index is too narrow you can use `.pad` to increase the width.
-```scala mdoc:silent
-import chisel3.util.log2Up
-
-class TooNarrow(extracteeWidth: Int, indexWidth: Int) {
-  val extractee = Wire(UInt(extracteeWidth.W))
-  val index = Wire(UInt(indexWidth.W))
-  extractee(index.pad(log2Up(extracteeWidth)))
-}
-```
-
-If the index is too wide you can use a bit extract to select the correct bits.
-```scala mdoc:silent
-class TooWide(extracteeWidth: Int, indexWidth: Int) {
-  val extractee = Wire(UInt(extracteeWidth.W))
-  val index = Wire(UInt(indexWidth.W))
-  extractee(index(log2Up(extracteeWidth) - 1, 0))
-}
-```
-
-Or use both if you are working on a generator where the widths may be too wide or too narrow under different circumstances.
-```scala mdoc:silent
-class TooWideOrNarrow(extracteeWidth: Int, indexWidth: Int) {
-  val extractee = Wire(UInt(extracteeWidth.W))
-  val index = Wire(UInt(indexWidth.W))
-  extractee(index.pad(log2Up(indexWidth))(log2Up(extracteeWidth) - 1, 0))
-}
-```

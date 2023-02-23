@@ -30,6 +30,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
 * [How do I create I/O without a prefix?](#how-do-i-create-io-without-a-prefix)
 * [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
+* [How do I resolve `Dynamic index ... is too wide/narrow for extractee ...`?](#how-do-i-resolve-dynamic-index--is-too-wide-narrow-for-extractee)
 * Predictable Naming
   * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
   * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
@@ -775,6 +776,37 @@ circt.stage.ChiselStage.emitSystemVerilog(new CountBits(4))
   // remove the body of the module by removing everything after ');'
   .split("\\);")
   .head + ");\n"
+```
+
+### How do I resolve `Dynamic index ... is too wide/narrow for extractee ...`?
+
+If the index is too narrow you can use `.pad` to increase the width.
+```scala mdoc:silent
+import chisel3.util.log2Up
+
+class TooNarrow(extracteeWidth: Int, indexWidth: Int) {
+  val extractee = Wire(UInt(extracteeWidth.W))
+  val index = Wire(UInt(indexWidth.W))
+  extractee(index.pad(log2Up(extracteeWidth)))
+}
+```
+
+If the index is too wide you can use a bit extract to select the correct bits.
+```scala mdoc:silent
+class TooWide(extracteeWidth: Int, indexWidth: Int) {
+  val extractee = Wire(UInt(extracteeWidth.W))
+  val index = Wire(UInt(indexWidth.W))
+  extractee(index(log2Up(extracteeWidth) - 1, 0))
+}
+```
+
+Or use both if you are working on a generator where the widths may be too wide or too narrow under different circumstances.
+```scala mdoc:silent
+class TooWideOrNarrow(extracteeWidth: Int, indexWidth: Int) {
+  val extractee = Wire(UInt(extracteeWidth.W))
+  val index = Wire(UInt(indexWidth.W))
+  extractee(index.pad(log2Up(indexWidth))(log2Up(extracteeWidth) - 1, 0))
+}
 ```
 
 ## Predictable Naming
