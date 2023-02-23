@@ -4,8 +4,6 @@ package firrtl
 
 import logger.LazyLogging
 import firrtl.ir._
-import Implicits.{constraint2bound, constraint2width, width2constraint}
-import firrtl.constraint._
 
 /** Definitions and Utility functions for [[ir.PrimOp]]s */
 object PrimOps extends LazyLogging {
@@ -201,10 +199,4 @@ object PrimOps extends LazyLogging {
 
   /** Gets the corresponding [[ir.PrimOp]] from its String representation */
   def fromString(op: String): PrimOp = strToPrimOp(op)
-
-  // Width Constraint Functions
-  def PLUS(w1:  Width, w2: Width): Constraint = IsAdd(w1, w2)
-  def MAX(w1:   Width, w2: Width): Constraint = IsMax(w1, w2)
-  def MINUS(w1: Width, w2: Width): Constraint = IsAdd(w1, IsNeg(w2))
-  def MIN(w1:   Width, w2: Width): Constraint = IsMin(w1, w2)
 }
