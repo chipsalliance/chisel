@@ -33,15 +33,11 @@ case class FileInfo(escaped: String) extends Info {
   def ++(that: Info): Info = if (that == NoInfo) this else MultiInfo(Seq(this, that))
   def unescaped: String = FileInfo.unescape(escaped)
   def split:     (String, String, String) = FileInfo.split(escaped)
-  @deprecated("Use FileInfo.unescaped instead. FileInfo.info will be removed in FIRRTL 1.5.", "FIRRTL 1.4")
-  def info: StringLit = StringLit(this.unescaped)
 }
 
 object FileInfo {
-  @deprecated("Use FileInfo.fromUnEscaped instead. FileInfo.apply will be removed in FIRRTL 1.5.", "FIRRTL 1.4")
-  def apply(info:      StringLit): FileInfo = new FileInfo(escape(info.string))
-  def fromEscaped(s:   String):    FileInfo = new FileInfo(s)
-  def fromUnescaped(s: String):    FileInfo = new FileInfo(escape(s))
+  def fromEscaped(s:   String): FileInfo = new FileInfo(s)
+  def fromUnescaped(s: String): FileInfo = new FileInfo(escape(s))
 
   /** prepends a `\` to: `\`, `\n`, `\t` and `]` */
   def escape(s: String): String = EscapeFirrtl.translate(s)

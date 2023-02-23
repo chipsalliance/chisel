@@ -138,31 +138,6 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
   private[options] lazy val _optionalPrerequisites: LinkedHashSet[Dependency[A]] =
     new LinkedHashSet() ++ optionalPrerequisites
 
-  /** All transforms that must run ''after'' this transform
-    *
-    * ''This is a means of prerequisite injection into some other transform.'' Normally a transform will define its own
-    * prerequisites. Dependents exist for two main situations:
-    *
-    * First, they improve the composition of optional transforms. If some first transform is optional (e.g., an
-    * expensive validation check), you would like to be able to conditionally cause it to run. If it is listed as a
-    * prerequisite on some other, second transform then it must always run before that second transform. There's no way
-    * to turn it off. However, by listing the second transform as a dependent of the first transform, the first
-    * transform will only run (and be treated as a prerequisite of the second transform) if included in a list of target
-    * transforms that should be run.
-    *
-    * Second, an external library would like to inject some first transform before a second transform inside FIRRTL. In
-    * this situation, the second transform cannot have any knowledge of external libraries. The use of a dependent here
-    * allows for prerequisite injection into FIRRTL proper.
-    *
-    * @see [[firrtl.passes.CheckTypes]] for an example of an optional checking [[firrtl.Transform]]
-    * $seqNote
-    */
-  @deprecated(
-    "Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.",
-    "FIRRTL 1.3"
-  )
-  def dependents: Seq[Dependency[A]] = Seq.empty
-
   /** A sequence of transforms to add this transform as an `optionalPrerequisite`. The use of `optionalPrerequisiteOf`
     * enables the transform declaring them to always run before some other transforms. However, declaring
     * `optionalPrerequisiteOf` will not result in the sequence of transforms executing.
@@ -173,7 +148,7 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
     * @note This method **will not** result in the listed transforms running. If you want to add multiple transforms at
     * once, you should use a `DependencyManager` with multiple targets.
     */
-  def optionalPrerequisiteOf: Seq[Dependency[A]] = dependents
+  def optionalPrerequisiteOf: Seq[Dependency[A]] = Seq.empty
   private[options] lazy val _optionalPrerequisiteOf: LinkedHashSet[Dependency[A]] =
     new LinkedHashSet() ++ optionalPrerequisiteOf
 
@@ -182,19 +157,6 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
     * @param a transform
     */
   def invalidates(a: A): Boolean = true
-
-}
-
-/** A trait indicating that no invalidations occur, i.e., all previous transforms are preserved
-  * @tparam A some [[TransformLike]]
-  */
-@deprecated(
-  "Use an explicit `override def invalidates` returning false. This will be removed in FIRRTL 1.5.",
-  "FIRRTL 1.4"
-)
-trait PreservesAll[A <: DependencyAPI[A]] { this: DependencyAPI[A] =>
-
-  override final def invalidates(a: A): Boolean = false
 
 }
 
