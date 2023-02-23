@@ -943,6 +943,11 @@ abstract class Record extends Aggregate {
             " See the cookbook entry 'How do I deal with the \"unable to clone\" error?' for more details."
         )
       }
+      if (field.binding.isDefined) {
+        throw RebindingException(
+          s"Cannot create Record ${this.className}; element ${field} of record is already a bound hardware."
+        )
+      }
     }
   }
 
@@ -1013,11 +1018,6 @@ abstract class Record extends Aggregate {
       if (child != sameChild) {
         throwException(
           s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
-        )
-      }
-      if (child.binding.isDefined) {
-        throw RebindingException(
-          s"Cannot create Record ${this.className}; element ${child} of record is already a bound hardware."
         )
       }
 

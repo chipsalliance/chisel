@@ -423,10 +423,9 @@ class RecordSpec extends ChiselFlatSpec with Utils {
     err.getMessage should include("bundle plugin was unable to clone")
   }
 
-  "Attempting to initiate records with bound hardware values" should "error" in {
+  "Attempting to create a Record with bound elements" should "error" in {
     class MyRecord[T <: Data](gen: T) extends Record {
       val elements = SeqMap("a" -> gen)
-      override def cloneType: this.type = (new MyRecord(gen)).asInstanceOf[this.type]
     }
     val e = the[ChiselException] thrownBy {
       ChiselStage.elaborate(new Module {
