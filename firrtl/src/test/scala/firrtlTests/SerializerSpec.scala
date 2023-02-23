@@ -172,12 +172,18 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     val constAsyncReset = DefWire(NoInfo, "constAsyncReset", ConstType(AsyncResetType))
     Serializer.serialize(constAsyncReset) should be("wire constAsyncReset : const AsyncReset")
 
+    val constInput = Port(NoInfo, "in", Input, ConstType(SIntType(IntWidth(8))))
+    Serializer.serialize(constInput) should be("input in : const SInt<8>")
+
     val constBundle = DefWire(NoInfo, "constBundle", ConstType(BundleType(Seq(
         Field("real", Default, UIntType(IntWidth(32))),
         Field("imag", Default, UIntType(IntWidth(32))),
         Field("other", Default, ConstType(SIntType(IntWidth(1)))),
       ))))
     Serializer.serialize(constBundle) should be("wire constBundle : const { real : UInt<32>, imag : UInt<32>, other : const SInt<1>}")
+
+    val constVec = DefWire(NoInfo, "constVec", VectorType(ClockType, 10))
+    Serializer.serialize(constVec) should be("wire constVec : Clock[10]")
   }
 
   it should "emit whens with empty Blocks correctly" in {
