@@ -96,12 +96,12 @@ object SerializerSpec {
       Seq.empty,
       Block(
         Seq(
-          DefWire(NoInfo, "constInt", ConstGroundType(UIntType(IntWidth(3)))),
-          DefWire(NoInfo, "constAsyncReset", ConstGroundType(AsyncResetType)),
-          DefWire(NoInfo, "constBundle", ConstAggregateType(BundleType(Seq(
+          DefWire(NoInfo, "constInt", ConstType(UIntType(IntWidth(3)))),
+          DefWire(NoInfo, "constAsyncReset", ConstType(AsyncResetType)),
+          DefWire(NoInfo, "constBundle", ConstType(BundleType(Seq(
             Field("real", Default, UIntType(IntWidth(32))),
             Field("imag", Default, UIntType(IntWidth(32))),
-            Field("other", Default, ConstGroundType(SIntType(IntWidth(1)))),
+            Field("other", Default, ConstType(SIntType(IntWidth(1)))),
           )))),
         )
       )
