@@ -23,8 +23,4 @@ class FileUtilsSpec extends AnyFlatSpec with Matchers {
     FileUtils.getText(sampleAnnotationsFileName).size should be > 0
   }
 
-  it should "read from a Java file" in {
-    FileUtils.getText(new java.io.File(sampleAnnotationsFileName)).size should be > 0
-  }
-
 }

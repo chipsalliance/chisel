@@ -13,14 +13,6 @@ case class BlackBoxTargetDirAnno(targetDir: String) extends BlackBoxHelperAnno w
   override def serialize: String = s"targetDir\n$targetDir"
 }
 
-@deprecated("Use either a BlackBoxInlineAnno or a BlackBoxPathAnno", "FIRRTL 1.5.0")
-case class BlackBoxResourceAnno(target: ModuleName, resourceId: String)
-    extends BlackBoxHelperAnno
-    with SingleTargetAnnotation[ModuleName] {
-  def duplicate(n: ModuleName) = this.copy(target = n)
-  override def serialize: String = s"resource\n$resourceId"
-}
-
 case class BlackBoxInlineAnno(target: ModuleName, name: String, text: String)
     extends BlackBoxHelperAnno
     with SingleTargetAnnotation[ModuleName] {

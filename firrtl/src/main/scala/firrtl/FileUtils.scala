@@ -49,19 +49,6 @@ object FileUtils {
     */
   def getText(file: os.Path): String = os.read(file)
 
-  /** Read a text file and return it as  a single string
-    * Closes the file after read to avoid dangling file handles
-    *
-    * @param file a java File to be read
-    */
-  @deprecated("Use os-lib instead, this function will be removed in FIRRTL 1.6", "FIRRTL 1.5")
-  def getText(file: java.io.File): String = {
-    val source = scala.io.Source.fromFile(file)
-    val text = source.mkString
-    source.close()
-    text
-  }
-
   /** Get os.Path from String
     * @param pathName an absolute or relative path string
     */
