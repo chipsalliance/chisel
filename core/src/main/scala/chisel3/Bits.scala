@@ -162,7 +162,8 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       }
     }
     val theBits = this >> x
-    theBits(0)
+    val noExtract = theBits.widthOption.exists(_ <= 1)
+    if (noExtract) theBits.asBool else theBits(0)
   }
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
