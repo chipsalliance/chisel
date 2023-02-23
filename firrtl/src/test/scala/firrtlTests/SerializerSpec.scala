@@ -82,6 +82,30 @@ object SerializerSpec {
       "test"
     )
 
+  val constModule: String =
+    """module test :
+      |
+      |  wire constInt : const UInt<3>
+      |  wire constAsyncReset : const AsyncReset
+      |  wire constBundle : const { real : UInt<32>, imag : UInt<32>, other : const SInt<1>}""".stripMargin
+
+  val constsModuleIR: Module =
+    Module(
+      NoInfo,
+      "test",
+      Seq.empty,
+      Block(
+        Seq(
+          DefWire(NoInfo, "constInt", ConstGroundType(UIntType(IntWidth(3)))),
+          DefWire(NoInfo, "constAsyncReset", ConstGroundType(AsyncResetType)),
+          DefWire(NoInfo, "constBundle", ConstAggregateType(BundleType(Seq(
+            Field("real", Default, UIntType(IntWidth(32))),
+            Field("imag", Default, UIntType(IntWidth(32))),
+            Field("other", Default, ConstGroundType(SIntType(IntWidth(1)))),
+          )))),
+        )
+      )
+    )
 }
 
 /** used to test parsing and serialization of smems */
@@ -163,6 +187,11 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
   it should "support emitting indented individual extmodules" in {
     val serialized = Serializer.serialize(childModuleIR, 1)
     serialized should be(childModuleTabbed)
+  }
+
+  it should "support emitting const types" in {
+    val serialized = Serializer.serialize(constsModuleIR)
+    serialized should be(constModule)
   }
 
   it should "emit whens with empty Blocks correctly" in {
