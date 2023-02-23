@@ -3,19 +3,8 @@
 package firrtl
 
 import firrtl.ir._
-import firrtl.PrimOps._
-
-import scala.collection.mutable
 
 import _root_.logger.LazyLogging
-
-object getWidth {
-  def apply(t: Type): Width = t match {
-    case t: GroundType => t.width
-    case _ => Utils.error(s"No width: $t")
-  }
-  def apply(e: Expression): Width = apply(e.tpe)
-}
 
 object Utils extends LazyLogging {
 
@@ -67,9 +56,7 @@ object Utils extends LazyLogging {
     (timeMillis, result)
   }
 
-  def getUIntWidth(u: BigInt):     Int = u.bitLength
-  def dec2string(v:   BigDecimal): String = v.underlying().stripTrailingZeros().toPlainString
-  def trim(v:         BigDecimal): BigDecimal = BigDecimal(dec2string(v))
+  def getUIntWidth(u: BigInt): Int = u.bitLength
   val BoolType = UIntType(IntWidth(1))
   val one = UIntLiteral(1)
   val zero = UIntLiteral(0)

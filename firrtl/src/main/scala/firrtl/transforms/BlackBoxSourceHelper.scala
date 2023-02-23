@@ -2,7 +2,7 @@
 
 package firrtl.transforms
 
-import java.io.{File, FileNotFoundException, FileOutputStream, PrintWriter}
+import java.io.{File, FileNotFoundException, FileOutputStream}
 
 import firrtl._
 import firrtl.annotations._
@@ -89,9 +89,4 @@ object BlackBoxSourceHelper {
 
   val defaultFileListName = "firrtl_black_box_resource_files.f"
 
-  def writeTextToFile(text: String, file: File): Unit = {
-    val out = new PrintWriter(file)
-    out.write(text)
-    out.close()
-  }
 }

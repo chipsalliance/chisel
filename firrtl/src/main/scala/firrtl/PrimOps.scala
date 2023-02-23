@@ -7,16 +7,6 @@ import firrtl.ir._
 
 /** Definitions and Utility functions for [[ir.PrimOp]]s */
 object PrimOps extends LazyLogging {
-  def t1(e: DoPrim): Type = e.args.head.tpe
-  def t2(e: DoPrim): Type = e.args(1).tpe
-  def t3(e: DoPrim): Type = e.args(2).tpe
-  def w1(e: DoPrim): Width = getWidth(t1(e))
-  def w2(e: DoPrim): Width = getWidth(t2(e))
-  def c1(e: DoPrim) = IntWidth(e.consts.head)
-  def c2(e: DoPrim) = IntWidth(e.consts(1))
-  def o1(e: DoPrim) = e.consts(0)
-  def o2(e: DoPrim) = e.consts(1)
-  def o3(e: DoPrim) = e.consts(2)
 
   /** Addition */
   case object Add extends PrimOp {
@@ -193,9 +183,6 @@ object PrimOps extends LazyLogging {
   private lazy val strToPrimOp: Map[String, PrimOp] = {
     builtinPrimOps.map { case op: PrimOp => op.toString -> op }.toMap
   }
-
-  /** Seq of String representations of [[ir.PrimOp]]s */
-  lazy val listing: Seq[String] = builtinPrimOps.map(_.toString)
 
   /** Gets the corresponding [[ir.PrimOp]] from its String representation */
   def fromString(op: String): PrimOp = strToPrimOp(op)
