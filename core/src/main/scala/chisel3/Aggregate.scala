@@ -1015,6 +1015,12 @@ abstract class Record extends Aggregate {
           s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
         )
       }
+      if (child.binding.isDefined) {
+        throw RebindingException(
+          s"Cannot create Record ${this.className}; element ${child} of record is already a bound hardware."
+        )
+      }
+
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
