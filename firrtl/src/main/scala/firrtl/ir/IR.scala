@@ -444,9 +444,17 @@ abstract class GroundType extends Type {
 object GroundType {
   def unapply(ground: GroundType): Option[Width] = Some(ground.width)
 }
-abstract class AggregateType extends Type
+abstract class AggregateType extends Type {
+  def mapWidth(f:     Width => Width): Type = this
+  def foreachWidth(f: Width => Unit):  Unit = ()
+}
 case class UIntType(width: Width) extends GroundType with UseSerializer
 case class SIntType(width: Width) extends GroundType with UseSerializer
+
+case class ConstGroundType(underlying: GroundType) extends GroundType with UseSerializer {
+  val width = underlying.width
+}
+case class ConstAggregateType(underlying: AggregateType) extends AggregateType with UseSerializer
 
 case class BundleType(fields: Seq[Field]) extends AggregateType with UseSerializer
 case class VectorType(tpe: Type, size: Int) extends AggregateType with UseSerializer

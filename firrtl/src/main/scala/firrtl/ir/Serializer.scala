@@ -309,6 +309,8 @@ object Serializer {
 
   private def s(node: Type)(implicit b: StringBuilder, indent: Int): Unit = node match {
     // Types
+    case ConstGroundType(underlying: GroundType) => b ++= "const "; s(underlying)
+    case ConstAggregateType(underlying: AggregateType) => b ++= "const "; s(underlying)
     case UIntType(width: Width) => b ++= "UInt"; s(width)
     case SIntType(width: Width) => b ++= "SInt"; s(width)
     case BundleType(fields)    => b ++= "{ "; sField(fields, ", "); b += '}'
