@@ -290,7 +290,6 @@ object StringLit {
   */
 abstract class PrimOp extends FirrtlNode {
   def serialize: String = this.toString
-  def propagateType(e: DoPrim): Type = UnknownType
   def apply(args: Any*): DoPrim = {
     val groups = args.groupBy {
       case x: Expression => "exp"
