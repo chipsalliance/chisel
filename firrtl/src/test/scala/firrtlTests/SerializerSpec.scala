@@ -82,30 +82,6 @@ object SerializerSpec {
       "test"
     )
 
-  val constModule: String =
-    """module test :
-      |
-      |  wire constInt : const UInt<3>
-      |  wire constAsyncReset : const AsyncReset
-      |  wire constBundle : const { real : UInt<32>, imag : UInt<32>, other : const SInt<1>}""".stripMargin
-
-  val constsModuleIR: Module =
-    Module(
-      NoInfo,
-      "test",
-      Seq.empty,
-      Block(
-        Seq(
-          DefWire(NoInfo, "constInt", ConstType(UIntType(IntWidth(3)))),
-          DefWire(NoInfo, "constAsyncReset", ConstType(AsyncResetType)),
-          DefWire(NoInfo, "constBundle", ConstType(BundleType(Seq(
-            Field("real", Default, UIntType(IntWidth(32))),
-            Field("imag", Default, UIntType(IntWidth(32))),
-            Field("other", Default, ConstType(SIntType(IntWidth(1)))),
-          )))),
-        )
-      )
-    )
 }
 
 /** used to test parsing and serialization of smems */
@@ -190,8 +166,18 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "support emitting const types" in {
-    val serialized = Serializer.serialize(constsModuleIR)
-    serialized should be(constModule)
+    val constInt = DefWire(NoInfo, "constInt", ConstType(UIntType(IntWidth(3))))
+    Serializer.serialize(constInt) should be("wire constInt : const UInt<3>")
+
+    val constAsyncReset = DefWire(NoInfo, "constAsyncReset", ConstType(AsyncResetType))
+    Serializer.serialize(constAsyncReset) should be("wire constAsyncReset : const AsyncReset")
+
+    val constBundle = DefWire(NoInfo, "constBundle", ConstType(BundleType(Seq(
+        Field("real", Default, UIntType(IntWidth(32))),
+        Field("imag", Default, UIntType(IntWidth(32))),
+        Field("other", Default, ConstType(SIntType(IntWidth(1)))),
+      ))))
+    Serializer.serialize(constBundle) should be("wire constBundle : const { real : UInt<32>, imag : UInt<32>, other : const SInt<1>}")
   }
 
   it should "emit whens with empty Blocks correctly" in {
