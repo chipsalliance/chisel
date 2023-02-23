@@ -317,14 +317,6 @@ abstract class Expression extends FirrtlNode {
   def tpe: Type
 }
 
-/** Represents reference-like expression nodes: SubField, SubIndex, SubAccess and Reference
-  * The following fields can be cast to RefLikeExpression in every well formed firrtl AST:
-  * - SubField.expr, SubIndex.expr, SubAccess.expr
-  * - IsInvalid.expr, Connect.loc, PartialConnect.loc
-  * - Attach.exprs
-  */
-sealed trait RefLikeExpression extends Expression { def flow: Flow }
-
 /** Represents a statement that can be referenced in a firrtl expression.
   * This explicitly excludes named side-effecting statements like Print, Stop and Verification.
   * Note: This trait cannot be sealed since the memory ports are declared in WIR.scala.
@@ -335,45 +327,34 @@ trait CanBeReferenced
 object Reference {
 
   /** Creates a Reference from a Wire */
-  def apply(wire: DefWire): Reference = Reference(wire.name, wire.tpe, WireKind, UnknownFlow)
+  def apply(wire: DefWire): Reference = Reference(wire.name, wire.tpe)
 
   /** Creates a Reference from a Register */
-  def apply(reg: DefRegister): Reference = Reference(reg.name, reg.tpe, RegKind, UnknownFlow)
+  def apply(reg: DefRegister): Reference = Reference(reg.name, reg.tpe)
 
   /** Creates a Reference from a Node */
-  def apply(node: DefNode): Reference = Reference(node.name, node.value.tpe, NodeKind, SourceFlow)
+  def apply(node: DefNode): Reference = Reference(node.name, node.value.tpe)
 
   /** Creates a Reference from a Port */
-  def apply(port: Port): Reference = Reference(port.name, port.tpe, PortKind, UnknownFlow)
+  def apply(port: Port): Reference = Reference(port.name, port.tpe)
 
   /** Creates a Reference from a DefInstance */
-  def apply(i: DefInstance): Reference = Reference(i.name, i.tpe, InstanceKind, UnknownFlow)
+  def apply(i: DefInstance): Reference = Reference(i.name, i.tpe)
 
   /** Creates a Reference from a DefMemory */
-  def apply(mem: DefMemory): Reference = Reference(mem.name, passes.MemPortUtils.memType(mem), MemKind, UnknownFlow)
+  def apply(mem: DefMemory): Reference = Reference(mem.name, passes.MemPortUtils.memType(mem))
 }
 
-case class Reference(name: String, tpe: Type = UnknownType, kind: Kind = UnknownKind, flow: Flow = UnknownFlow)
+case class Reference(name: String, tpe: Type = UnknownType) extends Expression with HasName with UseSerializer
+
+case class SubField(expr: Expression, name: String, tpe: Type = UnknownType)
     extends Expression
     with HasName
     with UseSerializer
-    with RefLikeExpression
 
-case class SubField(expr: Expression, name: String, tpe: Type = UnknownType, flow: Flow = UnknownFlow)
-    extends Expression
-    with HasName
-    with UseSerializer
-    with RefLikeExpression
+case class SubIndex(expr: Expression, value: Int, tpe: Type) extends Expression with UseSerializer
 
-case class SubIndex(expr: Expression, value: Int, tpe: Type, flow: Flow = UnknownFlow)
-    extends Expression
-    with UseSerializer
-    with RefLikeExpression
-
-case class SubAccess(expr: Expression, index: Expression, tpe: Type, flow: Flow = UnknownFlow)
-    extends Expression
-    with UseSerializer
-    with RefLikeExpression
+case class SubAccess(expr: Expression, index: Expression, tpe: Type) extends Expression with UseSerializer
 
 case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type = UnknownType)
     extends Expression
