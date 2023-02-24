@@ -5,7 +5,7 @@ package firrtlTests.options.phases
 import java.io.File
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.{DeletedAnnotation, NoTargetAnnotation}
+import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{
   BufferedCustomFileEmission,
   CustomFileEmission,
@@ -15,8 +15,7 @@ import firrtl.options.{
   PhaseException,
   StageOption,
   StageOptions,
-  TargetDirAnnotation,
-  WriteDeletedAnnotation
+  TargetDirAnnotation
 }
 import firrtl.options.Viewer.view
 import firrtl.options.phases.{GetIncludes, WriteOutputAnnotations}
@@ -39,10 +38,6 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
     info(s"reading '$f' works")
     val read = (new GetIncludes)
       .transform(Seq(InputAnnotationFileAnnotation(f.toString)))
-      .filterNot {
-        case a @ DeletedAnnotation(_, _: InputAnnotationFileAnnotation) => true
-        case _ => false
-      }
 
     info(s"annotations in file are expected size")
     read.size should be(a.size)
@@ -62,18 +57,16 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
 
   behavior.of(classOf[WriteOutputAnnotations].toString)
 
-  it should "write annotations to a file (excluding DeletedAnnotations and StageOptions)" in new Fixture {
+  it should "write annotations to a file (excluding StageOptions)" in new Fixture {
     val file = new File(dir + "/should-write-annotations-to-a-file.anno.json")
     val annotations = Seq(
       OutputAnnotationFileAnnotation(file.toString),
       WriteOutputAnnotationsSpec.FooAnnotation,
       WriteOutputAnnotationsSpec.BarAnnotation(0),
-      WriteOutputAnnotationsSpec.BarAnnotation(1),
-      DeletedAnnotation("foo", WriteOutputAnnotationsSpec.FooAnnotation)
+      WriteOutputAnnotationsSpec.BarAnnotation(1)
     )
     val expected = annotations.filter {
-      case _: DeletedAnnotation => false
-      case _: StageOption       => false
+      case _: StageOption => false
       case _ => true
     }
     val out = phase.transform(annotations)
@@ -81,28 +74,6 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
     info("annotations should be as expected")
     out.toSeq should be(annotations)
 
-    fileContainsAnnotations(file, expected)
-  }
-
-  it should "include DeletedAnnotations if a WriteDeletedAnnotation is present" in new Fixture {
-    val file = new File(dir + "should-include-deleted.anno.json")
-    val annotations = Seq(
-      OutputAnnotationFileAnnotation(file.toString),
-      WriteOutputAnnotationsSpec.FooAnnotation,
-      WriteOutputAnnotationsSpec.BarAnnotation(0),
-      WriteOutputAnnotationsSpec.BarAnnotation(1),
-      DeletedAnnotation("foo", WriteOutputAnnotationsSpec.FooAnnotation),
-      WriteDeletedAnnotation
-    )
-    val out = phase.transform(annotations)
-
-    info("annotations are unmodified")
-    out.toSeq should be(annotations)
-
-    val expected = annotations.filter {
-      case _: StageOption => false
-      case _ => true
-    }
     fileContainsAnnotations(file, expected)
   }
 

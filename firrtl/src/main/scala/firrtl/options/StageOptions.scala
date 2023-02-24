@@ -14,23 +14,20 @@ class StageOptions private[firrtl] (
   val targetDir:         String = TargetDirAnnotation().directory,
   val annotationFilesIn: Seq[String] = Seq.empty,
   val annotationFileOut: Option[String] = None,
-  val programArgs:       Seq[String] = Seq.empty,
-  val writeDeleted:      Boolean = false) {
+  val programArgs:       Seq[String] = Seq.empty) {
 
   private[options] def copy(
     targetDir:         String = targetDir,
     annotationFilesIn: Seq[String] = annotationFilesIn,
     annotationFileOut: Option[String] = annotationFileOut,
-    programArgs:       Seq[String] = programArgs,
-    writeDeleted:      Boolean = writeDeleted
+    programArgs:       Seq[String] = programArgs
   ): StageOptions = {
 
     new StageOptions(
       targetDir = targetDir,
       annotationFilesIn = annotationFilesIn,
       annotationFileOut = annotationFileOut,
-      programArgs = programArgs,
-      writeDeleted = writeDeleted
+      programArgs = programArgs
     )
 
   }

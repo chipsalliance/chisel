@@ -77,8 +77,4 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
 
 object Annotation
 
-case class DeletedAnnotation(xFormName: String, anno: Annotation) extends NoTargetAnnotation {
-  override def serialize: String = s"""DELETED by $xFormName\n${anno.serialize}"""
-}
-
 case class UnrecognizedAnnotation(underlying: JValue) extends NoTargetAnnotation

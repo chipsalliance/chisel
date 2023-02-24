@@ -3,7 +3,6 @@
 package chisel3.stage.phases
 
 import firrtl.{AnnotationSeq, EmittedFirrtlCircuit, EmittedFirrtlCircuitAnnotation}
-import firrtl.annotations.DeletedAnnotation
 import firrtl.options.{Dependency, Phase, StageOptions}
 import firrtl.options.Viewer.view
 
@@ -46,8 +45,7 @@ class Emitter extends Phase {
         val w = new FileWriter(file)
         w.write(emitted)
         w.close()
-        val anno = EmittedFirrtlCircuitAnnotation(EmittedFirrtlCircuit(a.circuit.name, emitted, ".fir"))
-        Seq(DeletedAnnotation(name, anno), a)
+        Some(a)
       case a => Some(a)
     }
   }

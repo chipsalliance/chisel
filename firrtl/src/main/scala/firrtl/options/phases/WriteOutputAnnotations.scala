@@ -3,7 +3,7 @@
 package firrtl.options.phases
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.{Annotation, DeletedAnnotation, JsonProtocol}
+import firrtl.annotations.{Annotation, JsonProtocol}
 import firrtl.options.{
   BufferedCustomFileEmission,
   CustomFileEmission,
@@ -43,9 +43,6 @@ class WriteOutputAnnotations extends Phase {
     val filesWritten = mutable.HashMap.empty[String, Annotation]
     val serializable: AnnotationSeq = annotations.toSeq.flatMap {
       case _: Unserializable => None
-      case a: DeletedAnnotation =>
-        if (sopts.writeDeleted) { Some(a) }
-        else { None }
       case a: CustomFileEmission =>
         val filename = a.filename(annotations)
         val canonical = filename.getCanonicalPath()
