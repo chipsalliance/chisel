@@ -148,8 +148,22 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** @group SourceInfoTransformMacro */
   final def do_extract(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    this.widthOption.foreach { thisWidth =>
+      if (thisWidth == 0) {
+        Builder.error(s"Cannot extract from zero-width")
+      } else {
+        x.widthOption.foreach { xWidth =>
+          if (xWidth >= 31 || (1 << (xWidth - 1)) >= thisWidth) {
+            Builder.warning(s"Dynamic index with width $xWidth is too large for extractee of width $thisWidth")
+          } else if ((1 << xWidth) < thisWidth) {
+            Builder.warning(s"Dynamic index with width $xWidth is too small for extractee of width $thisWidth")
+          }
+        }
+      }
+    }
     val theBits = this >> x
-    theBits(0)
+    val noExtract = theBits.widthOption.exists(_ <= 1)
+    if (noExtract) theBits.asBool else theBits(0)
   }
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
