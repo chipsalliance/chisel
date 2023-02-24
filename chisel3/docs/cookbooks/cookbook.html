@@ -44,6 +44,7 @@ ga('send', 'pageview');
   <li><a href="#how-do-i-create-an-optional-io">How do I create an optional I/O?</a></li>
   <li><a href="#how-do-i-create-io-without-a-prefix">How do I create I/O without a prefix?</a></li>
   <li><a href="#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector">How do I minimize the number of bits used in an output vector</a></li>
+  <li><a href="#how-do-i-resolve-dynamic-index--is-too-wide-narrow-for-extractee">How do I resolve <code class="language-plaintext highlighter-rouge">Dynamic index ... is too wide/narrow for extractee ...</code>?</a></li>
   <li>Predictable Naming
     <ul>
       <li><a href="#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset">How do I get Chisel to name signals properly in blocks like when/withClockAndReset?</a></li>
@@ -759,6 +760,34 @@ normal <code class="language-plaintext highlighter-rouge">val</code> prefix, you
 <span class="p">);</span>
 </code></pre></div></div>
 
+<h3 id="how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee-">How do I resolve <code class="language-plaintext highlighter-rouge">Dynamic index ... is too wide/narrow for extractee ...</code>?</h3>
+
+<p>If the index is too narrow you can use <code class="language-plaintext highlighter-rouge">.pad</code> to increase the width.</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.util.log2Up</span>
+
+<span class="k">class</span> <span class="nc">TooNarrow</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">indexWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">extracteeWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">indexWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="nf">extractee</span><span class="o">(</span><span class="nv">index</span><span class="o">.</span><span class="py">pad</span><span class="o">(</span><span class="nf">log2Up</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="o">)))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>If the index is too wide you can use a bit extract to select the correct bits.</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TooWide</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">indexWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">extracteeWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">indexWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="nf">extractee</span><span class="o">(</span><span class="nf">index</span><span class="o">(</span><span class="nf">log2Up</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="o">)</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Or use both if you are working on a generator where the widths may be too wide or too narrow under different circumstances.</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TooWideOrNarrow</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">indexWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">extracteeWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">indexWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="nf">extractee</span><span class="o">(</span><span class="nv">index</span><span class="o">.</span><span class="py">pad</span><span class="o">(</span><span class="nf">log2Up</span><span class="o">(</span><span class="n">indexWidth</span><span class="o">))(</span><span class="nf">log2Up</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="o">)</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
 <h2 id="predictable-naming">Predictable Naming</h2>
 
 <h3 id="how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset">How do I get Chisel to name signals properly in blocks like when/withClockAndReset?</h3>
@@ -788,18 +817,18 @@ normal <code class="language-plaintext highlighter-rouge">val</code> prefix, you
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Foo</span><span class="p">(</span>
   <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
   <span class="kt">input</span>        <span class="n">reset</span><span class="p">,</span>
-  <span class="kt">input</span>        <span class="n">io_in_0</span><span class="p">,</span> <span class="c1">// @[cookbook.md 775:14]</span>
-  <span class="kt">input</span>        <span class="n">io_in_1</span><span class="p">,</span> <span class="c1">// @[cookbook.md 775:14]</span>
-  <span class="kt">input</span>        <span class="n">io_in_2</span><span class="p">,</span> <span class="c1">// @[cookbook.md 775:14]</span>
-  <span class="kt">input</span>        <span class="n">io_in_3</span><span class="p">,</span> <span class="c1">// @[cookbook.md 775:14]</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_idx</span><span class="p">,</span> <span class="c1">// @[cookbook.md 775:14]</span>
-  <span class="kt">input</span>        <span class="n">io_en</span><span class="p">,</span> <span class="c1">// @[cookbook.md 775:14]</span>
-  <span class="kt">output</span>       <span class="n">io_out</span> <span class="c1">// @[cookbook.md 775:14]</span>
+  <span class="kt">input</span>        <span class="n">io_in_0</span><span class="p">,</span> <span class="c1">// @[cookbook.md 808:14]</span>
+  <span class="kt">input</span>        <span class="n">io_in_1</span><span class="p">,</span> <span class="c1">// @[cookbook.md 808:14]</span>
+  <span class="kt">input</span>        <span class="n">io_in_2</span><span class="p">,</span> <span class="c1">// @[cookbook.md 808:14]</span>
+  <span class="kt">input</span>        <span class="n">io_in_3</span><span class="p">,</span> <span class="c1">// @[cookbook.md 808:14]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_idx</span><span class="p">,</span> <span class="c1">// @[cookbook.md 808:14]</span>
+  <span class="kt">input</span>        <span class="n">io_en</span><span class="p">,</span> <span class="c1">// @[cookbook.md 808:14]</span>
+  <span class="kt">output</span>       <span class="n">io_out</span> <span class="c1">// @[cookbook.md 808:14]</span>
 <span class="p">);</span>
-  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_1</span> <span class="o">=</span> <span class="mh">2'h1</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_1</span> <span class="o">:</span> <span class="n">io_in_0</span><span class="p">;</span> <span class="c1">// @[cookbook.md 783:{13,13}]</span>
-  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_2</span> <span class="o">=</span> <span class="mh">2'h2</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_2</span> <span class="o">:</span> <span class="mi">_</span><span class="n">GEN_1</span><span class="p">;</span> <span class="c1">// @[cookbook.md 783:{13,13}]</span>
-  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_3</span> <span class="o">=</span> <span class="mh">2'h3</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_3</span> <span class="o">:</span> <span class="mi">_</span><span class="n">GEN_2</span><span class="p">;</span> <span class="c1">// @[cookbook.md 783:{13,13}]</span>
-  <span class="k">assign</span> <span class="n">io_out</span> <span class="o">=</span> <span class="mi">_</span><span class="n">GEN_3</span> <span class="o">&amp;</span> <span class="n">io_en</span><span class="p">;</span> <span class="c1">// @[cookbook.md 783:13]</span>
+  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_1</span> <span class="o">=</span> <span class="mh">2'h1</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_1</span> <span class="o">:</span> <span class="n">io_in_0</span><span class="p">;</span> <span class="c1">// @[cookbook.md 816:{13,13}]</span>
+  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_2</span> <span class="o">=</span> <span class="mh">2'h2</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_2</span> <span class="o">:</span> <span class="mi">_</span><span class="n">GEN_1</span><span class="p">;</span> <span class="c1">// @[cookbook.md 816:{13,13}]</span>
+  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_3</span> <span class="o">=</span> <span class="mh">2'h3</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_3</span> <span class="o">:</span> <span class="mi">_</span><span class="n">GEN_2</span><span class="p">;</span> <span class="c1">// @[cookbook.md 816:{13,13}]</span>
+  <span class="k">assign</span> <span class="n">io_out</span> <span class="o">=</span> <span class="mi">_</span><span class="n">GEN_3</span> <span class="o">&amp;</span> <span class="n">io_en</span><span class="p">;</span> <span class="c1">// @[cookbook.md 816:13]</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
 
@@ -811,18 +840,18 @@ normal <code class="language-plaintext highlighter-rouge">val</code> prefix, you
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="n">Foo2</span><span class="p">(</span>
   <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
   <span class="kt">input</span>        <span class="n">reset</span><span class="p">,</span>
-  <span class="kt">input</span>        <span class="n">io_in_0</span><span class="p">,</span> <span class="c1">// @[cookbook.md 798:14]</span>
-  <span class="kt">input</span>        <span class="n">io_in_1</span><span class="p">,</span> <span class="c1">// @[cookbook.md 798:14]</span>
-  <span class="kt">input</span>        <span class="n">io_in_2</span><span class="p">,</span> <span class="c1">// @[cookbook.md 798:14]</span>
-  <span class="kt">input</span>        <span class="n">io_in_3</span><span class="p">,</span> <span class="c1">// @[cookbook.md 798:14]</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_idx</span><span class="p">,</span> <span class="c1">// @[cookbook.md 798:14]</span>
-  <span class="kt">input</span>        <span class="n">io_en</span><span class="p">,</span> <span class="c1">// @[cookbook.md 798:14]</span>
-  <span class="kt">output</span>       <span class="n">io_out</span> <span class="c1">// @[cookbook.md 798:14]</span>
+  <span class="kt">input</span>        <span class="n">io_in_0</span><span class="p">,</span> <span class="c1">// @[cookbook.md 831:14]</span>
+  <span class="kt">input</span>        <span class="n">io_in_1</span><span class="p">,</span> <span class="c1">// @[cookbook.md 831:14]</span>
+  <span class="kt">input</span>        <span class="n">io_in_2</span><span class="p">,</span> <span class="c1">// @[cookbook.md 831:14]</span>
+  <span class="kt">input</span>        <span class="n">io_in_3</span><span class="p">,</span> <span class="c1">// @[cookbook.md 831:14]</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_idx</span><span class="p">,</span> <span class="c1">// @[cookbook.md 831:14]</span>
+  <span class="kt">input</span>        <span class="n">io_en</span><span class="p">,</span> <span class="c1">// @[cookbook.md 831:14]</span>
+  <span class="kt">output</span>       <span class="n">io_out</span> <span class="c1">// @[cookbook.md 831:14]</span>
 <span class="p">);</span>
-  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_1</span> <span class="o">=</span> <span class="mh">2'h1</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_1</span> <span class="o">:</span> <span class="n">io_in_0</span><span class="p">;</span> <span class="c1">// @[cookbook.md 805:{19,19}]</span>
-  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_2</span> <span class="o">=</span> <span class="mh">2'h2</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_2</span> <span class="o">:</span> <span class="mi">_</span><span class="n">GEN_1</span><span class="p">;</span> <span class="c1">// @[cookbook.md 805:{19,19}]</span>
-  <span class="kt">wire</span>  <span class="n">x</span> <span class="o">=</span> <span class="mh">2'h3</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_3</span> <span class="o">:</span> <span class="mi">_</span><span class="n">GEN_2</span><span class="p">;</span> <span class="c1">// @[cookbook.md 805:{19,19}]</span>
-  <span class="k">assign</span> <span class="n">io_out</span> <span class="o">=</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">io_en</span><span class="p">;</span> <span class="c1">// @[cookbook.md 806:13]</span>
+  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_1</span> <span class="o">=</span> <span class="mh">2'h1</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_1</span> <span class="o">:</span> <span class="n">io_in_0</span><span class="p">;</span> <span class="c1">// @[cookbook.md 838:{19,19}]</span>
+  <span class="kt">wire</span>  <span class="mi">_</span><span class="n">GEN_2</span> <span class="o">=</span> <span class="mh">2'h2</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_2</span> <span class="o">:</span> <span class="mi">_</span><span class="n">GEN_1</span><span class="p">;</span> <span class="c1">// @[cookbook.md 838:{19,19}]</span>
+  <span class="kt">wire</span>  <span class="n">x</span> <span class="o">=</span> <span class="mh">2'h3</span> <span class="o">==</span> <span class="n">io_idx</span> <span class="o">?</span> <span class="n">io_in_3</span> <span class="o">:</span> <span class="mi">_</span><span class="n">GEN_2</span><span class="p">;</span> <span class="c1">// @[cookbook.md 838:{19,19}]</span>
+  <span class="k">assign</span> <span class="n">io_out</span> <span class="o">=</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">io_en</span><span class="p">;</span> <span class="c1">// @[cookbook.md 839:13]</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
 
@@ -855,13 +884,13 @@ normal <code class="language-plaintext highlighter-rouge">val</code> prefix, you
   <span class="kt">input</span>   <span class="n">clock</span><span class="p">,</span>
   <span class="kt">input</span>   <span class="n">reset</span>
 <span class="p">);</span>
-  <span class="kt">wire</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">drink_I</span><span class="p">;</span> <span class="c1">// @[cookbook.md 837:23]</span>
-  <span class="kt">wire</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">drink_O</span><span class="p">;</span> <span class="c1">// @[cookbook.md 837:23]</span>
-  <span class="n">Tea</span> <span class="n">drink</span> <span class="p">(</span> <span class="c1">// @[cookbook.md 837:23]</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">drink_I</span><span class="p">;</span> <span class="c1">// @[cookbook.md 870:23]</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">drink_O</span><span class="p">;</span> <span class="c1">// @[cookbook.md 870:23]</span>
+  <span class="n">Tea</span> <span class="n">drink</span> <span class="p">(</span> <span class="c1">// @[cookbook.md 870:23]</span>
     <span class="p">.</span><span class="n">I</span><span class="p">(</span><span class="n">drink_I</span><span class="p">),</span>
     <span class="p">.</span><span class="n">O</span><span class="p">(</span><span class="n">drink_O</span><span class="p">)</span>
   <span class="p">);</span>
-  <span class="k">assign</span> <span class="n">drink_I</span> <span class="o">=</span> <span class="mh">32'h2a</span><span class="p">;</span> <span class="c1">// @[cookbook.md 840:16]</span>
+  <span class="k">assign</span> <span class="n">drink_I</span> <span class="o">=</span> <span class="mh">32'h2a</span><span class="p">;</span> <span class="c1">// @[cookbook.md 873:16]</span>
 <span class="k">endmodule</span>
 </code></pre></div></div>
 
@@ -893,8 +922,8 @@ to a register:</p>
 <span class="c1">// STDOUT:</span>
 <span class="c1">// </span>
 <span class="c1">// STDERR:</span>
-<span class="c1">// cookbook.md:870:20: error: 'firrtl.reg' op result #0 must be a passive base type that does not contain analog, but got '!firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;'</span>
-<span class="c1">// cookbook.md:870:20: note: see current operation: %5 = "firrtl.reg"(%arg0) {annotations = [], name = "monitor", nameKind = #firrtl&lt;name_kind interesting_name&gt;} : (!firrtl.clock) -&gt; !firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;</span>
+<span class="c1">// cookbook.md:903:20: error: 'firrtl.reg' op result #0 must be a passive base type that does not contain analog, but got '!firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;'</span>
+<span class="c1">// cookbook.md:903:20: note: see current operation: %5 = "firrtl.reg"(%arg0) {annotations = [], name = "monitor", nameKind = #firrtl&lt;name_kind interesting_name&gt;} : (!firrtl.clock) -&gt; !firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;</span>
 <span class="c1">// </span>
 <span class="c1">// ------------------------------------------------------------------------------</span>
 <span class="c1">// 	at circt.stage.phases.CIRCT.transform(CIRCT.scala:259)</span>
@@ -909,8 +938,8 @@ to a register:</p>
 <span class="c1">// 	at firrtl.options.DependencyManager.transform$(DependencyManager.scala:255)</span>
 <span class="c1">// 	at firrtl.options.PhaseManager.transform(DependencyManager.scala:443)</span>
 <span class="c1">// 	at circt.stage.ChiselStage$.emitSystemVerilog(ChiselStage.scala:165)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp44$$anonfun$166.apply(cookbook.md:879)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp44$$anonfun$166.apply(cookbook.md:879)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp44$$anonfun$172.apply(cookbook.md:912)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp44$$anonfun$172.apply(cookbook.md:912)</span>
 </code></pre></div></div>
 
 <p>While there is no construct to “strip direction” in Chisel3, wrapping a type in <code class="language-plaintext highlighter-rouge">Output(...)</code>
