@@ -72,21 +72,12 @@ object Serializer {
   private def flattenInfo(infos: Seq[Info]): Seq[FileInfo] = infos.flatMap {
     case NoInfo => Seq()
     case f: FileInfo => Seq(f)
-    case MultiInfo(infos) => flattenInfo(infos)
   }
 
   private def s(node: Info)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case f: FileInfo => b ++= " @["; b ++= f.escaped; b ++= "]"
     case NoInfo => // empty string
-    case m: MultiInfo =>
-      val infos = m.flatten
-      if (infos.nonEmpty) {
-        val lastId = infos.length - 1
-        b ++= " @["
-        infos.zipWithIndex.foreach { case (f, i) => b ++= f.escaped; if (i < lastId) b += ' ' }
-        b += ']'
-      }
-    case other => b ++= other.serialize // Handle user-defined nodes
+    case other  => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(str: StringLit)(implicit b: StringBuilder, indent: Int): Unit = b ++= str.serialize
