@@ -150,13 +150,13 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def do_extract(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     this.widthOption.foreach { thisWidth =>
       if (thisWidth == 0) {
-        Builder.error(s"Cannot extract from zero-width $this")
+        Builder.error(s"Cannot extract from zero-width")
       } else {
         x.widthOption.foreach { xWidth =>
           if (xWidth >= 31 || (1 << (xWidth - 1)) >= thisWidth) {
-            Builder.warning(s"Dynamic index '$x' is too large for extractee '$this'")
+            Builder.warning(s"Dynamic index with width $xWidth is too large for extractee of width $thisWidth")
           } else if ((1 << xWidth) < thisWidth) {
-            Builder.warning(s"Dynamic index '$x' is too small for extractee '$this'")
+            Builder.warning(s"Dynamic index with width $xWidth is too small for extractee of width $thisWidth")
           }
         }
       }
