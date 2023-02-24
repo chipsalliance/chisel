@@ -6,6 +6,8 @@ import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap, LinkedHashSet}
 import scala.util.control.NoStackTrace
 import _root_.logger.Logger
+import java.io.File
+import scala.io.Source
 
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 
@@ -98,7 +100,29 @@ private[chisel3] object ErrorLog {
   val errTag = s"[${Console.RED}error${Console.RESET}]"
 }
 
-private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
+private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File]) {
+
+  private def getErrorLineInFile(sl: SourceLine): List[String] = {
+    def tryFileInSourceRoot(sourceRoot: File): Option[List[String]] = {
+      try {
+        val file = new File(sourceRoot, sl.filename)
+        val lines = Source.fromFile(file).getLines()
+        var i = 0
+        while (i < (sl.line - 1) && lines.hasNext) {
+          lines.next()
+          i += 1
+        }
+        val line = lines.next()
+        val caretLine = (" " * (sl.col - 1)) + "^"
+        Some(line :: caretLine :: Nil)
+      } catch {
+        case scala.util.control.NonFatal(_) => None
+      }
+    }
+    val sourceRootsWithDefault = if (sourceRoots.nonEmpty) sourceRoots else Seq(new File("."))
+    // View allows us to search the directories one at a time and early out
+    sourceRootsWithDefault.view.map(tryFileInSourceRoot(_)).collectFirst { case Some(value) => value }.getOrElse(Nil)
+  }
 
   /** Returns an appropriate location string for the provided source info.
     * If the source info is of `NoSourceInfo` type, the source location is looked up via stack trace.
@@ -119,8 +143,9 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
 
   private def errorEntry(msg: String, si: Option[SourceInfo], isFatal: Boolean): ErrorEntry = {
     val location = errorLocationString(si)
+    val sourceLineAndCaret = si.collect { case sl: SourceLine => getErrorLineInFile(sl) }.getOrElse(Nil)
     val fullMessage = if (location.isEmpty) msg else s"$location: $msg"
-    ErrorEntry(fullMessage, isFatal)
+    ErrorEntry(fullMessage :: sourceLineAndCaret, isFatal)
   }
 
   /** Log an error message */
@@ -158,7 +183,7 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
       case ((message, sourceLoc), count) =>
         logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
-    errors.foreach(e => logger.error(s"${e.tag} ${e.msg}"))
+    errors.foreach(e => logger.error(e.serialize))
 
     if (!deprecations.isEmpty) {
       logger.warn(
@@ -237,6 +262,8 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean) {
   private def elapsedTime: Long = System.currentTimeMillis - startTime
 }
 
-private case class ErrorEntry(msg: String, isFatal: Boolean) {
+private case class ErrorEntry(lines: Seq[String], isFatal: Boolean) {
   def tag = if (isFatal) ErrorLog.errTag else ErrorLog.warnTag
+
+  def serialize: String = lines.map(s"$tag " + _).mkString("\n")
 }

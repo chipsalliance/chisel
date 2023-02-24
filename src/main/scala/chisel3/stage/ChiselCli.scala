@@ -13,6 +13,7 @@ trait ChiselCli { this: Shell =>
     PrintFullStackTraceAnnotation,
     ThrowOnFirstErrorAnnotation,
     WarningsAsErrorsAnnotation,
+    SourceRootAnnotation,
     WarnReflectiveNamingAnnotation,
     ChiselOutputFileAnnotation,
     ChiselGeneratorAnnotation

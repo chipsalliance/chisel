@@ -3,6 +3,7 @@
 package circtTests.stage
 
 import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.experimental.SourceLine
 
 import circt.stage.{ChiselStage, FirtoolOption, PreserveAggregate}
 
@@ -72,6 +73,16 @@ object ChiselStageSpec {
 
   class RecoverableError extends RawModule {
     3.U >> -1
+  }
+
+  class RecoverableErrorFakeSourceInfo extends RawModule {
+    implicit val info = SourceLine("Foo", 3, 10)
+    3.U >> -1
+  }
+
+  class ErrorCaughtByFirtool extends RawModule {
+    implicit val info = SourceLine("Foo", 3, 10)
+    val w = Wire(UInt(8.W))
   }
 }
 
@@ -382,6 +393,114 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val stackTrace = exception.getStackTrace.mkString("\n")
       info("The exception should contain a truncated stack trace")
       stackTrace should include("java")
+    }
+
+    it("should include source line and a caret for recoverable errors") {
+      val (stdout, stderr, _) = grabStdOutErr {
+        intercept[java.lang.Exception] {
+          (new ChiselStage)
+            .execute(
+              Array("--target", "chirrtl"),
+              Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+            )
+        }
+      }
+
+      val lines = stdout.split("\n")
+      // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
+      lines(0) should include(
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:75:9: Negative shift amounts are illegal (got -1)"
+      )
+      lines(1) should include("    3.U >> -1")
+      lines(2) should include("        ^")
+    }
+
+    it("should NOT include source line and caret with an incorrect --source-root") {
+      val (stdout, stderr, _) = grabStdOutErr {
+        intercept[java.lang.Exception] {
+          (new ChiselStage)
+            .execute(
+              Array("--target", "chirrtl", "--source-root", ".github"),
+              Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+            )
+        }
+      }
+
+      val lines = stdout.split("\n")
+      // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
+      lines.size should equal(2)
+      lines(0) should include(
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:75:9: Negative shift amounts are illegal (got -1)"
+      )
+      (lines(1) should not).include("3.U >> -1")
+    }
+
+    it("should include source line and a caret for recoverable errors with multiple --source-roots") {
+      val (stdout, stderr, _) = grabStdOutErr {
+        intercept[java.lang.Exception] {
+          (new ChiselStage)
+            .execute(
+              Array(
+                "--target",
+                "chirrtl",
+                "--source-root",
+                ".",
+                "--source-root",
+                "src/test/resources/chisel3/sourceroot1"
+              ),
+              Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableErrorFakeSourceInfo))
+            )
+        }
+      }
+
+      val lines = stdout.split("\n")
+      // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
+      lines(0) should include("Foo:3:10: Negative shift amounts are illegal (got -1)")
+      lines(1) should include("I am the file in sourceroot1")
+      lines(2) should include("         ^")
+    }
+
+    it("should include source line and a caret picking the first --source-root if there is ambiguity") {
+      val (stdout, stderr, _) = grabStdOutErr {
+        intercept[java.lang.Exception] {
+          (new ChiselStage)
+            .execute(
+              Array(
+                "--target",
+                "chirrtl",
+                "--source-root",
+                "src/test/resources/chisel3/sourceroot2",
+                "--source-root",
+                "src/test/resources/chisel3/sourceroot1"
+              ),
+              Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableErrorFakeSourceInfo))
+            )
+        }
+      }
+
+      val lines = stdout.split("\n")
+      // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
+      lines(0) should include("Foo:3:10: Negative shift amounts are illegal (got -1)")
+      lines(1) should include("I am the file in sourceroot2")
+      lines(2) should include("         ^")
+    }
+
+    it("should propagate --source-root as --include-dir to firtool") {
+      val e = intercept[java.lang.Exception] {
+        (new ChiselStage)
+          .execute(
+            Array("--target", "systemverilog", "--source-root", "src/test/resources/chisel3/sourceroot1"),
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.ErrorCaughtByFirtool))
+          )
+      }
+
+      val lines = e.getMessage.split("\n")
+      val idx = lines.indexWhere(_.contains("not fully initialized"))
+      lines(idx) should include(
+        "src/test/resources/chisel3/sourceroot1/Foo:3:10: error: sink \"w\" not fully initialized"
+      )
+      lines(idx + 1) should equal("I am the file in sourceroot1")
+      lines(idx + 2) should equal("         ^")
     }
 
   }
