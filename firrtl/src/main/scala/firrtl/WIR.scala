@@ -27,7 +27,6 @@ case class CDefMemory(
   readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined)
     extends Statement
     with HasInfo
-    with CanBeReferenced
     with UseSerializer {
   def mapExpr(f:       Expression => Expression): Statement = this
   def mapStmt(f:       Statement => Statement):   Statement = this
@@ -43,7 +42,6 @@ case class CDefMemory(
 case class CDefMPort(info: Info, name: String, tpe: Type, mem: String, exps: Seq[Expression], direction: MPortDir)
     extends Statement
     with HasInfo
-    with CanBeReferenced
     with UseSerializer {
   def mapExpr(f:       Expression => Expression): Statement = this.copy(exps = exps.map(f))
   def mapStmt(f:       Statement => Statement):   Statement = this
