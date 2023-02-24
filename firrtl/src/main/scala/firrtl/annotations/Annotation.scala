@@ -3,10 +3,7 @@
 package firrtl
 package annotations
 
-import firrtl.options.StageUtils
 import org.json4s.JValue
-
-import scala.collection.Traversable
 
 case class AnnotationException(message: String) extends Exception(message)
 

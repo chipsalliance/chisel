@@ -3,7 +3,6 @@
 package firrtl
 package passes
 
-import firrtl.ir._
 import firrtl.annotations._
 import firrtl.options.{HasShellOptions, ShellOption}
 

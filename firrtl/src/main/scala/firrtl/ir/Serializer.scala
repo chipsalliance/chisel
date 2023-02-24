@@ -2,8 +2,6 @@
 
 package firrtl.ir
 
-import firrtl.Utils
-
 case class Version(major: Int, minor: Int, patch: Int) {
   def serialize: String = s"$major.$minor.$patch"
   def incompatible(that: Version): Boolean =

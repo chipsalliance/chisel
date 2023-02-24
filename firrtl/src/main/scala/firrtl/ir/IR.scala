@@ -7,7 +7,6 @@ import dataclass.{data, since}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
 import scala.collection.JavaConverters._
-import scala.math.BigDecimal.RoundingMode._
 
 /** Intermediate Representation */
 abstract class FirrtlNode {
