@@ -27,8 +27,8 @@ case object NoInfo extends Info {
 /** Stores the string of a file info annotation in its escaped form. */
 case class FileInfo(escaped: String) extends Info {
   override def toString: String = " @[" + escaped + "]"
-  def unescaped: String = FileInfo.unescape(escaped)
-  def split:     (String, String, String) = FileInfo.split(escaped)
+  def unescaped:         String = FileInfo.unescape(escaped)
+  def split:             (String, String, String) = FileInfo.split(escaped)
 }
 
 object FileInfo {
@@ -90,7 +90,6 @@ object FileInfo {
 
   private val FileInfoRegex = """(?:([^\s]+)(?: (\d+)\:(\d+)))""".r
 }
-
 
 trait HasName {
   val name: String
@@ -177,34 +176,6 @@ abstract class Expression extends FirrtlNode {
   def tpe: Type
 }
 
-/** Represents a statement that can be referenced in a firrtl expression.
-  * This explicitly excludes named side-effecting statements like Print, Stop and Verification.
-  * Note: This trait cannot be sealed since the memory ports are declared in WIR.scala.
-  *       Once we fully remove all WIR, this trait could be sealed.
-  */
-trait CanBeReferenced
-
-object Reference {
-
-  /** Creates a Reference from a Wire */
-  def apply(wire: DefWire): Reference = Reference(wire.name, wire.tpe)
-
-  /** Creates a Reference from a Register */
-  def apply(reg: DefRegister): Reference = Reference(reg.name, reg.tpe)
-
-  /** Creates a Reference from a Node */
-  def apply(node: DefNode): Reference = Reference(node.name, node.value.tpe)
-
-  /** Creates a Reference from a Port */
-  def apply(port: Port): Reference = Reference(port.name, port.tpe)
-
-  /** Creates a Reference from a DefInstance */
-  def apply(i: DefInstance): Reference = Reference(i.name, i.tpe)
-
-  /** Creates a Reference from a DefMemory */
-  def apply(mem: DefMemory): Reference = Reference(mem.name, passes.MemPortUtils.memType(mem))
-}
-
 case class Reference(name: String, tpe: Type = UnknownType) extends Expression with HasName with UseSerializer
 
 case class SubField(expr: Expression, name: String, tpe: Type = UnknownType)
@@ -252,11 +223,7 @@ case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: T
     with UseSerializer
 
 abstract class Statement extends FirrtlNode
-case class DefWire(info: Info, name: String, tpe: Type)
-    extends Statement
-    with IsDeclaration
-    with CanBeReferenced
-    with UseSerializer
+case class DefWire(info: Info, name: String, tpe: Type) extends Statement with IsDeclaration with UseSerializer
 case class DefRegister(
   info:  Info,
   name:  String,
@@ -266,7 +233,6 @@ case class DefRegister(
   init:  Expression)
     extends Statement
     with IsDeclaration
-    with CanBeReferenced
     with UseSerializer
 
 object DefInstance {
@@ -276,7 +242,6 @@ object DefInstance {
 case class DefInstance(info: Info, name: String, module: String, tpe: Type = UnknownType)
     extends Statement
     with IsDeclaration
-    with CanBeReferenced
     with UseSerializer
 
 object ReadUnderWrite extends Enumeration {
@@ -299,13 +264,8 @@ case class DefMemory(
   readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined)
     extends Statement
     with IsDeclaration
-    with CanBeReferenced
     with UseSerializer
-case class DefNode(info: Info, name: String, value: Expression)
-    extends Statement
-    with IsDeclaration
-    with CanBeReferenced
-    with UseSerializer
+case class DefNode(info: Info, name: String, value: Expression) extends Statement with IsDeclaration with UseSerializer
 case class Conditionally(
   info:   Info,
   pred:   Expression,
@@ -521,7 +481,6 @@ case class Port(
   tpe:       Type)
     extends FirrtlNode
     with IsDeclaration
-    with CanBeReferenced
     with UseSerializer
 
 /** Parameters for external modules */
