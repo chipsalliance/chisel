@@ -36,7 +36,7 @@ mrproper:
 
 # Publish Microsite
 publish: all
-	sbt -DdisableFatalWarnings docs/ghpagesPushSite
+	sbt docs/ghpagesPushSite
 
 # Start a Jekyll server for the site
 serve: all
@@ -44,14 +44,14 @@ serve: all
 
 # Build the sbt-microsite
 docs/target/site/index.html: build.sbt docs/src/main/tut/contributors.md $(www-src)
-	sbt -DdisableFatalWarnings docs/makeMicrosite
+	sbt docs/makeMicrosite
 
 # Determine contributors
 docs/src/main/tut/contributors.md: build.sbt
-	sbt -DdisableFatalWarnings contributors/determineContributors
+	sbt contributors/determineContributors
 
 # Build docs in subproject with a specific tag.
 # This command is brittle as it assumes chisel3 is up one dir from here in the path to where
 # we want to put the website docs.
 docs/src/main/tut/chisel3/docs: $(chisel3)/docs/ $(www-docs)
-	(cd $(chisel3) && sbt -DdisableFatalWarnings docs/mdoc && cp -r docs/generated website/docs/src/main/tut/chisel3/docs)
+	(cd $(chisel3) && sbt docs/mdoc && cp -r docs/generated website/docs/src/main/tut/chisel3/docs)
