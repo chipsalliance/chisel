@@ -33,7 +33,6 @@ abstract class Stage extends Phase {
   final def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val annotationsx =
       Seq(new phases.GetIncludes)
-        .map(phases.DeletedWrapper(_))
         .foldLeft(annotations)((a, p) => p.transform(a))
 
     Logger.makeScope(annotationsx) {
@@ -43,7 +42,6 @@ abstract class Stage extends Phase {
         new Phase { def transform(a: AnnotationSeq) = run(a) },
         new phases.WriteOutputAnnotations
       )
-        .map(phases.DeletedWrapper(_))
         .foldLeft(annotationsx)((a, p) => p.transform(a))
     }
   }

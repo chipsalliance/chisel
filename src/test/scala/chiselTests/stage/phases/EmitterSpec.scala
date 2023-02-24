@@ -7,7 +7,6 @@ import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, Chisel
 import chisel3.stage.phases.{Convert, Elaborate, Emitter}
 
 import firrtl.{AnnotationSeq, EmittedFirrtlCircuitAnnotation}
-import firrtl.annotations.DeletedAnnotation
 import firrtl.options.{Phase, TargetDirAnnotation}
 
 import java.io.File
@@ -51,9 +50,6 @@ class EmitterSpec extends AnyFlatSpec with Matchers {
 
     info(s"$bazFile exists")
     bazFile should (exist)
-
-    info("a deleted EmittedFirrtlCircuitAnnotation should be generated")
-    annotations.collect { case a @ DeletedAnnotation(_, _: EmittedFirrtlCircuitAnnotation) => a }.size should be(1)
   }
 
 }
