@@ -620,7 +620,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       implicit val compileOptions = ExplicitCompileOptions.Strict
       implicit val sourceInfo = UnlocatableSourceInfo
       if (makeConst) {
-        chisel3.experimental.Const(WireDefault(this)).ref
+        WireDefault(chisel3.experimental.Const(chiselTypeOf(this)), this).ref
       } else {
         WireDefault(this).ref
       }
@@ -696,6 +696,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     val clone = this.cloneType // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
+    clone.isConst = isConst
     clone
   }
 
