@@ -378,7 +378,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   // If this Data is constant, it must hold a constant value
-  private var _isConst: Boolean = false
+  private var _isConst:         Boolean = false
   private[chisel3] def isConst: Boolean = _isConst
   private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
 
