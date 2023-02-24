@@ -20,7 +20,4 @@ case class MemoryFileInlineAnnotation(
   require(filename.trim.nonEmpty, "empty filename not allowed in MemoryFileInlineAnnotation")
   override def duplicate(n: ReferenceTarget): Annotation = copy(n)
   override def isRandomInit: Boolean = false
-  override private[firrtl] def dedup: Option[(Any, Annotation, ReferenceTarget)] = Some(
-    ((target.pathlessTarget, filename), copy(target = target.pathlessTarget), target)
-  )
 }

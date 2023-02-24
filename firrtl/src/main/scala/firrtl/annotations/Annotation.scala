@@ -22,38 +22,6 @@ trait Annotation extends Product {
     */
   def serialize: String = this.toString
 
-  /** Recurses through ls to find all [[Target]] instances
-    * @param ls
-    * @return
-    */
-  private def extractComponents(ls: Traversable[_]): Traversable[Target] = {
-    ls.flatMap {
-      case c: Target                          => Seq(c)
-      case x: scala.collection.Traversable[_] => extractComponents(x)
-      case o: Product                         => extractComponents(o.productIterator.toIterable)
-      case _ => Seq()
-    }
-  }
-
-  /** Returns all [[firrtl.annotations.Target Target]] members in this annotation
-    * @return
-    */
-  def getTargets: Seq[Target] = extractComponents(productIterator.toIterable).toSeq
-
-  /** Returns a deduplicable representation of this [[Annotation]]: a 3-tuple of the
-    * deduplicated annotation's "dedup key", the deduplicated [[Annotation]], and the
-    * [[firrtl.annotations.ReferenceTarget ReferenceTarget]](s) to the annotated objects.
-    *
-    * If two absolute instances of this [[Annotation]] would deduplicate to the same
-    * local form, both of their "dedup key"s must be equivalent.
-    *
-    * A deduplication key is typically taken to be a 2-tuple of the pathless target and
-    * the annotation's value.
-    *
-    * Returning None signifies this annotation will not deduplicate.
-    * @return
-    */
-  private[firrtl] def dedup: Option[(Any, Annotation, ReferenceTarget)] = None
 }
 
 /** If an Annotation does not target any [[Named]] thing in the circuit, then all updates just
@@ -61,16 +29,11 @@ trait Annotation extends Product {
   */
 trait NoTargetAnnotation extends Annotation {
   def update(renames: RenameMap): Seq[NoTargetAnnotation] = Seq(this)
-
-  override def getTargets: Seq[Target] = Seq.empty
 }
 
 /** An Annotation that targets a single [[Named]] thing */
 trait SingleTargetAnnotation[T <: Named] extends Annotation {
   val target: T
-
-  // we can implement getTargets more efficiently since we know that we have exactly one target
-  override def getTargets: Seq[Target] = Seq(target)
 
   /** Create another instance of this Annotation */
   def duplicate(n: T): Annotation
@@ -123,8 +86,6 @@ trait MultiTargetAnnotation extends Annotation {
     * }}}
     */
   def targets: Seq[Seq[Target]]
-
-  override def getTargets: Seq[Target] = targets.flatten
 
   /** Create another instance of this Annotation
     *
