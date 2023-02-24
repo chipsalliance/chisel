@@ -75,53 +75,6 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
   }
 }
 
-/** [[MultiTargetAnnotation]] keeps the renamed targets grouped within a single annotation. */
-trait MultiTargetAnnotation extends Annotation {
-
-  /** Contains a nested sequence of [[firrtl.annotations.Target Target]]
-    *
-    * Each inner Seq should contain a single element. For example:
-    * {{{
-    * def targets = Seq(Seq(foo), Seq(bar))
-    * }}}
-    */
-  def targets: Seq[Seq[Target]]
-
-  /** Create another instance of this Annotation
-    *
-    * The inner Seqs correspond to the renames of the inner Seqs of targets
-    */
-  def duplicate(n: Seq[Seq[Target]]): Annotation
-
-  /** Assume [[RenameMap]] is `Map(TargetA -> Seq(TargetA1, TargetA2, TargetA3), TargetB -> Seq(TargetB1, TargetB2))`
-    * in the update, this Annotation is still one annotation, but the contents are renamed in the below form
-    * Seq(Seq(TargetA1, TargetA2, TargetA3), Seq(TargetB1, TargetB2), Seq(TargetC))
-    */
-  def update(renames: RenameMap): Seq[Annotation] = Seq(duplicate(targets.map(ts => ts.flatMap(renames(_)))))
-
-  private def crossJoin[T](list: Seq[Seq[T]]): Seq[Seq[T]] =
-    list match {
-      case Nil      => Nil
-      case x :: Nil => x.map(Seq(_))
-      case x :: xs =>
-        val xsJoin = crossJoin(xs)
-        for {
-          i <- x
-          j <- xsJoin
-        } yield {
-          Seq(i) ++ j
-        }
-    }
-
-  /** Assume [[RenameMap]] is `Map(TargetA -> Seq(TargetA1, TargetA2, TargetA3), TargetB -> Seq(TargetB1, TargetB2))`
-    * After flat, this Annotation will be flat to the [[AnnotationSeq]] in the below form
-    * Seq(Seq(TargetA1), Seq(TargetB1), Seq(TargetC)); Seq(Seq(TargetA1), Seq(TargetB2), Seq(TargetC))
-    * Seq(Seq(TargetA2), Seq(TargetB1), Seq(TargetC)); Seq(Seq(TargetA2), Seq(TargetB2), Seq(TargetC))
-    * Seq(Seq(TargetA3), Seq(TargetB1), Seq(TargetC)); Seq(Seq(TargetA3), Seq(TargetB2), Seq(TargetC))
-    */
-  def flat(): AnnotationSeq = crossJoin(targets).map(r => duplicate(r.map(Seq(_))))
-}
-
 object Annotation
 
 case class DeletedAnnotation(xFormName: String, anno: Annotation) extends NoTargetAnnotation {
