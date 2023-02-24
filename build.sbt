@@ -179,6 +179,8 @@ lazy val firrtl = (project in file("firrtl"))
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   )
   .settings(mimaSettings)
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
 
 lazy val chiselSettings = Seq(
   name := "chisel3",

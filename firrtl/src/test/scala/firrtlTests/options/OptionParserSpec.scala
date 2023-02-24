@@ -19,16 +19,16 @@ class OptionParserSpec extends AnyFlatSpec with Matchers with firrtl.testutils.U
 
   /* An option parser that prepends to a Seq[Int] */
   class IntParser extends OptionParser[AnnotationSeq]("Int Parser") {
-    opt[Int]("integer").abbr("n").unbounded.action((x, c) => IntAnnotation(x) +: c)
+    opt[Int]("integer").abbr("n").unbounded().action((x, c) => IntAnnotation(x) +: c)
     help("help")
   }
 
   trait DuplicateShortOption { this: OptionParser[AnnotationSeq] =>
-    opt[Int]("not-an-integer").abbr("n").unbounded.action((x, c) => IntAnnotation(x) +: c)
+    opt[Int]("not-an-integer").abbr("n").unbounded().action((x, c) => IntAnnotation(x) +: c)
   }
 
   trait DuplicateLongOption { this: OptionParser[AnnotationSeq] =>
-    opt[Int]("integer").abbr("m").unbounded.action((x, c) => IntAnnotation(x) +: c)
+    opt[Int]("integer").abbr("m").unbounded().action((x, c) => IntAnnotation(x) +: c)
   }
 
   trait WithIntParser { val parser = new IntParser }

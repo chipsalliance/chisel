@@ -61,7 +61,7 @@ class WriteOutputAnnotations extends Phase {
               // Regular emission
               case _ =>
                 a.getBytes match {
-                  case arr: mutable.WrappedArray[Byte] => w.write(arr.array.asInstanceOf[Array[Byte]])
+                  case arr: mutable.ArraySeq[Byte] => w.write(arr.array.asInstanceOf[Array[Byte]])
                   case other => other.foreach(w.write(_))
                 }
             }

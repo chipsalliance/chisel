@@ -68,7 +68,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
     *
     * @return a Set[T] of source nodes
     */
-  def findSources: Set[T] = getVertices -- edges.values.flatten.toSet
+  def findSources: Set[T] = getVertices.diff(edges.values.flatten.toSet)
 
   /** Find all sinks in the graph
     *
@@ -370,7 +370,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
     */
   def simplify(vprime: Set[T]): DiGraph[T] = {
     require(vprime.subsetOf(edges.keySet))
-    val pathEdges = vprime.map(v => (v, reachableFrom(v) & (vprime - v)))
+    val pathEdges = vprime.map(v => (v, reachableFrom(v) & (vprime.diff(Set(v)))))
     new DiGraph(new LinkedHashMap[T, LinkedHashSet[T]] ++ pathEdges)
   }
 

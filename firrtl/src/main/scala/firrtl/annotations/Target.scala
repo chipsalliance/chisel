@@ -255,23 +255,19 @@ case class GenericTarget(circuitOpt: Option[String], moduleOpt: Option[String], 
 
   override def toTarget: CompleteTarget = getComplete.get
 
-  override def getComplete: Option[CompleteTarget] = {
-    if (!isComplete) None
-    else {
-      val target = this match {
-        case GenericTarget(Some(c), None, Vector())                                  => CircuitTarget(c)
-        case GenericTarget(Some(c), Some(m), Vector())                               => ModuleTarget(c, m)
-        case GenericTarget(Some(c), Some(m), Ref(r) +: component)                    => ReferenceTarget(c, m, Nil, r, component)
-        case GenericTarget(Some(c), Some(m), Instance(i) +: OfModule(o) +: Vector()) => InstanceTarget(c, m, Nil, i, o)
-        case GenericTarget(Some(c), Some(m), component) =>
-          val path = getPath.getOrElse(Nil)
-          ((getRef, getInstanceOf): @unchecked) match {
-            case (Some((r, comps)), _) => ReferenceTarget(c, m, path, r, comps)
-            case (None, Some((i, o)))  => InstanceTarget(c, m, path, i, o)
-          }
+  override def getComplete: Option[CompleteTarget] = this match {
+    case GenericTarget(Some(c), None, Vector())               => Some(CircuitTarget(c))
+    case GenericTarget(Some(c), Some(m), Vector())            => Some(ModuleTarget(c, m))
+    case GenericTarget(Some(c), Some(m), Ref(r) +: component) => Some(ReferenceTarget(c, m, Nil, r, component))
+    case GenericTarget(Some(c), Some(m), Instance(i) +: OfModule(o) +: Vector()) =>
+      Some(InstanceTarget(c, m, Nil, i, o))
+    case GenericTarget(Some(c), Some(m), component) =>
+      val path = getPath.getOrElse(Nil)
+      ((getRef, getInstanceOf): @unchecked) match {
+        case (Some((r, comps)), _) => Some(ReferenceTarget(c, m, path, r, comps))
+        case (None, Some((i, o)))  => Some(InstanceTarget(c, m, path, i, o))
       }
-      Some(target)
-    }
+    case _ /* the target is not Complete */ => None
   }
 
   override def isLocal: Boolean = !(getPath.nonEmpty && getPath.get.nonEmpty)
@@ -392,7 +388,7 @@ case class GenericTarget(circuitOpt: Option[String], moduleOpt: Option[String], 
   lazy val (parentModule: Option[String], astModule: Option[String]) = path match {
     case Seq()                 => (None, moduleOpt)
     case Seq((i, OfModule(o))) => (moduleOpt, Some(o))
-    case seq if seq.size > 1 =>
+    case seq =>
       val reversed = seq.reverse
       (Some(reversed(1)._2.value), Some(reversed(0)._2.value))
   }

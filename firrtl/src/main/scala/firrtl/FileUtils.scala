@@ -22,19 +22,6 @@ object FileUtils {
     */
   def getLines(file: os.Path): Seq[String] = os.read.lines(file)
 
-  /** Read a text file and return it as  a Seq of strings
-    * Closes the file after read to avoid dangling file handles
-    *
-    * @param file a java File to be read
-    */
-  @deprecated("Use os-lib instead, this function will be removed in FIRRTL 1.6", "FIRRTL 1.5")
-  def getLines(file: java.io.File): Seq[String] = {
-    val source = scala.io.Source.fromFile(file)
-    val lines = source.getLines().toList
-    source.close()
-    lines
-  }
-
   /** Read a text file and return it as  a single string
     * Closes the file after read to avoid dangling file handles
     *

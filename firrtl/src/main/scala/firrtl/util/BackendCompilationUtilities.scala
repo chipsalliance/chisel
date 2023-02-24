@@ -124,7 +124,7 @@ object BackendCompilationUtilities extends LazyLogging {
     // Build a set of canonical file paths to use as a filter to exclude already included additional Verilog sources.
     val blackBoxHelperFiles: Set[String] = {
       if (list_file.exists()) {
-        FileUtils.getLines(list_file).toSet
+        FileUtils.getLines(FileUtils.getPath(list_file.getPath())).toSet
       } else {
         Set.empty
       }

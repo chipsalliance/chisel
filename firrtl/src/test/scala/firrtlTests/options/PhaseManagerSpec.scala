@@ -399,7 +399,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
     d.mkdirs()
 
     {
-      val f = new File(d + "/dependencyGraph.dot")
+      val f = new File(d, "dependencyGraph.dot")
       val w = new PrintWriter(f)
       w.write(pm.dependenciesToGraphviz)
       w.close
@@ -407,8 +407,8 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
     }
 
     {
-      val f = new File(d + "/transformOrder.dot")
-      val w = new PrintWriter(new File(d + "/transformOrder.dot"))
+      val f = new File(d, "transformOrder.dot")
+      val w = new PrintWriter(new File(d, "transformOrder.dot"))
       try {
         info("transform order:\n" + pm.prettyPrint("    "))
         w.write(pm.transformOrderToGraphviz())
@@ -622,7 +622,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     /** The resulting order: B0--B6, B6_0--B6_B15, B7, B8_0--B8_15, B8--B15 */
     val expectedDeps = targets.slice(0, 7) ++ prerequisiteTargets ++ Some(targets(7)) ++ current ++ targets.drop(8)
-    val expectedClasses = expectedDeps.map { case Dependency(Left(c)) => c }
+    val expectedClasses = expectedDeps.collect { case Dependency(Left(c)) => c }
 
     val pm = new PhaseManager(targets ++ prerequisiteTargets ++ current, current.reverse)
 
