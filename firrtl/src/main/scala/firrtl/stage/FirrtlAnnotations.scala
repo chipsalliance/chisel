@@ -5,9 +5,7 @@ package firrtl.stage
 import firrtl._
 import firrtl.ir.Circuit
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{Dependency, HasShellOptions, OptionsException, ShellOption, Unserializable}
-import java.io.{File, FileNotFoundException}
-import java.nio.file.{NoSuchFileException, NotDirectoryException}
+import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
 /** Indicates that this is an [[firrtl.annotations.Annotation Annotation]] directly used in the construction of a
   * [[FirrtlOptions]] view.

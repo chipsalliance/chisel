@@ -3,7 +3,7 @@
 package firrtl.stage.phases
 
 import firrtl.AnnotationSeq
-import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
+import firrtl.options.{Phase, TargetDirAnnotation}
 import firrtl.transforms.BlackBoxTargetDirAnno
 import firrtl.stage.{FirrtlOptions, InfoModeAnnotation}
 

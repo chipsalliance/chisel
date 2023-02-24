@@ -2,11 +2,6 @@
 
 package firrtl
 
-import firrtl.options.StageUtils
-
-import scala.collection.Seq
-import scala.sys.process.{stringSeqToProcess, BasicIO, ProcessLogger}
-
 object FileUtils {
 
   /** Read a text file and return it as a Seq of strings

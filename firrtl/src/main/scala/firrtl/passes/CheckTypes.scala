@@ -3,7 +3,6 @@
 package firrtl.passes
 
 import firrtl.ir._
-import scala.collection.Seq
 
 object CheckTypes {
   def legalResetType(tpe: Type): Boolean = tpe match {

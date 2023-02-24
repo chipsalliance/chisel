@@ -2,8 +2,6 @@
 
 package firrtl
 
-import firrtl.ir._
-
 object Parser {
 
   sealed abstract class InfoMode
