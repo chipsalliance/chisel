@@ -3,6 +3,7 @@
 package chiselTests.stage
 
 import chisel3._
+import chisel3.experimental.SourceLine
 import chisel3.stage.ChiselMain
 import java.io.File
 
@@ -39,6 +40,13 @@ object ChiselMainSpec {
 
   /** A module that triggers a Builder.error (as opposed to exception) */
   class BuilderErrorModule extends RawModule {
+    val w = Wire(UInt(8.W))
+    w(3, -1)
+  }
+
+  /** A module that triggers a Builder.error (as opposed to exception) */
+  class BuilderErrorModuleFakeSourceInfo extends RawModule {
+    implicit val info = SourceLine("Foo", 3, 10)
     val w = Wire(UInt(8.W))
     w(3, -1)
   }
@@ -275,8 +283,70 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
         message = Seq(Right("Fatal errors during hardware elaboration")),
         stdout = Seq(
           Right(
-            "src/test/scala/chiselTests/stage/ChiselMainSpec.scala:43:6: Invalid bit range (3,-1)"
-          )
+            "src/test/scala/chiselTests/stage/ChiselMainSpec.scala:44:6: Invalid bit range (3,-1)"
+          ),
+          // This spacing is important to make sure the caret is correct
+          // Keep the source-root test below in sync
+          Right("     w(3, -1)"),
+          Right("      ^")
+        )
+      )
+    )
+  }
+  Feature("Builder.error errors with source info even with incorrect source-root") {
+    runStageExpectException(
+      ChiselMainExceptionTest[ChiselException](
+        args = Array("-X", "low", "--source-root", ".."),
+        generator = Some(classOf[BuilderErrorModule]),
+        message = Seq(Right("Fatal errors during hardware elaboration")),
+        stdout = Seq(
+          Right(
+            "src/test/scala/chiselTests/stage/ChiselMainSpec.scala:44:6: Invalid bit range (3,-1)"
+          ),
+          Left("w(3, -1)")
+        )
+      )
+    )
+  }
+  Feature("Builder.error errors accept multiple source-roots") {
+    runStageExpectException(
+      ChiselMainExceptionTest[ChiselException](
+        args = Array("-X", "low", "--source-root", ".", "--source-root", "src/test/resources/chisel3/sourceroot1"),
+        generator = Some(classOf[BuilderErrorModuleFakeSourceInfo]),
+        message = Seq(Right("Fatal errors during hardware elaboration")),
+        stdout = Seq(
+          Right(
+            "Foo:3:10: Invalid bit range (3,-1)"
+          ),
+          // This spacing is important to make sure the caret is correct
+          // Keep the source-root test below in sync
+          Right("I am the file in sourceroot1"),
+          Right("         ^")
+        )
+      )
+    )
+  }
+  Feature("Builder.error errors accept multiple source-roots and pick first match") {
+    runStageExpectException(
+      ChiselMainExceptionTest[ChiselException](
+        args = Array(
+          "-X",
+          "low",
+          "--source-root",
+          "src/test/resources/chisel3/sourceroot2",
+          "--source-root",
+          "src/test/resources/chisel3/sourceroot1"
+        ),
+        generator = Some(classOf[BuilderErrorModuleFakeSourceInfo]),
+        message = Seq(Right("Fatal errors during hardware elaboration")),
+        stdout = Seq(
+          Right(
+            "Foo:3:10: Invalid bit range (3,-1)"
+          ),
+          // This spacing is important to make sure the caret is correct
+          // Keep the source-root test below in sync
+          Right("I am the file in sourceroot2"),
+          Right("         ^")
         )
       )
     )
@@ -289,7 +359,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
         message = Seq(Right("Fatal errors during hardware elaboration")),
         stdout = Seq(
           Right(
-            "ChiselMainSpec.scala:49: Cannot convert 2 to Bool, must be 0 or 1"
+            "ChiselMainSpec.scala:57: Cannot convert 2 to Bool, must be 0 or 1"
           )
         )
       )

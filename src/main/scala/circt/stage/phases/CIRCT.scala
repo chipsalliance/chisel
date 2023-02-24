@@ -3,7 +3,7 @@
 package circt.stage.phases
 
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
-import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation, SourceRootAnnotation}
 
 import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
@@ -26,6 +26,7 @@ import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
 import _root_.logger.LogLevel
 import chisel3.InternalErrorException
 
+import scala.collection.mutable
 import java.io.File
 
 private object Helpers {
@@ -146,6 +147,7 @@ class CIRCT extends Phase {
     var imcp = true
     var logLevel = _root_.logger.LogLevel.None
     var split = circtOptions.splitVerilog
+    val includeDirs = mutable.ArrayBuffer.empty[String]
 
     // Partition the annotations into those that will be passed to CIRCT and
     // those that are not.  The annotations that are in the passhtrough set will
@@ -177,6 +179,9 @@ class CIRCT extends Phase {
         Nil
       case anno: _root_.logger.LogLevelAnnotation =>
         logLevel = anno.globalLogLevel
+        Nil
+      case SourceRootAnnotation(dir) =>
+        includeDirs += dir.toString
         Nil
       /* The following can be dropped. */
       case _: _root_.logger.ClassLogLevelAnnotation => Nil
@@ -216,6 +221,7 @@ class CIRCT extends Phase {
         (!imcp).option("-disable-imcp") ++
         /* Communicate the annotation file through a file. */
         (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
+        includeDirs.flatMap(d => Seq("--include-dir", d.toString)) ++
         /* Convert the target to a firtool-compatible option. */
         ((circtOptions.target, split) match {
           case (Some(CIRCTTarget.FIRRTL), false)        => Seq("-ir-fir")

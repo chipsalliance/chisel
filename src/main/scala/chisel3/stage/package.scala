@@ -27,6 +27,7 @@ package object stage {
           case WarnReflectiveNamingAnnotation => c // Do nothing, ignored
           case ChiselOutputFileAnnotation(f)  => c.copy(outputFile = Some(f))
           case ChiselCircuitAnnotation(a)     => c.copy(chiselCircuit = Some(a))
+          case SourceRootAnnotation(s)        => c.copy(sourceRoots = c.sourceRoots :+ s)
         }
       }
 

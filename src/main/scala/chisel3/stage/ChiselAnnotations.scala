@@ -99,6 +99,30 @@ case object WarningsAsErrorsAnnotation
 
 }
 
+/** A root directory for source files, used for enhanced error reporting
+  *
+  * More than one may be provided. If a source file is found in more than one source root,
+  * the first match will be used in error reporting.
+  */
+case class SourceRootAnnotation(directory: File) extends NoTargetAnnotation with Unserializable with ChiselOption
+
+object SourceRootAnnotation extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "source-root",
+      toAnnotationSeq = { dir =>
+        val f = new File(dir)
+        if (!f.isDirectory()) {
+          throw new OptionsException(s"Must be directory that exists!")
+        }
+        Seq(SourceRootAnnotation(f))
+      },
+      helpText = "Root directory for source files, used for enhanced error reporting",
+      helpValueName = Some("<file>")
+    )
+  )
+}
+
 /** Warn when reflective naming changes names of signals */
 @deprecated("Support for reflective naming has been removed, this object no longer does anything", "Chisel 3.6")
 case object WarnReflectiveNamingAnnotation

@@ -6,6 +6,7 @@ import chisel3.deprecatedMFCMessage
 import chisel3.stage.{
   ChiselGeneratorAnnotation,
   PrintFullStackTraceAnnotation,
+  SourceRootAnnotation,
   ThrowOnFirstErrorAnnotation,
   WarningsAsErrorsAnnotation
 }
@@ -23,6 +24,7 @@ trait CLI { this: Shell =>
     PrintFullStackTraceAnnotation,
     ThrowOnFirstErrorAnnotation,
     WarningsAsErrorsAnnotation,
+    SourceRootAnnotation,
     SplitVerilog
   ).foreach(_.addOptions(parser))
 }
