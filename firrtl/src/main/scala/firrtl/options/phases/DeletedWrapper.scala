@@ -28,10 +28,13 @@ class DeletedWrapper(p: Phase) extends Phase with Translator[AnnotationSeq, (Ann
 
     val (in, out) = (mutable.LinkedHashSet() ++ b._1, mutable.LinkedHashSet() ++ b._2)
 
-    (in -- out).map {
-      case DeletedAnnotation(n, a) => DeletedAnnotation(s"$n+$name", a)
-      case a                       => DeletedAnnotation(name, a)
-    }.toSeq ++ b._2
+    (in
+      .diff(out))
+      .map {
+        case DeletedAnnotation(n, a) => DeletedAnnotation(s"$n+$name", a)
+        case a                       => DeletedAnnotation(name, a)
+      }
+      .toSeq ++ b._2
 
   }
 
