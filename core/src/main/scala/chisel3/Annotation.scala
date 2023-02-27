@@ -28,11 +28,7 @@ trait ChiselMultiAnnotation {
   def toFirrtl: Seq[Annotation]
 }
 
-/** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
-  * during a run of
-  * [[Driver$.execute(args:Array[String],dut:()=>chisel3\.RawModule)* Driver.execute]].
-  * Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
-  * FIRRTL.
+/** Mixin for [[ChiselAnnotation]] that instantiates an associated Transform when this Annotation is present
   */
 trait RunFirrtlTransform extends ChiselAnnotation {
   def transformClass: Class[_ <: Transform]
@@ -81,7 +77,7 @@ object annotate {
   *
   * @note Calling this on [[Data]] creates an annotation that Chisel emits to a separate annotations
   * file. This file must be passed to FIRRTL independently of the `.fir` file. The execute methods
-  * in [[chisel3.Driver]] will pass the annotations to FIRRTL automatically.
+  * in `chisel3.Driver` will pass the annotations to FIRRTL automatically.
   */
 
 object doNotDedup {

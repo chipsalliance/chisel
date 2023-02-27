@@ -176,8 +176,8 @@ object ChiselStage {
       .get
   }
 
-  /** Return a [[firrtl.ir.Circuit]] for a [[chisel3.internal.firrtl.Circuit]](aka chirrtl)
-    * @param chirrtl [[chisel3.internal.firrtl.Circuit]] which need to be converted to [[firrtl.ir.Circuit]]
+  /** Return a `firrtl.ir.Circuit` for a chisel3.internal.firrtl.Circuit` (aka chirrtl)
+    * @param chirrtl `chisel3.internal.firrtl.Circuit` which need to be converted to `firrtl.ir.Circuit`
     */
   def convert(chirrtl: cir.Circuit): fir.Circuit = {
     val phase = new ChiselPhase {

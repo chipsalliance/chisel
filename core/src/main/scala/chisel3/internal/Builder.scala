@@ -176,7 +176,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     * If the final computed name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
     *
-    * Is a higher priority than [[autoSeed]], in that regardless of whether [[autoSeed]]
+    * Is a higher priority than `autoSeed`, in that regardless of whether `autoSeed`
     * was called, [[suggestName]] will always take precedence.
     *
     * @param seed The seed for the name of this component

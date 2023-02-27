@@ -316,7 +316,7 @@ object Select {
   }
 
   /** Selects a kind of arithmetic or logical operator directly instantiated within given module
-    * The kind of operators are contained in [[chisel3.internal.firrtl.PrimOp]]
+    * The kind of operators are contained in `chisel3.internal.firrtl.PrimOp`
     * @param opKind the kind of operator, e.g. "mux", "add", or "bits"
     * @param module
     */

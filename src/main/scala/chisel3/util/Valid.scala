@@ -55,8 +55,8 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   *   }
   * }}}
   *
-  * To convert this to a "valid" interface, you wrap it with a call to the [[Valid$.apply `Valid` companion object's
-  * apply method]]:
+  * To convert this to a `valid`` interface, you wrap it with a call to the `Valid`.apply `Valid` companion object's
+  * apply method:
   * {{{
   *   val bar = Valid(new MyBundle)
   * }}}
@@ -69,7 +69,8 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   *   }
   * }}}
   *
-  * In addition to adding the `valid` bit, a [[Valid.fire]] method is also added that returns the `valid` bit. This
+  * In addition to adding the `valid` bit, a `Valid.fire` method is also added that returns the `valid` bit. This
+  *
   * provides a similarly named interface to [[DecoupledIO]]'s fire.
   *
   * @see [[Decoupled$ DecoupledIO Factory]]

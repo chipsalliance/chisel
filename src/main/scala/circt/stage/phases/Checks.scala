@@ -9,7 +9,7 @@ import firrtl.annotations.Annotation
 import firrtl.options.{Dependency, OptionsException, Phase, TargetDirAnnotation}
 import firrtl.stage.OutputFileAnnotation
 
-/** Check properties of an [[AnnotationSeq]] to look for errors before running CIRCT. */
+/** Check properties of an [[firrtl.AnnotationSeq!]] to look for errors before running CIRCT. */
 class Checks extends Phase {
 
   override def prerequisites = Seq.empty

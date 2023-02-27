@@ -170,14 +170,14 @@ object QMCMinimizer extends Minimizer {
     */
   private def getCover(implicants: Seq[Implicant], minterms: Seq[Implicant]): Seq[Implicant] = {
 
-    /** Calculate the implementation cost (using comparators) of a list of implicants, more don't cares is cheaper
+    /* Calculate the implementation cost (using comparators) of a list of implicants, more don't cares is cheaper
       *
       * @param cover Implicant list
       * @return How many comparators need to implement this list of implicants
       */
     def getCost(cover: Seq[Implicant]): Int = cover.map(_.bp.mask.bitCount).sum
 
-    /** Determine if one combination of prime implicants is cheaper when implementing as comparators.
+    /* Determine if one combination of prime implicants is cheaper when implementing as comparators.
       * Shorter term list is cheaper, term list with more don't cares is cheaper (less comparators)
       *
       * @param a    Operand a
@@ -188,7 +188,7 @@ object QMCMinimizer extends Minimizer {
       val ca = getCost(a)
       val cb = getCost(b)
 
-      /** If `a` < `b`
+      /* If `a` < `b`
         *
         * Like comparing the dictionary order of two strings.
         * Define `a` < `b` if both `a` and `b` are empty.

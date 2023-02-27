@@ -401,8 +401,8 @@ package experimental {
 
     /** The desired name of this module (which will be used in generated FIRRTL IR or Verilog).
       *
-      * The name of a module approximates the behavior of the Java Reflection [[`getSimpleName` method
-      * https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html#getSimpleName--]] with some modifications:
+      * The name of a module approximates the behavior of the Java Reflection `getSimpleName` method
+      * https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html#getSimpleName-- with some modifications:
       *
       * - Anonymous modules will get an `"_Anon"` tag
       * - Modules defined in functions will use their class name and not a numeric name

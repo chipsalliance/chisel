@@ -170,7 +170,7 @@ object DataView {
     )
   }
 
-  /** Provides implementations of [[DataView]] for [[Tuple2]] to [[HWTuple2]] */
+  /** Provides implementations of [[DataView]] for `Tuple2`  to [[HWTuple2]] */
   implicit def tuple2DataView[T1: DataProduct, T2: DataProduct, V1 <: Data, V2 <: Data](
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
@@ -184,7 +184,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple3]] to [[HWTuple3]] */
+  /** Provides implementations of [[DataView]] for `Tuple3` to [[HWTuple3]] */
   implicit def tuple3DataView[T1: DataProduct, T2: DataProduct, T3: DataProduct, V1 <: Data, V2 <: Data, V3 <: Data](
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
@@ -199,7 +199,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple4]] to [[HWTuple4]] */
+  /** Provides implementations of [[DataView]] for `Tuple4` to [[HWTuple4]] */
   implicit def tuple4DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -227,7 +227,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple5]] to [[HWTuple5]] */
+  /** Provides implementations of [[DataView]] for `Tuple5` to [[HWTuple5]] */
   implicit def tuple5DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -272,7 +272,7 @@ object DataView {
     )
   }
 
-  /** Provides implementations of [[DataView]] for [[Tuple6]] to [[HWTuple6]] */
+  /** Provides implementations of [[DataView]] for `Tuple6` to [[HWTuple6]] */
   implicit def tuple6DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -320,7 +320,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple7]] to [[HWTuple7]] */
+  /** Provides implementations of [[DataView]] for `Tuple7` to [[HWTuple7]] */
   implicit def tuple7DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -373,7 +373,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple8]] to [[HWTuple8]] */
+  /** Provides implementations of [[DataView]] for `Tuple8` to [[HWTuple8]] */
   implicit def tuple8DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -431,7 +431,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple9]] to [[HWTuple9]] */
+  /** Provides implementations of [[DataView]] for `Tuple9` to [[HWTuple9]] */
   implicit def tuple9DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -494,7 +494,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple10]] to [[HWTuple10]] */
+  /** Provides implementations of [[DataView]] for `Tuple10` to [[HWTuple10]] */
   implicit def tuple10DataView[
     T1:  DataProduct,
     T2:  DataProduct,

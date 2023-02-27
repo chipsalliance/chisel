@@ -5,6 +5,9 @@ package chisel3
 import chisel3.internal.{BiConnect, Builder}
 import chisel3.experimental.{prefix, SourceInfo}
 
+/*
+ * * @define colonGreaterEq The "flipped connection operator", or the "backpressure connection operator" between a producer and consumer.
+ */
 package object connectable {
 
   import Connection.connect
