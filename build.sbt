@@ -124,7 +124,6 @@ lazy val chiselSettings = Seq(
 
 autoCompilerPlugins := true
 autoAPIMappings := true
-autoAPIMappings := true
 
 // Plugin must be fully cross-versioned (published for Scala minor version)
 // The plugin only works in Scala 2.12+
