@@ -114,16 +114,6 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     super.scalacOptions() ++ Agg(s"-Xplugin:${plugin.jar().path}")
   }
 
-  object stdlib extends CommonModule {
-    override def moduleDeps = super.moduleDeps ++ Agg(m)
-
-    override def millSourcePath = m.millSourcePath / "stdlib"
-
-    override def crossScalaVersion = m.crossScalaVersion
-
-    override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
-  }
-
   object test extends Tests with TestModule.ScalaTest with ScalafmtModule {
     override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
 
@@ -142,7 +132,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
       v.scalacheck
     ) ++ m.chiseltestIvyDeps
 
-    override def moduleDeps = super.moduleDeps ++ Seq(stdlib) ++ chiseltestModule
+    override def moduleDeps = super.moduleDeps ++ chiseltestModule
   }
 
   override def buildInfoPackageName = Some("chisel3")
