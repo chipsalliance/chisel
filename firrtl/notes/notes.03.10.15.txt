@@ -1,0 +1,33 @@
+Lower to ground types
+
+simple declarations:
+  wire w : UInt[3]
+  ==>
+  wire temp1 : UInt
+  wire temp2 : UInt
+  wire temp3 : UInt
+
+  reg r : UInt[3] ;TODO
+
+bundle declarations:
+  wire w : {male data:SInt, female ready:UInt}
+  wire temp1 : SInt
+  wire temp2 : UInt
+
+other
+  wire w : {male data : SInt[3], female ready : UInt}
+  wire temp1 : SInt
+  wire temp2 : SInt
+  wire temp3 : SInt
+  wire temp4 : UInt
+
+ports:
+  input a : {m: data, m:valid, f:rdy}
+  ==>
+  input a1
+  input a2
+  output a3
+
+mem m : {m, 
+
+key function: expand-exp(e:Expression) -> List<[Expression,Gender]>

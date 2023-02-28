@@ -1,0 +1,207 @@
+===================================
+Supporting Memory Variety in FIRRTL
+===================================
+
+----------- Masks? ------------------
+
+== High FIRRTL ==
+mem m : { tag : UInt<10> data : UInt<128> }[32]
+accessor w = m[i]
+
+== Low FIRRTL ==
+mem m : { tag : UInt<10>[32] data : UInt<128>[32] }
+wire w#tag : UInt<10>
+wire w#data : UInt<128>
+WritePort(m.tag,i,en*) := w#tag
+WritePort(m.data,i,en*) := w#data
+
+== Example Backend == ;Keep merged mem for masks, easy because mem declaration preserves bundle type
+mem m : UInt<138>[32]
+wire w : UInt<138>
+wire w#tag : UInt<10>
+wire w#data : UInt<128>
+w := concat(w#tag,w#concat)
+MaskedWritePort(m,i,mask*) := w ; mask* calculated from enables and mem declaration
+
+== Example Backend == ;Split mem, easy because accessors are bundle-expanded
+mem m#tag : UInt<10>[32]
+mem m#data : UInt<128>[32]
+wire w#tag : UInt<10>
+WritePort(m#tag,i,en*) := w#tag
+wire w#data : UInt<128>
+WritePort(m#data,i,en*) := w#data
+
+
+--------- Combination/Sequential Reads? ----------
+
+== High FIRRTL ==
+cmem m-com : UInt<128>[32] 
+smem m-seq : UInt<128>[32]
+
+== Low FIRRTL ==
+cmem m-com : UInt<128>[32] ;FIRRTL does nothing
+smem m-seq : UInt<128>[32] 
+
+
+--------- Read&Write Ports? ---------------
+
+read accessor r = m[i]
+write accessor w = m[i]
+readwrite accessor rw = m[i]
+? accessor u = m[i] /can infer read, write, but not readwrite
+
+
+== Chisel ==
+val m = Mem(UInt(128),32)
+val rw = ReadWritePort(m,index)
+
+== High FIRRTL ==
+mem m : UInt<128>[32]
+readwrite accessor rw = m[index]
+
+== Low FIRRTL ==
+mem m<1> : UInt<128>[32] ;r/w ports are always synchronous because writes always synchronous
+wire rw : UInt<128>
+rw := ReadWritePort(m,index,ren*,wen*) 
+
+== Backends ==
+   ; Example of read/write to same address, can handle differently in BRAM's on FPGA,
+   but is undefined for SRAMs. (Specifically for Synchronous). 
+
+----------- Notes -----------------
+
+   Catch-all is to always use black boxes
+   We are not absorbing registers!
+      User registers the address input, and chisel is allowed to retime the register into the address
+   Not firrtl's job to autotune - that is the library writer (ASIC backend? FIRRTL library?)
+      e.g. FPGA backend is an executable that iterates and does DSE
+
+
+
+================================
+Supporting Annotations in FIRRTL
+================================
+
+Example pass:
+We have a decoupled interface in Chisel - {data:UInt, valid:UInt, flip ready:UInt} - and want
+to test our design by adding a random number of buffers between every bulk connect of this type.
+
+== High FIRRTL ==
+wire a : { data : UInt<32>, valid : UInt<1>, flip ready : UInt<1> }
+wire b : { data : UInt<32>, valid : UInt<1>, flip ready : UInt<1> }
+b := a 
+
+== Low FIRRTL, no FIFO PASS ==
+wire a#data : UInt<32>
+wire a#valid : UInt<1>
+wire a#ready : UInt<1>
+wire b#data : UInt<32>
+wire b#valid : UInt<1>
+wire b#ready : UInt<1>
+b#data := a#data
+b#valid := a#valid
+a#ready := b#ready
+
+== High FIRRTL after FIFO Pass ==
+wire a : { data : UInt, valid : UInt, flip ready : UInt }
+reg r : { data : UInt, valid : UInt, flip ready : UInt }
+wire b : { data : UInt, valid : UInt, flip ready : UInt }
+r := a
+b := r
+
+== Low FIRRTL after FIFO Pass ==
+wire a#data : UInt<32>
+wire a#valid : UInt<1>
+wire a#ready : UInt<1>
+wire b#data : UInt<32>
+wire b#valid : UInt<1>
+wire b#ready : UInt<1>
+reg r#data : UInt<32>
+reg r#valid : UInt<1>
+reg r#ready : UInt<1>
+r#data := a#data
+r#valid := a#valid
+a#ready := r#ready
+b#data := r#data
+b#valid := r#valid
+r#ready := b#ready
+
+-------- Option 1: Only Unique IDs --------
+FIRRTL provides no support for annotations, except guaranteeing that each node has a unique id.
+-------------------------------------------
+Generator Pass Structure:
+   Walk tree and build hashtable of symbol => boolean, where each reference's id matches a symbol, and the boolean is true if the type of the reference matches the decoupled interface.
+
+Consumer Pass Structure:
+   Walk tree and for any ':=', check if both references are in table. If so, insert a random number of buffers
+
+Points: 
+ + Very simple to implement.
+ - If generator operates on high firrtl and consumer operates on low firrtl, bundle-expansion breaks the consumer pass. Whose fault is it??
+ - Can't pass annotations from front-end to back-end in the tree, but in auxilliary data structure, which can become out of date.
+
+TLDR: Onus is on generator pass to make it robust. Middle passes can screw things up. Easiest.
+
+-------- Option 2: Typed Annotations ---------
+FIRRTL has (order of) 10 types of annotations with known propagation properties; each pass must state which types of annotations are preserved, which are generated, and which are broken.
+----------------------------------------------
+Generator Pass Structure:
+   Walk tree and annotate all nodes that match the decoupled interface with an annotation type that propagates through bundle expansion
+
+Consumer Pass Structure:
+   Walk tree and for an ':=', check if both references contain generated annotation. If so, insert a random number of buffers.
+
+Points:
+ + Clear assignment of blame - notion of support for annotations can keep passes/people responsible
+ - Requires thinking critically about all types of annotations that will be needed. Adds additional work to every pass.
+ - Pass complexity is associated with number of annotation types, not actual pass algorithm
+
+TLDR: Onus is shared between all passes. May limit types of annotations. Strong assignment of blame.
+
+-------- Option 3: History Trees ----------
+FIRRTL records all graph transformations (think git), where nodes have pointers to deleted/replaced nodes. A pass can walk the history graph to understand how previous passes mutated the graph (and its annotations).
+-------------------------------------------
+Generator Pass Structure:
+   Walk tree and annotate all nodes that match the decoupled interface.
+
+Consumer Pass Structure:
+   Walk tree and for an ':=', look at both node's history to find any ancestor node which was annotated. If so, insert random number of buffers.
+
+Points:
+ + Intermediate passes can be oblivious to all annotations.
+ - Hard to write consumer pass correctly, because arbitrary passes could really mess with the graph. Need significant FIRRTL support for maintaining history table, and all passes must correctly use API to ensure history is indeed correct. Hard to assign blame.
+ - If ever restructure upstream passes, could very easily break downstream passes because can depend on history as well as the tree
+
+TLDR: Onus is on consumer pass. Requires significant support from FIRRTL.
+
+--------- Option 4: Annotation Propogation Passes ----------
+Each FIRRTL pass constructs a table mapping unique id nodes from the old circuit to a list of unique id nodes in the new circuit. The annotation writer writes a pass that uses this table, the old circuit, and the new circuit to create a new circuit with the correct annotations.
+------------------------------------------------------------
+Generator Pass Structure:
+   Walk tree and annotate all nodes that match the decoupled interface
+Propagation Pass Structure:
+   Per row in the annotation table, add the annotation from the old circuit's id to each node in the new circuit that match the list of nodes.
+Consumer Pass Structure:
+   Walk tree and for each ':=', look at both node's annotations and, if contains correct annotation, insert random number of buffers.
+Points:
+  + Passes remain simple - only need to create table
+  + Simple passes makes writing the annotation propogation pass easier
+  - Up to annotation writer to validate whether a pass's constructed annotation table is correct
+
+
+   
+  
+
+Debug info
+Tagged Decoupled
+Layout ideas
+Daisy chains
+Simulation annotations
+Probability distribution of values
+After inlining, what module things came from
+
+
+Inline Module 
+ensure_combinational Module
+throw/catch exceptions (more fanciful); on wire declaration
+

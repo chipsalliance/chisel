@@ -1,0 +1,84 @@
+LIST OF FEEDBACK, QUESTIONS, AND ANSWERS        
+
+Q1. Bundles seem a bit odd -- I don't really like the idea this implicit direction thing.
+A1. We agree that using the same names for port and bundle directions is confusing, we will will change the direction names for bundle fields
+
+Q2. Why are there nodes?  Can't these just be wires?
+A2. Nodes are names of intermediate results, while wires have complicated semantics because you can connect to a wire.  The compiler deals with nodes in a simpler way, because it knows nothing can connect to it.  This means the compiler will run faster, and we can provide a checking mechanism if users try to connect to a node when they shouldn’t.
+Example:
+        x + y := UInt(10) ; This should cause an error!
+        =>
+        node temp = x + y
+        temp := UInt(1) ; Since the compiler will generate a node temp, this will get cause
+
+Q3. There's some ambiguity in the spec as to how you refer to integers -- sometimes you mean a literal integer, and sometimes either Int or UInt.
+A3. Could you point to specific cases? Some confusion may be that the first two pages contain the ABSTRACT syntax definition, while later in the spec (Section 11) describes the concrete syntax.
+
+Q4. Why are there memories?  Can't these just be vectors of registers?  Or I guess registers of a vector type?
+A4. No, registers have their own semantics (.init fields), and have index expressions (.2). These are not valid for memories. You can have a register of vector type, but not a vector of registers – by making vector a type, its easier to write the compiler to correctly handle Vec[Vec] type. 
+
+Q5. Are memories sequential or combinational?  This seems to be a sticking point of all other HDLs...
+A5. Good point. We will add a new field to the Mem construct for specifying sequential or combinational. This will be dealt with in whichever backend is used.
+
+Q6. I don't understand the purpose of the "letrec" form, it seems like you've just got two entire copies of the language stuck together.  Would it be possible to define the lowered form as something that looks closer to the regular form, so everyone doesn't have to implement all their transformations twice?
+Q7. Agreed, it is not that pretty. The reason for the apparent duplication of the language is to express two different representations of construction of a graph. The higher form separates declaring a structure, and connecting to it. Although this is easier to write/generate, it is much harder to write passes because identifying the inputs/outputs of structures is non-trivial.
+    However, the lowered form is a specialized usage of the letrec, where all structural elements and their inputs are declared at the same time. This is easier for writing passes, but harder to generate. Thus, we merged the two specifications using the letrec construct.
+    You won’t have to write two versions of each pass – passes should either operate at the higher or lower form. However, it would be useful to go through some potential passes and explain how generally we imagine they would be written.
+    To make all this less confusing, we can change the concrete syntax of all structural elements so they look less like expressions/statements.
+ 
+Q8. There seem to be some convenience features in FIRRTL that I don't think should be there -- specifically, things that might make this easier to write as human-written language that end up making FIRRTL less strict and therefor harder to write generators for:
+* Modules have an implicit reset port that can also be declared.  This just seems like a recipe for disaster -- someone is going to not know this, and then declare a field called reset, which FIRRTL won't throw an error for but will instead just change the behavior of all the existing nodes in the circuit.
+A8. No it won’t – there will be a pass ensuring that reset is a 1-bit UInt.
+
+* Lots of the "Primitive Operations" can be constructed from others in trivial ways, which just adds more boilerplate code to anything that has to walk a FIRRTL graph.  Specifically:
+  - concat
+  - bit
+  - add/sub (or add-mod/sub-mod)
+  - lt/leq/gt/geq, pad
+  - multiplex
+A8. These are included to allow backends to treat them differently, if needed. For example, if compiling to run on x86, we want to keep these ops around so it can generate more optimal code.
+
+* Can things like "bits" or "pad" take "?" as the width argument?  That would be very useful for generators.
+A8. Can you provide an example for when you would want to extract an unknown number of bits?
+
+* I don't like the implicit growth, I'd argue that it should be explicit.  Particularly if you support something like
+
+    add(pad(a, ?), pad(b, ?))
+
+  for saying "these widths may be different, just expand one to make them match" then you could still easily have your generator use the weaker version but allow generators that think they know their widths a bit better to get error messages from the compiler.
+
+A8. Assuming width growth is the common case, then the firttl code will have pad(a,?) everywhere, which is annoying. However, we did come up with an example where implicit growth silently hides an error:
+Example:
+module Counter :
+   input enable : UInt(1)
+   output out : UInt(3)
+   reg r : UInt
+   when enable :
+      r := r + 1
+   r.init := 0
+   out := r
+In this case, r will toggle between 0 and 1, when in reality we want it to fail because the size of the counter should ideally be 3 bits. Thus, we will play around with non-implicit growth and get back to you.
+
+Q9. It feels funny you have things like "ltu", but then not the same for
+"rsh".
+A9. We will get rid of the generics, and instead add all combinations (i.e. adduu, addus, addss, ltuu, ltus etc.)
+
+Q10. There's no way to do assertions.  It'd be great to have both static
+and dynamic assertions.
+A10. What do you mean by static? Can you give me an example? We will add a dynamic assertion.
+
+Q11. How would one convert from a signed integer to an unsigned integer?
+A11. We will add this convert operation to the primop.
+
+Future questions to answer:
+Introduction – motivation, and intended usage
+Philosophical justifications for all constructs
+More introduction for types, e.g. what is a ground type?
+What is a statement? What is an expression? What is a memory? Difference between vector type and memory? What are accessors for?
+Why would I ever write an empty statement? Mainly for use by compiler/passes
+What is a structural element? Duplication?
+Subtracting two unsigned numbers… Should talk to a math guy to figure it out
+What are shift left and shift right operations? HW doesn’t have these concepts. Need justification.
+What is lowered form? What is it for?
+
+

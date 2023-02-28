@@ -1,0 +1,110 @@
+queue_rules:
+- name: default
+  conditions:
+  - status-success=all tests passed
+pull_request_rules:
+- name: automatic squash-and-merge on CI success and review
+  conditions:
+  - status-success=all tests passed
+  - '#approved-reviews-by>=1'
+  - '#changes-requested-reviews-by=0'
+  - base=master
+  - label="Please Merge"
+  - label!="DO NOT MERGE"
+  - label!="bp-conflict"
+  actions:
+    queue:
+      name: default
+      method: squash
+      update_method: merge
+- name: backport to 1.5.x
+  conditions:
+  - merged
+  - base=master
+  - milestone=1.5.x
+  actions:
+    backport:
+      branches:
+      - 1.5.x
+      labels:
+      - Backport
+      ignore_conflicts: true
+      label_conflicts: bp-conflict
+    label:
+      add:
+      - Backported
+- name: backport to 1.4.x, 1.5.x
+  conditions:
+  - merged
+  - base=master
+  - milestone=1.4.x
+  actions:
+    backport:
+      branches:
+      - 1.4.x
+      - 1.5.x
+      labels:
+      - Backport
+      ignore_conflicts: true
+      label_conflicts: bp-conflict
+    label:
+      add:
+      - Backported
+- name: backport to 1.3.x, 1.4.x, 1.5.x
+  conditions:
+  - merged
+  - base=master
+  - milestone=1.3.x
+  actions:
+    backport:
+      branches:
+      - 1.3.x
+      - 1.4.x
+      - 1.5.x
+      labels:
+      - Backport
+      ignore_conflicts: true
+      label_conflicts: bp-conflict
+    label:
+      add:
+      - Backported
+- name: automatic squash-and-mege of 1.3.x backport PRs
+  conditions:
+  - status-success=all tests passed
+  - '#changes-requested-reviews-by=0'
+  - base=1.3.x
+  - label="Backport"
+  - label!="DO NOT MERGE"
+  - label!="bp-conflict"
+  actions:
+    queue:
+      name: default
+      method: squash
+      update_method: merge
+- name: automatic squash-and-mege of 1.4.x backport PRs
+  conditions:
+  - status-success=all tests passed
+  - '#changes-requested-reviews-by=0'
+  - base=1.4.x
+  - label="Backport"
+  - label!="DO NOT MERGE"
+  - label!="bp-conflict"
+  actions:
+    queue:
+      name: default
+      method: squash
+      update_method: merge
+- name: automatic squash-and-mege of 1.5.x backport PRs
+  conditions:
+  - status-success=all tests passed
+  - '#changes-requested-reviews-by=0'
+  - base=1.5.x
+  - label="Backport"
+  - label!="DO NOT MERGE"
+  - label!="bp-conflict"
+  actions:
+    queue:
+      name: default
+      method: squash
+      update_method: merge
+

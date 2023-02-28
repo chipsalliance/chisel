@@ -1,0 +1,8 @@
+Firrtl spec feedback
+
+add limited support for zero width wires?
+
+Add more explanation for what types of passes
+spec of what chisel3/firrtl whole compiler toolchain looks like
+
+Why is verilog generation unreadable and slow for chisel 2.0?

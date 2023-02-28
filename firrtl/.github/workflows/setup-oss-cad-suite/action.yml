@@ -1,0 +1,13 @@
+name: Setup OSS CAD Suite
+
+runs:
+  using: composite
+  steps:
+    - name: Install Tabby OSS Cad Suite
+      shell: bash
+      env:
+        VERSION: 2021-11-09
+      run: |
+        ARTIFACT=oss-cad-suite-linux-x64-$(echo $VERSION | tr -d '-')
+        wget -q -O - https://github.com/YosysHQ/oss-cad-suite-build/releases/download/${VERSION}/${ARTIFACT}.tgz | tar -zx
+        echo "$(pwd)/oss-cad-suite/bin" >> $GITHUB_PATH
