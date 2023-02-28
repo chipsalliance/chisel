@@ -1,0 +1,65 @@
+Functions (defn) have (1) a static type signature and (2) an implementation
+You can define them seperately
+  type signature -> defmulti
+  implementation -> defmethod
+
+Thus, you can have multiple defmethods per defmulti.
+However, you cannot have:
+  defmulti a(x:?) -> ?
+  defn a(x:Int) -> Int
+because it is unclear which to call (2 matching static type signatures)
+
+; [a b c] <- a tuple
+;
+; val rest = List(1,2,3)
+; val b = List(0,rest) --> (0,1,2,3)
+; val c = list(0,rest) --> (0,(1,2,3))
+
+; label<Int> myret :
+;    for i in 0 to 10 do :
+;       if i == 5:
+;          myret(i)
+;    0
+
+; val v = Vector<Int>()
+; add(v,10)
+; add(v,20)
+; add(v,32)
+; for x in v do :
+;    println(x)
+
+
+1. explain curly braces in 
+     print{o, _} $
+     match(k) :
+        (k:RegKind) : "reg:"
+   My guess is you are passing in a different function depending on the type of k, so you need to lazily evaluate the print, which signifies the {}'s.
+2. explain where in
+     Circuit(modules*, main(c)) where :
+        val modules* =
+           for m in modules(c) map :
+              Module(name(m), ports(m), to-command(body(m)))
+   My guess is you are again evaluating modules* before Circuit, so you are passing in modules lazily?
+3. difference between defn and defmethod?
+
+a typeof T
+a and b
+a or b
+a as T
+
+
+append(list1,list2) -> list1,list2
+List(x,list) -> x,list
+list() -> empty
+list(a) -> a
+list(a,b) -> a,b 
+
+println-all([a b c])
+
+to extract values (with correct type-age) from a tuple:
+val x = [1 "hi"]
+val [a,b] = x
+a typeof Int
+b typeof String
+
+to combine symbols: symbol-join

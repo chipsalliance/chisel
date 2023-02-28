@@ -1,0 +1,81 @@
+reg r: UInt(16)
+
+=>
+
+reg r: UInt(16)
+wire r_init : UInt(16)
+r_init := NULL
+
+when reset :
+   r := r_init
+
+===============
+
+reg r: UInt(16)
+r.init := UInt(0)
+
+=>
+
+reg r: UInt(16)
+wire r_init : UInt(16)
+r_init := NULL
+r_init := UInt(0)
+when reset :
+   r := r_init
+
+=>
+
+reg r: UInt(16)
+wire r_init2 : UInt(16)
+r_init2 := NULL
+wire r_init : UInt(16)
+r_init := NULL
+r_init := UInt(0)
+when reset :
+   r := r_init
+when reset :
+   r := r_init2
+
+
+======
+
+We continue to simplify from the previous example. Here's the input we had (but with the incorrect lines removed).
+
+reg r: UInt(16)
+wire r_init2 : UInt(16)
+r_init2 := NULL
+wire r_init : UInt(16)
+r_init := NULL
+r_init := UInt(0)
+when reset :
+   r := r_init
+when reset :
+   r := r_init2
+
+One of the following passes will turn wires into nodes, by scanning to see what they are connected to.
+
+reg r: UInt(16)
+node r_init2 = NULL
+node r_init = UInt(0)
+when reset :
+   r := r_init
+when reset :
+   r := r_init2
+
+Another pass will compute the final value connected to the register, expressed as a bunch of muxes. The default value for a register is set to itself.
+
+node r_init2 = NULL
+node r_init = UInt(0)
+reg r:UInt(16) = Mux(reset, r_init2, Mux(reset, r_init, r))
+
+Next we inline all the nodes with NULL in them, to arrive at the final expression for the register.
+
+reg r:UInt(16) = Mux(reset, NULL, Mux(reset, r_init, r))
+
+NULL's do nothing, so any expression of the form Mux(a, NULL, b) can be simplified to b. Arriving finally at:
+
+reg r:UInt(16) = Mux(reset, r_init, r)
+
+which is what we wanted. 
+
+

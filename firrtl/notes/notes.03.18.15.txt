@@ -1,0 +1,74 @@
+WHEN EXPANSION
+
+Goal:
+reg r
+wire w
+when p1 :
+  w := b
+  r.init := x
+    when p2 :
+      w := c
+      r := d
+r := e
+
+==>
+
+1. Remove last connect semantics
+2. Remove conditional blocks
+3. Eliminate concept of scoping
+
+Exp    | Value
+--------------
+r      | e
+w      | mux(p1,mux(p2,c,b),null)
+r.init | mux(p1,x,null)
+
+==>
+
+Symbolic Value - what can appear in value column
+sv = e
+   | null
+   | svmux(e,sv1,sv2)
+
+State:
+{
+  r => void
+  r.init => p1
+  w => svmux(e,_,_)
+}
+
+==>
+
+Build two tables, one mapping symbols to symbolic values, and another mapping symbols to declared types
+
+if w is a wire:
+merge {r=>x, w=>y} with {r=>x} under p : {r=>svmux(p,x,x), w=>y}
+
+if s is a reg:
+merge {r=>x,s=>y} with {r=>x} under p : {r=>svmux(p,x,x), s=>svmux(p,y,void)} 
+;this is to correctly calculate the ENABLE signal! when actually calculating the input, we will reduce it
+;actually, since we will be doing the reducing anyways, we might as well not do anything different for wires, 
+;  and instead do the reduction step separately
+
+wire r     {r=>VOID}
+r := x     {r=>x}
+when p     {r=>x}
+  reg s    {r=>x,s=>VOID}
+  s := y   {r=>x,s=>y}
+  wire w   {r=>x,s=>y,w=>VOID}
+else       {r=>x}
+  reg s    {r=>x,s=>VOID}
+  wire w   {r=>x,s=>VOID,w=>VOID}
+  w := z   {r=>x,s=>VOID,w=>z}
+  w := y   {r=>x,s=>y,w=>y}
+else 
+  emptystmt {r=>x}
+;merge table-c with table-a
+;get unique keys of table-a + table-c
+; (r,s,w)
+{r=>(p?x:x),s=>(p?y:VOID),w=>(p?y:VOID)}
+
+
+
+
+

@@ -1,0 +1,77 @@
+========= RENAME STRATEGY =========
+Special chars ~!@#$%^*-_+=?/ get renamed to _XX, where XX is a hex representation of the symbol
+
+a_x 
+=> 
+a_XXx
+
+a_XXx 
+=> 
+a_XXXXx
+
+This guarantees all symbols use a subset of the character set
+
+Now, I need to rename duplicate symbols, so:
+
+wire x
+when p
+  wire x
+
+=>
+
+wire x%0
+when p
+  wire x%1
+
+We know that all new symbols are unique because they use a special character
+At this point, all names are unique.
+
+-- Bundle Expansion --
+To deal with bundle expansion, use another different special character:
+
+wire x : {a,b}
+
+=>
+
+wire x#a
+wire x#b
+
+-- Vector Expansion --
+
+To deal with bundle expansion, use another different special character:
+
+wire x : UInt<1>[3]
+
+=>
+
+wire x$0 : UInt<1>
+wire x$1 : UInt<1>
+wire x$2 : UInt<1>
+
+-- Creating Temporaries --
+To deal with creating temporaries, use another different special character:
+
+node x = a + b * c
+=>
+node x!0 = b * c
+node x!1 = a + x!0
+node x = x!1
+
+Finally, to deal with backends that only use subsets of the special characters, do another rename step to remove special characters (must remove $ again!)
+
+ASCII Hex
+_ 5F __
+~ 7E _A
+! 21 _B
+@ 40 _C
+# 23 _D
+$ 24 _E
+% 25 _F
+^ 5E _G
+* 2A _H
+- 2D _I
++ 2B _J
+= 3D _K
+? 3F _L
+/ 2F _M
+

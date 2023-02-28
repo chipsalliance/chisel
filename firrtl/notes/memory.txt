@@ -1,0 +1,40 @@
+Whats resonable to express, how this relates to hardware
+
+Catch-all? Can always use black boxes
+
+Read/write ports? explicitly call it out in front end, and have a r/w accessor
+   Can infer from enables that they are mutually exclusive in some cases, in general need SAT solver
+   Writer often wants a r/w port to always be generated
+   r/w ports are always synchronous because writes always synchronous
+   Example of read/write to same address, can handle differently in BRAM's on FPGA, but is undefined for SRAMs. (Specifically for Synchronous). 
+      In this case, it is backend speciifc, so should not be in chisel code.
+
+Don't have both synchronous and asynchronous reads on the same memory
+Declaring the memory itself to have delay? - have node for seq, and node for combinational. Could have >1 delay, but not often used. Boolean for now (0 or 1)
+
+Absorbing registers should stop - register the address input, and chisel is allowed to retime the register into the address
+
+Not firrtl's job to autotune - that is the library writer (ASIC backend? FIRRTL library?)
+   e.g. FPGA backend is an executable that iterates and does DSE
+
+Masks? 
+   Front-end generates mem's of type bundles or vec for enable granularity.
+   Lowering does not expand these.
+   Backends treat these differently.
+   How do we do this? Try not expanding mems, but expanding accessors.
+   e.g.
+
+mem m : { tag : UInt<10> data : UInt<128> }[128]
+accessor r = m[i]
+accessor w = m[i]
+
+==>
+
+mem m : { tag : UInt<10> data : UInt<128> }[128]
+accessor r#tag = m.tag[i]
+accessor r#data = m.data[i]
+accessor w#tag = m.tag[i]
+accessor w#data = m.data[i]
+
+
+Eliminate flips from bundles in mems, must error.

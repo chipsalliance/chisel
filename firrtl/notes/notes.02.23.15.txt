@@ -1,0 +1,10 @@
+TODO: rename ! to *.
+
+when declare a var, give it a type because compiler assumes it is ?
+
+if costantantly adding to end of a list, should use a vector type instead of a list, because add is much faster than append (depends on length of left operand)
+
+TODO: test case
+  inst a of mywire
+
+

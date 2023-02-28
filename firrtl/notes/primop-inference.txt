@@ -1,0 +1,104 @@
+Support on-reset for now, but it will get deprecated. It was originally included to make it easier for the front-end to support Vec(Reg), but since this was a bad decision in Chisel, we shouldn't muddy up FIRRTL to compensate.
+   For now, we will add which of the reset signal for registers in their declaration, so on-reset will use that instead of the implicit reset
+Delete implicit reset, always make it explicit
+Clock will be a subtype of Port. Need to make sure it isn't used in any logic. It will be included in the declaration of registers.
+
+Primops - Different widths
+Backends will emit different things based on the type of the input arguments, and the widths.
+e.g.
+SInt<7> + SInt<4>
+For C++ : need to sign-extend SInt<4> and add to SInt<7>
+For Verilog : Emit as is, which will generate a 4-bit add and an increment circuit
+Verilog does not want it sign extended, so we should not ensure that widths should be different
+For backends that need strict width inference, you should write your own padding pass, and checking pass.
+
+Primops - Input Type dependence
+To simplify all passes other than the backend, only the generic ops will be supported. All combinations (-uu,-us,...) that actually require different behaviors will need to look at the type of the operands.
+We decided to make a resolve&check pass that is separate from lowering, and is done immediately after parsing the file. This will do all the type inference. By making this pass available, the backends can
+   guarantee the in-memory AST will have types and be type-checked.
+
+Assignment - expanding?
+We didn't discuss this, but my hunch is we should make it loose in that it allows connections of a smaller width expression to a larger width expression
+
+
+
+
+The design of the primitive operations follows the following principles:
+(1) if operand types are known (i.e. FIRRTL front-end), primops whose return type is statically known (no future type introspection needed) are available
+(2) if operand types are not known (i.e. hand-writing FIRRTL pass), generic primops can be used, and a future pass will perform type introspection to replace the generic with the specific primop
+(3) the FIRRTL's lowered form will never contain any generic primops
+(4) resultant widths are always large enough to represent any possible output
+(5) specific primops do not grow widths (e.g. add-wrap, sub-wrap) and should be used if that behavior is desired
+(6) except for mux, mux-u, and mux-s, all primops can accept operands of differing width to enable optimizations in the backend
+(7) autopadding on connect is not allowed, and one should use the pad!/-u/-s expression to autopad
+
+TODO:
+rederive div,mod,quo,rem widths.
+Write explanations in terms of formulas.
+Reread all explanations.
+Finish adding primops.
+
+add
+  adduu(a,b) -> u, max(a.w,b.w) + 1
+  addus(a,b) -> s, max(a.w,b.w) + 1
+  addsu(a,b) -> s, max(a.w,b.w) + 1
+  addss(a,b) -> s, max(a.w,b.w) + 1
+
+sub
+  subuu(a,b) -> s, max(a.w,b.w) + 1 ; 0@<UInt,3> - 7@<UInt,3> = -7@<SInt,4>
+  subus(a,b) -> s, max(a.w,b.w) + 1 ; 7@<UInt,3> - -8@<SInt,4> = 15@<SInt,5>
+  subsu(a,b) -> s, max(a.w,b.w) + 1 ; -8@<SInt,4> - 7@<UInt,3> = -15@<SInt,5>
+  subss(a,b) -> s, max(a.w,b.w) + 1 ; -8@<UInt,4> - 7@<SInt,4> = -15@<SInt,5>
+
+mul
+   muluu(a,b) -> u,a.w+b.w
+   mulus(a,b) -> s,a.w+b.w
+   mulsu(a,b) -> s,a.w+b.w
+   mulss(a,b) -> s,a.w+b.w
+
+div
+   divuu(a,b) -> u,a.w   ; if divide by 1
+   divus(a,b) -> s,a.w+1 ; if divide by -1 
+   divsu(a,b) -> s,a.w   ; if divide by 1
+   divss(a,b) -> s,a.w+1 ; if divide by -1
+
+quo
+   quouu -> u, a.w
+   quous -> s, a.w + 1
+   quosu -> s, a.w
+   quoss -> u, a.w + 1
+
+mod
+   moduu(a,d) -> u,d.w
+   modus(a,d) -> u,d.w
+   modsu(a,d) -> u,d.w
+   modss(a,d) -> u,d.w
+   
+rem
+   remuu(a,b) -> u,b.w ; 15 % 16 = 15. All remainders must be less than b or a.
+   remus(a,b) -> u,b.w          ; -1 % 32 = 31. Remainder can be larger than abs(a), but not larger than b.
+   remsu(a,b) -> s,b.w          ; 1 % -32 = -31. abs(rem) can be larger than abs(a), but not larger than abs(b). 
+   remss(a,b) -> s,b.w          ; strictly superset of us and su.
+
+add-mod
+  add-moduu(a,b) -> u, a.w
+  add-modus(a,b) -> u, a.w
+  add-modsu(a,b) -> s, a.w
+  add-modss(a,b) -> s, a.w
+
+sub-mod
+  sub-moduu(a,b) -> u, a.w
+  sub-modus(a,b) -> u, a.w
+  sub-modsu(a,b) -> s, a.w
+  sub-modss(a,b) -> s, a.w
+
+
+Proof:
+add-moduu -> u
+take inverse:
+sub-moduu -> u
+add-modus -> u
+add-modsu -> s with width of first operand
+
+add-mod and sub-mod always return the type and width of the first operand.
+

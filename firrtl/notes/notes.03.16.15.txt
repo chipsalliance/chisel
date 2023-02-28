@@ -1,0 +1,24 @@
+Why did we remove the letrec?
+
+Why was it there? A way to express all the enables and input values without the need for the when statement, and also allows you to analyze the graph without worrying about last connect semantics, and allows you to analyze the graph without worrying about compound datatypes, known widths, known genders.
+
+Now we have a way to do it without this. We introduced the Register expression and read/writeport expressions, which enable you to declare them as a function of their inputs and enables. We expand all datatypes into their ground types. Lastly, we express the graph such that for every wire declaration, we ensure that there is only ever one connect to each wire.
+
+lowered form and higher form
+
+
+Add FIFOs to the IR - major semantics work.
+Write a pass expecting to be used on high firrtl, (in current firrtl it could break because we add new constructs) but is used on low firrtl.
+
+Front-end will write to special r.enable value that it will assign 1 to whenever r is written (or if a mem, read).
+
+Registers now have 2 fields, .data and .enable. Declare:
+reg r : { pckg : {enable} , valid}
+r.data := blah ; which has type {pckg : {enable, valid}}
+r.enable := UInt(1)
+bleh := r.data
+; no enable required
+
+Memories require enables on both reads and writes.
+
+

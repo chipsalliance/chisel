@@ -1,0 +1,26 @@
+February 13, 2015.
+
+This is where the notes are.
+
+To compile firrtl: stanzam -i chmain.stanza -o chmain
+
+Homework: rewrite to-working-ir, write printer
+
+a typeof T
+a and b
+a or b
+a as T
+
+questions:
+1. explain curly braces in 
+     print{o, _} $
+     match(k) :
+        (k:RegKind) : "reg:"
+   My guess is you are passing in a different function depending on the type of k, so you need to lazily evaluate the print, which signifies the {}'s.
+2. explain where in
+     Circuit(modules*, main(c)) where :
+        val modules* =
+           for m in modules(c) map :
+              Module(name(m), ports(m), to-command(body(m)))
+   My guess is you are again evaluating modules* before Circuit, so you are passing in modules lazily?
+3. difference between defn and defmethod?

@@ -1,0 +1,72 @@
+;Example 1: special memmodule with descriptors
+; - feels not firrtly
+; - if you are representing the semantics this way, why not just represent them via FIRRTL? you already have a mechanism to do this
+; - the type of m is not anywhere in the code, and requires looking at documentation
+circuit top :
+   memmodule CMEM_2R_2W_1RW :
+      read-ports = 2
+      write-ports = 2
+      readwrite-ports = 1
+      read-latency = 0
+      write-latency = 1
+   module Top :
+      mem m of CMEM_2R_2W_1RW : UInt<32>[4],128
+      ;...
+
+;Example 2: special memmodule with typed parameters
+; - must specify read/write latency at instantiation
+; - can't easily parameterize type of mask...
+; - introduces new concept of type parameterization which is NOT what we want to do
+circuit top :
+   memmodule MEM_2R_2W_1RW (T, size, rlatency, wlatency):
+      output read : {data : T, flip en : UInt<1>, flip clk : Clock}[2]
+      input write : {data : T, en : UInt<1>, clk : Clock}[2]
+      input rdwr : {rdata : T, ren : UInt<1>, wdata : T, wen : UInt<1>, clk : Clock}[1]
+      input mask : T ;WRONG, needs to be
+   module Top :
+      mem m of MEM_2R_2W_1RW (UInt<32>[4],0,1)
+      ;...
+
+;Example 3: black box/normal module memories
+; - need new cmem for every type and width
+; - either annotation gives semantic information, which is bad, or...
+; - behavioral FIRRTL also gives semantic information, which is bad and brittle to infer
+circuit
+   module cmem : @cmem_2r_2w_1rw
+      output read : {data : UInt<32>[4], flip en : UInt<1>, flip clk : Clock}[2]
+      input write : {data : UInt<32>[4], en : UInt<1>, clk : Clock}[2]
+      input rdwr : {rdata : UInt<32>[4], ren : UInt<1>, wdata : UInt<32>[4], wen : UInt<1>, clk : Clock}[1]
+      input mask : UInt<1>[4]
+   module Top :
+      mem m of cmem : UInt<32>[4],128
+      ;...
+
+;Example 4: special memstmt with descriptors
+; - feels not firrtly
+; - the type of m is not anywhere in the code, and requires looking at documentation
+circuit top :
+   module Top :
+      mem m : UInt<32>[4],128,2,2,1,0,1 ;datatype,size,#rdports,#wrports,#rwports,rlat,wlat
+      ;...
+
+
+; All m's have type: 
+   {
+      read  : {flip data : UInt<32>[4], en : UInt<1>, index : UInt<7>, clk : Clock}[2]
+      write : {data : UInt<32>[4], en : UInt<1>, index : UInt<7>, clk : Clock, mask : UInt<1>[4]}[2]
+      rdwr  : {flip rdata : UInt<32>[4], ren : UInt<1>, wdata : UInt<32>[4], wen : UInt<1>, index : UInt<7>, clk : Clock, mask : UInt<1>[4]}[1]
+   }
+
+
+Changes to compiler:
+Resolve genders: is much easier because (1) don't need to infer ports, and (2) is no longer fixed-point algorithm
+Expand accessors: now makes an expression indexer
+Lowering: Need to special case memories
+Need to do cse early on, definitely before inline indexers
+Expand whens: need to special case memories and their subfields.. ugh.
+
+
+
+
+
+
