@@ -6,10 +6,8 @@ import chisel3.experimental.Const
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 import circt.stage.ChiselStage
-import chiselTests.LazyCloneSpec
 
 class ConstSpec extends ChiselFlatSpec with Utils {
-  // bundles/vecs to wire constants
 
   "Const modifier on a wire or register" should "emit FIRRTL const descriptors" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
