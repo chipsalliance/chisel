@@ -112,8 +112,6 @@ sealed trait Target extends Named {
 }
 
 object Target {
-  import scala.language.implicitConversions
-
   def asTarget(m: ModuleTarget)(e: Expression): ReferenceTarget = e match {
     case r: ir.Reference => m.ref(r.name)
     case s: ir.SubIndex  => asTarget(m)(s.expr).index(s.value)
