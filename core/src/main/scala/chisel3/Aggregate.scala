@@ -38,6 +38,10 @@ sealed abstract class Aggregate extends Data {
           val width = elt.width.get
           val masked = ((BigInt(1) << width) - 1) & eltLit // also handles the negative case with two's complement
           Some((accumulator << width) + masked)
+        case (Some(accumulator), None) =>
+          Builder.error(s"Called litValue on aggregate $this contains DontCare")(UnlocatableSourceInfo)
+          val width = elt.width.get
+          Some((accumulator << width))
         case (None, _) => None
         case (_, None) => None
       }
