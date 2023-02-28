@@ -2,14 +2,6 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-val defaultVersions = Map(
-  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
-  // chiseltest intentionally excluded so that release automation does not try to set its version
-  // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
-  // when doing publishing and will not find a chiseltest release since chiseltest depends on
-  // chisel3
-)
-
 lazy val commonSettings = Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
@@ -91,6 +83,121 @@ lazy val publishSettings = Seq(
     }
   }
 )
+
+// FIRRTL SETTINGS
+
+lazy val isAtLeastScala213 = Def.setting {
+  import Ordering.Implicits._
+  CrossVersion.partialVersion(scalaVersion.value).exists(_ >= (2, 13))
+}
+
+lazy val firrtlSettings = Seq(
+  name := "firrtl",
+  version := "1.6-SNAPSHOT",
+  addCompilerPlugin(scalafixSemanticdb),
+  scalacOptions := Seq(
+    "-deprecation",
+    "-unchecked",
+    "-language:reflectiveCalls",
+    "-language:existentials",
+    "-language:implicitConversions",
+    "-Yrangepos" // required by SemanticDB compiler plugin
+  ),
+  // Always target Java8 for maximum compatibility
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  libraryDependencies ++= Seq(
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.scalatest" %% "scalatest" % "3.2.14" % "test",
+    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test",
+    "com.github.scopt" %% "scopt" % "3.7.1",
+    "net.jcazevedo" %% "moultingyaml" % "0.4.2",
+    "org.json4s" %% "json4s-native" % "4.0.6",
+    "org.apache.commons" % "commons-text" % "1.10.0",
+    "io.github.alexarchambault" %% "data-class" % "0.2.5",
+    "com.lihaoyi" %% "os-lib" % "0.8.1"
+  ),
+  // macros for the data-class library
+  libraryDependencies ++= {
+    if (isAtLeastScala213.value) Nil
+    else Seq(compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)))
+  },
+  scalacOptions ++= {
+    if (isAtLeastScala213.value) Seq("-Ymacro-annotations")
+    else Nil
+  },
+  // starting with scala 2.13 the parallel collections are separate from the standard library
+  libraryDependencies ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, major)) if major <= 12 => Seq()
+      case _                               => Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
+    }
+  },
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
+  )
+)
+
+lazy val mimaSettings = Seq(
+  mimaPreviousArtifacts := Set()
+)
+
+lazy val protobufSettings = Seq(
+  // The parentheses around the version help avoid version ambiguity in release scripts
+  ProtobufConfig / version := ("3.18.3"), // CVE-2021-22569
+  ProtobufConfig / sourceDirectory := baseDirectory.value / "src" / "main" / "proto",
+  ProtobufConfig / protobufRunProtoc := (args => com.github.os72.protocjar.Protoc.runProtoc("-v351" +: args.toArray))
+)
+
+lazy val assemblySettings = Seq(
+  assembly / assemblyJarName := "firrtl.jar",
+  assembly / test := {},
+  assembly / assemblyOutputPath := file("./utils/bin/firrtl.jar")
+)
+
+lazy val testAssemblySettings = Seq(
+  Test / assembly / test := {}, // Ditto above
+  Test / assembly / assemblyMergeStrategy := {
+    case PathList("firrtlTests", xs @ _*) => MergeStrategy.discard
+    case x =>
+      val oldStrategy = (Test / assembly / assemblyMergeStrategy).value
+      oldStrategy(x)
+  },
+  Test / assembly / assemblyJarName := s"firrtl-test.jar",
+  Test / assembly / assemblyOutputPath := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
+)
+
+lazy val antlrSettings = Seq(
+  Antlr4 / antlr4GenVisitor := true,
+  Antlr4 / antlr4GenListener := true,
+  Antlr4 / antlr4PackageName := Option("firrtl.antlr"),
+  Antlr4 / antlr4Version := "4.9.3",
+  Antlr4 / javaSource := (Compile / sourceManaged).value
+)
+
+lazy val firrtl = (project in file("firrtl"))
+  .enablePlugins(ProtobufPlugin)
+  .enablePlugins(ScalaUnidocPlugin)
+  .enablePlugins(Antlr4Plugin)
+  .settings(
+    fork := true,
+    Test / testForkedParallel := true
+  )
+  .settings(commonSettings)
+  .settings(firrtlSettings)
+  .settings(protobufSettings)
+  .settings(antlrSettings)
+  .settings(assemblySettings)
+  .settings(inConfig(Test)(baseAssemblySettings))
+  .settings(testAssemblySettings)
+  .settings(publishSettings)
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    buildInfoPackage := name.value,
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  )
+  .settings(mimaSettings)
 
 lazy val chiselSettings = Seq(
   name := "chisel3",
@@ -184,10 +291,7 @@ lazy val macros = (project in file("macros"))
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
 
-lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
-
 lazy val core = (project in file("core"))
-  .sourceDependency(firrtlRef, defaultVersions("firrtl"))
   .settings(commonSettings: _*)
   .enablePlugins(BuildInfoPlugin)
   .settings(
@@ -216,6 +320,7 @@ lazy val core = (project in file("core"))
     )
   )
   .dependsOn(macros)
+  .dependsOn(firrtl)
 
 // This will always be the root project, even if we are a sub-project.
 lazy val root = RootProject(file("."))
@@ -228,9 +333,9 @@ lazy val chisel = (project in file("."))
   .settings(usePluginSettings: _*)
   .dependsOn(macros)
   .dependsOn(core)
-  .aggregate(macros, core, plugin)
+  .dependsOn(firrtl)
+  .aggregate(macros, core, plugin, firrtl)
   .settings(warningSuppression: _*)
-  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
@@ -261,7 +366,8 @@ lazy val chisel = (project in file("."))
             s"v${version.value}"
           }
         s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
-      }
+      },
+      "-language:implicitConversions"
     ) ++
       // Suppress compiler plugin for source files in core
       // We don't need this in regular compile because we just don't add the chisel3-plugin to core's scalacOptions
@@ -319,4 +425,3 @@ lazy val docs = project // new documentation project
       "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )
   )
-  .settings(fatalWarningsSettings: _*)
