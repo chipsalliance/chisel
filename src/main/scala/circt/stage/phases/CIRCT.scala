@@ -115,10 +115,7 @@ private[this] object Exceptions {
 
 }
 
-/** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an `AnnotationSeq` API.
-  *
-  * This is analogous to [[firrtl.stage.phases.Compiler]].
-  */
+/** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[firrtl.AnnotationSeq AnnotationSeq]] API. */
 class CIRCT extends Phase {
 
   import Helpers._

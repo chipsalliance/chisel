@@ -24,9 +24,10 @@ import scala.collection.mutable
   *  1) Annotations which extend [[CustomFileEmission]] are written seperately to their prescribed
   *     destinations and replaced per [[[CustomFileEmission.replacements replacements]].
   *  2) All remaining annotations are written to destination specified by
-  *    [[StageOptions.annotationFileOut annotationFileOut]], iff the stage option is set, with the following exceptions:
+  *    [[StageOptions.annotationFileOut annotationFileOut]], iff the stage option is set, with the following exception:
   *    a) Annotations extending [[Unserializable]] are not written
-  *    b) Deleted annotations are not written unless [[StageOptions.writeDeleted writeDeleted]] is set
+  *    b) Annotations extending [[CustomFileEmission]] are written to the file they specify using the serialization they
+  *    define.  They show up in the output Annotation file using their "replacements", if one is specified.
   */
 class WriteOutputAnnotations extends Phase {
 

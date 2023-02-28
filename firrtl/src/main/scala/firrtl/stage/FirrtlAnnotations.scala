@@ -35,7 +35,6 @@ object OutputFileAnnotation extends HasShellOptions {
 /** Sets the info mode style
   *  - set with `--info-mode`
   * @param mode info mode name
-  * @note This cannote be directly converted to [[Parser.InfoMode]] as that depends on an optional [[FirrtlFileAnnotation]]
   */
 case class InfoModeAnnotation(modeName: String = "use") extends NoTargetAnnotation with FirrtlOption {
   require(

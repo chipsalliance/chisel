@@ -38,7 +38,7 @@ package object plugin {
     * DO NOT USE in your normal Chisel code!!!
     *
     * @param names The names to use corresponding to interesting fields of the Product
-    * @param nameMe The [[Product]] to be named
+    * @param nameMe The [[scala.Product]] to be named
     * @tparam T The type of the thing to be named
     * @return The thing, but with each member named
     */

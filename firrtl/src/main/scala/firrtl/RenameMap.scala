@@ -25,7 +25,6 @@ object RenameMap {
 
 /** Map old names to new names
   *
-  * Transforms that modify names should return a [[RenameMap]] with the [[CircuitState]]
   * These are mutable datastructures for convenience
   * @define noteSelfRename @note Self renames *will* be recorded
   * @define noteDistinct @note Rename to/tos will be made distinct

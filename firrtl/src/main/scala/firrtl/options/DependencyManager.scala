@@ -35,7 +35,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   private lazy val _targets: LinkedHashSet[Dependency[B]] = targets
     .foldLeft(new LinkedHashSet[Dependency[B]]()) { case (a, b) => a += b }
 
-  /** A sequence of [[firrtl.Transform]]s that have been run. Internally, this will be converted to an ordered set.
+  /** A sequence of [[TransformLike]]s that have been run. Internally, this will be converted to an ordered set.
     */
   def currentState: Seq[Dependency[B]]
   private lazy val _currentState: LinkedHashSet[Dependency[B]] = currentState

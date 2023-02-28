@@ -33,8 +33,6 @@ trait CLI { this: Shell =>
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
-  * This is intended to be a replacement for [[chisel3.stage.ChiselStage]].
-  *
   * @note The companion object, [[ChiselStage$]], has a cleaner API for compiling and returning a string.
   */
 class ChiselStage extends Stage {

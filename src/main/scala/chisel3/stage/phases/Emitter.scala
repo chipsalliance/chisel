@@ -2,7 +2,7 @@
 
 package chisel3.stage.phases
 
-import firrtl.{AnnotationSeq, EmittedFirrtlCircuit, EmittedFirrtlCircuitAnnotation}
+import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, StageOptions}
 import firrtl.options.Viewer.view
 
@@ -12,14 +12,9 @@ import chisel3.stage.{ChiselCircuitAnnotation, ChiselOptions}
 import java.io.{File, FileWriter}
 
 /** Emit a [[chisel3.stage.ChiselCircuitAnnotation]] to a file if a [[chisel3.stage.ChiselOutputFileAnnotation]] is
-  * present. A deleted [[firrtl.EmittedFirrtlCircuitAnnotation]] is added.
+  * present.
   *
-  * @todo This should be switched to support correct emission of multiple circuits to multiple files. The API should
-  * likely mirror how the [[firrtl.stage.phases.Compiler]] parses annotations into "global" annotations and
-  * left-associative per-circuit annotations.
-  * @todo The use of the deleted [[firrtl.EmittedFirrtlCircuitAnnotation]] is a kludge to provide some breadcrumbs such
-  * that the emitted CHIRRTL can be provided back to the old Driver. This should be removed or a better solution
-  * developed.
+  * @todo This should be switched to support correct emission of multiple circuits to multiple files.
   */
 class Emitter extends Phase {
 

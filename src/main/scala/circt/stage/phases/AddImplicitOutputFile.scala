@@ -8,19 +8,15 @@ import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, Viewer}
 import firrtl.stage.{FirrtlOptions, OutputFileAnnotation}
 
-/** [[firrtl.options.Phase Phase]] that adds an [[OutputFileAnnotation]] if one does not already exist.
+/** [[firrtl.options.Phase Phase]] that adds an [[firrtl.stage.OutputFileAnnotation OutputFileAnnotation]] if one does
+  * not already exist.
   *
-  * To determine the [[OutputFileAnnotation]], the following precedence is used. Whichever happens first succeeds:
-  *  - Do nothing if an [[OutputFileAnnotation]] or [[EmitAllModulesAnnotation]] exist
+  * To determine the [[firrtl.stage.OutputFileAnnotation OutputFileAnnotation]], the following precedence is
+  * used. Whichever happens first succeeds:
+  *  - Do nothing if an [[firrtl.stage.OutputFileAnnotation OutputFileAnnotation]] "--split-verilog" was specified
   *  - Use the main in the first discovered [[firrtl.stage.FirrtlCircuitAnnotation FirrtlCircuitAnnotation]] (see note
   *    below)
   *  - Use "a"
-  *
-  * The file suffix may or may not be specified, but this may be arbitrarily changed by the [[Emitter]].
-  *
-  * @note This [[firrtl.options.Phase Phase]] has a dependency on [[AddCircuit]]. Only a
-  * [[firrtl.stage.FirrtlCircuitAnnotation FirrtlCircuitAnnotation]] will be used to implicitly set the
-  * [[OutputFileAnnotation]] (not other [[firrtl.stage.CircuitOption CircuitOption]] subclasses).
   */
 class AddImplicitOutputFile extends Phase {
 
@@ -30,7 +26,7 @@ class AddImplicitOutputFile extends Phase {
 
   override def invalidates(a: Phase) = false
 
-  /** Add an [[OutputFileAnnotation]] to an [[AnnotationSeq]] */
+  /** Add an [[firrtl.stage.OutputFileAnnotation OutputFileAnnotation]] to an [[firrtl.AnnotationSeq AnnotationSeq]] */
   def transform(annotations: AnnotationSeq): AnnotationSeq =
     annotations.collectFirst { case _: OutputFileAnnotation | SplitVerilog => annotations }.getOrElse {
       val topName = Viewer[FirrtlOptions]
