@@ -6,11 +6,7 @@ package memlib
 import firrtl.Utils.error
 import firrtl._
 import firrtl.annotations._
-import firrtl.options.{CustomFileEmission, Dependency, HasShellOptions, ShellOption}
-import firrtl.passes.wiring._
-import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
-
-import java.io.{CharArrayWriter, PrintWriter}
+import firrtl.options.{HasShellOptions, ShellOption}
 
 sealed trait PassOption
 case object InputConfigFileName extends PassOption
@@ -46,35 +42,7 @@ object PassConfigUtil {
 
 case class ReplSeqMemAnnotation(inputFileName: String, outputConfig: String) extends NoTargetAnnotation
 
-case class GenVerilogMemBehaviorModelAnno(genBlackBox: Boolean) extends NoTargetAnnotation
-
-/** Generate conf file for a sequence of [[DefAnnotatedMemory]]
-  * @note file already has its suffix adding by `--replSeqMem`
-  */
-case class MemLibOutConfigFileAnnotation(file: String, annotatedMemories: Seq[DefAnnotatedMemory])
-    extends NoTargetAnnotation
-    with CustomFileEmission {
-  def baseFileName(annotations: AnnotationSeq) = file
-  def suffix = None
-  def getBytes = annotatedMemories.map { m =>
-    require(bitWidth(m.dataType) <= Int.MaxValue)
-    m.maskGran.foreach(x => require(x <= Int.MaxValue))
-    MemConf(
-      m.name,
-      m.depth,
-      bitWidth(m.dataType).toInt,
-      m.readers.length,
-      m.writers.length,
-      m.readwriters.length,
-      m.maskGran.map(_.toInt)
-    ).toString
-  }.mkString.getBytes
-}
-
-private[memlib] case class AnnotatedMemoriesAnnotation(annotatedMemories: List[DefAnnotatedMemory])
-    extends NoTargetAnnotation
-
-object ReplSeqMemAnnotation {
+object ReplSeqMemAnnotation extends HasShellOptions {
   def parse(t: String): ReplSeqMemAnnotation = {
     val usage = """
 [Optional] ReplSeqMem
@@ -100,66 +68,14 @@ Optional Arguments:
     val inputFileName = PassConfigUtil.getPassOptions(t).getOrElse(InputConfigFileName, "")
     ReplSeqMemAnnotation(inputFileName, outputConfig)
   }
-}
-
-@deprecated(
-  "Migrate to a transform that does not take arguments. This will be removed in 1.4.",
-  "FIRRTL 1.3"
-)
-class SimpleTransform(p: Pass, form: CircuitForm) extends Transform {
-  def inputForm = form
-  def outputForm = form
-  def execute(state: CircuitState): CircuitState = CircuitState(p.run(state.circuit), state.form, state.annotations)
-}
-
-class SimpleMidTransform(p: Pass) extends SimpleTransform(p, MidForm)
-
-// SimpleRun instead of PassBased because of the arguments to passSeq
-class ReplSeqMem extends SeqTransform with HasShellOptions with DependencyAPIMigration {
-
-  override def prerequisites = Forms.MidForm
-  override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Forms.MidEmitters
-  override def invalidates(a: Transform) = a match {
-    case InferTypes | ResolveKinds | ResolveFlows | LowerTypes => true
-    case _                                                     => false
-  }
 
   val options = Seq(
     new ShellOption[String](
       longOption = "repl-seq-mem",
-      toAnnotationSeq =
-        (a: String) => Seq(passes.memlib.ReplSeqMemAnnotation.parse(a), RunFirrtlTransformAnnotation(new ReplSeqMem)),
+      toAnnotationSeq = (a: String) => Seq(passes.memlib.ReplSeqMemAnnotation.parse(a)),
       helpText = "Blackbox and emit a configuration file for each sequential memory",
       shortOption = Some("frsq"),
       helpValueName = Some("-c:<circuit>:-i:<file>:-o:<file>")
-    ),
-    new ShellOption[String](
-      longOption = "gen-mem-verilog",
-      toAnnotationSeq = (a: String) =>
-        Seq(
-          a match {
-            case "blackbox" => GenVerilogMemBehaviorModelAnno(genBlackBox = true)
-            case _          => GenVerilogMemBehaviorModelAnno(genBlackBox = false)
-          },
-          RunFirrtlTransformAnnotation(new ReplSeqMem)
-        ),
-      helpText = "Blackbox and emit a Verilog behavior model for each sequential memory",
-      shortOption = Some("gmv"),
-      helpValueName = Some("<blackbox|full>")
     )
   )
-
-  val transforms: Seq[Transform] =
-    Seq(
-      new SimpleMidTransform(LegalizeConnectsOnly),
-      new SimpleMidTransform(ToMemIR),
-      new SimpleMidTransform(ResolveMaskGranularity),
-      new SimpleMidTransform(RenameAnnotatedMemoryPorts),
-      new CreateMemoryAnnotations,
-      new ResolveMemoryReference,
-      new ReplaceMemMacros,
-      new WiringTransform,
-      new DumpMemoryAnnotations
-    )
 }

@@ -12,46 +12,6 @@ import annotation.tailrec
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
 
-class PrintfSpec extends FirrtlPropSpec {
-
-  property("Printf should correctly print values in each format %x, %d, %b") {
-    val prefix = "Printf"
-    val testDir = compileFirrtlTest(prefix, "/features")
-    val harness = new File(testDir, s"top.cpp")
-    copyResourceToFile(cppHarnessResourceName, harness)
-
-    verilogToCpp(prefix, testDir, Seq(), harness) #&&
-      cppToExe(prefix, testDir) ! loggingProcessLogger
-
-    // Check for correct Printf:
-    // Count up from 0, match decimal, hex, and binary
-    // see /features/Print.fir to see what we're matching
-    val regex = """\tcount\s+=\s+(\d+)\s+0x(\w+)\s+b([01]+).*""".r
-    var done = false
-    var expected = 0
-    var error = false
-    val ret = Process(s"./V${prefix}", testDir) !
-      ProcessLogger(line => {
-        line match {
-          case regex(dec, hex, bin) => {
-            if (!done) {
-              // Must mark error before assertion or sbt test will pass
-              if (Integer.parseInt(dec, 10) != expected) error = true
-              assert(Integer.parseInt(dec, 10) == expected)
-              if (Integer.parseInt(hex, 16) != expected) error = true
-              assert(Integer.parseInt(hex, 16) == expected)
-              if (Integer.parseInt(bin, 2) != expected) error = true
-              assert(Integer.parseInt(bin, 2) == expected)
-              expected += 1
-            }
-          }
-          case _ => // Do Nothing
-        }
-      })
-    if (error) fail()
-  }
-}
-
 class StringSpec extends FirrtlPropSpec {
 
   // Whitelist is [0x20 - 0x7e]

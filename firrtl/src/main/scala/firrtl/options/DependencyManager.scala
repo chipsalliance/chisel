@@ -35,7 +35,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   private lazy val _targets: LinkedHashSet[Dependency[B]] = targets
     .foldLeft(new LinkedHashSet[Dependency[B]]()) { case (a, b) => a += b }
 
-  /** A sequence of [[firrtl.Transform]]s that have been run. Internally, this will be converted to an ordered set.
+  /** A sequence of [[TransformLike]]s that have been run. Internally, this will be converted to an ordered set.
     */
   def currentState: Seq[Dependency[B]]
   private lazy val _currentState: LinkedHashSet[Dependency[B]] = currentState
@@ -101,7 +101,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
           edges(obj) = LinkedHashSet.empty
           dependencyToObject += (v -> obj)
         }
-        edges(dependencyToObject(u)) = edges(dependencyToObject(u)) + dependencyToObject(v)
+        edges(dependencyToObject(u)) += dependencyToObject(v)
       }
     }
 
@@ -211,7 +211,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
         /* A comparison function that will sort vertices based on the topological sort of the invalidation graph */
         val cmp =
           (l: B, r: B) =>
-            v.foldLeft((Map.empty[B, Dependency[B] => Boolean], Set.empty[Dependency[B]])) {
+            v.foldLeft((Map.empty[B, Dependency[B] => Boolean], ISet.empty[Dependency[B]])) {
               case ((m, s), r) => (m + (r -> ((a: Dependency[B]) => !s(a))), s + r)
             }._1(l)(r)
         new LinkedHashMap() ++
@@ -231,14 +231,14 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
           dependencyGraph.getEdges(in).toSeq.map(oToD) ++
           otherPrerequisites.getEdges(in).toSeq.map(oToD)
         val preprocessing: Option[B] = {
-          if ((prereqs -- state).nonEmpty) { Some(this.copy(prereqs.toSeq, state.toSeq)) }
+          if ((prereqs.diff(state)).nonEmpty) { Some(this.copy(prereqs.toSeq, state.toSeq)) }
           else { None }
         }
         /* "in" is added *after* invalidation because a transform my not invalidate itself! */
-        ((state ++ prereqs).map(dToO).filterNot(in.invalidates).map(oToD) + in, out ++ preprocessing :+ in)
+        ((state ++ prereqs).map(dToO).filterNot(in.invalidates).map(oToD) += in, out ++ preprocessing :+ in)
     }
     val postprocessing: Option[B] = {
-      if ((_targets -- s).nonEmpty) { Some(this.copy(_targets.toSeq, s.toSeq)) }
+      if ((_targets.diff(s)).nonEmpty) { Some(this.copy(_targets.toSeq, s.toSeq)) }
       else { None }
     }
     l ++ postprocessing
@@ -281,7 +281,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
         logger.info(s"""----------------------------${"-" * t.name.size}---------\n""")
         logger.info(f"Time: $timeMillis%.1f ms")
         logger.info(s"======== Finished ${t.name} ========")
-        val statex = (state + wrapperToClass(t)).map(dToO).filterNot(t.invalidates).map(oToD)
+        val statex = (state += wrapperToClass(t)).map(dToO).filterNot(t.invalidates).map(oToD)
         (annosx, statex)
     }._1
   }

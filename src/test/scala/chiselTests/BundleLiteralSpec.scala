@@ -7,7 +7,7 @@ import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.experimental.{BundleLiteralException, ChiselRange, FixedPoint, Interval}
+import chisel3.experimental.BundleLiteralException
 
 class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   object MyEnum extends ChiselEnum {
@@ -84,7 +84,6 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
   "bundle literals of vec literals" should "work" in {
     assertTesterPasses(new BasicTester {
-      val range = range"[0,4].2"
       val bundleWithVecs = new Bundle {
         val a = Vec(2, UInt(4.W))
         val b = Vec(2, SInt(4.W))

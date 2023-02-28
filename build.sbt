@@ -142,13 +142,6 @@ lazy val mimaSettings = Seq(
   mimaPreviousArtifacts := Set()
 )
 
-lazy val protobufSettings = Seq(
-  // The parentheses around the version help avoid version ambiguity in release scripts
-  ProtobufConfig / version := ("3.18.3"), // CVE-2021-22569
-  ProtobufConfig / sourceDirectory := baseDirectory.value / "src" / "main" / "proto",
-  ProtobufConfig / protobufRunProtoc := (args => com.github.os72.protocjar.Protoc.runProtoc("-v351" +: args.toArray))
-)
-
 lazy val assemblySettings = Seq(
   assembly / assemblyJarName := "firrtl.jar",
   assembly / test := {},
@@ -167,26 +160,14 @@ lazy val testAssemblySettings = Seq(
   Test / assembly / assemblyOutputPath := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
 )
 
-lazy val antlrSettings = Seq(
-  Antlr4 / antlr4GenVisitor := true,
-  Antlr4 / antlr4GenListener := true,
-  Antlr4 / antlr4PackageName := Option("firrtl.antlr"),
-  Antlr4 / antlr4Version := "4.9.3",
-  Antlr4 / javaSource := (Compile / sourceManaged).value
-)
-
 lazy val firrtl = (project in file("firrtl"))
-  .enablePlugins(ProtobufPlugin)
   .enablePlugins(ScalaUnidocPlugin)
-  .enablePlugins(Antlr4Plugin)
   .settings(
     fork := true,
     Test / testForkedParallel := true
   )
   .settings(commonSettings)
   .settings(firrtlSettings)
-  .settings(protobufSettings)
-  .settings(antlrSettings)
   .settings(assemblySettings)
   .settings(inConfig(Test)(baseAssemblySettings))
   .settings(testAssemblySettings)
@@ -198,6 +179,8 @@ lazy val firrtl = (project in file("firrtl"))
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   )
   .settings(mimaSettings)
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
 
 lazy val chiselSettings = Seq(
   name := "chisel3",
@@ -336,6 +319,7 @@ lazy val chisel = (project in file("."))
   .dependsOn(firrtl)
   .aggregate(macros, core, plugin, firrtl)
   .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
@@ -383,21 +367,6 @@ lazy val chisel = (project in file("."))
       }
   )
 
-// tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
-lazy val integrationTests = (project in file("integration-tests"))
-  .dependsOn(chisel)
-  .dependsOn(standardLibrary)
-  .settings(commonSettings: _*)
-  .settings(warningSuppression: _*)
-  .settings(fatalWarningsSettings: _*)
-  .settings(chiselSettings: _*)
-  .settings(usePluginSettings: _*)
-  .settings(
-    Seq(
-      libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.6-SNAPSHOT" % "test"
-    )
-  )
-
 // the chisel standard library
 lazy val standardLibrary = (project in file("stdlib"))
   .dependsOn(chisel)
@@ -425,3 +394,4 @@ lazy val docs = project // new documentation project
       "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )
   )
+  .settings(fatalWarningsSettings: _*)

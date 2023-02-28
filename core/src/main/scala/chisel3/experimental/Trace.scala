@@ -4,7 +4,6 @@ import chisel3.internal.HasId
 import chisel3.{Aggregate, Data, Element, RawModule}
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, CompleteTarget, SingleTargetAnnotation}
-import firrtl.transforms.DontTouchAllTargets
 
 /** The util that records the reference map from original [[Data]]/[[Module]] annotated in Chisel and final FIRRTL.
   * @example
@@ -42,12 +41,6 @@ object Trace {
         })
     }
   }
-
-  @deprecated("switch to using 'traceName' as 'traceNameV2' has the same behavior of 'traceName' now", "Chisel 3.6")
-  def traceNameV2(x: RawModule) = traceName(x)
-
-  @deprecated("switch to using 'traceName' as 'traceNameV2' has the same behavior of 'traceName' now", "Chisel 3.6")
-  def traceNameV2(x: Data) = traceName(x)
 
   /** An Annotation that records the original target annotate from Chisel.
     *

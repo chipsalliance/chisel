@@ -124,7 +124,7 @@ object BackendCompilationUtilities extends LazyLogging {
     // Build a set of canonical file paths to use as a filter to exclude already included additional Verilog sources.
     val blackBoxHelperFiles: Set[String] = {
       if (list_file.exists()) {
-        FileUtils.getLines(list_file).toSet
+        FileUtils.getLines(FileUtils.getPath(list_file.getPath())).toSet
       } else {
         Set.empty
       }
@@ -187,62 +187,4 @@ object BackendCompilationUtilities extends LazyLogging {
     !executeExpectingFailure(prefix, dir)
   }
 
-  /** Creates and runs a Yosys script that creates and runs SAT on a miter
-    * circuit. Returns true if SAT succeeds, false otherwise
-    *
-    * The custom and reference Verilog files must not contain any modules with
-    * the same name otherwise Yosys will not be able to create a miter circuit
-    *
-    * @param customTop    name of the DUT with custom transforms without the .v
-    *                     extension
-    * @param referenceTop name of the DUT without custom transforms without the
-    *                     .v extension
-    * @param testDir      directory containing verilog files
-    * @param timesteps    the maximum number of timesteps for Yosys equivalence
-    *                     checking to consider
-    */
-  def yosysExpectSuccess(customTop: String, referenceTop: String, testDir: File, timesteps: Int = 1): Boolean = {
-    !yosysExpectFailure(customTop, referenceTop, testDir, timesteps)
-  }
-
-  /** Creates and runs a Yosys script that creates and runs SAT on a miter
-    * circuit. Returns false if SAT succeeds, true otherwise
-    *
-    * The custom and reference Verilog files must not contain any modules with
-    * the same name otherwise Yosys will not be able to create a miter circuit
-    *
-    * @param customTop    name of the DUT with custom transforms without the .v
-    *                     extension
-    * @param referenceTop name of the DUT without custom transforms without the
-    *                     .v extension
-    * @param testDir      directory containing verilog files
-    * @param timesteps    the maximum number of timesteps for Yosys equivalence
-    *                     checking to consider
-    */
-  def yosysExpectFailure(customTop: String, referenceTop: String, testDir: File, timesteps: Int = 1): Boolean = {
-
-    val scriptFileName = s"${testDir.getAbsolutePath}/yosys_script"
-    val yosysScriptWriter = new PrintWriter(scriptFileName)
-    yosysScriptWriter.write(s"""read_verilog ${testDir.getAbsolutePath}/$customTop.v
-                               |prep -flatten -top $customTop; proc; opt; memory
-                               |design -stash custom
-                               |read_verilog ${testDir.getAbsolutePath}/$referenceTop.v
-                               |prep -flatten -top $referenceTop; proc; opt; memory
-                               |design -stash reference
-                               |design -copy-from custom -as custom $customTop
-                               |design -copy-from reference -as reference $referenceTop
-                               |equiv_make custom reference equiv
-                               |hierarchy -top equiv
-                               |prep -flatten -top equiv
-                               |clean -purge
-                               |equiv_simple -seq $timesteps
-                               |equiv_induct -seq $timesteps
-                               |equiv_status -assert
-         """.stripMargin)
-    yosysScriptWriter.close()
-
-    val resultFileName = testDir.getAbsolutePath + "/yosys_results"
-    val command = s"yosys -s $scriptFileName" #> new File(resultFileName)
-    command.! != 0
-  }
 }

@@ -51,12 +51,6 @@ object ReadyValidIO {
       */
     def fire: Bool = target.ready && target.valid
 
-    @deprecated(
-      "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-      "Chisel 3.5"
-    )
-    def fire(dummy: Int = 0): Bool = fire
-
     /** Push dat onto the output bits of this interface to let the consumer know it has happened.
       * @param dat the values to assign to bits.
       * @return    dat.

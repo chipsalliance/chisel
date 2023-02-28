@@ -3,6 +3,7 @@
 package firrtlTests
 
 import org.scalatest._
+import firrtl.CDefMemory
 import firrtl.ir._
 import firrtl.{Parser, Utils}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -11,27 +12,11 @@ import org.scalatest.matchers.should.Matchers
 object SerializerSpec {
   case class WrapStmt(stmt: Statement) extends Statement {
     def serialize: String = s"wrap(${stmt.serialize})"
-    def foreachExpr(f:   Expression => Unit):       Unit = stmt.foreachExpr(f)
-    def foreachInfo(f:   Info => Unit):             Unit = stmt.foreachInfo(f)
-    def foreachStmt(f:   Statement => Unit):        Unit = stmt.foreachStmt(f)
-    def foreachString(f: String => Unit):           Unit = stmt.foreachString(f)
-    def foreachType(f:   Type => Unit):             Unit = stmt.foreachType(f)
-    def mapExpr(f:       Expression => Expression): Statement = this.copy(stmt.mapExpr(f))
-    def mapInfo(f:       Info => Info):             Statement = this.copy(stmt.mapInfo(f))
-    def mapStmt(f:       Statement => Statement):   Statement = this.copy(stmt.mapStmt(f))
-    def mapString(f:     String => String):         Statement = this.copy(stmt.mapString(f))
-    def mapType(f:       Type => Type):             Statement = this.copy(stmt.mapType(f))
   }
 
   case class WrapExpr(expr: Expression) extends Expression {
     def serialize: String = s"wrap(${expr.serialize})"
     def tpe:       Type = expr.tpe
-    def foreachExpr(f:  Expression => Unit):       Unit = expr.foreachExpr(f)
-    def foreachType(f:  Type => Unit):             Unit = expr.foreachType(f)
-    def foreachWidth(f: Width => Unit):            Unit = expr.foreachWidth(f)
-    def mapExpr(f:      Expression => Expression): Expression = this.copy(expr.mapExpr(f))
-    def mapType(f:      Type => Type):             Expression = this.copy(expr.mapType(f))
-    def mapWidth(f:     Width => Width):           Expression = this.copy(expr.mapWidth(f))
   }
 
   private def tab(s: String): String = {
@@ -54,6 +39,20 @@ object SerializerSpec {
 
   val testModuleTabbed: String = tab(testModule)
 
+  val testModuleIR: Module =
+    Module(
+      NoInfo,
+      "test",
+      Seq(Port(NoInfo, "in", Input, UIntType(IntWidth(8))), Port(NoInfo, "out", Output, UIntType(IntWidth(8)))),
+      Block(
+        Seq(
+          DefInstance("c", "child"),
+          Connect(NoInfo, SubField(Reference("c"), "in"), Reference("in")),
+          Connect(NoInfo, Reference("out"), SubField(Reference("c"), "out"))
+        )
+      )
+    )
+
   val childModule: String =
     """extmodule child :
       |  input in : UInt<8>
@@ -62,8 +61,65 @@ object SerializerSpec {
 
   val childModuleTabbed: String = tab(childModule)
 
+  val childModuleIR: ExtModule = ExtModule(
+    NoInfo,
+    "child",
+    Seq(Port(NoInfo, "in", Input, UIntType(IntWidth(8))), Port(NoInfo, "out", Output, UIntType(IntWidth(8)))),
+    "child",
+    Seq.empty
+  )
+
   val simpleCircuit: String =
     s"FIRRTL version ${Serializer.version.serialize}\ncircuit test :\n" + childModuleTabbed + "\n\n" + testModuleTabbed + "\n"
+
+  val simpleCircuitIR: Circuit =
+    Circuit(
+      NoInfo,
+      Seq(
+        childModuleIR,
+        testModuleIR
+      ),
+      "test"
+    )
+
+}
+
+/** used to test parsing and serialization of smems */
+object SMemTestCircuit {
+  def src(ruw: String): String =
+    s"""circuit Example :
+       |  module Example :
+       |    smem mem : UInt<8> [8] $ruw@[main.scala 10:25]
+       |""".stripMargin
+
+  def circuit(ruw: ReadUnderWrite.Value): Circuit =
+    Circuit(
+      NoInfo,
+      Seq(
+        Module(
+          NoInfo,
+          "Example",
+          Seq.empty,
+          Block(
+            CDefMemory(
+              NoInfo,
+              "mem",
+              UIntType(IntWidth(8)),
+              8,
+              true,
+              ruw
+            )
+          )
+        )
+      ),
+      "Example"
+    )
+
+  def findRuw(c: Circuit): ReadUnderWrite.Value = {
+    val main = c.modules.head.asInstanceOf[Module]
+    val mem = main.body.asInstanceOf[Block].stmts.collectFirst { case m: CDefMemory => m }.get
+    mem.readUnderWrite
+  }
 }
 
 class SerializerSpec extends AnyFlatSpec with Matchers {
@@ -90,29 +146,22 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "support emitting circuits" in {
-    val parsed = Parser.parse(simpleCircuit)
-    val serialized = Serializer.serialize(parsed)
+    val serialized = Serializer.serialize(simpleCircuitIR)
     serialized should be(simpleCircuit)
   }
 
   it should "support emitting individual modules" in {
-    val parsed = Parser.parse(simpleCircuit)
-    val m = parsed.modules.find(_.name == "test").get
-    val serialized = Serializer.serialize(m)
+    val serialized = Serializer.serialize(testModuleIR)
     serialized should be(testModule)
   }
 
   it should "support emitting indented individual modules" in {
-    val parsed = Parser.parse(simpleCircuit)
-    val m = parsed.modules.find(_.name == "test").get
-    val serialized = Serializer.serialize(m, 1)
+    val serialized = Serializer.serialize(testModuleIR, 1)
     serialized should be(testModuleTabbed)
   }
 
   it should "support emitting indented individual extmodules" in {
-    val parsed = Parser.parse(simpleCircuit)
-    val m = parsed.modules.find(_.name == "child").get
-    val serialized = Serializer.serialize(m, 1)
+    val serialized = Serializer.serialize(childModuleIR, 1)
     serialized should be(childModuleTabbed)
   }
 
@@ -123,17 +172,8 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "serialize read-under-write behavior for smems correctly" in {
-    def parseSerializeParse(src: String): Circuit = Parser.parse(Parser.parse(src).serialize)
-    val undefined = parseSerializeParse(SMemTestCircuit.src(""))
-    assert(SMemTestCircuit.findRuw(undefined) == ReadUnderWrite.Undefined)
-
-    val undefined2 = parseSerializeParse(SMemTestCircuit.src(" undefined"))
-    assert(SMemTestCircuit.findRuw(undefined2) == ReadUnderWrite.Undefined)
-
-    val old = parseSerializeParse(SMemTestCircuit.src(" old"))
-    assert(SMemTestCircuit.findRuw(old) == ReadUnderWrite.Old)
-
-    val readNew = parseSerializeParse(SMemTestCircuit.src(" new"))
-    assert(SMemTestCircuit.findRuw(readNew) == ReadUnderWrite.New)
+    (SMemTestCircuit.circuit(ReadUnderWrite.Undefined).serialize should not).include("undefined")
+    SMemTestCircuit.circuit(ReadUnderWrite.New).serialize should include("new")
+    SMemTestCircuit.circuit(ReadUnderWrite.Old).serialize should include("old")
   }
 }

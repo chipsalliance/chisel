@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{Analog, FixedPoint}
+import chisel3.experimental.Analog
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 
@@ -58,14 +58,6 @@ class ConnectSpec extends ChiselPropSpec with Utils {
       }
     }
   }
-  property("UInt := FixedPoint should fail") {
-    intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(FixedPoint(16.W, 8.BP), UInt(16.W)) }
-      }
-    }
-  }
-
   property("Clock := Clock should succeed") {
     assertTesterPasses { new CrossConnectTester(Clock(), Clock()) }
   }

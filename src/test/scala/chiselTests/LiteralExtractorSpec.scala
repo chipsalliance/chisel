@@ -43,14 +43,6 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
   }
 
   "doubles and big decimals" should "round trip properly" in {
-    intercept[ChiselException] {
-      Num.toBigDecimal(BigInt("1" * 109, 2), 0.BP) // this only works if number takes less than 109 bits
-    }
-
-    intercept[ChiselException] {
-      Num.toDouble(BigInt("1" * 54, 2), 0.BP) // this only works if number takes less than 54 bits
-    }
-
     val bigInt108 = BigInt("1" * 108, 2)
     val bigDecimal = Num.toBigDecimal(bigInt108, 2)
 
@@ -65,23 +57,6 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     val bigIntFromDouble = Num.toBigInt(double, 2)
 
     bigIntFromDouble should be(bigInt53)
-  }
-
-  "encoding and decoding of Intervals" should "round trip" in {
-    val rangeMin = BigDecimal(-31.5)
-    val rangeMax = BigDecimal(32.5)
-    val range = range"($rangeMin, $rangeMax).2"
-    for (value <- (rangeMin - 4) to (rangeMax + 4) by 2.25) {
-      if (value < rangeMin || value > rangeMax) {
-        intercept[ChiselException] {
-          val literal = value.I(range)
-        }
-      } else {
-        val literal = value.I(range)
-        literal.isLit should be(true)
-        literal.litValue.toDouble / 4.0 should be(value)
-      }
-    }
   }
 
   "literals declared outside a builder context" should "compare with those inside builder context" in {
@@ -102,7 +77,6 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       // with "chisel3.internal.BundleLitBinding cannot be cast to chisel3.internal.ElementLitBinding"
 
       chisel3.assert(outsideLiteral.x === insideLiteral.x)
-      chisel3.assert(outsideLiteral.y === insideLiteral.y)
       chisel3.assert(outsideLiteral.x === 7.S)
       chisel3.assert(outsideLiteral.y === 7777.U)
 

@@ -262,23 +262,55 @@ class BlackBoxSpec extends ChiselFlatSpec {
 
     val sixteenParams = ('a' until 'p').map { key => key.toString -> IntParam(1) }
 
-    getVerilogString(new Top(Map())) should include("ParameterizedBlackBox pbb ( //")
-    getVerilogString(new Top(Map("a" -> IntParam(1)))) should include("ParameterizedBlackBox #(.a(1)) pbb ( //")
+    def splitAndStrip(verilog: String): Array[String] = verilog.split("\n").map(_.dropWhile(_.isWhitespace))
+
+    getVerilogString(new Top(Map())) should include("ParameterizedBlackBox pbb")
+    getVerilogString(new Top(Map("a" -> IntParam(1)))) should include(".a(1)")
 
     // check that both param orders are the same
-    getVerilogString(new Top(Map("a" -> IntParam(1), "b" -> IntParam(1)))) should include(
-      "ParameterizedBlackBox #(.a(1), .b(1)) pbb ( //"
+    (splitAndStrip(getVerilogString(new Top(Map("a" -> IntParam(1), "b" -> IntParam(1))))) should contain).allOf(
+      ".a(1),",
+      ".b(1)"
     )
-    getVerilogString(new Top(Map("b" -> IntParam(1), "a" -> IntParam(1)))) should include(
-      "ParameterizedBlackBox #(.a(1), .b(1)) pbb ( //"
+    (splitAndStrip(getVerilogString(new Top(Map("b" -> IntParam(1), "a" -> IntParam(1))))) should contain).allOf(
+      ".a(1),",
+      ".b(1)"
     )
 
     // check that both param orders are the same, note that verilog output does a newline when more params are present
-    getVerilogString(new Top(sixteenParams.toMap)) should include(
-      "(.a(1), .b(1), .c(1), .d(1), .e(1), .f(1), .g(1), .h(1), .i(1), .j(1), .k(1), .l(1), .m(1), .n(1), .o(1)) pbb ( //"
+    (splitAndStrip(getVerilogString(new Top(sixteenParams.toMap))) should contain).allOf(
+      ".a(1),",
+      ".b(1),",
+      ".c(1),",
+      ".d(1),",
+      ".e(1),",
+      ".f(1),",
+      ".g(1),",
+      ".h(1),",
+      ".i(1),",
+      ".j(1),",
+      ".k(1),",
+      ".l(1),",
+      ".m(1),",
+      ".n(1),",
+      ".o(1)"
     )
-    getVerilogString(new Top(sixteenParams.reverse.toMap)) should include(
-      "(.a(1), .b(1), .c(1), .d(1), .e(1), .f(1), .g(1), .h(1), .i(1), .j(1), .k(1), .l(1), .m(1), .n(1), .o(1)) pbb ( //"
+    (splitAndStrip(getVerilogString(new Top(sixteenParams.reverse.toMap))) should contain).allOf(
+      ".a(1),",
+      ".b(1),",
+      ".c(1),",
+      ".d(1),",
+      ".e(1),",
+      ".f(1),",
+      ".g(1),",
+      ".h(1),",
+      ".i(1),",
+      ".j(1),",
+      ".k(1),",
+      ".l(1),",
+      ".m(1),",
+      ".n(1),",
+      ".o(1)"
     )
   }
 }

@@ -91,16 +91,6 @@ private[chisel3] object Converter {
       val uint = convert(ULit(unsigned, slit.width), ctx, info)
       fir.DoPrim(firrtl.PrimOps.AsSInt, Seq(uint), Seq.empty, fir.UnknownType)
     // TODO Simplify
-    case fplit @ FPLit(n, w, bp) =>
-      val unsigned = if (n < 0) (BigInt(1) << fplit.width.get) + n else n
-      val uint = convert(ULit(unsigned, fplit.width), ctx, info)
-      val lit = bp.asInstanceOf[KnownBinaryPoint].value
-      fir.DoPrim(firrtl.PrimOps.AsFixedPoint, Seq(uint), Seq(lit), fir.UnknownType)
-    case intervalLit @ IntervalLit(n, w, bp) =>
-      val unsigned = if (n < 0) (BigInt(1) << intervalLit.width.get) + n else n
-      val uint = convert(ULit(unsigned, intervalLit.width), ctx, info)
-      val lit = bp.asInstanceOf[KnownBinaryPoint].value
-      fir.DoPrim(firrtl.PrimOps.AsInterval, Seq(uint), Seq(n, n, lit), fir.UnknownType)
     case lit: ILit =>
       throw new InternalErrorException(s"Unexpected ILit: $lit")
     case other =>
@@ -302,11 +292,6 @@ private[chisel3] object Converter {
     case KnownWidth(value) => fir.IntWidth(value)
   }
 
-  def convert(bp: BinaryPoint): fir.Width = bp match {
-    case UnknownBinaryPoint      => fir.UnknownWidth
-    case KnownBinaryPoint(value) => fir.IntWidth(value)
-  }
-
   private def firrtlUserDirOf(d: Data): SpecifiedDirection = d match {
     case d: Vec[_] =>
       SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
@@ -324,8 +309,6 @@ private[chisel3] object Converter {
     case d: EnumType   => fir.UIntType(convert(d.width))
     case d: UInt       => fir.UIntType(convert(d.width))
     case d: SInt       => fir.SIntType(convert(d.width))
-    case d: FixedPoint => fir.FixedType(convert(d.width), convert(d.binaryPoint))
-    case d: Interval   => fir.IntervalType(d.range.lowerBound, d.range.upperBound, d.range.firrtlBinaryPoint)
     case d: Analog => fir.AnalogType(convert(d.width))
     case d: Vec[_] =>
       val childClearDir = clearDir ||

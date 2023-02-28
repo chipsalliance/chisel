@@ -25,26 +25,6 @@ import java.lang.reflect.InvocationTargetException
   */
 sealed trait ChiselOption { this: Annotation => }
 
-/** Disable the execution of the FIRRTL compiler by Chisel
-  */
-@deprecated(deprecatedMFCMessage + """ Use "--target chirrtl" with circt.stage.ChiselStage.""", "Chisel 3.6")
-case object NoRunFirrtlCompilerAnnotation
-    extends NoTargetAnnotation
-    with ChiselOption
-    with HasShellOptions
-    with Unserializable {
-
-  val options = Seq(
-    new ShellOption[Unit](
-      longOption = "no-run-firrtl",
-      toAnnotationSeq = _ => Seq(NoRunFirrtlCompilerAnnotation),
-      helpText = "Do not run the FIRRTL compiler (generate FIRRTL IR from Chisel and exit)",
-      shortOption = Some("chnrf")
-    )
-  )
-
-}
-
 /** On an exception, this will cause the full stack trace to be printed as opposed to a pruned stack trace.
   */
 case object PrintFullStackTraceAnnotation
@@ -123,29 +103,6 @@ object SourceRootAnnotation extends HasShellOptions {
   )
 }
 
-/** Warn when reflective naming changes names of signals */
-@deprecated("Support for reflective naming has been removed, this object no longer does anything", "Chisel 3.6")
-case object WarnReflectiveNamingAnnotation
-    extends NoTargetAnnotation
-    with ChiselOption
-    with HasShellOptions
-    with Unserializable {
-
-  private val longOption = "warn:reflective-naming"
-
-  val options = Seq(
-    new ShellOption[Unit](
-      longOption = longOption,
-      toAnnotationSeq = _ => {
-        val msg = s"'$longOption' no longer does anything and will be removed in Chisel 3.7"
-        firrtl.options.StageUtils.dramaticWarning(msg)
-        Seq(this)
-      },
-      helpText = "(deprecated, this option does nothing)"
-    )
-  )
-}
-
 /** An [[firrtl.annotations.Annotation]] storing a function that returns a Chisel module
   * @param gen a generator function
   */
@@ -214,13 +171,6 @@ object CircuitSerializationAnnotation {
   case object FirrtlFileFormat extends Format {
     def extension = ".fir"
   }
-  @deprecated(
-    deprecatedMFCMessage + " Protobuf emission is deprecated and the MFC does not support reading Protobuf. Please switch to FIRRTL text emission.",
-    "Chisel 3.6"
-  )
-  case object ProtoBufFileFormat extends Format {
-    def extension = ".pb"
-  }
 }
 
 import CircuitSerializationAnnotation._
@@ -247,12 +197,6 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
       OldEmitter
         .emitLazily(circuit)
         .map(_.getBytes)
-    // TODO Use lazy Iterables so that we don't have to materialize full intermediate data structures
-    case ProtoBufFileFormat =>
-      val ostream = new java.io.ByteArrayOutputStream
-      val modules = circuit.components.map(m => () => chisel3.internal.firrtl.Converter.convert(m))
-      firrtl.proto.ToProto.writeToStreamFast(ostream, firrtl.ir.NoInfo, modules, circuit.name)
-      List(ostream.toByteArray)
   }
 }
 

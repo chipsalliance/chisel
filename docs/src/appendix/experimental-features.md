@@ -271,49 +271,6 @@ class InitMemInline(memoryFile: String = "") extends Module {
 The default is to use `$readmemh` (which assumes all numbers in the file are in ascii hex),
 but to use ascii binary there is an optional `hexOrBinary` argument which can be set to `MemoryLoadFileType.Hex` or `MemoryLoadFileType.Binary`. You will need to add an additional import.
 
-By default, the inline initialization will generate the memory `readmem` statements inside an `ifndef SYNTHESIS` block, which suits ASIC workflow.
-
-Some synthesis tools (like Synplify and Yosys) define `SYNTHESIS` so the `readmem` statement is not read when inside this block.
-
-To control this, one can use the `MemoryNoSynthInit` and `MemorySynthInit` annotations from `firrtl.annotations`. The former which is the default setting when no annotation is present generates `readmem` inside the block. Using the latter, the statement are generated outside the `ifndef` block so it can be used by FPGA synthesis tools.
-
-Below an example for initialization suited for FPGA workflows:
-
-```scala mdoc:silent
-import chisel3._
-import chisel3.util.experimental.loadMemoryFromFileInline
-import chisel3.experimental.{annotate, ChiselAnnotation}
-import firrtl.annotations.MemorySynthInit
-
-class InitMemInlineFPGA(memoryFile: String = "") extends Module {
-  val width: Int = 32
-  val io = IO(new Bundle {
-    val enable = Input(Bool())
-    val write = Input(Bool())
-    val addr = Input(UInt(10.W))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
-  })
-
-  // Notice the annotation below
-  annotate(new ChiselAnnotation {
-    override def toFirrtl =
-      MemorySynthInit
-  })
-
-  val mem = SyncReadMem(1024, UInt(width.W))
-  if (memoryFile.trim().nonEmpty) {
-    loadMemoryFromFileInline(mem, memoryFile)
-  }
-  io.dataOut := DontCare
-  when(io.enable) {
-    val rdwrPort = mem(io.addr)
-    when (io.write) { rdwrPort := io.dataIn }
-      .otherwise    { io.dataOut := rdwrPort }
-  }
-}
-```
-
 #### SystemVerilog Bind Initialization
 
 Chisel can also initialize memories by generating a SV bind module with `readmemh` or `readmemb` statements by using the function `loadMemoryFromFile` from `chisel3.util.experimental`.
@@ -364,16 +321,4 @@ for working examples.
 
 ### Aggregate memories
 
-Aggregate memories are supported but in bit of a clunky way. Since they will be split up into a memory per field, the following convention was adopted.  When specifying the file for such a memory the file name should be regarded as a template. If the memory is a Bundle e.g.
-
-```scala mdoc:compile-only
-class MemDataType extends Bundle {
-  val a = UInt(16.W)
-  val b = UInt(32.W)
-  val c = Bool()
-}
-```
-
-The memory will be split into `memory_a`, `memory_b`, and `memory_c`. Similarly if a load file is specified as `"memory-load.txt"` the simulation will expect that there will be three files, `"memory-load_a.txt"`, `"memory-load_b.txt"`, `"memory-load_c.txt"`
-
-> Note: The use of `_` and that the memory field name is added before any file suffix. The suffix is optional but if present is considered to be the text after the last `.` in the file name.
+Aggregate memories are supported and will be lowered to a single wide `UInt`.  The memory loading file should be constructed to align with the final structure of the memory.

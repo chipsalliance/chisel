@@ -368,9 +368,6 @@ package object Chisel {
   implicit def resetToBool(reset: Reset): Bool = reset.asBool
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
-  type BlackBox = chisel3.internal.LegacyBlackBox
-
-  @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   type MemBase[T <: Data] = chisel3.MemBase[T]
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")

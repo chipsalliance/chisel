@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import firrtl.annotations.{IsMember, Named}
-import chisel3.internal.firrtl.BinaryPoint
 import chisel3.internal.ExceptionHelpers
 
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
@@ -115,10 +114,6 @@ package object chisel3 {
     }
   }
 
-  implicit class fromIntToBinaryPoint(int: Int) {
-    def BP: BinaryPoint = BinaryPoint(int)
-  }
-
   implicit class fromBooleanToLiteral(boolean: Boolean) {
 
     /** Boolean to Bool conversion, recommended style for constants.
@@ -129,31 +124,6 @@ package object chisel3 {
       */
     def asBool: Bool = Bool.Lit(boolean)
   }
-
-  // Fixed Point is experimental for now, but we alias the implicit conversion classes here
-  // to minimize disruption with existing code.
-  implicit class fromDoubleToLiteral(double: Double)
-      extends experimental.FixedPoint.Implicits.fromDoubleToLiteral(double)
-
-  implicit class fromBigDecimalToLiteral(bigDecimal: BigDecimal)
-      extends experimental.FixedPoint.Implicits.fromBigDecimalToLiteral(bigDecimal)
-
-  // Interval is experimental for now, but we alias the implicit conversion classes here
-  //  to minimize disruption with existing code.
-  implicit class fromIntToLiteralInterval(int: Int)
-      extends experimental.Interval.Implicits.fromIntToLiteralInterval(int)
-
-  implicit class fromLongToLiteralInterval(long: Long)
-      extends experimental.Interval.Implicits.fromLongToLiteralInterval(long)
-
-  implicit class fromBigIntToLiteralInterval(bigInt: BigInt)
-      extends experimental.Interval.Implicits.fromBigIntToLiteralInterval(bigInt)
-
-  implicit class fromDoubleToLiteralInterval(double: Double)
-      extends experimental.Interval.Implicits.fromDoubleToLiteralInterval(double)
-
-  implicit class fromBigDecimalToLiteralInterval(bigDecimal: BigDecimal)
-      extends experimental.Interval.Implicits.fromBigDecimalToLiteralInterval(bigDecimal)
 
   implicit class fromIntToWidth(int: Int) {
     def W: Width = Width(int)

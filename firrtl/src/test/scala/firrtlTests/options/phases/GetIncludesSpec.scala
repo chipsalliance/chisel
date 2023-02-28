@@ -34,11 +34,11 @@ class GetIncludesSpec extends AnyFlatSpec with Matchers with firrtl.testutils.Ut
   }
 
   val files = Seq(
-    new File(dir + "/a.anno.json") -> Seq(A, ref("b")),
-    new File(dir + "/b.anno.json") -> Seq(B, ref("c"), ref("a")),
-    new File(dir + "/c.anno.json") -> Seq(C, ref("d"), ref("e")),
-    new File(dir + "/d.anno.json") -> Seq(D),
-    new File(dir + "/e.anno.json") -> Seq(E)
+    new File(dir, "a.anno.json") -> Seq(A, ref("b")),
+    new File(dir, "b.anno.json") -> Seq(B, ref("c"), ref("a")),
+    new File(dir, "c.anno.json") -> Seq(C, ref("d"), ref("e")),
+    new File(dir, "d.anno.json") -> Seq(D),
+    new File(dir, "e.anno.json") -> Seq(E)
   )
 
   files.foreach {

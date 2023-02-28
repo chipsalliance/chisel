@@ -5,7 +5,6 @@ package chisel3.aop
 import chisel3._
 import chisel3.internal.{HasId, PseudoModule}
 import chisel3.experimental.BaseModule
-import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy.core._
 import chisel3.experimental.hierarchy.ModuleClone
@@ -489,9 +488,8 @@ object Select {
   // Given an arg, return the corresponding id. Don't use on a loc of a connect.
   private def getId(a: Arg): HasId = a match {
     case Node(id) => id
-    case l: ULit  => l.num.U(l.w)
-    case l: SLit  => l.num.S(l.w)
-    case l: FPLit => FixedPoint(l.num, l.w, l.binaryPoint)
+    case l: ULit => l.num.U(l.w)
+    case l: SLit => l.num.S(l.w)
     case other =>
       sys.error(s"Something went horribly wrong! I was expecting ${other} to be a lit or a node!")
   }

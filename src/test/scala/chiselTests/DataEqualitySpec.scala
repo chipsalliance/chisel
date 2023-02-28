@@ -3,7 +3,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.VecLiterals._
 import chisel3.experimental.BundleLiterals._
-import chisel3.experimental.{Analog, FixedPoint}
+import chisel3.experimental.Analog
 import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util.Valid
@@ -64,7 +64,7 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
   class LongBundle extends Bundle {
     val a = UInt(48.W)
     val b = SInt(32.W)
-    val c = FixedPoint(16.W, 4.BP)
+    val c = SInt(32.W)
   }
   class RuntimeSensitiveBundle(gen: => Bundle) extends Bundle {
     val a = UInt(8.W)
@@ -193,7 +193,7 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
             _.b -> (new LongBundle).Lit(
               _.a -> 42.U,
               _.b -> 0.S,
-              _.c -> 4.5.F(16.W, 4.BP)
+              _.c -> 5.S
             )
           )
         )

@@ -3,15 +3,35 @@
 package circt.stage
 
 import chisel3.RawModule
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
+import chisel3.stage.{
+  ChiselCircuitAnnotation,
+  ChiselGeneratorAnnotation,
+  CircuitSerializationAnnotation,
+  PrintFullStackTraceAnnotation,
+  SourceRootAnnotation,
+  ThrowOnFirstErrorAnnotation,
+  WarningsAsErrorsAnnotation
+}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.stage.FirrtlCircuitAnnotation
 
+trait CLI { this: Shell =>
+  parser.note("CIRCT (MLIR FIRRTL Compiler) options")
+  Seq(
+    CIRCTTargetAnnotation,
+    PreserveAggregate,
+    ChiselGeneratorAnnotation,
+    PrintFullStackTraceAnnotation,
+    ThrowOnFirstErrorAnnotation,
+    WarningsAsErrorsAnnotation,
+    SourceRootAnnotation,
+    SplitVerilog
+  ).foreach(_.addOptions(parser))
+}
+
 /** Entry point for running Chisel with the CIRCT compiler.
-  *
-  * This is intended to be a replacement for [[chisel3.stage.ChiselStage]].
   *
   * @note The companion object, [[ChiselStage$]], has a cleaner API for compiling and returning a string.
   */
@@ -35,7 +55,7 @@ class ChiselStage extends Stage {
         Dependency[chisel3.stage.phases.AddSerializationAnnotations],
         Dependency[chisel3.stage.phases.Convert],
         Dependency[chisel3.stage.phases.MaybeInjectingPhase],
-        Dependency[firrtl.stage.phases.AddImplicitOutputFile],
+        Dependency[circt.stage.phases.AddImplicitOutputFile],
         Dependency[circt.stage.phases.Checks],
         Dependency[circt.stage.phases.CIRCT]
       ),
@@ -59,7 +79,7 @@ object ChiselStage {
       Dependency[chisel3.aop.injecting.InjectingPhase],
       Dependency[chisel3.stage.phases.Elaborate],
       Dependency[chisel3.stage.phases.Convert],
-      Dependency[firrtl.stage.phases.AddImplicitOutputFile],
+      Dependency[circt.stage.phases.AddImplicitOutputFile],
       Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
       Dependency[circt.stage.phases.Checks],
       Dependency[circt.stage.phases.CIRCT]

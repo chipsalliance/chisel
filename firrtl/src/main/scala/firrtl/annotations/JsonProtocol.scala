@@ -29,13 +29,6 @@ case class UnserializeableAnnotation(error: String, content: String) extends NoT
 object JsonProtocol extends LazyLogging {
   private val GetClassPattern = "[^']*'([^']+)'.*".r
 
-  class TransformClassSerializer
-      extends CustomSerializer[Class[_ <: Transform]](format =>
-        (
-          { case JString(s) => Class.forName(s).asInstanceOf[Class[_ <: Transform]] },
-          { case x: Class[_] => JString(x.getName) }
-        )
-      )
   // TODO Reduce boilerplate?
   class NamedSerializer
       extends CustomSerializer[Named](format =>
@@ -63,25 +56,6 @@ object JsonProtocol extends LazyLogging {
         (
           { case JString(s) => AnnotationUtils.toNamed(s).asInstanceOf[ComponentName] },
           { case named: ComponentName => JString(named.serialize) }
-        )
-      )
-  class TransformSerializer
-      extends CustomSerializer[Transform](format =>
-        (
-          {
-            case JString(s) =>
-              try {
-                Class.forName(s).asInstanceOf[Class[_ <: Transform]].newInstance()
-              } catch {
-                case e: java.lang.InstantiationException =>
-                  throw new FirrtlInternalException(
-                    "NoSuchMethodException during construction of serialized Transform. Is your Transform an inner class?",
-                    e
-                  )
-                case t: Throwable => throw t
-              }
-          },
-          { case x: Transform => JString(x.getClass.getName) }
         )
       )
   class LoadMemoryFileTypeSerializer
@@ -155,63 +129,6 @@ object JsonProtocol extends LazyLogging {
           { case named: CompleteTarget => JString(named.serialize) }
         )
       )
-  // FIRRTL Serializers
-  class TypeSerializer
-      extends CustomSerializer[Type](format =>
-        (
-          { case JString(s) => Parser.parseType(s) },
-          { case tpe: Type => JString(tpe.serialize) }
-        )
-      )
-  class ExpressionSerializer
-      extends CustomSerializer[Expression](format =>
-        (
-          { case JString(s) => Parser.parseExpression(s) },
-          { case expr: Expression => JString(expr.serialize) }
-        )
-      )
-  class StatementSerializer
-      extends CustomSerializer[Statement](format =>
-        (
-          { case JString(s) => Parser.parseStatement(s) },
-          { case statement: Statement => JString(statement.serialize) }
-        )
-      )
-  class PortSerializer
-      extends CustomSerializer[Port](format =>
-        (
-          { case JString(s) => Parser.parsePort(s) },
-          { case port: Port => JString(port.serialize) }
-        )
-      )
-  class DefModuleSerializer
-      extends CustomSerializer[DefModule](format =>
-        (
-          { case JString(s) => Parser.parseDefModule(s) },
-          { case mod: DefModule => JString(mod.serialize) }
-        )
-      )
-  class CircuitSerializer
-      extends CustomSerializer[Circuit](format =>
-        (
-          { case JString(s) => Parser.parse(s) },
-          { case cir: Circuit => JString(cir.serialize) }
-        )
-      )
-  class InfoSerializer
-      extends CustomSerializer[Info](format =>
-        (
-          { case JString(s) => Parser.parseInfo(s) },
-          { case info: Info => JString(info.serialize) }
-        )
-      )
-  class GroundTypeSerializer
-      extends CustomSerializer[GroundType](format =>
-        (
-          { case JString(s) => Parser.parseType(s).asInstanceOf[GroundType] },
-          { case tpe: GroundType => JString(tpe.serialize) }
-        )
-      )
 
   class UnrecognizedAnnotationSerializer
       extends CustomSerializer[JObject](format =>
@@ -224,15 +141,12 @@ object JsonProtocol extends LazyLogging {
   /** Construct Json formatter for annotations */
   def jsonFormat(tags: Seq[Class[_]]) = {
     Serialization.formats(FullTypeHints(tags.toList, "class")) +
-      new TransformClassSerializer + new NamedSerializer + new CircuitNameSerializer +
+      new NamedSerializer + new CircuitNameSerializer +
       new ModuleNameSerializer + new ComponentNameSerializer + new TargetSerializer +
       new GenericTargetSerializer + new CircuitTargetSerializer + new ModuleTargetSerializer +
-      new InstanceTargetSerializer + new ReferenceTargetSerializer + new TransformSerializer +
+      new InstanceTargetSerializer + new ReferenceTargetSerializer +
       new LoadMemoryFileTypeSerializer + new IsModuleSerializer + new IsMemberSerializer +
-      new CompleteTargetSerializer + new TypeSerializer + new ExpressionSerializer +
-      new StatementSerializer + new PortSerializer + new DefModuleSerializer +
-      new CircuitSerializer + new InfoSerializer + new GroundTypeSerializer +
-      new UnrecognizedAnnotationSerializer
+      new CompleteTargetSerializer + new UnrecognizedAnnotationSerializer
   }
 
   /** Serialize annotations to a String for emission */

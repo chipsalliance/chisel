@@ -2,15 +2,12 @@
 
 package firrtl.stage.phases
 
-import firrtl.{AnnotationSeq, VerilogEmitter}
-import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
-import firrtl.stage.TransformManager.TransformDependency
+import firrtl.AnnotationSeq
+import firrtl.options.{Phase, TargetDirAnnotation}
 import firrtl.transforms.BlackBoxTargetDirAnno
-import firrtl.stage.{FirrtlOptions, InfoModeAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.stage.{FirrtlOptions, InfoModeAnnotation}
 
-/** [[firrtl.options.Phase Phase]] that adds default [[FirrtlOption]] [[firrtl.annotations.Annotation Annotation]]s.
-  * This is a part of the preprocessing done by [[FirrtlStage]].
-  */
+/** [[firrtl.options.Phase Phase]] that adds default [[FirrtlOption]] [[firrtl.annotations.Annotation Annotation]]s. */
 class AddDefaults extends Phase {
 
   override def prerequisites = Seq.empty
@@ -19,15 +16,12 @@ class AddDefaults extends Phase {
 
   override def invalidates(a: Phase) = false
 
-  val DefaultEmitterTarget: TransformDependency = Dependency[VerilogEmitter]
-
   /** Append any missing default annotations to an annotation sequence */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    var bb, em, im = true
+    var bb, im = true
     annotations.foreach {
       case _: BlackBoxTargetDirAnno => bb = false
       case _: InfoModeAnnotation    => im = false
-      case RunFirrtlTransformAnnotation(_: firrtl.Emitter) => em = false
       case _ =>
     }
 
@@ -37,8 +31,6 @@ class AddDefaults extends Phase {
       .directory
 
     (if (bb) Seq(BlackBoxTargetDirAnno(targetDir)) else Seq()) ++
-      // if there is no compiler or emitter specified, add the default emitter
-      (if (em) Seq(RunFirrtlTransformAnnotation(DefaultEmitterTarget)) else Seq()) ++
       (if (im) Seq(InfoModeAnnotation()) else Seq()) ++
       annotations
   }

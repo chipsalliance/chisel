@@ -5,7 +5,7 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule, FixedPoint, Interval}
+import chisel3.experimental.{Analog, BaseModule}
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
@@ -178,20 +178,6 @@ private[chisel3] object cloneSupertype {
             // TODO: perhaps redefine Widths to allow >= op?
             if (elt1.width == (elt1.width.max(elt2.width))) elt1 else elt2
           case (elt1: SInt, elt2: SInt) => if (elt1.width == (elt1.width.max(elt2.width))) elt1 else elt2
-          case (elt1: FixedPoint, elt2: FixedPoint) => {
-            (elt1.binaryPoint, elt2.binaryPoint, elt1.width, elt2.width) match {
-              case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), KnownWidth(w1), KnownWidth(w2)) =>
-                val maxBinaryPoint = bp1.max(bp2)
-                val maxIntegerWidth = (w1 - bp1).max(w2 - bp2)
-                FixedPoint((maxIntegerWidth + maxBinaryPoint).W, (maxBinaryPoint).BP)
-              case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), _, _) =>
-                FixedPoint(Width(), (bp1.max(bp2)).BP)
-              case _ => FixedPoint()
-            }
-          }
-          case (elt1: Interval, elt2: Interval) =>
-            val range = if (elt1.range.width == elt1.range.width.max(elt2.range.width)) elt1.range else elt2.range
-            Interval(range)
           case (elt1, elt2) =>
             throw new AssertionError(
               s"can't create $createdType with heterogeneous types ${elt1.getClass} and ${elt2.getClass}"
@@ -903,8 +889,6 @@ object Data {
         case (thiz: SInt, that: SInt) => thiz === that
         case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
         case (thiz: Reset, that: Reset) => thiz === that
-        case (thiz: Interval, that: Interval) => thiz === that
-        case (thiz: FixedPoint, that: FixedPoint) => thiz === that
         case (thiz: EnumType, that: EnumType) => thiz === that
         case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
         case (thiz: Vec[_], that: Vec[_]) =>

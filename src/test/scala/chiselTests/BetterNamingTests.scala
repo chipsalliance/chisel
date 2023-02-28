@@ -95,7 +95,7 @@ class BetterNamingTests extends ChiselFlatSpec {
     class MyModule(withLits: Boolean) extends Module {
       val io = IO(new Bundle {})
       if (withLits) {
-        List(8.U, -3.S, 1.25.F(2.BP))
+        List(8.U, -3.S)
       }
       WireDefault(3.U)
     }
