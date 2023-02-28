@@ -770,7 +770,7 @@ sealed class IntervalRange(
   }
 
   /**
-    * Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
+    * Wrap the value of this `Interval` into the range of a different Interval with a presumably smaller range.
     * @param that
     * @return
     */
@@ -779,7 +779,7 @@ sealed class IntervalRange(
   }
 
   /**
-    * Clip the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
+    * Clip the value of this `Interval` into the range of a different Interval with a presumably smaller range.
     * @param that
     * @return
     */

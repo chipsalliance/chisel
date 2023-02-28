@@ -56,7 +56,8 @@ lazy val warningSuppression = Seq(
     "msg=Importing from firrtl:s",
     "msg=migration to the MLIR:s",
     "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s",  // replacement `knownSize` is not in 2.12
-    "msg=object JavaConverters in package collection is deprecated:s"
+    "msg=object JavaConverters in package collection is deprecated:s",
+    "msg=undefined in comment for method cf in class PrintableHelper:s"
   ).mkString(",")
 )
 
@@ -110,6 +111,7 @@ lazy val chiselSettings = Seq(
 )
 
 autoCompilerPlugins := true
+autoAPIMappings := true
 
 // Plugin must be fully cross-versioned (published for Scala minor version)
 // The plugin only works in Scala 2.12+
@@ -318,7 +320,3 @@ lazy val docs = project // new documentation project
     )
   )
   .settings(fatalWarningsSettings: _*)
-
-addCommandAlias("com", "all compile")
-addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
-addCommandAlias("fix", "all compile:scalafix test:scalafix")

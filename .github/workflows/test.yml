@@ -133,7 +133,7 @@ jobs:
         uses: ./.github/workflows/install-circt
         #TODO: make the microsite building include building ScalaDoc
       - name: Build the docs
-        run: sbt -DdisableFatalWarnings doc
+        run: sbt doc
       - name: Build the microsite
         run: make -C website
         env:

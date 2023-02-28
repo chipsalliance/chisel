@@ -225,7 +225,7 @@ object CircuitSerializationAnnotation {
 
 import CircuitSerializationAnnotation._
 
-/** Wraps a [[Circuit]] for serialization via [[CustomFileEmission]]
+/** Wraps a `Circuit` for serialization via `CustomFileEmission`
   * @param circuit a Chisel Circuit
   * @param filename name of destination file (excludes file extension)
   * @param format serialization file format (sets file extension)

@@ -64,7 +64,7 @@ object assert extends VerifPrintMacrosDoc {
     * @param cond condition, assertion fires (simulation fails) on a rising clock edge when false and reset is not asserted
     * @param message optional chisel Printable type message
     *
-    * @note See [[printf.apply(fmt:Printable)]] for documentation on printf using Printables
+    * @note See [[printf.apply(pable:chisel3\.Printable)*]] for documentation on printf using Printables
     * @note currently cannot be used in core Chisel / libraries because macro
     * defs need to be compiled first and the SBT project is not set up to do
     * that
@@ -239,7 +239,7 @@ object assume extends VerifPrintMacrosDoc {
     * @param cond condition, assertion fires (simulation fails) when false
     * @param message optional Printable type message when the assertion fires
     *
-    * @note See [[printf.apply(fmt:Printable]] for documentation on printf using Printables
+    * @note See [[printf.apply(pable:chisel3\.Printable)*]] for documentation on printf using Printables
     */
   def apply(
     cond:    Bool,

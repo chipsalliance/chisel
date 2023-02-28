@@ -125,7 +125,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    * - Connecting two [[util.DecoupledIO]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
+    * - Connecting two `util.DecoupledIO`'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
     * - Functionally equivalent to chisel3.:=, but different than Chisel.:=
     *
     * @group connection
@@ -143,7 +143,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    *  - Connecting two [[util.DecoupledIO]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
+    *  - Connecting two `util.DecoupledIO`'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
     *
     * @group connection
     *
@@ -160,7 +160,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    *  - Connecting two [[util.DecoupledIO]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
+    *  - Connecting two `util.DecoupledIO`'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
     *
     * @group connection
     *
@@ -182,7 +182,7 @@ object Connectable {
     * - An additional type restriction is that all relative orientations of `consumer` and `producer` must match exactly.
     *
     * Additional notes:
-    *  - Connecting two wires of [[util.DecoupledIO]] chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
+    *  - Connecting two wires of `util.DecoupledIO` chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
     *  - If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
     *  - "turk-duck-en" is a dish where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
     *

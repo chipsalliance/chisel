@@ -117,10 +117,10 @@ object loadMemoryFromFile {
 /** [[loadMemoryFromFileInline]] is an annotation generator that helps with loading a memory from a text file inlined in
   * the Verilog module. This relies on Verilator and Verilog's `\$readmemh` or `\$readmemb`.
   *
-  * This annotation, when the FIRRTL compiler runs, triggers the [[MemoryFileInlineAnnotation]] that will add Verilog
+  * This annotation, when the FIRRTL compiler runs, triggers the `MemoryFileInlineAnnotation` that will add Verilog
   * directives inlined to the module enabling the specified memories to be initialized from files.
-  * The module supports both `hex` and `bin` files by passing the appropriate [[MemoryLoadFileType.FileType]] argument with
-  * [[MemoryLoadFileType.Hex]] or [[MemoryLoadFileType.Binary]]. Hex is the default.
+  * The module supports both `hex` and `bin` files by passing the appropriate `MemoryLoadFileType.FileType`` argument with
+  * `MemoryLoadFileType.Hex` or `MemoryLoadFileType.Binary`. Hex is the default.
   *
   * ==Example module==
   *

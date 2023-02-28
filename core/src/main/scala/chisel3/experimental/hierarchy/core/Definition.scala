@@ -14,7 +14,7 @@ import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
 import scala.annotation.nowarn
 
 /** User-facing Definition type.
-  * Represents a definition of an object of type [[A]] which are marked as @instantiable
+  * Represents a definition of an object of type `A` which are marked as @instantiable
   * Can be created using Definition.apply method.
   *
   * These definitions are then used to create multiple [[Instance]]s.
@@ -26,7 +26,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
     with SealedHierarchy[A] {
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
-    * Instead, mark the field you are accessing with [[@public]]
+    * Instead, mark the field you are accessing with [[public]]
     *
     * Given a selector function (that) which selects a member from the original, return the
     *   corresponding member from the instance.
