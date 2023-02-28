@@ -8,7 +8,7 @@ import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 import firrtl.options.{Dependency, OptionsException, Phase}
 
-/** Sanity checks an [[firrtl.AnnotationSeq!]] before running the main [[firrtl.options.Phase]]s of
+/** Sanity checks an [[firrtl.AnnotationSeq]] before running the main [[firrtl.options.Phase]]s of
   * `chisel3.stage.ChiselStage`.
   */
 class Checks extends Phase {

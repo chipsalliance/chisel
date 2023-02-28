@@ -1159,11 +1159,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     clone
   }
 
-  /** The collection of [[Data]]
+  /** The collection of [[chisel3.Data]]
     *
     * This underlying datastructure is a ListMap because the elements must
     * remain ordered for serialization/deserialization. Elements added later
-    * are higher order when serialized (this is similar to [[Vec]]). For example:
+    * are higher order when serialized (this is similar to `Vec`). For example:
     * {{{
     *   // Assume we have some type MyRecord that creates a Record from the ListMap
     *   val record = MyRecord(ListMap("fizz" -> UInt(16.W), "buzz" -> UInt(16.W)))

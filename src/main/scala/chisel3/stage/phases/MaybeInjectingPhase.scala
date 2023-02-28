@@ -6,7 +6,7 @@ import chisel3.aop.injecting.{InjectStatement, InjectingPhase}
 import firrtl.AnnotationSeq
 import firrtl.options.Phase
 
-/** Run `InjectingPhase` if a `InjectStatement`` is present.
+/** Run `InjectingPhase` if a `InjectStatement` is present.
   */
 class MaybeInjectingPhase extends Phase {
   override def prerequisites = Seq.empty

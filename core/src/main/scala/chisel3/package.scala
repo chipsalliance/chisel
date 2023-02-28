@@ -215,7 +215,7 @@ package object chisel3 {
       StringContext(t: _*).cf(args: _*)
     }
 
-    /** Custom string interpolator for generating formatted Printables : the cf interpolator
+    /** Custom string interpolator for generating formatted Printables : cf"..."
       *
       * Enhanced version of scala's `f` interpolator.
       * Each expression (argument) referenced within the string is
@@ -265,7 +265,7 @@ package object chisel3 {
       *         if the number of `parts` in the enclosing `StringContext` does not exceed
       *         the number of arguments `arg` by exactly 1.
       */
-    @nowarn("msg=checkLengths in class StringContext is deprecated:s")
+    @nowarn("msg=checkLengths in class StringContext is deprecated")
     def cf(args: Any*): Printable = {
 
       // Handle literal %

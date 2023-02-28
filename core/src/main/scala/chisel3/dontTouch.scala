@@ -19,6 +19,8 @@ import firrtl.transforms.DontTouchAnnotation
   *   dontTouch(dead) // Marking it as such will preserve it
   * }
   * }}}
+  * @note Because this is an optimization barrier, constants will not be propagated through a signal marked as
+  * dontTouch.
   */
 object dontTouch {
 

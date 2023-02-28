@@ -55,8 +55,7 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   *   }
   * }}}
   *
-  * To convert this to a `valid`` interface, you wrap it with a call to the `Valid`.apply `Valid` companion object's
-  * apply method:
+  * To convert this to a `valid` interface, you wrap it with a call to the `Valid` companion object's apply method:
   * {{{
   *   val bar = Valid(new MyBundle)
   * }}}

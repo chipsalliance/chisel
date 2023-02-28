@@ -68,7 +68,6 @@ class ChiselPlugin(val global: Global) extends Plugin {
       } else if (option.startsWith(arguments.skipFilePluginOpt)) {
         val filename = option.stripPrefix(arguments.skipFilePluginOpt)
         arguments.skipFiles += filename
-        // Be annoying and warn because users are not supposed to use this
       } else if (option == arguments.genBundleElementsOpt) {
         val msg = s"'${arguments.genBundleElementsOpt}' is now default behavior, you can remove the scalacOption."
         global.reporter.warning(NoPosition, msg)
