@@ -160,6 +160,7 @@ package object experimental {
     *   // Name without AffectsChiselPrefix: "value_1"
     *   val nonData2 = new NotAData
     * }
+    * }}}
     */
   trait AffectsChiselPrefix
 
@@ -205,7 +206,7 @@ package object experimental {
   // ****************************** Hardware equivalents of Scala Tuples ******************************
   // These are intended to be used via DataView
 
-  /** [[Data]] equivalent of Scala's [[Tuple2]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple2]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple2` in
     * `chisel3.experimental.conversions`
@@ -220,7 +221,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple3]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple3]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple3` in
     * `chisel3.experimental.conversions`
@@ -244,7 +245,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple4]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple4]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple4` in
     * `chisel3.experimental.conversions`
@@ -271,7 +272,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple5]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple5]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple5` in
     * `chisel3.experimental.conversions`
@@ -301,7 +302,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple6]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple6]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple6` in
     * `chisel3.experimental.conversions`
@@ -334,7 +335,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple7]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple7]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple7` in
     * `chisel3.experimental.conversions`
@@ -378,7 +379,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple8]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple8]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple8` in
     * `chisel3.experimental.conversions`
@@ -426,7 +427,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple9]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple9]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple9` in
     * `chisel3.experimental.conversions`
@@ -478,7 +479,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple9]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple9]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple9` in
     * `chisel3.experimental.conversions`

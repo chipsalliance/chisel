@@ -20,6 +20,7 @@ import logger.LazyLogging
 
 import scala.collection.mutable
 import scala.annotation.tailrec
+import java.io.File
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   // This HashMap is compressed, not every name in the namespace is present here.
@@ -175,7 +176,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     * If the final computed name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
     *
-    * Is a higher priority than [[autoSeed]], in that regardless of whether [[autoSeed]]
+    * Is a higher priority than `autoSeed`, in that regardless of whether `autoSeed`
     * was called, [[suggestName]] will always take precedence.
     *
     * @param seed The seed for the name of this component
@@ -425,7 +426,8 @@ private[chisel3] class ChiselContext() {
 private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
   val throwOnFirstError: Boolean,
-  val warningsAsErrors:  Boolean) {
+  val warningsAsErrors:  Boolean,
+  val sourceRoots:       Seq[File]) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map holding the actual names of extModules
@@ -484,7 +486,7 @@ private[chisel3] class DynamicContext(
   var whenStack:            List[WhenContext] = Nil
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
-  val errors = new ErrorLog(warningsAsErrors)
+  val errors = new ErrorLog(warningsAsErrors, sourceRoots)
   val namingStack = new NamingStack
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition

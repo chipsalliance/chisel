@@ -723,7 +723,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
     *
-    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    * For chisel3._, uses the `chisel3.internal.BiConnect` algorithm; sub-elements of that` may end up driving sub-elements of `this`
     *  - Complicated semantics, hard to write quickly, will likely be deprecated in the future
     *
     * For Chisel._, emits the FIRRTL.<- operator

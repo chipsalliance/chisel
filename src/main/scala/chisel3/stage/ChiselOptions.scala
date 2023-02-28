@@ -3,6 +3,7 @@
 package chisel3.stage
 
 import chisel3.internal.firrtl.Circuit
+import java.io.File
 
 class ChiselOptions private[stage] (
   val runFirrtlCompiler:   Boolean = true,
@@ -10,7 +11,8 @@ class ChiselOptions private[stage] (
   val throwOnFirstError:   Boolean = false,
   val warningsAsErrors:    Boolean = false,
   val outputFile:          Option[String] = None,
-  val chiselCircuit:       Option[Circuit] = None) {
+  val chiselCircuit:       Option[Circuit] = None,
+  val sourceRoots:         Vector[File] = Vector.empty) {
 
   private[stage] def copy(
     runFirrtlCompiler:   Boolean = runFirrtlCompiler,
@@ -18,7 +20,8 @@ class ChiselOptions private[stage] (
     throwOnFirstError:   Boolean = throwOnFirstError,
     warningsAsErrors:    Boolean = warningsAsErrors,
     outputFile:          Option[String] = outputFile,
-    chiselCircuit:       Option[Circuit] = chiselCircuit
+    chiselCircuit:       Option[Circuit] = chiselCircuit,
+    sourceRoots:         Vector[File] = sourceRoots
   ): ChiselOptions = {
 
     new ChiselOptions(
@@ -27,7 +30,8 @@ class ChiselOptions private[stage] (
       throwOnFirstError = throwOnFirstError,
       warningsAsErrors = warningsAsErrors,
       outputFile = outputFile,
-      chiselCircuit = chiselCircuit
+      chiselCircuit = chiselCircuit,
+      sourceRoots = sourceRoots
     )
 
   }

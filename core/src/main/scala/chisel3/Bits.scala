@@ -148,8 +148,22 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** @group SourceInfoTransformMacro */
   final def do_extract(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    this.widthOption.foreach { thisWidth =>
+      if (thisWidth == 0) {
+        Builder.error(s"Cannot extract from zero-width")
+      } else {
+        x.widthOption.foreach { xWidth =>
+          if (xWidth >= 31 || (1 << (xWidth - 1)) >= thisWidth) {
+            Builder.warning(s"Dynamic index with width $xWidth is too large for extractee of width $thisWidth")
+          } else if ((1 << xWidth) < thisWidth) {
+            Builder.warning(s"Dynamic index with width $xWidth is too small for extractee of width $thisWidth")
+          }
+        }
+      }
+    }
     val theBits = this >> x
-    theBits(0)
+    val noExtract = theBits.widthOption.exists(_ <= 1)
+    if (noExtract) theBits.asBool else theBits(0)
   }
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
@@ -360,10 +374,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** @group SourceInfoTransformMacro */
   def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt
 
-  /** Reinterpret this $coll as a [[FixedPoint]].
+  /** Reinterpret this $coll as a `FixedPoint`.
     *
     * @note The value is not guaranteed to be preserved. For example, a [[UInt]] of width 3 and value 7 (0b111) would
-    * become a [[FixedPoint]] with value -1. The interpretation of the number is also affected by the specified binary
+    * become a `FixedPoint` with value -1. The interpretation of the number is also affected by the specified binary
     * point. '''Caution is advised!'''
     */
   @deprecated(deprecatedMFCMessage, "Chisel 3.6")
@@ -1317,7 +1331,7 @@ package experimental {
     @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def binaryPoint: BinaryPoint
 
-    /** Return the [[Double]] value of this instance if it is a Literal
+    /** Return the `Double` value of this instance if it is a Literal
       * @note this method may throw an exception if the literal value won't fit in a Double
       */
     @deprecated(deprecatedMFCMessage, "Chisel 3.6")
@@ -1334,7 +1348,7 @@ package experimental {
     @deprecated(deprecatedMFCMessage, "Chisel 3.6")
     def litToDouble: Double = litToDoubleOption.get
 
-    /** Return the [[BigDecimal]] value of this instance if it is a Literal
+    /** Return the [[scala.math.BigDecimal]] value of this instance if it is a Literal
       * @note this method may throw an exception if the literal value won't fit in a BigDecimal
       */
     @deprecated(deprecatedMFCMessage, "Chisel 3.6")
@@ -1346,7 +1360,7 @@ package experimental {
       }
     }
 
-    /** Return the [[BigDecimal]] value of this instance assuming it is a literal (convenience method)
+    /** Return the [[scala.math.BigDecimal]] value of this instance assuming it is a literal (convenience method)
       * @return
       */
     @deprecated(deprecatedMFCMessage, "Chisel 3.6")
@@ -1846,7 +1860,7 @@ package experimental {
     *   val one = 1.I
     *   val six = Seq.fill(6)(one).reduce(_ + _)
     * }}}
-    * A UInt computed in this way would require a [[Width]]
+    * A UInt computed in this way would require a `Width`
     * binary point
     * The width and binary point may be inferred.
     *

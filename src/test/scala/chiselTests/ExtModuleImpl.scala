@@ -114,10 +114,9 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesExtModuleAddViaInline),
-        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]),
         BlackBoxTargetDirAnno(".")
       )
-      (new ChiselStage).execute(Array("--target", "systemverilog"), annotations)
+      (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
       val verilogOutput = new File(targetDir, "ExtModuleAdd.v")
       verilogOutput should exist
@@ -129,10 +128,9 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaResource),
-        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]),
         BlackBoxTargetDirAnno(".")
       )
-      (new ChiselStage).execute(Array("--target", "systemverilog"), annotations)
+      (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
       verilogOutput should exist
@@ -146,10 +144,9 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaPath),
-        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]),
         BlackBoxTargetDirAnno(".")
       )
-      (new ChiselStage).execute(Array("--target", "systemverilog"), annotations)
+      (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
       verilogOutput should exist

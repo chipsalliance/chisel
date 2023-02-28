@@ -36,13 +36,29 @@ lazy val commonSettings = Seq(
   }
 )
 
+lazy val fatalWarningsSettings = Seq(
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 =>
+          if (sys.props.contains("disableFatalWarnings")) {
+            Nil
+          } else {
+            "-Werror" :: Nil
+          }
+
+      case _                       => Nil
+    }
+  }
+)
+
 lazy val warningSuppression = Seq(
   scalacOptions += "-Wconf:" + Seq(
     "msg=APIs in chisel3.internal:s",
     "msg=Importing from firrtl:s",
     "msg=migration to the MLIR:s",
     "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s",  // replacement `knownSize` is not in 2.12
-    "msg=object JavaConverters in package collection is deprecated:s"
+    "msg=object JavaConverters in package collection is deprecated:s",
+    "msg=undefined in comment for method cf in class PrintableHelper:s"
   ).mkString(",")
 )
 
@@ -96,6 +112,7 @@ lazy val chiselSettings = Seq(
 )
 
 autoCompilerPlugins := true
+autoAPIMappings := true
 
 // Plugin must be fully cross-versioned (published for Scala minor version)
 // The plugin only works in Scala 2.12+
@@ -136,7 +153,6 @@ lazy val plugin = (project in file("plugin"))
   .settings(publishSettings: _*)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    scalacOptions += "-Xfatal-warnings",
     crossScalaVersions := pluginScalaVersions,
     // Must be published for Scala minor version
     crossVersion := CrossVersion.full,
@@ -145,6 +161,7 @@ lazy val plugin = (project in file("plugin"))
       target.value / s"scala-${scalaVersion.value}"
     }
   )
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := {
       Set()
@@ -182,6 +199,7 @@ lazy val core = (project in file("core"))
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
   .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     name := "chisel3-core",
     libraryDependencies ++= Seq(
@@ -213,6 +231,7 @@ lazy val chisel = (project in file("."))
   .dependsOn(core)
   .aggregate(macros, core, plugin)
   .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
@@ -264,6 +283,8 @@ lazy val integrationTests = (project in file("integration-tests"))
   .dependsOn(chisel)
   .dependsOn(standardLibrary)
   .settings(commonSettings: _*)
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(chiselSettings: _*)
   .settings(usePluginSettings: _*)
   .settings(
@@ -287,7 +308,6 @@ lazy val docs = project // new documentation project
   .settings(commonSettings)
   .settings(
     scalacOptions ++= Seq(
-      "-Xfatal-warnings",
       "-language:reflectiveCalls",
       "-language:implicitConversions",
       "-Wconf:msg=firrtl:s"
@@ -300,7 +320,4 @@ lazy val docs = project // new documentation project
       "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )
   )
-
-addCommandAlias("com", "all compile")
-addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
-addCommandAlias("fix", "all compile:scalafix test:scalafix")
+  .settings(fatalWarningsSettings: _*)

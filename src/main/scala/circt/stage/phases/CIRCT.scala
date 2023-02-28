@@ -3,7 +3,7 @@
 package circt.stage.phases
 
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
-import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation, SourceRootAnnotation}
 
 import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
@@ -24,7 +24,9 @@ import firrtl.options.phases.WriteOutputAnnotations
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
 import _root_.logger.LogLevel
+import chisel3.InternalErrorException
 
+import scala.collection.mutable
 import java.io.File
 
 private object Helpers {
@@ -45,7 +47,7 @@ private object Helpers {
     */
   def extractAnnotationFile(string: String, filename: String): AnnotationSeq = {
     var inAnno = false
-    val filtered: String = string.lines.filter {
+    val filtered: String = string.linesIterator.filter {
       case line if line.startsWith("// ----- 8< ----- FILE") && line.contains(filename) =>
         inAnno = true
         false
@@ -113,7 +115,7 @@ private[this] object Exceptions {
 
 }
 
-/** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[AnnotationSeq]] API.
+/** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an `AnnotationSeq` API.
   *
   * This is analogous to [[firrtl.stage.phases.Compiler]].
   */
@@ -144,7 +146,8 @@ class CIRCT extends Phase {
     var inferReadWrite = false
     var imcp = true
     var logLevel = _root_.logger.LogLevel.None
-    var split = false
+    var split = circtOptions.splitVerilog
+    val includeDirs = mutable.ArrayBuffer.empty[String]
 
     // Partition the annotations into those that will be passed to CIRCT and
     // those that are not.  The annotations that are in the passhtrough set will
@@ -162,6 +165,9 @@ class CIRCT extends Phase {
       }
       case _: firrtl.EmitCircuitAnnotation | _: ImportDefinitionAnnotation[_] => Nil
       case _: firrtl.EmitAllModulesAnnotation => {
+        logger.warn(
+          """[warn] Please switch from "firrtl.EmitAllModulesAnnotation" to "--split-verilog" when using "ChiselStage"."""
+        )
         split = true
         Nil
       }
@@ -173,6 +179,9 @@ class CIRCT extends Phase {
         Nil
       case anno: _root_.logger.LogLevelAnnotation =>
         logLevel = anno.globalLogLevel
+        Nil
+      case SourceRootAnnotation(dir) =>
+        includeDirs += dir.toString
         Nil
       /* The following can be dropped. */
       case _: _root_.logger.ClassLogLevelAnnotation => Nil
@@ -212,6 +221,7 @@ class CIRCT extends Phase {
         (!imcp).option("-disable-imcp") ++
         /* Communicate the annotation file through a file. */
         (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
+        includeDirs.flatMap(d => Seq("--include-dir", d.toString)) ++
         /* Convert the target to a firtool-compatible option. */
         ((circtOptions.target, split) match {
           case (Some(CIRCTTarget.FIRRTL), false)        => Seq("-ir-fir")
@@ -279,6 +289,8 @@ class CIRCT extends Phase {
           throw new Exception(
             "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
           )
+        case unknown =>
+          throw new InternalErrorException(s"Match Error: Unknon CIRCTTarget: $unknown")
       })
     }
 

@@ -59,7 +59,7 @@ object Trace {
     def duplicate(n: T): Annotation = this.copy(target = n)
   }
 
-  /** Get [[CompleteTarget]] of the target `x` for `annos`.
+  /** Get `CompleteTarget` of the target `x` for `annos`.
     * This API can be used to find the final reference to a signal or module which is marked by `traceName`
     */
   def finalTarget(annos: AnnotationSeq)(x: HasId): Seq[CompleteTarget] = finalTargetMap(annos)

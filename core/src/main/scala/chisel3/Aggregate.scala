@@ -227,7 +227,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
   /** The "bulk connect operator", assigning elements in this Vec from elements in a Seq.
     *
-    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    * For chisel3._, uses the `chisel3.internal.BiConnect` algorithm; sub-elements of `that` may end up driving sub-elements of `this`
     *  - Complicated semantics, will likely be deprecated in the future
     *
     * For Chisel._, emits the FIRRTL.<- operator
@@ -249,7 +249,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
   /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
     *
-    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    * For chisel3._, uses the `chisel3.internal.BiConnect` algorithm; sub-elements of `that` may end up driving sub-elements of `this`
     *  - See docs/src/explanations/connection-operators.md for details
     *
     * For Chisel._, emits the FIRRTL.<- operator
@@ -1159,11 +1159,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     clone
   }
 
-  /** The collection of [[Data]]
+  /** The collection of [[chisel3.Data]]
     *
     * This underlying datastructure is a ListMap because the elements must
     * remain ordered for serialization/deserialization. Elements added later
-    * are higher order when serialized (this is similar to [[Vec]]). For example:
+    * are higher order when serialized (this is similar to `Vec`). For example:
     * {{{
     *   // Assume we have some type MyRecord that creates a Record from the ListMap
     *   val record = MyRecord(ListMap("fizz" -> UInt(16.W), "buzz" -> UInt(16.W)))

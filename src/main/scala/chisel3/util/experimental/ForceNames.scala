@@ -82,7 +82,7 @@ object forceName {
 
 /** Links the user-specified name to force to, with the signal/instance in the FIRRTL design
   *
-  * @throws CustomTransformException when the signal is renamed to >1 target
+  * @throws firrtl.CustomTransformException when the signal is renamed to >1 target
   * @param target signal/instance to force the name
   * @param name name to force it to be
   */

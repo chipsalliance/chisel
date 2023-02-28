@@ -14,7 +14,7 @@ import firrtl.annotations.IsModule
 import scala.annotation.nowarn
 
 /** User-facing Instance type.
-  * Represents a unique instance of type [[A]] which are marked as @instantiable
+  * Represents a unique instance of type `A` which are marked as @instantiable
   * Can be created using Instance.apply method.
   *
   * @param underlying The internal representation of the instance, which may be either be directly the object, or a clone of an object
@@ -43,7 +43,7 @@ final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Und
   }
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
-    * Instead, mark the field you are accessing with [[@public]]
+    * Instead, mark the field you are accessing with [[public]]
     *
     * Given a selector function (that) which selects a member from the original, return the
     *   corresponding member from the instance.
