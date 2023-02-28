@@ -186,7 +186,6 @@ trait Phase extends TransformLike[AnnotationSeq] with DependencyAPI[Phase] {
   * @tparam B the internal type
   */
 trait Translator[A, B] extends TransformLike[A] {
-  import scala.language.implicitConversions
 
   /** A method converting type `A` into type `B`
     * @param an object of type `A`

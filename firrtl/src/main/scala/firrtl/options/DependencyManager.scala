@@ -18,7 +18,6 @@ case class DependencyManagerException(message: String, cause: Throwable = null) 
   * @tparam B the type of the [[firrtl.options.TransformLike TransformLike]]
   */
 trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends TransformLike[A] with DependencyAPI[B] {
-  import scala.language.implicitConversions
   import DependencyManagerUtils.CharSet
 
   override def prerequisites: Seq[Dependency[B]] = currentState
