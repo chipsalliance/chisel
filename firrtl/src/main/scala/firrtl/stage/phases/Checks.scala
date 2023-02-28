@@ -13,8 +13,7 @@ import firrtl.options.{Dependency, OptionsException, Phase}
   * [[AddDefaults]]).
   *
   * The intent of this approach is that after running this [[firrtl.options.Phase Phase]], a user can be absolutely
-  * certain that other [[firrtl.options.Phase Phase]]s or views will succeed. See [[FirrtlStage]] for a list of
-  * [[firrtl.options.Phase Phase]] that commonly run before this.
+  * certain that other [[firrtl.options.Phase Phase]]s or views will succeed.
   */
 class Checks extends Phase {
 

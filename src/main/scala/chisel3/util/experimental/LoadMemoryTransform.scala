@@ -35,8 +35,8 @@ private case class ChiselLoadMemoryAnnotation[T <: Data](
 /** [[loadMemoryFromFile]] is an annotation generator that helps with loading a memory from a text file as a bind module. This relies on
   * Verilator and Verilog's `\$readmemh` or `\$readmemb`.
   *
-  * This annotation, when the FIRRTL compiler runs, triggers the [[LoadMemoryTransform]]. That will add Verilog
-  * directives to enable the specified memories to be initialized from files.
+  * This annotation, when a FIRRTL compiler runs will add Verilog directives to enable the specified memories to be
+  * initialized from files.
   *
   * ==Example module==
   *

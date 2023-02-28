@@ -8,7 +8,7 @@ import firrtl.options.{CustomFileEmission, HasShellOptions, OptionsException, Sh
 import firrtl.options.Viewer.view
 import firrtl.stage.FirrtlOptions
 
-/** An option consumed by [[circt.stage.CIRCTStage CIRCTStage]] */
+/** An option used to construct a [[circt.stage.CIRCTOptions CIRCTOptions]] */
 sealed trait CIRCTOption extends Unserializable { this: Annotation => }
 
 object PreserveAggregate extends HasShellOptions {

@@ -7,9 +7,7 @@ import firrtl.options.{Phase, TargetDirAnnotation}
 import firrtl.transforms.BlackBoxTargetDirAnno
 import firrtl.stage.{FirrtlOptions, InfoModeAnnotation}
 
-/** [[firrtl.options.Phase Phase]] that adds default [[FirrtlOption]] [[firrtl.annotations.Annotation Annotation]]s.
-  * This is a part of the preprocessing done by [[FirrtlStage]].
-  */
+/** [[firrtl.options.Phase Phase]] that adds default [[FirrtlOption]] [[firrtl.annotations.Annotation Annotation]]s. */
 class AddDefaults extends Phase {
 
   override def prerequisites = Seq.empty

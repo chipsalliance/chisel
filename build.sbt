@@ -319,6 +319,7 @@ lazy val chisel = (project in file("."))
   .dependsOn(firrtl)
   .aggregate(macros, core, plugin, firrtl)
   .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
@@ -393,3 +394,4 @@ lazy val docs = project // new documentation project
       "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )
   )
+  .settings(fatalWarningsSettings: _*)
