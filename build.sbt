@@ -5,8 +5,8 @@ enablePlugins(SiteScaladocPlugin)
 lazy val commonSettings = Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
-  organization := "edu.berkeley.cs",
-  version := "3.6-SNAPSHOT",
+  organization := "org.chipsalliance",
+  version := "5.0-SNAPSHOT",
   autoAPIMappings := true,
   scalaVersion := "2.13.10",
   crossScalaVersions := Seq("2.13.10", "2.12.17"),
@@ -54,25 +54,18 @@ lazy val warningSuppression = Seq(
 )
 
 lazy val publishSettings = Seq(
-  versionScheme := Some("pvp"),
+  versionScheme := Some("semver-spec"),
   publishMavenStyle := true,
   Test / publishArtifact := false,
   pomIncludeRepository := { x => false },
-  pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
+  pomExtra := <url>https://www.chisel-lang.org</url>
     <licenses>
       <license>
         <name>apache-v2</name>
         <url>https://opensource.org/licenses/Apache-2.0</url>
         <distribution>repo</distribution>
       </license>
-    </licenses>
-    <developers>
-      <developer>
-        <id>jackbackrack</id>
-        <name>Jonathan Bachrach</name>
-        <url>http://www.eecs.berkeley.edu/~jrb/</url>
-      </developer>
-    </developers>,
+    </licenses>,
   publishTo := {
     val v = version.value
     val nexus = "https://oss.sonatype.org/"
@@ -183,7 +176,7 @@ lazy val firrtl = (project in file("firrtl"))
   .settings(fatalWarningsSettings: _*)
 
 lazy val chiselSettings = Seq(
-  name := "chisel3",
+  name := "chisel",
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.15" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
@@ -237,7 +230,7 @@ lazy val pluginScalaVersions = Seq(
 )
 
 lazy val plugin = (project in file("plugin"))
-  .settings(name := "chisel3-plugin")
+  .settings(name := "chisel-plugin")
   .settings(commonSettings: _*)
   .settings(publishSettings: _*)
   .settings(
@@ -269,7 +262,7 @@ lazy val usePluginSettings = Seq(
 )
 
 lazy val macros = (project in file("macros"))
-  .settings(name := "chisel3-macros")
+  .settings(name := "chisel-macros")
   .settings(commonSettings: _*)
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
@@ -287,7 +280,7 @@ lazy val core = (project in file("core"))
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
   .settings(
-    name := "chisel3-core",
+    name := "chisel-core",
     libraryDependencies ++= Seq(
       "com.lihaoyi" %% "upickle" % "2.0.0",
       "com.lihaoyi" %% "os-lib" % "0.8.1"
@@ -349,12 +342,12 @@ lazy val chisel = (project in file("."))
           } else {
             s"v${version.value}"
           }
-        s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
+        s"https://github.com/chipsalliance/chisel/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       },
       "-language:implicitConversions"
     ) ++
       // Suppress compiler plugin for source files in core
-      // We don't need this in regular compile because we just don't add the chisel3-plugin to core's scalacOptions
+      // We don't need this in regular compile because we just don't add the chisel-plugin to core's scalacOptions
       // This works around an issue where unidoc uses the exact same arguments for all source files.
       // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
       // See https://github.com/sbt/sbt-unidoc/issues/107
