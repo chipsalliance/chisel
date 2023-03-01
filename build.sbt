@@ -326,6 +326,9 @@ lazy val chisel = (project in file("."))
   .aggregate(macros, core, plugin, firrtl)
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
+  .settings(
+    Test / scalacOptions ++= Seq("-language:reflectiveCalls")
+  )
 
 
 def addUnipublishDeps(proj: Project)(deps: Project*): Project =
@@ -357,7 +360,6 @@ lazy val unipublish =
     mimaPreviousArtifacts := Set("org.chipsalliance" %% "chisel" % "5.0-SNAPSHOT"),
     // This is a pseudo-project with no class files, use the package jar instead
     mimaCurrentClassfiles := (Compile / packageBin).value,
-    Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
     // Forward doc command to unidoc
     Compile / doc := (ScalaUnidoc / doc).value,
     // Include unidoc as the ScalaDoc for publishing
