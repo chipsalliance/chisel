@@ -12,7 +12,7 @@ object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.10", "2.12.17")
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "firrtl" -> "1.6-SNAPSHOT",
+  "firrtl" -> "1.6-SNAPSHOT"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -26,7 +26,7 @@ object v {
   val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.6-SNAPSHOT"
   val scalatest = ivy"org.scalatest::scalatest:3.2.15"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
-  val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
+  val osLib = ivy"com.lihaoyi::os-lib:0.9.0"
   val upickle = ivy"com.lihaoyi::upickle:2.0.0"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
 }
