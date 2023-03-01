@@ -68,7 +68,7 @@ lazy val publishSettings = Seq(
     </licenses>,
   publishTo := {
     val v = version.value
-    val nexus = "https://oss.sonatype.org/"
+    val nexus = "https://s01.oss.sonatype.org/"
     if (v.trim.endsWith("SNAPSHOT")) {
       Some("snapshots".at(nexus + "content/repositories/snapshots"))
     } else {
@@ -164,7 +164,10 @@ lazy val firrtl = (project in file("firrtl"))
   .settings(assemblySettings)
   .settings(inConfig(Test)(baseAssemblySettings))
   .settings(testAssemblySettings)
-  .settings(publishSettings)
+  .settings(
+    // Published as part of unipublish
+    publish / skip := true
+  )
   .enablePlugins(BuildInfoPlugin)
   .settings(
     buildInfoPackage := name.value,
@@ -264,7 +267,10 @@ lazy val usePluginSettings = Seq(
 lazy val macros = (project in file("macros"))
   .settings(name := "chisel-macros")
   .settings(commonSettings: _*)
-  .settings(publishSettings: _*)
+  .settings(
+    // Published as part of unipublish
+    publish / skip := true
+  )
   .settings(mimaPreviousArtifacts := Set())
 
 lazy val core = (project in file("core"))
@@ -275,7 +281,10 @@ lazy val core = (project in file("core"))
     buildInfoUsePackageAsPath := true,
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   )
-  .settings(publishSettings: _*)
+  .settings(
+    // Published as part of unipublish
+    publish / skip := true
+  )
   .settings(mimaPreviousArtifacts := Set())
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
@@ -302,10 +311,12 @@ lazy val core = (project in file("core"))
 lazy val root = RootProject(file("."))
 
 lazy val chisel = (project in file("."))
-  .enablePlugins(ScalaUnidocPlugin)
   .settings(commonSettings: _*)
   .settings(chiselSettings: _*)
-  .settings(publishSettings: _*)
+  .settings(
+    // Published as part of unipublish
+    publish / skip := true
+  )
   .settings(usePluginSettings: _*)
   .dependsOn(macros)
   .dependsOn(core)
@@ -313,8 +324,37 @@ lazy val chisel = (project in file("."))
   .aggregate(macros, core, plugin, firrtl)
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
+
+
+def addUnipublishDeps(proj: Project)(deps: Project*): Project =
+  deps.foldLeft(proj) { case (p, dep) =>
+    //p.dependsOn(dep % "compile-internal")
+    p
+     .settings(
+       libraryDependencies ++= (dep / libraryDependencies).value,
+       Compile / packageBin / mappings ++= (dep / Compile / packageBin / mappings).value,
+       Compile / packageSrc / mappings ++= (dep / Compile / packageSrc / mappings).value,
+     )
+  }
+
+// This is a pseudo-project that unifies all compilation units (excluding the plugin) into a single artifact
+// It should be used for all publishing and MiMa binary compatibility checking
+lazy val unipublish =
+  addUnipublishDeps(project in file("unipublish"))(
+    firrtl, macros, core, chisel
+  )
+  .aggregate(plugin) // Also publish the plugin when publishing this project
+  .settings(name := (chisel / name).value)
+  .enablePlugins(ScalaUnidocPlugin)
+  .settings(commonSettings: _*)
+  .settings(publishSettings: _*)
+  .settings(usePluginSettings: _*)
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
-    mimaPreviousArtifacts := Set(),
+    mimaPreviousArtifacts := Set("org.chipsalliance" %% "chisel" % "5.0-SNAPSHOT"),
+    // This is a pseudo-project with no class files, use the package jar instead
+    mimaCurrentClassfiles := (Compile / packageBin).value,
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
     // Forward doc command to unidoc
     Compile / doc := (ScalaUnidoc / doc).value,
