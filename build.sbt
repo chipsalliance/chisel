@@ -31,13 +31,13 @@ lazy val fatalWarningsSettings = Seq(
   scalacOptions ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 =>
-          if (sys.props.contains("disableFatalWarnings")) {
-            Nil
-          } else {
-            "-Werror" :: Nil
-          }
+        if (sys.props.contains("disableFatalWarnings")) {
+          Nil
+        } else {
+          "-Werror" :: Nil
+        }
 
-      case _                       => Nil
+      case _ => Nil
     }
   }
 )
@@ -47,7 +47,7 @@ lazy val warningSuppression = Seq(
     "msg=APIs in chisel3.internal:s",
     "msg=Importing from firrtl:s",
     "msg=migration to the MLIR:s",
-    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s",  // replacement `knownSize` is not in 2.12
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
     "msg=object JavaConverters in package collection is deprecated:s",
     "msg=undefined in comment for method cf in class PrintableHelper:s"
   ).mkString(",")
@@ -113,7 +113,7 @@ lazy val firrtlSettings = Seq(
     "net.jcazevedo" %% "moultingyaml" % "0.4.2",
     "org.json4s" %% "json4s-native" % "4.0.6",
     "org.apache.commons" % "commons-text" % "1.10.0",
-    "io.github.alexarchambault" %% "data-class" % "0.2.5",
+    "io.github.alexarchambault" %% "data-class" % "0.2.6",
     "com.lihaoyi" %% "os-lib" % "0.8.1"
   ),
   // macros for the data-class library
