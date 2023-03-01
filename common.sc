@@ -53,6 +53,24 @@ trait FirrtlModule
   )
 }
 
+trait FirrtlUnitTestModule
+  extends TestModule
+    with ScalaModule
+    with TestModule.ScalaTest {
+  def firrtlModule: FirrtlModule
+
+  def scalatestIvy: Dep
+
+  def scalacheckIvy: Dep
+
+  override def moduleDeps = Seq(firrtlModule)
+
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    scalatestIvy,
+    scalacheckIvy
+  )
+}
+
 trait CoreModule
   extends ScalaModule
     with HasMacroAnnotations
@@ -130,4 +148,24 @@ trait ChiselModule
   override def scalacPluginClasspath = T(super.scalacPluginClasspath() ++ Agg(pluginModule.jar()))
 
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, coreModule)
+}
+
+trait ChiselUnitTestModule
+  extends TestModule
+    with ScalaModule
+    with HasChiselPlugin
+    with HasMacroAnnotations
+    with TestModule.ScalaTest {
+  def chiselModule: ChiselModule
+
+  def scalatestIvy: Dep
+
+  def scalacheckIvy: Dep
+
+  override def moduleDeps = Seq(chiselModule)
+
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    scalatestIvy,
+    scalacheckIvy
+  )
 }

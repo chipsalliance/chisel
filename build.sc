@@ -4,6 +4,7 @@ import mill.scalalib.TestModule._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
 import coursier.maven.MavenRepository
+import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import $file.common
 
 object v {
@@ -44,7 +45,7 @@ object v {
   val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
   val upickle = ivy"com.lihaoyi::upickle:2.0.0"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
-  val scalatest = ivy"org.scalatest::scalatest:3.2.15"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.14"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.6"
   val dataclass = ivy"io.github.alexarchambault::data-class:0.2.5"
@@ -76,6 +77,28 @@ class firrtl(val crossScalaVersion: String)
   def commonTextIvy = v.commonText
 
   def scoptIvy = v.scopt
+}
+
+object firrtlut extends mill.Cross[firrtlUnitTest](v.scalaCrossVersions: _*)
+
+class firrtlUnitTest(val crossScalaVersion: String)
+  extends common.FirrtlUnitTestModule
+    with CrossModuleBase
+    with ScalafmtModule {
+  override def millSourcePath = firrtl(crossScalaVersion).millSourcePath
+
+  def firrtlModule = firrtl(crossScalaVersion)
+
+  def scalatestIvy = v.scalatest
+
+  def scalacheckIvy = v.scalacheck
+
+  override def sources = T.sources {
+    Seq(PathRef(millSourcePath / "src" / "test")) ++
+      matchingVersions(crossScalaVersion).map(s =>
+        PathRef(millSourcePath / "src" / "test" / s"scala-$s")
+      )
+  }
 }
 
 object macros extends mill.Cross[macros](v.scalaCrossVersions: _*)
@@ -135,6 +158,33 @@ class chisel(val crossScalaVersion: String)
 
   def macroParadiseIvy = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 }
+
+object chiselut extends mill.Cross[chiselUnitTest](v.scalaCrossVersions: _*)
+
+class chiselUnitTest(val crossScalaVersion: String)
+  extends common.ChiselUnitTestModule
+    with CrossModuleBase
+    with ScalafmtModule {
+  override def millSourcePath = chisel(crossScalaVersion).millSourcePath
+
+  def chiselModule = chisel(crossScalaVersion)
+
+  def pluginModule = plugin(crossScalaVersion)
+
+  def scalatestIvy = v.scalatest
+
+  def scalacheckIvy = v.scalacheck
+
+  def macroParadiseIvy: Option[Dep] = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
+
+  override def sources = T.sources {
+    Seq(PathRef(millSourcePath / "src" / "test")) ++
+      matchingVersions(crossScalaVersion).map(s =>
+        PathRef(millSourcePath / "src" / "test" / s"scala-$s")
+      )
+  }
+}
+
 
 object stdlib extends mill.Cross[stdlib](v.scalaCrossVersions: _*)
 
