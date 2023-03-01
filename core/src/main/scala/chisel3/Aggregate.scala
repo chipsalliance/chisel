@@ -25,12 +25,7 @@ class AliasedAggregateFieldException(message: String) extends chisel3.ChiselExce
   */
 sealed abstract class Aggregate extends Data {
 
-  /** Return an Aggregate's literal value if it is a literal, None otherwise.
-    * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
-    *
-    * @return an Aggregate's literal value if it is a literal.
-    */
-  override def litOption: Option[BigInt] = {
+  private def checkingLitOption(checkForDontCares: Boolean): Option[BigInt] = {
     // Shift the accumulated value by our width and add in our component, masked by our width.
     def shiftAdd(accumulator: Option[BigInt], elt: Data): Option[BigInt] = {
       (accumulator, elt.litOption) match {
@@ -39,9 +34,10 @@ sealed abstract class Aggregate extends Data {
           val masked = ((BigInt(1) << width) - 1) & eltLit // also handles the negative case with two's complement
           Some((accumulator << width) + masked)
         case (Some(accumulator), None) =>
-          Builder.error(s"Called litValue on aggregate $this contains DontCare")(UnlocatableSourceInfo)
-          val width = elt.width.get
-          Some((accumulator << width))
+          if (checkForDontCares) {
+            Builder.error(s"Called litValue on aggregate $this contains DontCare")(UnlocatableSourceInfo)
+          }
+          None
         case (None, _) => None
         case (_, None) => None
       }
@@ -53,6 +49,19 @@ sealed abstract class Aggregate extends Data {
           .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
       case _ => None
     }
+  }
+
+  /** Return an Aggregate's literal value if it is a literal, None otherwise.
+    * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
+    *
+    * @return an Aggregate's literal value if it is a literal.
+    */
+  override def litOption: Option[BigInt] = {
+    checkingLitOption(checkForDontCares = false)
+  }
+
+  override def litValue: BigInt = {
+    checkingLitOption(checkForDontCares = true).get
   }
 
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
