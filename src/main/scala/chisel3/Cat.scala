@@ -1,12 +1,9 @@
-// SPDX-License-Identifier: Apache-2.0
+package chisel3
 
-package chisel3.util
-
-import scala.language.experimental.macros
-
-import chisel3._
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.SourceInfoTransform
+
+import scala.language.experimental.macros
 
 /** Concatenates elements of the input, in order, together.
   *
@@ -18,7 +15,6 @@ import chisel3.internal.sourceinfo.SourceInfoTransform
   * Cat(mySeqOfBits)
   * }}}
   */
-@deprecated("Use chisel3.Cat instead", since = "Chisel 3.6.x")
 object Cat {
 
   /** Concatenates the argument data elements, in argument order, together. The first argument

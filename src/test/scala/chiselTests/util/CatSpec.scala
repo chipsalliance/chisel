@@ -4,7 +4,6 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.experimental.noPrefix
-import chisel3.util.Cat
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
 
@@ -23,7 +22,7 @@ class CatSpec extends ChiselFlatSpec {
 
   import CatSpec._
 
-  behavior.of("util.Cat")
+  behavior.of("chisel3.Cat")
 
   it should "not fail to elaborate a zero-element Vec" in {
 
