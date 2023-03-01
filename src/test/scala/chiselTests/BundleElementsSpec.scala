@@ -3,8 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{ChiselEnum, FixedPoint}
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.freespec.AnyFreeSpec
@@ -141,9 +140,7 @@ class HasGenParamsPassedToSuperclasses extends Module {
     val superQux = gen2
   }
 
-//  class BpipDemoBundle[T <: Data](gen: T, gen2: => T) extends BpipTwoField with BpipVarmint {
   class BpipUsesWithGen[T <: Data](gen: T, gen2: => T) extends BpipWithGen(gen, gen2) {
-    //    val foo = gen
     val bar = Bool()
     val qux = gen2
     val bad = 444
@@ -151,18 +148,10 @@ class HasGenParamsPassedToSuperclasses extends Module {
   }
 
   val out1 = IO(Output(new BpipUsesWithGen(UInt(4.W), new OtherBundle)))
-  val out2 = IO(Output(new BpipUsesWithGen(UInt(4.W), FixedPoint(10.W, 4.BP))))
 
   out1 := DontCare
 
   assertElementsMatchExpected(out1)(
-    "baz" -> _.baz,
-    "qux" -> _.qux,
-    "bar" -> _.bar,
-    "superQux" -> _.superQux,
-    "superFoo" -> _.superFoo
-  )
-  assertElementsMatchExpected(out2)(
     "baz" -> _.baz,
     "qux" -> _.qux,
     "bar" -> _.bar,
@@ -259,16 +248,15 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       val fox = UInt(w2.W)
     }
 
-    class BpipDemoBundle[T <: Data](gen: T, gen2: => T) extends BpipTwoField with BpipVarmint {
+    class BpipDemoBundle[T <: Data](gen: T) extends BpipTwoField with BpipVarmint {
       val foo = gen
       val bar = Bool()
-      val qux = gen2
       val bad = 44
       val baz = Decoupled(UInt(16.W))
       val animals = new BpipAnimalBundle(4, 8)
     }
 
-    val out = IO(Output(new BpipDemoBundle(UInt(4.W), FixedPoint(10.W, 4.BP))))
+    val out = IO(Output(new BpipDemoBundle(UInt(4.W))))
 
     val out2 = IO(Output(new BpipAbstractBundle {
       override def doNothing: Unit = ()
@@ -285,7 +273,6 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
     assertElementsMatchExpected(out)(
       "animals" -> _.animals,
       "baz" -> _.baz,
-      "qux" -> _.qux,
       "bar" -> _.bar,
       "varmint" -> _.varmint,
       "fieldThree" -> _.fieldThree,
@@ -299,48 +286,48 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   }
 
   "Complex Bundle with inheritance, traits and params. DebugProblem1" in {
-    ChiselStage.emitFirrtl(new BpipIsComplexBundle)
+    ChiselStage.emitCHIRRTL(new BpipIsComplexBundle)
   }
 
   "Decoupled Bundle with inheritance" in {
-    ChiselStage.emitFirrtl(new HasDecoupledBundleByInheritance)
+    ChiselStage.emitCHIRRTL(new HasDecoupledBundleByInheritance)
   }
 
   "Simple bundle inheritance. DebugProblem3" in {
-    ChiselStage.emitFirrtl(new DebugProblem3)
+    ChiselStage.emitCHIRRTL(new DebugProblem3)
   }
 
   "Bundles containing Seq[Data] should be compile erorr. HasBadSeqBundle" in {
     intercept[ChiselException] {
-      ChiselStage.emitFirrtl(new HasBadSeqBundle)
+      ChiselStage.emitCHIRRTL(new HasBadSeqBundle)
     }
   }
 
   "IgnoreSeqInBundle allows Seq[Data] in bundle" in {
-    ChiselStage.emitFirrtl(new UsesIgnoreSeqInBundle)
+    ChiselStage.emitCHIRRTL(new UsesIgnoreSeqInBundle)
   }
 
   "Simple field ordering test." in {
-    ChiselStage.emitFirrtl(new ForFieldOrderingTest)
+    ChiselStage.emitCHIRRTL(new ForFieldOrderingTest)
   }
 
   "Val params to Bundle should be an Exception." in {
-    ChiselStage.emitFirrtl(new HasValParamsToBundle)
+    ChiselStage.emitCHIRRTL(new HasValParamsToBundle)
   }
 
   "Should handle gen params passed to superclasses" in {
-    ChiselStage.emitFirrtl(new HasGenParamsPassedToSuperclasses)
+    ChiselStage.emitCHIRRTL(new HasGenParamsPassedToSuperclasses)
   }
 
   "Aliased fields should be detected and throw an exception, because gen: Data, with no =>" in {
     intercept[AliasedAggregateFieldException] {
-      ChiselStage.emitFirrtl(new UsesGenFiedldsInSuperClass)
+      ChiselStage.emitCHIRRTL(new UsesGenFiedldsInSuperClass)
     }
   }
 
   "Error when bundle fields are hardware, such as literal values. HasHardwareFieldsInBundle" in {
     val e = intercept[ExpectedChiselTypeException] {
-      ChiselStage.emitFirrtl(new HasHardwareFieldsInBundle)
+      ChiselStage.emitCHIRRTL(new HasHardwareFieldsInBundle)
     }
     e.getMessage should include(
       "Bundle: BpipBadBundleWithHardware contains hardware fields: bpipWithHardwareBad: UInt<16>(244)"
@@ -348,7 +335,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   }
 
   "Aliased fields not created when using gen: => Data" in {
-    ChiselStage.emitFirrtl(new UsesBundleWithGeneratorField)
+    ChiselStage.emitCHIRRTL(new UsesBundleWithGeneratorField)
   }
 
   class OptionBundle(val hasIn: Boolean) extends Bundle {
@@ -369,7 +356,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   }
 
   "plugin should work with Bundles with Option fields" in {
-    ChiselStage.emitFirrtl(new UsesBundleWithOptionFields)
+    ChiselStage.emitCHIRRTL(new UsesBundleWithOptionFields)
   }
 
   "plugin should work with enums in bundles" in {
@@ -377,7 +364,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       val s0, s1, s2 = Value
     }
 
-    ChiselStage.emitFirrtl(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val out = IO(Output(new Bundle {
         val a = UInt(8.W)
         val b = Bool()
@@ -390,7 +377,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   "plugin will NOT see fields that are Data but declared in some way as Any" in {
     //This is not incompatible with chisel not using the plugin, but this code is considered bad practice
 
-    ChiselStage.emitFirrtl(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val out = IO(Output(new Bundle {
         val a = UInt(8.W)
         val b: Any = Bool()
@@ -411,7 +398,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
 
     def checkAssertion(checks: (BundleAB => (String, Data))*)(expectedMessage: String): Unit = {
       intercept[AssertionError] {
-        ChiselStage.emitFirrtl(new Module {
+        ChiselStage.emitCHIRRTL(new Module {
           val out = IO(new BundleAB)
           assertElementsMatchExpected(out)(checks: _*)
         })
@@ -443,7 +430,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   }
 
   "plugin should error correctly when bundles contain only a Option field" in {
-    ChiselStage.emitFirrtl(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = new Bundle {
@@ -489,7 +476,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       )
     }
 
-    ChiselStage.emitFirrtl(new ALU(ALUConfig(10, mul = true, b = false)))
+    ChiselStage.emitCHIRRTL(new ALU(ALUConfig(10, mul = true, b = false)))
   }
 
   "TraceSpec test, different version found in TraceSpec.scala" in {
@@ -528,7 +515,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       val s0, s1, s2 = Value
     }
 
-    ChiselStage.emitFirrtl(new Module1)
+    ChiselStage.emitCHIRRTL(new Module1)
   }
 }
 /* Checks that the elements method of a bundle matches the testers idea of what the bundle field names and their

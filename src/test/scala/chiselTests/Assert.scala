@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util._
 
@@ -34,9 +34,9 @@ class PipelinedResetModule extends Module {
 
 // This relies on reset being asserted for 3 or more cycles
 class PipelinedResetTester extends BasicTester {
-  val module = Module(new PipelinedResetModule)
+  val pipelinedResetModule = Module(new PipelinedResetModule)
 
-  module.reset := RegNext(RegNext(RegNext(reset)))
+  pipelinedResetModule.reset := RegNext(RegNext(RegNext(reset)))
 
   val (_, done) = Counter(!reset.asBool, 4)
   when(done) {
@@ -178,7 +178,7 @@ class AssertSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses { new FormattedAssertTester }
   }
   they should "allow printf-style format strings in Assumes" in {
-    val chirrtl = ChiselStage.emitChirrtl(new PrintableAssumeTester)
+    val chirrtl = ChiselStage.emitCHIRRTL(new PrintableAssumeTester)
     chirrtl should include(
       """assume(w === 255.U, cf\"Assumption failed, Wire w =/= $w%%%%x\")\n", w)"""
     )

@@ -36,12 +36,6 @@ class Valid[+T <: Data](gen: T) extends Bundle {
     * @return a Chisel [[Bool]] true if `valid` is asserted
     */
   def fire: Bool = valid
-
-  @deprecated(
-    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-    "Chisel 3.5"
-  )
-  def fire(dummy: Int = 0): Bool = valid
 }
 
 /** Factory for generating "valid" interfaces. A "valid" interface is a data-communicating interface between a producer
@@ -55,8 +49,7 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   *   }
   * }}}
   *
-  * To convert this to a "valid" interface, you wrap it with a call to the [[Valid$.apply `Valid` companion object's
-  * apply method]]:
+  * To convert this to a `valid` interface, you wrap it with a call to the `Valid` companion object's apply method:
   * {{{
   *   val bar = Valid(new MyBundle)
   * }}}
@@ -69,7 +62,8 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   *   }
   * }}}
   *
-  * In addition to adding the `valid` bit, a [[Valid.fire]] method is also added that returns the `valid` bit. This
+  * In addition to adding the `valid` bit, a `Valid.fire` method is also added that returns the `valid` bit. This
+  *
   * provides a similarly named interface to [[DecoupledIO]]'s fire.
   *
   * @see [[Decoupled$ DecoupledIO Factory]]

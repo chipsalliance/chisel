@@ -17,15 +17,30 @@ object SimpleBundle {
   }
 }
 
+class ZeroWidthBundle extends Bundle {
+  val x = UInt(0.W)
+  val y = UInt()
+}
+object ZeroWidthBundle {
+  def intoWire(): ZeroWidthBundle = {
+    val w = Wire(new ZeroWidthBundle)
+    w.x := 0.U(0.W)
+    w.y := 0.U(0.W)
+    w
+  }
+}
+
 class WidthSpec extends ChiselFlatSpec {
   "Literals without specified widths" should "get the minimum legal width" in {
     "hdeadbeef".U.getWidth should be(32)
     "h_dead_beef".U.getWidth should be(32)
     "h0a".U.getWidth should be(4)
     "h1a".U.getWidth should be(5)
-    "h0".U.getWidth should be(1)
+    "h0".U.getWidth should be(1) // no literal is zero-width unless explicitly requested.
     1.U.getWidth should be(1)
     1.S.getWidth should be(2)
+    0.U.getWidth should be(1)
+    0.S.getWidth should be(1)
   }
 }
 
@@ -50,6 +65,21 @@ abstract class WireRegWidthSpecImpl extends ChiselFlatSpec {
     }
   }
 
+  it should "set the width to zero if the template type is set to zero-width" in {
+    assertKnownWidth(0) {
+      builder(UInt(0.W))
+    }
+    assertKnownWidth(0) {
+      val w = builder(new ZeroWidthBundle)
+      w := ZeroWidthBundle.intoWire()
+      w.x
+    }
+    assertKnownWidth(0) {
+      val x = builder(Vec(1, UInt(0.W)))
+      x(0)
+    }
+  }
+
   it should "infer the width if the template type has no width" in {
     assertInferredWidth(4) {
       val w = builder(UInt())
@@ -64,6 +94,24 @@ abstract class WireRegWidthSpecImpl extends ChiselFlatSpec {
     assertInferredWidth(4) {
       val w = builder(Vec(1, UInt()))
       w(0) := 0.U(4.W)
+      w(0)
+    }
+  }
+
+  it should "infer width as zero if the template type has no width and is initialized to zero-width literal" in {
+    assertInferredWidth(0) {
+      val w = builder(UInt())
+      w := 0.U(0.W)
+      w
+    }
+    assertInferredWidth(0) {
+      val w = builder(new ZeroWidthBundle)
+      w := ZeroWidthBundle.intoWire()
+      w.y
+    }
+    assertInferredWidth(0) {
+      val w = builder(Vec(1, UInt()))
+      w(0) := 0.U(0.W)
       w(0)
     }
   }
@@ -89,12 +137,21 @@ abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
     assertKnownWidth(4) {
       builder1(3.U(4.W))
     }
+    assertKnownWidth(0) {
+      builder1(0.U(0.W))
+    }
   }
 
   it should "NOT set width if passed a literal without a forced width" in {
     assertInferredWidth(4) {
       val w = builder1(3.U)
       w := 3.U(4.W)
+      w
+    }
+
+    assertInferredWidth(1) {
+      val w = builder1(0.U)
+      w := 0.U(0.W)
       w
     }
   }
@@ -187,64 +244,4 @@ class RegInitWidthSpec extends WireDefaultRegInitSpecImpl {
   def name: String = "RegInit"
   def builder1[T <: Data](x: T): T = RegInit(x)
   def builder2[T <: Data](x: T, y: T): T = RegInit(x, y)
-}
-
-class OpWidthSpec extends ChiselFlatSpec {
-  import firrtl._
-  import firrtl.ir._
-
-  val maxWidth = 5
-  val uIntOps: Seq[((UInt, UInt) => UInt, PrimOp)] =
-    Seq(
-      (_ +& _, PrimOps.Add),
-      (_ -& _, PrimOps.Sub),
-      (_ * _, PrimOps.Mul),
-      (_ / _, PrimOps.Div),
-      (_ % _, PrimOps.Rem),
-      (_ << _, PrimOps.Dshl),
-      (_ >> _, PrimOps.Dshr)
-    )
-
-  assertTesterPasses(new chisel3.testers.BasicTester {
-    for (i <- 0 to maxWidth) {
-      for (j <- 0 to maxWidth) {
-        for ((cOp, fOp) <- uIntOps) {
-          val args = Seq(i, j).map(w => Reference("", UIntType(IntWidth(w))))
-          fOp.propagateType(DoPrim(fOp, args, Nil, UnknownType)) match {
-            case UIntType(IntWidth(w)) =>
-              val x = 0.U(maxWidth.W).head(i)
-              val y = 0.U(maxWidth.W).head(j)
-              assert(w == cOp(x, y).getWidth)
-          }
-        }
-      }
-    }
-    stop()
-  })
-
-  val sIntOps: Seq[((SInt, SInt) => SInt, PrimOp)] =
-    Seq(
-      (_ +& _, PrimOps.Add),
-      (_ -& _, PrimOps.Sub),
-      (_ * _, PrimOps.Mul),
-      (_ / _, PrimOps.Div),
-      (_ % _, PrimOps.Rem)
-    )
-
-  assertTesterPasses(new chisel3.testers.BasicTester {
-    for (i <- 0 to maxWidth) {
-      for (j <- 0 to maxWidth) {
-        for ((cOp, fOp) <- sIntOps) {
-          val args = Seq(i, j).map(w => Reference("", SIntType(IntWidth(w))))
-          fOp.propagateType(DoPrim(fOp, args, Nil, UnknownType)) match {
-            case SIntType(IntWidth(w)) =>
-              val x = 0.U(maxWidth.W).head(i).asSInt
-              val y = 0.U(maxWidth.W).head(j).asSInt
-              assert(w == cOp(x, y).getWidth)
-          }
-        }
-      }
-    }
-    stop()
-  })
 }

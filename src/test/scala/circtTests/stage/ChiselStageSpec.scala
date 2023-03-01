@@ -3,10 +3,10 @@
 package circtTests.stage
 
 import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.experimental.SourceLine
 
 import circt.stage.{ChiselStage, FirtoolOption, PreserveAggregate}
 
-import firrtl.annotations.DeletedAnnotation
 import firrtl.EmittedVerilogCircuitAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
 
@@ -47,11 +47,96 @@ object ChiselStageSpec {
     val out = IO(Output(new BazBundle))
     out := in
   }
+
+  class Qux extends RawModule {
+    val a = IO(Input(Bool()))
+    val b = IO(Output(Bool()))
+    b := a
+  }
+
+  class Quz extends RawModule {
+    val a = IO(Input(Bool()))
+    val b = IO(Output(Bool()))
+    val qux = Module(new Qux)
+    qux.a := a
+    b := qux.b
+  }
+
+  class UserExceptionModule extends RawModule {
+    assert(false, "User threw an exception")
+  }
+
+  class UserExceptionNoStackTrace extends RawModule {
+    throw new Exception("Something bad happened") with scala.util.control.NoStackTrace
+  }
+
+  class RecoverableError extends RawModule {
+    3.U >> -1
+  }
+
+  class RecoverableErrorFakeSourceInfo extends RawModule {
+    implicit val info = SourceLine("Foo", 3, 10)
+    3.U >> -1
+  }
+
+  class ErrorCaughtByFirtool extends RawModule {
+    implicit val info = SourceLine("Foo", 3, 10)
+    val w = Wire(UInt(8.W))
+  }
 }
 
-class ChiselStageSpec extends AnyFunSpec with Matchers {
+/** A fixture used that exercises features of the Trace API.
+  */
+class TraceSpec {
+
+  import chisel3._
+  import chisel3.experimental.Trace
+  import chisel3.util.experimental.InlineInstance
+
+  /** A mutable Chisel reference to an internal wire inside Bar. This is done to enable later use of the Trace API to find this wire. */
+  var id: Option[Bool] = None
+
+  /** A submodule that will be inlined into the parent, Foo. */
+  class Bar extends RawModule with InlineInstance {
+
+    /** The wire that we want to trace. */
+    val a = WireDefault(false.B)
+    id = Some(a)
+    dontTouch(a)
+    Trace.traceName(a)
+  }
+
+  /** The top module. */
+  class Foo extends RawModule {
+    val bar = Module(new Bar)
+  }
+
+}
+
+class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
   describe("ChiselStage") {
+
+    it("should elaborate a Chisel module and emit specification FIRRTL (CHIRRTL)") {
+
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      val expectedOutput = new File(targetDir, "Foo.fir")
+      expectedOutput.delete()
+
+      (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo)))
+
+      info(s"'$expectedOutput' exists")
+      expectedOutput should (exist)
+
+    }
 
     it("should compile a Chisel module to FIRRTL dialect") {
 
@@ -111,10 +196,6 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
       (new ChiselStage)
         .execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo)))
-        .map {
-          case DeletedAnnotation(_, a) => a
-          case a                       => a
-        }
 
       info(s"'$expectedOutput' exists")
       expectedOutput should (exist)
@@ -169,171 +250,254 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
         .get
         .value should include("struct")
     }
+
+    it("should support split Verilog output") {
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString,
+        "--split-verilog"
+      )
+
+      val expectedOutputs = Seq(new File(targetDir, "Qux.sv"), new File(targetDir, "Qux.sv"))
+      expectedOutputs.foreach(_.delete)
+
+      info("output contains multiple Verilog files")
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Quz), PreserveAggregate(PreserveAggregate.All))
+        )
+
+      expectedOutputs.foreach { file =>
+        info(s"'$file' exists")
+        file should exist
+      }
+    }
   }
 
-  describe("ChiselStage handover to CIRCT") {
+  describe("ChiselStage exception handling") {
 
-    /*Test that widths were not inferred in the FIRRTL passed to CIRCT */
-    it("should handover at CHIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val a = IO(Input(UInt(1.W)))
-        val b = IO(Output(UInt()))
-
-        b := a
+    it("should truncate a user exception") {
+      info("The user's java.lang.AssertionError was thrown")
+      val exception = intercept[java.lang.AssertionError] {
+        (new ChiselStage)
+          .execute(
+            Array("--target", "chirrtl"),
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserExceptionModule))
+          )
       }
 
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/low",
-        "--handover",
-        "chirrtl"
-      )
+      info(s""" -  Exception was a ${exception.getClass.getName}""")
 
-      ((new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should not).include("b : UInt<")
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("User threw an exception")
 
+      val stackTrace = exception.getStackTrace.mkString("\n")
+      info("The stack trace is trimmed")
+      (stackTrace should not).include("java")
+
+      info("The stack trace include information about running --full-stacktrace")
+      stackTrace should include("--full-stacktrace")
     }
 
-    /* Test that widths were inferred in the FIRRTL passed to CIRCT */
-    it("should handover at High FIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val a = IO(Input(UInt(1.W)))
-        val b = IO(Output(UInt()))
-
-        b := a
-      }
-
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/low",
-        "--handover",
-        "high"
-      )
-
-      (new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should include("b : UInt<1>")
-
-    }
-
-    /* Test that a subaccess was removed in the FIRRTL passed to CIRCT */
-    it("should handover at Middle FIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val a = IO(Input(Vec(2, Bool())))
-        val b = IO(Input(Bool()))
-        val c = IO(Output(Bool()))
-        c := a(b)
-      }
-
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/low",
-        "--handover",
-        "middle"
-      )
-
-      ((new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should not).include("a[b]")
-
-    }
-
-    /* Test that aggregates were lowered in the FIRRTL passed to CIRCT */
-    it("should handover at Low FIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val b = IO(
-          new Bundle {
-            val a = Output(Bool())
-            val b = Output(Bool())
-          }
+    it("""should not truncate a user exception with "--full-stacktrace"""") {
+      info("The user's java.lang.AssertionError was thrown")
+      val exception = intercept[java.lang.AssertionError] {
+        (new ChiselStage).execute(
+          Array("--target", "chirrtl", "--full-stacktrace"),
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserExceptionModule))
         )
-        b := DontCare
       }
 
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/low",
-        "--handover",
-        "low"
-      )
+      info(s""" -  Exception was a ${exception.getClass.getName}""")
 
-      (new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should include("b_a")
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("User threw an exception")
 
+      info("The stack trace is not trimmed")
+      exception.getStackTrace.mkString("\n") should include("java")
     }
 
-    /* Test that primops were folded in the FIRRTL passed to CIRCT */
-    it("should handover at Low Optimized FIRRTL") {
-
-      import chisel3._
-
-      class Foo extends RawModule {
-        val a = IO(Input(Bool()))
-        val b = IO(Output(Bool()))
-        b := a | 1.U(1.W)
+    it("should NOT add a stack trace to an exception with no stack trace") {
+      val exception = intercept[java.lang.Exception] {
+        (new ChiselStage)
+          .execute(
+            Array("--target", "chirrtl"),
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserExceptionNoStackTrace))
+          )
       }
 
-      val args: Array[String] = Array(
-        "--target",
-        "firrtl",
-        "--target-dir",
-        "test_run_dir/ChiselStageSpec/handover/lowopt",
-        "--handover",
-        "lowopt"
-      )
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("Something bad happened")
 
-      (new ChiselStage)
-        .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case FirrtlCircuitAnnotation(circuit)                       => circuit
-          case DeletedAnnotation(_, FirrtlCircuitAnnotation(circuit)) => circuit
-        }
-        .map(_.serialize)
-        .get should include("""b <= UInt<1>("h1")""")
-
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
     }
+
+    it("should NOT include a stack trace for recoverable errors") {
+      val exception = intercept[java.lang.Exception] {
+        (new ChiselStage)
+          .execute(
+            Array("--target", "chirrtl"),
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+          )
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the standard error message")
+      message should include("Fatal errors during hardware elaboration. Look above for error list.")
+
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
+    }
+
+    it("should include a stack trace for recoverable errors with '--throw-on-first-error'") {
+      val exception = intercept[java.lang.Exception] {
+        (new ChiselStage).execute(
+          Array("--target", "chirrtl", "--throw-on-first-error"),
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+        )
+      }
+
+      val stackTrace = exception.getStackTrace.mkString("\n")
+      info("The exception should contain a truncated stack trace")
+      stackTrace shouldNot include("java")
+
+      info("The stack trace include information about running --full-stacktrace")
+      stackTrace should include("--full-stacktrace")
+    }
+
+    it(
+      "include an untruncated stack trace for recoverable errors when given both '--throw-on-first-error' and '--full-stacktrace'"
+    ) {
+      val exception = intercept[java.lang.Exception] {
+        val args = Array("--throw-on-first-error", "--full-stacktrace")
+        (new ChiselStage).execute(
+          Array("--target", "chirrtl", "--throw-on-first-error", "--full-stacktrace"),
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+        )
+      }
+
+      val stackTrace = exception.getStackTrace.mkString("\n")
+      info("The exception should contain a truncated stack trace")
+      stackTrace should include("java")
+    }
+
+    it("should include source line and a caret for recoverable errors") {
+      val (stdout, stderr, _) = grabStdOutErr {
+        intercept[java.lang.Exception] {
+          (new ChiselStage)
+            .execute(
+              Array("--target", "chirrtl"),
+              Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+            )
+        }
+      }
+
+      val lines = stdout.split("\n")
+      // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
+      lines(0) should include(
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:74:9: Negative shift amounts are illegal (got -1)"
+      )
+      lines(1) should include("    3.U >> -1")
+      lines(2) should include("        ^")
+    }
+
+    it("should NOT include source line and caret with an incorrect --source-root") {
+      val (stdout, stderr, _) = grabStdOutErr {
+        intercept[java.lang.Exception] {
+          (new ChiselStage)
+            .execute(
+              Array("--target", "chirrtl", "--source-root", ".github"),
+              Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
+            )
+        }
+      }
+
+      val lines = stdout.split("\n")
+      // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
+      lines.size should equal(2)
+      lines(0) should include(
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:74:9: Negative shift amounts are illegal (got -1)"
+      )
+      (lines(1) should not).include("3.U >> -1")
+    }
+
+    it("should include source line and a caret for recoverable errors with multiple --source-roots") {
+      val (stdout, stderr, _) = grabStdOutErr {
+        intercept[java.lang.Exception] {
+          (new ChiselStage)
+            .execute(
+              Array(
+                "--target",
+                "chirrtl",
+                "--source-root",
+                ".",
+                "--source-root",
+                "src/test/resources/chisel3/sourceroot1"
+              ),
+              Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableErrorFakeSourceInfo))
+            )
+        }
+      }
+
+      val lines = stdout.split("\n")
+      // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
+      lines(0) should include("Foo:3:10: Negative shift amounts are illegal (got -1)")
+      lines(1) should include("I am the file in sourceroot1")
+      lines(2) should include("         ^")
+    }
+
+    it("should include source line and a caret picking the first --source-root if there is ambiguity") {
+      val (stdout, stderr, _) = grabStdOutErr {
+        intercept[java.lang.Exception] {
+          (new ChiselStage)
+            .execute(
+              Array(
+                "--target",
+                "chirrtl",
+                "--source-root",
+                "src/test/resources/chisel3/sourceroot2",
+                "--source-root",
+                "src/test/resources/chisel3/sourceroot1"
+              ),
+              Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableErrorFakeSourceInfo))
+            )
+        }
+      }
+
+      val lines = stdout.split("\n")
+      // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
+      lines(0) should include("Foo:3:10: Negative shift amounts are illegal (got -1)")
+      lines(1) should include("I am the file in sourceroot2")
+      lines(2) should include("         ^")
+    }
+
+    it("should propagate --source-root as --include-dir to firtool") {
+      val e = intercept[java.lang.Exception] {
+        (new ChiselStage)
+          .execute(
+            Array("--target", "systemverilog", "--source-root", "src/test/resources/chisel3/sourceroot1"),
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.ErrorCaughtByFirtool))
+          )
+      }
+
+      val lines = e.getMessage.split("\n")
+      val idx = lines.indexWhere(_.contains("not fully initialized"))
+      lines(idx) should include(
+        "src/test/resources/chisel3/sourceroot1/Foo:3:10: error: sink \"w\" not fully initialized"
+      )
+      lines(idx + 1) should equal("I am the file in sourceroot1")
+      lines(idx + 2) should equal("         ^")
+    }
+
   }
 
   describe("ChiselStage custom transform support") {
@@ -421,6 +585,71 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
       (verilog should not).include("module Baz")
       (verilog should not).include("module Bar")
+
+    }
+
+    it("should work with the Trace API for unified output") {
+
+      import chisel3.experimental.Trace
+
+      val fixture = new TraceSpec
+
+      val targetDir = new File("test_run_dir/TraceAPIUnified")
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      val annos = (new ChiselStage).execute(
+        args,
+        Seq(
+          ChiselGeneratorAnnotation(() => new fixture.Foo)
+        )
+      )
+
+      val finalTargets = Trace.finalTarget(annos)(fixture.id.get)
+      info("there is one final target")
+      finalTargets should have size (1)
+
+      val expectedTarget = firrtl.annotations.CircuitTarget("Foo").module("Foo").ref("bar_a")
+      info(s"the final target is $expectedTarget")
+      finalTargets.head should be(expectedTarget)
+
+    }
+
+    it("should work with the Trace API for split  verilog output") {
+
+      import chisel3.experimental.Trace
+
+      val fixture = new TraceSpec
+
+      val targetDir = new File("test_run_dir/TraceAPISplit")
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString,
+        "--split-verilog"
+      )
+
+      val annos = (new ChiselStage).execute(
+        args,
+        Seq(
+          ChiselGeneratorAnnotation(() => new fixture.Foo)
+        )
+      )
+
+      val finalTargets = Trace.finalTarget(annos)(fixture.id.get)
+      info("there is one final target")
+      finalTargets should have size (1)
+
+      val expectedTarget = firrtl.annotations.CircuitTarget("Foo").module("Foo").ref("bar_a")
+      info(s"the final target is $expectedTarget")
+      finalTargets.head should be(expectedTarget)
 
     }
 
@@ -520,40 +749,6 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
     }
 
-  }
-
-  describe("ChiselStage AOP support") {
-    it("should be able to use Inject statement with AOP") {
-      import chisel3._
-      import chisel3.aop.Select
-      import chisel3.aop.injecting.InjectingAspect
-
-      val targetDir = new File("test_run_dir/ChiselStageSpec")
-      val args: Array[String] = Array(
-        "--target",
-        "systemverilog",
-        "--target-dir",
-        targetDir.toString
-      )
-
-      val verilog = (new ChiselStage)
-        .execute(
-          args,
-          Seq(
-            ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo),
-            InjectingAspect(
-              { dut: ChiselStageSpec.Foo => Select.collectDeep(dut) { case dut: ChiselStageSpec.Foo => dut } },
-              { dut: ChiselStageSpec.Foo => dut.b.a := false.B }
-            )
-          )
-        )
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
-        }
-        .get
-        .value
-      verilog should include("assign b_a = 1'h0;")
-    }
   }
 
   describe("ChiselStage dedup behavior") {
@@ -666,6 +861,18 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
   describe("ChiselStage$") {
 
+    it("should convert a module to FIRRTL IR") {
+
+      ChiselStage.convert(new ChiselStageSpec.Foo).main should be("Foo")
+
+    }
+
+    it("should emit specification FIRRTL (CHIRRTL)") {
+
+      ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo) should include("circuit Foo")
+
+    }
+
     it("should emit FIRRTL dialect") {
 
       ChiselStage.emitFIRRTLDialect(new ChiselStageSpec.Foo) should include(" firrtl.module")
@@ -678,10 +885,100 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
     }
 
-    it("should emit SystemVerilog") {
+    it("should emit SystemVerilog to string") {
 
       ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo) should include("endmodule")
 
+    }
+    it("should emit SystemVerilog to string with firtool options") {
+
+      val sv = ChiselStage
+        .emitSystemVerilog(
+          new ChiselStageSpec.Foo,
+          firtoolOpts = Array("--strip-debug-info")
+        )
+      (sv should not).include("// <stdin>:")
+
+    }
+    it("should emit SystemVerilog to string with chisel arguments and firtool options") {
+
+      val sv = ChiselStage.emitSystemVerilog(
+        new ChiselStageSpec.Foo,
+        Array("--show-registrations"),
+        Array("--strip-debug-info")
+      )
+      sv should include("Generated by CIRCT")
+
+    }
+
+    it("emitSystemVerilogFile should support custom Chisel args and firtool options") {
+      val targetDir = new File("test_run_dir/ChiselStageSpec/generated")
+
+      val args: Array[String] = Array(
+        "--target-dir",
+        targetDir.toString
+      )
+
+      info(s"output contains a case statement using --lowering-options=disallowPackedArrays")
+      ChiselStage
+        .emitSystemVerilogFile(
+          new ChiselStageSpec.Bar,
+          args,
+          Array("--lowering-options=disallowPackedArrays")
+        )
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }
+        .get
+        .value should include("case")
+
+      val expectedOutput = new File(targetDir, "Bar.sv")
+      expectedOutput should (exist)
+      info(s"'$expectedOutput' exists")
+    }
+
+  }
+
+  describe("ChiselStage$ exception handling") {
+
+    it("should truncate a user exception") {
+      info("The user's java.lang.AssertionError was thrown")
+      val exception = intercept[java.lang.AssertionError] {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.UserExceptionModule)
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("User threw an exception")
+
+      info("The stack trace is trimmed")
+      (exception.getStackTrace.mkString("\n") should not).include("java")
+    }
+
+    it("should NOT add a stack trace to an exception with no stack trace") {
+      val exception = intercept[java.lang.Exception] {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.UserExceptionNoStackTrace)
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("Something bad happened")
+
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
+    }
+
+    it("should NOT include a stack trace for recoverable errors") {
+      val exception = intercept[java.lang.Exception] {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.RecoverableError)
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the standard error message")
+      message should include("Fatal errors during hardware elaboration. Look above for error list.")
+
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
     }
 
   }

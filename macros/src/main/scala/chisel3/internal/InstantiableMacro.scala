@@ -42,11 +42,15 @@ private[chisel3] object instantiableMacro {
       val (clz, objOpt) = annottees.map(_.tree).toList match {
         case Seq(c, o) => (c, Some(o))
         case Seq(c)    => (c, None)
+        case _ =>
+          throw new Exception(
+            s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: annottees.map(_.tree).toList=${annottees.map(_.tree).toList}"
+          )
       }
       val (newClz, implicitClzs, tpname) = clz match {
         case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
-          val defname = TypeName(tpname + c.freshName())
-          val instname = TypeName(tpname + c.freshName())
+          val defname = TypeName(tpname.toString + c.freshName())
+          val instname = TypeName(tpname.toString + c.freshName())
           val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
@@ -58,8 +62,8 @@ private[chisel3] object instantiableMacro {
             tpname
           )
         case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
-          val defname = TypeName(tpname + c.freshName())
-          val instname = TypeName(tpname + c.freshName())
+          val defname = TypeName(tpname.toString + c.freshName())
+          val instname = TypeName(tpname.toString + c.freshName())
           val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
@@ -80,6 +84,10 @@ private[chisel3] object instantiableMacro {
               ..$body
             }
           """
+        case _ =>
+          throw new Exception(
+            s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: objOpt: $objOpt"
+          )
       }
       q"""
         $newClz

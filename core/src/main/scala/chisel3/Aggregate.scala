@@ -8,16 +8,17 @@ import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewExcept
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, OpaqueType, VecLiteralException}
+import chisel3.experimental.{BaseModule, BundleLiteralException, OpaqueType, VecLiteralException}
+import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo._
+import chisel3.internal.sourceinfo.{CompileOptionsTransform, SourceInfoTransform, VecTransform}
 
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
 
-class AliasedAggregateFieldException(message: String) extends ChiselException(message)
+class AliasedAggregateFieldException(message: String) extends chisel3.ChiselException(message)
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -226,7 +227,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
   /** The "bulk connect operator", assigning elements in this Vec from elements in a Seq.
     *
-    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    * For chisel3._, uses the `chisel3.internal.BiConnect` algorithm; sub-elements of `that` may end up driving sub-elements of `this`
     *  - Complicated semantics, will likely be deprecated in the future
     *
     * For Chisel._, emits the FIRRTL.<- operator
@@ -248,7 +249,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
   /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
     *
-    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    * For chisel3._, uses the `chisel3.internal.BiConnect` algorithm; sub-elements of `that` may end up driving sub-elements of `this`
     *  - See docs/src/explanations/connection-operators.md for details
     *
     * For Chisel._, emits the FIRRTL.<- operator
@@ -608,6 +609,8 @@ object VecInit extends SourceInfoDoc {
       // Bulk connecting two wires may not succeed because Chisel frontend does not infer
       // directions.
       (x, y) => x <> y
+    case ActualDirection.Empty =>
+      (x, y) => x <> y
   }
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
@@ -937,6 +940,26 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
+  private def checkClone(clone: Record): Unit = {
+    for ((name, field) <- elements) {
+      if (clone.elements(name) eq field) {
+        throw new AutoClonetypeException(
+          s"The bundle plugin was unable to clone $clone that has field '$name' aliased with base $this." +
+            "This likely happened because you tried nesting Data arguments inside of other data structures." +
+            " Try wrapping the field(s) in Input(...), Output(...), or Flipped(...) if appropriate." +
+            " As a last resort, you can call chisel3.reflect.DataMirror.internal.chiselTypeClone on any nested Data arguments." +
+            " See the cookbook entry 'How do I deal with the \"unable to clone\" error?' for more details."
+        )
+      }
+    }
+  }
+
+  override def cloneType: this.type = {
+    val clone = _cloneTypeImpl.asInstanceOf[this.type]
+    checkClone(clone)
+    clone
+  }
+
   // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
   // of hardware created when connecting to one of these elements
   private def setElementRefs(): Unit = {
@@ -1136,11 +1159,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     clone
   }
 
-  /** The collection of [[Data]]
+  /** The collection of [[chisel3.Data]]
     *
     * This underlying datastructure is a ListMap because the elements must
     * remain ordered for serialization/deserialization. Elements added later
-    * are higher order when serialized (this is similar to [[Vec]]). For example:
+    * are higher order when serialized (this is similar to `Vec`). For example:
     * {{{
     *   // Assume we have some type MyRecord that creates a Record from the ListMap
     *   val record = MyRecord(ListMap("fizz" -> UInt(16.W), "buzz" -> UInt(16.W)))
@@ -1218,6 +1241,10 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
       s"Internal Error! This should have been implemented by the chisel3-plugin. Please file an issue against chisel3"
     )
   }
+
+  override private[chisel3] lazy val _minId: Long = {
+    this.elementsIterator.map(_._minId).foldLeft(this._id)(_ min _)
+  }
 }
 
 /**
@@ -1235,17 +1262,18 @@ trait IgnoreSeqInBundle {
   override def ignoreSeq: Boolean = true
 }
 
-class AutoClonetypeException(message: String) extends ChiselException(message)
+class AutoClonetypeException(message: String) extends chisel3.ChiselException(message)
 
 package experimental {
 
-  class BundleLiteralException(message: String) extends ChiselException(message)
-  class VecLiteralException(message: String) extends ChiselException(message)
+  class BundleLiteralException(message: String) extends chisel3.ChiselException(message)
+  class VecLiteralException(message: String) extends chisel3.ChiselException(message)
 
   /** Indicates that the compiler plugin should generate [[cloneType]] for this type
     *
     * All user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
     */
+  @deprecated("AutoCloneType is now always enabled, no need to mix it in", "Chisel 3.6")
   trait AutoCloneType { self: Record =>
 
     override def cloneType: this.type = _cloneTypeImpl.asInstanceOf[this.type]
@@ -1276,17 +1304,26 @@ package experimental {
   *     val data   = UInt(32.W)
   *   }
   *   class MyModule extends Module {
-  *      val io = IO(new Bundle {
-  *        val inPacket = Input(new Packet)
-  *        val outPacket = Output(new Packet)
-  *      })
-  *      val reg = Reg(new Packet)
-  *      reg <> io.inPacket
-  *      io.outPacket <> reg
+  *     val inPacket = IO(Input(new Packet))
+  *     val outPacket = IO(Output(new Packet))
+  *     val reg = Reg(new Packet)
+  *     reg := inPacket
+  *     outPacket := reg
   *   }
   * }}}
+  *
+  * The fields of a Bundle are stored in an ordered Map called "elements" in reverse order of
+  * definition
+  * {{{
+  *   class MyBundle extends Bundle {
+  *     val foo = UInt(8.W)
+  *     val bar = UInt(8.W)
+  *   }
+  *   val wire = Wire(new MyBundle)
+  *   wire.elements // VectorMap("bar" -> wire.bar, "foo" -> wire.foo)
+  * }}}
   */
-abstract class Bundle(implicit compileOptions: CompileOptions) extends Record with experimental.AutoCloneType {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
   private def mustUsePluginMsg: String =
     "The Chisel compiler plugin is now required for compiling Chisel code. " +
@@ -1390,31 +1427,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record wi
     * @note This should not be used in user code!
     */
   protected def _usingPlugin: Boolean = false
-
-  private def checkClone(clone: Bundle): Unit = {
-    for ((name, field) <- elements) {
-      if (clone.elements(name) eq field) {
-        throw new AutoClonetypeException(
-          s"Automatically cloned $clone has field '$name' aliased with base $this." +
-            " In the future, this will be solved automatically by the compiler plugin." +
-            " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
-            " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate." +
-            " As a last resort, you can override cloneType manually."
-        )
-      }
-    }
-  }
-
-  private[chisel3] lazy val hasExternalRef: Boolean = this.elements.exists(_._2._id < _id)
-
-  override def cloneType: this.type = {
-    val clone = _cloneTypeImpl.asInstanceOf[this.type]
-    checkClone(clone)
-    clone
-  }
-
-  // This is overriden for binary compatibility reasons in 3.5
-  override protected def _cloneTypeImpl: Bundle = super._cloneTypeImpl.asInstanceOf[Bundle]
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Map

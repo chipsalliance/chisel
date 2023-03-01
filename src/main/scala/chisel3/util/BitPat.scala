@@ -4,7 +4,8 @@ package chisel3.util
 
 import scala.language.experimental.macros
 import chisel3._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel3.experimental.SourceInfo
+import chisel3.internal.sourceinfo.SourceInfoTransform
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
@@ -45,7 +46,7 @@ object BitPat {
     (bits, mask, count)
   }
 
-  /** Creates a [[BitPat]] literal from a string.
+  /** Creates a `BitPat` literal from a string.
     *
     * @param n the literal value as a string, in binary, prefixed with 'b'
     * @note legal characters are '0', '1', and '?', as well as '_' and white
@@ -56,7 +57,7 @@ object BitPat {
     new BitPat(bits, mask, width)
   }
 
-  /** Creates a [[BitPat]] of all don't cares of the specified bitwidth.
+  /** Creates a `BitPat` of all don't cares of the specified bitwidth.
     *
     * @example {{{
     * val myDontCare = BitPat.dontCare(4)  // equivalent to BitPat("b????")
@@ -64,7 +65,7 @@ object BitPat {
     */
   def dontCare(width: Int): BitPat = BitPat("b" + ("?" * width))
 
-  /** Creates a [[BitPat]] of all 1 of the specified bitwidth.
+  /** Creates a `BitPat` of all 1 of the specified bitwidth.
     *
     * @example {{{
     * val myY = BitPat.Y(4)  // equivalent to BitPat("b1111")
@@ -72,7 +73,7 @@ object BitPat {
     */
   def Y(width: Int = 1): BitPat = BitPat("b" + ("1" * width))
 
-  /** Creates a [[BitPat]] of all 0 of the specified bitwidth.
+  /** Creates a `BitPat` of all 0 of the specified bitwidth.
     *
     * @example {{{
     * val myN = BitPat.N(4)  // equivalent to BitPat("b0000")
@@ -102,7 +103,6 @@ object BitPat {
   }
 
   implicit class fromUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
-    import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
     import scala.language.experimental.macros
 
@@ -120,8 +120,8 @@ object BitPat {
 package experimental {
   object BitSet {
 
-    /** Construct a [[BitSet]] from a sequence of [[BitPat]].
-      * All [[BitPat]] must have the same width.
+    /** Construct a `BitSet` from a sequence of BitPat`.
+      * All `BitPat` must have the same width.
       */
     def apply(bitpats: BitPat*): BitSet = {
       val bs = new BitSet { def terms = bitpats.flatMap(_.terms).toSet }
@@ -130,13 +130,13 @@ package experimental {
       bs
     }
 
-    /** Empty [[BitSet]]. */
+    /** Empty `BitSet`. */
     val empty: BitSet = new BitSet {
       def terms = Set()
     }
 
-    /** Construct a [[BitSet]] from String.
-      * each line should be a valid [[BitPat]] string with the same width.
+    /** Construct a `BitSet` from String.
+      * each line should be a valid `BitPat` string with the same width.
       */
     def fromString(str: String): BitSet = {
       val bs = new BitSet { def terms = str.split('\n').map(str => BitPat(str)).toSet }
@@ -145,24 +145,24 @@ package experimental {
       bs
     }
 
-    /** Construct a [[BitSet]] matching a range of value
+    /** Construct a `BitSet` matching a range of value
       * automatically infer width by the bit length of (start + length - 1)
       *
       * @param start The smallest matching value
       * @param length The length of the matching range
-      * @return A [[BitSet]] matching exactly all inputs in range [start, start + length)
+      * @return A `BitSet` matching exactly all inputs in range [start, start + length)
       */
     def fromRange(
       start:  BigInt,
       length: BigInt
     ): BitSet = fromRange(start, length, (start + length - 1).bitLength)
 
-    /** Construct a [[BitSet]] matching a range of value
+    /** Construct a `BitSet` matching a range of value
       *
       * @param start The smallest matching value
       * @param length The length of the matching range
-      * @param width The width of the constructed [[BitSet]]. If not given, the returned [[BitSet]] have the width of the maximum possible matching value.
-      * @return A [[BitSet]] matching exactly all inputs in range [start, start + length)
+      * @param width The width of the constructed `BitSet`. If not given, the returned `BitSet` have the width of the maximum possible matching value.
+      * @return A `BitSet` matcing exactly all inputs in range [start, start + length)
       */
     def fromRange(
       start:  BigInt,
@@ -207,10 +207,10 @@ package experimental {
     }
   }
 
-  /** A Set of [[BitPat]] represents a set of bit vector with mask. */
+  /** A Set of `BitPat` represents a set of bit vector with mask. */
   sealed trait BitSet { outer =>
 
-    /** all [[BitPat]] elements in [[terms]] make up this [[BitSet]].
+    /** all `BitPat` elements in [[terms]] make up this `BitSet`.
       * all [[terms]] should be have the same width.
       */
     def terms: Set[BitPat]
@@ -225,31 +225,31 @@ package experimental {
     import BitPat.bitPatOrder
     override def toString: String = terms.toSeq.sorted.mkString("\n")
 
-    /** whether this [[BitSet]] is empty (i.e. no value matches) */
+    /** whether this `BitSet` is empty (i.e. no value matches) */
     def isEmpty: Boolean = terms.forall(_.isEmpty)
 
     def matches(input: UInt) = VecInit(terms.map(_ === input).toSeq).asUInt.orR
 
-    /** Check whether this [[BitSet]] overlap with that [[BitSet]], i.e. !(intersect.isEmpty)
+    /** Check whether this `BitSet` overlap with that `BitSet`, i.e. !(intersect.isEmpty)
       *
-      * @param that [[BitSet]] to be checked.
-      * @return true if this and that [[BitSet]] have overlap.
+      * @param that `BitSet` to be checked.
+      * @return true if this and that `BitSet` have overlap.
       */
     def overlap(that: BitSet): Boolean =
       !terms.flatMap(a => that.terms.map(b => (a, b))).forall { case (a, b) => !a.overlap(b) }
 
-    /** Check whether this [[BitSet]] covers that (i.e. forall b matches that, b also matches this)
+    /** Check whether this `BitSet` covers that (i.e. forall b matches that, b also matches this)
       *
-      * @param that [[BitSet]] to be covered
-      * @return true if this [[BitSet]] can cover that [[BitSet]]
+      * @param that `BitSet` to b covered
+      * @return true if this `BitSet` can cover that `BitSet`
       */
     def cover(that: BitSet): Boolean =
       that.subtract(this).isEmpty
 
-    /** Intersect `this` and `that` [[BitSet]].
+    /** Intersect `this` and `that` `BitSet`.
       *
-      * @param that [[BitSet]] to be intersected.
-      * @return a [[BitSet]] containing all elements of `this` that also belong to `that`.
+      * @param that `BitSet` to be intersected.
+      * @return a `BitSet` containing all elements of `this` that also belong to `that`.
       */
     def intersect(that: BitSet): BitSet =
       terms
@@ -257,31 +257,31 @@ package experimental {
         .filterNot(_.isEmpty)
         .fold(BitSet.empty)(_.union(_))
 
-    /** Subtract that from this [[BitSet]].
+    /** Subtract that from this `BitSet`.
       *
-      * @param that subtrahend [[BitSet]].
-      * @return a [[BitSet]] containing elements of `this` which are not the elements of `that`.
+      * @param that subtrahend `BitSet`.
+      * @return a `BitSet` contining elements of `this` which are not the elements of `that`.
       */
     def subtract(that: BitSet): BitSet =
       terms.map { a =>
         that.terms.map(b => a.subtract(b)).fold(a)(_.intersect(_))
       }.filterNot(_.isEmpty).fold(BitSet.empty)(_.union(_))
 
-    /** Union this and that [[BitSet]]
+    /** Union this and that `BitSet`
       *
-      * @param that [[BitSet]] to union.
-      * @return a [[BitSet]] containing all elements of `this` and `that`.
+      * @param that `BitSet` to union.
+      * @return a `BitSet` containing all elements of `this` and `that`.
       */
     def union(that: BitSet): BitSet = new BitSet {
       def terms = outer.terms ++ that.terms
     }
 
-    /** Test whether two [[BitSet]] matches the same set of value
+    /** Test whether two `BitSet` matches the same set of value
       *
       * @note
       * This method can be very expensive compared to ordinary == operator between two Objects
       *
-      * @return true if two [[BitSet]] is same.
+      * @return true if two `BitSet` is same.
       */
     override def equals(obj: Any): Boolean = {
       obj match {
@@ -357,24 +357,24 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
     new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)
   }
 
-  /** Check whether this [[BitPat]] overlap with that [[BitPat]], i.e. !(intersect.isEmpty)
+  /** Check whether this `BitPat` overlap with that `BitPat`, i.e. !(intersect.isEmpty)
     *
-    * @param that [[BitPat]] to be checked.
-    * @return true if this and that [[BitPat]] have overlap.
+    * @param that `BitPat` to be checked.
+    * @return true if this and that `BitPat` have overlap.
     */
   def overlap(that: BitPat): Boolean = ((mask & that.mask) & (value ^ that.value)) == 0
 
-  /** Check whether this [[BitSet]] covers that (i.e. forall b matches that, b also matches this)
+  /** Check whether this `BitSet` covers that (i.e. forall b matches that, b also matches this)
     *
-    * @param that [[BitPat]] to be covered
-    * @return true if this [[BitSet]] can cover that [[BitSet]]
+    * @param that `BitPat` to be covered
+    * @return true if this `BitSet` can cover that `BitSet`
     */
   def cover(that: BitPat): Boolean = (mask & (~that.mask | (value ^ that.value))) == 0
 
-  /** Intersect `this` and `that` [[BitPat]].
+  /** Intersect `this` and `that` `BitPat`.
     *
-    * @param that [[BitPat]] to be intersected.
-    * @return a [[BitSet]] containing all elements of `this` that also belong to `that`.
+    * @param that `BitPat` to be intersected.
+    * @return a `BitSet` containing all elements of `this` that also belong to `that`.
     */
   def intersect(that: BitPat): BitSet = {
     if (!overlap(that)) {
@@ -384,10 +384,10 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
     }
   }
 
-  /** Subtract a [[BitPat]] from this.
+  /** Subtract a `BitPat` from this.
     *
-    * @param that subtrahend [[BitPat]].
-    * @return a [[BitSet]] containing elements of `this` which are not the elements of `that`.
+    * @param that subtrahend `BitPat`.
+    * @return a `BitSet` containing elements of `this` which are not the elements of `that`.
     */
   def subtract(that: BitPat): BitSet = {
     require(width == that.width)
@@ -424,7 +424,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
 
   override def isEmpty: Boolean = false
 
-  /** Generate raw string of a [[BitPat]]. */
+  /** Generate raw string of a `BitPat`. */
   def rawString: String = _rawString
 
   // This is micro-optimized and memoized because it is used for lots of BitPat operations

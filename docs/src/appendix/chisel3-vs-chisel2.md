@@ -70,10 +70,10 @@ class Hello extends RawModule
 ```
    becomes (in Chisel3):
 ```scala mdoc:compile-only
-   import chisel3.stage.ChiselStage
+   import circt.stage.ChiselStage
    object Hello {
      def main(args: Array[String]): Unit = {
-       (new ChiselStage).emitVerilog(new Hello())
+       ChiselStage.emitSystemVerilog(new Hello())
      }
    }
 ```
@@ -124,7 +124,7 @@ To use the Scala `Predef.printf()`, you need to qualify it with `Predef`.
 
 ## Packaging
 Chisel3 is implemented as several packages.
-The core DSL is differentiated from utility or library classes and objects, testers, and interpreters.
+The core DSL is differentiated from utility or library classes and objects, and testers.
 The prime components of the Chisel3 front end (the DSL and library objects) are:
 * coreMacros - source locators provide Chisel line numbers for `firrtl` detected errors,
 * chiselFrontend - main DSL components,

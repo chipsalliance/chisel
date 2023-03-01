@@ -3,8 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.util._
+import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 import scala.collection.mutable
 
@@ -54,7 +55,7 @@ class IterableNaming extends NamedModuleTester {
   // default name because it is built eagerly but the compiler plugin doesn't know how to handle
   // infinite-size structures. Scala 2.13 LazyList would give the same old naming behavior but does
   // not exist in Scala 2.12 so this test has been simplified a bit.
-  val stream = Stream.continually(Module(new Other(8)))
+  val stream = LazyList.continually(Module(new Other(8)))
   val list = List.tabulate(4)(i => expectName(Module(new Other(i)), s"list_$i"))
 }
 
@@ -94,12 +95,12 @@ class BetterNamingTests extends ChiselFlatSpec {
     class MyModule(withLits: Boolean) extends Module {
       val io = IO(new Bundle {})
       if (withLits) {
-        List(8.U, -3.S, 1.25.F(2.BP))
+        List(8.U, -3.S)
       }
       WireDefault(3.U)
     }
-    val withLits = ChiselStage.emitChirrtl(new MyModule(true))
-    val noLits = ChiselStage.emitChirrtl(new MyModule(false))
+    val withLits = ChiselStage.emitCHIRRTL(new MyModule(true))
+    val noLits = ChiselStage.emitCHIRRTL(new MyModule(false))
     withLits should equal(noLits)
   }
 }

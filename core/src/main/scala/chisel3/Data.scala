@@ -5,11 +5,13 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule, DataMirror, EnumType, FixedPoint, Interval}
+import chisel3.experimental.{Analog, BaseModule}
+import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
+import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
+import chisel3.reflect.DataMirror
 
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 import scala.reflect.ClassTag
@@ -66,7 +68,7 @@ object SpecifiedDirection {
       requireIsChiselType(data)
     }
     val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
-    out.specifiedDirection = dir(out)
+    out.specifiedDirection = dir(data) // Must use original data, specified direction of clone is cleared
     out
   }
 
@@ -176,20 +178,6 @@ private[chisel3] object cloneSupertype {
             // TODO: perhaps redefine Widths to allow >= op?
             if (elt1.width == (elt1.width.max(elt2.width))) elt1 else elt2
           case (elt1: SInt, elt2: SInt) => if (elt1.width == (elt1.width.max(elt2.width))) elt1 else elt2
-          case (elt1: FixedPoint, elt2: FixedPoint) => {
-            (elt1.binaryPoint, elt2.binaryPoint, elt1.width, elt2.width) match {
-              case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), KnownWidth(w1), KnownWidth(w2)) =>
-                val maxBinaryPoint = bp1.max(bp2)
-                val maxIntegerWidth = (w1 - bp1).max(w2 - bp2)
-                FixedPoint((maxIntegerWidth + maxBinaryPoint).W, (maxBinaryPoint).BP)
-              case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), _, _) =>
-                FixedPoint(Width(), (bp1.max(bp2)).BP)
-              case _ => FixedPoint()
-            }
-          }
-          case (elt1: Interval, elt2: Interval) =>
-            val range = if (elt1.range.width == elt1.range.width.max(elt2.range.width)) elt1.range else elt2.range
-            Interval(range)
           case (elt1, elt2) =>
             throw new AssertionError(
               s"can't create $createdType with heterogeneous types ${elt1.getClass} and ${elt2.getClass}"
@@ -367,18 +355,19 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  // must clone a data if
-  // * it has a binding
-  // * its id is older than prevId (not "freshly created")
-  // * it is a bundle with a non-fresh member (external reference)
+  // Must clone a Data if any of the following are true:
+  // * It has a binding
+  // * Its id is older than prevId (not "freshly created")
+  // * It is a Bundle or Record that contains a member older than prevId
   private[chisel3] def mustClone(prevId: Long): Boolean = {
-    if (this.hasBinding || this._id <= prevId) true
-    else
-      this match {
-        case b: Bundle => b.hasExternalRef
-        case _ => false
-      }
+    this.hasBinding || this._minId <= prevId
   }
+
+  /** The minimum (aka "oldest") id that is part of this Data
+    *
+    * @note This is usually just _id except for some Records and Bundles
+    */
+  private[chisel3] def _minId: Long = this._id
 
   override def autoSeed(name: String): this.type = {
     topBindingOpt match {
@@ -416,7 +405,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private def _binding:    Option[Binding] = Option(_bindingVar)
   // Only valid after node is bound (synthesizable), crashes otherwise
   protected[chisel3] def binding: Option[Binding] = _binding
-  protected def binding_=(target: Binding) {
+  protected def binding_=(target: Binding): Unit = {
     if (_binding.isDefined) {
       throw RebindingException(s"Attempted reassignment of binding to $this, from: ${target}")
     }
@@ -466,7 +455,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private def _direction:    Option[ActualDirection] = Option(_directionVar)
 
   private[chisel3] def direction: ActualDirection = _direction.get
-  private[chisel3] def direction_=(actualDirection: ActualDirection) {
+  private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
     if (_direction.isDefined) {
       throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
@@ -720,7 +709,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
     *
-    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    * For chisel3._, uses the `chisel3.internal.BiConnect` algorithm; sub-elements of that` may end up driving sub-elements of `this`
     *  - Complicated semantics, hard to write quickly, will likely be deprecated in the future
     *
     * For Chisel._, emits the FIRRTL.<- operator
@@ -867,7 +856,9 @@ object Data {
           (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
         case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
           (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
-        case (lOpt, rOpt) if isElement(lOpt, rOpt) => Nil
+        case (lOpt: Option[Element @unchecked], rOpt: Option[Element @unchecked]) if isElement(lOpt, rOpt) => Nil
+        case _ =>
+          throw new InternalErrorException(s"Match Error: left=$left, right=$right")
       }
   }
 
@@ -898,8 +889,6 @@ object Data {
         case (thiz: SInt, that: SInt) => thiz === that
         case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
         case (thiz: Reset, that: Reset) => thiz === that
-        case (thiz: Interval, that: Interval) => thiz === that
-        case (thiz: FixedPoint, that: FixedPoint) => thiz === that
         case (thiz: EnumType, that: EnumType) => thiz === that
         case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
         case (thiz: Vec[_], that: Vec[_]) =>
@@ -927,7 +916,7 @@ object Data {
                 try {
                   thisData === thatData
                 } catch {
-                  case e: ChiselException =>
+                  case e: chisel3.ChiselException =>
                     throwException(
                       s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
                     )
@@ -993,6 +982,57 @@ trait WireFactory {
   */
 object Wire extends WireFactory
 
+private[chisel3] sealed trait WireDefaultImpl {
+
+  private def applyImpl[T <: Data](
+    t:    T,
+    init: Data
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
+    val x = Wire(t)
+    requireIsHardware(init, "wire initializer")
+    x := init
+    x
+  }
+
+  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
+    */
+  def apply[T <: Data](
+    t:    T,
+    init: DontCare.type
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T = {
+    applyImpl(t, init)
+  }
+
+  /** Construct a [[Wire]] with a type template and a default connection
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The hardware value that will serve as the default value
+    */
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
+  }
+
+  /** Construct a [[Wire]] with a default connection
+    * @param init The hardware value that will serve as a type template and default value
+    */
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init match {
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
+      case _ => init.cloneTypeFull
+    }).asInstanceOf[T]
+    apply(model, init)
+  }
+}
+
 /** Utility for constructing hardware wires with a default connection
   *
   * The two forms of `WireDefault` differ in how the type and width of the resulting [[Wire]] are
@@ -1048,60 +1088,17 @@ object Wire extends WireFactory
   *   x
   * }
   * }}}
+  */
+object WireDefault extends WireDefaultImpl
+
+/** Utility for constructing hardware wires with a default connection
   *
-  * @note The `Default` in `WireDefault` refers to a `default` connection. This is in contrast to
+  * Alias for [[WireDefault]].
+  *
+  * @note The `Init` in `WireInit` refers to a "default" connection. This is in contrast to
   * [[RegInit]] where the `Init` refers to a value on reset.
   */
-object WireDefault {
-
-  private def applyImpl[T <: Data](
-    t:    T,
-    init: Data
-  )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
-  ): T = {
-    val x = Wire(t)
-    requireIsHardware(init, "wire initializer")
-    x := init
-    x
-  }
-
-  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
-    * @param t The type template used to construct this [[Wire]]
-    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
-    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
-    */
-  def apply[T <: Data](
-    t:    T,
-    init: DontCare.type
-  )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
-  ): T = {
-    applyImpl(t, init)
-  }
-
-  /** Construct a [[Wire]] with a type template and a default connection
-    * @param t The type template used to construct this [[Wire]]
-    * @param init The hardware value that will serve as the default value
-    */
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    applyImpl(t, init)
-  }
-
-  /** Construct a [[Wire]] with a default connection
-    * @param init The hardware value that will serve as a type template and default value
-    */
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init match {
-      // If init is a literal without forced width OR any non-literal, let width be inferred
-      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
-      case _ => init.cloneTypeFull
-    }).asInstanceOf[T]
-    apply(model, init)
-  }
-}
+object WireInit extends WireDefaultImpl
 
 /** RHS (source) for Invalidate API.
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
@@ -1131,7 +1128,7 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
     Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
 
-  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): UInt = {
+  def do_asUInt(implicit sourceInfo: chisel3.experimental.SourceInfo, compileOptions: CompileOptions): UInt = {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }

@@ -3,7 +3,7 @@
 package chisel3
 package connectable
 
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 import chisel3.reflect.DataMirror
 import experimental.{prefix, requireIsHardware}
 
@@ -36,16 +36,16 @@ final class Connectable[+T <: Data] private (
     *
     * @param members functions given the base return a member to waive
     */
-  def waiveAs[S <: Data](members: (T => Data)*): Connectable[S] =
+  def waiveAs[S <: Data](members: (T => Data)*)(implicit ev: T <:< S): Connectable[S] =
     this.copy(waived = waived ++ members.map(f => f(base)).toSet).asInstanceOf[Connectable[S]]
 
-  /** Programmatically select members of base to waive
+  /** Programmatically select members of base to waive and static cast to a new type
     *
     * @param members partial function applied to all recursive members of base, if match, can return a member to waive
     */
-  def waiveEach[S <: Data](pf: PartialFunction[Data, Seq[Data]]): Connectable[T] = {
+  def waiveEach[S <: Data](pf: PartialFunction[Data, Seq[Data]])(implicit ev: T <:< S): Connectable[S] = {
     val waivedMembers = DataMirror.collectMembers(base)(pf).flatten
-    this.copy(waived = waived ++ waivedMembers.toSet)
+    this.copy(waived = waived ++ waivedMembers.toSet).asInstanceOf[Connectable[S]]
   }
 
   /** Waive all members of base */
@@ -54,31 +54,41 @@ final class Connectable[+T <: Data] private (
     this.copy(waived = waivedMembers.toSet) // not appending waived because we are collecting all members
   }
 
-  /** Adds base to squeezes
-    *
-    * @param members functions given the base return a member to squeeze
-    */
-  def squeeze: Connectable[T] = this.copy(squeezed = squeezed + base)
+  /** Waive all members of base and static cast to a new type */
+  def waiveAllAs[S <: Data](implicit ev: T <:< S): Connectable[S] = waiveAll.asInstanceOf[Connectable[S]]
+
+  /** Adds base to squeezes */
+  def squeeze: Connectable[T] = this.copy(squeezed = squeezed ++ addOpaque(Seq(base)))
 
   /** Select members of base to squeeze
     *
     * @param members functions given the base return a member to squeeze
     */
-  def squeeze(members: (T => Data)*): Connectable[T] = this.copy(squeezed = squeezed ++ members.map(f => f(base)).toSet)
+  def squeeze(members: (T => Data)*): Connectable[T] = {
+    this.copy(squeezed = squeezed ++ addOpaque(members.map(f => f(base))))
+  }
 
   /** Programmatically select members of base to squeeze
     *
     * @param members partial function applied to all recursive members of base, if match, can return a member to squeeze
     */
   def squeezeEach[S <: Data](pf: PartialFunction[Data, Seq[Data]]): Connectable[T] = {
-    val squeezedMembers = DataMirror.collectMembers(base)(pf).flatten
-    this.copy(squeezed = squeezed ++ squeezedMembers.toSet)
+    val squeezedMembers = addOpaque(DataMirror.collectMembers(base)(pf).flatten.toSeq)
+    this.copy(squeezed = squeezed ++ squeezedMembers)
   }
 
   /** Squeeze all members of base */
   def squeezeAll: Connectable[T] = {
     val squeezedMembers = DataMirror.collectMembers(base) { case x => x }
     this.copy(squeezed = squeezedMembers.toSet) // not appending squeezed because we are collecting all members
+  }
+
+  /** Add any elements of members that are OpaqueType */
+  private def addOpaque(members: Seq[Data]): Seq[Data] = {
+    members.flatMap {
+      case x: Record if x._isOpaqueType => Seq(x, x.getElements.head)
+      case o => Seq(o)
+    }
   }
 }
 
@@ -115,7 +125,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    * - Connecting two [[util.DecoupledIO]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
+    * - Connecting two `util.DecoupledIO`'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
     * - Functionally equivalent to chisel3.:=, but different than Chisel.:=
     *
     * @group connection
@@ -133,7 +143,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    *  - Connecting two [[util.DecoupledIO]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
+    *  - Connecting two `util.DecoupledIO`'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
     *
     * @group connection
     *
@@ -150,7 +160,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    *  - Connecting two [[util.DecoupledIO]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
+    *  - Connecting two `util.DecoupledIO`'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
     *
     * @group connection
     *
@@ -172,7 +182,7 @@ object Connectable {
     * - An additional type restriction is that all relative orientations of `consumer` and `producer` must match exactly.
     *
     * Additional notes:
-    *  - Connecting two wires of [[util.DecoupledIO]] chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
+    *  - Connecting two wires of `util.DecoupledIO` chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
     *  - If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
     *  - "turk-duck-en" is a dish where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
     *
@@ -211,7 +221,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    final def :<=[S <: Data](lProducer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :<=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       connect(consumer, producer, ColonLessEq)
     }
@@ -221,7 +231,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    final def :<=[S <: Data](producer: Connectable[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :<=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         connect(consumer, producer, ColonLessEq)
       }
@@ -232,7 +242,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=[S <: Data](lProducer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :>=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       connect(consumer, producer, ColonGreaterEq)
     }
@@ -242,10 +252,27 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=[S <: Data](producer: Connectable[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :>=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         connect(consumer, producer, ColonGreaterEq)
       }
+    }
+
+    /** There are cases when we need to reverse a FIRRTL connection
+      *
+      * Namely, OpaqueTypes of flipped fields since the flip is not present in the emitted FIRRTL
+      * @todo when refactoring internals, this firrtl-specific behavior should probably be moved
+      *   into Chisel IR lowering to FIRRTL IR. Such a change will likely conflict with the logic in
+      *   BiConnect which uses AbsoluteDirection to "Do the right thing"TM.
+      */
+    private def doFirrtlConnect[S <: Data](consumer: T, producer: S)(implicit sourceInfo: SourceInfo): Unit = {
+      val flip = consumer match {
+        case rec: Record if rec._isOpaqueType =>
+          rec.elementsIterator.next().specifiedDirection == SpecifiedDirection.Flip
+        case _ => false
+      }
+      val (lhs, rhs) = if (flip) (producer, consumer) else (consumer, producer)
+      lhs.firrtlConnect(rhs)
     }
 
     /** $colonLessGreaterEq
@@ -253,10 +280,10 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    final def :<>=[S <: Data](lProducer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :<>=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
-        consumer.base.firrtlConnect(producer)
+        doFirrtlConnect(consumer.base, producer)
       } else {
         connect(consumer, producer, ColonLessGreaterEq)
       }
@@ -267,10 +294,10 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    final def :<>=[S <: Data](producer: Connectable[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :<>=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
-          consumer.base.firrtlConnect(producer.base)
+          doFirrtlConnect(consumer.base, producer.base)
         } else {
           connect(consumer, producer, ColonLessGreaterEq)
         }
@@ -282,7 +309,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    final def :#=[S <: Data](lProducer: => S)(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :#=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       connect(consumer, producer, ColonHashEq)
     }
@@ -292,7 +319,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    final def :#=[S <: Data](producer: Connectable[S])(implicit evidence: S =:= T, sourceInfo: SourceInfo): Unit = {
+    final def :#=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         connect(consumer, producer, ColonHashEq)
       }

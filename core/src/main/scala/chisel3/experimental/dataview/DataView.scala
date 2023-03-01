@@ -5,8 +5,7 @@ package chisel3.experimental.dataview
 import chisel3._
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.experimental.{HWTuple10, HWTuple2, HWTuple3, HWTuple4, HWTuple5, HWTuple6, HWTuple7, HWTuple8, HWTuple9}
-import chisel3.experimental.ChiselSubtypeOf
-import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{ChiselSubtypeOf, SourceInfo, UnlocatableSourceInfo}
 import chisel3.ExplicitCompileOptions.Strict
 
 import scala.reflect.runtime.universe.WeakTypeTag
@@ -171,7 +170,7 @@ object DataView {
     )
   }
 
-  /** Provides implementations of [[DataView]] for [[Tuple2]] to [[HWTuple2]] */
+  /** Provides implementations of [[DataView]] for [[scala.Tuple2]]  to [[HWTuple2]] */
   implicit def tuple2DataView[T1: DataProduct, T2: DataProduct, V1 <: Data, V2 <: Data](
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
@@ -185,7 +184,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple3]] to [[HWTuple3]] */
+  /** Provides implementations of [[DataView]] for [[scala.Tuple3]] to [[HWTuple3]] */
   implicit def tuple3DataView[T1: DataProduct, T2: DataProduct, T3: DataProduct, V1 <: Data, V2 <: Data, V3 <: Data](
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
@@ -200,7 +199,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple4]] to [[HWTuple4]] */
+  /** Provides implementations of [[DataView]] for [[scala.Tuple4]] to [[HWTuple4]] */
   implicit def tuple4DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -228,7 +227,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple5]] to [[HWTuple5]] */
+  /** Provides implementations of [[DataView]] for [[scala.Tuple5]] to [[HWTuple5]] */
   implicit def tuple5DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -273,7 +272,7 @@ object DataView {
     )
   }
 
-  /** Provides implementations of [[DataView]] for [[Tuple6]] to [[HWTuple6]] */
+  /** Provides implementations of [[DataView]] for [[scala.Tuple6]] to [[HWTuple6]] */
   implicit def tuple6DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -321,7 +320,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple7]] to [[HWTuple7]] */
+  /** Provides implementations of [[DataView]] for [[scala.Tuple7]] to [[HWTuple7]] */
   implicit def tuple7DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -374,7 +373,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple8]] to [[HWTuple8]] */
+  /** Provides implementations of [[DataView]] for [[scala.Tuple8]] to [[HWTuple8]] */
   implicit def tuple8DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -432,7 +431,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple9]] to [[HWTuple9]] */
+  /** Provides implementations of [[DataView]] for [[scala.Tuple9]] to [[HWTuple9]] */
   implicit def tuple9DataView[
     T1: DataProduct,
     T2: DataProduct,
@@ -495,7 +494,7 @@ object DataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[Tuple10]] to [[HWTuple10]] */
+  /** Provides implementations of [[DataView]] for [[scala.Tuple10]] to [[HWTuple10]] */
   implicit def tuple10DataView[
     T1:  DataProduct,
     T2:  DataProduct,

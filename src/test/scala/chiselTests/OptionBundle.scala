@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import circt.stage.ChiselStage
 
 class OptionBundle(val hasIn: Boolean) extends Bundle {
   val in = if (hasIn) {

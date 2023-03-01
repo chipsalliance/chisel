@@ -10,6 +10,7 @@ import scala.collection.mutable
 
 private[plugin] case class ChiselPluginArguments(
   val skipFiles: mutable.HashSet[String] = mutable.HashSet.empty) {
+  var deprecateSFC: Boolean = true
   def useBundlePluginOpt = "useBundlePlugin"
   def useBundlePluginFullOpt = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
   def genBundleElementsOpt = "genBundleElements"
@@ -55,7 +56,8 @@ class ChiselPlugin(val global: Global) extends Plugin {
   private val arguments = ChiselPluginArguments()
   val components: List[PluginComponent] = List[PluginComponent](
     new ChiselComponent(global, arguments),
-    new BundleComponent(global, arguments)
+    new BundleComponent(global, arguments),
+    new DeprecateSFCComponent(global, arguments)
   )
 
   override def init(options: List[String], error: String => Unit): Boolean = {
@@ -66,9 +68,6 @@ class ChiselPlugin(val global: Global) extends Plugin {
       } else if (option.startsWith(arguments.skipFilePluginOpt)) {
         val filename = option.stripPrefix(arguments.skipFilePluginOpt)
         arguments.skipFiles += filename
-        // Be annoying and warn because users are not supposed to use this
-        val msg = s"Option -P:${ChiselPlugin.name}:$option should only be used for internal chisel3 compiler purposes!"
-        global.reporter.warning(NoPosition, msg)
       } else if (option == arguments.genBundleElementsOpt) {
         val msg = s"'${arguments.genBundleElementsOpt}' is now default behavior, you can remove the scalacOption."
         global.reporter.warning(NoPosition, msg)

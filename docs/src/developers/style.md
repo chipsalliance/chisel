@@ -7,7 +7,7 @@ section: "chisel3"
 # Chisel Developers Style Guide
 
 This document describes the syle used within the `chisel3`
-and related projects (`firrtl`, `treadle`, etc). It does not
+and related projects (`firrtl`, etc). It does not
 capture requirements for code which is written using these libraries,
 although projects may choose to adopt these guidelines.
 

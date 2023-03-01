@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class MemorySearch extends Module {
   val io = IO(new Bundle {
@@ -14,7 +14,7 @@ class MemorySearch extends Module {
   })
   val vals = Array(0, 4, 15, 14, 2, 5, 13)
   val index = RegInit(0.U(3.W))
-  val elts = VecInit(vals.map(_.asUInt(4.W)))
+  val elts = VecInit(vals.toIndexedSeq.map(_.asUInt(4.W)))
   // val elts  = Mem(UInt(32.W), 8) TODO ????
   val elt = elts(index)
   val end = !io.en && ((elt === io.target) || (index === 7.U))

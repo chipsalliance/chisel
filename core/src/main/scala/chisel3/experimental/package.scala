@@ -4,7 +4,7 @@ package chisel3
 
 import chisel3.ExplicitCompileOptions.Strict
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 
 /** Package for experimental features, which may have their API changed, be removed, etc.
   *
@@ -22,7 +22,12 @@ package object experimental {
   implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
-  type ChiselEnum = EnumFactory
+  @deprecated("This type has moved to chisel3", "Chisel 3.5")
+  type ChiselEnum = chisel3.ChiselEnum
+  @deprecated("This type has moved to chisel3", "Chisel 3.5")
+  type EnumType = chisel3.EnumType
+  @deprecated("This type has moved to chisel3", "Chisel 3.5")
+  val suppressEnumCastWarning = chisel3.suppressEnumCastWarning
 
   // Rocket Chip-style clonemodule
 
@@ -45,15 +50,40 @@ package object experimental {
     def apply(
       proto: BaseModule
     )(
-      implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
+      implicit sourceInfo: chisel3.experimental.SourceInfo,
       compileOptions:      CompileOptions
     ): ClonePorts = {
       BaseModule.cloneIORecord(proto)
     }
   }
 
-  val requireIsHardware = chisel3.internal.requireIsHardware
-  val requireIsChiselType = chisel3.internal.requireIsChiselType
+  /** Requires that a node is hardware ("bound")
+    */
+  object requireIsHardware {
+    def apply(node: Data, msg: String = ""): Unit = {
+      node._parent match { // Compatibility layer hack
+        case Some(x) => x._compatAutoWrapPorts()
+        case _       =>
+      }
+      if (!node.isSynthesizable) {
+        val prefix = if (msg.nonEmpty) s"$msg " else ""
+        throw ExpectedHardwareException(
+          s"$prefix'$node' must be hardware, " +
+            "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?"
+        )
+      }
+    }
+  }
+
+  /** Requires that a node is a chisel type (not hardware, "unbound")
+    */
+  object requireIsChiselType {
+    def apply(node: Data, msg: String = ""): Unit = if (node.isSynthesizable) {
+      val prefix = if (msg.nonEmpty) s"$msg " else ""
+      throw ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
+    }
+  }
+
   type Direction = ActualDirection
   val Direction = ActualDirection
 
@@ -62,7 +92,7 @@ package object experimental {
     import dataview._
     def coerceDirection(d: Data) = {
       import chisel3.{SpecifiedDirection => SD}
-      DataMirror.specifiedDirectionOf(gen) match {
+      chisel3.reflect.DataMirror.specifiedDirectionOf(gen) match {
         case SD.Flip   => Flipped(d)
         case SD.Input  => Input(d)
         case SD.Output => Output(d)
@@ -83,21 +113,6 @@ package object experimental {
       (seq, rec) => seq.zip(rec.elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
     )
     ports.viewAs[T]
-  }
-
-  implicit class ChiselRange(val sc: StringContext) extends AnyVal {
-
-    import scala.language.experimental.macros
-
-    /** Specifies a range using mathematical range notation. Variables can be interpolated using
-      * standard string interpolation syntax.
-      * @example {{{
-      * UInt(range"[0, 2)")
-      * UInt(range"[0, \$myInt)")
-      * UInt(range"[0, \${myInt + 2})")
-      * }}}
-      */
-    def range(args: Any*): chisel3.internal.firrtl.IntervalRange = macro chisel3.internal.RangeTransform.apply
   }
 
   class dump extends chisel3.internal.naming.dump
@@ -130,6 +145,7 @@ package object experimental {
     *   // Name without AffectsChiselPrefix: "value_1"
     *   val nonData2 = new NotAData
     * }
+    * }}}
     */
   trait AffectsChiselPrefix
 
@@ -172,39 +188,10 @@ package object experimental {
     }
   }
 
-  /** Use to add a prefix to any components generated in the provided scope.
-    *
-    * @example {{{
-    *
-    * val x1 = prefix("first") {
-    *   // Anything generated here will be prefixed with "first"
-    * }
-    *
-    * val x2 = prefix(mysignal) {
-    *   // Anything generated here will be prefixed with the name of mysignal
-    * }
-    *
-    * }}}
-    */
-  val prefix = chisel3.internal.prefix
-
-  /** Use to clear existing prefixes so no signals within the scope are prefixed
-    * by signals/names outside the scope
-    *
-    * @example {{{
-    *
-    * val x1 = prefix("first") {
-    *   // Anything generated here will have no prefix.
-    *   // The result returned from this would *still* be called `x1` however.
-    * }
-    * }}}
-    */
-  val noPrefix = chisel3.internal.noPrefix
-
   // ****************************** Hardware equivalents of Scala Tuples ******************************
   // These are intended to be used via DataView
 
-  /** [[Data]] equivalent of Scala's [[Tuple2]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple2]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple2` in
     * `chisel3.experimental.conversions`
@@ -219,7 +206,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple3]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple3]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple3` in
     * `chisel3.experimental.conversions`
@@ -243,7 +230,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple4]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple4]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple4` in
     * `chisel3.experimental.conversions`
@@ -270,7 +257,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple5]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple5]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple5` in
     * `chisel3.experimental.conversions`
@@ -300,7 +287,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple6]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple6]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple6` in
     * `chisel3.experimental.conversions`
@@ -333,7 +320,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple7]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple7]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple7` in
     * `chisel3.experimental.conversions`
@@ -377,7 +364,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple8]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple8]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple8` in
     * `chisel3.experimental.conversions`
@@ -425,7 +412,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple9]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple9]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple9` in
     * `chisel3.experimental.conversions`
@@ -477,7 +464,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple9]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple9]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple9` in
     * `chisel3.experimental.conversions`
@@ -532,5 +519,7 @@ package object experimental {
       "_10" -> _10
     )
   }
+
+  @deprecated("This value has moved to chisel3.reflect", "Chisel 3.6")
   val DataMirror = chisel3.reflect.DataMirror
 }

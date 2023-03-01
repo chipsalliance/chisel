@@ -4,7 +4,7 @@ package chiselTests.experimental
 
 import chisel3._
 import chisel3.util.Valid
-import chisel3.stage.ChiselStage.emitChirrtl
+import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3.experimental.{Analog, FlatIO}
 import chiselTests.ChiselFlatSpec
 
@@ -19,7 +19,7 @@ class FlatIOSpec extends ChiselFlatSpec {
       })
       io.out := io.in
     }
-    val chirrtl = emitChirrtl(new MyModule)
+    val chirrtl = emitCHIRRTL(new MyModule)
     chirrtl should include("input in : UInt<8>")
     chirrtl should include("output out : UInt<8>")
     chirrtl should include("out <= in")
@@ -31,7 +31,7 @@ class FlatIOSpec extends ChiselFlatSpec {
       val out = IO(Output(Valid(UInt(8.W))))
       out := in
     }
-    val chirrtl = emitChirrtl(new MyModule)
+    val chirrtl = emitCHIRRTL(new MyModule)
     chirrtl should include("out.bits <= bits")
     chirrtl should include("out.valid <= valid")
   }
@@ -45,7 +45,7 @@ class FlatIOSpec extends ChiselFlatSpec {
       })
       io.out(io.addr) := io.in(io.addr)
     }
-    val chirrtl = emitChirrtl(new MyModule)
+    val chirrtl = emitCHIRRTL(new MyModule)
     chirrtl should include("out[addr] <= in[addr]")
   }
 
@@ -55,11 +55,13 @@ class FlatIOSpec extends ChiselFlatSpec {
       val bar = Analog(8.W)
     }
     class MyModule extends RawModule {
-      val in = IO(Flipped(new MyBundle))
-      val out = IO(new MyBundle)
-      out <> in
+      val io = FlatIO(new Bundle {
+        val in = Flipped(new MyBundle)
+        val out = new MyBundle
+      })
+      io.out <> io.in
     }
-    val chirrtl = emitChirrtl(new MyModule)
+    val chirrtl = emitCHIRRTL(new MyModule)
     chirrtl should include("out.foo <= in.foo")
     chirrtl should include("attach (out.bar, in.bar)")
   }

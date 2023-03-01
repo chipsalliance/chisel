@@ -8,7 +8,7 @@ import firrtl.options.{CustomFileEmission, HasShellOptions, OptionsException, Sh
 import firrtl.options.Viewer.view
 import firrtl.stage.FirrtlOptions
 
-/** An option consumed by [[circt.stage.CIRCTStage CIRCTStage]] */
+/** An option used to construct a [[circt.stage.CIRCTOptions CIRCTOptions]] */
 sealed trait CIRCTOption extends Unserializable { this: Annotation => }
 
 object PreserveAggregate extends HasShellOptions {
@@ -42,6 +42,9 @@ object CIRCTTarget {
   /** The parent type of all CIRCT targets */
   sealed trait Type
 
+  /** Specification FIRRTL */
+  case object CHIRRTL extends Type
+
   /** The FIRRTL dialect */
   case object FIRRTL extends Type
 
@@ -65,6 +68,7 @@ object CIRCTTargetAnnotation extends HasShellOptions {
     new ShellOption[String](
       longOption = "target",
       toAnnotationSeq = _ match {
+        case "chirrtl"       => Seq(CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL))
         case "firrtl"        => Seq(CIRCTTargetAnnotation(CIRCTTarget.FIRRTL))
         case "hw"            => Seq(CIRCTTargetAnnotation(CIRCTTarget.HW))
         case "verilog"       => Seq(CIRCTTargetAnnotation(CIRCTTarget.Verilog))
@@ -72,7 +76,7 @@ object CIRCTTargetAnnotation extends HasShellOptions {
         case a               => throw new OptionsException(s"Unknown target name '$a'! (Did you misspell it?)")
       },
       helpText = "The CIRCT",
-      helpValueName = Some("{firrtl|rtl|systemverilog}")
+      helpValueName = Some("{chirrtl|firrtl|hw|verilog|systemverilog}")
     )
   )
 
@@ -97,33 +101,25 @@ case class EmittedMLIR(
 
 }
 
-object CIRCTHandover extends HasShellOptions {
+case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption
 
-  sealed trait Type
-
-  case object CHIRRTL extends Type
-  case object HighFIRRTL extends Type
-  case object MiddleFIRRTL extends Type
-  case object LowFIRRTL extends Type
-  case object LowOptimizedFIRRTL extends Type
+/** Annotation that indicates that firtool should run using the
+  * `--split-verilog` option.  This has two effects: (1) Verilog will be emitted
+  * as one-file-per-module and (2) any other output file attributes created
+  * along the way will have their operations written to other files.  Without
+  * this option, output file attributes will have their operations emitted
+  * inline in the single-file Verilog produced.
+  */
+private[circt] case object SplitVerilog extends NoTargetAnnotation with CIRCTOption with HasShellOptions {
 
   override def options = Seq(
-    new ShellOption[String](
-      longOption = "handover",
-      toAnnotationSeq = _ match {
-        case "chirrtl" => Seq(CIRCTHandover(CHIRRTL))
-        case "high"    => Seq(CIRCTHandover(HighFIRRTL))
-        case "middle"  => Seq(CIRCTHandover(MiddleFIRRTL))
-        case "low"     => Seq(CIRCTHandover(LowFIRRTL))
-        case "lowopt"  => Seq(CIRCTHandover(LowOptimizedFIRRTL))
-        case a         => throw new OptionsException(s"Unknown handover point '$a'! (Did you misspell it?)")
-      },
-      helpText = "Switch to the CIRCT compiler at this point, using the Scala FIRRTL Compiler if needed",
-      helpValueName = Some("{chirrtl|high|middle|low|lowopt}")
+    new ShellOption[Unit](
+      longOption = "split-verilog",
+      toAnnotationSeq = _ => Seq(this),
+      helpText =
+        """Indicates that "firtool" should emit one-file-per-module and write separate outputs to separate files""",
+      helpValueName = None
     )
   )
+
 }
-
-case class CIRCTHandover(handover: CIRCTHandover.Type) extends NoTargetAnnotation with CIRCTOption
-
-case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption

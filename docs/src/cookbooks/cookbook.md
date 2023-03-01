@@ -23,12 +23,14 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
   * [How do I partially reset an Aggregate Reg?](#how-do-i-partially-reset-an-aggregate-reg)
 * Bundles
   * [How do I deal with aliased Bundle fields?](#aliased-bundle-fields)
+  * [How do I deal with the "unable to clone" error?](#bundle-unable-to-clone)
 * [How do I create a finite state machine?](#how-do-i-create-a-finite-state-machine-fsm)
 * [How do I unpack a value ("reverse concatenation") like in Verilog?](#how-do-i-unpack-a-value-reverse-concatenation-like-in-verilog)
 * [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
 * [How do I create I/O without a prefix?](#how-do-i-create-io-without-a-prefix)
 * [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
+* [How do I resolve `Dynamic index ... is too wide/narrow for extractee ...`?](#how-do-i-resolve-dynamic-index--is-too-wide-narrow-for-extractee)
 * Predictable Naming
   * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
   * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
@@ -82,7 +84,7 @@ class MyBundle extends Bundle {
 class Foo extends Module {
   val uint = 0xb4.U
   val bundle = uint.asTypeOf(new MyBundle)
-  
+
   printf(cf"$bundle") // Bundle(foo -> 11, bar -> 4)
 
   // Test
@@ -103,7 +105,7 @@ you are tying off, you can use `chiselTypeOf`:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class MyBundle extends Bundle {
   val foo = UInt(4.W)
@@ -113,17 +115,17 @@ class MyBundle extends Bundle {
 class Foo(typ: MyBundle) extends Module {
   val bundleA = IO(Output(typ))
   val bundleB = IO(Output(typ))
-  
-  // typ is already a Chisel Data Type, so can use it directly here, but you 
+
+  // typ is already a Chisel Data Type, so can use it directly here, but you
   // need to know that bundleA is of type typ
   bundleA := 0.U.asTypeOf(typ)
-  
+
   // bundleB is a Hardware data IO(Output(...)) so need to call chiselTypeOf,
   // but this will work no matter the type of bundleB:
-  bundleB := 0.U.asTypeOf(chiselTypeOf(bundleB)) 
+  bundleB := 0.U.asTypeOf(chiselTypeOf(bundleB))
 }
 
-ChiselStage.emitVerilog(new Foo(new MyBundle))
+ChiselStage.emitSystemVerilog(new Foo(new MyBundle))
 ```
 ### How do I create a Vec of Bools from a UInt?
 
@@ -221,9 +223,9 @@ class Foo extends Module {
 ```
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
-ChiselStage.emitVerilog(new Foo)
+ChiselStage.emitSystemVerilog(new Foo)
 ```
 
 
@@ -443,15 +445,75 @@ class UsingCloneTypeBundle[T <: Data](gen: T) extends Bundle {
 getVerilogString(new Top(new UsingCloneTypeBundle(UInt(8.W))))
 ```
 
+### <a name="bundle-unable-to-clone"></a> How do I deal with the "unable to clone" error?
+
+Most Chisel objects need to be cloned in order to differentiate between the
+software representation of the bundle field from its "bound" hardware
+representation, where "binding" is the process of generating a hardware
+component. For Bundle fields, this cloning is supposed to happen automatically
+with a compiler plugin.
+
+In some cases though, the plugin may not be able to clone the Bundle fields. The
+most common case for when this happens is when the `chisel3.Data` part of the
+Bundle field is nested inside some other data structure and the compiler plugin
+is unable to figure out how to clone the entire structure. It is best to avoid
+such nested structures.
+
+There are a few ways around this issue - you can try wrapping the problematic
+fields in Input(...), Output(...), or Flipped(...) if appropriate. You can also
+try manually cloning each field in the Bundle using the `chiselTypeClone` method
+in `chisel3.reflect.DataMirror`. Here's an example with the Bundle whose fields
+won't get cloned:
+
+```scala mdoc:invisible
+import chisel3._
+import scala.collection.immutable.ListMap
+```
+
+```scala mdoc:crash
+class CustomBundleBroken(elts: (String, Data)*) extends Record {
+  val elements = ListMap(elts: _*)
+
+  def apply(elt: String): Data = elements(elt)
+}
+
+class NewModule extends Module {
+  val out = Output(UInt(8.W))
+  val recordType = new CustomBundleBroken("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
+  val record = Wire(recordType)
+  val uint = record.asUInt
+  val record2 = uint.asTypeOf(recordType)
+  out := record
+}
+getVerilogString(new NewModule)
+```
+
+You can use `chiselTypeClone` to clone the elements as:
+
+
+```scala mdoc
+import chisel3.reflect.DataMirror
+import chisel3.experimental.requireIsChiselType
+
+class CustomBundleFixed(elts: (String, Data)*) extends Record {
+  val elements = ListMap(elts.map {
+    case (field, elt) =>
+      requireIsChiselType(elt)
+      field -> DataMirror.internal.chiselTypeClone(elt)
+  }: _*)
+
+  def apply(elt: String): Data = elements(elt)
+}
+```
+
 ### How do I create a finite state machine (FSM)?
 
-The advised way is to use [`ChiselEnum`](https://www.chisel-lang.org/api/latest/chisel3/experimental/index.html#ChiselEnum=chisel3.experimental.EnumFactory) to construct enumerated types representing the state of the FSM.
-State transitions are then handled with [`switch`](https://www.chisel-lang.org/api/latest/chisel3/util/switch$.html)/[`is`](https://www.chisel-lang.org/api/latest/chisel3/util/is$.html) and [`when`](https://www.chisel-lang.org/api/latest/chisel3/when$.html)/[`.elsewhen`](https://www.chisel-lang.org/api/latest/chisel3/WhenContext.html#elsewhen(elseCond:=%3Echisel3.Bool)(block:=%3EUnit)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):chisel3.WhenContext)/[`.otherwise`](https://www.chisel-lang.org/api/latest/chisel3/WhenContext.html#otherwise(block:=%3EUnit)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):Unit).
+The advised way is to use `ChiselEnum` to construct enumerated types representing the state of the FSM.
+State transitions are then handled with `switch`/`is` and `when`/`.elsewhen`/`.otherwise`.
 
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.{switch, is}
-import chisel3.experimental.ChiselEnum
 
 object DetectTwoOnes {
   object State extends ChiselEnum {
@@ -556,7 +618,7 @@ Below, the left-hand side connection to `io.out(0)` is not allowed.
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 
 class Foo extends Module {
   val io = IO(new Bundle {
@@ -710,10 +772,41 @@ Unlike `Vecs` which represent a singular Chisel type and must have the same widt
 `Seq` is a purely Scala construct, so their elements are independent from the perspective of Chisel and can have different widths.
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new CountBits(4))
+circt.stage.ChiselStage.emitSystemVerilog(new CountBits(4))
   // remove the body of the module by removing everything after ');'
   .split("\\);")
   .head + ");\n"
+```
+
+### How do I resolve `Dynamic index ... is too wide/narrow for extractee ...`?
+
+If the index is too narrow you can use `.pad` to increase the width.
+```scala mdoc:silent
+import chisel3.util.log2Up
+
+class TooNarrow(extracteeWidth: Int, indexWidth: Int) {
+  val extractee = Wire(UInt(extracteeWidth.W))
+  val index = Wire(UInt(indexWidth.W))
+  extractee(index.pad(log2Up(extracteeWidth)))
+}
+```
+
+If the index is too wide you can use a bit extract to select the correct bits.
+```scala mdoc:silent
+class TooWide(extracteeWidth: Int, indexWidth: Int) {
+  val extractee = Wire(UInt(extracteeWidth.W))
+  val index = Wire(UInt(indexWidth.W))
+  extractee(index(log2Up(extracteeWidth) - 1, 0))
+}
+```
+
+Or use both if you are working on a generator where the widths may be too wide or too narrow under different circumstances.
+```scala mdoc:silent
+class TooWideOrNarrow(extracteeWidth: Int, indexWidth: Int) {
+  val extractee = Wire(UInt(extracteeWidth.W))
+  val index = Wire(UInt(indexWidth.W))
+  extractee(index.pad(log2Up(indexWidth))(log2Up(extracteeWidth) - 1, 0))
+}
 ```
 
 ## Predictable Naming
@@ -743,9 +836,11 @@ class Foo extends Module {
 
 The above code loses the `x` name, instead using `_GEN_3` (the other `_GEN_*` signals are expected).
 
+{% raw %}
 ```scala mdoc:verilog
 getVerilogString(new Foo)
 ```
+{% endraw %}
 
 This can be worked around by creating a wire and connecting the dynamic index to the wire:
 ```scala
@@ -768,9 +863,11 @@ class Foo2 extends Module {
 ```
 
 Which produces:
+{% raw %}
 ```scala mdoc:verilog
 getVerilogString(new Foo2)
 ```
+{% endraw %}
 
 ### How can I dynamically set/parametrize the name of a module?
 
@@ -811,20 +908,20 @@ to a register:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 class BadRegConnect extends Module {
   val io = IO(new Bundle {
     val enq = Decoupled(UInt(8.W))
   })
-  
+
   val monitor = Reg(chiselTypeOf(io.enq))
   monitor := io.enq
 }
 ```
 
 ```scala mdoc:crash
-ChiselStage.emitVerilog(new BadRegConnect)
+ChiselStage.emitSystemVerilog(new BadRegConnect)
 ```
 
 While there is no construct to "strip direction" in Chisel3, wrapping a type in `Output(...)`
@@ -834,13 +931,13 @@ This will have the desired result when used to construct a Register:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.stage.ChiselStage
+import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 class CoercedRegConnect extends Module {
   val io = IO(new Bundle {
     val enq = Flipped(Decoupled(UInt(8.W)))
   })
-  
+
   // Make a Reg which contains all of the bundle's signals, regardless of their directionality
   val monitor = Reg(Output(chiselTypeOf(io.enq)))
   // Even though io.enq is bidirectional, := will drive all fields of monitor with the fields of io.enq
@@ -850,7 +947,7 @@ class CoercedRegConnect extends Module {
 
 <!-- Just make sure it actually works -->
 ```scala mdoc:invisible
-ChiselStage.emitVerilog(new CoercedRegConnect {
+ChiselStage.emitSystemVerilog(new CoercedRegConnect {
   // Provide default connections that would just muddy the example
   io.enq.ready := true.B
   // dontTouch so that it shows up in the Verilog

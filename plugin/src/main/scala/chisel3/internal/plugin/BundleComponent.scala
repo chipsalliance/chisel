@@ -43,7 +43,6 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     val bundleTpe:      Type = inferType(tq"chisel3.Bundle")
     val recordTpe:      Type = inferType(tq"chisel3.Record")
-    val autoCloneTpe:   Type = inferType(tq"chisel3.experimental.AutoCloneType")
     val dataTpe:        Type = inferType(tq"chisel3.Data")
     val ignoreSeqTpe:   Type = inferType(tq"chisel3.IgnoreSeqInBundle")
     val seqOfDataTpe:   Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
@@ -54,8 +53,6 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     def isABundle(sym: Symbol): Boolean = { sym.tpe <:< bundleTpe }
 
     def isARecord(sym: Symbol): Boolean = { sym.tpe <:< recordTpe }
-
-    def isAnAutoCloneType(sym: Symbol): Boolean = { sym.tpe <:< autoCloneTpe }
 
     def isIgnoreSeqInBundle(sym: Symbol): Boolean = { sym.tpe <:< ignoreSeqTpe }
 
@@ -99,7 +96,13 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         case acc: ValDef if acc.symbol.isParamAccessor =>
           paramAccessors += acc.symbol
         case con: DefDef if con.symbol.isPrimaryConstructor =>
-          primaryConstructor = Some(con)
+          if (con.symbol.isPrivate) {
+            val msg = "Private bundle constructors cannot automatically be cloned, try making it package private"
+            global.reporter.error(con.pos, msg)
+          } else {
+            primaryConstructor = Some(con)
+          }
+
         case d: DefDef if isNullaryMethodNamed("_cloneTypeImpl", d) =>
           val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
@@ -110,23 +113,12 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           val msg = "Users cannot override _usingPlugin, it is for the compiler plugin's use only."
           global.reporter.error(d.pos, msg)
         case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
-          val prefix = if (isBundle) "Bundles" else "Records extending AutoCloneType"
+          val prefix = if (isBundle) "Bundles" else "Records"
           val msg = s"$prefix cannot override cloneType. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
         case _ =>
       }
       (primaryConstructor, paramAccessors.toList)
-    }
-
-    def warnOnCloneType(body: List[Tree]): Unit = {
-      body.foreach {
-        case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
-          val msg = "It is no longer necessary to implement cloneType. " +
-            "Mix in chisel3.experimental.AutoCloneType to let the compiler plugin generate it. " +
-            "This will become an error in Chisel 3.6."
-          global.reporter.warning(d.pos, msg)
-        case _ => // Do nothing
-      }
     }
 
     def generateAutoCloneType(record: ClassDef, thiz: global.This, isBundle: Boolean): Option[Tree] = {
@@ -158,6 +150,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       val ttpe =
         if (tparamList.nonEmpty) AppliedTypeTree(Ident(record.symbol), tparamList) else Ident(record.symbol)
       val newUntyped = New(ttpe, conArgs)
+
+      // TODO For private default constructors this crashes with a
+      // TypeError. Figure out how to make this local to the object so
+      // that private default constructors work.
       val neww = localTyper.typed(newUntyped)
 
       // Create the symbol for the method and have it be associated with the Record class
@@ -166,10 +162,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
       cloneTypeSym.resetFlag(Flags.METHOD)
 
-      // Need to set the return type correctly for the override to work
-      // For binary compatibility reasons in 3.5, Bundles have to return chisel3.Bundle
-      val returnType = if (isBundle) bundleTpe else recordTpe
-      cloneTypeSym.setInfo(NullaryMethodType(returnType))
+      cloneTypeSym.setInfo(NullaryMethodType(recordTpe))
 
       Some(localTyper.typed(DefDef(cloneTypeSym, neww)))
     }
@@ -242,17 +235,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     override def transform(tree: Tree): Tree = tree match {
 
-      case record: ClassDef if isARecord(record.symbol) && !record.mods.hasFlag(Flag.ABSTRACT) =>
-        val isBundle:        Boolean = isABundle(record.symbol)
-        val isAutoCloneType: Boolean = isAnAutoCloneType(record.symbol)
-
-        if (!isAutoCloneType) {
-          warnOnCloneType(record.impl.body)
-          // Other than warning, there is nothing to do on Records that don't mixin AutoCloneType
-          return super.transform(record)
-        }
-
-        val thiz: global.This = gen.mkAttributedThis(record.symbol)
+      case record: ClassDef
+          if isARecord(record.symbol) && !record.mods.hasFlag(Flag.ABSTRACT) => // check that its not abstract
+        val isBundle: Boolean = isABundle(record.symbol)
+        val thiz:     global.This = gen.mkAttributedThis(record.symbol)
 
         // ==================== Generate _cloneTypeImpl ====================
         val cloneTypeImplOpt = generateAutoCloneType(record, thiz, isBundle)

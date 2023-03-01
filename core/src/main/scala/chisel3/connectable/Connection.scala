@@ -2,11 +2,11 @@
 
 package chisel3.connectable
 
-import chisel3.{Aggregate, BiConnectException, Data, DontCare, RawModule}
-import chisel3.internal.{prefix, BiConnect, Builder}
+import chisel3.{Aggregate, BiConnectException, Data, DontCare, InternalErrorException, RawModule}
+import chisel3.internal.{BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.DefInvalid
-import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
 import Alignment.matchingZipOfChildren
 
@@ -194,8 +194,11 @@ private[chisel3] object Connection {
         // Base Case 3: early exit if operator requires matching widths, but they aren't the same
         case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment)
             if (consumerAlignment
-              .mismatchedWidths(producerAlignment, connectionOp)) && (connectionOp.noMismatchedWidths) =>
-          errors = (s"mismatched widths of ${consumerAlignment.member} and ${producerAlignment.member}") +: errors
+              .truncationRequired(producerAlignment, connectionOp)
+              .nonEmpty) && (connectionOp.noMismatchedWidths) =>
+          val mustBeTruncated = consumerAlignment.truncationRequired(producerAlignment, connectionOp).get
+          errors =
+            (s"mismatched widths of ${consumerAlignment.member} and ${producerAlignment.member} might require truncation of $mustBeTruncated") +: errors
 
         // Base Case 3: operator error on dangling/unconnected fields
         case (consumer: NonEmptyAlignment, _: EmptyAlignment) =>
@@ -266,6 +269,7 @@ private[chisel3] object Connection {
         case List(a, b) =>
           BiConnect.markAnalogConnected(sourceInfo, a, b, currentModule)
           BiConnect.markAnalogConnected(sourceInfo, b, a, currentModule)
+        case _ => throw new InternalErrorException("Match error: as.toList=${as.toList}")
       }
     } catch { // convert Exceptions to Builder.error's so compilation can continue
       case attach.AttachException(message) => Builder.error(message)

@@ -2,22 +2,13 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-val defaultVersions = Map(
-  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6-SNAPSHOT"
-  // chiseltest intentionally excluded so that release automation does not try to set its version
-  // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
-  // when doing publishing and will not find a chiseltest release since chiseltest depends on
-  // chisel3
-)
-
 lazy val commonSettings = Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
   organization := "edu.berkeley.cs",
   version := "3.6-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.17",
+  scalaVersion := "2.13.10",
   crossScalaVersions := Seq("2.13.10", "2.12.17"),
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -34,6 +25,32 @@ lazy val commonSettings = Seq(
       case _                       => compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)) :: Nil
     }
   }
+)
+
+lazy val fatalWarningsSettings = Seq(
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 =>
+          if (sys.props.contains("disableFatalWarnings")) {
+            Nil
+          } else {
+            "-Werror" :: Nil
+          }
+
+      case _                       => Nil
+    }
+  }
+)
+
+lazy val warningSuppression = Seq(
+  scalacOptions += "-Wconf:" + Seq(
+    "msg=APIs in chisel3.internal:s",
+    "msg=Importing from firrtl:s",
+    "msg=migration to the MLIR:s",
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s",  // replacement `knownSize` is not in 2.12
+    "msg=object JavaConverters in package collection is deprecated:s",
+    "msg=undefined in comment for method cf in class PrintableHelper:s"
+  ).mkString(",")
 )
 
 lazy val publishSettings = Seq(
@@ -67,10 +84,108 @@ lazy val publishSettings = Seq(
   }
 )
 
+// FIRRTL SETTINGS
+
+lazy val isAtLeastScala213 = Def.setting {
+  import Ordering.Implicits._
+  CrossVersion.partialVersion(scalaVersion.value).exists(_ >= (2, 13))
+}
+
+lazy val firrtlSettings = Seq(
+  name := "firrtl",
+  version := "1.6-SNAPSHOT",
+  addCompilerPlugin(scalafixSemanticdb),
+  scalacOptions := Seq(
+    "-deprecation",
+    "-unchecked",
+    "-language:reflectiveCalls",
+    "-language:existentials",
+    "-language:implicitConversions",
+    "-Yrangepos" // required by SemanticDB compiler plugin
+  ),
+  // Always target Java8 for maximum compatibility
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  libraryDependencies ++= Seq(
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.scalatest" %% "scalatest" % "3.2.14" % "test",
+    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test",
+    "com.github.scopt" %% "scopt" % "3.7.1",
+    "net.jcazevedo" %% "moultingyaml" % "0.4.2",
+    "org.json4s" %% "json4s-native" % "4.0.6",
+    "org.apache.commons" % "commons-text" % "1.10.0",
+    "io.github.alexarchambault" %% "data-class" % "0.2.5",
+    "com.lihaoyi" %% "os-lib" % "0.8.1"
+  ),
+  // macros for the data-class library
+  libraryDependencies ++= {
+    if (isAtLeastScala213.value) Nil
+    else Seq(compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)))
+  },
+  scalacOptions ++= {
+    if (isAtLeastScala213.value) Seq("-Ymacro-annotations")
+    else Nil
+  },
+  // starting with scala 2.13 the parallel collections are separate from the standard library
+  libraryDependencies ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, major)) if major <= 12 => Seq()
+      case _                               => Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
+    }
+  },
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
+  )
+)
+
+lazy val mimaSettings = Seq(
+  mimaPreviousArtifacts := Set()
+)
+
+lazy val assemblySettings = Seq(
+  assembly / assemblyJarName := "firrtl.jar",
+  assembly / test := {},
+  assembly / assemblyOutputPath := file("./utils/bin/firrtl.jar")
+)
+
+lazy val testAssemblySettings = Seq(
+  Test / assembly / test := {}, // Ditto above
+  Test / assembly / assemblyMergeStrategy := {
+    case PathList("firrtlTests", xs @ _*) => MergeStrategy.discard
+    case x =>
+      val oldStrategy = (Test / assembly / assemblyMergeStrategy).value
+      oldStrategy(x)
+  },
+  Test / assembly / assemblyJarName := s"firrtl-test.jar",
+  Test / assembly / assemblyOutputPath := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
+)
+
+lazy val firrtl = (project in file("firrtl"))
+  .enablePlugins(ScalaUnidocPlugin)
+  .settings(
+    fork := true,
+    Test / testForkedParallel := true
+  )
+  .settings(commonSettings)
+  .settings(firrtlSettings)
+  .settings(assemblySettings)
+  .settings(inConfig(Test)(baseAssemblySettings))
+  .settings(testAssemblySettings)
+  .settings(publishSettings)
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    buildInfoPackage := name.value,
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  )
+  .settings(mimaSettings)
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
+
 lazy val chiselSettings = Seq(
   name := "chisel3",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.14" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.15" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "upickle" % "2.0.0"
   )
@@ -86,6 +201,7 @@ lazy val chiselSettings = Seq(
 )
 
 autoCompilerPlugins := true
+autoAPIMappings := true
 
 // Plugin must be fully cross-versioned (published for Scala minor version)
 // The plugin only works in Scala 2.12+
@@ -126,7 +242,6 @@ lazy val plugin = (project in file("plugin"))
   .settings(publishSettings: _*)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    scalacOptions += "-Xfatal-warnings",
     crossScalaVersions := pluginScalaVersions,
     // Must be published for Scala minor version
     crossVersion := CrossVersion.full,
@@ -135,6 +250,7 @@ lazy val plugin = (project in file("plugin"))
       target.value / s"scala-${scalaVersion.value}"
     }
   )
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := {
       Set()
@@ -158,10 +274,7 @@ lazy val macros = (project in file("macros"))
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
 
-lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
-
 lazy val core = (project in file("core"))
-  .sourceDependency(firrtlRef, defaultVersions("firrtl"))
   .settings(commonSettings: _*)
   .enablePlugins(BuildInfoPlugin)
   .settings(
@@ -171,6 +284,8 @@ lazy val core = (project in file("core"))
   )
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     name := "chisel3-core",
     libraryDependencies ++= Seq(
@@ -178,7 +293,6 @@ lazy val core = (project in file("core"))
       "com.lihaoyi" %% "os-lib" % "0.8.1"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
-      "-deprecation",
       "-explaintypes",
       "-feature",
       "-language:reflectiveCalls",
@@ -189,6 +303,7 @@ lazy val core = (project in file("core"))
     )
   )
   .dependsOn(macros)
+  .dependsOn(firrtl)
 
 // This will always be the root project, even if we are a sub-project.
 lazy val root = RootProject(file("."))
@@ -201,10 +316,12 @@ lazy val chisel = (project in file("."))
   .settings(usePluginSettings: _*)
   .dependsOn(macros)
   .dependsOn(core)
-  .aggregate(macros, core, plugin)
+  .dependsOn(firrtl)
+  .aggregate(macros, core, plugin, firrtl)
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
   .settings(
     mimaPreviousArtifacts := Set(),
-    libraryDependencies += defaultVersions("treadle") % "test",
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
     // Forward doc command to unidoc
     Compile / doc := (ScalaUnidoc / doc).value,
@@ -233,7 +350,8 @@ lazy val chisel = (project in file("."))
             s"v${version.value}"
           }
         s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
-      }
+      },
+      "-language:implicitConversions"
     ) ++
       // Suppress compiler plugin for source files in core
       // We don't need this in regular compile because we just don't add the chisel3-plugin to core's scalacOptions
@@ -242,24 +360,11 @@ lazy val chisel = (project in file("."))
       // See https://github.com/sbt/sbt-unidoc/issues/107
       (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
       ++ {
-           CrossVersion.partialVersion(scalaVersion.value) match {
-             case Some((2, n)) if n >= 13 => "-implicits" :: Nil
-             case _                       => Nil
-           }
-         }
-  )
-
-// tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
-lazy val integrationTests = (project in file("integration-tests"))
-  .dependsOn(chisel)
-  .dependsOn(standardLibrary)
-  .settings(commonSettings: _*)
-  .settings(chiselSettings: _*)
-  .settings(usePluginSettings: _*)
-  .settings(
-    Seq(
-      libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.6-SNAPSHOT" % "test"
-    )
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, n)) if n >= 13 => "-implicits" :: Nil
+          case _                       => Nil
+        }
+      }
   )
 
 // the chisel standard library
@@ -277,9 +382,9 @@ lazy val docs = project // new documentation project
   .settings(commonSettings)
   .settings(
     scalacOptions ++= Seq(
-      "-Xfatal-warnings",
       "-language:reflectiveCalls",
-      "-language:implicitConversions"
+      "-language:implicitConversions",
+      "-Wconf:msg=firrtl:s"
     ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
@@ -289,7 +394,4 @@ lazy val docs = project // new documentation project
       "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )
   )
-
-addCommandAlias("com", "all compile")
-addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
-addCommandAlias("fix", "all compile:scalafix test:scalafix")
+  .settings(fatalWarningsSettings: _*)

@@ -2,11 +2,10 @@
 
 package chisel3
 
-import chisel3.internal.ChiselException
-import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint}
+import chisel3.internal.sourceinfo.SourceInfoTransform
 
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel3.experimental.SourceInfo
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
 
@@ -183,8 +182,6 @@ object Num extends NumObject
 
 /** NumbObject has a lot of convenience methods for converting between
   * BigInts and Double and BigDecimal
-  * For backwards compatibility this is used with FixedPoint and Interval objects
-  * but is better used with the Num Object
   */
 trait NumObject {
   val MaxBitsBigIntToBigDecimal = 108
@@ -203,20 +200,6 @@ trait NumObject {
   }
 
   /**
-    * How to create a bigint from a big decimal with a specific binaryPoint
-    * @param x           a BigDecimal value
-    * @param binaryPoint a binaryPoint that you would like to use
-    * @return
-    */
-  def toBigInt(x: Double, binaryPoint: BinaryPoint): BigInt = {
-    binaryPoint match {
-      case KnownBinaryPoint(n) => toBigInt(x, n)
-      case x =>
-        throw new ChiselException(s"Error converting Double $x to BigInt, binary point must be known, not $x")
-    }
-  }
-
-  /**
     * How to create a bigint from a big decimal with a specific binaryPoint (int)
     * @param x           a BigDecimal value
     * @param binaryPoint a binaryPoint that you would like to use
@@ -226,20 +209,6 @@ trait NumObject {
     val multiplier = math.pow(2, binaryPoint)
     val result = (x * multiplier).rounded.toBigInt
     result
-  }
-
-  /**
-    * How to create a bigint from a big decimal with a specific binaryPoint
-    * @param value           a BigDecimal value
-    * @param binaryPoint a binaryPoint that you would like to use
-    * @return
-    */
-  def toBigInt(value: BigDecimal, binaryPoint: BinaryPoint): BigInt = {
-    binaryPoint match {
-      case KnownBinaryPoint(n) => toBigInt(value, n)
-      case x =>
-        throw new ChiselException(s"Error converting BigDecimal $value to BigInt, binary point must be known, not $x")
-    }
   }
 
   /**
@@ -260,20 +229,6 @@ trait NumObject {
   }
 
   /**
-    * converts a bigInt with the given binaryPoint into the double representation
-    * @param value       a bigint
-    * @param binaryPoint the implied binaryPoint of @i
-    * @return
-    */
-  def toDouble(value: BigInt, binaryPoint: BinaryPoint): Double = {
-    binaryPoint match {
-      case KnownBinaryPoint(n) => toDouble(value, n)
-      case x =>
-        throw new ChiselException(s"Error converting BigDecimal $value to BigInt, binary point must be known, not $x")
-    }
-  }
-
-  /**
     * converts a bigInt with the given binaryPoint into the BigDecimal representation
     * @param value           a bigint
     * @param binaryPoint the implied binaryPoint of @i
@@ -290,17 +245,4 @@ trait NumObject {
     result
   }
 
-  /**
-    * converts a bigInt with the given binaryPoint into the BigDecimal representation
-    * @param value           a bigint
-    * @param binaryPoint the implied binaryPoint of @i
-    * @return
-    */
-  def toBigDecimal(value: BigInt, binaryPoint: BinaryPoint): BigDecimal = {
-    binaryPoint match {
-      case KnownBinaryPoint(n) => toBigDecimal(value, n)
-      case x =>
-        throw new ChiselException(s"Error converting BigDecimal $value to BigInt, binary point must be known, not $x")
-    }
-  }
 }

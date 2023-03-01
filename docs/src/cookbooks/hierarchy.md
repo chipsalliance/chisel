@@ -24,12 +24,18 @@ Instead, it returns a `Definition` class which represents that module's definiti
 
 `Instance(...)` takes a `Definition` and instantiates it, returning an `Instance` object.
 
+`Instantiate(...)` provides an API similar to `Module(...)`, except it uses
+`Definition` and `Instance` to only elaborate modules once for a given set of
+parameters. It returns an `Instance` object.
+
 Modules (classes or traits) which will be used with the `Definition`/`Instance` api should be marked
 with the `@instantiable` annotation at the class/trait definition.
 
 To make a Module's members variables accessible from an `Instance` object, they must be annotated
 with the `@public` annotation. Note that this is only accessible from a Scala sense—this is not
 in and of itself a mechanism for cross-module references.
+
+### Using Definition and Instance
 
 In the following example, use `Definition`, `Instance`, `@instantiable` and `@public` to create
 multiple instances of one specific parameterization of a module, `AddOne`.
@@ -57,7 +63,29 @@ class AddTwo(width: Int) extends Module {
 }
 ```
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new AddTwo(10))
+circt.stage.ChiselStage.emitSystemVerilog(new AddTwo(10))
+```
+
+### Using Instantiate
+
+Similar to the above, the following example uses `Instantiate` to create
+multiple instances of `AddOne`.
+
+```scala mdoc:silent
+import chisel3.experimental.hierarchy.Instantiate
+
+class AddTwoInstantiate(width: Int) extends Module {
+  val in  = IO(Input(UInt(width.W)))
+  val out = IO(Output(UInt(width.W)))
+  val i0 = Instantiate(new AddOne(width))
+  val i1 = Instantiate(new AddOne(width))
+  i0.in := in
+  i1.in := i0.out
+  out   := i1.out
+}
+```
+```scala mdoc:verilog
+circt.stage.ChiselStage.emitSystemVerilog(new AddTwoInstantiate(16))
 ```
 
 ## How do I access internal fields of an instance?
@@ -135,7 +163,12 @@ class Top extends Module {
 ```
 ```scala mdoc:passthrough
 println("```")
-chisel3.stage.ChiselStage.elaborate(new Top)
+val chiselCircuit = (new chisel3.stage.phases.Elaborate)
+  .transform(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new Top)))
+  .collectFirst { case chisel3.stage.ChiselCircuitAnnotation(a) =>
+    a
+  }.get
+  println(chiselCircuit)
 println("```")
 ```
 
@@ -149,7 +182,7 @@ import chisel3._
 import chisel3.experimental.hierarchy.{Definition, instantiable, public}
 
 @instantiable
-class AddOne(val width: Int) extends Module {
+class AddOne(val width: Int) extends RawModule {
   @public val width = width
   @public val in  = IO(Input(UInt(width.W)))
   @public val out = IO(Output(UInt(width.W)))
@@ -161,8 +194,9 @@ class Top extends Module {
   println(s"Width is: ${definition.width}")
 }
 ```
+
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Top())
+circt.stage.ChiselStage.emitSystemVerilog(new Top())
 ```
 
 ## How do I parameterize a module by its children instances?
@@ -202,7 +236,7 @@ class AddTwo(addOneDef: Definition[AddOne]) extends Module {
 }
 ```
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new AddTwo(Definition(new AddOne(10))))
+circt.stage.ChiselStage.emitSystemVerilog(new AddTwo(Definition(new AddOne(10))))
 ```
 
 ## How do I use the new hierarchy-specific Select functions?
@@ -257,7 +291,7 @@ class Top extends Module {
 ```
 ```scala mdoc:passthrough
 println("```")
-val x = chisel3.stage.ChiselStage.emitFirrtl(new Top)
+val x = circt.stage.ChiselStage.emitCHIRRTL(new Top)
 println("```")
 ```
 
@@ -305,6 +339,6 @@ class InOutTop extends Module {
 ```
 ```scala mdoc:passthrough
 println("```")
-val y = chisel3.stage.ChiselStage.emitFirrtl(new InOutTop)
+val y = circt.stage.ChiselStage.emitCHIRRTL(new InOutTop)
 println("```")
 ```

@@ -3,13 +3,15 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.experimental.Trace._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
+import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import chisel3.util.experimental.InlineInstance
+import circt.stage.ChiselStage
 import firrtl.AnnotationSeq
 import firrtl.annotations.TargetToken.{Instance, OfModule, Ref}
 import firrtl.annotations.{CompleteTarget, InstanceTarget, ReferenceTarget}
+import firrtl.util.BackendCompilationUtilities.createTestDirectory
+
 import org.scalatest.matchers.should.Matchers
 
 class TraceSpec extends ChiselFlatSpec with Matchers {
@@ -23,7 +25,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
   def compile(testName: String, gen: () => Module): (os.Path, AnnotationSeq) = {
     val testDir = os.Path(createTestDirectory(testName).getAbsolutePath)
     val annos = (new ChiselStage).execute(
-      Array("--target-dir", s"$testDir"),
+      Array("--target-dir", s"$testDir", "--target", "systemverilog", "--split-verilog"),
       Seq(
         ChiselGeneratorAnnotation(gen)
       )
@@ -31,6 +33,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     (testDir, annos)
   }
 
+  //TODO: SFC->MFC, this test is ignored because MFC does not support the custom annotations used here
   "TraceFromAnnotations" should "be able to get nested name." in {
     class Bundle0 extends Bundle {
       val a = UInt(8.W)
@@ -69,7 +72,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
       val s0, s1, s2 = Value
     }
 
-    val (testDir, annos) = compile("TraceFromAnnotaions", () => new Module1)
+    val (testDir, annos) = compile("TraceFromAnnotations", () => new Module1)
     val dut = annos.collectFirst { case DesignAnnotation(dut) => dut }.get.asInstanceOf[Module1]
     // out of Builder.
 
@@ -159,18 +162,29 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     }
 
     val config = os.temp(dir = testDir, contents = generateVerilatorConfigFile(Seq(dut.m0.o.a.b), annos))
-    val verilog = testDir / s"$topName.v"
+    val verilog = testDir / s"$topName.sv"
     val cpp = os.temp(dir = testDir, suffix = ".cpp", contents = verilatorTemplate(Seq(dut.m0.o.a.b), annos))
     val exe = testDir / "obj_dir" / s"V$topName"
-    os.proc("verilator", "-Wall", "--cc", "--exe", "--build", "--vpi", s"$cpp", s"$verilog", s"$config")
-      .call(stdout = os.Inherit, stderr = os.Inherit, cwd = testDir)
+    os.proc(
+      "verilator",
+      "--cc",
+      "--exe",
+      "--build",
+      "--vpi",
+      s"-I$testDir",
+      s"$cpp",
+      s"$verilog",
+      s"$config"
+    ).call(stdout = os.Inherit, stderr = os.Inherit, cwd = testDir)
     assert(
       os.proc(s"$exe").call(stdout = os.Inherit, stderr = os.Inherit).exitCode == 0,
       "verilator should exit peacefully"
     )
   }
 
-  "TraceFromCollideBundle" should "work" in {
+  // TODO: This is disabled until CIRCT 1.32 or 1.33 when there is a bug is fixed.  The CIRCT tarcking issue is:
+  //   - https://github.com/llvm/circt/issues/4661
+  "TraceFromCollideBundle" should "work" ignore {
     class CollideModule extends Module {
       val a = IO(
         Input(
@@ -222,6 +236,10 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
 
     val a0_c1_e = finalTarget(annos)(dut.a(0).c(1).e).head
     val a0_c_1_e = finalTarget(annos)(dut.a(0).c_1_e).head
+    println(dut.a(0).c(1).e.toTarget)
+    println(a0_c1_e)
+    println(dut.a(0).c_1_e.toTarget)
+    println(a0_c_1_e)
     a0_c1_e should be(refTarget(topName, "a_0_c__1_e"))
     a0_c_1_e should be(refTarget(topName, "a_0_c_1_e"))
   }
@@ -280,37 +298,37 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
 
     class M1 extends Module {
       val io = IO(new Io)
-      val not = Module(new Not)
-      not.io <> io
+      val bar = Module(new Not)
+      bar.io <> io
     }
 
     class M2 extends Module {
       val io = IO(new Io)
       val m1 = Module(new M1 with InlineInstance)
-      val not = Module(new Not)
+      val foo = Module(new Not)
 
       m1.io.i := io.i
-      not.io.i := io.i
+      foo.io.i := io.i
 
-      io.o := m1.io.o && not.io.o
+      io.o := m1.io.o && foo.io.o
     }
 
     class M3 extends Module {
       val io = IO(new Io)
       val m2 = Module(new M2)
       io <> m2.io
-      traceName(m2.not)
-      traceName(m2.m1.not)
+      traceName(m2.foo)
+      traceName(m2.m1.bar)
     }
 
     val (_, annos) = compile("NestedModule", () => new M3)
     val m3 = annos.collectFirst { case DesignAnnotation(dut) => dut }.get.asInstanceOf[M3]
 
-    val m2_m1_not = finalTarget(annos)(m3.m2.m1.not).head
-    val m2_not = finalTarget(annos)(m3.m2.not).head
+    val m2_m1_not = finalTarget(annos)(m3.m2.m1.bar).head
+    val m2_not = finalTarget(annos)(m3.m2.foo).head
 
-    m2_m1_not should be(instTarget("M3", "m1_not", "Not", Seq(Instance("m2") -> OfModule("M2"))))
-    m2_not should be(instTarget("M3", "not", "Not", Seq(Instance("m2") -> OfModule("M2"))))
+    m2_m1_not should be(instTarget("M3", "bar", "Not", Seq(Instance("m2") -> OfModule("M2"))))
+    m2_not should be(instTarget("M3", "foo", "Not", Seq(Instance("m2") -> OfModule("M2"))))
   }
 
   "All traced signal" should "generate" in {

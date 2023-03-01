@@ -7,8 +7,9 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.SourceInfo
 
+import scala.annotation.nowarn
 import scala.reflect.macros.blackbox
 
 /** Scaladoc information for internal verification statement macros
@@ -63,7 +64,7 @@ object assert extends VerifPrintMacrosDoc {
     * @param cond condition, assertion fires (simulation fails) on a rising clock edge when false and reset is not asserted
     * @param message optional chisel Printable type message
     *
-    * @note See [[printf.apply(fmt:Printable)]] for documentation on printf using Printables
+    * @note See [[printf.apply(pable:chisel3\.Printable)*]] for documentation on printf using Printables
     * @note currently cannot be used in core Chisel / libraries because macro
     * defs need to be compiled first and the SBT project is not set up to do
     * that
@@ -238,7 +239,7 @@ object assume extends VerifPrintMacrosDoc {
     * @param cond condition, assertion fires (simulation fails) when false
     * @param message optional Printable type message when the assertion fires
     *
-    * @note See [[printf.apply(fmt:Printable]] for documentation on printf using Printables
+    * @note See [[printf.apply(pable:chisel3\.Printable)*]] for documentation on printf using Printables
     */
   def apply(
     cond:    Bool,
@@ -465,7 +466,7 @@ private object VerificationStatement {
 
   def getLine(c: blackbox.Context): SourceLineInfo = {
     val p = c.enclosingPosition
-    (p.source.file.name, p.line, p.lineContent.trim)
+    (p.source.file.name, p.line, p.lineContent.trim): @nowarn // suppress, there's no clear replacement
   }
 
   def failureMessage(

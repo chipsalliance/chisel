@@ -50,7 +50,7 @@ class Example extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example)
+circt.stage.ChiselStage.emitSystemVerilog(new Example)
 ```
 
 Partial specification is allowed, which results in "invalidated fields" as
@@ -66,7 +66,7 @@ class Example2 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example2)
+circt.stage.ChiselStage.emitSystemVerilog(new Example2)
 ```
 
 Bundle literals can also be nested arbitrarily.
@@ -88,13 +88,13 @@ class Example3 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example3)
+circt.stage.ChiselStage.emitSystemVerilog(new Example3)
 ```
 
 ### Vec Literals
 
 Vec literals are very similar to Bundle literals and can be constructed via an experimental import.
-They can be constructed in two forms, with type and length inferred as in: 
+They can be constructed in two forms, with type and length inferred as in:
 
 ```scala mdoc
 import chisel3._
@@ -106,7 +106,7 @@ class VecExample1 extends Module {
 }
 ```
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample1)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample1)
 ```
 
 or explicitly as in:
@@ -122,7 +122,7 @@ class VecExample1a extends Module {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample1a)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample1a)
 ```
 
 The following examples all use the explicit form.
@@ -139,7 +139,7 @@ class VecExample2 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample2)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample2)
 ```
 
 Registers can be initialized from Vec literals
@@ -155,7 +155,7 @@ class VecExample3 extends Module {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample3)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample3)
 ```
 
 Vec literals can also be nested arbitrarily.
@@ -171,7 +171,7 @@ class VecExample5 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new VecExample5)
+circt.stage.ChiselStage.emitSystemVerilog(new VecExample5)
 ```
 
 ### Interval Type <a name="interval-type"></a>
@@ -232,7 +232,7 @@ Consider a Interval with a binary point of 3: aaa.bbb
 
 ## Loading Memories for simulation or FPGA initialization <a name="loading-memories"></a>
 
-Chisel supports multiple experimental methods for annotating memories to be loaded from a text file containing hex or binary data. When using verilog simulation it uses the `$readmemh` or `$readmemb` verilog extension. The treadle simulator can also load memories using the same annotation.
+Chisel supports multiple experimental methods for annotating memories to be loaded from a text file containing hex or binary data. When using verilog simulation it uses the `$readmemh` or `$readmemb` verilog extension.
 
 ### Inline initialization with external file
 
@@ -270,49 +270,6 @@ class InitMemInline(memoryFile: String = "") extends Module {
 
 The default is to use `$readmemh` (which assumes all numbers in the file are in ascii hex),
 but to use ascii binary there is an optional `hexOrBinary` argument which can be set to `MemoryLoadFileType.Hex` or `MemoryLoadFileType.Binary`. You will need to add an additional import.
-
-By default, the inline initialization will generate the memory `readmem` statements inside an `ifndef SYNTHESIS` block, which suits ASIC workflow.
-
-Some synthesis tools (like Synplify and Yosys) define `SYNTHESIS` so the `readmem` statement is not read when inside this block.
-
-To control this, one can use the `MemoryNoSynthInit` and `MemorySynthInit` annotations from `firrtl.annotations`. The former which is the default setting when no annotation is present generates `readmem` inside the block. Using the latter, the statement are generated outside the `ifndef` block so it can be used by FPGA synthesis tools.
-
-Below an example for initialization suited for FPGA workflows:
-
-```scala mdoc:silent
-import chisel3._
-import chisel3.util.experimental.loadMemoryFromFileInline
-import chisel3.experimental.{annotate, ChiselAnnotation}
-import firrtl.annotations.MemorySynthInit
-
-class InitMemInlineFPGA(memoryFile: String = "") extends Module {
-  val width: Int = 32
-  val io = IO(new Bundle {
-    val enable = Input(Bool())
-    val write = Input(Bool())
-    val addr = Input(UInt(10.W))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
-  })
-
-  // Notice the annotation below
-  annotate(new ChiselAnnotation {
-    override def toFirrtl =
-      MemorySynthInit
-  })
-
-  val mem = SyncReadMem(1024, UInt(width.W))
-  if (memoryFile.trim().nonEmpty) {
-    loadMemoryFromFileInline(mem, memoryFile)
-  }
-  io.dataOut := DontCare
-  when(io.enable) {
-    val rdwrPort = mem(io.addr)
-    when (io.write) { rdwrPort := io.dataIn }
-      .otherwise    { io.dataOut := rdwrPort }
-  }
-}
-```
 
 #### SystemVerilog Bind Initialization
 
@@ -364,16 +321,4 @@ for working examples.
 
 ### Aggregate memories
 
-Aggregate memories are supported but in bit of a clunky way. Since they will be split up into a memory per field, the following convention was adopted.  When specifying the file for such a memory the file name should be regarded as a template. If the memory is a Bundle e.g.
-
-```scala mdoc:compile-only
-class MemDataType extends Bundle {
-  val a = UInt(16.W)
-  val b = UInt(32.W)
-  val c = Bool()
-}
-```
-
-The memory will be split into `memory_a`, `memory_b`, and `memory_c`. Similarly if a load file is specified as `"memory-load.txt"` the simulation will expect that there will be three files, `"memory-load_a.txt"`, `"memory-load_b.txt"`, `"memory-load_c.txt"`
-
-> Note: The use of `_` and that the memory field name is added before any file suffix. The suffix is optional but if present is considered to be the text after the last `.` in the file name.
+Aggregate memories are supported and will be lowered to a single wide `UInt`.  The memory loading file should be constructed to align with the final structure of the memory.

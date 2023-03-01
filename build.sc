@@ -13,7 +13,6 @@ object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.10", "2.12.17")
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
   "firrtl" -> "1.6-SNAPSHOT",
-  "treadle" -> "1.6-SNAPSHOT"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -24,9 +23,8 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
 
 object v {
   val firrtl = getVersion("firrtl")
-  val treadle = getVersion("treadle")
   val chiseltest = ivy"edu.berkeley.cs::chiseltest:0.6-SNAPSHOT"
-  val scalatest = ivy"org.scalatest::scalatest:3.2.14"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.15"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
   val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
   val upickle = ivy"com.lihaoyi::upickle:2.0.0"
@@ -40,14 +38,6 @@ trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule
   def firrtlIvyDeps = if (firrtlModule.isEmpty)
     Agg(
       v.firrtl
-    )
-  else Agg.empty[Dep]
-
-  def treadleModule: Option[PublishModule] = None
-
-  def treadleIvyDeps = if (treadleModule.isEmpty)
-    Agg(
-      v.chiseltest
     )
   else Agg.empty[Dep]
 
@@ -140,9 +130,9 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def ivyDeps = m.ivyDeps() ++ Agg(
       v.scalatest,
       v.scalacheck
-    ) ++ m.treadleIvyDeps
+    )
 
-    override def moduleDeps = super.moduleDeps ++ treadleModule
+    override def moduleDeps = super.moduleDeps
   }
 
   object `integration-tests` extends Tests with TestModule.ScalaTest with ScalafmtModule {
@@ -150,9 +140,9 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def ivyDeps = m.ivyDeps() ++ Agg(
       v.scalatest,
       v.scalacheck
-    ) ++ m.treadleIvyDeps ++ m.chiseltestIvyDeps
+    ) ++ m.chiseltestIvyDeps
 
-    override def moduleDeps = super.moduleDeps ++ Seq(stdlib) ++ treadleModule ++ chiseltestModule
+    override def moduleDeps = super.moduleDeps ++ Seq(stdlib) ++ chiseltestModule
   }
 
   override def buildInfoPackageName = Some("chisel3")

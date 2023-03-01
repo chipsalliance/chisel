@@ -68,7 +68,7 @@ class SharedConstantValDedupTop extends Module {
 class DedupSpec extends ChiselFlatSpec {
   private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
   def countModules(verilog: String): Int =
-    (verilog.split("\n").collect { case ModuleRegex(name) => name }).size
+    (verilog.split("\n").collect { case ModuleRegex(name) => name }).filterNot(_.contains("ram_combMem")).size
 
   "Deduplication" should "occur" in {
     assert(countModules(compile { new DedupQueues(4) }) === 2)

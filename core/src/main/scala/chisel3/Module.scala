@@ -9,8 +9,8 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo.{InstTransform}
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -199,15 +199,6 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   }
 }
 
-package experimental {
-  object IO {
-    @deprecated("chisel3.experimental.IO is deprecated, use chisel3.IO instead", "Chisel 3.5")
-    def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-      chisel3.IO.apply(iodef)
-    }
-  }
-}
-
 package internal {
 
   object BaseModule {
@@ -314,7 +305,7 @@ package experimental {
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
     private val _ids = ArrayBuffer[HasId]()
-    private[chisel3] def addId(d: HasId) {
+    private[chisel3] def addId(d: HasId): Unit = {
       if (Builder.aspectModule(this).isDefined) {
         aspectModule(this).get.addId(d)
       } else {
@@ -381,14 +372,14 @@ package experimental {
             if (_namespace.contains(name)) {
               Builder.error(
                 s"""Unable to name port $port to "$name" in $this,""" +
-                  s" name is already taken by another port! ${source}"
+                  s" name is already taken by another port! ${source.makeMessage(x => x)}"
               )(UnlocatableSourceInfo)
             }
             port.setRef(ModuleIO(this, _namespace.name(name)))
           case None =>
             Builder.error(
               s"Unable to name port $port in $this, " +
-                s"try making it a public field of the Module $source"
+                s"try making it a public field of the Module ${source.makeMessage(x => x)}"
             )(UnlocatableSourceInfo)
             port.setRef(ModuleIO(this, "<UNNAMED>"))
         }
@@ -401,8 +392,8 @@ package experimental {
 
     /** The desired name of this module (which will be used in generated FIRRTL IR or Verilog).
       *
-      * The name of a module approximates the behavior of the Java Reflection [[`getSimpleName` method
-      * https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html#getSimpleName--]] with some modifications:
+      * The name of a module approximates the behavior of the Java Reflection `getSimpleName` method
+      * https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html#getSimpleName-- with some modifications:
       *
       * - Anonymous modules will get an `"_Anon"` tag
       * - Modules defined in functions will use their class name and not a numeric name
@@ -524,7 +515,7 @@ package experimental {
       *
       * TODO: remove this, perhaps by removing Bindings checks in compatibility mode.
       */
-    def _compatAutoWrapPorts() {}
+    def _compatAutoWrapPorts(): Unit = {}
 
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
