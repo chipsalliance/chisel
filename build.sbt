@@ -66,6 +66,8 @@ lazy val publishSettings = Seq(
         <distribution>repo</distribution>
       </license>
     </licenses>,
+  sonatypeCredentialHost := "s01.oss.sonatype.org",
+  sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
   publishTo := {
     val v = version.value
     val nexus = "https://s01.oss.sonatype.org/"
