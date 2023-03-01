@@ -182,8 +182,10 @@ jobs:
       - name: Setup GPG (for Publish)
         uses: olafurpg/setup-gpg@v3
       - name: Publish
-        run: sbt -DdisableFatalWarnings ci-release
+        run: sbt ci-release
         env:
+          CI_SNAPSHOT_RELEASE: '+ unipublish / publish'
+          CI_SONATYPE_RELEASE: '+ unipublish / publishSigned'
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.CHIPSALLIANCE_SONATYPE_PASSWORD }}
