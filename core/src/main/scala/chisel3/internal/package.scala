@@ -12,17 +12,6 @@ import scala.annotation.{implicitNotFound, nowarn}
 
 package object internal {
 
-  @deprecated("This function has moved to chisel3.experimental", "Chisel 3.6")
-  val prefix = chisel3.experimental.prefix
-  @deprecated("This function has moved to chisel3.experimental", "Chisel 3.6")
-  val noPrefix = chisel3.experimental.noPrefix
-
-  @deprecated("This type has moved to chisel3", "Chisel 3.6")
-  type ChiselException = chisel3.ChiselException
-
-  @deprecated("This type has moved to chisel3", "Chisel 3.6")
-  type InstanceId = chisel3.InstanceId
-
   @implicitNotFound("You are trying to access a macro-only API. Please use the @public annotation instead.")
   trait MacroGenerated
 
