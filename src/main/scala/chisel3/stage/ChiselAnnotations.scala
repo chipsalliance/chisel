@@ -13,7 +13,7 @@ import firrtl.options.{
   Unserializable
 }
 import firrtl.options.Viewer.view
-import chisel3.{deprecatedMFCMessage, ChiselException, Module}
+import chisel3.{ChiselException, Module}
 import chisel3.RawModule
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.{Circuit, Emitter => OldEmitter}
