@@ -188,7 +188,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }
 
     val x = intercept[ChiselException] {
-      ChiselStage.elaborate(new Example , Array("--throw-on-first-error"))
+      ChiselStage.elaborate(new Example, Array("--throw-on-first-error"))
     }
     x.getMessage should include(
       "Called litValue on aggregate MyBundle$1(a=UInt<8>(8), b=Bool(true), c=UInt<4>(DontCare)) contains DontCare"
