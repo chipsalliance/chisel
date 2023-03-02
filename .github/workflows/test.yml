@@ -46,7 +46,7 @@ jobs:
       - name: Binary compatibility
         # TODO either make this also check the plugin or decide that we don't
         #      support binary compatibility for the plugin
-        run: sbt ++${{ matrix.scala }} unipublish / mimaReportBinaryIssues
+        run: sbt ++${{ matrix.scala }} unipublish/mimaReportBinaryIssues
 
   doc:
     name: Formatting
@@ -184,8 +184,8 @@ jobs:
       - name: Publish
         run: sbt ci-release
         env:
-          CI_SNAPSHOT_RELEASE: '+ unipublish / publish'
-          CI_SONATYPE_RELEASE: '+ unipublish / publishSigned'
+          CI_SNAPSHOT_RELEASE: "+unipublish/publish"
+          CI_SONATYPE_RELEASE: "+unipublish/publishSigned"
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.CHIPSALLIANCE_SONATYPE_PASSWORD }}
