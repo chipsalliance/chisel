@@ -36,9 +36,7 @@ object Mem {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): Mem[T] = {
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "memory type")
-    }
+    requireIsChiselType(t, "memory type")
     val mt = t.cloneTypeFull
     val mem = new Mem(mt, size)
     mt.bind(MemTypeBinding(mem))
@@ -315,9 +313,7 @@ object SyncReadMem {
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): SyncReadMem[T] = {
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "memory type")
-    }
+    requireIsChiselType(t, "memory type")
     val mt = t.cloneTypeFull
     val mem = new SyncReadMem(mt, size, ruw)
     mt.bind(MemTypeBinding(mem))

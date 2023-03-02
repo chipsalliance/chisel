@@ -112,16 +112,7 @@ private[chisel3] object Connection {
   }
 
   // Consumed by the := operator, set to what chisel3 will eventually become.
-  implicit val chisel5CompileOptions = new chisel3.CompileOptions {
-    val connectFieldsMustMatch:      Boolean = true
-    val declaredTypeMustBeUnbound:   Boolean = true
-    val dontTryConnectionsSwapped:   Boolean = false
-    val dontAssumeDirectionality:    Boolean = true
-    val checkSynthesizable:          Boolean = true
-    val explicitInvalidate:          Boolean = true
-    val inferModuleReset:            Boolean = true
-    override def emitStrictConnects: Boolean = true
-  }
+  implicit val chisel5CompileOptions = new chisel3.CompileOptions { }
 
   private def leafConnect(
     consumer:     Data,

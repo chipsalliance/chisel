@@ -172,16 +172,7 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
-    val inferReset = (_parent.isDefined || Builder.inDefinition) && moduleCompileOptions.inferModuleReset
-    if (moduleCompileOptions.migrateInferModuleReset && !moduleCompileOptions.inferModuleReset) {
-      this match {
-        case _: RequireSyncReset => // Good! It's been migrated.
-        case _ => // Bad! It hasn't been migrated.
-          Builder.error(
-            s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
-          )(UnlocatableSourceInfo)
-      }
-    }
+    val inferReset = (_parent.isDefined || Builder.inDefinition)
     if (inferReset) Reset() else Bool()
   }
 
@@ -246,7 +237,7 @@ package internal {
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
-      if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
+      if (Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
         // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }

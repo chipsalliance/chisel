@@ -21,12 +21,6 @@ import scala.annotation.nowarn
   * @groupdesc Signals The actual hardware fields of the Bundle
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
-  // Compatibility hack for rocket-chip
-  private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
-    case (true, Some(module: Module)) if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
-    case _ => gen
-  }
-
   /** Indicates that the consumer is ready to accept the data this cycle
     * @group Signals
     */
@@ -40,7 +34,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
   /** The data to be transferred when ready and valid are asserted at the same cycle
     * @group Signals
     */
-  val bits = Output(genType)
+  val bits = Output(gen)
 }
 
 object ReadyValidIO {
@@ -253,19 +247,10 @@ class Queue[T <: Data](
     extends Module() {
   require(entries > -1, "Queue must have non-negative number of entries")
   require(entries != 0, "Use companion object Queue.apply for zero entries")
-  val genType = if (compileOptions.declaredTypeMustBeUnbound) {
-    requireIsChiselType(gen)
-    gen
-  } else {
-    if (DataMirror.internal.isSynthesizable(gen)) {
-      chiselTypeOf(gen)
-    } else {
-      gen
-    }
-  }
+  requireIsChiselType(gen)
 
-  val io = IO(new QueueIO(genType, entries, hasFlush))
-  val ram = if (useSyncReadMem) SyncReadMem(entries, genType, SyncReadMem.WriteFirst) else Mem(entries, genType)
+  val io = IO(new QueueIO(gen, entries, hasFlush))
+  val ram = if (useSyncReadMem) SyncReadMem(entries, gen, SyncReadMem.WriteFirst) else Mem(entries, gen)
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
   val maybe_full = RegInit(false.B)

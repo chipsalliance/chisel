@@ -64,9 +64,7 @@ object SpecifiedDirection {
   ): T = {
     val prevId = Builder.idGen.value
     val data = source // evaluate source once (passed by name)
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(data)
-    }
+    requireIsChiselType(data)
     val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
     out.specifiedDirection = dir(data) // Must use original data, specified direction of clone is cleared
     out
@@ -511,36 +509,20 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions
   ): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, "data to be connected")
-      requireIsHardware(that, "data to be connected")
-      this.topBinding match {
-        case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
-        case _ => // fine
-      }
+    requireIsHardware(this, "data to be connected")
+    requireIsHardware(that, "data to be connected")
+    this.topBinding match {
+      case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
+      case _ => // fine
     }
-    if (connectCompileOptions.migrateMonoConnections) {
-      getRecursiveFields.lazilyNoPath(this).collect {
-        case d if d.direction != this.direction =>
-          Builder.error(s"$this cannot be used with := because submember $d has inverse orientation; use :#= instead")
-      }
-      getRecursiveFields.lazilyNoPath(that).collect {
-        case d if d.direction != that.direction =>
-          Builder.error(s"$that cannot be used with := because submember $d has inverse orientation; use :#= instead")
-      }
-    }
-    if (connectCompileOptions.emitStrictConnects) {
 
-      try {
-        MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
-      } catch {
-        case MonoConnectException(message) =>
-          throwException(
-            s"Connection between sink ($this) and source ($that) failed @: $message"
-          )
-      }
-    } else {
-      this.firrtlPartialConnect(that)
+    try {
+      MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
+    } catch {
+      case MonoConnectException(message) =>
+        throwException(
+          s"Connection between sink ($this) and source ($that) failed @: $message"
+        )
     }
   }
   private[chisel3] def bulkConnect(
@@ -549,29 +531,21 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     implicit sourceInfo:   SourceInfo,
     connectCompileOptions: CompileOptions
   ): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, s"data to be bulk-connected")
-      requireIsHardware(that, s"data to be bulk-connected")
-      (this.topBinding, that.topBinding) match {
-        case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
-        // DontCare cannot be a sink (LHS)
-        case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
-        case _ => // fine
-      }
+    requireIsHardware(this, s"data to be bulk-connected")
+    requireIsHardware(that, s"data to be bulk-connected")
+    (this.topBinding, that.topBinding) match {
+      case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
+      // DontCare cannot be a sink (LHS)
+      case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
+      case _ => // fine
     }
-    if (connectCompileOptions.emitStrictConnects) {
-      try {
-        BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
-      } catch {
-        case BiConnectException(message) =>
-          throwException(
-            s"Connection between left ($this) and source ($that) failed @$message"
-          )
-      }
-    } else {
-      if (connectCompileOptions.migrateBulkConnections)
-        Builder.error(s"Cannot use <> in an `import Chisel._` file; use :<>= instead")
-      this.firrtlPartialConnect(that)
+    try {
+      BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
+    } catch {
+      case BiConnectException(message) =>
+        throwException(
+          s"Connection between left ($this) and source ($that) failed @$message"
+        )
     }
   }
 
@@ -944,16 +918,14 @@ trait WireFactory {
   def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "wire type")
-    }
+    requireIsChiselType(t, "wire type")
     val x = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
     // Bind each element of x to being a Wire
     x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
 
     pushCommand(DefWire(sourceInfo, x))
-    if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
+    if (Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
       pushCommand(DefInvalid(sourceInfo, x.ref))
     }
 
