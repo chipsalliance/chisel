@@ -35,6 +35,7 @@ sealed abstract class Aggregate extends Data {
           Some((accumulator << width) + masked)
         case (Some(accumulator), None) if checkForDontCares =>
           Builder.error(s"Called litValue on aggregate $this contains DontCare")(UnlocatableSourceInfo)
+          None
         case (None, _) => None
         case (_, None) => None
       }
