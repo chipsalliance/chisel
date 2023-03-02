@@ -331,16 +331,17 @@ lazy val chisel = (project in file("."))
   )
 
 
-def addUnipublishDeps(proj: Project)(deps: Project*): Project =
+
+def addUnipublishDeps(proj: Project)(deps: Project*): Project = {
+  def inTestScope(module: ModuleID): Boolean = module.configurations.exists(_ == "test")
   deps.foldLeft(proj) { case (p, dep) =>
-    //p.dependsOn(dep % "compile-internal")
-    p
-     .settings(
-       libraryDependencies ++= (dep / libraryDependencies).value,
-       Compile / packageBin / mappings ++= (dep / Compile / packageBin / mappings).value,
-       Compile / packageSrc / mappings ++= (dep / Compile / packageSrc / mappings).value,
-     )
+    p.settings(
+      libraryDependencies ++= (dep / libraryDependencies).value.filterNot(inTestScope),
+      Compile / packageBin / mappings ++= (dep / Compile / packageBin / mappings).value,
+      Compile / packageSrc / mappings ++= (dep / Compile / packageSrc / mappings).value,
+    )
   }
+}
 
 // This is a pseudo-project that unifies all compilation units (excluding the plugin) into a single artifact
 // It should be used for all publishing and MiMa binary compatibility checking
@@ -357,7 +358,7 @@ lazy val unipublish =
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
   .settings(
-    mimaPreviousArtifacts := Set("org.chipsalliance" %% "chisel" % "5.0-SNAPSHOT"),
+    mimaPreviousArtifacts := Set(),
     // This is a pseudo-project with no class files, use the package jar instead
     mimaCurrentClassfiles := (Compile / packageBin).value,
     // Forward doc command to unidoc
