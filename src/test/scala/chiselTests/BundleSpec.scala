@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
-import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
 
 trait BundleSpecUtils {
