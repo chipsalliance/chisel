@@ -412,4 +412,19 @@ package object chisel3 {
     "this feature will not be supported as part of the migration to the MLIR-based FIRRTL Compiler (MFC). For more information about this migration, please see the Chisel ROADMAP.md."
 
   final val deprecatedPublicAPIMsg = "APIs in chisel3.internal are not intended to be public"
+  
+  object BundleInit {
+    implicit class AddInitConstruct[T <: Record](bun: T) {
+      def Init(fs: (T => (Data, Data))*): T = {
+        chisel3.experimental.requireIsChiselType(bun, "Can only init from clean types")
+        val init = Wire(bun)
+        for (f <- fs) {
+          val (field, value) = f(init)
+          // TODO check that field is a field of init
+          field := value
+        }
+        init
+      }
+    }
+  }
 }
