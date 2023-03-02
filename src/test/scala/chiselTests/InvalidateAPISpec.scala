@@ -45,7 +45,6 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
     (firrtlOutput should not).include("is invalid")
   }
 
-
   property("a bundle with a DontCare should emit a Firrtl \"is invalid\"") {
     class ModuleWithoutDontCare extends Module {
       val io = IO(new TrivialInterface)
