@@ -101,4 +101,3 @@
 - [`@yunsup`](https://github.com/yunsup)
 - [`@zhemao`](https://github.com/zhemao)
 - [`@zhutmost`](https://github.com/zhutmost)
-- [`@zyedidia`](https://github.com/zyedidia)
