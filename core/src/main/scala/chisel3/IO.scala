@@ -20,7 +20,7 @@ object IO {
     * requested (so that all calls to ports will return the same information).
     * Internal API.
     */
-  def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
     val module = Module.currentModule.get // Impossible to fail
     require(!module.isClosed, "Can't add more ports after module close")
     val prevId = Builder.idGen.value

@@ -30,7 +30,7 @@ object dontTouch {
     * @param data The signal to be marked
     * @return Unmodified signal `data`
     */
-  def apply[T <: Data](data: T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T <: Data](data: T): T = {
     requireIsHardware(data, "Data marked dontTouch")
     annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
     data
