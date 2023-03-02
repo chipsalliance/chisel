@@ -61,7 +61,7 @@ package object Chisel {
   implicit class AddDirMethodToData[T <: Data](target: T) {
     import chisel3.ActualDirection
     import chisel3.reflect.DataMirror
-    import chisel3.internal.requireIsHardware
+    import chisel3.experimental.requireIsHardware
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def dir: Direction = {
