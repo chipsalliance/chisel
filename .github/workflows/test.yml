@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - main
       - 3.5.x
       - 3.4.x
       - 3.3.x
@@ -44,7 +44,9 @@ jobs:
       - name: Test
         run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
-        run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+        # TODO either make this also check the plugin or decide that we don't
+        #      support binary compatibility for the plugin
+        run: sbt ++${{ matrix.scala }} unipublish/mimaReportBinaryIssues
 
   doc:
     name: Formatting
@@ -165,7 +167,7 @@ jobs:
   publish:
     needs: [all_tests_passed]
     runs-on: ubuntu-20.04
-    if: (github.event_name == 'push' && github.ref_name != 'website-test')
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout
@@ -179,19 +181,22 @@ jobs:
       - name: Setup GPG (for Publish)
         uses: olafurpg/setup-gpg@v3
       - name: Publish
-        run: sbt -DdisableFatalWarnings ci-release
+        run: sbt ci-release
         env:
+          CI_SNAPSHOT_RELEASE: "+unipublish/publish"
+          CI_SONATYPE_RELEASE: "+unipublish/publishSigned"
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.CHIPSALLIANCE_SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.CHIPSALLIANCE_SONATYPE_USERNAME }}
 
 
   deploy_website:
     name: Deploy Website
     runs-on: ubuntu-latest
     needs: [all_tests_passed]
-    if: (github.event_name == 'push') && (github.ref_type == 'branch') && ((github.ref_name == 'website-test') || (github.ref_name == 'master'))
+    # Only Deploy website on pushes to main, may change to a stable branch
+    if: (github.event_name == 'push') && (github.ref_name == 'main')
     steps:
       - name: Download built website
         uses: actions/download-artifact@v3
