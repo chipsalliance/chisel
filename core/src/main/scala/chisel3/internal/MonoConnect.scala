@@ -181,7 +181,7 @@ private[chisel3] object MonoConnect {
             try {
               source_r.elements.get(field) match {
                 case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
-                case None => throw MissingFieldException(field)
+                case None             => throw MissingFieldException(field)
               }
             } catch {
               case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
@@ -273,7 +273,8 @@ private[chisel3] object MonoConnect {
       // Thus, right node better be a port node and thus have a direction
       if (!source_is_port) { false }
       else if (sinkCanBeInput) {
-        if (source.direction == Output) { true } else { false }
+        if (source.direction == Output) { true }
+        else { false }
       } else { true }
     }
 

@@ -5,7 +5,7 @@ package chisel3
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
-trait CompileOptions { }
+trait CompileOptions {}
 
 object CompileOptions {
   // Provides a low priority Strict default. Can be overridden by importing the NotStrict option.

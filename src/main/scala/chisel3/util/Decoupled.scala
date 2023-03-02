@@ -21,6 +21,7 @@ import scala.annotation.nowarn
   * @groupdesc Signals The actual hardware fields of the Bundle
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
+
   /** Indicates that the consumer is ready to accept the data this cycle
     * @group Signals
     */

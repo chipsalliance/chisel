@@ -112,7 +112,7 @@ private[chisel3] object Connection {
   }
 
   // Consumed by the := operator, set to what chisel3 will eventually become.
-  implicit val chisel5CompileOptions = new chisel3.CompileOptions { }
+  implicit val chisel5CompileOptions = new chisel3.CompileOptions {}
 
   private def leafConnect(
     consumer:     Data,

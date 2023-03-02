@@ -172,5 +172,5 @@ abstract class BlackBox(
     _component
   }
 
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = { }
+  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {}
 }

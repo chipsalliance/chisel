@@ -227,7 +227,7 @@ private[chisel3] object BiConnect {
       try {
         right_r.elements.get(field) match {
           case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
-          case None => throw MissingRightFieldException(field)
+          case None            => throw MissingRightFieldException(field)
         }
       } catch {
         case BiConnectException(message) => throw BiConnectException(s".$field$message")
@@ -396,8 +396,8 @@ private[chisel3] object BiConnect {
         case (Output, Internal) => issueConnectR2L(left, right)
         case (Internal, Input)  => issueConnectR2L(left, right)
 
-        case (Input, Input)   => throw BothDriversException
-        case (Output, Output) => throw BothDriversException
+        case (Input, Input)       => throw BothDriversException
+        case (Output, Output)     => throw BothDriversException
         case (Internal, Internal) => throw UnknownDriverException
       }
     }
@@ -414,8 +414,8 @@ private[chisel3] object BiConnect {
 
         case (Input, Input)   => throw NeitherDriverException
         case (Output, Output) => throw BothDriversException
-        case (_, Internal) => throw UnknownRelationException
-        case (Internal, _) => throw UnknownRelationException
+        case (_, Internal)    => throw UnknownRelationException
+        case (Internal, _)    => throw UnknownRelationException
       }
     }
 

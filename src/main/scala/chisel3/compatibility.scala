@@ -10,4 +10,3 @@ import chisel3.stage.{phases, ChiselCircuitAnnotation, ChiselOutputFileAnnotatio
 import circt.stage.ChiselStage
 
 import scala.annotation.nowarn
-
