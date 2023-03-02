@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - 3.6.x
       - 3.5.x
       - 3.4.x
       - 3.3.x
@@ -64,6 +65,27 @@ jobs:
         uses: ./.github/workflows/install-circt
       - name: Check Formatting
         run: sbt scalafmtCheckAll
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
+      - name: Install Espresso
+        uses: ./.github/workflows/install-espresso
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+          cache: 'sbt'
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
+      - name: Integration Tests
+        run: sbt integrationTests/test
 
   std:
     name: Standard Library Tests
@@ -130,7 +152,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   check-tests:
     name: "check tests"
-    needs: [ci, std, doc, website]
+    needs: [ci, std, integration, doc, website]
     runs-on: ubuntu-20.04
     if: success() # only run if all tests have passed
     outputs:

@@ -405,6 +405,17 @@ lazy val unipublish =
       }
   )
 
+// End-to-end tests that check the functionality of the emitted design with simulation
+ lazy val integrationTests = (project in file("integration-tests"))
+   .dependsOn(chisel % "compile->compile;test->test")
+   .dependsOn(firrtl) // SBT doesn't seem to be propagating transitive library dependencies...
+   .dependsOn(standardLibrary)
+   .settings(commonSettings: _*)
+   .settings(warningSuppression: _*)
+   .settings(fatalWarningsSettings: _*)
+   .settings(chiselSettings: _*)
+   .settings(usePluginSettings: _*)
+
 // the chisel standard library
 lazy val standardLibrary = (project in file("stdlib"))
   .dependsOn(chisel)
