@@ -199,12 +199,12 @@ class QueueIO[T <: Data](
    *  but internally, the queue implementation itself sits on the other side
    *  of the interface so uses the flipped instance.
    */
-  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped.
+  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[chisel3.util.DecoupledIO]] flipped.
     * @group Signals
     */
   val enq = Flipped(EnqIO(gen))
 
-  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]
+  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[chisel3.util.DecoupledIO]]
     * @group Signals
     */
   val deq = Flipped(DeqIO(gen))
