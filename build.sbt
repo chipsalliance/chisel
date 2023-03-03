@@ -6,7 +6,6 @@ lazy val commonSettings = Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
   organization := "org.chipsalliance",
-  version := "5.0-SNAPSHOT",
   autoAPIMappings := true,
   scalaVersion := "2.13.10",
   crossScalaVersions := Seq("2.13.10", "2.12.17"),
@@ -88,7 +87,6 @@ lazy val isAtLeastScala213 = Def.setting {
 
 lazy val firrtlSettings = Seq(
   name := "firrtl",
-  version := "1.6-SNAPSHOT",
   addCompilerPlugin(scalafixSemanticdb),
   scalacOptions := Seq(
     "-deprecation",
