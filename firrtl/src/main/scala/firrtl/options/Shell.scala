@@ -11,7 +11,7 @@ import scopt.OptionParser
 import java.util.ServiceLoader
 
 /** A utility for working with command line options.  This provides no options by default other than "--help".  This is
-  * intended for lower-level APIs which do not want to include options that are provided by [[Shell].
+  * intended for lower-level APIs which do not want to include options that are provided by [[Shell]].
   *
   * @param applicationName
   */
