@@ -197,6 +197,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
@@ -229,7 +231,7 @@ jobs:
           name: website
       - name: Untar built website
         run: tar zxf website.tar.gz
-      - name: Deploy Website to GitHub Pages (From Master Branch)
+      - name: Deploy Website to GitHub Pages (From Main Branch)
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
