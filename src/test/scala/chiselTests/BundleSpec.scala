@@ -184,7 +184,6 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       val out = IO(Output(new MyBundle))
       val lit = (new MyBundle).Lit(_.a -> 8.U, _.b -> true.B)
       out := lit
-      println(lit.litValue)
     }
 
     val x = intercept[ChiselException] {
