@@ -11,4 +11,7 @@ package object util {
   type ValidIO[+T <: Data] = chisel3.util.Valid[T]
   val ValidIO = chisel3.util.Valid
   val DecoupledIO = chisel3.util.Decoupled
+
+  @deprecated("Use chisel3.Cat instead", since = "Chisel 3.6.x")
+  val Cat = chisel3.Cat
 }

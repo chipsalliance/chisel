@@ -15,7 +15,7 @@ This page serves as a quick introduction to Chisel for those familiar with Veril
 import chisel3._
 import chisel3.util.{switch, is}
 import circt.stage.ChiselStage
-import chisel3.util.{Cat, Fill, DecoupledIO}
+import chisel3.util.{Fill, DecoupledIO}
 ```
 
 <body>
