@@ -83,8 +83,7 @@ object TesterDriver extends BackendCompilationUtilities {
       })
 
       val dirName = annotationsFromPhase1.collectFirst { case TargetDirAnnotation(dirName) => dirName }.getOrElse(".")
-      val args = Array("-td", dirName)
-      val verilog = circt.stage.ChiselStage.emitSystemVerilog(t(), args)
+      val verilog = circt.stage.ChiselStage.emitSystemVerilog(t())
       val verilogPath = ensureExistingAbsolutePath(path.toString) / (target + ".v")
       os.write.over(verilogPath, verilog)
       // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
