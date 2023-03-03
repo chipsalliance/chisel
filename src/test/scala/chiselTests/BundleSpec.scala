@@ -181,9 +181,9 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }
 
     class Example extends RawModule {
-      val out = IO(Output(new MyBundle))
+      val out = IO(Output(new UInt()))
       val lit = (new MyBundle).Lit(_.a -> 8.U, _.b -> true.B)
-      out := lit
+      out := lit.litValue.U
     }
 
     val x = intercept[ChiselException] {
