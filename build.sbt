@@ -52,6 +52,8 @@ lazy val warningSuppression = Seq(
   ).mkString(",")
 )
 
+// This should only be mixed in by projects that are published
+// See 'unipublish' project below
 lazy val publishSettings = Seq(
   versionScheme := Some("semver-spec"),
   publishMavenStyle := true,
@@ -67,6 +69,17 @@ lazy val publishSettings = Seq(
     </licenses>,
   sonatypeCredentialHost := "s01.oss.sonatype.org",
   sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
+  // Check that SBT Dynver can properly derive a version which requires unshallow clone
+  // We are just using 'publish / skip' as a hook to run this check when publishing
+  // This allows us to only require unshallow clones when publishing but lets CI do
+  // shallow clones for standard testing
+  publish / skip := {
+    val v = version.value
+    if (dynverGitDescribeOutput.value.hasNoTags) {
+      sys.error(s"Failed to derive version from git tags. Maybe run `git fetch --unshallow`? Version: $v")
+    }
+    (publish / skip).value
+  },
   publishTo := {
     val v = version.value
     val nexus = "https://s01.oss.sonatype.org/"
