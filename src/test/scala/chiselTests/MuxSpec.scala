@@ -28,6 +28,39 @@ class MuxSpec extends ChiselFlatSpec {
   }
 }
 
+class MuxLookupEnumTester extends BasicTester {
+  object TestEnum extends ChiselEnum {
+    val a = Value
+    val b = Value(7.U)
+    val c = Value
+  }
+  object TestEnum2 extends ChiselEnum {
+    val a = Value
+    val b = Value(7.U)
+    val c = Value
+  }
+  val mapping = TestEnum.all.zipWithIndex.map {
+    case (e, i) =>
+      e -> i.U
+  }
+  assert(MuxLookup.fromEnum(TestEnum.a, 3.U, mapping) === 0.U)
+  assert(MuxLookup.fromEnum(TestEnum.b, 3.U, mapping) === 1.U)
+  assert(MuxLookup.fromEnum(TestEnum.c, 3.U, mapping) === 2.U)
+
+  val incompleteMapping = Seq(TestEnum.a -> 0.U, TestEnum.c -> 2.U)
+  assert(MuxLookup.fromEnum(TestEnum.a, 3.U, incompleteMapping) === 0.U)
+  assert(MuxLookup.fromEnum(TestEnum.b, 3.U, incompleteMapping) === 3.U)
+  assert(MuxLookup.fromEnum(TestEnum.c, 3.U, incompleteMapping) === 2.U)
+
+  stop()
+}
+
+class MuxLookupEnumSpec extends ChiselFlatSpec {
+  "MuxLookup with enum selector" should "pass basic checks" in {
+    assertTesterPasses { new MuxLookupEnumTester }
+  }
+}
+
 class MuxLookupWrapper(keyWidth: Int, default: Int, mapping: () => Seq[(UInt, UInt)]) extends RawModule {
   val outputWidth = log2Ceil(default).max(keyWidth) // make room for default value
   val key = IO(Input(UInt(keyWidth.W)))
