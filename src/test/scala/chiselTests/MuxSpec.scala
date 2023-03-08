@@ -43,14 +43,14 @@ class MuxLookupEnumTester extends BasicTester {
     case (e, i) =>
       e -> i.U
   }
-  assert(MuxLookup.fromEnum(TestEnum.a, 3.U, mapping) === 0.U)
-  assert(MuxLookup.fromEnum(TestEnum.b, 3.U, mapping) === 1.U)
-  assert(MuxLookup.fromEnum(TestEnum.c, 3.U, mapping) === 2.U)
+  assert(MuxLookup.fromEnum(TestEnum.a, 3.U)(mapping) === 0.U)
+  assert(MuxLookup.fromEnum(TestEnum.b, 3.U)(mapping) === 1.U)
+  assert(MuxLookup.fromEnum(TestEnum.c, 3.U)(mapping) === 2.U)
 
   val incompleteMapping = Seq(TestEnum.a -> 0.U, TestEnum.c -> 2.U)
-  assert(MuxLookup.fromEnum(TestEnum.a, 3.U, incompleteMapping) === 0.U)
-  assert(MuxLookup.fromEnum(TestEnum.b, 3.U, incompleteMapping) === 3.U)
-  assert(MuxLookup.fromEnum(TestEnum.c, 3.U, incompleteMapping) === 2.U)
+  assert(MuxLookup.fromEnum(TestEnum.a, 3.U)(incompleteMapping) === 0.U)
+  assert(MuxLookup.fromEnum(TestEnum.b, 3.U)(incompleteMapping) === 3.U)
+  assert(MuxLookup.fromEnum(TestEnum.c, 3.U)(incompleteMapping) === 2.U)
 
   stop()
 }

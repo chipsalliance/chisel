@@ -83,12 +83,16 @@ object MuxLookup {
 
   /** Same as MuxLookup.apply but for EnumTypes
     *
+    * @example {{{
+    * MuxLookup.fromEnum(myEnum, default)(Array(MyEnum.a -> 1.U, MyEnum.b -> 2.U, MyEnum.c -> 3.U))
+    * }}}
+    *
     * @param key a key to search for
     * @param default a default value if nothing is found
     * @param mapping a sequence to search of keys and values
     * @return the value found or the default if not
     */
-  def fromEnum[S <: EnumType, T <: Data](key: S, default: T, mapping: Seq[(S, T)]): T = {
+  def fromEnum[S <: EnumType, T <: Data](key: S, default: T)(mapping: Seq[(S, T)]): T = {
     apply(key.asUInt, default, mapping.map { case (s, t) => (s.asUInt, t) })
   }
 }
