@@ -94,7 +94,7 @@ lazy val contributors =
         val uniqueContributors =
           // Even though we no longer host all these projects,
           // we still honor their contributions
-          Seq( GitHubRepository("chipsalliance", "chisel3"),
+          Seq( GitHubRepository("chipsalliance", "chisel"),
                GitHubRepository("chipsalliance", "firrtl"),
                GitHubRepository("chipsalliance", "treadle"),
                GitHubRepository("ucb-bar", "chiseltest"),
