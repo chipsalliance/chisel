@@ -30,7 +30,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
 * [How do I create I/O without a prefix?](#how-do-i-create-io-without-a-prefix)
 * [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
-* [How do I resolve `Dynamic index ... is too wide/narrow for extractee ...`?](#how-do-i-resolve-dynamic-index--is-too-wide-narrow-for-extractee)
+* [How do I resolve `Dynamic index ... is too wide/narrow for extractee ...`?](#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee-)
 * Predictable Naming
   * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
   * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
