@@ -611,7 +611,7 @@ package object Chisel {
   val Reverse = chisel3.util.Reverse
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
-  val Cat = chisel3.util.Cat
+  val Cat = chisel3.Cat
 
   @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
   val Log2 = chisel3.util.Log2
