@@ -12,8 +12,6 @@ import scala.annotation.nowarn
 
 package object stage {
 
-  final val pleaseSwitchToCIRCT = deprecatedMFCMessage + " Please switch to circt.stage.ChiselStage."
-
   @nowarn("cat=deprecation&msg=WarnReflectiveNamingAnnotation")
   implicit object ChiselOptionsView extends OptionsView[ChiselOptions] {
 
