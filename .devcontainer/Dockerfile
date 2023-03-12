@@ -23,7 +23,7 @@ RUN \
   make install
 
 # Install GraalVM
-# This downloads all available GraalVM releases at once, mostly because $TARGETARCH values don't map exactly to the release URLs. Since we're optimizing for developer experience here and not image size, this is OK
+# This downloads all relevant GraalVM architectures at once, mostly because $TARGETARCH values don't map exactly to the release URLs. Since we're optimizing for developer experience here and not image size, this is OK
 # GraalVM release links can be found here: https://github.com/graalvm/graalvm-ce-builds/releases
 ADD https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.3.1/graalvm-ce-java17-linux-aarch64-22.3.1.tar.gz /graalvm/tarballs/arm64.tar.gz
 ADD https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.3.1/graalvm-ce-java17-linux-amd64-22.3.1.tar.gz /graalvm/tarballs/amd64.tar.gz
