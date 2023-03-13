@@ -126,9 +126,7 @@ trait VecFactory extends SourceInfoDoc {
     * @note elements are NOT assigned by default and have no value
     */
   def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(gen, "vec type")
-    }
+    requireIsChiselType(gen, "vec type")
     new Vec(gen.cloneTypeFull, n)
   }
 

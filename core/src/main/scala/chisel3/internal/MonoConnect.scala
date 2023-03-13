@@ -181,11 +181,7 @@ private[chisel3] object MonoConnect {
             try {
               source_r.elements.get(field) match {
                 case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
-                case None => {
-                  if (connectCompileOptions.connectFieldsMustMatch) {
-                    throw MissingFieldException(field)
-                  }
-                }
+                case None             => throw MissingFieldException(field)
               }
             } catch {
               case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
@@ -275,11 +271,10 @@ private[chisel3] object MonoConnect {
         case _                => false
       }
       // Thus, right node better be a port node and thus have a direction
-      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
+      if (!source_is_port) { false }
       else if (sinkCanBeInput) {
-        if (source.direction == Output) {
-          !connectCompileOptions.dontTryConnectionsSwapped
-        } else { false }
+        if (source.direction == Output) { true }
+        else { false }
       } else { true }
     }
 
@@ -300,7 +295,7 @@ private[chisel3] object MonoConnect {
     //   Note: This includes case when sink and source in same module but in parent
     else if ((sink_parent_opt == context_mod_opt) && (source_parent_opt == context_mod_opt)) {
       // Thus both nodes must be ports and have a direction
-      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
+      if (!source_is_port) { false }
       else if (sink_is_port) {
         // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
         // See: https://github.com/freechipsproject/firrtl/issues/1703
@@ -435,15 +430,9 @@ private[chisel3] object MonoConnect {
         case (Internal, Input)  => issueConnect(sink, source)
         case (Output, Output)   => issueConnect(sink, source)
         case (Output, Input)    => issueConnect(sink, source)
-        case (_, Internal) => {
-          if (!(connectCompileOptions.dontAssumeDirectionality)) {
-            issueConnect(sink, source)
-          } else {
-            throw UnreadableSourceException(sink, source)
-          }
-        }
-        case (Input, Output) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink)
-        case (Input, _)                                                              => throw UnwritableSinkException(sink, source)
+        case (_, Internal)      => throw UnreadableSourceException(sink, source)
+        case (Input, Output)    => issueConnect(source, sink)
+        case (Input, _)         => throw UnwritableSinkException(sink, source)
       }
     }
 
@@ -470,14 +459,8 @@ private[chisel3] object MonoConnect {
         case (Input, Input)  => issueConnect(sink, source)
         case (Input, Output) => issueConnect(sink, source)
         case (Output, _)     => throw UnwritableSinkException(sink, source)
-        case (_, Internal) => {
-          if (!(connectCompileOptions.dontAssumeDirectionality)) {
-            issueConnect(sink, source)
-          } else {
-            throw UnreadableSourceException(sink, source)
-          }
-        }
-        case (Internal, _) => throw UnwritableSinkException(sink, source)
+        case (_, Internal)   => throw UnreadableSourceException(sink, source)
+        case (Internal, _)   => throw UnwritableSinkException(sink, source)
       }
     }
 
