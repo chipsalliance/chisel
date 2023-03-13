@@ -491,6 +491,8 @@ private[chisel3] class DynamicContext(
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
+
+  var buildImplementation: Boolean = true
 }
 
 private[chisel3] object Builder extends LazyLogging {
@@ -587,6 +589,7 @@ private[chisel3] object Builder extends LazyLogging {
           }
         case SampleElementBinding(parent)                            => recData(parent)
         case PortBinding(mod) if Builder.currentModule.contains(mod) => data.seedOpt
+        case PortBinding(mod) if Builder.aspectModule(mod).nonEmpty  => data.seedOpt
         case PortBinding(mod)                                        => map2(mod.seedOpt, data.seedOpt)(_ + "_" + _)
         case (_: LitBinding | _: DontCareBinding) => None
         case _ => Some("view_") // TODO implement
@@ -733,6 +736,12 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContextVar.value
       .map(_.inDefinition)
       .getOrElse(false)
+  }
+
+  def buildImplementation: Boolean = {
+    dynamicContextVar.value
+      .map(_.buildImplementation)
+      .getOrElse(true)
   }
 
   def forcedClock: Clock = currentClock.getOrElse(

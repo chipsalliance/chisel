@@ -94,6 +94,74 @@ object Instance extends SourceInfoDoc {
     }
   }
 
+  /** A constructs an [[Instance]] from a [[Interface]]
+    *
+    * @param definition the Module being created
+    * @return an instance of the module definition
+    */
+  def apply[T <: BaseModule with IsInstantiable](definition: Interface[T]): Instance[T] =
+    macro InstanceTransform.apply[T]
+
+  /** A constructs an [[Instance]] from a [[Interface]]
+    *
+    * @param definition the Module being created
+    * @return an instance of the module definition
+    */
+  def do_apply[T <: BaseModule with IsInstantiable](
+    definition: Interface[T]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Instance[T] = {
+    // Check to see if the module is already defined internally or externally
+    val existingMod = Builder.components.map {
+      case c: DefModule if c.id == definition.proto          => Some(c)
+      case c: DefBlackBox if c.name == definition.proto.name => Some(c)
+      case _ => None
+    }.flatten
+
+    if (existingMod.isEmpty) {
+      // Add a Interface that will get emitted as an ExtModule so that FIRRTL
+      // does not complain about a missing element
+      val extModName = Builder.importDefinitionMap.getOrElse(
+        definition.proto.name,
+        throwException(
+          "Imported Interface information not found - possibly forgot to add ImportDefinition annotation?"
+        )
+      )
+      class EmptyExtModule extends ExtModule {
+        override def desiredName: String = extModName
+        override def generateComponent(): Option[Component] = {
+          require(!_closed, s"Can't generate $desiredName module more than once")
+          _closed = true
+          val firrtlPorts = definition.proto.getModulePortsAndLocators.map {
+            case (port, sourceInfo) =>
+              Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
+          }
+          val component = DefBlackBox(this, definition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
+          Some(component)
+        }
+      }
+      // Uncomment if you want extmodule
+      //Interface(new EmptyExtModule() {})
+    }
+
+    val components = Builder.components
+    val set = components.toSet
+    val protoComp = definition.proto._component
+    if(protoComp.nonEmpty && !set.contains(protoComp.get)) {
+      // Uncomment if you want module
+      Builder.components ++= definition.proto._component
+    }
+    //proto._circuit = Builder.currentModule
+    //new Interface(Proto(module))
+
+    val ports = experimental.CloneModuleAsRecord(definition.proto)
+    val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
+    clone._madeFromDefinition = true
+
+    new Instance(Clone(clone))
+  }
+
   /** A constructs an [[Instance]] from a [[Definition]]
     *
     * @param definition the Module being created

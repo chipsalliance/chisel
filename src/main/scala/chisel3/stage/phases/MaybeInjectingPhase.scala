@@ -3,13 +3,14 @@
 package chisel3.stage.phases
 
 import chisel3.aop.injecting.{InjectStatement, InjectingPhase}
+import firrtl.options.Dependency
 import firrtl.AnnotationSeq
 import firrtl.options.Phase
 
 /** Run `InjectingPhase` if a `InjectStatement` is present.
   */
 class MaybeInjectingPhase extends Phase {
-  override def prerequisites = Seq.empty
+  override def prerequisites = Seq(Dependency[MaybeAspectPhase], Dependency[Convert])
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
