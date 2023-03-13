@@ -63,35 +63,6 @@ error for this signal.</p>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>This feature is controlled by <code class="language-plaintext highlighter-rouge">CompileOptions.explicitInvalidate</code> and is set to <code class="language-plaintext highlighter-rouge">false</code> in <code class="language-plaintext highlighter-rouge">NotStrict</code> (Chisel2 compatibility mode),
-and <code class="language-plaintext highlighter-rouge">true</code> in <code class="language-plaintext highlighter-rouge">Strict</code> mode.</p>
-
-<p>You can selectively enable this for Chisel2 compatibility mode by providing your own explicit <code class="language-plaintext highlighter-rouge">compileOptions</code>,
-either for a group of Modules (via inheritance):</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">abstract</span> <span class="k">class</span> <span class="nc">ExplicitInvalidateModule</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">()(</span><span class="nv">chisel3</span><span class="o">.</span><span class="py">ExplicitCompileOptions</span><span class="o">.</span><span class="py">NotStrict</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">explicitInvalidate</span> <span class="k">=</span> <span class="kc">true</span><span class="o">))</span>
-</code></pre></div></div>
-<p>or on a per-Module basis:</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
-  <span class="k">override</span> <span class="k">val</span> <span class="nv">compileOptions</span> <span class="k">=</span> <span class="nv">chisel3</span><span class="o">.</span><span class="py">ExplicitCompileOptions</span><span class="o">.</span><span class="py">NotStrict</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">explicitInvalidate</span> <span class="k">=</span> <span class="kc">true</span><span class="o">)</span>
-  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span> <span class="cm">/* ... */</span> <span class="o">}</span> <span class="o">)</span>
-  <span class="c1">// ...</span>
-<span class="o">}</span>
-</code></pre></div></div>
-
-<p>Or conversely, disable this stricter checking (which is now the default in pure chisel3):</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">abstract</span> <span class="k">class</span> <span class="nc">ImplicitInvalidateModule</span> <span class="k">extends</span> <span class="nc">Module</span><span class="o">()(</span><span class="nv">chisel3</span><span class="o">.</span><span class="py">ExplicitCompileOptions</span><span class="o">.</span><span class="py">Strict</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">explicitInvalidate</span> <span class="k">=</span> <span class="kc">false</span><span class="o">))</span>
-</code></pre></div></div>
-<p>or on a per-Module basis:</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
-  <span class="k">override</span> <span class="k">val</span> <span class="nv">compileOptions</span> <span class="k">=</span> <span class="nv">chisel3</span><span class="o">.</span><span class="py">ExplicitCompileOptions</span><span class="o">.</span><span class="py">Strict</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">explicitInvalidate</span> <span class="k">=</span> <span class="kc">false</span><span class="o">)</span>
-  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span> <span class="cm">/* ... */</span> <span class="o">}</span> <span class="o">)</span>
-  <span class="c1">// ...</span>
-<span class="o">}</span>
-</code></pre></div></div>
-
-<p>Please see the corresponding <a href="https://github.com/freechipsproject/chisel3/blob/master/src/test/scala/chiselTests/InvalidateAPISpec.scala">API tests</a>
-for examples.</p>
-
 <h3 id="determining-the-unconnected-element">Determining the unconnected element</h3>
 
 <p>I have an interface with 42 wires.
