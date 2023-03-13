@@ -933,19 +933,14 @@ abstract class Record extends Aggregate {
   }
 
   private def checkClone(clone: Record): Unit = {
-    for ((name, field) <- elements) {
-      if (clone.elements(name) eq field) {
+    for ((name, field) <- _elements) {
+      if (clone._elements(name) eq field) {
         throw new AutoClonetypeException(
           s"The bundle plugin was unable to clone $clone that has field '$name' aliased with base $this." +
             "This likely happened because you tried nesting Data arguments inside of other data structures." +
             " Try wrapping the field(s) in Input(...), Output(...), or Flipped(...) if appropriate." +
             " As a last resort, you can call chisel3.reflect.DataMirror.internal.chiselTypeClone on any nested Data arguments." +
             " See the cookbook entry 'How do I deal with the \"unable to clone\" error?' for more details."
-        )
-      }
-      if (field.binding.isDefined) {
-        throw RebindingException(
-          s"Cannot create Record ${this.className}; element ${field} of record is already a bound hardware."
         )
       }
     }
@@ -966,10 +961,10 @@ abstract class Record extends Aggregate {
     // which can cause collisions
     val _namespace = Namespace.empty
     require(
-      !opaqueType || (elements.size == 1 && elements.head._1 == ""),
-      s"Opaque types must have exactly one element with an empty name, not ${elements.size}: ${elements.keys.mkString(", ")}"
+      !opaqueType || (_elements.size == 1 && _elements.head._1 == ""),
+      s"Opaque types must have exactly one element with an empty name, not ${_elements.size}: ${elements.keys.mkString(", ")}"
     )
-    for ((name, elt) <- elements) {
+    for ((name, elt) <- _elements) {
       elt.setRef(this, _namespace.name(name, leadingDigitOk = true), opaque = opaqueType)
     }
   }
@@ -993,7 +988,7 @@ abstract class Record extends Aggregate {
       val dupNames = duplicates.toSeq
         .sortBy(_._id)
         .map { duplicate =>
-          this.elements.collect { case x if x._2._id == duplicate._id => x }.toSeq
+          this._elements.collect { case x if x._2._id == duplicate._id => x }.toSeq
             .sortBy(_._2._id)
             .map(_._1)
             .reverse
@@ -1014,13 +1009,13 @@ abstract class Record extends Aggregate {
 
     checkForAndReportDuplicates()
 
-    for ((child, sameChild) <- this.elementsIterator.zip(this.elementsIterator)) {
-      if (child != sameChild) {
+    for ((child, sameChild) <- this.elements.zip(this.elementsIterator)) {
+      if (child._2 != sameChild) {
         throwException(
           s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
         )
       }
-      child.bind(ChildBinding(this), resolvedDirection)
+      child._2.bind(ChildBinding(this), resolvedDirection)
     }
 
     // Check that children obey the directionality rules.
@@ -1174,7 +1169,7 @@ abstract class Record extends Aggregate {
   override def toString: String = {
     topBindingOpt match {
       case Some(BundleLitBinding(_)) =>
-        val contents = elements.toList.reverse.map {
+        val contents = _elements.toList.reverse.map {
           case (name, data) =>
             s"$name=$data"
         }.mkString(", ")
@@ -1184,6 +1179,17 @@ abstract class Record extends Aggregate {
   }
 
   def elements: SeqMap[String, Data]
+
+  private[chisel3] lazy val _elements: SeqMap[String, Data] = {
+    for ((name, field) <- elements) {
+      if (field.binding.isDefined) {
+        throw RebindingException(
+          s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
+        )
+      }
+    }
+    elements
+  }
 
   /** Name for Pretty Printing */
   def className: String = try {
@@ -1196,11 +1202,11 @@ abstract class Record extends Aggregate {
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>
       this.getClass == that.getClass &&
-        this.elements.size == that.elements.size &&
-        this.elements.forall {
+        this._elements.size == that._elements.size &&
+        this._elements.forall {
           case (name, model) =>
-            that.elements.contains(name) &&
-              (that.elements(name).typeEquivalent(model))
+            that._elements.contains(name) &&
+              (that._elements(name).typeEquivalent(model))
         }
     case _ => false
   }
@@ -1209,7 +1215,7 @@ abstract class Record extends Aggregate {
 
   override def getElements: Seq[Data] = elementsIterator.toIndexedSeq
 
-  final override private[chisel3] def elementsIterator: Iterator[Data] = elements.iterator.map(_._2)
+  final override private[chisel3] def elementsIterator: Iterator[Data] = _elements.iterator.map(_._2)
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
@@ -1227,7 +1233,7 @@ abstract class Record extends Aggregate {
     * Analogous to printing a Map
     * Results in "`\$className(elt0.name -> elt0.value, ...)`"
     */
-  def toPrintable: Printable = toPrintableHelper(elements.toList)
+  def toPrintable: Printable = toPrintableHelper(_elements.toList)
 
   /** Implementation of cloneType that is [optionally for Record] overridden by the compiler plugin
     *
@@ -1431,5 +1437,5 @@ abstract class Bundle extends Record {
     * @note The order is reversed from the order of elements in order to print
     *   the fields in the order they were defined
     */
-  override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
+  override def toPrintable: Printable = toPrintableHelper(_elements.toList.reverse)
 }

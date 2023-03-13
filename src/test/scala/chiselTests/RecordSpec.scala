@@ -423,16 +423,26 @@ class RecordSpec extends ChiselFlatSpec with Utils {
     err.getMessage should include("bundle plugin was unable to clone")
   }
 
-  "Attempting to create a Record with bound elements" should "error" in {
-    class MyRecord[T <: Data](gen: T) extends Record {
+  "Attempting to create a Record with bound nested elements" should "error" in {
+    class InnerNestedRecord[T <: Data](gen: T) extends Record {
       val elements = SeqMap("a" -> gen)
     }
+    class NestedRecord[T <: Data](gen: T) extends Record {
+      val inner1 = new InnerNestedRecord(gen)
+      val inner2 = new InnerNestedRecord(UInt(4.W))
+      val elements = SeqMap("a" -> inner1, "b" -> inner2)
+    }
+    class MyRecord[T <: Data](gen: T) extends Record {
+      val nested = new NestedRecord(gen)
+      val elements = SeqMap("a" -> nested)
+    }
+
     val e = the[ChiselException] thrownBy {
       ChiselStage.elaborate(new Module {
         val myReg = RegInit(0.U(8.W))
         val io = IO(Input(new MyRecord(myReg)))
       })
     }
-    e.getMessage should include("record is already a bound hardware")
+    e.getMessage should include("must be a Chisel type, not hardware")
   }
 }
