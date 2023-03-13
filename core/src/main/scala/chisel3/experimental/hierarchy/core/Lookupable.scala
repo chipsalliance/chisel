@@ -37,6 +37,7 @@ trait Lookupable[-B] {
     * @return
     */
   def definitionLookup[A](that:     A => B, definition: Definition[A]): C
+  def interfaceLookup[A](that:     A => B, interface: Interface[A]): C
   protected def getProto[A](h:      Hierarchy[A]): A = h.proto
   protected def getUnderlying[A](h: Hierarchy[A]): Underlying[A] = h.underlying
 }
@@ -295,6 +296,7 @@ object Lookupable {
     type B = X
     type C = X
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = that(definition.proto)
+    def interfaceLookup[A](that: A => B, interface: Interface[A]): C = that(interface.proto)
     def instanceLookup[A](that:   A => B, instance:   Instance[A]):   C = that(instance.proto)
   }
 
@@ -304,6 +306,10 @@ object Lookupable {
       def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): C = {
         val ret = that(definition.proto)
         new Instance(cloneModuleToContext(ret.underlying, definition.getInnerDataContext.get))
+      }
+      def interfaceLookup[A](that: A => Instance[B], interface: Interface[A]): C = {
+        val ret = that(interface.proto)
+        new Instance(cloneModuleToContext(ret.underlying, interface.getInnerDataContext.get))
       }
       def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): C = {
         val ret = that(instance.proto)
@@ -321,6 +327,10 @@ object Lookupable {
       def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
         val ret = that(definition.proto)
         new Instance(cloneModuleToContext(Proto(ret), definition.getInnerDataContext.get))
+      }
+      def interfaceLookup[A](that: A => B, interface: Interface[A]): C = {
+        val ret = that(interface.proto)
+        new Instance(cloneModuleToContext(Proto(ret), interface.getInnerDataContext.get))
       }
       def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
         val ret = that(instance.proto)
@@ -341,6 +351,14 @@ object Lookupable {
           ??? // TODO!!!!!!  cloneViewToContext(ret, instance, ioMap, instance.getInnerDataContext)
         } else {
           doLookupData(ret, definition.cache, None, definition.getInnerDataContext)
+        }
+      }
+      def interfaceLookup[A](that: A => B, interface: Interface[A]): C = {
+        val ret = that(interface.proto)
+        if (isView(ret)) {
+          ??? // TODO!!!!!!  cloneViewToContext(ret, instance, ioMap, instance.getInnerDataContext)
+        } else {
+          doLookupData(ret, interface.cache, None, interface.getInnerDataContext)
         }
       }
       def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
@@ -404,6 +422,9 @@ object Lookupable {
       def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
         cloneMemToContext(that(definition.proto), definition.getInnerDataContext.get)
       }
+      def interfaceLookup[A](that: A => B, interface: Interface[A]): C = {
+        cloneMemToContext(that(interface.proto), interface.getInnerDataContext.get)
+      }
       def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
         cloneMemToContext(that(instance.proto), instance.getInnerDataContext.get)
       }
@@ -420,6 +441,10 @@ object Lookupable {
       val ret = that(definition.proto).asInstanceOf[Iterable[B]]
       ret.map { x: B => lookupable.definitionLookup[A](_ => x, definition) }.asInstanceOf[C]
     }
+    def interfaceLookup[A](that: A => F[B], interface: Interface[A]): C = {
+      val ret = that(interface.proto).asInstanceOf[Iterable[B]]
+      ret.map { x: B => lookupable.interfaceLookup[A](_ => x, interface) }.asInstanceOf[C]
+    }
     def instanceLookup[A](that: A => F[B], instance: Instance[A]): C = {
       import instance._
       val ret = that(proto).asInstanceOf[Iterable[B]]
@@ -435,6 +460,10 @@ object Lookupable {
     def definitionLookup[A](that: A => Option[B], definition: Definition[A]): C = {
       val ret = that(definition.proto)
       ret.map { x: B => lookupable.definitionLookup[A](_ => x, definition) }
+    }
+    def interfaceLookup[A](that: A => Option[B], interface: Interface[A]): C = {
+      val ret = that(interface.proto)
+      ret.map { x: B => lookupable.interfaceLookup[A](_ => x, interface) }
     }
     def instanceLookup[A](that: A => Option[B], instance: Instance[A]): C = {
       import instance._
@@ -453,6 +482,12 @@ object Lookupable {
       val ret = that(definition.proto)
       ret.map { x: R => lookupableR.definitionLookup[A](_ => x, definition) }.left.map { x: L =>
         lookupableL.definitionLookup[A](_ => x, definition)
+      }
+    }
+    def interfaceLookup[A](that: A => Either[L, R], interface: Interface[A]): C = {
+      val ret = that(interface.proto)
+      ret.map { x: R => lookupableR.interfaceLookup[A](_ => x, interface) }.left.map { x: L =>
+        lookupableL.interfaceLookup[A](_ => x, interface)
       }
     }
     def instanceLookup[A](that: A => Either[L, R], instance: Instance[A]): C = {
@@ -478,6 +513,13 @@ object Lookupable {
         lookupableY.definitionLookup[A](_ => ret._2, definition)
       )
     }
+    def interfaceLookup[A](that: A => (X, Y), interface: Interface[A]): C = {
+      val ret = that(interface.proto)
+      (
+        lookupableX.interfaceLookup[A](_ => ret._1, interface),
+        lookupableY.interfaceLookup[A](_ => ret._2, interface)
+      )
+    }
     def instanceLookup[A](that: A => (X, Y), instance: Instance[A]): C = {
       import instance._
       val ret = that(proto)
@@ -495,6 +537,14 @@ object Lookupable {
       val underlying = new InstantiableClone[B] {
         val getProto = ret
         lazy val _innerContext = definition
+      }
+      new Instance(Clone(underlying))
+    }
+    def interfaceLookup[A](that: A => B, interface: Interface[A]): C = {
+      val ret = that(interface.proto)
+      val underlying = new InstantiableClone[B] {
+        val getProto = ret
+        lazy val _innerContext = interface
       }
       new Instance(Clone(underlying))
     }

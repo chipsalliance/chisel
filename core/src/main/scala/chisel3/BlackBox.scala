@@ -66,7 +66,8 @@ package experimental {
   @nowarn("msg=class Port") // delete when Port becomes private
   abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
     private[chisel3] override def generateComponent(): Option[Component] = {
-      require(!_closed, "Can't generate module more than once")
+      if(_closed) return None
+      //require(!_closed, "Can't generate module more than once")
       _closed = true
 
       // Ports are named in the same way as regular Modules

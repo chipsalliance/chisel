@@ -55,7 +55,8 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   }
 
   private[chisel3] override def generateComponent(): Option[Component] = {
-    require(!_closed, "Can't generate module more than once")
+    if(_closed) return None
+    //require(!_closed, "Can't generate module more than once")
     _closed = true
 
     // Check to make sure that all ports can be named

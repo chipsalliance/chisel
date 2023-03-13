@@ -274,9 +274,16 @@ package experimental {
 
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
-      import chisel3.experimental.hierarchy.core.{Definition, Instance}
+      import chisel3.experimental.hierarchy.core.{Definition, Instance, Interface}
       def toInstance:   Instance[T] = new Instance(Proto(b))
-      def toDefinition: Definition[T] = new Definition(Proto(b))
+      def toInterface: Interface[T] = new Interface(Proto(b))
+      def toDefinition: Definition[T] = {
+        b match {
+          case x: chisel3.experimental.hierarchy.core.HasImplementationInternal => x.inject
+          case other =>
+        }
+        new Definition(Proto(b))
+      }
     }
   }
 

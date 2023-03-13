@@ -31,9 +31,9 @@ class ChiselStage extends Stage {
         Dependency[chisel3.stage.phases.Checks],
         Dependency[chisel3.stage.phases.AddImplicitOutputFile],
         Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-        Dependency[chisel3.stage.phases.MaybeAspectPhase],
         Dependency[chisel3.stage.phases.AddSerializationAnnotations],
         Dependency[chisel3.stage.phases.Convert],
+        Dependency[chisel3.stage.phases.MaybeAspectPhase],
         Dependency[chisel3.stage.phases.MaybeInjectingPhase],
         Dependency[firrtl.stage.phases.AddImplicitOutputFile],
         Dependency[circt.stage.phases.Checks],
@@ -56,11 +56,12 @@ object ChiselStage {
   private def phase = new PhaseManager(
     Seq(
       Dependency[chisel3.stage.phases.Checks],
-      Dependency[chisel3.aop.injecting.InjectingPhase],
       Dependency[chisel3.stage.phases.Elaborate],
       Dependency[chisel3.stage.phases.Convert],
       Dependency[firrtl.stage.phases.AddImplicitOutputFile],
       Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+      Dependency[chisel3.stage.phases.MaybeAspectPhase],
+      Dependency[chisel3.stage.phases.MaybeInjectingPhase],
       Dependency[circt.stage.phases.Checks],
       Dependency[circt.stage.phases.CIRCT]
     )
@@ -76,10 +77,11 @@ object ChiselStage {
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
     ) ++ (new ChiselStage).shell.parse(args)
 
+    println(phase.transformOrder)
     phase
       .transform(annos)
       .collectFirst {
-        case a: ChiselCircuitAnnotation => CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat).getBytes
+        case a: FirrtlCircuitAnnotation => a.circuit.serialize
       }
       .get
       .map(_.toChar)

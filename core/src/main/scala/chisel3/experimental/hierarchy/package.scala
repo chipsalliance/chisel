@@ -50,6 +50,8 @@ package object hierarchy {
   val Instance = core.Instance
   type Definition[P] = core.Definition[P]
   val Definition = core.Definition
+  type Interface[P] = core.Interface[P]
+  val Interface = core.Interface
   type Hierarchy[P] = core.Hierarchy[P]
   val Hierarchy = core.Hierarchy
   type IsInstantiable = core.IsInstantiable

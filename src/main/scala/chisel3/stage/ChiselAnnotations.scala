@@ -14,6 +14,7 @@ import firrtl.options.{
 }
 import firrtl.options.Viewer.view
 import chisel3.{deprecatedMFCMessage, ChiselException, Module}
+import chisel3.experimental.BaseModule
 import chisel3.RawModule
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.{Circuit, Emitter => OldEmitter}
@@ -149,7 +150,7 @@ case object WarnReflectiveNamingAnnotation
 /** An [[firrtl.annotations.Annotation]] storing a function that returns a Chisel module
   * @param gen a generator function
   */
-case class ChiselGeneratorAnnotation(gen: () => RawModule) extends NoTargetAnnotation with Unserializable {
+case class ChiselGeneratorAnnotation(gen: () => BaseModule, buildImplementation: Boolean = true) extends NoTargetAnnotation with Unserializable {
 
   /** Run elaboration on the Chisel module generator function stored by this [[firrtl.annotations.Annotation]]
     */
@@ -277,4 +278,4 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
   * @param design top-level Chisel design
   * @tparam DUT Type of the top-level Chisel design
   */
-case class DesignAnnotation[DUT <: RawModule](design: DUT) extends NoTargetAnnotation with Unserializable
+case class DesignAnnotation[DUT <: BaseModule](design: DUT) extends NoTargetAnnotation with Unserializable

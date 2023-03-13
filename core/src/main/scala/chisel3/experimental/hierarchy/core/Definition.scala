@@ -7,7 +7,7 @@ import chisel3._
 
 import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
-import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
+import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, InterfaceTransform}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
 
@@ -62,6 +62,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
   }
 
   override def toDefinition: Definition[A] = this
+  def toInterface: Interface[A] = new Interface(underlying)
   override def toInstance:   Instance[A] = new Instance(underlying)
 
 }
@@ -80,6 +81,8 @@ object Definition extends SourceInfoDoc {
       */
     def toAbsoluteTarget: IsModule = d.proto.toAbsoluteTarget
   }
+  import scala.language.implicitConversions
+  implicit def convertToInterface[T](d: Definition[T]): Interface[T] = d.toInterface
 
   /** A construction method to build a Definition of a Module
     *
@@ -117,10 +120,132 @@ object Definition extends SourceInfoDoc {
 
 }
 
+/** User-facing Interface type.
+  * Represents a definition of an object of type `A` which are marked as @instantiable
+  * Can be created using Interface.apply method.
+  *
+  * These definitions are then used to create multiple [[Instance]]s.
+  *
+  * @param underlying The internal representation of the definition, which may be either be directly the object, or a clone of an object
+  */
+final case class Interface[+A] private[chisel3] (private[chisel3] underlying: Underlying[A])
+    extends IsLookupable
+    with SealedHierarchy[A] {
+
+  /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
+    * Instead, mark the field you are accessing with [[public]]
+    *
+    * Given a selector function (that) which selects a member from the original, return the
+    *   corresponding member from the instance.
+    *
+    * Our @instantiable and @public macros generate the calls to this apply method
+    *
+    * By calling this function, we summon the proper Lookupable typeclass from our implicit scope.
+    *
+    * @param that a user-specified lookup function
+    * @param lookup typeclass which contains the correct lookup function, based on the types of A and B
+    * @param macroGenerated a value created in the macro, to make it harder for users to use this API
+    */
+  def _lookup[B, C](
+    that: A => B
+  )(
+    implicit lookup: Lookupable[B],
+    macroGenerated:  chisel3.internal.MacroGenerated
+  ): lookup.C = {
+    lookup.interfaceLookup(that, this)
+  }
+
+  /** @return the context of any Data's return from inside the instance */
+  private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
+    case value: BaseModule =>
+      val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value))(
+        chisel3.experimental.UnlocatableSourceInfo
+      )
+      newChild._circuit = value._circuit.orElse(Some(value))
+      newChild._parent = None
+      Some(newChild)
+    case value: IsInstantiable => None
+  }
+
+  override def toDefinition: Definition[A] = proto match {
+    case x: HasImplementationInternal => 
+      x.inject
+      new Definition(underlying)
+    case other => new Definition(underlying)
+  }
+  def buildImplementation: A = proto match {
+    case x: HasImplementationInternal with BaseModule => 
+      x.inject
+      Builder.readyForModuleConstr = false
+      Builder.components ++= x._component
+      proto
+    case other => proto
+  }
+  override def toInstance:   Instance[A] = new Instance(underlying)
+
+}
+private[chisel3] trait HasImplementationInternal {
+  def hasImplementation: Boolean
+  def inject: Unit
+}
+
+
+/** Factory methods for constructing [[Interface]]s */
+object Interface extends SourceInfoDoc {
+  implicit class InterfaceBaseModuleExtensions[T <: BaseModule](d: Interface[T]) {
+
+    /** If this is an instance of a Module, returns the toTarget of this instance
+      * @return target of this instance
+      */
+    def toTarget: ModuleTarget = d.proto.toTarget
+
+    /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
+      * @return absoluteTarget of this instance
+      */
+    def toAbsoluteTarget: IsModule = d.proto.toAbsoluteTarget
+  }
+
+  /** A construction method to build a Interface of a Module
+    *
+    * @param proto the Module being defined
+    *
+    * @return the input module as a Interface
+    */
+  def apply[T <: BaseModule with IsInstantiable](proto: => T): Interface[T] = macro InterfaceTransform.apply[T]
+
+  /** A construction method to build a Interface of a Module
+    *
+    * @param bc the Module being defined
+    *
+    * @return the input module as a Interface
+    */
+  def do_apply[T <: BaseModule with IsInstantiable](
+    proto: => T
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Interface[T] = {
+    val dynamicContext = {
+      val context = Builder.captureContext()
+      new DynamicContext(Nil, context.throwOnFirstError, context.warningsAsErrors, context.sourceRoots)
+    }
+    Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
+    dynamicContext.inDefinition = true
+    dynamicContext.buildImplementation = false
+    val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
+    Builder.components ++= ir.components
+    Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
+    module._circuit = Builder.currentModule
+    dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
+    new Interface(Proto(module))
+  }
+
+}
+
+
 /** Stores a [[Definition]] that is imported so that its Instances can be
   * compiled separately.
   */
 case class ImportDefinitionAnnotation[T <: BaseModule with IsInstantiable](
-  definition:      Definition[T],
+  definition:      Interface[T],
   overrideDefName: Option[String] = None)
     extends NoTargetAnnotation

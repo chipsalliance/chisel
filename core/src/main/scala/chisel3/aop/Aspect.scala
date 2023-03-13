@@ -3,6 +3,7 @@
 package chisel3.aop
 
 import chisel3.RawModule
+import chisel3.experimental.BaseModule
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Unserializable
 import firrtl.AnnotationSeq
@@ -11,7 +12,7 @@ import firrtl.AnnotationSeq
   * what behavior should be done to instance, via the FIRRTL Annotation Mechanism
   * @tparam T Type of top-level module
   */
-abstract class Aspect[T <: RawModule] extends Annotation with Unserializable with NoTargetAnnotation {
+abstract class Aspect[T <: BaseModule] extends Annotation with Unserializable with NoTargetAnnotation {
 
   /** variable to save [[AnnotationSeq]] from [[chisel3.stage.phases.AspectPhase]]
     * to be used at [[chisel3.aop.injecting.InjectorAspect]], exposes annotations to [[chisel3.internal.DynamicContext]]
@@ -28,7 +29,7 @@ abstract class Aspect[T <: RawModule] extends Annotation with Unserializable wit
     * @param top
     * @return
     */
-  private[chisel3] def resolveAspect(top: RawModule, remainingAnnotations: AnnotationSeq): AnnotationSeq = {
+  private[chisel3] def resolveAspect(top: BaseModule, remainingAnnotations: AnnotationSeq): AnnotationSeq = {
     annotationsInAspect = remainingAnnotations
     toAnnotation(top.asInstanceOf[T])
   }

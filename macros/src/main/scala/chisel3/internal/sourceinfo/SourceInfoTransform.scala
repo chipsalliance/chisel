@@ -46,6 +46,15 @@ class InstTransform(val c: Context) extends SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
+object InterfaceTransform
+// Module instantiation transform
+class InterfaceTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def apply[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($proto)($implicitSourceInfo)"
+  }
+}
+// Workaround for https://github.com/sbt/sbt/issues/3966
 object DefinitionTransform
 // Module instantiation transform
 class DefinitionTransform(val c: Context) extends SourceInfoTransformMacro {

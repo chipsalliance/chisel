@@ -29,7 +29,6 @@ class Emitter extends Phase {
       Dependency[Elaborate],
       Dependency[AddImplicitOutputFile],
       Dependency[AddImplicitOutputAnnotationFile],
-      Dependency[MaybeAspectPhase]
     )
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq(Dependency[Convert])
