@@ -2,8 +2,6 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-ThisBuild / version := "5.0.0-M1"
-
 lazy val commonSettings = Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
