@@ -285,19 +285,6 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     }
   }
 
-  describe("Otherwise identital Modules Instantiated with different CompileOptions") {
-    it("should NOT use the same Definition") {
-      val modules = convert(new Top {
-        val inst0 = Instantiate(new NoArgs)
-        val inst1 = {
-          implicit val options = ExplicitCompileOptions.NotStrict
-          Instantiate(new NoArgs)
-        }
-      }).modules.map(_.name)
-      assert(modules == Seq("NoArgs", "NoArgs_1", "Top"))
-    }
-  }
-
   describe("The Instantiate cache") {
     it("should NOT be shared between elaborations within the same JVM run") {
       class MyTop extends Top {

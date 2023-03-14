@@ -89,9 +89,7 @@ object MixedVec {
   */
 final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with collection.IndexedSeq[T] {
   // We want to create MixedVec only with Chisel types.
-  if (compileOptions.declaredTypeMustBeUnbound) {
-    eltsIn.foreach(e => requireIsChiselType(e))
-  }
+  eltsIn.foreach(e => requireIsChiselType(e))
 
   // In Scala 2.13, this is protected in IndexedSeq, must override as public because it's public in
   // Record

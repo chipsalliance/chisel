@@ -38,9 +38,7 @@ object Reg {
   def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "reg type")
-    }
+    requireIsChiselType(t, "reg type")
     val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     val clock = Node(Builder.forcedClock)
 
@@ -171,9 +169,7 @@ object RegInit {
     * @param init The value the [[Reg]] is initialized to on reset
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "reg type")
-    }
+    requireIsChiselType(t, "reg type")
     val reg = t.cloneTypeFull
     val clock = Builder.forcedClock
     val reset = Builder.forcedReset
