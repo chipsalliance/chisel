@@ -109,19 +109,19 @@ object SerializerSpec {
         Port(NoInfo, "cond", Input, UIntType(IntWidth(1))),
         Port(NoInfo, "in", Input, UIntType(IntWidth(8))),
         Port(NoInfo, "inProbe", Input, ProbeType(UIntType(IntWidth(8)))),
-        Port(NoInfo, "out", Output, UIntType(IntWidth(8))),
+        Port(NoInfo, "out", Output, UIntType(IntWidth(8)))
       ),
       Block(
         Seq(
           DefInstance("c", "child"),
           DefWire(NoInfo, "fooProbe", ProbeType(UIntType(IntWidth(8)))),
           Connect(NoInfo, SubField(Reference("c"), "in"), Reference("in")),
-          ProbeDefine(NoInfo,  Reference("fooProbe"), ProbeExpr(SubField(Reference("c"), "in"))),
+          ProbeDefine(NoInfo, Reference("fooProbe"), ProbeExpr(SubField(Reference("c"), "in"))),
           Connect(NoInfo, Reference("out"), ProbeRead(Reference("out"))),
           ProbeForceInitial(NoInfo, Reference("inProbe"), UIntLiteral(100, IntWidth(8))),
           ProbeReleaseInitial(NoInfo, Reference("inProbe")),
           ProbeForce(NoInfo, Reference("clock"), Reference("cond"), Reference("inProbe"), Reference("in")),
-          ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("inProbe")),
+          ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("inProbe"))
         )
       )
     )
@@ -225,9 +225,17 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     val probeInt = DefWire(NoInfo, "foo", ProbeType(UIntType(IntWidth(3))))
     Serializer.serialize(probeInt) should be("wire foo : Probe<UInt<3>>")
 
-    val rwProbeBundle = DefWire(NoInfo, "foo", RWProbeType(BundleType(Seq(
-        Field("bar", Default, UIntType(IntWidth(32))),
-      ))))
+    val rwProbeBundle = DefWire(
+      NoInfo,
+      "foo",
+      RWProbeType(
+        BundleType(
+          Seq(
+            Field("bar", Default, UIntType(IntWidth(32)))
+          )
+        )
+      )
+    )
     Serializer.serialize(rwProbeBundle) should be("wire foo : RWProbe<{ bar : UInt<32>}>")
 
     // check probe expressions and statements

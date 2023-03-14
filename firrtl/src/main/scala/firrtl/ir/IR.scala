@@ -340,8 +340,12 @@ case class ProbeDefine(info: Info, sink: Expression, probeExpr: Expression) exte
 
 case class ProbeForceInitial(info: Info, probe: Expression, value: Expression) extends Statement with UseSerializer
 case class ProbeReleaseInitial(info: Info, probe: Expression) extends Statement with UseSerializer
-case class ProbeForce(info: Info, clock: Expression, cond: Expression, probe: Expression, value: Expression) extends Statement with UseSerializer
-case class ProbeRelease(info: Info, clock: Expression, cond: Expression, probe: Expression) extends Statement with UseSerializer
+case class ProbeForce(info: Info, clock: Expression, cond: Expression, probe: Expression, value: Expression)
+    extends Statement
+    with UseSerializer
+case class ProbeRelease(info: Info, clock: Expression, cond: Expression, probe: Expression)
+    extends Statement
+    with UseSerializer
 
 // formal
 object Formal extends Enumeration {
