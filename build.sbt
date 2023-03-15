@@ -59,14 +59,14 @@ lazy val publishSettings = Seq(
   publishMavenStyle := true,
   Test / publishArtifact := false,
   pomIncludeRepository := { x => false },
-  pomExtra := <url>https://www.chisel-lang.org</url>
-    <licenses>
-      <license>
-        <name>apache-v2</name>
-        <url>https://opensource.org/licenses/Apache-2.0</url>
-        <distribution>repo</distribution>
-      </license>
-    </licenses>,
+  homepage := Some(url("https://www.chisel-lang.org")),
+  organizationHomepage := Some(url("https://www.chipsalliance.org")),
+  licenses := List(License.Apache2),
+  developers := List(
+    Developer("jackkoenig", "Jack Koenig", "jack.koenig3@gmail.com", url("https://github.com/jackkoenig")),
+    Developer("azidar", "Adam Izraelevitz", "azidar@gmail.com", url("https://github.com/azidar")),
+    Developer("seldridge", "Schuyler Eldridge", "schuyler.eldridge@gmail.com", url("https://github.com/seldridge")),
+  ),
   sonatypeCredentialHost := "s01.oss.sonatype.org",
   sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
   // Check that SBT Dynver can properly derive a version which requires unshallow clone

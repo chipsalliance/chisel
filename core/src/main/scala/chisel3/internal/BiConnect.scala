@@ -72,22 +72,13 @@ private[chisel3] object BiConnect {
     * 2. FIRRTL Connect (implemented as being field-blasted because we know all firrtl fields would not match exactly)
     *   `a.foo <= b.foo, b.bar <= a.bar`
     *
-    * 3. FIRRTL Partial Connect (firrtl will allow fields to not match exactly)
-    *   `a <- b`
-    *
-    * 4. Mixed Semantic Connect (some fields need to be handled differently)
-    *   `a.foo <= b.foo` (case 2),  `b.bar <- a.bar` (case 3)
-    *
     * - The decision on 1 vs 2 is based on structural type -- if same type once emitted to firrtl, emit 1, otherwise emit 2
-    * - 1/2 vs 3 is based on CompileOptions at connection point e.g. at `<>` , emit 3 if `emitStrictConnects = false` for either side
-    * - 4 is a special case of 2 turning into 3 for some subfields, when either side's subfield at `extends Bundle/Record` has `emitStrictConnects = false`
     */
   def connect(
-    sourceInfo:            SourceInfo,
-    connectCompileOptions: CompileOptions,
-    left:                  Data,
-    right:                 Data,
-    context_mod:           RawModule
+    sourceInfo:  SourceInfo,
+    left:        Data,
+    right:       Data,
+    context_mod: RawModule
   ): Unit = {
     (left, right) match {
       // Handle element case (root case)
@@ -106,9 +97,9 @@ private[chisel3] object BiConnect {
           case attach.AttachException(message) => throw BiConnectException(message)
         }
         pushCommand(DefInvalid(sourceInfo, left_a.lref))
-      case (DontCare, right_a: Analog) => connect(sourceInfo, connectCompileOptions, right, left, context_mod)
+      case (DontCare, right_a: Analog) => connect(sourceInfo, right, left, context_mod)
       case (left_e: Element, right_e: Element) => {
-        elemConnect(sourceInfo, connectCompileOptions, left_e, right_e, context_mod)
+        elemConnect(sourceInfo, left_e, right_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
       }
       // Handle Vec case
@@ -125,7 +116,6 @@ private[chisel3] object BiConnect {
             leftReified.get,
             rightReified.get,
             sourceInfo,
-            connectCompileOptions,
             context_mod
           )
         ) {
@@ -133,8 +123,7 @@ private[chisel3] object BiConnect {
         } else {
           for (idx <- 0 until left_v.length) {
             try {
-              implicit val compileOptions = connectCompileOptions
-              connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
+              connect(sourceInfo, left_v(idx), right_v(idx), context_mod)
             } catch {
               case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
             }
@@ -145,8 +134,7 @@ private[chisel3] object BiConnect {
       case (left_v: Vec[Data @unchecked], DontCare) => {
         for (idx <- 0 until left_v.length) {
           try {
-            implicit val compileOptions = connectCompileOptions
-            connect(sourceInfo, connectCompileOptions, left_v(idx), right, context_mod)
+            connect(sourceInfo, left_v(idx), right, context_mod)
           } catch {
             case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
           }
@@ -156,8 +144,7 @@ private[chisel3] object BiConnect {
       case (DontCare, right_v: Vec[Data @unchecked]) => {
         for (idx <- 0 until right_v.length) {
           try {
-            implicit val compileOptions = connectCompileOptions
-            connect(sourceInfo, connectCompileOptions, left, right_v(idx), context_mod)
+            connect(sourceInfo, left, right_v(idx), context_mod)
           } catch {
             case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
           }
@@ -166,9 +153,6 @@ private[chisel3] object BiConnect {
       // Handle Records defined in Chisel._ code by emitting a FIRRTL bulk
       // connect when possible and a partial connect otherwise
       case pair @ (left_r: Record, right_r: Record) =>
-        val emitStrictConnects: Boolean =
-          left_r.compileOptions.emitStrictConnects && right_r.compileOptions.emitStrictConnects
-
         // chisel3 <> is commutative but FIRRTL <- is not
         val flipConnection =
           !MonoConnect.canBeSink(left_r, context_mod) || !MonoConnect.canBeSource(right_r, context_mod)
@@ -182,48 +166,31 @@ private[chisel3] object BiConnect {
             leftReified.get,
             rightReified.get,
             sourceInfo,
-            connectCompileOptions,
             context_mod
           )
         ) {
           pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
-        } else if (!emitStrictConnects) {
-          if (connectCompileOptions.migrateBulkConnections)
-            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")(sourceInfo)
-          newLeft.firrtlPartialConnect(newRight)(sourceInfo)
         } else {
-          recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
+          recordConnect(sourceInfo, left_r, right_r, context_mod)
         }
 
       // Handle Records connected to DontCare
       case (left_r: Record, DontCare) =>
-        if (!left_r.compileOptions.emitStrictConnects) {
-          if (connectCompileOptions.migrateBulkConnections)
-            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")(sourceInfo)
-          left.firrtlPartialConnect(right)(sourceInfo)
-        } else {
-          // For each field in left, descend with right
-          for ((field, left_sub) <- left_r.elements) {
-            try {
-              connect(sourceInfo, connectCompileOptions, left_sub, right, context_mod)
-            } catch {
-              case BiConnectException(message) => throw BiConnectException(s".$field$message")
-            }
+        // For each field in left, descend with right
+        for ((field, left_sub) <- left_r.elements) {
+          try {
+            connect(sourceInfo, left_sub, right, context_mod)
+          } catch {
+            case BiConnectException(message) => throw BiConnectException(s".$field$message")
           }
         }
       case (DontCare, right_r: Record) =>
-        if (!right_r.compileOptions.emitStrictConnects) {
-          if (connectCompileOptions.migrateBulkConnections)
-            Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")(sourceInfo)
-          left.firrtlPartialConnect(right)(sourceInfo)
-        } else {
-          // For each field in left, descend with right
-          for ((field, right_sub) <- right_r.elements) {
-            try {
-              connect(sourceInfo, connectCompileOptions, left, right_sub, context_mod)
-            } catch {
-              case BiConnectException(message) => throw BiConnectException(s".$field$message")
-            }
+        // For each field in left, descend with right
+        for ((field, right_sub) <- right_r.elements) {
+          try {
+            connect(sourceInfo, left, right_sub, context_mod)
+          } catch {
+            case BiConnectException(message) => throw BiConnectException(s".$field$message")
           }
         }
 
@@ -234,33 +201,26 @@ private[chisel3] object BiConnect {
 
   // Do connection of two Records
   def recordConnect(
-    sourceInfo:            SourceInfo,
-    connectCompileOptions: CompileOptions,
-    left_r:                Record,
-    right_r:               Record,
-    context_mod:           RawModule
+    sourceInfo:  SourceInfo,
+    left_r:      Record,
+    right_r:     Record,
+    context_mod: RawModule
   ): Unit = {
     // Verify right has no extra fields that left doesn't have
 
     // For each field in left, descend with right.
     // Don't bother doing this check if we don't expect it to necessarily pass.
-    if (connectCompileOptions.connectFieldsMustMatch) {
-      for ((field, right_sub) <- right_r.elements) {
-        if (!left_r.elements.isDefinedAt(field)) {
-          throw MissingLeftFieldException(field)
-        }
+    for ((field, right_sub) <- right_r.elements) {
+      if (!left_r.elements.isDefinedAt(field)) {
+        throw MissingLeftFieldException(field)
       }
     }
     // For each field in left, descend with right
     for ((field, left_sub) <- left_r.elements) {
       try {
         right_r.elements.get(field) match {
-          case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
-          case None => {
-            if (connectCompileOptions.connectFieldsMustMatch) {
-              throw MissingRightFieldException(field)
-            }
-          }
+          case Some(right_sub) => connect(sourceInfo, left_sub, right_sub, context_mod)
+          case None            => throw MissingRightFieldException(field)
         }
       } catch {
         case BiConnectException(message) => throw BiConnectException(s".$field$message")
@@ -283,11 +243,10 @@ private[chisel3] object BiConnect {
     * @param raiseIfFalse raise a BiConnectException if the result would be false with information about why it's false.
     */
   private[chisel3] def canFirrtlConnectData(
-    sink:                  Data,
-    source:                Data,
-    sourceInfo:            SourceInfo,
-    connectCompileOptions: CompileOptions,
-    context_mod:           RawModule
+    sink:        Data,
+    source:      Data,
+    sourceInfo:  SourceInfo,
+    context_mod: RawModule
   ): Boolean = {
 
     // check that the aggregates have the same types
@@ -300,7 +259,6 @@ private[chisel3] object BiConnect {
     def contextCheck =
       MonoConnect.dataConnectContextCheck(
         sourceInfo,
-        connectCompileOptions,
         sink,
         source,
         context_mod
@@ -362,11 +320,10 @@ private[chisel3] object BiConnect {
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
   def elemConnect(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions,
-    _left:                 Element,
-    _right:                Element,
-    context_mod:           RawModule
+    implicit sourceInfo: SourceInfo,
+    _left:               Element,
+    _right:              Element,
+    context_mod:         RawModule
   ): Unit = {
     import BindingDirection.{Input, Internal, Output} // Using extensively so import these
     val left = reify(_left)
@@ -429,15 +386,9 @@ private[chisel3] object BiConnect {
         case (Output, Internal) => issueConnectR2L(left, right)
         case (Internal, Input)  => issueConnectR2L(left, right)
 
-        case (Input, Input)   => throw BothDriversException
-        case (Output, Output) => throw BothDriversException
-        case (Internal, Internal) => {
-          if (connectCompileOptions.dontAssumeDirectionality) {
-            throw UnknownDriverException
-          } else {
-            issueConnectR2L(left, right)
-          }
-        }
+        case (Input, Input)       => throw BothDriversException
+        case (Output, Output)     => throw BothDriversException
+        case (Internal, Internal) => throw UnknownDriverException
       }
     }
 
@@ -453,18 +404,8 @@ private[chisel3] object BiConnect {
 
         case (Input, Input)   => throw NeitherDriverException
         case (Output, Output) => throw BothDriversException
-        case (_, Internal) =>
-          if (connectCompileOptions.dontAssumeDirectionality) {
-            throw UnknownRelationException
-          } else {
-            issueConnectR2L(left, right)
-          }
-        case (Internal, _) =>
-          if (connectCompileOptions.dontAssumeDirectionality) {
-            throw UnknownRelationException
-          } else {
-            issueConnectR2L(left, right)
-          }
+        case (_, Internal)    => throw UnknownRelationException
+        case (Internal, _)    => throw UnknownRelationException
       }
     }
 

@@ -90,37 +90,36 @@ private[chisel3] object MonoConnect {
     * This gives the user a 'path' to where in the connections things went wrong.
     */
   def connect(
-    sourceInfo:            SourceInfo,
-    connectCompileOptions: CompileOptions,
-    sink:                  Data,
-    source:                Data,
-    context_mod:           RawModule
+    sourceInfo:  SourceInfo,
+    sink:        Data,
+    source:      Data,
+    context_mod: RawModule
   ): Unit = {
     (sink, source) match {
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
       case (sink_e: Bool, source_e: UInt) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: UInt, source_e: Bool) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: UInt, source_e: UInt) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: SInt, source_e: SInt) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: Clock, source_e: Clock) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: AsyncReset, source_e: AsyncReset) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: ResetType, source_e: Reset) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: Reset, source_e: ResetType) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: EnumType, source_e: UnsafeEnum) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: EnumType, source_e: EnumType) if sink_e.typeEquivalent(source_e) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: UnsafeEnum, source_e: UInt) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, sink_e, source_e, context_mod)
 
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
@@ -134,7 +133,6 @@ private[chisel3] object MonoConnect {
             sinkReified.get,
             sourceReified.get,
             sourceInfo,
-            connectCompileOptions,
             context_mod
           )
         ) {
@@ -142,8 +140,7 @@ private[chisel3] object MonoConnect {
         } else {
           for (idx <- 0 until sink_v.length) {
             try {
-              implicit val compileOptions = connectCompileOptions
-              connect(sourceInfo, connectCompileOptions, sink_v(idx), source_v(idx), context_mod)
+              connect(sourceInfo, sink_v(idx), source_v(idx), context_mod)
             } catch {
               case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
             }
@@ -153,8 +150,7 @@ private[chisel3] object MonoConnect {
       case (sink_v: Vec[Data @unchecked], DontCare) =>
         for (idx <- 0 until sink_v.length) {
           try {
-            implicit val compileOptions = connectCompileOptions
-            connect(sourceInfo, connectCompileOptions, sink_v(idx), source, context_mod)
+            connect(sourceInfo, sink_v(idx), source, context_mod)
           } catch {
             case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
           }
@@ -170,7 +166,6 @@ private[chisel3] object MonoConnect {
             sinkReified.get,
             sourceReified.get,
             sourceInfo,
-            connectCompileOptions,
             context_mod
           )
         ) {
@@ -180,12 +175,8 @@ private[chisel3] object MonoConnect {
           for ((field, sink_sub) <- sink_r.elements) {
             try {
               source_r.elements.get(field) match {
-                case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
-                case None => {
-                  if (connectCompileOptions.connectFieldsMustMatch) {
-                    throw MissingFieldException(field)
-                  }
-                }
+                case Some(source_sub) => connect(sourceInfo, sink_sub, source_sub, context_mod)
+                case None             => throw MissingFieldException(field)
               }
             } catch {
               case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
@@ -197,7 +188,7 @@ private[chisel3] object MonoConnect {
         // For each field, descend with right
         for ((field, sink_sub) <- sink_r.elements) {
           try {
-            connect(sourceInfo, connectCompileOptions, sink_sub, source, context_mod)
+            connect(sourceInfo, sink_sub, source, context_mod)
           } catch {
             case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
           }
@@ -226,11 +217,10 @@ private[chisel3] object MonoConnect {
     * @return whether the source and sink exist in an appropriate context to be connected
     */
   private[chisel3] def dataConnectContextCheck(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions,
-    sink:                  Data,
-    source:                Data,
-    context_mod:           RawModule
+    implicit sourceInfo: SourceInfo,
+    sink:                Data,
+    source:              Data,
+    context_mod:         RawModule
   ): Boolean = {
     import ActualDirection.{Bidirectional, Input, Output}
     // If source has no location, assume in context module
@@ -275,11 +265,10 @@ private[chisel3] object MonoConnect {
         case _                => false
       }
       // Thus, right node better be a port node and thus have a direction
-      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
+      if (!source_is_port) { false }
       else if (sinkCanBeInput) {
-        if (source.direction == Output) {
-          !connectCompileOptions.dontTryConnectionsSwapped
-        } else { false }
+        if (source.direction == Output) { true }
+        else { false }
       } else { true }
     }
 
@@ -300,7 +289,7 @@ private[chisel3] object MonoConnect {
     //   Note: This includes case when sink and source in same module but in parent
     else if ((sink_parent_opt == context_mod_opt) && (source_parent_opt == context_mod_opt)) {
       // Thus both nodes must be ports and have a direction
-      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
+      if (!source_is_port) { false }
       else if (sink_is_port) {
         // NOTE: Workaround for bulk connecting non-agnostified FIRRTL ports
         // See: https://github.com/freechipsproject/firrtl/issues/1703
@@ -355,15 +344,14 @@ private[chisel3] object MonoConnect {
     * a `BiConnect` (`chisel3.<>` or `chisel.:<>=`) is necessary.
     */
   private[chisel3] def canFirrtlConnectData(
-    sink:                  Data,
-    source:                Data,
-    sourceInfo:            SourceInfo,
-    connectCompileOptions: CompileOptions,
-    context_mod:           RawModule
+    sink:        Data,
+    source:      Data,
+    sourceInfo:  SourceInfo,
+    context_mod: RawModule
   ): Boolean = {
     // Assuming we're using a <>, check if a FIRRTL.<= connection operator is valid in that case
     def biConnectCheck =
-      BiConnect.canFirrtlConnectData(sink, source, sourceInfo, connectCompileOptions, context_mod)
+      BiConnect.canFirrtlConnectData(sink, source, sourceInfo, context_mod)
 
     // Check that the sink Data can be driven (not bidirectional or an input) to match Chisel semantics
     def sinkCanBeDrivenCheck: Boolean =
@@ -385,11 +373,10 @@ private[chisel3] object MonoConnect {
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
   def elemConnect(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions,
-    _sink:                 Element,
-    _source:               Element,
-    context_mod:           RawModule
+    implicit sourceInfo: SourceInfo,
+    _sink:               Element,
+    _source:             Element,
+    context_mod:         RawModule
   ): Unit = {
     import BindingDirection.{Input, Internal, Output} // Using extensively so import these
     val sink = reify(_sink)
@@ -435,15 +422,9 @@ private[chisel3] object MonoConnect {
         case (Internal, Input)  => issueConnect(sink, source)
         case (Output, Output)   => issueConnect(sink, source)
         case (Output, Input)    => issueConnect(sink, source)
-        case (_, Internal) => {
-          if (!(connectCompileOptions.dontAssumeDirectionality)) {
-            issueConnect(sink, source)
-          } else {
-            throw UnreadableSourceException(sink, source)
-          }
-        }
-        case (Input, Output) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink)
-        case (Input, _)                                                              => throw UnwritableSinkException(sink, source)
+        case (_, Internal)      => throw UnreadableSourceException(sink, source)
+        case (Input, Output)    => issueConnect(source, sink)
+        case (Input, _)         => throw UnwritableSinkException(sink, source)
       }
     }
 
@@ -470,14 +451,8 @@ private[chisel3] object MonoConnect {
         case (Input, Input)  => issueConnect(sink, source)
         case (Input, Output) => issueConnect(sink, source)
         case (Output, _)     => throw UnwritableSinkException(sink, source)
-        case (_, Internal) => {
-          if (!(connectCompileOptions.dontAssumeDirectionality)) {
-            issueConnect(sink, source)
-          } else {
-            throw UnreadableSourceException(sink, source)
-          }
-        }
-        case (Internal, _) => throw UnwritableSinkException(sink, source)
+        case (_, Internal)   => throw UnreadableSourceException(sink, source)
+        case (Internal, _)   => throw UnwritableSinkException(sink, source)
       }
     }
 

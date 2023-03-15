@@ -18,7 +18,7 @@ import scala.collection.immutable.VectorBuilder
   * multiple IO() declarations.
   */
 @nowarn("msg=class Port") // delete when Port becomes private
-abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends BaseModule {
+abstract class RawModule extends BaseModule {
   //
   // RTL construction internals
   //
@@ -40,8 +40,6 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   // Other Internal Functions
   //
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
-
-  val compileOptions = moduleCompileOptions
 
   private[chisel3] def checkPorts(): Unit = {
     for ((port, source) <- getModulePortsAndLocators) {
@@ -101,7 +99,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
     val invalidateCommands = {
-      if (!compileOptions.explicitInvalidate || this.isInstanceOf[ImplicitInvalidate]) {
+      if (this.isInstanceOf[ImplicitInvalidate]) {
         getModulePortsAndLocators.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
       } else {
         Seq()
@@ -112,10 +110,10 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     _component
   }
 
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+  private[chisel3] def initializeInParent(): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    if (!parentCompileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
+    if (Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
       for ((port, sourceInfo) <- getModulePortsAndLocators) {
         pushCommand(DefInvalid(sourceInfo, port.ref))
       }
