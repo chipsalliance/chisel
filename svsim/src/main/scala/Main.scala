@@ -1,0 +1,3 @@
+package svsim
+
+object Foo {}
