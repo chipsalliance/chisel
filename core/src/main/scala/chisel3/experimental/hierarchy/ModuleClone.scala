@@ -40,7 +40,7 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends Pse
     }
   }
   // This module doesn't actually exist in the FIRRTL so no initialization to do
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
+  private[chisel3] def initializeInParent(): Unit = ()
 
   // Name of this instance's module is the same as the proto's name
   override def desiredName: String = getProto.name

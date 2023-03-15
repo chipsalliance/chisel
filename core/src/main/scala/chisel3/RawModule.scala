@@ -18,7 +18,7 @@ import scala.collection.immutable.VectorBuilder
   * multiple IO() declarations.
   */
 @nowarn("msg=class Port") // delete when Port becomes private
-abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends BaseModule {
+abstract class RawModule extends BaseModule {
   //
   // RTL construction internals
   //
@@ -40,8 +40,6 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   // Other Internal Functions
   //
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
-
-  val compileOptions = moduleCompileOptions
 
   private[chisel3] def checkPorts(): Unit = {
     for ((port, source) <- getModulePortsAndLocators) {
@@ -112,7 +110,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
     _component
   }
 
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+  private[chisel3] def initializeInParent(): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     if (Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {

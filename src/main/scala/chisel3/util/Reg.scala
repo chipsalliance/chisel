@@ -19,7 +19,7 @@ object RegEnable {
   def apply[T <: Data](next: T, enable: Bool): T = macro SourceInfoTransform.nextEnableArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](next: T, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_apply[T <: Data](next: T, enable: Bool)(implicit sourceInfo: SourceInfo): T = {
     val r = Reg(chiselTypeOf(next))
     when(enable) { r := next }
     r
@@ -39,8 +39,7 @@ object RegEnable {
     init:   T,
     enable: Bool
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     val r = RegInit(init)
     when(enable) { r := next }
@@ -68,8 +67,7 @@ object ShiftRegister {
     n:  Int,
     en: Bool = true.B
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T =
     _apply_impl(in, n, en)
 
@@ -87,7 +85,7 @@ object ShiftRegister {
   def apply[T <: Data](in: T, n: Int): T = macro SourceInfoTransform.inNArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](in: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_apply[T <: Data](in: T, n: Int)(implicit sourceInfo: SourceInfo): T =
     _apply_impl(in, n)
 
   private def _apply_impl[T <: Data](
@@ -95,8 +93,7 @@ object ShiftRegister {
     n:  Int,
     en: Bool = true.B
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T =
     ShiftRegisters(in, n, en).lastOption.getOrElse(in)
 
@@ -120,8 +117,7 @@ object ShiftRegister {
     resetData: T,
     en:        Bool
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T =
     ShiftRegisters(in, n, resetData, en).lastOption.getOrElse(in)
 }
@@ -142,8 +138,7 @@ object ShiftRegisters {
     n:  Int,
     en: Bool
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Seq[T] = _apply_impl(in, n, en)
 
   private def _apply_impl[T <: Data](
@@ -151,8 +146,7 @@ object ShiftRegisters {
     n:  Int,
     en: Bool = true.B
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Seq[T] =
     Seq.iterate(in, n + 1)(util.RegEnable(_, en)).drop(1)
 
@@ -166,7 +160,7 @@ object ShiftRegisters {
   def apply[T <: Data](in: T, n: Int): Seq[T] = macro SourceInfoTransform.inNArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](in: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[T] =
+  def do_apply[T <: Data](in: T, n: Int)(implicit sourceInfo: SourceInfo): Seq[T] =
     _apply_impl(in, n)
 
   /** Returns delayed input signal registers with reset initialization from 1 to n.
@@ -185,8 +179,7 @@ object ShiftRegisters {
     resetData: T,
     en:        Bool
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Seq[T] =
     Seq.iterate(in, n + 1)(util.RegEnable(_, resetData, en)).drop(1)
 }

@@ -120,24 +120,19 @@ package object internal {
     */
 
   @nowarn("msg=in class Module is deprecated")
-  abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions) extends Module {
+  abstract class LegacyModule extends Module {
     // Provide a non-deprecated constructor
     def this(
       override_clock: Option[Clock] = None,
       override_reset: Option[Bool] = None
-    )(
-      implicit moduleCompileOptions: CompileOptions
     ) = {
       this()
       this.override_clock = override_clock //TODO: Replace with a better override strategy
       this.override_reset = override_reset //TODO: Replace with a better override strategy
     }
-    def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
-      this(Option(_clock), None)(moduleCompileOptions)
-    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
-      this(None, Option(_reset))(moduleCompileOptions)
-    def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
-      this(Option(_clock), Option(_reset))(moduleCompileOptions)
+    def this(_clock: Clock) = this(Option(_clock), None)
+    def this(_reset: Bool) = this(None, Option(_reset))
+    def this(_clock: Clock, _reset: Bool) = this(Option(_clock), Option(_reset))
 
     // Sort of a DIY lazy val because if the user tries to construct hardware before val io is
     // constructed, _compatAutoWrapPorts will try to access it but it will be null
@@ -173,7 +168,7 @@ package object internal {
 
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo))
       }
     }
   }
@@ -186,9 +181,7 @@ package object internal {
     * import (preferably `import chisel3._`).
     */
   abstract class LegacyBlackBox(
-    params: Map[String, Param] = Map.empty[String, Param]
-  )(
-    implicit moduleCompileOptions: CompileOptions)
+    params: Map[String, Param] = Map.empty[String, Param])
       extends chisel3.BlackBox(params) {
 
     override private[chisel3] lazy val _io: Option[Record] = reflectivelyFindValIO(this)
@@ -197,13 +190,13 @@ package object internal {
     // required) to build.
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo))
       }
     }
   }
 
   /** Internal API for [[ViewParent]] */
-  sealed private[chisel3] class ViewParentAPI extends RawModule()(ExplicitCompileOptions.Strict) with PseudoModule {
+  sealed private[chisel3] class ViewParentAPI extends RawModule() with PseudoModule {
     // We must provide `absoluteTarget` but not `toTarget` because otherwise they would be exactly
     // the same and we'd have no way to distinguish the kind of target when renaming view targets in
     // the Converter
@@ -212,8 +205,8 @@ package object internal {
     private[chisel3] val absoluteTarget: IsModule = ModuleTarget(this.circuitName, "_$$AbsoluteView$$_")
 
     // This module is not instantiable
-    override private[chisel3] def generateComponent(): Option[Component] = None
-    override private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
+    override private[chisel3] def generateComponent():  Option[Component] = None
+    override private[chisel3] def initializeInParent(): Unit = ()
     // This module is not really part of the circuit
     _parent = None
 
@@ -228,5 +221,5 @@ package object internal {
     * @note this is a val instead of an object because of the need to wrap in Module(...)
     */
   private[chisel3] val ViewParent =
-    Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo, ExplicitCompileOptions.Strict)
+    Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo)
 }
