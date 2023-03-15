@@ -8,11 +8,11 @@ import firrtl.annotations.Annotation
 
 package object injecting {
   object inject {
-    def apply[T <: RawModule](module: T)(f: T => Unit) = {
+    def apply[T <: RawModule](module: => T)(f: T => Unit) = {
       withScope(module)(_ => Seq(module))(f)
     }
 
-    def withScope[P <: RawModule, C <: RawModule](parent: P)(selectChildren: P => Iterable[C])(onChild: C => Unit) = {
+    def withScope[P <: RawModule, C <: RawModule](parent: => P)(selectChildren: P => Iterable[C])(onChild: C => Unit) = {
 
       val ia = InjectingAspect(
         {x: RawModule =>
@@ -24,7 +24,10 @@ package object injecting {
         onChild
       )
 
-      annotate(new ChiselAnnotation { override def toFirrtl: Annotation = ia })
+      annotate(new ChiselAnnotation { override def toFirrtl: Annotation = {
+        println("converted!")
+        ia
+      }})
 
     }
   }

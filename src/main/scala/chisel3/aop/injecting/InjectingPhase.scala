@@ -34,7 +34,9 @@ class InjectingPhase extends Phase {
         val newModules = c.modules.map { m: ir.DefModule =>
           m match {
             case m: ir.Module if addStmtMap.contains(m.name) =>
-              logger.debug(s"Injecting to ${m.name} with statement: \n${ir.Block(addStmtMap(m.name)).serialize}")
+              println(s"Injecting to ${m.name} a statement")
+              println(s"Existing body: \n${m.serialize}")
+              println(s"Injection: \n${ir.Block(addStmtMap(m.name)).serialize}")
               m.copy(body = ir.Block(m.body +: addStmtMap(m.name)))
             case m: _root_.firrtl.ir.ExtModule if addStmtMap.contains(m.name) =>
               logger.debug(s"Injecting to ${m.name} with statement: \n${ir.Block(addStmtMap(m.name)).serialize}")
