@@ -87,18 +87,16 @@ object SerializerSpec {
       |  input clock : Clock
       |  input cond : UInt<1>
       |  input in : UInt<8>
-      |  input inProbe : Probe<UInt<8>>
       |  output out : UInt<8>
+      |  output outProbe : RWProbe<UInt<8>>
 
       |  inst c of child
-      |  wire fooProbe : Probe<UInt<8>>
-      |  c.in <= in
-      |  define fooProbe = probe(c.in)
-      |  out <= read(out)
-      |  force_initial(inProbe, UInt<8>("h64"))
-      |  release_initial(inProbe)
-      |  force(clock, cond, inProbe, in)
-      |  release(clock, cond, inProbe)""".stripMargin
+      |  define c.in = probe(in)
+      |  out <= read(c.out)
+      |  force_initial(outProbe, UInt<8>("h64"))
+      |  release_initial(outProbe)
+      |  force(clock, cond, outProbe, in)
+      |  release(clock, cond, outProbe)""".stripMargin
 
   val probeModuleIR: Module =
     Module(
@@ -108,20 +106,18 @@ object SerializerSpec {
         Port(NoInfo, "clock", Input, ClockType),
         Port(NoInfo, "cond", Input, UIntType(IntWidth(1))),
         Port(NoInfo, "in", Input, UIntType(IntWidth(8))),
-        Port(NoInfo, "inProbe", Input, ProbeType(UIntType(IntWidth(8)))),
-        Port(NoInfo, "out", Output, UIntType(IntWidth(8)))
+        Port(NoInfo, "out", Output, UIntType(IntWidth(8))),
+        Port(NoInfo, "outProbe", Output, RWProbeType(UIntType(IntWidth(8))))
       ),
       Block(
         Seq(
           DefInstance("c", "child"),
-          DefWire(NoInfo, "fooProbe", ProbeType(UIntType(IntWidth(8)))),
-          Connect(NoInfo, SubField(Reference("c"), "in"), Reference("in")),
-          ProbeDefine(NoInfo, Reference("fooProbe"), ProbeExpr(SubField(Reference("c"), "in"))),
-          Connect(NoInfo, Reference("out"), ProbeRead(Reference("out"))),
-          ProbeForceInitial(NoInfo, Reference("inProbe"), UIntLiteral(100, IntWidth(8))),
-          ProbeReleaseInitial(NoInfo, Reference("inProbe")),
-          ProbeForce(NoInfo, Reference("clock"), Reference("cond"), Reference("inProbe"), Reference("in")),
-          ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("inProbe"))
+          ProbeDefine(NoInfo, SubField(Reference("c"), "in"), ProbeExpr(Reference("in"))),
+          Connect(NoInfo, Reference("out"), ProbeRead(Reference("c.out"))),
+          ProbeForceInitial(NoInfo, Reference("outProbe"), UIntLiteral(100, IntWidth(8))),
+          ProbeReleaseInitial(NoInfo, Reference("outProbe")),
+          ProbeForce(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"), Reference("in")),
+          ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"))
         )
       )
     )

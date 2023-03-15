@@ -94,7 +94,7 @@ object Serializer {
     case ValidIf(cond, value, _) => b ++= "validif("; s(cond); b ++= ", "; s(value); b += ')'
     case SIntLiteral(value, width) =>
       b ++= "SInt"; s(width); b ++= "(\"h"; b ++= value.toString(16); b ++= "\")"
-    case ProbeExpr(expr)    => b ++= "probe("; s(expr); b += ')'
+    case ProbeExpr(expr, _) => b ++= "probe("; s(expr); b += ')'
     case ProbeRead(expr, _) => b ++= "read("; s(expr); b += ')'
     case other              => b ++= other.serialize // Handle user-defined nodes
   }

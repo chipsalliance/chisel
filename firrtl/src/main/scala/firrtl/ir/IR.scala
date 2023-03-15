@@ -195,9 +195,7 @@ abstract class Literal extends Expression {
   val width: Width
 }
 
-case class ProbeExpr(expr: Expression) extends Expression with UseSerializer {
-  def tpe = ProbeType(expr.tpe)
-}
+case class ProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
 
 case class ProbeRead(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
 
