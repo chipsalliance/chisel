@@ -303,7 +303,7 @@ sbt test
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
-The repository version can be found in the [build.sbt](build.sbt) file.
+The repository version can be found in the [build.sc](build.sc) file.
 As of the time of writing it was:
 
 ```scala
