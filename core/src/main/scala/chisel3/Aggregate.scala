@@ -1009,7 +1009,12 @@ abstract class Record extends Aggregate {
 
     checkForAndReportDuplicates()
 
-    for ((child, sameChild) <- this.elements.zip(this.elementsIterator)) {
+    // This check is for making sure that elements always returns the
+    // same object, which will not be the case if the user makes it a
+    // def inside the Record. Checking elementsIterator against itself
+    // is not useful for this check because it's a lazy val which will
+    // always return the same thing.
+    for ((child, sameChild) <- this.elements.iterator.zip(this.elementsIterator)) {
       if (child._2 != sameChild) {
         throwException(
           s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
