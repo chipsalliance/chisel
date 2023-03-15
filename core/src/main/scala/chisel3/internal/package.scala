@@ -112,6 +112,7 @@ package object internal {
       }
   }
 
+<<<<<<< HEAD
   /** Legacy Module class that restricts IOs to just io, clock, and reset, and provides a constructor
     * for threading through explicit clock and reset.
     *
@@ -202,6 +203,8 @@ package object internal {
     }
   }
 
+=======
+>>>>>>> 9b2e288c9 (Remove LegacyModule and LegacyBlackBox (#3058))
   /** Internal API for [[ViewParent]] */
   sealed private[chisel3] class ViewParentAPI extends RawModule()(ExplicitCompileOptions.Strict) with PseudoModule {
     // We must provide `absoluteTarget` but not `toTarget` because otherwise they would be exactly
