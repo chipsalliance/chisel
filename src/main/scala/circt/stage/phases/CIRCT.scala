@@ -140,7 +140,6 @@ class CIRCT extends Phase {
     val firrtlOptions = view[FirrtlOptions](annotations)
     val stageOptions = view[StageOptions](annotations)
 
-    var inferReadWrite = false
     var imcp = true
     var logLevel = _root_.logger.LogLevel.None
     var split = circtOptions.splitVerilog
@@ -161,9 +160,6 @@ class CIRCT extends Phase {
         a.replacements(filename)
       }
       case _: ImportDefinitionAnnotation[_] => Nil
-      case firrtl.passes.memlib.InferReadWriteAnnotation =>
-        inferReadWrite = true
-        Nil
       case firrtl.transforms.NoConstantPropagationAnnotation =>
         imcp = false
         Nil
@@ -207,7 +203,6 @@ class CIRCT extends Phase {
           case None                              => None
         }) ++
         circtOptions.preserveAggregate.map(_ => "-preserve-public-types=0") ++
-        (!inferReadWrite).option("-disable-infer-rw") ++
         (!imcp).option("-disable-imcp") ++
         /* Communicate the annotation file through a file. */
         (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
