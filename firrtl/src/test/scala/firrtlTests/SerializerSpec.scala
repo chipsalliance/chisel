@@ -82,46 +82,6 @@ object SerializerSpec {
       "test"
     )
 
-  val probeModule: String =
-    """module probeModule :
-      |  input clock : Clock
-      |  input cond : UInt<1>
-      |  input in : UInt<8>
-      |  output out : UInt<8>
-      |  output outProbe : RWProbe<UInt<8>>
-
-      |  inst c of child
-      |  define c.in = probe(in)
-      |  out <= read(c.out)
-      |  force_initial(outProbe, UInt<8>("h64"))
-      |  release_initial(outProbe)
-      |  force(clock, cond, outProbe, in)
-      |  release(clock, cond, outProbe)""".stripMargin
-
-  val probeModuleIR: Module =
-    Module(
-      NoInfo,
-      "probeModule",
-      Seq(
-        Port(NoInfo, "clock", Input, ClockType),
-        Port(NoInfo, "cond", Input, UIntType(IntWidth(1))),
-        Port(NoInfo, "in", Input, UIntType(IntWidth(8))),
-        Port(NoInfo, "out", Output, UIntType(IntWidth(8))),
-        Port(NoInfo, "outProbe", Output, RWProbeType(UIntType(IntWidth(8))))
-      ),
-      Block(
-        Seq(
-          DefInstance("c", "child"),
-          ProbeDefine(NoInfo, SubField(Reference("c"), "in"), ProbeExpr(Reference("in"))),
-          Connect(NoInfo, Reference("out"), ProbeRead(Reference("c.out"))),
-          ProbeForceInitial(NoInfo, Reference("outProbe"), UIntLiteral(100, IntWidth(8))),
-          ProbeReleaseInitial(NoInfo, Reference("outProbe")),
-          ProbeForce(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"), Reference("in")),
-          ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"))
-        )
-      )
-    )
-
 }
 
 /** used to test parsing and serialization of smems */
@@ -234,7 +194,22 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     )
     Serializer.serialize(rwProbeBundle) should be("wire foo : RWProbe<{ bar : UInt<32>}>")
 
-    // check probe expressions and statements
-    Serializer.serialize(probeModuleIR) should be(probeModule)
+    val probeDefine = ProbeDefine(NoInfo, SubField(Reference("c"), "in"), ProbeExpr(Reference("in")))
+    Serializer.serialize(probeDefine) should be ("define c.in = probe(in)")
+
+    val probeRead = Connect(NoInfo, Reference("out"), ProbeRead(Reference("c.out")))
+    Serializer.serialize(probeRead) should be ("out <= read(c.out)")
+
+    val probeForceInitial = ProbeForceInitial(NoInfo, Reference("outProbe"), UIntLiteral(100, IntWidth(8)))
+    Serializer.serialize(probeForceInitial) should be ("force_initial(outProbe, UInt<8>(\"h64\"))")
+
+    val probeReleaseInitial = ProbeReleaseInitial(NoInfo, Reference("outProbe"))
+    Serializer.serialize(probeReleaseInitial) should be ("release_initial(outProbe)")
+
+    val probeForce = ProbeForce(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"), Reference("in"))
+    Serializer.serialize(probeForce) should be ("force(clock, cond, outProbe, in)")
+
+    val probeRelease = ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"))
+    Serializer.serialize(probeRelease) should be ("release(clock, cond, outProbe)")
   }
 }
