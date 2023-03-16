@@ -95,6 +95,21 @@ class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
   }
 }
 
+class MuxLookupTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def apply[S: c.WeakTypeTag, T: c.WeakTypeTag](key: c.Tree, default: c.Tree, mapping: c.Tree): c.Tree = {
+    val sType = weakTypeOf[S]
+    val tType = weakTypeOf[T]
+    q"$thisObj.do_apply[$sType, $tType]($key, $default, $mapping)($implicitSourceInfo)"
+  }
+
+  def applyCurried[S: c.WeakTypeTag, T: c.WeakTypeTag](key: c.Tree, default: c.Tree)(mapping: c.Tree): c.Tree = {
+    val sType = weakTypeOf[S]
+    val tType = weakTypeOf[T]
+    q"$thisObj.do_apply[$sType, $tType]($key, $default, $mapping)($implicitSourceInfo)"
+  }
+}
+
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object VecTransform
 class VecTransform(val c: Context) extends SourceInfoTransformMacro {

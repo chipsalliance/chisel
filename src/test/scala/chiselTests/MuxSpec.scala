@@ -43,14 +43,14 @@ class MuxLookupEnumTester extends BasicTester {
     case (e, i) =>
       e -> i.U
   }
-  assert(MuxLookup.fromEnum(TestEnum.a, 3.U)(mapping) === 0.U)
-  assert(MuxLookup.fromEnum(TestEnum.b, 3.U)(mapping) === 1.U)
-  assert(MuxLookup.fromEnum(TestEnum.c, 3.U)(mapping) === 2.U)
+  assert(MuxLookup(TestEnum.a, 3.U)(mapping) === 0.U)
+  assert(MuxLookup(TestEnum.b, 3.U)(mapping) === 1.U)
+  assert(MuxLookup(TestEnum.c, 3.U)(mapping) === 2.U)
 
   val incompleteMapping = Seq(TestEnum.a -> 0.U, TestEnum.c -> 2.U)
-  assert(MuxLookup.fromEnum(TestEnum.a, 3.U)(incompleteMapping) === 0.U)
-  assert(MuxLookup.fromEnum(TestEnum.b, 3.U)(incompleteMapping) === 3.U)
-  assert(MuxLookup.fromEnum(TestEnum.c, 3.U)(incompleteMapping) === 2.U)
+  assert(MuxLookup(TestEnum.a, 3.U)(incompleteMapping) === 0.U)
+  assert(MuxLookup(TestEnum.b, 3.U)(incompleteMapping) === 3.U)
+  assert(MuxLookup(TestEnum.c, 3.U)(incompleteMapping) === 2.U)
 
   stop()
 }
@@ -65,7 +65,7 @@ class MuxLookupWrapper(keyWidth: Int, default: Int, mapping: () => Seq[(UInt, UI
   val outputWidth = log2Ceil(default).max(keyWidth) // make room for default value
   val key = IO(Input(UInt(keyWidth.W)))
   val output = IO(Output(UInt(outputWidth.W)))
-  output := MuxLookup(key, default.U, mapping())
+  output := MuxLookup(key, default.U)(mapping())
 }
 
 class MuxLookupExhaustiveSpec extends ChiselPropSpec {
