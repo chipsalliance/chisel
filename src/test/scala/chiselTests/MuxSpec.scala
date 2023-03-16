@@ -34,11 +34,6 @@ class MuxLookupEnumTester extends BasicTester {
     val b = Value(7.U)
     val c = Value
   }
-  object TestEnum2 extends ChiselEnum {
-    val a = Value
-    val b = Value(7.U)
-    val c = Value
-  }
   val mapping = TestEnum.all.zipWithIndex.map {
     case (e, i) =>
       e -> i.U

@@ -89,7 +89,7 @@ object MuxLookup {
     * @param mapping a sequence to search of keys and values
     * @return the value found or the default if not
     */
-  def apply[T <: Data](key: EnumType, default: T)(mapping: Seq[(EnumType, T)]): T =
+  def apply[S <: EnumType, T <: Data](key: S, default: T)(mapping: Seq[(S, T)]): T =
     apply[T](key.asUInt, default)(mapping.map { case (s, t) => (s.asUInt, t) })
 
   def do_apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)])(implicit sourceinfo: SourceInfo): T = {
