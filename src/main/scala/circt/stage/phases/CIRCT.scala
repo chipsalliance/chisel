@@ -140,7 +140,6 @@ class CIRCT extends Phase {
     val firrtlOptions = view[FirrtlOptions](annotations)
     val stageOptions = view[StageOptions](annotations)
 
-    var imcp = true
     var logLevel = _root_.logger.LogLevel.None
     var split = circtOptions.splitVerilog
     val includeDirs = mutable.ArrayBuffer.empty[String]
@@ -159,10 +158,7 @@ class CIRCT extends Phase {
         val filename = a.filename(annotations)
         a.replacements(filename)
       }
-      case _: ImportDefinitionAnnotation[_] => Nil
-      case firrtl.transforms.NoConstantPropagationAnnotation =>
-        imcp = false
-        Nil
+      case _:    ImportDefinitionAnnotation[_] => Nil
       case anno: _root_.logger.LogLevelAnnotation =>
         logLevel = anno.globalLogLevel
         Nil
@@ -203,7 +199,6 @@ class CIRCT extends Phase {
           case None                              => None
         }) ++
         circtOptions.preserveAggregate.map(_ => "-preserve-public-types=0") ++
-        (!imcp).option("-disable-imcp") ++
         /* Communicate the annotation file through a file. */
         (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
         includeDirs.flatMap(d => Seq("--include-dir", d.toString)) ++
