@@ -161,7 +161,6 @@ class CIRCT extends Phase {
         val filename = a.filename(annotations)
         a.replacements(filename)
       }
-<<<<<<< HEAD
       case _: firrtl.EmitCircuitAnnotation | _: ImportDefinitionAnnotation[_] => Nil
       case _: firrtl.EmitAllModulesAnnotation => {
         logger.warn(
@@ -170,15 +169,6 @@ class CIRCT extends Phase {
         split = true
         Nil
       }
-      case firrtl.passes.memlib.InferReadWriteAnnotation =>
-        inferReadWrite = true
-        Nil
-      case firrtl.transforms.NoConstantPropagationAnnotation =>
-        imcp = false
-        Nil
-=======
-      case _:    ImportDefinitionAnnotation[_] => Nil
->>>>>>> 3158c492b (Remove deprecated CIRCT Options (#3101))
       case anno: _root_.logger.LogLevelAnnotation =>
         logLevel = anno.globalLogLevel
         Nil
