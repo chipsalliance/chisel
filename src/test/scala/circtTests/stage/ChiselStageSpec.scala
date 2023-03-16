@@ -867,9 +867,11 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
     }
 
-    it("should emit specification FIRRTL (CHIRRTL)") {
+    it("should emit specification FIRRTL (CHIRRTL) with the correct FIRRTL spec version") {
 
-      ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo) should include("circuit Foo")
+      val text = ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo)
+      text should include("FIRRTL version 1.1.0")
+      text should include("circuit Foo")
 
     }
 
