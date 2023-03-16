@@ -200,7 +200,7 @@ private[chisel3] object cloneSupertype {
 private[chisel3] object getRecursiveFields {
   def noPath(data: Data): Seq[Data] = data match {
     case data: Record =>
-      data.elements.map {
+      data._elements.map {
         case (_, fieldData) =>
           getRecursiveFields.noPath(fieldData)
       }.fold(Seq(data)) {
@@ -217,7 +217,7 @@ private[chisel3] object getRecursiveFields {
   }
   def apply(data: Data, path: String): Seq[(Data, String)] = data match {
     case data: Record =>
-      data.elements.map {
+      data._elements.map {
         case (fieldName, fieldData) =>
           getRecursiveFields(fieldData, s"$path.$fieldName")
       }.fold(Seq(data -> path)) {
@@ -236,7 +236,7 @@ private[chisel3] object getRecursiveFields {
   def lazily(data: Data, path: String): Seq[(Data, String)] = data match {
     case data: Record =>
       LazyList(data -> path) ++
-        data.elements.view.flatMap {
+        data._elements.view.flatMap {
           case (fieldName, fieldData) =>
             getRecursiveFields(fieldData, s"$path.$fieldName")
         }
@@ -251,7 +251,7 @@ private[chisel3] object getRecursiveFields {
   def lazilyNoPath(data: Data): Seq[Data] = data match {
     case data: Record =>
       LazyList(data) ++
-        data.elements.view.flatMap {
+        data._elements.view.flatMap {
           case (fieldName, fieldData) =>
             getRecursiveFields.lazilyNoPath(fieldData)
         }
@@ -273,13 +273,13 @@ private[chisel3] object getMatchedFields {
       require(x.typeEquivalent(y))
       Seq(x -> y)
     case (x: Record, y: Record) =>
-      (x.elements
-        .zip(y.elements))
+      (x._elements
+        .zip(y._elements))
         .map {
           case ((xName, xElt), (yName, yElt)) =>
             require(
               xName == yName,
-              s"$xName != $yName, ${x.elements}, ${y.elements}, $x, $y"
+              s"$xName != $yName, ${x._elements}, ${y._elements}, $x, $y"
             ) // assume fields returned in same, deterministic order
             getMatchedFields(xElt, yElt)
         }
@@ -792,8 +792,8 @@ object Data {
     }
     implicit class RecordOptGet(rOpt: Option[Record]) {
       // Like .get, but its already defined on Option
-      def grab(k: String): Option[Data] = rOpt.flatMap { _.elements.get(k) }
-      def keys: Iterable[String] = rOpt.map { r => r.elements.map(_._1) }.getOrElse(Seq.empty[String])
+      def grab(k: String): Option[Data] = rOpt.flatMap { _._elements.get(k) }
+      def keys: Iterable[String] = rOpt.map { r => r._elements.map(_._1) }.getOrElse(Seq.empty[String])
     }
     //TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
     private def isDifferent(l: Option[Data], r: Option[Data]): Boolean =
@@ -868,17 +868,17 @@ object Data {
               .reduce(_ && _)
           }
         case (thiz: Record, that: Record) =>
-          if (thiz.elements.size != that.elements.size) {
+          if (thiz._elements.size != that._elements.size) {
             throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
           } else {
-            thiz.elements.map {
+            thiz._elements.map {
               case (thisName, thisData) =>
-                if (!that.elements.contains(thisName))
+                if (!that._elements.contains(thisName))
                   throwException(
                     s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
                   )
 
-                val thatData = that.elements(thisName)
+                val thatData = that._elements(thisName)
 
                 try {
                   thisData === thatData
