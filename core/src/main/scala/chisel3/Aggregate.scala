@@ -1014,13 +1014,13 @@ abstract class Record extends Aggregate {
     // def inside the Record. Checking elementsIterator against itself
     // is not useful for this check because it's a lazy val which will
     // always return the same thing.
-    for ((child, sameChild) <- this.elements.iterator.zip(this.elementsIterator)) {
-      if (child._2 != sameChild) {
+    for (((_, child), sameChild) <- this.elements.iterator.zip(this.elementsIterator)) {
+      if (child != sameChild) {
         throwException(
           s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
         )
       }
-      child._2.bind(ChildBinding(this), resolvedDirection)
+      child.bind(ChildBinding(this), resolvedDirection)
     }
 
     // Check that children obey the directionality rules.
@@ -1185,6 +1185,11 @@ abstract class Record extends Aggregate {
 
   def elements: SeqMap[String, Data]
 
+  // Internal representation of Record elements. _elements makes it
+  // possible to check for rebinding issues with Record elements
+  // without having to recurse over all elements after the Record is
+  // constructed. Laziness of _elements means that this check will
+  // occur (only) at the first instance _elements is referenced.
   private[chisel3] lazy val _elements: SeqMap[String, Data] = {
     for ((name, field) <- elements) {
       if (field.binding.isDefined) {
