@@ -59,7 +59,7 @@ object PriorityMux {
   * MuxLookup(myEnum, default)(Seq(MyEnum.a -> 1.U, MyEnum.b -> 2.U, MyEnum.c -> 3.U))
   * }}}
   */
-object MuxLookup {
+object MuxLookup extends SourceInfoDoc {
 
   /** Creates a cascade of n Muxs to search for a key value.
     *
@@ -92,6 +92,7 @@ object MuxLookup {
   def apply[S <: EnumType, T <: Data](key: S, default: T)(mapping: Seq[(S, T)]): T =
     macro MuxLookupTransform.applyEnum[S, T]
 
+  /** @group SourceInfoTransformMacro */
   def do_applyEnum[S <: EnumType, T <: Data](
     key:     S,
     default: T,
@@ -101,6 +102,7 @@ object MuxLookup {
   ): T =
     do_apply[UInt, T](key.asUInt, default, mapping.map { case (s, t) => (s.asUInt, t) })
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)])(implicit sourceinfo: SourceInfo): T = {
     /* If the mapping is defined for all possible values of the key, then don't use the default value */
     val (defaultx, mappingx) = key.widthOption match {
