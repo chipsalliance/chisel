@@ -36,8 +36,7 @@ array [ condition -&gt; selected_input_port ].</p>
 <h3 id="muxlookup">MuxLookup</h3>
 <p>Chisel also provides <code class="language-plaintext highlighter-rouge">MuxLookup</code> which is an n-way indexed multiplexer:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">MuxLookup</span><span class="o">(</span><span class="n">idx</span><span class="o">,</span> <span class="n">default</span><span class="o">,</span>
-          <span class="nc">Array</span><span class="o">(</span><span class="mf">0.</span><span class="n">U</span> <span class="o">-&gt;</span> <span class="n">a</span><span class="o">,</span> <span class="mf">1.</span><span class="n">U</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="o">,</span> <span class="o">...))</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">MuxLookup</span><span class="o">(</span><span class="n">idx</span><span class="o">,</span> <span class="n">default</span><span class="o">)(</span><span class="nc">Array</span><span class="o">(</span><span class="mf">0.</span><span class="n">U</span> <span class="o">-&gt;</span> <span class="n">a</span><span class="o">,</span> <span class="mf">1.</span><span class="n">U</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="o">,</span> <span class="o">...))</span>
 </code></pre></div></div>
 
 <p>This is the same as a <code class="language-plaintext highlighter-rouge">MuxCase</code>, where the conditions are all index based selection:</p>
