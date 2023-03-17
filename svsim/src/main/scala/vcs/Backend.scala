@@ -68,14 +68,24 @@ object Backend {
 
   def initializeFromProcessEnvironment() = {
     (sys.env.get("VCS_HOME"), sys.env.get("LM_LICENSE_FILE")) match {
-      case (Some(vcsHome), Some(lmLicenseFile)) => Some(new Backend(vcsHome, lmLicenseFile))
-      case _                                    => None
+      case (Some(vcsHome), Some(lmLicenseFile)) =>
+        Some(
+          new Backend(
+            vcsHome,
+            lmLicenseFile,
+            defaultArchOverride = sys.env.get("VCS_ARCH_OVERRIDE"),
+            defaultLicenseExpireWarningTimeout = sys.env.get("VCS_LIC_EXPIRE_WARNING")
+          )
+        )
+      case _ => None
     }
   }
 }
 final class Backend(
-  vcsHome:       String,
-  lmLicenseFile: String)
+  vcsHome:                            String,
+  lmLicenseFile:                      String,
+  defaultArchOverride:                Option[String] = None,
+  defaultLicenseExpireWarningTimeout: Option[String] = None)
     extends svsim.Backend {
   type CompilationSettings = Backend.CompilationSettings
 
@@ -88,8 +98,12 @@ final class Backend(
   ): svsim.Backend.InvocationSettings = {
     // These environment variables apply to both compilation and simulation
     val environment = Seq(
-      backendSpecificSettings.archOverride.map("VCS_ARCH_OVERRIDE" -> _),
-      backendSpecificSettings.licenceExpireWarningTimeout.map("VCS_LIC_EXPIRE_WARNING" -> _.toString)
+      backendSpecificSettings.archOverride
+        .orElse(defaultArchOverride)
+        .map("VCS_ARCH_OVERRIDE" -> _),
+      backendSpecificSettings.licenceExpireWarningTimeout
+        .orElse(defaultLicenseExpireWarningTimeout)
+        .map("VCS_LIC_EXPIRE_WARNING" -> _.toString)
     ).flatten
 
     //format: off
