@@ -6,8 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.SourceInfo
-import chisel3.internal.sourceinfo.MuxLookupTransform
+import chisel3.internal.sourceinfo.{MuxLookupTransform, SourceInfo}
 import scala.language.experimental.macros
 
 /** Builds a Mux tree out of the input signal vector using a one hot encoded
@@ -72,9 +71,8 @@ object MuxLookup extends SourceInfoDoc {
     * @param mapping a sequence to search of keys and values
     * @return the value found or the default if not
     */
-  @deprecated("Use MuxLookup(key, default)(mapping) instead", "Chisel 3.6")
   def apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)]): T =
-    macro MuxLookupTransform.apply[S, T]
+    do_apply[S, T](key, default, mapping)
 
   /** @param key a key to search for
     * @param default a default value if nothing is found
