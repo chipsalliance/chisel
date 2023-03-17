@@ -2,185 +2,27 @@
 
 package chisel3
 
+import firrtl.annotations.{IsModule, ModuleTarget}
+import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
+import chisel3.internal.firrtl.{Component, DefModule}
+import chisel3.internal.Builder.Prefix
+
 import scala.util.Try
-import scala.language.experimental.macros
-import scala.annotation.nowarn
-import chisel3.experimental.BaseModule
-import chisel3.internal._
-import chisel3.internal.BaseModule.{InstanceClone, ModuleClone}
-import chisel3.internal.Builder._
-import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.UnlocatableSourceInfo
-import _root_.firrtl.annotations.{IsModule, ModuleTarget}
-import scala.collection.immutable.VectorBuilder
-
-/** Abstract base class for Modules that contain Chisel RTL.
-  * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
-  * multiple IO() declarations.
-  */
-@nowarn("msg=class Port") // delete when Port becomes private
-abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends BaseModule {
-  //
-  // RTL construction internals
-  //
-  // Perhaps this should be an ArrayBuffer (or ArrayBuilder), but DefModule is public and has Seq[Command]
-  // so our best option is to share a single Seq datastructure with that
-  private val _commands = new VectorBuilder[Command]()
-  private[chisel3] def addCommand(c: Command) {
-    require(!_closed, "Can't write to module after module close")
-    _commands += c
-  }
-  protected def getCommands: Seq[Command] = {
-    require(_closed, "Can't get commands before module close")
-    // Unsafe cast but we know that any RawModule uses a DefModule
-    // _component is defined as a var on BaseModule and we cannot override mutable vars
-    _component.get.asInstanceOf[DefModule].commands
-  }
-
-  //
-  // Other Internal Functions
-  //
-  private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
-
-  @deprecated("Use DataMirror.modulePorts instead. this API will be removed in Chisel 3.6", "Chisel 3.5")
-  lazy val getPorts: Seq[Port] = _firrtlPorts.get
-
-  val compileOptions = moduleCompileOptions
-
-<<<<<<< HEAD
-  // This could be factored into a common utility
-  private def canBeNamed(id: HasId): Boolean = id match {
-    case d: Data =>
-      d.binding match {
-        case Some(_: ConstrainedBinding) => true
-        case _ => false
-=======
-  private[chisel3] def checkPorts(): Unit = {
-    for ((port, source) <- getModulePortsAndLocators) {
-      if (port._computeName(None).isEmpty) {
-        Builder.error(
-          s"Unable to name port $port in $this, " +
-            s"try making it a public field of the Module ${source.makeMessage(x => x)}"
-        )(UnlocatableSourceInfo)
->>>>>>> 0530bdba (Improve Builder.forceName collision errors (#3012))
-      }
-    case b: BaseModule => true
-    case m: MemBase[_] => true
-    // These names don't affect hardware
-    case _: VerificationStatement => false
-    // While the above should be comprehensive, since this is used in warning we want to be careful
-    // to never accidentally have a match error
-    case _ => false
-  }
-
-  private[chisel3] override def generateComponent(): Option[Component] = {
-    require(!_closed, "Can't generate module more than once")
-    _closed = true
-
-    val names = nameIds(classOf[RawModule])
-
-    // Ports get first naming priority, since they are part of a Module's IO spec
-    namePorts(names)
-
-    // Then everything else gets named
-    val warnReflectiveNaming = Builder.warnReflectiveNaming
-    for ((node, name) <- names) {
-      node match {
-        case d: HasId if warnReflectiveNaming && canBeNamed(d) =>
-          val result = d._suggestNameCheck(name)
-          result match {
-            case None => // All good, no warning
-            case Some((oldName, oldPrefix)) =>
-              val prevName = buildName(oldName, oldPrefix.reverse)
-              val newName = buildName(name, Nil)
-              val msg = s"[module ${this.name}] '$prevName' is renamed by reflection to '$newName'. " +
-                s"Chisel 3.6 removes reflective naming so the name will remain '$prevName'."
-              Builder.warningNoLoc(msg)
-          }
-        // Note that unnamable things end up here (eg. literals), this is supporting backwards
-        // compatibility
-        case _ => node.suggestName(name)
-      }
-    }
-
-    // All suggestions are in, force names to every node.
-    for (id <- getIds) {
-      id match {
-        case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
-        case id: InstanceClone[_] => id.setAsInstanceRef()
-        case id: BaseModule       => id.forceName(default = id.desiredName, _namespace)
-        case id: MemBase[_]       => id.forceName(default = "MEM", _namespace)
-        case id: stop.Stop        => id.forceName(default = "stop", _namespace)
-        case id: assert.Assert    => id.forceName(default = "assert", _namespace)
-        case id: assume.Assume    => id.forceName(default = "assume", _namespace)
-        case id: cover.Cover      => id.forceName(default = "cover", _namespace)
-        case id: printf.Printf => id.forceName(default = "printf", _namespace)
-        case id: Data =>
-          if (id.isSynthesizable) {
-            id.topBinding match {
-              case OpBinding(_, _) =>
-                id.forceName(default = "_T", _namespace)
-              case MemoryPortBinding(_, _) =>
-                id.forceName(default = "MPORT", _namespace)
-              case PortBinding(_) =>
-                id.forceName(default = "PORT", _namespace)
-              case RegBinding(_, _) =>
-                id.forceName(default = "REG", _namespace)
-              case WireBinding(_, _) =>
-                id.forceName(default = "_WIRE", _namespace)
-              case _ => // don't name literals
-            }
-          } // else, don't name unbound types
-      }
-      id._onModuleClose
-    }
-
-    closeUnboundIds(names)
-
-    val firrtlPorts = getModulePorts.map { port: Data =>
-      Port(port, port.specifiedDirection)
-    }
-    _firrtlPorts = Some(firrtlPorts)
-
-    // Generate IO invalidation commands to initialize outputs as unused,
-    //  unless the client wants explicit control over their generation.
-    val invalidateCommands = {
-      if (!compileOptions.explicitInvalidate || this.isInstanceOf[ImplicitInvalidate]) {
-        getModulePorts.map { port => DefInvalid(UnlocatableSourceInfo, port.ref) }
-      } else {
-        Seq()
-      }
-    }
-    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++: _commands.result())
-    _component = Some(component)
-    _component
-  }
-
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-    implicit val sourceInfo = UnlocatableSourceInfo
-
-    if (!parentCompileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      for (port <- getModulePorts) {
-        pushCommand(DefInvalid(sourceInfo, port.ref))
-      }
-    }
-  }
-}
-
-trait RequireAsyncReset extends Module {
-  override private[chisel3] def mkReset: AsyncReset = AsyncReset()
-}
-
-trait RequireSyncReset extends Module {
-  override private[chisel3] def mkReset: Bool = Bool()
-}
-
-/** Mix with a [[RawModule]] to automatically connect DontCare to the module's ports, wires, and children instance IOs. */
-trait ImplicitInvalidate { self: RawModule => }
+import scala.annotation.{implicitNotFound, nowarn}
 
 package object internal {
 
-  import scala.annotation.implicitNotFound
+  @deprecated("This function has moved to chisel3.experimental", "Chisel 3.6")
+  val prefix = chisel3.experimental.prefix
+  @deprecated("This function has moved to chisel3.experimental", "Chisel 3.6")
+  val noPrefix = chisel3.experimental.noPrefix
+
+  @deprecated("This type has moved to chisel3", "Chisel 3.6")
+  type ChiselException = chisel3.ChiselException
+
+  @deprecated("This type has moved to chisel3", "Chisel 3.6")
+  type InstanceId = chisel3.InstanceId
+
   @implicitNotFound("You are trying to access a macro-only API. Please use the @public annotation instead.")
   trait MacroGenerated
 
@@ -220,6 +62,16 @@ package object internal {
       }
       builder.toString
     }
+  }
+
+  // Sanitizes a name, e.g. from a `HasId`, by stripping all non ANSI-C characters
+  private[chisel3] def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
+    // TODO what character set does FIRRTL truly support? using ANSI C for now
+    def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+    def legal(c:      Char) = legalStart(c) || (c >= '0' && c <= '9')
+    val res = if (s.forall(legal)) s else s.filter(legal)
+    val headOk = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
+    if (headOk) res else s"_$res"
   }
 
   // Private reflective version of "val io" to maintain Chisel.Module semantics without having
@@ -266,6 +118,8 @@ package object internal {
     * '''Do not use this class in user code'''. Use whichever `Module` is imported by your wildcard
     * import (preferably `import chisel3._`).
     */
+
+  @nowarn("msg=in class Module is deprecated")
   abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions) extends Module {
     // Provide a non-deprecated constructor
     def this(
@@ -275,8 +129,8 @@ package object internal {
       implicit moduleCompileOptions: CompileOptions
     ) = {
       this()
-      this.override_clock = override_clock
-      this.override_reset = override_reset
+      this.override_clock = override_clock //TODO: Replace with a better override strategy
+      this.override_reset = override_reset //TODO: Replace with a better override strategy
     }
     def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), None)(moduleCompileOptions)
@@ -301,7 +155,7 @@ package object internal {
       _compatAutoWrapPorts() // pre-IO(...) compatibility hack
 
       // Restrict IO to just io, clock, and reset
-      if (_io.isEmpty || !_compatIoPortBound) {
+      if (_io.isEmpty || !_compatIoPortBound()) {
         throwException(
           s"Compatibility mode Module '$this' must have a 'val io' Bundle. " +
             "If there is such a field and you still see this error, autowrapping has failed (sorry!). " +
@@ -319,7 +173,7 @@ package object internal {
 
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
       }
     }
   }
@@ -343,7 +197,7 @@ package object internal {
     // required) to build.
     override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
-        _io.foreach(_bindIoInPlace(_))
+        _io.foreach(_bindIoInPlace(_)(UnlocatableSourceInfo, moduleCompileOptions))
       }
     }
   }
