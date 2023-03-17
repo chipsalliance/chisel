@@ -1,3 +1,0 @@
-package svsim
-
-object Foo {}
