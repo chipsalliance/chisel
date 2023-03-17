@@ -103,7 +103,7 @@ abstract class RawModule extends BaseModule {
     _component
   }
 
-  private[chisel3] def initializeInParent(): Unit = { }
+  private[chisel3] def initializeInParent(): Unit = {}
 }
 
 trait RequireAsyncReset extends Module {
