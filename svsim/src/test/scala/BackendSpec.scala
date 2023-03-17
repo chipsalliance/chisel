@@ -8,8 +8,6 @@ import svsim._
 
 class VCSSpec extends BackendSpec {
   import vcs.Backend.CompilationSettings._
-  type Backend = svsim.vcs.Backend
-  val name = "vcs"
   val backend = vcs.Backend.initializeFromProcessEnvironment()
   val compilationSettings = vcs.Backend.CompilationSettings(
     traceSettings = TraceSettings(
@@ -18,27 +16,27 @@ class VCSSpec extends BackendSpec {
     licenceExpireWarningTimeout = Some(0),
     archOverride = Some("linux")
   )
-  test()
+  backend match {
+    case Some(backend) => test("vcs", backend)(compilationSettings)
+    case None          => ignore("Svsim backend 'vcs'") {}
+  }
 }
 
 class VerilatorSpec extends BackendSpec {
   import verilator.Backend.CompilationSettings._
-  type Backend = svsim.verilator.Backend
-  val name = "verilator"
   val backend = verilator.Backend.initializeFromProcessEnvironment()
   val compilationSettings = verilator.Backend.CompilationSettings(
     traceStyle = Some(TraceStyle.Vcd(traceUnderscore = false))
   )
-  test()
+  test("verilator", backend)(compilationSettings)
 }
 
 trait BackendSpec extends AnyFunSpec with Matchers {
-  type Backend <: svsim.Backend
-  val name:                String
-  val backend:             Backend
-  val compilationSettings: backend.CompilationSettings
-
-  def test() = {
+  def test[Backend <: svsim.Backend](
+    name:                String,
+    backend:             Backend
+  )(compilationSettings: backend.CompilationSettings
+  ) = {
     describe(s"Svsim backend '$name'") {
       val workspace = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}")
       var simulation: Simulation = null

@@ -66,8 +66,12 @@ object Backend {
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None)
 
-  def initializeFromProcessEnvironment() =
-    new Backend(vcsHome = sys.env("VCS_HOME"), lmLicenseFile = sys.env("LM_LICENSE_FILE"))
+  def initializeFromProcessEnvironment() = {
+    (sys.env.get("VCS_HOME"), sys.env.get("LM_LICENSE_FILE")) match {
+      case (Some(vcsHome), Some(lmLicenseFile)) => Some(new Backend(vcsHome, lmLicenseFile))
+      case _                                    => None
+    }
+  }
 }
 final class Backend(
   vcsHome:       String,
