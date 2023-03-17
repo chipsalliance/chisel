@@ -406,7 +406,8 @@ package experimental {
     }
 
     /** Legalized name of this module. */
-    final val name =
+    final lazy val name: String = {
+      _parent.map(_.name) // Name parent before me!
       try {
         // PseudoModules are not "true modules" and thus should share
         // their original modules names without uniquification
@@ -422,6 +423,7 @@ package experimental {
           )
         case t: Throwable => throw t
       }
+    }
 
     /** Returns a FIRRTL ModuleName that references this object
       *
