@@ -279,10 +279,17 @@ final class Workspace(
     val makefileWriter = new LineWriter(workingDirectory / "Makefile")
     try {
       val l = makefileWriter
+      l("# This Makefile enables lightweight debugging of `svsim` tests. ")
+      l("# To rebuild the simulation run `make simulation` in this directory.")
+      l("# To replay the simulation run `make replay` in this directory.")
+      l(
+        "# Changes to `generated-sources` and `primary-sources` will be picked up when running `make replay` and `make simulation`. This is useful for debugging issues. You can also freely add, remove or change any of the arguments to the backend or simulation in the targets below."
+      )
+      l()
+      l(".PHONY: clean simulation replay")
+      l()
       //format: off
       // For this debug flow, we rebuild the simulation from scratch every time, to avoid issues if the simulation was originally compiled in a different environment, like using SiFive's `wake`.
-      l(".PHONY: clean simulation replay")
-
       l("clean:")
 	    l("\tls . | grep -v Makefile | grep -v execution-script.txt | xargs rm -rf")
       l()

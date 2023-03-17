@@ -874,7 +874,6 @@ int main(int argc, const char *argv[]) {
 
 #ifdef SVSIM_ENABLE_VERILATOR_SUPPORT
 #include "VsvsimTestbench.h"
-#include "verilated.h"
 
 extern "C" {
 
