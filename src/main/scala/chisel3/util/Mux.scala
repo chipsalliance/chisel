@@ -90,7 +90,16 @@ object MuxLookup {
     * @return the value found or the default if not
     */
   def apply[S <: EnumType, T <: Data](key: S, default: T)(mapping: Seq[(S, T)]): T =
-    apply[T](key.asUInt, default)(mapping.map { case (s, t) => (s.asUInt, t) })
+    macro MuxLookupTransform.applyEnum[S, T]
+
+  def do_applyEnum[S <: EnumType, T <: Data](
+    key:     S,
+    default: T,
+    mapping: Seq[(S, T)]
+  )(
+    implicit sourceinfo: SourceInfo
+  ): T =
+    do_apply[UInt, T](key.asUInt, default, mapping.map { case (s, t) => (s.asUInt, t) })
 
   def do_apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)])(implicit sourceinfo: SourceInfo): T = {
     /* If the mapping is defined for all possible values of the key, then don't use the default value */

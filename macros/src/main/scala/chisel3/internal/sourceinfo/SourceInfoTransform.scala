@@ -108,6 +108,12 @@ class MuxLookupTransform(val c: Context) extends SourceInfoTransformMacro {
     val tType = weakTypeOf[T]
     q"$thisObj.do_apply[$sType, $tType]($key, $default, $mapping)($implicitSourceInfo)"
   }
+
+  def applyEnum[S: c.WeakTypeTag, T: c.WeakTypeTag](key: c.Tree, default: c.Tree)(mapping: c.Tree): c.Tree = {
+    val sType = weakTypeOf[S]
+    val tType = weakTypeOf[T]
+    q"$thisObj.do_applyEnum[$sType, $tType]($key, $default, $mapping)($implicitSourceInfo)"
+  }
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
