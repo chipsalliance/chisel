@@ -215,6 +215,11 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.copy$default$2"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.this"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.Converter#WhenFrame.apply"),
+      // Private classes
+      ProblemFilters.exclude[MissingClassProblem]("chisel3.internal.Error"),
+      ProblemFilters.exclude[MissingClassProblem]("chisel3.internal.Info"),
+      ProblemFilters.exclude[MissingClassProblem]("chisel3.internal.LogEntry"),
+      ProblemFilters.exclude[MissingClassProblem]("chisel3.internal.Warning"),
     )
   ).
   settings(
