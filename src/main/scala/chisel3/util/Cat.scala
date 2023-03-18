@@ -1,4 +1,7 @@
-package chisel3
+// SPDX-License-Identifier: Apache-2.0
+package chisel3.util
+
+import chisel3._
 
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.SourceInfoTransform
