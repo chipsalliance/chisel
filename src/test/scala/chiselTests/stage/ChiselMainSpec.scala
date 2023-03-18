@@ -42,6 +42,12 @@ object ChiselMainSpec {
     val w = Wire(UInt(8.W))
     w(3, -1)
   }
+
+  /** A module that triggers a Builder.error without source info */
+  class BuilderErrorNoSourceInfoModule extends RawModule {
+    val w = Wire(Bool())
+    w := BigInt(2).B
+  }
 }
 
 case class TestClassAspect()
@@ -261,19 +267,33 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       )
     ).foreach(runStageExpectException)
   }
-  Feature("Stack trace trimming and Builder.error errors") {
-    Seq(
+  Feature("Builder.error errors with source info") {
+    runStageExpectException(
       ChiselMainExceptionTest[chisel3.internal.ChiselException](
         args = Array("-X", "low"),
         generator = Some(classOf[BuilderErrorModule]),
         message = Seq(Right("Fatal errors during hardware elaboration")),
         stdout = Seq(
           Right(
-            "ChiselMainSpec.scala:43: Invalid bit range (3,-1) in class chiselTests.stage.ChiselMainSpec$BuilderErrorModule"
+            "ChiselMainSpec.scala:43:6: Invalid bit range (3,-1)"
           )
         )
       )
-    ).foreach(runStageExpectException)
+    )
+  }
+  Feature("Stack trace trimming and Builder.error errors") {
+    runStageExpectException(
+      ChiselMainExceptionTest[chisel3.internal.ChiselException](
+        args = Array("-X", "low"),
+        generator = Some(classOf[BuilderErrorNoSourceInfoModule]),
+        message = Seq(Right("Fatal errors during hardware elaboration")),
+        stdout = Seq(
+          Right(
+            "ChiselMainSpec.scala:49: Cannot convert 2 to Bool, must be 0 or 1"
+          )
+        )
+      )
+    )
   }
 
   Feature("Specifying a custom output file") {

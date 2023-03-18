@@ -13,7 +13,8 @@ import chisel3.internal.sourceinfo.{
   SourceInfo,
   SourceInfoTransform,
   SourceInfoWhiteboxTransform,
-  UIntTransform
+  UIntTransform,
+  UnlocatableSourceInfo
 }
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
@@ -442,7 +443,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   protected final def validateShiftAmount(x: Int): Int = {
     if (x < 0)
-      Builder.error(s"Negative shift amounts are illegal (got $x)")
+      Builder.error(s"Negative shift amounts are illegal (got $x)")(UnlocatableSourceInfo)
     x
   }
 }

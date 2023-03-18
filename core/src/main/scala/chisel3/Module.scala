@@ -179,7 +179,7 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
         case _ => // Bad! It hasn't been migrated.
           Builder.error(
             s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
-          )
+          )(UnlocatableSourceInfo)
       }
     }
     if (inferReset) Reset() else Bool()
@@ -507,14 +507,14 @@ package experimental {
               Builder.error(
                 s"""Unable to name port $port to "$name" in $this,""" +
                   " name is already taken by another port!"
-              )
+              )(UnlocatableSourceInfo)
             }
             port.setRef(ModuleIO(this, _namespace.name(name)))
           case None =>
             Builder.error(
               s"Unable to name port $port in $this, " +
                 "try making it a public field of the Module"
-            )
+            )(UnlocatableSourceInfo)
             port.setRef(ModuleIO(this, "<UNNAMED>"))
         }
       }
