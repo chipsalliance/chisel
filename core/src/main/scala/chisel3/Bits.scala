@@ -116,6 +116,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       requireIsHardware(this, "bits to be indexed")
 
       widthOption match {
+        case Some(w) if w == 0 => Builder.error(s"Cannot extract from zero-width")
         case Some(w) if x >= w => Builder.error(s"High index $x is out of range [0, ${w - 1}]")
         case _                 =>
       }
@@ -197,6 +198,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       requireIsHardware(this, "bits to be sliced")
 
       widthOption match {
+        case Some(w) if w == 0 => Builder.error(s"Cannot extract from zero-width")
         case Some(w) if y >= w => Builder.error(s"High and low indices $x and $y are both out of range [0, ${w - 1}]")
         case Some(w) if x >= w => Builder.error(s"High index $x is out of range [0, ${w - 1}]")
         case _                 =>

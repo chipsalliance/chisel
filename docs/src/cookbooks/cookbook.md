@@ -445,13 +445,12 @@ getVerilogString(new Top(new UsingCloneTypeBundle(UInt(8.W))))
 
 ### How do I create a finite state machine (FSM)?
 
-The advised way is to use [`ChiselEnum`](https://www.chisel-lang.org/api/latest/chisel3/experimental/index.html#ChiselEnum=chisel3.experimental.EnumFactory) to construct enumerated types representing the state of the FSM.
-State transitions are then handled with [`switch`](https://www.chisel-lang.org/api/latest/chisel3/util/switch$.html)/[`is`](https://www.chisel-lang.org/api/latest/chisel3/util/is$.html) and [`when`](https://www.chisel-lang.org/api/latest/chisel3/when$.html)/[`.elsewhen`](https://www.chisel-lang.org/api/latest/chisel3/WhenContext.html#elsewhen(elseCond:=%3Echisel3.Bool)(block:=%3EUnit)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):chisel3.WhenContext)/[`.otherwise`](https://www.chisel-lang.org/api/latest/chisel3/WhenContext.html#otherwise(block:=%3EUnit)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):Unit).
+The advised way is to use `ChiselEnum` to construct enumerated types representing the state of the FSM.
+State transitions are then handled with `switch`/`is` and `when`/`.elsewhen`/`.otherwise`.
 
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.{switch, is}
-import chisel3.experimental.ChiselEnum
 
 object DetectTwoOnes {
   object State extends ChiselEnum {

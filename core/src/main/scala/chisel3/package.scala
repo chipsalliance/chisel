@@ -14,6 +14,10 @@ package object chisel3 {
 
   import scala.language.implicitConversions
 
+  type ChiselEnum = experimental.ChiselEnum
+  type EnumType = experimental.EnumType
+  val suppressEnumCastWarning = experimental.suppressEnumCastWarning
+
   /**
     * These implicit classes allow one to convert [[scala.Int]] or [[scala.BigInt]] to
     * Chisel.UInt|Chisel.SInt by calling .asUInt|.asSInt on them, respectively.

@@ -22,6 +22,7 @@ package object experimental {
   implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
+  @deprecated("This type has moved to chisel3", "Chisel 3.5")
   type ChiselEnum = EnumFactory
 
   // Rocket Chip-style clonemodule
@@ -72,7 +73,7 @@ package object experimental {
     val ports: Seq[Data] =
       gen.elements.toSeq.reverse.map {
         case (name, data) =>
-          val p = IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
+          val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
           p.suggestName(name)
           p
 
