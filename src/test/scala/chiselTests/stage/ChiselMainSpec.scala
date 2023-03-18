@@ -275,7 +275,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
         message = Seq(Right("Fatal errors during hardware elaboration")),
         stdout = Seq(
           Right(
-            "src/test/scala/chiselTests/stage/ChiselMainSpec.scala:43:6: Invalid bit range (3,-1)"
+            "ChiselMainSpec.scala:43:6: Invalid bit range (3,-1)"
           )
         )
       )
