@@ -223,14 +223,7 @@ private[chisel3] trait HasId extends InstanceId {
     if (_ref.isEmpty) {
       val candidate_name = _computeName(Some(default)).get
       val available_name = namespace.name(candidate_name)
-<<<<<<< HEAD
       setRef(Ref(available_name))
-=======
-      if (errorIfDup && (available_name != candidate_name)) {
-        Builder.error(s"Cannot have duplicate names $available_name and $candidate_name")(UnlocatableSourceInfo)
-      }
-      setRef(refBuilder(available_name))
->>>>>>> e45be10a (Use SourceInfo in Builder error messages when available (#2849))
       // Clear naming prefix to free memory
       naming_prefix = Nil
     }

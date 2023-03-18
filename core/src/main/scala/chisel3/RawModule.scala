@@ -47,22 +47,12 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
   val compileOptions = moduleCompileOptions
 
-<<<<<<< HEAD
   // This could be factored into a common utility
   private def canBeNamed(id: HasId): Boolean = id match {
     case d: Data =>
       d.binding match {
         case Some(_: ConstrainedBinding) => true
         case _ => false
-=======
-  private[chisel3] def checkPorts(): Unit = {
-    for ((port, source) <- getModulePortsAndLocators) {
-      if (port._computeName(None).isEmpty) {
-        Builder.error(
-          s"Unable to name port $port in $this, " +
-            s"try making it a public field of the Module $source"
-        )(UnlocatableSourceInfo)
->>>>>>> e45be10a (Use SourceInfo in Builder error messages when available (#2849))
       }
     case b: BaseModule => true
     case m: MemBase[_] => true
