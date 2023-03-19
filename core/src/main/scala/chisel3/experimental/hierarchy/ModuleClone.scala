@@ -33,9 +33,9 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends Pse
     getProto match {
       // BlackBox needs special handling for its pseduo-io Bundle
       case protoBB: BlackBox =>
-        Map(protoBB._io.get -> getPorts.elements("io"))
+        Map(protoBB._io.get -> getPorts._elements("io"))
       case _ =>
-        val name2Port = getPorts.elements
+        val name2Port = getPorts._elements
         getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
     }
   }
@@ -62,7 +62,7 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends Pse
       case _: BlackBox =>
         // Override the io Bundle's ref so that it thinks it is the top for purposes of
         // generating FIRRTL
-        record.elements("io").setRef(ref, force = true)
+        record._elements("io").setRef(ref, force = true)
       case _ => // Do nothing
     }
 

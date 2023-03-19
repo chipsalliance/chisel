@@ -607,8 +607,8 @@ object PartialDataView {
       mkView,
       {
         case (a, b) =>
-          val aElts = a.elements
-          val bElts = b.elements
+          val aElts = a._elements
+          val bElts = b._elements
           val bKeys = bElts.keySet
           val keys = aElts.keysIterator.filter(bKeys.contains)
           keys.map(k => aElts(k) -> bElts(k)).toSeq
