@@ -131,9 +131,9 @@ object Lookupable {
         if (coor.isEmpty) d
         else {
           val next = (coor.head, d) match {
-            case (Slot(_, name), rec: Record) => rec.elements(name)
+            case (Slot(_, name), rec: Record) => rec._elements(name)
             case (Index(_, ILit(n)), vec: Vec[_]) => vec.apply(n.toInt)
-            case (ModuleIO(_, name), rec: Record) => rec.elements(name)
+            case (ModuleIO(_, name), rec: Record) => rec._elements(name)
             case (arg, _) => err(s"Unexpected Arg '$arg' applied to '$d'! Root was '$start'.")
           }
           applyCoordinates(coor.tail, next)

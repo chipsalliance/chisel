@@ -74,44 +74,6 @@ package object internal {
     if (headOk) res else s"_$res"
   }
 
-  // Private reflective version of "val io" to maintain Chisel.Module semantics without having
-  // io as a virtual method. See https://github.com/freechipsproject/chisel3/pull/1550 for more
-  // information about the removal of "val io"
-  private def reflectivelyFindValIO(self: BaseModule): Option[Record] = {
-    // Java reflection is faster and works for the common case
-    def tryJavaReflect: Option[Record] = Try {
-      self.getClass.getMethod("io").invoke(self).asInstanceOf[Record]
-    }.toOption
-      .filter(_ != null)
-    // Anonymous subclasses don't work with Java reflection, so try slower, Scala reflection
-    def tryScalaReflect: Option[Record] = {
-      val ru = scala.reflect.runtime.universe
-      import ru.{Try => _, _}
-      val m = ru.runtimeMirror(self.getClass.getClassLoader)
-      val im = m.reflect(self)
-      val tpe = im.symbol.toType
-      // For some reason, in anonymous subclasses, looking up the Term by name (TermName("io"))
-      // hits an internal exception. Searching for the term seems to work though so we use that.
-      val ioTerm: Option[TermSymbol] = tpe.decls.collectFirst {
-        case d if d.name.toString == "io" && d.isTerm => d.asTerm
-      }
-      ioTerm.flatMap { term =>
-        Try {
-          im.reflectField(term).get.asInstanceOf[Record]
-        }.toOption
-          .filter(_ != null)
-      }
-    }
-
-    tryJavaReflect
-      .orElse(tryScalaReflect)
-      .map(_.forceFinalName("io"))
-      .orElse {
-        // Fallback if reflection fails, user can wrap in IO(...)
-        self.findPort("io").collect { case r: Record => r }
-      }
-  }
-
   /** Internal API for [[ViewParent]] */
   sealed private[chisel3] class ViewParentAPI extends RawModule() with PseudoModule {
     // We must provide `absoluteTarget` but not `toTarget` because otherwise they would be exactly

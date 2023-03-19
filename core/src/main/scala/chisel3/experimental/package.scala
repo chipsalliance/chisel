@@ -98,7 +98,7 @@ package object experimental {
       }
     }
     val ports: Seq[Data] =
-      gen.elements.toSeq.reverse.map {
+      gen._elements.toSeq.reverse.map {
         case (name, data) =>
           val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
           p.suggestName(name)
@@ -108,7 +108,7 @@ package object experimental {
 
     implicit val dv: DataView[Seq[Data], T] = DataView.mapping(
       _ => chiselTypeClone(gen).asInstanceOf[T],
-      (seq, rec) => seq.zip(rec.elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
+      (seq, rec) => seq.zip(rec._elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
     )
     ports.viewAs[T]
   }

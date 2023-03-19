@@ -172,9 +172,9 @@ private[chisel3] object MonoConnect {
           pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
         } else {
           // For each field, descend with right
-          for ((field, sink_sub) <- sink_r.elements) {
+          for ((field, sink_sub) <- sink_r._elements) {
             try {
-              source_r.elements.get(field) match {
+              source_r._elements.get(field) match {
                 case Some(source_sub) => connect(sourceInfo, sink_sub, source_sub, context_mod)
                 case None             => throw MissingFieldException(field)
               }
@@ -186,7 +186,7 @@ private[chisel3] object MonoConnect {
       // Handle Record connected to DontCare. Apply the DontCare to individual elements.
       case (sink_r: Record, DontCare) =>
         // For each field, descend with right
-        for ((field, sink_sub) <- sink_r.elements) {
+        for ((field, sink_sub) <- sink_r._elements) {
           try {
             connect(sourceInfo, sink_sub, source, context_mod)
           } catch {
