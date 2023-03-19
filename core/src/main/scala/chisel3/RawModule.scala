@@ -98,27 +98,12 @@ abstract class RawModule extends BaseModule {
 
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
-    val invalidateCommands = {
-      if (this.isInstanceOf[ImplicitInvalidate]) {
-        getModulePortsAndLocators.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
-      } else {
-        Seq()
-      }
-    }
-    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++: _commands.result())
+    val component = DefModule(this, name, firrtlPorts, _commands.result())
     _component = Some(component)
     _component
   }
 
-  private[chisel3] def initializeInParent(): Unit = {
-    implicit val sourceInfo = UnlocatableSourceInfo
-
-    if (Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      for ((port, sourceInfo) <- getModulePortsAndLocators) {
-        pushCommand(DefInvalid(sourceInfo, port.ref))
-      }
-    }
-  }
+  private[chisel3] def initializeInParent(): Unit = {}
 }
 
 trait RequireAsyncReset extends Module {
@@ -128,6 +113,3 @@ trait RequireAsyncReset extends Module {
 trait RequireSyncReset extends Module {
   override private[chisel3] def mkReset: Bool = Bool()
 }
-
-/** Mix with a [[RawModule]] to automatically connect DontCare to the module's ports, wires, and children instance IOs. */
-trait ImplicitInvalidate { self: RawModule => }

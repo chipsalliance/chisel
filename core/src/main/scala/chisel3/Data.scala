@@ -918,9 +918,6 @@ trait WireFactory {
     x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
 
     pushCommand(DefWire(sourceInfo, x))
-    if (Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      pushCommand(DefInvalid(sourceInfo, x.ref))
-    }
 
     x
   }
