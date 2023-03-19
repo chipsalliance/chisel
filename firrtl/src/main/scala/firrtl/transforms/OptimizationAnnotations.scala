@@ -5,9 +5,6 @@ package transforms
 
 import firrtl.annotations._
 
-/** Indicate that ConstantPropagation should not be run */
-case object NoConstantPropagationAnnotation extends NoTargetAnnotation
-
 /** A component that should be preserved
   *
   * DCE treats the component as a top-level sink of the circuit
