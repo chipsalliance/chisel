@@ -197,6 +197,7 @@ private[chisel3] object BiConnect {
 
       // Handle Records connected to DontCare
       case (left_r: Record, DontCare) =>
+<<<<<<< HEAD
         if (!left_r.compileOptions.emitStrictConnects) {
           if (connectCompileOptions.migrateBulkConnections)
             Builder.error(s"Cannot use <> in an 'import Chisel._' file; refactor code to use :<>= instead")(sourceInfo)
@@ -224,6 +225,23 @@ private[chisel3] object BiConnect {
             } catch {
               case BiConnectException(message) => throw BiConnectException(s".$field$message")
             }
+=======
+        // For each field in left, descend with right
+        for ((field, left_sub) <- left_r._elements) {
+          try {
+            connect(sourceInfo, left_sub, right, context_mod)
+          } catch {
+            case BiConnectException(message) => throw BiConnectException(s".$field$message")
+          }
+        }
+      case (DontCare, right_r: Record) =>
+        // For each field in left, descend with right
+        for ((field, right_sub) <- right_r._elements) {
+          try {
+            connect(sourceInfo, left, right_sub, context_mod)
+          } catch {
+            case BiConnectException(message) => throw BiConnectException(s".$field$message")
+>>>>>>> a85156619 (Detect bound hardware when processing record elements (#3037))
           }
         }
 
@@ -244,16 +262,23 @@ private[chisel3] object BiConnect {
 
     // For each field in left, descend with right.
     // Don't bother doing this check if we don't expect it to necessarily pass.
+<<<<<<< HEAD
     if (connectCompileOptions.connectFieldsMustMatch) {
       for ((field, right_sub) <- right_r.elements) {
         if (!left_r.elements.isDefinedAt(field)) {
           throw MissingLeftFieldException(field)
         }
+=======
+    for ((field, right_sub) <- right_r._elements) {
+      if (!left_r._elements.isDefinedAt(field)) {
+        throw MissingLeftFieldException(field)
+>>>>>>> a85156619 (Detect bound hardware when processing record elements (#3037))
       }
     }
     // For each field in left, descend with right
-    for ((field, left_sub) <- left_r.elements) {
+    for ((field, left_sub) <- left_r._elements) {
       try {
+<<<<<<< HEAD
         right_r.elements.get(field) match {
           case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
           case None => {
@@ -261,6 +286,11 @@ private[chisel3] object BiConnect {
               throw MissingRightFieldException(field)
             }
           }
+=======
+        right_r._elements.get(field) match {
+          case Some(right_sub) => connect(sourceInfo, left_sub, right_sub, context_mod)
+          case None            => throw MissingRightFieldException(field)
+>>>>>>> a85156619 (Detect bound hardware when processing record elements (#3037))
         }
       } catch {
         case BiConnectException(message) => throw BiConnectException(s".$field$message")

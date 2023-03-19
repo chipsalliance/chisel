@@ -182,8 +182,9 @@ private[chisel3] object MonoConnect {
           pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
         } else {
           // For each field, descend with right
-          for ((field, sink_sub) <- sink_r.elements) {
+          for ((field, sink_sub) <- sink_r._elements) {
             try {
+<<<<<<< HEAD
               source_r.elements.get(field) match {
                 case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
                 case None => {
@@ -191,6 +192,11 @@ private[chisel3] object MonoConnect {
                     throw MissingFieldException(field)
                   }
                 }
+=======
+              source_r._elements.get(field) match {
+                case Some(source_sub) => connect(sourceInfo, sink_sub, source_sub, context_mod)
+                case None             => throw MissingFieldException(field)
+>>>>>>> a85156619 (Detect bound hardware when processing record elements (#3037))
               }
             } catch {
               case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
@@ -200,7 +206,7 @@ private[chisel3] object MonoConnect {
       // Handle Record connected to DontCare. Apply the DontCare to individual elements.
       case (sink_r: Record, DontCare) =>
         // For each field, descend with right
-        for ((field, sink_sub) <- sink_r.elements) {
+        for ((field, sink_sub) <- sink_r._elements) {
           try {
             connect(sourceInfo, connectCompileOptions, sink_sub, source, context_mod)
           } catch {
