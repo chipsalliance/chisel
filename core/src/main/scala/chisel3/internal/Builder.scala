@@ -191,17 +191,6 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     this
   }
 
-  // Internal version of .suggestName that can override a user-suggested name
-  // This only exists for maintaining "val io" naming in compatibility-mode Modules without IO
-  // wrapping
-  private[chisel3] def forceFinalName(seed: String): this.type = {
-    // This could be called with user prefixes, ignore them
-    chisel3.experimental.noPrefix {
-      suggested_seedVar = seed
-      this.suggestName(seed)
-    }
-  }
-
   /** Computes the name of this HasId, if one exists
     * @param defaultSeed Optionally provide default seed for computing the name
     * @return the name, if it can be computed
