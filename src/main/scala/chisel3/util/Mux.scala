@@ -74,7 +74,7 @@ object MuxLookup extends SourceInfoDoc {
     */
   @deprecated("Use MuxLookup(key, default)(mapping) instead", "Chisel 3.6")
   def apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)]): T =
-    macro MuxLookupTransform.apply[S, T]
+    do_apply(key, default, mapping)
 
   /** @param key a key to search for
     * @param default a default value if nothing is found
