@@ -3,6 +3,8 @@
 package svsim.verilator
 
 import svsim._
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 object Backend {
   object CompilationSettings {
@@ -19,9 +21,13 @@ object Backend {
     disabledWarnings:           Seq[String] = Seq(),
     disableFatalExitOnWarnings: Boolean = false)
 
-  def initializeFromProcessEnvironment() = new Backend(
-    executablePath = os.proc("which", "verilator").call().out.lines().head
-  )
+  def initializeFromProcessEnvironment() = {
+    val process = Runtime.getRuntime().exec(Array("which", "verilator"))
+    val outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))
+    val executablePath = outputReader.lines().findFirst().get()
+    process.waitFor()
+    new Backend(executablePath = executablePath)
+  }
 }
 final class Backend(
   executablePath: String)

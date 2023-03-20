@@ -5,6 +5,8 @@ package svsimTests
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
+import java.io.BufferedReader
+import java.io.FileReader
 
 class VCSSpec extends BackendSpec {
   import vcs.Backend.CompilationSettings._
@@ -121,7 +123,9 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           assert(log.contains("Calculating GCD of 7dc0000000000000 and 0180000000000000"))
           assert(log.contains("Calculated GCD to be 00c0000000000000"))
         }
-        os.read(os.Path(simulation.workingDirectoryPath) / "trace.vcd").linesIterator.length must be > 1
+
+        val traceReader = new BufferedReader(new FileReader(s"${simulation.workingDirectoryPath}/trace.vcd"))
+        traceReader.lines().count() must be > 1L
       }
     }
   }

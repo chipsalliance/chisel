@@ -177,8 +177,7 @@ lazy val svsim = (project in file("svsim"))
   .settings(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.2.15" % "test",
-      "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-      "com.lihaoyi" %% "os-lib" % "0.8.1"
+      "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test"
     )
   )
 

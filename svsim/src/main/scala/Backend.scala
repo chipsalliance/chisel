@@ -6,12 +6,12 @@ package svsim
   */
 case class SvsimCompilationSettings(
   verilogPreprocessorDefines: Seq[SvsimCompilationSettings.VerilogPreprocessorDefine] = Seq(),
-  optimizationStyle:          SvsimCompilationSettings.OptimizationStyle              = SvsimCompilationSettings.OptimizationStyle.Default,
-  availableParallelism:       SvsimCompilationSettings.AvailableParallelism           = SvsimCompilationSettings.AvailableParallelism.Default,
-  defaultTimescale:           Option[SvsimCompilationSettings.Timescale]              = None,
-  libraryExtensions:          Option[Seq[String]]                                         = None,
-  libraryPaths:               Option[Seq[String]]                                         = None,
-)
+  optimizationStyle:          SvsimCompilationSettings.OptimizationStyle = SvsimCompilationSettings.OptimizationStyle.Default,
+  availableParallelism: SvsimCompilationSettings.AvailableParallelism =
+    SvsimCompilationSettings.AvailableParallelism.Default,
+  defaultTimescale:  Option[SvsimCompilationSettings.Timescale] = None,
+  libraryExtensions: Option[Seq[String]] = None,
+  libraryPaths:      Option[Seq[String]] = None)
 object SvsimCompilationSettings {
   object VerilogPreprocessorDefine {
     def apply(name: String, value: String) = new VerilogPreprocessorDefine(name, Some(value))
@@ -65,7 +65,7 @@ trait Backend {
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
     commonSettings:          SvsimCompilationSettings,
-    backendSpecificSettings: CompilationSettings,
+    backendSpecificSettings: CompilationSettings
   ): Backend.InvocationSettings
 }
 
@@ -76,15 +76,14 @@ object Backend {
     compilerArguments:     Seq[String],
     compilerEnvironment:   Seq[(String, String)],
     simulationArguments:   Seq[String],
-    simulationEnvironment: Seq[(String, String)],
-  )
+    simulationEnvironment: Seq[(String, String)])
 
   // -- Flags affecting shared code compilation
 
   /** Verilator support requires that we manually implement some SystemVerilog functions, such as `run_simulation` and `simulation_main`. These flags control the Verilator-specific code paths.
     */
   private[svsim] val enableVerilatorSupportFlag = "SVSIM_ENABLE_VERILATOR_SUPPORT"
-  private[svsim] val enableVerilatorTraceFlag   = "SVSIM_VERILATOR_TRACE_ENABLED"
+  private[svsim] val enableVerilatorTraceFlag = "SVSIM_VERILATOR_TRACE_ENABLED"
 
   /** This flag controls if VCS-specifc code is compiled.
     */
@@ -92,8 +91,8 @@ object Backend {
 
   /** Flags enabling various tracing mechanisms.
     */
-  private[svsim] val enableVcdTracingFlag  = "SVSIM_ENABLE_VCD_TRACING"
-  private[svsim] val enableVpdTracingFlag  = "SVSIM_ENABLE_VPD_TRACING"
+  private[svsim] val enableVcdTracingFlag = "SVSIM_ENABLE_VCD_TRACING"
+  private[svsim] val enableVpdTracingFlag = "SVSIM_ENABLE_VPD_TRACING"
   private[svsim] val enableFsdbTracingFlag = "SVSIM_ENABLE_FSDB_TRACING"
 
   /** Verilator does not currently support delay (`#delay`) in DPI functions, so we omit the SystemVerilog definition of the `run_simulation` function and instead provide a C implementation.

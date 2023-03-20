@@ -4,15 +4,16 @@ package svsim
 
 import scala.collection.mutable.Queue
 import java.io.{BufferedReader, BufferedWriter}
+import java.io.OutputStreamWriter
+import java.io.InputStreamReader
+import java.io.File
 
 final class Simulation private[svsim] (
-  executableName:   String,
-  settings:         Simulation.Settings,
-  workingDirectory: os.Path,
-  moduleInfo:       ModuleInfo) {
-  private val executionScriptPath = workingDirectory / "execution-script.txt"
-
-  def workingDirectoryPath = workingDirectory.toString
+  executableName:           String,
+  settings:                 Simulation.Settings,
+  val workingDirectoryPath: String,
+  moduleInfo:               ModuleInfo) {
+  private val executionScriptPath = s"$workingDirectoryPath/execution-script.txt"
 
   def run[T](body: Simulation.Controller => T): T = run()(body)
   def run[T](
@@ -22,25 +23,27 @@ final class Simulation private[svsim] (
   )(body:                          Simulation.Controller => T
   ): T = {
     val cwd = settings.customWorkingDirectory match {
-      case None                                 => workingDirectory
-      case Some(value) if value.startsWith("/") => os.Path(value)
-      case Some(value)                          => workingDirectory / value
+      case None => workingDirectoryPath
+      case Some(value) =>
+        if (value.startsWith("/"))
+          value
+        else
+          s"$workingDirectoryPath/$value"
     }
-    val process = os
-      .proc(
-        workingDirectory / executableName,
-        settings.arguments
-      )
-      .spawn(
-        env = settings.environment ++ Seq(
-          Some("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath.toString()),
-          executionScriptLimit.map("SVSIM_EXECUTION_SCRIPT_LIMIT" -> _.toString)
-        ).flatten.toMap,
-        cwd = cwd
-      )
+    val command = Seq(s"$workingDirectoryPath/$executableName") ++ settings.arguments
+    val processBuilder = new ProcessBuilder(command: _*)
+    processBuilder.directory(new File(cwd))
+    val environment = settings.environment ++ Seq(
+      Some("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
+      executionScriptLimit.map("SVSIM_EXECUTION_SCRIPT_LIMIT" -> _.toString)
+    ).flatten
+    environment.foreach { (pair) =>
+      processBuilder.environment().put(pair._1, pair._2)
+    }
+    val process = processBuilder.start()
     val controller = new Simulation.Controller(
-      process.stdin.buffered,
-      process.stdout.buffered,
+      new BufferedWriter(new OutputStreamWriter(process.getOutputStream())),
+      new BufferedReader(new InputStreamReader(process.getInputStream())),
       moduleInfo,
       conservativeCommandResolution = conservativeCommandResolution,
       logMessagesAndCommands = verbose

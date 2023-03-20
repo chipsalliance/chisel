@@ -160,7 +160,7 @@ final class Backend(
               case OptimizationStyle.Default => Seq()
               case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O0")
             },
-
+            
             additionalHeaderPaths.map { path => s"-I${path}" },
             
             Seq(
