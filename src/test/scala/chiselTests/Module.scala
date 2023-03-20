@@ -77,6 +77,12 @@ class ModuleRecursive(gen: Option[() => ModuleRecursive], callName: Boolean) ext
   if (gen.nonEmpty) { val child = Module(gen.get.apply()) }
 }
 
+class ModuleIntermediate(name: String) extends Module {
+  val io = IO(new Bundle {})
+  val intermediate = name + "Wrapper"
+  override def desiredName = intermediate
+}
+
 class ModuleWrapper(gen: => Module) extends Module {
   val io = IO(new Bundle {})
   val child = Module(gen)
@@ -259,6 +265,9 @@ class ModuleSpec extends ChiselPropSpec with Utils {
         .elaborate(new ModuleRecursive(Some(() => new ModuleRecursive(None, true)), false))
         .name == "ModuleRecursive"
     )
+  }
+  property("Calling .name in the BaseModule constructor can make intermediate vals trigger null-pointer exceptions") {
+    ChiselStage.elaborate(new ModuleIntermediate("MyModule"))
   }
   property("The name of a module in a function should be sane") {
     def foo = {
