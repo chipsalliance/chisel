@@ -233,7 +233,9 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   }
 
   property("A desiredName parameterized by a submodule should work") {
-    ChiselStage.elaborate(new ModuleWrapper(new ModuleWire)).name should be("ModuleWireWrapper")
+    (the[ChiselException] thrownBy extractCause[ChiselException](
+      ChiselStage.elaborate(new ModuleWrapper(new ModuleWire))
+    )).getMessage should include("desiredName of chiselTests.ModuleWrapper is null")
   }
   property("A name generating a null pointer exception should provide a good error message") {
     (the[ChiselException] thrownBy extractCause[ChiselException](
