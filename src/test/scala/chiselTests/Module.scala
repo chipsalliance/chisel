@@ -71,6 +71,12 @@ class ModuleRewrap extends Module {
   val inst2 = Module(inst)
 }
 
+class ModuleRecursive(gen: Option[() => ModuleRecursive], callName: Boolean) extends Module {
+  val io = IO(new Bundle {})
+  if (callName) { val x = name }
+  if (gen.nonEmpty) { val child = Module(gen.get.apply()) }
+}
+
 class ModuleWrapper(gen: => Module) extends Module {
   val io = IO(new Bundle {})
   val child = Module(gen)
@@ -232,7 +238,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     (DataMirror.fullModulePorts(mod) should contain).theSameElementsInOrderAs(expected)
   }
 
-  property("A desiredName parameterized by a submodule should work") {
+  property("A desiredName parameterized by a submodule should NOT work") {
     (the[ChiselException] thrownBy extractCause[ChiselException](
       ChiselStage.elaborate(new ModuleWrapper(new ModuleWire))
     )).getMessage should include("desiredName of chiselTests.ModuleWrapper is null")
@@ -241,6 +247,18 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     (the[ChiselException] thrownBy extractCause[ChiselException](
       ChiselStage.elaborate(new NullModuleWrapper)
     )).getMessage should include("desiredName of chiselTests.NullModuleWrapper is null")
+  }
+  property("A naming conflict between parent and child should resolve regardless of where .name is called") {
+    assert(
+      ChiselStage
+        .elaborate(new ModuleRecursive(Some(() => new ModuleRecursive(None, false)), true))
+        .name == "ModuleRecursive"
+    )
+    assert(
+      ChiselStage
+        .elaborate(new ModuleRecursive(Some(() => new ModuleRecursive(None, true)), false))
+        .name == "ModuleRecursive"
+    )
   }
   property("The name of a module in a function should be sane") {
     def foo = {
