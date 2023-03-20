@@ -51,7 +51,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
         simulation = workspace.compile(
           backend
         )(
-          outputTag = name,
+          workingDirectoryTag = name,
           commonSettings = SvsimCompilationSettings(),
           backendSpecificSettings = compilationSettings,
           customSimulationWorkingDirectory = None

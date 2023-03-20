@@ -256,13 +256,13 @@ final class Workspace(
     */
   def compile[T <: Backend](
     backend:                          T
-  )(outputTag:                        String,
+  )(workingDirectoryTag:              String,
     commonSettings:                   SvsimCompilationSettings,
     backendSpecificSettings:          backend.CompilationSettings,
     customSimulationWorkingDirectory: Option[String]
   ): Simulation = {
     val moduleInfo = _moduleInfo.get
-    val workingDirectoryPath = s"$absolutePath/$workingDirectoryPrefix-$outputTag"
+    val workingDirectoryPath = s"$absolutePath/$workingDirectoryPrefix-$workingDirectoryTag"
     val workingDirectory = new File(workingDirectoryPath)
     workingDirectory.mkdir()
 
