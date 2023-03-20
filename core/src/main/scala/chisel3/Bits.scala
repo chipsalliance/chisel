@@ -376,7 +376,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def do_asBool(implicit sourceInfo: SourceInfo): Bool = {
     width match {
       case KnownWidth(1) => this(0)
-      case _             => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
+      case _             => throwException(s"can't covert ${chiselClassName}$width to Bool")
     }
   }
 

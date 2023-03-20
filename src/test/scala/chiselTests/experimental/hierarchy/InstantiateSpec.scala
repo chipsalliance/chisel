@@ -102,7 +102,7 @@ object InstantiateSpec {
   class DataTypeParameterized[T <: Data](gen: T) extends Module {
     // Need to override desiredName to work around the fact that the Instantiate cache doesn't get
     // cleared between tests
-    override def desiredName = s"${this.getClass.getSimpleName}_${dataToString(gen)}"
+    override def desiredName = s"${this.chiselClassName}_${dataToString(gen)}"
     @public val in = IO(Input(gen))
     @public val out = IO(Output(gen))
     out := in
@@ -111,7 +111,7 @@ object InstantiateSpec {
   class DataTypeParameterizedByName[T <: Data](gen: => T) extends Module {
     // Need to override desiredName to work around the fact that the Instantiate cache doesn't get
     // cleared between tests
-    override def desiredName = s"${this.getClass.getSimpleName}_${dataToString(gen)}"
+    override def desiredName = s"${this.chiselClassName}_${dataToString(gen)}"
     @public val in = IO(Input(gen))
     @public val out = IO(Output(gen))
     out := in

@@ -87,7 +87,7 @@ class ClassNameSpec extends ChiselFunSpec with Utils {
       ChiselStage.elaborate(
         new Module {
           val x = new StaticObject.MyStaticRecord {}
-          assert(x.chiselClassName == "") // 6_Anon
+          assert(x.chiselClassName == "")
         }
       )
     }
