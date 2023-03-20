@@ -3,10 +3,7 @@
 package svsim
 
 import scala.collection.mutable.Queue
-import java.io.{BufferedReader, BufferedWriter}
-import java.io.OutputStreamWriter
-import java.io.InputStreamReader
-import java.io.File
+import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
 
 final class Simulation private[svsim] (
   executableName:           String,

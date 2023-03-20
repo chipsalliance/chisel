@@ -1,10 +1,8 @@
 package svsim
 
-import java.io.{BufferedWriter, File, FileWriter}
+import java.io.{BufferedReader, BufferedWriter, File, FileWriter, InputStreamReader}
 import java.nio.file.Paths
 import java.lang.ProcessBuilder.Redirect
-import java.io.BufferedReader
-import java.io.InputStreamReader
 
 case class ModuleInfo(
   name:  String,

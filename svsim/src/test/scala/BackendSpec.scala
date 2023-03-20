@@ -5,8 +5,7 @@ package svsimTests
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
-import java.io.BufferedReader
-import java.io.FileReader
+import java.io.{BufferedReader, FileReader}
 
 class VCSSpec extends BackendSpec {
   import vcs.Backend.CompilationSettings._
