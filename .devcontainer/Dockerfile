@@ -2,6 +2,14 @@ FROM --platform=$BUILDPLATFORM ubuntu:20.04
 
 ARG TARGETARCH
 
+# Initialize System
+RUN \
+  DEBIAN_FRONTEND=noninteractive \
+    apt-get update -y && \
+    apt-get install -y \
+      locales
+RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && locale-gen
+
 # Install Verilator
 # Get Dependencies
 RUN \
@@ -25,8 +33,9 @@ RUN \
 # Install GraalVM
 # This downloads all relevant GraalVM architectures at once, mostly because $TARGETARCH values don't map exactly to the release URLs. Since we're optimizing for developer experience here and not image size, this is OK
 # GraalVM release links can be found here: https://github.com/graalvm/graalvm-ce-builds/releases
-ADD https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.3.1/graalvm-ce-java17-linux-aarch64-22.3.1.tar.gz /graalvm/tarballs/arm64.tar.gz
-ADD https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.3.1/graalvm-ce-java17-linux-amd64-22.3.1.tar.gz /graalvm/tarballs/amd64.tar.gz
+ENV JAVA_VERSION=java11
+ADD https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.3.1/graalvm-ce-$JAVA_VERSION-linux-aarch64-22.3.1.tar.gz /graalvm/tarballs/arm64.tar.gz
+ADD https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.3.1/graalvm-ce-$JAVA_VERSION-linux-amd64-22.3.1.tar.gz /graalvm/tarballs/amd64.tar.gz
 RUN tar -xzf /graalvm/tarballs/$TARGETARCH.tar.gz -C /graalvm --strip-components=1
 ENV JAVA_HOME=/graalvm
 ENV PATH=$JAVA_HOME/bin/:$PATH
@@ -41,5 +50,33 @@ RUN gzip -d /scala/cs-$TARGETARCH.gz && \
     chmod +x /scala/cs && \
     /scala/cs setup -y --dir /scala/bin
 ENV PATH=/scala/bin:$PATH
-# Make sure sbt is ready to go
+# Preheat SBT
 RUN sbt --version 
+
+# Install firtool
+RUN \
+  DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y \
+      cmake \
+      ninja-build
+# Check out source code (may take a while)
+RUN mkdir /circt && \
+    git clone https://github.com/llvm/circt /circt/source && \
+    cd /circt/source && \
+    git submodule update --init
+# Install firtool
+RUN cd /circt/source && \
+    cmake \
+      -S llvm/llvm \
+      -B ../build \
+      -G Ninja \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DLLVM_ENABLE_PROJECTS=mlir \
+      -DLLVM_EXTERNAL_PROJECTS=circt \
+      -DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=. && \
+    cmake \
+      --build ../build \
+      --target install-firtool
+    
+# Use VSCode for writing commit messages
+ENV GIT_EDITOR="code --wait"
