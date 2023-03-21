@@ -211,7 +211,6 @@ lazy val chiselSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.15" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "com.lihaoyi" %% "upickle" % "2.0.0"
   )
 ) ++ (
