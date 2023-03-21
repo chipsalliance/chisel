@@ -2,8 +2,11 @@
 
 enablePlugins(SiteScaladocPlugin)
 
+addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
+addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
+
 val defaultVersions = Map(
-  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT",
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT"
   // chiseltest intentionally excluded so that release automation does not try to set its version
   // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
   // when doing publishing and will not find a chiseltest release since chiseltest depends on
@@ -39,13 +42,13 @@ lazy val fatalWarningsSettings = Seq(
   scalacOptions ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 =>
-          if (sys.props.contains("disableFatalWarnings")) {
-            Nil
-          } else {
-            "-Werror" :: Nil
-          }
+        if (sys.props.contains("disableFatalWarnings")) {
+          Nil
+        } else {
+          "-Werror" :: Nil
+        }
 
-      case _                       => Nil
+      case _ => Nil
     }
   }
 )
@@ -56,7 +59,7 @@ lazy val warningSuppression = Seq(
     "msg=Importing from firrtl:s",
     "msg=migration to the MLIR:s",
     "cat=deprecation&origin=chisel3\\.ImplicitInvalidate:s",
-    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s",  // replacement `knownSize` is not in 2.12
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
     "msg=object JavaConverters in package collection is deprecated:s",
     "msg=undefined in comment for method cf in class PrintableHelper:s"
   ).mkString(",")
