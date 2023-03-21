@@ -418,7 +418,7 @@ package experimental {
       } catch {
         case e: NullPointerException =>
           throwException(
-            s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?",
+            s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available? Instantiating children modules will eagerly evaluate 'name'",
             e
           )
         case t: Throwable => throw t

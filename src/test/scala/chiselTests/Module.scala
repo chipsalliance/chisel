@@ -82,6 +82,12 @@ class ModuleIntermediate(name: String) extends Module {
   val intermediate = name + "Wrapper"
   override def desiredName = intermediate
 }
+class ModuleNameNotInitialized(name: String) extends Module {
+  val io = IO(new Bundle {})
+  val child = Module(new PlusOne)
+  val intermediate = name + "Wrapper"
+  override def desiredName = intermediate
+}
 
 class ModuleWrapper(gen: => Module) extends Module {
   val io = IO(new Bundle {})
@@ -268,6 +274,11 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   }
   property("Calling .name in the BaseModule constructor can make intermediate vals trigger null-pointer exceptions") {
     ChiselStage.elaborate(new ModuleIntermediate("MyModule"))
+  }
+  property("Instantiating a child before vals giving name are initialized gives good error message") {
+    (the[ChiselException] thrownBy extractCause[ChiselException](
+      ChiselStage.elaborate(new ModuleNameNotInitialized("MyModule"))
+    )).getMessage should include("Instantiating children modules will eagerly evaluate 'name'")
   }
   property("The name of a module in a function should be sane") {
     def foo = {
