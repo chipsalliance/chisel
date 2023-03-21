@@ -2,6 +2,9 @@
 
 enablePlugins(SiteScaladocPlugin)
 
+addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
+addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
+
 lazy val commonSettings = Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
