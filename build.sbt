@@ -5,14 +5,17 @@ enablePlugins(SiteScaladocPlugin)
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
-lazy val commonSettings = Seq(
+lazy val minimalSettings = Seq(
+  organization := "org.chipsalliance",
+  scalacOptions := Seq("-deprecation", "-feature"),
+  scalaVersion := "2.13.10",
+  crossScalaVersions := Seq("2.13.10", "2.12.17")
+)
+
+lazy val commonSettings = minimalSettings ++ Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
-  organization := "org.chipsalliance",
   autoAPIMappings := true,
-  scalaVersion := "2.13.10",
-  crossScalaVersions := Seq("2.13.10", "2.12.17"),
-  scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
   scalacOptions ++= {
@@ -168,6 +171,15 @@ lazy val testAssemblySettings = Seq(
   Test / assembly / assemblyJarName := s"firrtl-test.jar",
   Test / assembly / assemblyOutputPath := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
 )
+
+lazy val svsim = (project in file("svsim"))
+  .settings(minimalSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "3.2.15" % "test",
+      "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test"
+    )
+  )
 
 lazy val firrtl = (project in file("firrtl"))
   .enablePlugins(ScalaUnidocPlugin)
@@ -337,7 +349,8 @@ lazy val chisel = (project in file("."))
   .dependsOn(macros)
   .dependsOn(core)
   .dependsOn(firrtl)
-  .aggregate(macros, core, plugin, firrtl)
+  .dependsOn(svsim)
+  .aggregate(macros, core, plugin, firrtl, svsim)
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
   .settings(

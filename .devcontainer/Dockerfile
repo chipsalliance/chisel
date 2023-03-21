@@ -64,6 +64,13 @@ RUN mkdir /circt && \
     git clone https://github.com/llvm/circt /circt/source && \
     cd /circt/source && \
     git submodule update --init
+# For development, we use the top of `main` even though it is possible this will be incompatible with the current Chisel. We expect Chisel to follow CIRCT pretty closely, and CIRCT to become more stable over time so this seems better than having to update this every time.
+ARG FIRTOOL_TAG=main
+# Checkout as a separate build step so the first checkout is more likely to stay cached
+RUN cd /circt/source && \
+    git fetch origin && \
+    git checkout $FIRTOOL_TAG && \
+    git submodule update
 # Install firtool
 RUN cd /circt/source && \
     cmake \
