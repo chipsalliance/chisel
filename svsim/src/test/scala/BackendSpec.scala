@@ -71,14 +71,14 @@ trait BackendSpec extends AnyFunSpec with Matchers {
 
           controller.setTraceEnabled(true)
 
-          val aVal = -0x0240_0000_0000_0000L
-          val bVal = +0x0180_0000_0000_0000L
+          val aVal = -0x0240000000000000L
+          val bVal = +0x0180000000000000L
           a.set(aVal)
           a.check(isSigned = true) { value =>
             assert(value.asBigInt === aVal)
           }
           a.check(isSigned = false) { value =>
-            assert(value.asBigInt === 0x7dc0_0000_0000_0000L)
+            assert(value.asBigInt === 0x7dc0000000000000L)
           }
           b.set(bVal)
           b.check(isSigned = true) { value =>
@@ -110,7 +110,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           var isResultChecked: Boolean = false
           result.check { value =>
             isResultChecked = true
-            assert(value.asBigInt === 0x00c0_0000_0000_0000L)
+            assert(value.asBigInt === 0x00c0000000000000L)
           }
           assert(isResultChecked === false)
 
