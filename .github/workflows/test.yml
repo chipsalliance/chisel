@@ -62,7 +62,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
       - name: Check Formatting
-        run: sbt scalafmtCheckAll
+        run: sbt fmtCheck
 
   integration:
     name: Integration Tests (w/ chiseltest)
