@@ -65,7 +65,7 @@ object Serializer {
       case n: Circuit   => sIt(n)(indent)
       case other => Iterator(serialize(other, indent))
     }
-  }
+  }.view // TODO replace .view with constructing a view directly above, but must drop 2.12 first.
 
   private def flattenInfo(infos: Seq[Info]): Seq[FileInfo] = infos.flatMap {
     case NoInfo => Seq()
