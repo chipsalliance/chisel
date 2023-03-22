@@ -175,6 +175,8 @@ lazy val testAssemblySettings = Seq(
 lazy val svsim = (project in file("svsim"))
   .settings(minimalSettings)
   .settings(
+    // Published as part of unipublish
+    publish / skip := true,
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.2.15" % "test",
       "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test"
@@ -374,6 +376,7 @@ def addUnipublishDeps(proj: Project)(deps: Project*): Project = {
 lazy val unipublish =
   addUnipublishDeps(project in file("unipublish"))(
     firrtl,
+    svsim,
     macros,
     core,
     chisel
