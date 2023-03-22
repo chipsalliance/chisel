@@ -2,14 +2,20 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-lazy val commonSettings = Seq(
+addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
+addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
+
+lazy val minimalSettings = Seq(
+  organization := "org.chipsalliance",
+  scalacOptions := Seq("-deprecation", "-feature"),
+  scalaVersion := "2.13.10",
+  crossScalaVersions := Seq("2.13.10", "2.12.17")
+)
+
+lazy val commonSettings = minimalSettings ++ Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
-  organization := "org.chipsalliance",
   autoAPIMappings := true,
-  scalaVersion := "2.13.10",
-  crossScalaVersions := Seq("2.13.10", "2.12.17"),
-  scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
   scalacOptions ++= {
@@ -30,13 +36,13 @@ lazy val fatalWarningsSettings = Seq(
   scalacOptions ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 =>
-          if (sys.props.contains("disableFatalWarnings")) {
-            Nil
-          } else {
-            "-Werror" :: Nil
-          }
+        if (sys.props.contains("disableFatalWarnings")) {
+          Nil
+        } else {
+          "-Werror" :: Nil
+        }
 
-      case _                       => Nil
+      case _ => Nil
     }
   }
 )
@@ -46,7 +52,7 @@ lazy val warningSuppression = Seq(
     "msg=APIs in chisel3.internal:s",
     "msg=Importing from firrtl:s",
     "msg=migration to the MLIR:s",
-    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s",  // replacement `knownSize` is not in 2.12
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
     "msg=object JavaConverters in package collection is deprecated:s",
     "msg=undefined in comment for method cf in class PrintableHelper:s"
   ).mkString(",")
@@ -59,14 +65,14 @@ lazy val publishSettings = Seq(
   publishMavenStyle := true,
   Test / publishArtifact := false,
   pomIncludeRepository := { x => false },
-  pomExtra := <url>https://www.chisel-lang.org</url>
-    <licenses>
-      <license>
-        <name>apache-v2</name>
-        <url>https://opensource.org/licenses/Apache-2.0</url>
-        <distribution>repo</distribution>
-      </license>
-    </licenses>,
+  homepage := Some(url("https://www.chisel-lang.org")),
+  organizationHomepage := Some(url("https://www.chipsalliance.org")),
+  licenses := List(License.Apache2),
+  developers := List(
+    Developer("jackkoenig", "Jack Koenig", "jack.koenig3@gmail.com", url("https://github.com/jackkoenig")),
+    Developer("azidar", "Adam Izraelevitz", "azidar@gmail.com", url("https://github.com/azidar")),
+    Developer("seldridge", "Schuyler Eldridge", "schuyler.eldridge@gmail.com", url("https://github.com/seldridge"))
+  ),
   sonatypeCredentialHost := "s01.oss.sonatype.org",
   sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
   // Check that SBT Dynver can properly derive a version which requires unshallow clone
@@ -165,6 +171,17 @@ lazy val testAssemblySettings = Seq(
   Test / assembly / assemblyJarName := s"firrtl-test.jar",
   Test / assembly / assemblyOutputPath := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
 )
+
+lazy val svsim = (project in file("svsim"))
+  .settings(minimalSettings)
+  .settings(
+    // Published as part of unipublish
+    publish / skip := true,
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "3.2.15" % "test",
+      "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test"
+    )
+  )
 
 lazy val firrtl = (project in file("firrtl"))
   .enablePlugins(ScalaUnidocPlugin)
@@ -334,23 +351,23 @@ lazy val chisel = (project in file("."))
   .dependsOn(macros)
   .dependsOn(core)
   .dependsOn(firrtl)
-  .aggregate(macros, core, plugin, firrtl)
+  .dependsOn(svsim)
+  .aggregate(macros, core, plugin, firrtl, svsim)
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
   .settings(
     Test / scalacOptions ++= Seq("-language:reflectiveCalls")
   )
 
-
-
 def addUnipublishDeps(proj: Project)(deps: Project*): Project = {
   def inTestScope(module: ModuleID): Boolean = module.configurations.exists(_ == "test")
-  deps.foldLeft(proj) { case (p, dep) =>
-    p.settings(
-      libraryDependencies ++= (dep / libraryDependencies).value.filterNot(inTestScope),
-      Compile / packageBin / mappings ++= (dep / Compile / packageBin / mappings).value,
-      Compile / packageSrc / mappings ++= (dep / Compile / packageSrc / mappings).value,
-    )
+  deps.foldLeft(proj) {
+    case (p, dep) =>
+      p.settings(
+        libraryDependencies ++= (dep / libraryDependencies).value.filterNot(inTestScope),
+        Compile / packageBin / mappings ++= (dep / Compile / packageBin / mappings).value,
+        Compile / packageSrc / mappings ++= (dep / Compile / packageSrc / mappings).value
+      )
   }
 }
 
@@ -358,74 +375,78 @@ def addUnipublishDeps(proj: Project)(deps: Project*): Project = {
 // It should be used for all publishing and MiMa binary compatibility checking
 lazy val unipublish =
   addUnipublishDeps(project in file("unipublish"))(
-    firrtl, macros, core, chisel
+    firrtl,
+    svsim,
+    macros,
+    core,
+    chisel
   )
-  .aggregate(plugin) // Also publish the plugin when publishing this project
-  .settings(name := (chisel / name).value)
-  .enablePlugins(ScalaUnidocPlugin)
-  .settings(commonSettings: _*)
-  .settings(publishSettings: _*)
-  .settings(usePluginSettings: _*)
-  .settings(warningSuppression: _*)
-  .settings(fatalWarningsSettings: _*)
-  .settings(
-    mimaPreviousArtifacts := Set(),
-    // This is a pseudo-project with no class files, use the package jar instead
-    mimaCurrentClassfiles := (Compile / packageBin).value,
-    // Forward doc command to unidoc
-    Compile / doc := (ScalaUnidoc / doc).value,
-    // Include unidoc as the ScalaDoc for publishing
-    Compile / packageDoc / mappings := (ScalaUnidoc / packageDoc / mappings).value,
-    Compile / doc / scalacOptions ++= Seq(
-      "-diagrams",
-      "-groups",
-      "-skip-packages",
-      "chisel3.internal",
-      "-diagrams-max-classes",
-      "25",
-      "-doc-version",
-      version.value,
-      "-doc-title",
-      name.value,
-      "-doc-root-content",
-      baseDirectory.value + "/root-doc.txt",
-      "-sourcepath",
-      (ThisBuild / baseDirectory).value.toString,
-      "-doc-source-url", {
-        val branch =
-          if (version.value.endsWith("-SNAPSHOT")) {
-            "master"
-          } else {
-            s"v${version.value}"
+    .aggregate(plugin) // Also publish the plugin when publishing this project
+    .settings(name := (chisel / name).value)
+    .enablePlugins(ScalaUnidocPlugin)
+    .settings(commonSettings: _*)
+    .settings(publishSettings: _*)
+    .settings(usePluginSettings: _*)
+    .settings(warningSuppression: _*)
+    .settings(fatalWarningsSettings: _*)
+    .settings(
+      mimaPreviousArtifacts := Set(),
+      // This is a pseudo-project with no class files, use the package jar instead
+      mimaCurrentClassfiles := (Compile / packageBin).value,
+      // Forward doc command to unidoc
+      Compile / doc := (ScalaUnidoc / doc).value,
+      // Include unidoc as the ScalaDoc for publishing
+      Compile / packageDoc / mappings := (ScalaUnidoc / packageDoc / mappings).value,
+      Compile / doc / scalacOptions ++= Seq(
+        "-diagrams",
+        "-groups",
+        "-skip-packages",
+        "chisel3.internal",
+        "-diagrams-max-classes",
+        "25",
+        "-doc-version",
+        version.value,
+        "-doc-title",
+        name.value,
+        "-doc-root-content",
+        baseDirectory.value + "/root-doc.txt",
+        "-sourcepath",
+        (ThisBuild / baseDirectory).value.toString,
+        "-doc-source-url", {
+          val branch =
+            if (version.value.endsWith("-SNAPSHOT")) {
+              "master"
+            } else {
+              s"v${version.value}"
+            }
+          s"https://github.com/chipsalliance/chisel/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
+        },
+        "-language:implicitConversions"
+      ) ++
+        // Suppress compiler plugin for source files in core
+        // We don't need this in regular compile because we just don't add the chisel-plugin to core's scalacOptions
+        // This works around an issue where unidoc uses the exact same arguments for all source files.
+        // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
+        // See https://github.com/sbt/sbt-unidoc/issues/107
+        (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
+        ++ {
+          CrossVersion.partialVersion(scalaVersion.value) match {
+            case Some((2, n)) if n >= 13 => "-implicits" :: Nil
+            case _                       => Nil
           }
-        s"https://github.com/chipsalliance/chisel/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
-      },
-      "-language:implicitConversions"
-    ) ++
-      // Suppress compiler plugin for source files in core
-      // We don't need this in regular compile because we just don't add the chisel-plugin to core's scalacOptions
-      // This works around an issue where unidoc uses the exact same arguments for all source files.
-      // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
-      // See https://github.com/sbt/sbt-unidoc/issues/107
-      (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
-      ++ {
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, n)) if n >= 13 => "-implicits" :: Nil
-          case _                       => Nil
         }
-      }
-  )
+    )
 
 // End-to-end tests that check the functionality of the emitted design with simulation
- lazy val integrationTests = (project in file("integration-tests"))
-   .dependsOn(chisel % "compile->compile;test->test")
-   .dependsOn(firrtl) // SBT doesn't seem to be propagating transitive library dependencies...
-   .dependsOn(standardLibrary)
-   .settings(commonSettings: _*)
-   .settings(warningSuppression: _*)
-   .settings(fatalWarningsSettings: _*)
-   .settings(chiselSettings: _*)
-   .settings(usePluginSettings: _*)
+lazy val integrationTests = (project in file("integration-tests"))
+  .dependsOn(chisel % "compile->compile;test->test")
+  .dependsOn(firrtl) // SBT doesn't seem to be propagating transitive library dependencies...
+  .dependsOn(standardLibrary)
+  .settings(commonSettings: _*)
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
+  .settings(chiselSettings: _*)
+  .settings(usePluginSettings: _*)
 
 // the chisel standard library
 lazy val standardLibrary = (project in file("stdlib"))

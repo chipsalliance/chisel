@@ -26,7 +26,7 @@ object Module extends SourceInfoDoc {
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     if (Builder.readyForModuleConstr) {
       throwException(
         "Error: Called Module() twice without instantiating a Module." +
@@ -80,7 +80,7 @@ object Module extends SourceInfoDoc {
     if (Builder.currentModule.isDefined && module._component.isDefined) {
       val component = module._component.get
       pushCommand(DefInstance(sourceInfo, module, component.ports))
-      module.initializeInParent(compileOptions)
+      module.initializeInParent()
     }
     module
   }
@@ -97,8 +97,7 @@ object Module extends SourceInfoDoc {
   private[chisel3] def do_pseudo_apply[T <: BaseModule](
     bc: => T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     val parent = Builder.currentModule
     val module: T = bc // bc is actually evaluated here
@@ -147,10 +146,10 @@ object Module extends SourceInfoDoc {
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
-abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
+abstract class Module extends RawModule {
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("clock")
-  final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("reset")
+  final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
+  final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
 
   // TODO It's hard to remove these deprecated override methods because they're used by
   //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
@@ -172,16 +171,7 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
-    val inferReset = (_parent.isDefined || Builder.inDefinition) && moduleCompileOptions.inferModuleReset
-    if (moduleCompileOptions.migrateInferModuleReset && !moduleCompileOptions.inferModuleReset) {
-      this match {
-        case _: RequireSyncReset => // Good! It's been migrated.
-        case _ => // Bad! It hasn't been migrated.
-          Builder.error(
-            s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
-          )(UnlocatableSourceInfo)
-      }
-    }
+    val inferReset = (_parent.isDefined || Builder.inDefinition)
     if (inferReset) Reset() else Bool()
   }
 
@@ -190,10 +180,10 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   Builder.currentReset = Some(reset)
   Builder.clearPrefix()
 
-  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+  private[chisel3] override def initializeInParent(): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    super.initializeInParent(parentCompileOptions)
+    super.initializeInParent()
     clock := _override_clock.getOrElse(Builder.forcedClock)
     reset := _override_reset.getOrElse(Builder.forcedReset)
   }
@@ -210,7 +200,7 @@ package internal {
       * @note These are not true Data (the Record doesn't correspond to anything in the emitted
       * FIRRTL yet its elements *do*) so have some very specialized behavior.
       */
-    private[chisel3] class ClonePorts(elts: (String, Data)*)(implicit compileOptions: CompileOptions) extends Record {
+    private[chisel3] class ClonePorts(elts: (String, Data)*) extends Record {
       val elements = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
       def apply(field: String) = elements(field)
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
@@ -219,8 +209,7 @@ package internal {
     private[chisel3] def cloneIORecord(
       proto: BaseModule
     )(
-      implicit sourceInfo: SourceInfo,
-      compileOptions:      CompileOptions
+      implicit sourceInfo: SourceInfo
     ): ClonePorts = {
       require(proto.isClosed, "Can't clone a module before module close")
       // Fake Module to serve as the _parent of the cloned ports
@@ -245,11 +234,6 @@ package internal {
       clonePorts.bind(PortBinding(cloneParent))
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
-      // Normally handled during Module construction but ClonePorts really lives in its parent's parent
-      if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-        // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
-        pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
-      }
       if (proto.isInstanceOf[Module]) {
         clonePorts("clock") := Module.clock
         clonePorts("reset") := Module.reset
@@ -363,7 +347,7 @@ package experimental {
 
     /** Sets up this module in the parent context
       */
-    private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit
+    private[chisel3] def initializeInParent(): Unit
 
     private[chisel3] def namePorts(): Unit = {
       for ((port, source) <- getModulePortsAndLocators) {
@@ -520,7 +504,7 @@ package experimental {
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
-    protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
+    protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo): Unit = {
 
       // Assign any signals (Chisel or chisel3) with Unspecified/Flipped directions to Output/Input
       Module.assignCompatDir(iodef)
@@ -533,8 +517,7 @@ package experimental {
     private[chisel3] def bindIoInPlace(
       iodef: Data
     )(
-      implicit sourceInfo: SourceInfo,
-      compileOptions:      CompileOptions
+      implicit sourceInfo: SourceInfo
     ): Unit = _bindIoInPlace(iodef)
 
     /**
@@ -553,7 +536,7 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    protected def IO[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
       chisel3.IO.apply(iodef)
     }
 

@@ -21,8 +21,7 @@ class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lit
     v:     Iterable[T]
   )(block: => Any
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): SwitchContext[T] = {
     if (!v.isEmpty) {
       val newLits = v.map { w =>
@@ -41,15 +40,14 @@ class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lit
       this
     }
   }
-  def is(v: T)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SwitchContext[T] =
+  def is(v: T)(block: => Any)(implicit sourceInfo: SourceInfo): SwitchContext[T] =
     is(Seq(v))(block)
   def is(
     v:     T,
     vr:    T*
   )(block: => Any
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): SwitchContext[T] = is(v :: vr.toList)(block)
 }
 
