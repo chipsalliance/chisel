@@ -1213,6 +1213,12 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
   * @define numType $coll
   */
 sealed class Bool() extends UInt(1.W) with Reset {
+  /**
+    * Give this `Bool` a stable `typeName` for Verilog name generation.
+    * Specifying a Bool's width in its type name isn't necessary
+    */
+  override def typeName = "Bool"
+
   override def toString: String = {
     litToBooleanOption match {
       case Some(value) => s"Bool($value)"
