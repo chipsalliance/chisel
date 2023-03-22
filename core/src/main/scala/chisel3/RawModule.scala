@@ -18,7 +18,7 @@ import scala.collection.immutable.VectorBuilder
   * multiple IO() declarations.
   */
 @nowarn("msg=class Port") // delete when Port becomes private
-abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends BaseModule {
+abstract class RawModule extends BaseModule {
   //
   // RTL construction internals
   //
@@ -40,8 +40,6 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   // Other Internal Functions
   //
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
-
-  val compileOptions = moduleCompileOptions
 
   private[chisel3] def checkPorts(): Unit = {
     for ((port, source) <- getModulePortsAndLocators) {
@@ -100,27 +98,12 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
-    val invalidateCommands = {
-      if (!compileOptions.explicitInvalidate || this.isInstanceOf[ImplicitInvalidate]) {
-        getModulePortsAndLocators.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
-      } else {
-        Seq()
-      }
-    }
-    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++: _commands.result())
+    val component = DefModule(this, name, firrtlPorts, _commands.result())
     _component = Some(component)
     _component
   }
 
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-    implicit val sourceInfo = UnlocatableSourceInfo
-
-    if (!parentCompileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      for ((port, sourceInfo) <- getModulePortsAndLocators) {
-        pushCommand(DefInvalid(sourceInfo, port.ref))
-      }
-    }
-  }
+  private[chisel3] def initializeInParent(): Unit = {}
 }
 
 trait RequireAsyncReset extends Module {
@@ -130,6 +113,3 @@ trait RequireAsyncReset extends Module {
 trait RequireSyncReset extends Module {
   override private[chisel3] def mkReset: Bool = Bool()
 }
-
-/** Mix with a [[RawModule]] to automatically connect DontCare to the module's ports, wires, and children instance IOs. */
-trait ImplicitInvalidate { self: RawModule => }

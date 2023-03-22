@@ -44,7 +44,7 @@ trait Num[T <: Data] {
   final def +(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_+(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_+(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Multiplication operator
     *
@@ -57,7 +57,7 @@ trait Num[T <: Data] {
   final def *(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_*(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_*(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Division operator
     *
@@ -70,7 +70,7 @@ trait Num[T <: Data] {
   final def /(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_/(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_/(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Modulo operator
     *
@@ -82,7 +82,7 @@ trait Num[T <: Data] {
   final def %(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_%(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_%(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Subtraction operator
     *
@@ -94,7 +94,7 @@ trait Num[T <: Data] {
   final def -(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_-(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_-(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Less than operator
     *
@@ -105,7 +105,7 @@ trait Num[T <: Data] {
   final def <(that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_<(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_<(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Less than or equal to operator
     *
@@ -116,7 +116,7 @@ trait Num[T <: Data] {
   final def <=(that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_<=(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_<=(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Greater than operator
     *
@@ -127,7 +127,7 @@ trait Num[T <: Data] {
   final def >(that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_>(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_>(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Greater than or equal to operator
     *
@@ -138,7 +138,7 @@ trait Num[T <: Data] {
   final def >=(that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_>=(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_>=(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Absolute value operator
     *
@@ -149,7 +149,7 @@ trait Num[T <: Data] {
   final def abs: T = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_abs(implicit sourceInfo: SourceInfo): T
 
   /** Minimum operator
     *
@@ -161,7 +161,7 @@ trait Num[T <: Data] {
   final def min(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_min(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_min(that: T)(implicit sourceInfo: SourceInfo): T =
     Mux(this < that, this.asInstanceOf[T], that)
 
   /** Maximum operator
@@ -174,7 +174,7 @@ trait Num[T <: Data] {
   final def max(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_max(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_max(that: T)(implicit sourceInfo: SourceInfo): T =
     Mux(this < that, that, this.asInstanceOf[T])
 }
 
