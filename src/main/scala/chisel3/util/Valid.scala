@@ -43,6 +43,9 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   )
   def fire(dummy: Int = 0): Bool = valid
 
+  /** A non-ambiguous name of this `Valid` instance for use in generated Verilog names
+    * Inserts the parameterized generator's typeName, e.g. Valid_UInt4
+    */
   override def typeName = s"${this.getClass.getSimpleName}_${gen.typeName}"
 }
 
@@ -180,6 +183,15 @@ object Pipe {
   * @see The [[ShiftRegister$ ShiftRegister factory]] to generate a pipe without a [[Valid]] interface
   */
 class Pipe[T <: Data](val gen: T, val latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
+
+  /** A non-ambiguous name of this `Pipe` for use in generated Verilog names.
+   * Includes the cycle count in the name as well as the parameterized generator's
+   * `typeName`, e.g. `Pipe_4cycles_UInt4`
+   */
+  override def desiredName = {
+    val latencyStr = s"${latency}cycle${if (latency > 1) "s" else ""}"
+    s"${this.getClass.getSimpleName}_${latency_str}_${gen.typeName}"
+  }
 
   /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
     * @define notAQueue

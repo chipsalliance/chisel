@@ -17,6 +17,11 @@ object Clock {
 sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element {
   override def toString: String = stringAccessor("Clock")
 
+  /** A non-ambiguous name of this `Clock` for use in generated Verilog names
+    * Inserts the width directly after the typeName, e.g. Clock1
+    */
+  override def typeName = s"Clock$width"
+
   def cloneType: this.type = Clock().asInstanceOf[this.type]
 
   private[chisel3] def typeEquivalent(that: Data): Boolean =

@@ -52,6 +52,11 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   def cloneType: this.type = cloneTypeWidth(width)
 
+  /** A non-ambiguous name of this `Bits` instance for use in generated Verilog names
+    * Inserts the width directly after the typeName, e.g. UInt4, SInt1
+    */
+  def typeName: String = s"${this.getClass.getSimpleName}$width"
+
   /** Tail operator
     *
     * @param n the number of bits to remove
@@ -1159,6 +1164,11 @@ object AsyncReset {
   */
 sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
   override def toString: String = stringAccessor("AsyncReset")
+
+  /** A non-ambiguous name of this `AsyncReset` for use in generated Verilog names
+    * Inserts the width directly after the typeName, e.g. AsyncReset1
+    */
+  override def typeName = s"${this.getClass.getSimpleName}$width"
 
   def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
 
