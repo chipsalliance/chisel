@@ -13,7 +13,7 @@ import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{CompileOptionsTransform, SourceInfoTransform, VecTransform}
+import chisel3.internal.sourceinfo.{SourceInfoTransform, VecTransform}
 
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
@@ -25,12 +25,7 @@ class AliasedAggregateFieldException(message: String) extends chisel3.ChiselExce
   */
 sealed abstract class Aggregate extends Data {
 
-  /** Return an Aggregate's literal value if it is a literal, None otherwise.
-    * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
-    *
-    * @return an Aggregate's literal value if it is a literal.
-    */
-  override def litOption: Option[BigInt] = {
+  private def checkingLitOption(checkForDontCares: Boolean): Option[BigInt] = {
     // Shift the accumulated value by our width and add in our component, masked by our width.
     def shiftAdd(accumulator: Option[BigInt], elt: Data): Option[BigInt] = {
       (accumulator, elt.litOption) match {
@@ -38,6 +33,9 @@ sealed abstract class Aggregate extends Data {
           val width = elt.width.get
           val masked = ((BigInt(1) << width) - 1) & eltLit // also handles the negative case with two's complement
           Some((accumulator << width) + masked)
+        case (Some(accumulator), None) if checkForDontCares =>
+          Builder.error(s"Called litValue on aggregate $this contains DontCare")(UnlocatableSourceInfo)
+          None
         case (None, _) => None
         case (_, None) => None
       }
@@ -49,6 +47,19 @@ sealed abstract class Aggregate extends Data {
           .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
       case _ => None
     }
+  }
+
+  /** Return an Aggregate's literal value if it is a literal, None otherwise.
+    * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
+    *
+    * @return an Aggregate's literal value if it is a literal.
+    */
+  override def litOption: Option[BigInt] = {
+    checkingLitOption(checkForDontCares = false)
+  }
+
+  override def litValue: BigInt = {
+    checkingLitOption(checkForDontCares = true).get
   }
 
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
@@ -81,15 +92,14 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt))
   }
 
   private[chisel3] override def connectFromBits(
     that: Bits
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     var i = 0
     val bits = if (that.isLit) that else WireDefault(UInt(this.width), that) // handles width padding
@@ -114,10 +124,8 @@ trait VecFactory extends SourceInfoDoc {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(gen, "vec type")
-    }
+  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo): Vec[T] = {
+    requireIsChiselType(gen, "vec type")
     new Vec(gen.cloneTypeFull, n)
   }
 
@@ -126,8 +134,7 @@ trait VecFactory extends SourceInfoDoc {
     idx: UInt,
     n:   BigInt
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): UInt = {
     val w = (n - 1).bitLength
     if (n <= 1) 0.U
@@ -237,7 +244,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * @param that the Seq to connect from
     * @group connection
     */
-  def <>(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
+  def <>(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
     if (this.length != that.length)
       Builder.error(
         s"Vec (size ${this.length}) and Seq (size ${that.length}) being bulk connected have different lengths!"
@@ -260,7 +267,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * @param that the Vec to connect from
     * @group connection
     */
-  def <>(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit =
+  def <>(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit =
     this.bulkConnect(that.asInstanceOf[Data])
 
   /** "The strong connect operator", assigning elements in this Vec from elements in a Seq.
@@ -274,7 +281,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * @note the length of this Vec must match the length of the input Seq
     * @group connection
     */
-  def :=(that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
+  def :=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
     require(
       this.length == that.length,
       s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}"
@@ -295,14 +302,11 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * @note the length of this Vec must match the length of the input Vec
     * @group connection
     */
-  def :=(that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this.connect(that)
+  def :=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = this.connect(that)
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
-  override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
+  def apply(p: UInt): T = {
     requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
 
@@ -315,7 +319,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
         case Some(target: Vec[T @unchecked])
             if this.length == target.length &&
               this.sample_element.typeEquivalent(target.sample_element) =>
-          return target.do_apply(p)
+          return target.apply(p)
         case _ => throw InvalidViewException("Dynamic indexing of Views is not yet supported")
       }
     }
@@ -337,7 +341,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     // Perhaps there's a cleaner way of accomplishing this...
     port.bind(ChildBinding(this), reconstructedResolvedDirection)
 
-    val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
+    val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo)
     port.setRef(this, i)
 
     port
@@ -389,8 +393,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     redOp:   (T, T) => T,
     layerOp: (T) => T = (x: T) => x
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     require(!isEmpty, "Cannot apply reduction on a vec of size 0")
 
@@ -436,8 +439,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   private[chisel3] def _makeLit(
     elementInitializers: (Int, T)*
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): this.type = {
 
     def checkLiteralConstruction(): Unit = {
@@ -597,8 +599,7 @@ object VecInit extends SourceInfoDoc {
   private def getConnectOpFromDirectionality[T <: Data](
     proto: T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): (T, T) => Unit = proto.direction match {
     case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
       // When internal wires are involved, driver / sink must be specified explicitly, otherwise
@@ -625,7 +626,7 @@ object VecInit extends SourceInfoDoc {
   def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo): Vec[T] = {
     // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
     // varargs constructor, which is more in line with the style of the Scala
     // collection API. However, a deprecation phase isn't possible, since
@@ -657,7 +658,7 @@ object VecInit extends SourceInfoDoc {
   def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo): Vec[T] =
     apply(elt0 +: elts.toSeq)
 
   /** Creates a new [[Vec]] of length `n` composed of the results of the given
@@ -675,8 +676,7 @@ object VecInit extends SourceInfoDoc {
     n:   Int
   )(gen: (Int) => T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Vec[T] =
     apply((0 until n).map(i => gen(i)))
 
@@ -697,8 +697,7 @@ object VecInit extends SourceInfoDoc {
     m:   Int
   )(gen: (Int, Int) => T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Vec[Vec[T]] = {
     // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
     val elts = Seq.tabulate(n, m)(gen)
@@ -738,8 +737,7 @@ object VecInit extends SourceInfoDoc {
     p:   Int
   )(gen: (Int, Int, Int) => T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Vec[Vec[Vec[T]]] = {
     // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
     val elts = Seq.tabulate(n, m, p)(gen)
@@ -773,7 +771,7 @@ object VecInit extends SourceInfoDoc {
   def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
 
   /** @group SourceInfoTransformMacro */
-  def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+  def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo): Vec[T] =
     apply(Seq.fill(n)(gen))
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
@@ -792,8 +790,7 @@ object VecInit extends SourceInfoDoc {
     m:   Int
   )(gen: => T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Vec[Vec[T]] = {
     do_tabulate(n, m)((_, _) => gen)
   }
@@ -816,8 +813,7 @@ object VecInit extends SourceInfoDoc {
     p:   Int
   )(gen: => T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Vec[Vec[Vec[T]]] = {
     do_tabulate(n, m, p)((_, _, _) => gen)
   }
@@ -838,8 +834,7 @@ object VecInit extends SourceInfoDoc {
     len:   Int
   )(f:     (T) => T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Vec[T] =
     apply(Seq.iterate(start, len)(f))
 }
@@ -848,10 +843,7 @@ object VecInit extends SourceInfoDoc {
   * operations.
   */
 trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
-  def apply(p: UInt): T = macro CompileOptionsTransform.pArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T
+  def apply(p: UInt): T
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
@@ -862,7 +854,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   def forall(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
   /** @group SourceInfoTransformMacro */
-  def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
     (this.map(p)).fold(true.B)(_ && _)
 
   /** Outputs true if p outputs true for at least one element.
@@ -870,7 +862,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   def exists(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
   /** @group SourceInfoTransformMacro */
-  def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
     (this.map(p)).fold(false.B)(_ || _)
 
   /** Outputs true if the vector contains at least one element equal to x (using
@@ -879,7 +871,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   def contains(x: T)(implicit ev: T <:< UInt): Bool = macro VecTransform.contains
 
   /** @group SourceInfoTransformMacro */
-  def do_contains(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt, compileOptions: CompileOptions): Bool =
+  def do_contains(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt): Bool =
     this.exists(_ === x)
 
   /** Outputs the number of elements for which p is true.
@@ -887,7 +879,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   def count(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   /** @group SourceInfoTransformMacro */
-  def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.count(this.map(p))
 
   /** Helper function that appends an index (literal value) to each element,
@@ -900,7 +892,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   /** @group SourceInfoTransformMacro */
-  def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
   /** Outputs the index of the last element for which p outputs true.
@@ -908,7 +900,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   /** @group SourceInfoTransformMacro */
-  def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
 
   /** Outputs the index of the element for which p outputs true, assuming that
@@ -924,7 +916,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   def onlyIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   /** @group SourceInfoTransformMacro */
-  def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.oneHotMux(indexWhereHelper(p))
 }
 
@@ -933,7 +925,7 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   * Record should only be extended by libraries and fairly sophisticated generators.
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
-abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
+abstract class Record extends Aggregate {
 
   private[chisel3] def _isOpaqueType: Boolean = this match {
     case maybe: OpaqueType => maybe.opaqueType
@@ -941,8 +933,8 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   private def checkClone(clone: Record): Unit = {
-    for ((name, field) <- elements) {
-      if (clone.elements(name) eq field) {
+    for ((name, field) <- _elements) {
+      if (clone._elements(name) eq field) {
         throw new AutoClonetypeException(
           s"The bundle plugin was unable to clone $clone that has field '$name' aliased with base $this." +
             "This likely happened because you tried nesting Data arguments inside of other data structures." +
@@ -969,10 +961,10 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     // which can cause collisions
     val _namespace = Namespace.empty
     require(
-      !opaqueType || (elements.size == 1 && elements.head._1 == ""),
-      s"Opaque types must have exactly one element with an empty name, not ${elements.size}: ${elements.keys.mkString(", ")}"
+      !opaqueType || (_elements.size == 1 && _elements.head._1 == ""),
+      s"Opaque types must have exactly one element with an empty name, not ${_elements.size}: ${elements.keys.mkString(", ")}"
     )
-    for ((name, elt) <- elements) {
+    for ((name, elt) <- _elements) {
       elt.setRef(this, _namespace.name(name, leadingDigitOk = true), opaque = opaqueType)
     }
   }
@@ -996,7 +988,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
       val dupNames = duplicates.toSeq
         .sortBy(_._id)
         .map { duplicate =>
-          this.elements.collect { case x if x._2._id == duplicate._id => x }.toSeq
+          this._elements.collect { case x if x._2._id == duplicate._id => x }.toSeq
             .sortBy(_._2._id)
             .map(_._1)
             .reverse
@@ -1017,7 +1009,12 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
     checkForAndReportDuplicates()
 
-    for ((child, sameChild) <- this.elementsIterator.zip(this.elementsIterator)) {
+    // This check is for making sure that elements always returns the
+    // same object, which will not be the case if the user makes it a
+    // def inside the Record. Checking elementsIterator against itself
+    // is not useful for this check because it's a lazy val which will
+    // always return the same thing.
+    for (((_, child), sameChild) <- this.elements.iterator.zip(this.elementsIterator)) {
       if (child != sameChild) {
         throwException(
           s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
@@ -1177,7 +1174,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   override def toString: String = {
     topBindingOpt match {
       case Some(BundleLitBinding(_)) =>
-        val contents = elements.toList.reverse.map {
+        val contents = _elements.toList.reverse.map {
           case (name, data) =>
             s"$name=$data"
         }.mkString(", ")
@@ -1187,6 +1184,22 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   def elements: SeqMap[String, Data]
+
+  // Internal representation of Record elements. _elements makes it
+  // possible to check for rebinding issues with Record elements
+  // without having to recurse over all elements after the Record is
+  // constructed. Laziness of _elements means that this check will
+  // occur (only) at the first instance _elements is referenced.
+  private[chisel3] lazy val _elements: SeqMap[String, Data] = {
+    for ((name, field) <- elements) {
+      if (field.binding.isDefined) {
+        throw RebindingException(
+          s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
+        )
+      }
+    }
+    elements
+  }
 
   /** Name for Pretty Printing */
   def className: String = try {
@@ -1199,11 +1212,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>
       this.getClass == that.getClass &&
-        this.elements.size == that.elements.size &&
-        this.elements.forall {
+        this._elements.size == that._elements.size &&
+        this._elements.forall {
           case (name, model) =>
-            that.elements.contains(name) &&
-              (that.elements(name).typeEquivalent(model))
+            that._elements.contains(name) &&
+              (that._elements(name).typeEquivalent(model))
         }
     case _ => false
   }
@@ -1212,7 +1225,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   override def getElements: Seq[Data] = elementsIterator.toIndexedSeq
 
-  final override private[chisel3] def elementsIterator: Iterator[Data] = elements.iterator.map(_._2)
+  final override private[chisel3] def elementsIterator: Iterator[Data] = _elements.iterator.map(_._2)
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
@@ -1230,7 +1243,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     * Analogous to printing a Map
     * Results in "`\$className(elt0.name -> elt0.value, ...)`"
     */
-  def toPrintable: Printable = toPrintableHelper(elements.toList)
+  def toPrintable: Printable = toPrintableHelper(_elements.toList)
 
   /** Implementation of cloneType that is [optionally for Record] overridden by the compiler plugin
     *
@@ -1323,7 +1336,7 @@ package experimental {
   *   wire.elements // VectorMap("bar" -> wire.bar, "foo" -> wire.foo)
   * }}}
   */
-abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
+abstract class Bundle extends Record {
 
   private def mustUsePluginMsg: String =
     "The Chisel compiler plugin is now required for compiling Chisel code. " +
@@ -1434,5 +1447,5 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     * @note The order is reversed from the order of elements in order to print
     *   the fields in the order they were defined
     */
-  override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
+  override def toPrintable: Printable = toPrintableHelper(_elements.toList.reverse)
 }

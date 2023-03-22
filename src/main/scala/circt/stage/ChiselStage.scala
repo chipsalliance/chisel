@@ -14,10 +14,10 @@ import chisel3.stage.{
 }
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
-import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
+import firrtl.options.{BareShell, Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.stage.FirrtlCircuitAnnotation
 
-trait CLI { this: Shell =>
+trait CLI { this: BareShell =>
   parser.note("CIRCT (MLIR FIRRTL Compiler) options")
   Seq(
     CIRCTTargetAnnotation,
@@ -94,7 +94,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
-    ) ++ (new ChiselStage).shell.parse(args)
+    ) ++ (new BareShell("circt") with CLI).parse(args)
 
     phase
       .transform(annos)
@@ -117,7 +117,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
-    ) ++ (new ChiselStage).shell.parse(args)
+    ) ++ (new BareShell("circt") with CLI).parse(args)
 
     phase
       .transform(annos)
@@ -136,7 +136,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.FIRRTL)
-    ) ++ (new ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+    ) ++ (new BareShell("circt") with CLI).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
 
     phase
       .transform(annos)
@@ -155,7 +155,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.HW)
-    ) ++ (new ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+    ) ++ (new BareShell("circt") with CLI).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
 
     phase
       .transform(annos)
@@ -180,7 +180,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-    ) ++ (new circt.stage.ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+    ) ++ (new BareShell("circt") with CLI).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
     phase
       .transform(annos)
       .collectFirst {
@@ -218,7 +218,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
-    ) ++ (new ChiselStage).shell.parse(args)
+    ) ++ (new BareShell("circt") with CLI).parse(args)
 
     phase
       .transform(annos)

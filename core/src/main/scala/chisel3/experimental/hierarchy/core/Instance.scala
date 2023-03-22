@@ -110,8 +110,7 @@ object Instance extends SourceInfoDoc {
   def do_apply[T <: BaseModule with IsInstantiable](
     definition: Definition[T]
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
     val existingMod = Builder.components.map {
