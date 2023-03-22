@@ -55,7 +55,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** A non-ambiguous name of this `Bits` instance for use in generated Verilog names
     * Inserts the width directly after the typeName, e.g. UInt4, SInt1
     */
-  def typeName: String = s"${this.getClass.getSimpleName}$width"
+  override def typeName: String = s"${this.getClass.getSimpleName}$width"
 
   /** Tail operator
     *

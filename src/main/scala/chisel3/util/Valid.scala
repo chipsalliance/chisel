@@ -190,7 +190,7 @@ class Pipe[T <: Data](val gen: T, val latency: Int = 1)(implicit compileOptions:
    */
   override def desiredName = {
     val latencyStr = s"${latency}cycle${if (latency > 1) "s" else ""}"
-    s"${this.getClass.getSimpleName}_${latency_str}_${gen.typeName}"
+    s"${this.getClass.getSimpleName}_${latencyStr}_${gen.typeName}"
   }
 
   /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
