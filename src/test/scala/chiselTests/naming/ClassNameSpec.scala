@@ -24,7 +24,7 @@ class ClassNameSpec extends ChiselFunSpec with Utils {
   }
 
   describe("(0) Dynamic declarations") {
-    it("(0.a): name of an dynamic class of Module is anonymous") {
+    it("(0.a): name of an dynamic class of Module") {
       ChiselStage.elaborate {
         val x = new DynamicObject.MyDynamicModule
         assert(x.chiselClassName == "MyDynamicModule")
@@ -47,10 +47,21 @@ class ClassNameSpec extends ChiselFunSpec with Utils {
         }
       )
     }
+    it("(0.d): name of an dynamic class of Bundle defined in this it thingy") {
+      // I don't know why this adds the $1 at the end, but :shrug: its current behavior
+      class MyBundle extends Bundle
+      ChiselStage.elaborate(
+        new Module {
+          import chisel3.experimental.BundleLiterals._
+          val x = (new MyBundle())
+          assert(x.chiselClassName == "MyBundle$1")
+        }
+      )
+    }
   }
 
   describe("(1) Static declarations") {
-    it("(1.a): name of an dynamic class of Module is anonymous") {
+    it("(1.a): name of an dynamic class of Module") {
       ChiselStage.elaborate {
         val x = new StaticObject.MyStaticModule
         assert(x.chiselClassName == "MyStaticModule")
