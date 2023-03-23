@@ -1165,11 +1165,6 @@ object AsyncReset {
 sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
   override def toString: String = stringAccessor("AsyncReset")
 
-  /** A non-ambiguous name of this `AsyncReset` for use in generated Verilog names
-    * Inserts the width directly after the typeName, e.g. AsyncReset1
-    */
-  override def typeName = s"${this.getClass.getSimpleName}$width"
-
   def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
 
   private[chisel3] def typeEquivalent(that: Data): Boolean =
