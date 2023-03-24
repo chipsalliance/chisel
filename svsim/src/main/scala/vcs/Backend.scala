@@ -42,7 +42,7 @@ object Backend {
         (fsdbEnabled, svsim.Backend.enableFsdbTracingFlag)
       ).collect {
         case (true, value) =>
-          svsim.SvsimCompilationSettings.VerilogPreprocessorDefine(value)
+          svsim.CommonCompilationSettings.VerilogPreprocessorDefine(value)
       }
       private[vcs] def environment = fsdbSettings match {
         case None                                        => Seq()
@@ -93,7 +93,7 @@ final class Backend(
     outputBinaryName:        String,
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
-    commonSettings:          SvsimCompilationSettings,
+    commonSettings:          CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): svsim.Backend.InvocationSettings = {
     // These environment variables apply to both compilation and simulation
@@ -107,7 +107,7 @@ final class Backend(
     ).flatten
 
     //format: off
-    import SvsimCompilationSettings._
+    import CommonCompilationSettings._
     import Backend.CompilationSettings._
     svsim.Backend.InvocationSettings(
       compilerPath = s"$vcsHome/bin/vcs",

@@ -51,7 +51,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
             backend
           )(
             workingDirectoryTag = name,
-            commonSettings = SvsimCompilationSettings(),
+            commonSettings = CommonCompilationSettings(),
             backendSpecificSettings = compilationSettings,
             customSimulationWorkingDirectory = None,
             verbose = false
@@ -68,7 +68,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           backend
         )(
           workingDirectoryTag = name,
-          commonSettings = SvsimCompilationSettings(),
+          commonSettings = CommonCompilationSettings(),
           backendSpecificSettings = compilationSettings,
           customSimulationWorkingDirectory = None,
           verbose = false
