@@ -1,0 +1,126 @@
+package chisel3.simulator
+
+import svsim._
+import chisel3._
+
+object PeekPokeAPI {
+  case class FailedExpectationException[T](observed: T, expected: T, message: String)
+      extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
+
+  private def currentContext() = Simulator.dynamicSimulationContext.value.get
+
+  implicit class testableClock(clock: Clock) {
+    def step(cycles: Int = 1): Unit = {
+      val context = currentContext()
+      context.willEvaluate()
+      if (cycles == 0) {
+        context.controller.run(0)
+      } else {
+        val simulationPort = context.simulationPorts(clock)
+        simulationPort.tick(
+          timestepsPerPhase = 1,
+          maxCycles = cycles,
+          inPhaseValue = 0,
+          outOfPhaseValue = 1,
+          sentinel = None
+        )
+      }
+    }
+  }
+
+  sealed trait SimulationData {
+    type T <: Data
+    val data: T
+
+    private def isSigned = data.isInstanceOf[SInt]
+
+    private[simulator] def encode(width: Int, value: BigInt): T
+    private final def encode(value: Simulation.Value): T = {
+      encode(value.bitCount, value.asBigInt)
+    }
+
+    final def peek(): T = encode(data.peekValue())
+    final def expect(expected: T): Unit = {
+      data.expect(
+        expected.litValue,
+        encode(_).litValue,
+        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
+      )
+    }
+    final def expect(expected: T, message: String): Unit = {
+      data.expect(expected.litValue, encode(_).litValue, (_: BigInt, _: BigInt) => message)
+    }
+    final def expect(expected: BigInt): Unit = {
+      data.expect(
+        expected,
+        _.asBigInt,
+        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
+      )
+    }
+    final def expect(expected: BigInt, message: String): Unit = {
+      data.expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message)
+    }
+
+  }
+
+  implicit final class testableSInt(val data: SInt) extends SimulationData {
+    type T = SInt
+    override def encode(width: Int, value: BigInt) = value.asSInt(width.W)
+  }
+
+  implicit final class testableUInt(val data: UInt) extends SimulationData {
+    type T = UInt
+    override def encode(width: Int, value: BigInt) = value.asUInt(width.W)
+  }
+
+  implicit final class testableBool(val data: Bool) extends SimulationData {
+    type T = Bool
+    override def encode(width: Int, value: BigInt): Bool = {
+      if (value.isValidByte) {
+        value.byteValue match {
+          case 0 => false.B
+          case 1 => true.B
+          case x => throw new Exception(s"peeked Bool with value $x, not 0 or 1")
+        }
+      } else {
+        throw new Exception(s"peeked Bool with value $value, not 0 or 1")
+      }
+    }
+  }
+
+  implicit final class testableData[T <: Data](data: T) {
+    private def isSigned = data.isInstanceOf[SInt]
+
+    def poke(boolean: Boolean): Unit = {
+      poke(if (boolean) 1 else 0)
+    }
+    def poke(literal: T): Unit = {
+      poke(literal.litValue)
+    }
+    def poke(value: BigInt): Unit = {
+      val context = currentContext()
+      context.willPoke()
+      val simulationPort = context.simulationPorts(data)
+      simulationPort.set(value)
+    }
+    def peekValue(): Simulation.Value = {
+      val context = currentContext()
+      context.willPeek()
+      val simulationPort = context.simulationPorts(data)
+      simulationPort.get(isSigned = isSigned)
+    }
+    def expect[T](
+      expected:     T,
+      encode:       (Simulation.Value) => T,
+      buildMessage: (T, T) => String
+    ): Unit = {
+      val context = currentContext()
+      context.willPeek()
+      val simulationPort = context.simulationPorts(data)
+      simulationPort.check(isSigned = isSigned) { observedValue =>
+        val observed = encode(observedValue)
+        if (observed != expected) throw FailedExpectationException(observed, expected, buildMessage(observed, expected))
+      }
+    }
+  }
+}
