@@ -417,41 +417,46 @@ private[chisel3] class DynamicContext(
   val throwOnFirstError: Boolean,
   val warningsAsErrors:  Boolean,
   val sourceRoots:       Seq[File]) {
-  val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+  val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
-  // Map holding the actual names of extModules
-  // Pick the definition name by default in case not passed through annotation.
-  val importDefinitionMap = importDefinitionAnnos
+  // Map from proto module name to ext-module name
+  // Pick the definition name by default in case not overridden
+  // 1. Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
+  // 2. Return the distinct definition / extMod names
+  val importedDefinitionMap = importedDefinitionAnnos
     .map(a => a.definition.proto.name -> a.overrideDefName.getOrElse(a.definition.proto.name))
     .toMap
 
-  // Helper function which does 2 things
-  // 1. Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
-  // 2. Return the distinct definition / extMod names
-  private def checkAndGeDistinctProtoExtModNames() = {
-    val importAllDefinitionProtoNames = importDefinitionAnnos.map { a => a.definition.proto.name }
-    val importDistinctDefinitionProtoNames = importDefinitionMap.keys.toSeq
-    val importAllDefinitionExtModNames = importDefinitionMap.toSeq.map(_._2)
-    val importDistinctDefinitionExtModNames = importAllDefinitionExtModNames.distinct
+  private def checkAndGetDistinctProtoExtModNames() = {
+    val allProtoNames = importedDefinitionAnnos.map { a => a.definition.proto.name }
+    val distinctProtoNames = importedDefinitionMap.keys.toSeq
+    val allExtModNames = importedDefinitionMap.toSeq.map(_._2)
+    val distinctExtModNames = allExtModNames.distinct
 
-    if (importDistinctDefinitionProtoNames.length < importAllDefinitionProtoNames.length) {
-      val duplicates = importAllDefinitionProtoNames.diff(importDistinctDefinitionProtoNames).mkString(", ")
+    if (distinctProtoNames.length < allProtoNames.length) {
+      val duplicates = allProtoNames.diff(distinctProtoNames).mkString(", ")
       throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
     }
-    if (importDistinctDefinitionExtModNames.length < importAllDefinitionExtModNames.length) {
-      val duplicates = importAllDefinitionExtModNames.diff(importDistinctDefinitionExtModNames).mkString(", ")
+    if (distinctExtModNames.length < allExtModNames.length) {
+      val duplicates = allExtModNames.diff(distinctExtModNames).mkString(", ")
       throwException(s"Expected distinct overrideDef names but found duplicates for: $duplicates")
     }
-    (importAllDefinitionProtoNames ++ importAllDefinitionExtModNames).distinct
+    (
+      (allProtoNames ++ allExtModNames).distinct,
+      importedDefinitionAnnos.map(a => a.definition.proto.definitionIdentifier)
+    )
   }
 
   val globalNamespace = Namespace.empty
+  val globalIdentifierNamespace = Namespace.empty
 
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-  checkAndGeDistinctProtoExtModNames().foreach {
-    globalNamespace.name(_)
+  checkAndGetDistinctProtoExtModNames() match {
+    case (names, identifiers) =>
+      names.foreach(globalNamespace.name(_))
+      identifiers.foreach(globalIdentifierNamespace.name(_))
   }
 
   val components = ArrayBuffer[Component]()
@@ -525,18 +530,19 @@ private[chisel3] object Builder extends LazyLogging {
 
   def idGen: IdGen = chiselContext.get.idGen
 
-  def globalNamespace: Namespace = dynamicContext.globalNamespace
-  def components:      ArrayBuffer[Component] = dynamicContext.components
-  def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def globalNamespace:           Namespace = dynamicContext.globalNamespace
+  def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
+  def components:                ArrayBuffer[Component] = dynamicContext.components
+  def annotations:               ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
   // TODO : Unify this with annotations in the future - done this way for backward compatability
   def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
 
-  def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
-  def namingStack:         NamingStack = dynamicContext.namingStack
-  def importDefinitionMap: Map[String, String] = dynamicContext.importDefinitionMap
+  def annotationSeq:         AnnotationSeq = dynamicContext.annotationSeq
+  def namingStack:           NamingStack = dynamicContext.namingStack
+  def importedDefinitionMap: Map[String, String] = dynamicContext.importedDefinitionMap
 
   def unnamedViews:  ArrayBuffer[Data] = dynamicContext.unnamedViews
   def viewNamespace: Namespace = chiselContext.get.viewNamespace
