@@ -40,9 +40,13 @@
 
 #ifdef SVSIM_ENABLE_VERILATOR_SUPPORT
 #include "verilated-sources/VsvsimTestbench__Dpi.h"
+#define DPI_TASK_RETURN_TYPE int
+#define DPI_TASK_RETURN_VALUE 0
 #endif
 #ifdef SVSIM_ENABLE_VCS_SUPPORT
 #include "vc_hdrs.h"
+#define DPI_TASK_RETURN_TYPE void
+#define DPI_TASK_RETURN_VALUE
 #endif
 
 extern "C" {
@@ -783,7 +787,7 @@ static void processCommand() {
 }
 
 bool aslrShenanigansDetected = false;
-typeof(simulation_body()) simulation_body() {
+DPI_TASK_RETURN_TYPE simulation_body() {
   if (aslrShenanigansDetected) {
     failWithError("Backend did not relaunch the executable with ASLR disabled "
                   "as expected.");
@@ -793,7 +797,7 @@ typeof(simulation_body()) simulation_body() {
   sendReady();
   while (!receivedDone)
     processCommand();
-  return 0;
+  return DPI_TASK_RETURN_VALUE;
 }
 
 int main(int argc, const char *argv[]) {
