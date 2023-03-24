@@ -100,6 +100,9 @@ final object Simulator {
 
     // The peek/poke API implicitly evaluates on the first peek after one or more pokes. This is _only_ for peek/poke and using `controller` directly will not provide this behavior.
     private var evaluateBeforeNextPeek: Boolean = false
+    def willEvaluate() = {
+      evaluateBeforeNextPeek = false
+    }
     def willPoke() = {
       shouldCompleteInFlightCommands = true
       evaluateBeforeNextPeek = true
@@ -107,7 +110,7 @@ final object Simulator {
     def willPeek() = {
       shouldCompleteInFlightCommands = true
       if (evaluateBeforeNextPeek) {
-        evaluateBeforeNextPeek = false
+        willEvaluate()
         controller.run(0)
       }
     }

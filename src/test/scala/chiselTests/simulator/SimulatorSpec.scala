@@ -24,7 +24,7 @@ class GCD extends Module {
   io.resultIsValid := y === 0.U
 }
 
-final class VerilatorSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
+class VerilatorSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
   val backend = verilator.Backend.initializeFromProcessEnvironment()
   val tag = "verilator"
   val commonCompilationSettings = CommonCompilationSettings()
@@ -61,6 +61,23 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
             sentinel = Some(resultIsValid, 1)
           )
           result.get().asBigInt
+        }
+        .result
+      assert(result === 12)
+    }
+
+    it("runs GCD correctly with peek/poke") {
+      val simulator = new VerilatorSimulator("test_run_dir/simulator/GCDSimulator")
+      val result = simulator
+        .simulate(new GCD()) { (_, gcd) =>
+          import PeekPokeAPI._
+          gcd.io.a.poke(24.U)
+          gcd.io.b.poke(36.U)
+          gcd.io.loadValues.poke(1.B)
+          gcd.clock.step()
+          gcd.io.loadValues.poke(0.B)
+          gcd.clock.step(10)
+          gcd.io.result.peek().litValue
         }
         .result
       assert(result === 12)
