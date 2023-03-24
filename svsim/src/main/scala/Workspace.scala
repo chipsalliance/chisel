@@ -1,6 +1,6 @@
 package svsim
 
-import java.io.{BufferedReader, BufferedWriter, File, FileWriter, InputStreamReader}
+import java.io.{BufferedReader, BufferedWriter, File, FileWriter, InputStreamReader, PrintWriter}
 import java.nio.file.Paths
 import java.lang.ProcessBuilder.Redirect
 
@@ -257,7 +257,8 @@ final class Workspace(
   )(workingDirectoryTag:              String,
     commonSettings:                   SvsimCompilationSettings,
     backendSpecificSettings:          backend.CompilationSettings,
-    customSimulationWorkingDirectory: Option[String]
+    customSimulationWorkingDirectory: Option[String],
+    verbose:                          Boolean
   ): Simulation = {
     val moduleInfo = _moduleInfo.get
     val workingDirectoryPath = s"$absolutePath/$workingDirectoryPrefix-$workingDirectoryTag"
@@ -354,14 +355,39 @@ final class Workspace(
       * Use the generated Makefile to compile the simulation, since this exercises the Makefile codepath and makes it less likely that we will break `make replay`.
       */
     val processBuilder = new ProcessBuilder("make", "-C", workingDirectoryPath, "simulation")
-    processBuilder.redirectOutput(new File(s"$workingDirectoryPath/compilation-log.txt"))
+    processBuilder.redirectErrorStream(true)
     val process = processBuilder.start()
-    val sourceLocationRegex = "[\\./]*generated-sources/".r
-    new BufferedReader(new InputStreamReader(process.getErrorStream()))
-      .lines()
-      .map(sourceLocationRegex.replaceFirstIn(_, ""))
-      .forEach(System.err.println)
+    @scala.annotation.nowarn(
+      "msg=Use `scala.jdk.CollectionConverters` instead"
+    )
+    def readLogLines() = {
+      val sourceLocationRegex = "[\\./]*generated-sources/".r
+      import scala.collection.JavaConverters._
+      new BufferedReader(new InputStreamReader(process.getInputStream()))
+        .lines()
+        .map(sourceLocationRegex.replaceFirstIn(_, ""))
+        .map { line =>
+          if (verbose) {
+            println(line)
+          }
+          line
+        }
+        .iterator()
+        .asScala
+        .toSeq
+    }
+    val compilationLogLines = readLogLines()
     process.waitFor()
+    val compilationLogWriter = new PrintWriter(
+      new BufferedWriter(
+        new FileWriter(new File(s"$workingDirectoryPath/compilation-log.txt"))
+      )
+    )
+    compilationLogLines.foreach(compilationLogWriter.println)
+    compilationLogWriter.close()
+    if (process.exitValue() != 0) {
+      throw new Exception(compilationLogLines.mkString("\n"))
+    }
 
     new Simulation(
       executableName = "simulation",
