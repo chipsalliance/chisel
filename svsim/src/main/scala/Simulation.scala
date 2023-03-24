@@ -52,6 +52,9 @@ final class Simulation private[svsim] (
       // Make sure errors are thrown from async commands at the end of the test
       controller.completeInFlightCommands()
       process.waitFor()
+      if (process.exitValue() != 0) {
+        throw new Exception(s"Nonzero exit status: ${process.exitValue()}")
+      }
       outcome
     } finally {
       process.destroyForcibly()
