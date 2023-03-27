@@ -341,7 +341,8 @@ class Queue[T <: Data](
   }
 
   /** Give this Queue a default, stable desired name using the supplied `Data`
-   * generator's `typeName` */
+    * generator's `typeName`
+    */
   override def desiredName = s"Queue${entries}_${gen.typeName}"
 }
 

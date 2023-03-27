@@ -178,7 +178,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   }
 
   /** Give this Vec a default, stable desired name using the supplied `Data`
-   * generator's `typeName` */
+    * generator's `typeName`
+    */
   override def typeName = s"Vec${length}_${gen.typeName}"
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {

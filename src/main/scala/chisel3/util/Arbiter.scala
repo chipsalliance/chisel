@@ -133,7 +133,8 @@ class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](g
 class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
 
   /** Give this Arbiter a default, stable desired name using the supplied `Data`
-   * generator's `typeName` and input count parameter */
+    * generator's `typeName` and input count parameter
+    */
   override def desiredName = s"Arbiter${n}_${gen.typeName}"
 
   val io = IO(new ArbiterIO(gen, n))

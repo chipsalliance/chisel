@@ -185,9 +185,9 @@ object Pipe {
 class Pipe[T <: Data](val gen: T, val latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
 
   /** A non-ambiguous name of this `Pipe` for use in generated Verilog names.
-   * Includes the cycle count in the name as well as the parameterized generator's
-   * `typeName`, e.g. `Pipe_4cycles_UInt4`
-   */
+    * Includes the cycle count in the name as well as the parameterized generator's
+    * `typeName`, e.g. `Pipe_4cycles_UInt4`
+    */
   override def desiredName = {
     val latencyStr = s"${latency}cycle${if (latency > 1) "s" else ""}"
     s"${this.getClass.getSimpleName}_${latencyStr}_${gen.typeName}"
