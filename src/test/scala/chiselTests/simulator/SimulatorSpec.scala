@@ -5,8 +5,6 @@ import chisel3.simulator._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
-import chisel3.simulator.Simulator.CompilationFailed
-import chisel3.simulator.Simulator.SimulationDigest
 
 class GCD extends Module {
   val io = IO(new Bundle {
