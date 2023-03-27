@@ -1,35 +1,65 @@
 package chiselTests.naming
 
 import chisel3._
+import chisel3.experimental.Analog
 import chisel3.stage.ChiselStage
 import chisel3.util.{Decoupled, Queue}
 import chiselTests.ChiselFlatSpec
 
-class TypenameSpec extends ChiselFlatSpec { 
+class TypenameSpec extends ChiselFlatSpec {
   "Queues" should "have stable, type-parameterized default names" in {
     class Test extends Module {
+      class AnalogTest[T <: Analog](gen: T) extends Module {
+        val bus = IO(gen)
+
+        override def desiredName = s"AnalogTest_${gen.typeName}"
+      }
+
       val io = IO(new Bundle {
-        val foo = Decoupled(UInt(4.W))
-        val bar = Decoupled(Bool())
-        val fizzbuzz = Decoupled(Vec(3, UInt(8.W)))
+        val uint = Decoupled(UInt(4.W))
+        val bool = Decoupled(Bool())
+        val vec = Decoupled(Vec(3, UInt(8.W)))
+        val asyncReset = Decoupled(AsyncReset())
+        val reset = Decoupled(Reset())
+        val clock = Decoupled(Clock())
+        val analog = Analog(32.W)
       })
 
-      val fooEnq = Wire(Decoupled(UInt(4.W)))
-      val fooDeq = Queue(fooEnq, 16) // Queue16_UInt4
-      fooEnq <> io.foo
+      val uintEnq = Wire(Decoupled(UInt(4.W)))
+      val uintDeq = Queue(uintEnq, 16) // Queue16_UInt4
+      uintEnq <> io.uint
 
-      val barEnq = Wire(Decoupled(Bool()))
-      val barDeq = Queue(barEnq, 5) // Queue5_Bool
-      barEnq <> io.bar
-      
-      val fizzbuzzEnq = Wire(Decoupled(Vec(3, UInt(8.W))))
-      val fizzbuzzDeq = Queue(fizzbuzzEnq, 32) // Queue32_Vec3_UInt8
-      fizzbuzzEnq <> io.fizzbuzz
+      val boolEnq = Wire(Decoupled(Bool()))
+      val boolDeq = Queue(boolEnq, 5) // Queue5_Bool
+      boolEnq <> io.bool
+
+      val vecEnq = Wire(Decoupled(Vec(3, UInt(8.W))))
+      val vecDeq = Queue(vecEnq, 32) // Queue32_Vec3_UInt8
+      vecEnq <> io.vec
+
+      val asyncResetEnq = Wire(Decoupled(AsyncReset()))
+      val asyncResetDeq = Queue(asyncResetEnq, 17) // Queue17_AsyncReset
+      asyncResetEnq <> io.asyncReset
+
+      val resetEnq = Wire(Decoupled(Reset()))
+      val resetDeq = Queue(resetEnq, 3) // Queue3_Reset
+      resetEnq <> io.reset
+
+      val clockEnq = Wire(Decoupled(Clock()))
+      val clockDeq = Queue(clockEnq, 20) // Queue20_Clock
+      clockEnq <> io.clock
+
+      val analogTest = Module(new AnalogTest(Analog(32.W)))
+      analogTest.bus <> io.analog
     }
 
     val chirrtl = ChiselStage.emitChirrtl(new Test)
     chirrtl should include("module Queue16_UInt4")
     chirrtl should include("module Queue5_Bool")
     chirrtl should include("module Queue32_Vec3_UInt8")
+    chirrtl should include("module Queue17_AsyncReset")
+    chirrtl should include("module Queue3_Reset")
+    chirrtl should include("module Queue20_Clock")
+    chirrtl should include("module AnalogTest_Analog32")
   }
 }
