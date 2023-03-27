@@ -1,10 +1,10 @@
-package chiselTests.naming
+package chiselTests
+package naming
 
 import chisel3._
 import chisel3.experimental.Analog
-import chisel3.stage.ChiselStage
 import chisel3.util.{Decoupled, Queue}
-import chiselTests.ChiselFlatSpec
+import circt.stage.ChiselStage
 
 class TypenameSpec extends ChiselFlatSpec {
   "Queues" should "have stable, type-parameterized default names" in {
@@ -53,7 +53,7 @@ class TypenameSpec extends ChiselFlatSpec {
       analogTest.bus <> io.analog
     }
 
-    val chirrtl = ChiselStage.emitChirrtl(new Test)
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
     chirrtl should include("module Queue16_UInt4")
     chirrtl should include("module Queue5_Bool")
     chirrtl should include("module Queue32_Vec3_UInt8")
