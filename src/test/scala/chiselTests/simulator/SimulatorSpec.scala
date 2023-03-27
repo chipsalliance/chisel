@@ -75,6 +75,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           gcd.clock.step()
           gcd.io.loadValues.poke(0.B)
           gcd.clock.step(10)
+          gcd.io.result.expect(12)
           gcd.io.result.peek().litValue
         }
         .result
