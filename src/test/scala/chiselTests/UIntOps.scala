@@ -6,7 +6,6 @@ import circt.stage.ChiselStage
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-import org.scalacheck.Shrink
 import org.scalatest.matchers.should.Matchers
 
 class UIntOps extends Module {
@@ -207,9 +206,6 @@ class UIntLitZeroWidthTester extends BasicTester {
 }
 
 class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
-  // Disable shrinking on error.
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Bools can be created from 1 bit UInts") {
     ChiselStage.elaborate(new GoodBoolConversion)
@@ -383,6 +379,62 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
       val y = WireDefault(UInt(0.W), DontCare)
       val op = x * y
       WireDefault(chiselTypeOf(op), op)
+    }
+  }
+
+  property("emit warning if dynamic index is too wide or too narrow") {
+    class TooWide extends Module {
+      val in = IO(Input(UInt(2.W)))
+      val index = IO(Input(UInt(2.W)))
+      val out = IO(Output(Bool()))
+      out := in(index)
+    }
+    class TooNarrow extends Module {
+      val in = IO(Input(UInt(3.W)))
+      val index = IO(Input(UInt(1.W)))
+      val out = IO(Output(Bool()))
+      out := in(index)
+    }
+
+    Seq(
+      grabLog(ChiselStage.elaborate(new TooWide)),
+      grabLog(ChiselStage.elaborate(new TooNarrow))
+    ).foreach {
+      case (log, _) =>
+        log should include("warn")
+    }
+
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new RawModule {
+        val in = IO(Input(UInt(0.W)))
+        val index = IO(Input(UInt(1.W)))
+        val out = IO(Output(Bool()))
+        out := in(index)
+      })
+    }
+
+    class Ok extends Module {
+      val in1 = IO(Input(UInt(9.W)))
+      val index1 = IO(Input(UInt(4.W)))
+      val out1 = IO(Output(Bool()))
+      out1 := in1(index1)
+
+      val in2 = IO(Input(UInt(8.W)))
+      val index2 = IO(Input(UInt(3.W)))
+      val out2 = IO(Output(Bool()))
+      out2 := in2(index2)
+
+      val in3 = IO(Input(Bool()))
+      val index3 = IO(Input(UInt(0.W)))
+      val out3 = IO(Output(Bool()))
+      out3 := in3(index3)
+    }
+
+    Seq(
+      grabLog(ChiselStage.elaborate(new Ok))
+    ).foreach {
+      case (log, _) =>
+        log should be("")
     }
   }
 }

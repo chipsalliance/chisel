@@ -73,7 +73,7 @@ class RawModuleSpec extends ChiselFlatSpec with Utils {
   }
 
   "ImplicitModule directly in a RawModule" should "fail" in {
-    intercept[chisel3.internal.ChiselException] {
+    intercept[ChiselException] {
       extractCause[ChiselException] {
         ChiselStage.elaborate { new RawModuleWithDirectImplicitModule }
       }
@@ -81,7 +81,7 @@ class RawModuleSpec extends ChiselFlatSpec with Utils {
   }
 
   "ImplicitModule directly in a RawModule in an ImplicitModule" should "fail" in {
-    intercept[chisel3.internal.ChiselException] {
+    intercept[ChiselException] {
       extractCause[ChiselException] {
         ChiselStage.elaborate { new ImplicitModuleDirectlyInRawModuleTester }
       }

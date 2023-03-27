@@ -3,20 +3,8 @@
 package chisel3.experimental
 
 import chisel3.internal.firrtl.Width
-import chisel3.experimental.SourceInfo
 import chisel3.internal._
-import chisel3.{
-  ActualDirection,
-  Bits,
-  CompileOptions,
-  Data,
-  Element,
-  PString,
-  Printable,
-  RawModule,
-  SpecifiedDirection,
-  UInt
-}
+import chisel3.{ActualDirection, Bits, Data, Element, PString, Printable, RawModule, SpecifiedDirection, UInt}
 
 import scala.collection.mutable
 
@@ -80,14 +68,13 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     binding = target
   }
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt =
     throwException("Analog does not support asUInt")
 
   private[chisel3] override def connectFromBits(
     that: Bits
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     throwException("Analog does not support connectFromBits")
   }

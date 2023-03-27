@@ -6,8 +6,6 @@ import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.Queue
 
-import chisel3.internal.ChiselException
-
 class InstanceNameModule extends Module {
   val io = IO(new Bundle {
     val foo = Input(UInt(32.W))

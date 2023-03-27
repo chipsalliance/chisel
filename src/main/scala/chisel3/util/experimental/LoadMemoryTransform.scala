@@ -3,12 +3,8 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
-import firrtl.annotations._
-import firrtl.ir.{Module => _, _}
-import firrtl.transforms.BlackBoxInlineAnno
-import firrtl.Mappers._
-import firrtl.{AnnotationSeq, CircuitForm, CircuitState, EmitCircuitAnnotation, LowForm, Transform, VerilogEmitter}
+import chisel3.experimental.{annotate, ChiselAnnotation}
+import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryFileInlineAnnotation, MemoryLoadFileType}
 
 import scala.collection.mutable
 
@@ -18,20 +14,17 @@ import scala.collection.mutable
   * @param fileName      name of input file
   * @param hexOrBinary   use \$readmemh or \$readmemb, i.e. hex or binary text input, default is hex
   */
-case class ChiselLoadMemoryAnnotation[T <: Data](
+private case class ChiselLoadMemoryAnnotation[T <: Data](
   target:      MemBase[T],
   fileName:    String,
   hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex)
-    extends ChiselAnnotation
-    with RunFirrtlTransform {
+    extends ChiselAnnotation {
 
   if (fileName.isEmpty) {
     throw new Exception(
       s"""LoadMemory from file annotations file empty file name"""
     )
   }
-
-  def transformClass: Class[LoadMemoryTransform] = classOf[LoadMemoryTransform]
 
   def toFirrtl: LoadMemoryAnnotation = {
     val tx = target.toNamed.asInstanceOf[ComponentName]
@@ -42,8 +35,8 @@ case class ChiselLoadMemoryAnnotation[T <: Data](
 /** [[loadMemoryFromFile]] is an annotation generator that helps with loading a memory from a text file as a bind module. This relies on
   * Verilator and Verilog's `\$readmemh` or `\$readmemb`.
   *
-  * This annotation, when the FIRRTL compiler runs, triggers the [[LoadMemoryTransform]]. That will add Verilog
-  * directives to enable the specified memories to be initialized from files.
+  * This annotation, when a FIRRTL compiler runs will add Verilog directives to enable the specified memories to be
+  * initialized from files.
   *
   * ==Example module==
   *
@@ -116,10 +109,10 @@ object loadMemoryFromFile {
 /** [[loadMemoryFromFileInline]] is an annotation generator that helps with loading a memory from a text file inlined in
   * the Verilog module. This relies on Verilator and Verilog's `\$readmemh` or `\$readmemb`.
   *
-  * This annotation, when the FIRRTL compiler runs, triggers the [[MemoryFileInlineAnnotation]] that will add Verilog
+  * This annotation, when the FIRRTL compiler runs, triggers the `MemoryFileInlineAnnotation` that will add Verilog
   * directives inlined to the module enabling the specified memories to be initialized from files.
-  * The module supports both `hex` and `bin` files by passing the appropriate [[MemoryLoadFileType.FileType]] argument with
-  * [[MemoryLoadFileType.Hex]] or [[MemoryLoadFileType.Binary]]. Hex is the default.
+  * The module supports both `hex` and `bin` files by passing the appropriate `MemoryLoadFileType.FileType`` argument with
+  * `MemoryLoadFileType.Hex` or `MemoryLoadFileType.Binary`. Hex is the default.
   *
   * ==Example module==
   *
@@ -187,126 +180,5 @@ object loadMemoryFromFileInline {
     annotate(new ChiselAnnotation {
       override def toFirrtl = MemoryFileInlineAnnotation(memory.toTarget, fileName, hexOrBinary)
     })
-  }
-}
-
-/** This transform only is activated if Verilog is being generated (determined by presence of the proper emit
-  * annotation) when activated it creates additional Verilog files that contain modules bound to the modules that
-  * contain an initializable memory.
-  */
-class LoadMemoryTransform extends Transform {
-  def inputForm:  CircuitForm = LowForm
-  def outputForm: CircuitForm = LowForm
-
-  private var memoryCounter: Int = -1
-
-  private val bindModules: mutable.ArrayBuffer[BlackBoxInlineAnno] = new mutable.ArrayBuffer()
-
-  private val verilogEmitter: VerilogEmitter = new VerilogEmitter
-
-  /** run the pass
-    * @param circuit the circuit
-    * @param annotations all the annotations
-    * @return
-    */
-  def run(circuit: Circuit, annotations: AnnotationSeq): Circuit = {
-    val groups = annotations.collect { case m: LoadMemoryAnnotation => m }
-      .groupBy(_.target.serialize)
-    val memoryAnnotations = groups.map {
-      case (key, annos) =>
-        if (annos.size > 1) {
-          throw new Exception(
-            s"Multiple (${annos.size} found for memory $key one LoadMemoryAnnotation is allowed per memory"
-          )
-        }
-        key -> annos.head
-    }
-
-    val modulesByName = circuit.modules.collect { case module: firrtl.ir.Module => module.name -> module }.toMap
-
-    /* Walk the module and for memories that are annotated with [[LoadMemoryAnnotation]]s generate the bindable modules for
-     * Verilog emission.
-     * @param myModule module being searched for memories
-     */
-    def processModule(myModule: DefModule): DefModule = {
-
-      def makePath(componentName: String): String = {
-        circuit.main + "." + myModule.name + "." + componentName
-      }
-
-      def processMemory(name: String): Unit = {
-        val fullMemoryName = makePath(s"$name")
-
-        memoryAnnotations.get(fullMemoryName) match {
-          case Some(lma @ LoadMemoryAnnotation(ComponentName(componentName, moduleName), _, hexOrBinary, _)) =>
-            val writer = new java.io.StringWriter
-            val readmem = hexOrBinary match {
-              case MemoryLoadFileType.Binary => "$readmemb"
-              case MemoryLoadFileType.Hex    => "$readmemh"
-            }
-
-            modulesByName.get(moduleName.name).foreach { module =>
-              val renderer = verilogEmitter.getRenderer(module, modulesByName)(writer)
-              val loadFileName = lma.getFileName
-
-              memoryCounter += 1
-              val bindsToName = s"BindsTo_${memoryCounter}_${moduleName.name}"
-              renderer.emitVerilogBind(
-                bindsToName,
-                s"""
-                   |initial begin
-                   |  $readmem("$loadFileName", ${myModule.name}.$componentName);
-                   |end
-                      """.stripMargin
-              )
-              val inLineText = writer.toString + "\n" +
-                s"""bind ${myModule.name} $bindsToName ${bindsToName}_Inst(.*);"""
-
-              val blackBoxInline = BlackBoxInlineAnno(
-                moduleName,
-                moduleName.serialize + "." + componentName + ".v",
-                inLineText
-              )
-
-              bindModules += blackBoxInline
-            }
-
-          case _ =>
-        }
-      }
-
-      def processStatements(statement: Statement): Statement = {
-        statement match {
-          case m: DefMemory => processMemory(m.name)
-          case s => s.map(processStatements)
-        }
-        statement
-      }
-
-      myModule match {
-        case module: firrtl.ir.Module =>
-          processStatements(module.body)
-        case _ =>
-      }
-
-      myModule
-    }
-
-    circuit.map(processModule)
-  }
-
-  def execute(state: CircuitState): CircuitState = {
-    val isVerilog = state.annotations.exists {
-      case EmitCircuitAnnotation(emitter) =>
-        emitter == classOf[VerilogEmitter]
-      case _ =>
-        false
-    }
-    if (isVerilog) {
-      run(state.circuit, state.annotations)
-      state.copy(annotations = state.annotations ++ bindModules)
-    } else {
-      state
-    }
   }
 }

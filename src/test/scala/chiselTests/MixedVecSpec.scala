@@ -6,7 +6,6 @@ import circt.stage.ChiselStage
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-import org.scalacheck.Shrink
 
 class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester {
   val v = MixedVecInit(values.map(v => v.U(w.W)))
@@ -154,11 +153,6 @@ class MixedVecOneBitTester extends BasicTester {
 }
 
 class MixedVecSpec extends ChiselPropSpec with Utils {
-  // Disable shrinking on error.
-  // Not sure why this needs to be here, but the test behaves very weirdly without it (e.g. empty Lists, etc).
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
-
   property("MixedVec varargs API should work") {
     assertTesterPasses {
       new BasicTester {

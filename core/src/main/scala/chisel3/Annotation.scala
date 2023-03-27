@@ -3,9 +3,8 @@
 package chisel3.experimental
 
 import scala.language.existentials
-import chisel3.internal.{Builder, InstanceId, LegacyModule}
-import chisel3.{CompileOptions, Data, RawModule}
-import firrtl.Transform
+import chisel3.internal.Builder
+import chisel3.{Data, InstanceId, RawModule}
 import firrtl.annotations._
 import firrtl.options.Unserializable
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
@@ -26,16 +25,6 @@ trait ChiselAnnotation {
   */
 trait ChiselMultiAnnotation {
   def toFirrtl: Seq[Annotation]
-}
-
-/** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
-  * during a run of
-  * [[Driver$.execute(args:Array[String],dut:()=>chisel3\.RawModule)* Driver.execute]].
-  * Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
-  * FIRRTL.
-  */
-trait RunFirrtlTransform extends ChiselAnnotation {
-  def transformClass: Class[_ <: Transform]
 }
 
 object annotate {
@@ -78,12 +67,7 @@ object annotate {
   *  io.out(1) := fullAdder(io.a, io.b, "mod2")
   * }
   * }}}
-  *
-  * @note Calling this on [[Data]] creates an annotation that Chisel emits to a separate annotations
-  * file. This file must be passed to FIRRTL independently of the `.fir` file. The execute methods
-  * in [[chisel3.Driver]] will pass the annotations to FIRRTL automatically.
   */
-
 object doNotDedup {
 
   /** Marks a module to be ignored in Dedup Transform in Firrtl
@@ -91,7 +75,7 @@ object doNotDedup {
     * @param module The module to be marked
     * @return Unmodified signal `module`
     */
-  def apply[T <: RawModule](module: T)(implicit compileOptions: CompileOptions): Unit = {
+  def apply[T <: RawModule](module: T): Unit = {
     annotate(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(module.toNamed) })
   }
 }

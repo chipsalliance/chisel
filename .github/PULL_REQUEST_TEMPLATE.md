@@ -12,14 +12,15 @@
 
 #### Type of Improvement
 
-<!-- Choose one or more from the following: -->
-<!--   - bug fix                            -->
-<!--   - performance improvement            -->
-<!--   - documentation                      -->
-<!--   - code refactoring                   -->
-<!--   - code cleanup                       -->
-<!--   - backend code generation            -->
-<!--   - new feature/API                    -->
+<!-- Choose one or more from the following:
+- bug fix
+- performance improvement
+- documentation
+- code refactoring
+- code cleanup
+- backend code generation
+- new feature/API
+-->
 
 #### API Impact
 
@@ -33,9 +34,10 @@
 #### Desired Merge Strategy
 
 <!-- If approved, how should this PR be merged? -->
-<!-- Options are: -->
-<!--   - Squash: The PR will be squashed and merged (choose this if you have no preference. -->
-<!--   - Rebase: You will rebase the PR onto master and it will be merged with a merge commit. -->
+<!-- Options are:
+- Squash: The PR will be squashed and merged (choose this if you have no preference.
+- Rebase: You will rebase the PR onto master and it will be merged with a merge commit.
+-->
 
 #### Release Notes
 <!--
@@ -44,7 +46,7 @@ Text from here to the end of the body will be considered for inclusion in the re
 
 ### Reviewer Checklist (only modified by reviewer)
 - [ ] Did you add the appropriate labels?
-- [ ] Did you mark the proper milestone (Bug fix: `3.4.x`, [small] API extension: `3.5.x`, API modification or big change: `3.6.0`)?
+- [ ] Did you mark the proper milestone (Bug fix: `3.5.x` or `3.6.x` depending on impact, API modification or big change: `5.0.0`)?
 - [ ] Did you review?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
 - [ ] Did you do one of the following when ready to merge:

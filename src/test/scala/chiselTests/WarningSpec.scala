@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
+import circt.stage.ChiselStage
 import chisel3.util._
-import chisel3.stage.ChiselStage
 
 class WarningSpec extends ChiselFlatSpec with Utils {
   behavior.of("Warnings")
@@ -34,7 +34,7 @@ class WarningSpec extends ChiselFlatSpec with Utils {
   "Warnings" should "be treated as errors with warningsAsErrors" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
       val args = Array("--warnings-as-errors")
-      (new ChiselStage).emitChirrtl(new MyModule, args)
+      ChiselStage.emitCHIRRTL(new MyModule, args)
     }
   }
 }

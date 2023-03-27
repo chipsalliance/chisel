@@ -29,4 +29,8 @@ addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.11")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.0")
 
 // From FIRRTL for building from source
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.33")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.10.4")
+
+// From FIRRTL
+
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.0.0")
