@@ -23,6 +23,10 @@ class NestedTratClz(b: Int) extends NormalTrait
 @fixTraitIdentifier
 trait FixedNormalTrait extends Module
 
+class HasByNameArg(g: => Module) extends Module {
+  val x = Module(g)
+}
+
 class IdentifierSpec extends ChiselFunSpec with Utils {
   it("(1): definitionIdentifier works on classes, abstract classes, but not traits") {
     class TopA extends Module {
@@ -43,6 +47,13 @@ class IdentifierSpec extends ChiselFunSpec with Utils {
     class TopA extends Module {
       val a = Module(new FixedNormalTrait {})
       assert(a.definitionIdentifier == "FixedNormalTrait")
+    }
+    circt.stage.ChiselStage.emitCHIRRTL(new TopA, Array("--full-stacktrace"))
+  }
+  it("(3): By-name arguments aren't called") {
+    class TopA extends Module {
+      val a = Module(new HasByNameArg(new FixedNormalTrait {}))
+      assert(a.definitionIdentifier == "HasByNameArg")
     }
     circt.stage.ChiselStage.emitCHIRRTL(new TopA, Array("--full-stacktrace"))
   }
