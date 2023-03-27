@@ -19,6 +19,7 @@ private[chisel3] final class InstanceClone[T <: BaseModule](val getProto: T, val
     extends PseudoModule
     with core.IsClone[T] {
   override def toString = s"InstanceClone(${getProto})"
+  override private[chisel3] def _definitionIdentifier = getProto.definitionIdentifier
   // No addition components are generated
   private[chisel3] def generateComponent(): Option[Component] = None
   // Necessary for toTarget to work
