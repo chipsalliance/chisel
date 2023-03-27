@@ -123,7 +123,6 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     _circuitVar = target.getOrElse(null)
   }
 
-
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
   override def hashCode: Int = super.hashCode()
   override def equals(that: Any): Boolean = super.equals(that)
