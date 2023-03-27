@@ -30,7 +30,10 @@ package object plugin {
   def autoNameRecursively[T <: Any](name: String)(nameMe: => T): T = {
     // The _id of the most recently constructed HasId
     val prevId = Builder.idGen.value
+
+    Builder.setInstanceIdentifier(name)
     val result = nameMe
+    Builder.clearInstanceIdentifier()
     _autoNameRecursively(prevId, name, result)
   }
 
