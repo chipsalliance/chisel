@@ -28,8 +28,7 @@ object PeekPokeAPI {
     }
   }
 
-  sealed trait SimulationData {
-    type T <: Data
+  sealed trait SimulationData[T <: Data] {
     val data: T
 
     private def isSigned = data.isInstanceOf[SInt]
@@ -63,18 +62,15 @@ object PeekPokeAPI {
 
   }
 
-  implicit final class testableSInt(val data: SInt) extends SimulationData {
-    type T = SInt
+  implicit final class testableSInt(val data: SInt) extends SimulationData[SInt] {
     override def encode(width: Int, value: BigInt) = value.asSInt(width.W)
   }
 
-  implicit final class testableUInt(val data: UInt) extends SimulationData {
-    type T = UInt
+  implicit final class testableUInt(val data: UInt) extends SimulationData[UInt] {
     override def encode(width: Int, value: BigInt) = value.asUInt(width.W)
   }
 
-  implicit final class testableBool(val data: Bool) extends SimulationData {
-    type T = Bool
+  implicit final class testableBool(val data: Bool) extends SimulationData[Bool] {
     override def encode(width: Int, value: BigInt): Bool = {
       if (value.isValidByte) {
         value.byteValue match {
