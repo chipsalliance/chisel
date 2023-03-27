@@ -279,10 +279,12 @@ package experimental {
         .filterNot(_.forall(_.isDigit)) // 3. Drop purely numeric names
         .last // 4. Use the last name
     }
-    final val definitionIdentifier = {
+    // Needed this to override identifier for DefinitionClone
+    private[chisel3] def _definitionIdentifier = {
       val madeProposal = chisel3.naming.IdentifierProposer.makeProposal(this._moduleDefinitionIdentifierProposal)
       Builder.globalIdentifierNamespace.name(madeProposal)
     }
+    final val definitionIdentifier = _definitionIdentifier
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
