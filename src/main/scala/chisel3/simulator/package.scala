@@ -58,6 +58,10 @@ package object simulator {
       // Initialize Module Info
       val dut = someDut.get
       val ports = {
+
+        /**
+          * We infer the names of various ports since we don't currently have a good alternative when using MFC. We hope to replace this once we get better support from CIRCT.
+          */
         def leafPorts(node: Data, name: String): Seq[(Data, ModuleInfo.Port)] = {
           node match {
             case record: Record => {
