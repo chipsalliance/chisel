@@ -48,7 +48,7 @@ class IdentifierComponent(val global: Global, arguments: ChiselPluginArguments)
       val paramAccessors = mutable.ListBuffer[Symbol]()
       var primaryConstructor: Option[DefDef] = None
       body.foreach {
-        case acc: ValDef if acc.symbol.isParamAccessor =>
+        case acc: ValDef if acc.symbol.isParamAccessor && !acc.mods.hasFlag(Flag.BYNAMEPARAM) =>
           paramAccessors += acc.symbol
         case con: DefDef if con.symbol.isPrimaryConstructor =>
           primaryConstructor = Some(con)
@@ -64,17 +64,20 @@ class IdentifierComponent(val global: Global, arguments: ChiselPluginArguments)
       val (conOpt, params) = getConstructorAndParams(module.impl.body)
 
       // The params have spaces after them (Scalac implementation detail)
-      val paramLookup: String => Symbol = params.map(sym => sym.name.toString.trim -> sym).toMap
+      val paramLookup: Map[String, Symbol] = params.map { sym => sym.name.toString.trim -> sym }.toMap
 
       val str = stringFromTypeName(module.name)
       // Create a getProposal(this.<ref>) for each field matching order of constructor arguments
       val tpedNames: List[Tree] = (localTyper.typed(q"$str")) +:
         conOpt.toList.flatMap { x =>
-          x.vparamss.flatMap(_.map { vp =>
-            val p = paramLookup(vp.name.toString)
-            // Make this.<ref>
-            val select = gen.mkAttributedSelect(thiz.asInstanceOf[Tree], p)
-            localTyper.typed(q"_root_.chisel3.naming.IdentifierProposer.getProposal($select)")
+          x.vparamss.flatMap(_.flatMap { vp =>
+            paramLookup.get(vp.name.toString) match {
+              case Some(p) =>
+                // Make this.<ref>
+                val select = gen.mkAttributedSelect(thiz.asInstanceOf[Tree], p)
+                List(localTyper.typed(q"_root_.chisel3.naming.IdentifierProposer.getProposal($select)"))
+              case None => Nil
+            }
           })
         }
       val body = localTyper.typed(q"_root_.chisel3.naming.IdentifierProposer.makeProposal(..$tpedNames)")
