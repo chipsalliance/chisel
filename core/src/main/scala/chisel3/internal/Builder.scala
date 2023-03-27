@@ -109,11 +109,12 @@ private[chisel3] class IdGen {
 
 private[chisel3] trait HasId extends chisel3.InstanceId {
   // using nullable var for better memory usage
-  private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
-  private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
+  private[chisel3] def _parent: Option[BaseModule] = Builder.getParent(_id)
   private[chisel3] def _parent_=(target: Option[BaseModule]): Unit = {
-    _parentVar = target.getOrElse(null)
+    Builder.setParent(_id, target)
   }
+  private[chisel3] val _id: Long = Builder.idGen.next
+  _parent = Builder.currentModule
 
   // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
   private var _circuitVar:       BaseModule = null // using nullable var for better memory usage
@@ -122,7 +123,6 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     _circuitVar = target.getOrElse(null)
   }
 
-  private[chisel3] val _id: Long = Builder.idGen.next
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
   override def hashCode: Int = super.hashCode()
@@ -480,6 +480,8 @@ private[chisel3] class DynamicContext(
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
+
+  val parentMap: mutable.HashMap[Long, Option[BaseModule]] = mutable.HashMap.empty[Long, Option[BaseModule]]
 }
 
 private[chisel3] object Builder extends LazyLogging {
@@ -626,6 +628,11 @@ private[chisel3] object Builder extends LazyLogging {
     case Some(dynamicContext) => dynamicContext.aspectModule.get(module)
     case _                    => None
   }
+
+  def setParent(id: Long, parent: Option[BaseModule]): Unit = {
+    dynamicContext.parentMap(id) = parent
+  }
+  def getParent(id: Long): Option[BaseModule] = dynamicContext.parentMap.getOrElse(id, None)
 
   /** Retrieves the parent of a module based on the elaboration context
     *
