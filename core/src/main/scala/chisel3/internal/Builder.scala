@@ -123,7 +123,8 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   }
 
   private[chisel3] val _id:                Long = Builder.idGen.next
-  private[chisel3] val instanceIdentifier: String = Builder.getInstanceIdentifier.getOrElse(_id.toString)
+  private[chisel3] def _instanceIdentifier: String = Builder.getInstanceIdentifier.getOrElse("%" + _id.toString)
+  val instanceIdentifier: String = _instanceIdentifier
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
   override def hashCode: Int = super.hashCode()
@@ -358,6 +359,10 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ReferenceTarget that references this object
     * @note Should not be called until circuit elaboration is complete
     */
+  // Reversed
+  def identifierTarget: ReferenceTarget = {
+    _parent.get.identifierTarget.ref(instanceIdentifier)
+  }
   final def toTarget: ReferenceTarget = {
     assertValidTarget()
     val name = this.instanceName

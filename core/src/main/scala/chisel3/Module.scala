@@ -262,6 +262,14 @@ package experimental {
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 
+    final def identifierTarget: IsModule = {
+      if(_parent.isEmpty) {
+        ModuleTarget(definitionIdentifier, definitionIdentifier)
+      }
+      else {
+        _parent.get.identifierTarget.instOf(instanceIdentifier, definitionIdentifier)
+      }
+    }
     // Used with chisel3.naming.fixTraitIdentifier
     protected def _traitModuleDefinitionIdentifierProposal: Option[String] = None
 
