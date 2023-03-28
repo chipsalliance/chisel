@@ -21,6 +21,14 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
+      // Issue a deprecation warning for Scala 2.12
+      val scalaVersion = scala.util.Properties.versionNumberString.split('.')
+      if (scalaVersion(0).toInt == 2 && scalaVersion(1).toInt == 12) {
+        val msg = s"Chisel 3.6 is the last version that will support Scala 2.12. Please upgrade to Scala 2.13."
+
+        global.reporter.warning(unit.body.pos, msg)
+      }
+
       if (ChiselPlugin.runComponent(global, arguments)(unit)) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
       }
