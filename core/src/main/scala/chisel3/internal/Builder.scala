@@ -123,7 +123,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     _circuitVar = target.getOrElse(null)
   }
 
-  private[chisel3] val _id: Long = Builder.idGen.next
+  private[chisel3] val _id:                Long = Builder.idGen.next
   private[chisel3] val instanceIdentifier: String = Builder.getInstanceIdentifier.getOrElse(_id.toString)
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
