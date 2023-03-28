@@ -23,7 +23,7 @@ jobs:
         jvm: ["8"]
         scala: ["2.13.10", "2.12.17"]
         espresso: ["2.4"]
-        circt: ["firtool-1.34.0"]
+        circt: ["firtool-1.36.0"]
     runs-on: ${{ matrix.system }}
 
     steps:
@@ -67,7 +67,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
       - name: Check Formatting
-        run: sbt scalafmtCheckAll
+        run: sbt fmtCheck
 
   integration:
     name: Integration Tests

@@ -80,7 +80,7 @@ package experimental {
       _component
     }
 
-    private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+    private[chisel3] def initializeInParent(): Unit = {
       implicit val sourceInfo = UnlocatableSourceInfo
     }
   }
@@ -123,9 +123,7 @@ package experimental {
   */
 @nowarn("msg=class Port") // delete when Port becomes private
 abstract class BlackBox(
-  val params: Map[String, Param] = Map.empty[String, Param]
-)(
-  implicit compileOptions: CompileOptions)
+  val params: Map[String, Param] = Map.empty[String, Param])
     extends BaseBlackBox {
 
   // Find a Record port named "io" for purposes of stripping the prefix
@@ -172,5 +170,5 @@ abstract class BlackBox(
     _component
   }
 
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {}
+  private[chisel3] def initializeInParent(): Unit = {}
 }

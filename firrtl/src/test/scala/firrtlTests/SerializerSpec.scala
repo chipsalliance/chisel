@@ -212,4 +212,38 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     val probeRelease = ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"))
     Serializer.serialize(probeRelease) should be ("release(clock, cond, outProbe)")
   }
+
+  it should "support lazy serialization" in {
+    var stmtSerialized = false
+    case class HackStmt(stmt: Statement) extends Statement {
+      def serialize: String = {
+        stmtSerialized = true
+        stmt.serialize
+      }
+    }
+
+    val stmt = HackStmt(DefNode(NoInfo, "foo", Reference("bar")))
+    val it: Iterable[String] = Serializer.lazily(stmt)
+    assert(!stmtSerialized, "We should be able to construct the serializer lazily")
+
+    var mapExecuted = false
+    val it2: Iterable[String] = it.map { x =>
+      mapExecuted = true
+      x + ","
+    }
+    assert(!stmtSerialized && !mapExecuted, "We should be able to map the serializer lazily")
+
+    var appendExecuted = false
+    val it3: Iterable[String] = it2 ++ Seq("hi").view.map { x =>
+      appendExecuted = true
+      x
+    }
+    assert(!stmtSerialized && !mapExecuted && !appendExecuted, "We should be able to append to the serializer lazily")
+
+    val result = it3.mkString
+    assert(
+      stmtSerialized && mapExecuted && appendExecuted,
+      "Once we traverse the serializer, everything should execute"
+    )
+  }
 }

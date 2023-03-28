@@ -59,8 +59,6 @@ object SpecifiedDirection {
   private[chisel3] def specifiedDirection[T <: Data](
     source: => T
   )(dir:    T => SpecifiedDirection
-  )(
-    implicit compileOptions: CompileOptions
   ): T = {
     val prevId = Builder.idGen.value
     val data = source // evaluate source once (passed by name)
@@ -158,8 +156,7 @@ private[chisel3] object cloneSupertype {
     elts:        Seq[T],
     createdType: String
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
@@ -203,7 +200,7 @@ private[chisel3] object cloneSupertype {
 private[chisel3] object getRecursiveFields {
   def noPath(data: Data): Seq[Data] = data match {
     case data: Record =>
-      data.elements.map {
+      data._elements.map {
         case (_, fieldData) =>
           getRecursiveFields.noPath(fieldData)
       }.fold(Seq(data)) {
@@ -220,7 +217,7 @@ private[chisel3] object getRecursiveFields {
   }
   def apply(data: Data, path: String): Seq[(Data, String)] = data match {
     case data: Record =>
-      data.elements.map {
+      data._elements.map {
         case (fieldName, fieldData) =>
           getRecursiveFields(fieldData, s"$path.$fieldName")
       }.fold(Seq(data -> path)) {
@@ -239,7 +236,7 @@ private[chisel3] object getRecursiveFields {
   def lazily(data: Data, path: String): Seq[(Data, String)] = data match {
     case data: Record =>
       LazyList(data -> path) ++
-        data.elements.view.flatMap {
+        data._elements.view.flatMap {
           case (fieldName, fieldData) =>
             getRecursiveFields(fieldData, s"$path.$fieldName")
         }
@@ -254,7 +251,7 @@ private[chisel3] object getRecursiveFields {
   def lazilyNoPath(data: Data): Seq[Data] = data match {
     case data: Record =>
       LazyList(data) ++
-        data.elements.view.flatMap {
+        data._elements.view.flatMap {
           case (fieldName, fieldData) =>
             getRecursiveFields.lazilyNoPath(fieldData)
         }
@@ -276,13 +273,13 @@ private[chisel3] object getMatchedFields {
       require(x.typeEquivalent(y))
       Seq(x -> y)
     case (x: Record, y: Record) =>
-      (x.elements
-        .zip(y.elements))
+      (x._elements
+        .zip(y._elements))
         .map {
           case ((xName, xElt), (yName, yElt)) =>
             require(
               xName == yName,
-              s"$xName != $yName, ${x.elements}, ${y.elements}, $x, $y"
+              s"$xName != $yName, ${x._elements}, ${y._elements}, $x, $y"
             ) // assume fields returned in same, deterministic order
             getMatchedFields(xElt, yElt)
         }
@@ -319,18 +316,18 @@ object chiselTypeOf {
   * Thus, an error will be thrown if these are used on bound Data
   */
 object Input {
-  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Input)
   }
 }
 object Output {
-  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Output)
   }
 }
 
 object Flipped {
-  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(x => SpecifiedDirection.flip(x.specifiedDirection))
   }
 }
@@ -506,8 +503,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def connect(
     that: Data
   )(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     requireIsHardware(this, "data to be connected")
     requireIsHardware(that, "data to be connected")
@@ -517,7 +513,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
 
     try {
-      MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
+      MonoConnect.connect(sourceInfo, this, that, Builder.referenceUserModule)
     } catch {
       case MonoConnectException(message) =>
         throwException(
@@ -528,8 +524,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def bulkConnect(
     that: Data
   )(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     requireIsHardware(this, s"data to be bulk-connected")
     requireIsHardware(that, s"data to be bulk-connected")
@@ -540,7 +535,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _ => // fine
     }
     try {
-      BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
+      BiConnect.connect(sourceInfo, this, that, Builder.referenceUserModule)
     } catch {
       case BiConnectException(message) =>
         throwException(
@@ -586,7 +581,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] final def ref: Arg = {
     def materializeWire(): Arg = {
       if (!Builder.currentModule.isDefined) throwException(s"internal error: cannot materialize ref for $this")
-      implicit val compileOptions = ExplicitCompileOptions.Strict
       implicit val sourceInfo = UnlocatableSourceInfo
       WireDefault(this).ref
     }
@@ -675,9 +669,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the Data to connect from
     * @group connection
     */
-  final def :=(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+  final def :=(that: => Data)(implicit sourceInfo: SourceInfo): Unit = {
     prefix(this) {
-      this.connect(that)(sourceInfo, connectionCompileOptions)
+      this.connect(that)(sourceInfo)
     }
   }
 
@@ -692,9 +686,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the Data to connect from
     * @group connection
     */
-  final def <>(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+  final def <>(that: => Data)(implicit sourceInfo: SourceInfo): Unit = {
     prefix(this) {
-      this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
+      this.bulkConnect(that)(sourceInfo)
     }
   }
 
@@ -732,7 +726,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     val thatCloned = Wire(that.cloneTypeFull)
     thatCloned.connectFromBits(this.asUInt)
     thatCloned
@@ -743,8 +737,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def connectFromBits(
     that: Bits
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit
 
   /** Reinterpret cast to UInt.
@@ -757,7 +750,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   final def asUInt: UInt = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt
 
   /** Default pretty printing */
   def toPrintable: Printable
@@ -799,8 +792,8 @@ object Data {
     }
     implicit class RecordOptGet(rOpt: Option[Record]) {
       // Like .get, but its already defined on Option
-      def grab(k: String): Option[Data] = rOpt.flatMap { _.elements.get(k) }
-      def keys: Iterable[String] = rOpt.map { r => r.elements.map(_._1) }.getOrElse(Seq.empty[String])
+      def grab(k: String): Option[Data] = rOpt.flatMap { _._elements.get(k) }
+      def keys: Iterable[String] = rOpt.map { r => r._elements.map(_._1) }.getOrElse(Seq.empty[String])
     }
     //TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
     private def isDifferent(l: Option[Data], r: Option[Data]): Boolean =
@@ -849,7 +842,7 @@ object Data {
     *
     * @param lhs The [[Data]] hardware on the left-hand side of the equality
     */
-  implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+  implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo) {
 
     /** Dynamic recursive equality operator for generic [[Data]]
       *
@@ -875,17 +868,17 @@ object Data {
               .reduce(_ && _)
           }
         case (thiz: Record, that: Record) =>
-          if (thiz.elements.size != that.elements.size) {
+          if (thiz._elements.size != that._elements.size) {
             throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
           } else {
-            thiz.elements.map {
+            thiz._elements.map {
               case (thisName, thisData) =>
-                if (!that.elements.contains(thisName))
+                if (!that._elements.contains(thisName))
                   throwException(
                     s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
                   )
 
-                val thatData = that.elements(thisName)
+                val thatData = that._elements(thisName)
 
                 try {
                   thisData === thatData
@@ -915,7 +908,7 @@ trait WireFactory {
   /** Construct a [[Wire]] from a type template
     * @param t The template from which to construct this wire
     */
-  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "wire type")
@@ -925,9 +918,6 @@ trait WireFactory {
     x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
 
     pushCommand(DefWire(sourceInfo, x))
-    if (Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      pushCommand(DefInvalid(sourceInfo, x.ref))
-    }
 
     x
   }
@@ -960,8 +950,7 @@ private[chisel3] sealed trait WireDefaultImpl {
     t:    T,
     init: Data
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
@@ -978,8 +967,7 @@ private[chisel3] sealed trait WireDefaultImpl {
     t:    T,
     init: DontCare.type
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     applyImpl(t, init)
   }
@@ -988,14 +976,14 @@ private[chisel3] sealed trait WireDefaultImpl {
     * @param t The type template used to construct this [[Wire]]
     * @param init The hardware value that will serve as the default value
     */
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
     applyImpl(t, init)
   }
 
   /** Construct a [[Wire]] with a default connection
     * @param init The hardware value that will serve as a type template and default value
     */
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (init match {
       // If init is a literal without forced width OR any non-literal, let width be inferred
       case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
@@ -1094,13 +1082,12 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
   private[chisel3] def connectFromBits(
     that: Bits
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
 
-  def do_asUInt(implicit sourceInfo: chisel3.experimental.SourceInfo, compileOptions: CompileOptions): UInt = {
+  def do_asUInt(implicit sourceInfo: chisel3.experimental.SourceInfo): UInt = {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }

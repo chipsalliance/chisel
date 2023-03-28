@@ -52,8 +52,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
     case value: BaseModule =>
       val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value))(
-        chisel3.experimental.UnlocatableSourceInfo,
-        chisel3.ExplicitCompileOptions.Strict
+        chisel3.experimental.UnlocatableSourceInfo
       )
       newChild._circuit = value._circuit.orElse(Some(value))
       newChild._parent = None
@@ -98,8 +97,7 @@ object Definition extends SourceInfoDoc {
   def do_apply[T <: BaseModule with IsInstantiable](
     proto: => T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Definition[T] = {
     val dynamicContext = {
       val context = Builder.captureContext()
