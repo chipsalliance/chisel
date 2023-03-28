@@ -39,7 +39,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
 
   it should "work with modules" in {
     val q = m.q.toTarget.toString
-    assert(q == s"~$mn|Queue")
+    assert(q == s"~$mn|Queue4_UInt32")
   }
 
   it should "error on non-hardware types and provide information" in {
