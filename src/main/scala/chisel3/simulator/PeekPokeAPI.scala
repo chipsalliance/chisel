@@ -14,14 +14,18 @@ trait PeekPokeAPI {
     def step(cycles: Int = 1): Unit = {
       val context = currentContext()
       context.willEvaluate()
-      val simulationPort = context.simulationPorts(clock)
-      simulationPort.tick(
-        timestepsPerPhase = 1,
-        maxCycles = cycles,
-        inPhaseValue = 0,
-        outOfPhaseValue = 1,
-        sentinel = None
-      )
+      if (cycles == 0) {
+        context.controller.run(0)
+      } else {
+        val simulationPort = context.simulationPorts(clock)
+        simulationPort.tick(
+          timestepsPerPhase = 1,
+          maxCycles = cycles,
+          inPhaseValue = 0,
+          outOfPhaseValue = 1,
+          sentinel = None
+        )
+      }
     }
 
     /**

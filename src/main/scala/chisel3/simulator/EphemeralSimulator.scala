@@ -31,8 +31,6 @@ object EphemeralSimulator extends PeekPokeAPI {
     val commonCompilationSettings = CommonCompilationSettings()
     val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings()
 
-    println(s"GEORGE: $workspacePath")
-
     // Try to clean up temporary workspace if possible
     sys.addShutdownHook {
       Runtime.getRuntime().exec(Array("rm", "-rf", workspacePath)).waitFor()
