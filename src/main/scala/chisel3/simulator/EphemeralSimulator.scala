@@ -1,6 +1,7 @@
 package chisel3.simulator
 
 import svsim._
+import java.lang.ProcessHandle
 import chisel3.RawModule
 
 /**
