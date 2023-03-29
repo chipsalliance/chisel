@@ -29,8 +29,9 @@ trait PeekPokeAPI {
       }
     }
 
-    /**
-      * Ticks this clock up to `maxCycles`, stops early if the specified port is equal to the specified value.
+    /** Ticks this clock up to `maxCycles`.
+      *
+      * Stops early if the `sentinelPort` is equal to the `sentinelValue`.
       */
     def stepUntil(sentinelPort: Data, sentinelValue: BigInt, maxCycles: Int): Unit = {
       val context = currentContext()
