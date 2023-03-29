@@ -2,6 +2,7 @@ package chiselTests.simulator
 
 import chisel3._
 
+/** A simple module useful for testing Chisel generation and testing */
 class GCD extends Module {
   val io = IO(new Bundle {
     val a = Input(UInt(32.W))
