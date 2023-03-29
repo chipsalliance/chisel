@@ -1,7 +1,6 @@
 package chisel3.simulator
 
 import svsim._
-import java.lang.ProcessHandle
 import chisel3.RawModule
 
 /**
@@ -25,6 +24,8 @@ object EphemeralSimulator extends PeekPokeAPI {
     val commonCompilationSettings = CommonCompilationSettings()
     val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings()
 
+    println(s"GEORGE: $workspacePath")
+
     // Try to clean up temporary workspace if possible
     sys.addShutdownHook {
       Runtime.getRuntime().exec(Array("rm", "-rf", workspacePath)).waitFor()
@@ -32,7 +33,9 @@ object EphemeralSimulator extends PeekPokeAPI {
   }
   private lazy val simulator: DefaultSimulator = {
     val temporaryDirectory = System.getProperty("java.io.tmpdir")
-    val id = ProcessHandle.current().pid().toString()
+    // TODO: Use ProcessHandle when we can drop Java 8 support
+    // val id = ProcessHandle.current().pid().toString()
+    val id = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
     val className = getClass().getName().stripSuffix("$")
     new DefaultSimulator(Seq(temporaryDirectory, className, id).mkString("/"))
   }
