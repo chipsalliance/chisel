@@ -72,12 +72,43 @@ ChiselStage.emitSystemVerilog(new ExampleWhenPrefix)
 `_GEN` signals are usually generated from the FIRRTL compiler, rather than the Chisel library. We are working on
 renaming these signals with more context-dependent names, but it is a work in progress. Thanks for caring!
 
-### My module names are super unstable - I change one thing and Queue_1 becomes Queue_42. Help!
+### My module names are super unstable - I change one thing and Module_1 becomes Module_42. Help!
 
-This is the infamous `Queue` instability problem. In general, these cases are best solved at the source - the module
-itself! If you overwrite `desiredName` to include parameter information (see the
-[explanation](../explanations/naming#set-a-module-name) for more info), then this can avoid this problem permanantly.
-We've done this with some Chisel utilities with great results!
+This is an example of the module instability problem, which results from several modules all sharing the exact same name. To fix this, you must add more specificity to your `Module`'s name to avoid these name collisions.
+
+This can be done by leveraging the `typeName` API, which provides parameter information from a `Data` object for use in a Module's `desiredName` -- thus reducing name collisions and fixing this problem permanently. For instance, suppose your module looks like the following:
+
+```scala mdoc
+class MyModule[T <: Data](gen: T) extends Module {
+  val in = IO(Input(gen))
+  val out = IO(Output(gen))
+  out := in
+}
+```
+
+We can override `desiredName` to include the type name of the `gen` parameter like so:
+
+```scala mdoc
+override def desiredName = s"MyModule_${gen.typeName}"
+```
+
+Any instances of your `MyModule` will now have Verilog module names containing the type parameter.
+
+```scala mdoc
+val foo = Module(new MyModule(UInt(4.W))) // MyModule_UInt4
+val foo = Module(new MyModule(Vec(3, UInt(4.W)))) // MyModule_Vec3_UInt4
+```
+
+
+All default Chisel modules, like `Queue` and `Pipe`, already have their `desiredName` overrided in this manner, which solves the infamous `Queue` stability problem.
+
+### I have already overriden `desiredName` to use a `typeName` but my module names are still conflicting!
+
+You either must add additional information to the `desiredName`, or if you're using your own user-defined `Bundle`, increase the specificity of its own `typeName`. All `Data` types have a simple default implementation of `typeName` (which is simply their own name), but you can override this yourself, of course!
+
+In general, the suggested pattern for `typeName`, and subsequently `desiredName`, is to fold single integer-like parameters with the name itself (for example, `Queue4`, `UInt3`, `MyBundle9`) and separate these with underscores (`Queue4_UInt3`, `FooBundle_BarType4`).
+
+Integers should not occur with an underscore before it at the very end of the name (`MyBundle_1`) because this is the _same_ syntax used for duplicates, and so would cause confusion. Having to disambiguate modules all named `FooModule_MyBundle_4_1`, `FooModule_MyBundle_4_2`, `FooModule_MyBundle_4_3`, and so on would be undesirable, indeed!
 
 ### I want to add some hardware or assertions, but each time I do all the signal names get bumped!
 
