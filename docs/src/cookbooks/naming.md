@@ -101,7 +101,7 @@ val foo = Module(new MyModule(Vec(3, UInt(4.W)))) // MyModule_Vec3_UInt4
 ```
 
 
-All default Chisel modules, like `Queue` and `Pipe`, already have their `desiredName` overrided in this manner, which solves the infamous `Queue` stability problem.
+All Chisel built-in library modules, like `Queue` and `Pipe`, already have their `desiredName` overridden in this manner. Assuming that users of these also override the `typeName` of their Data type parameters in a distinct fashion, this will solve the `Queue` stability problem.
 
 ### I have already overriden `desiredName` to use a `typeName` but my module names are still conflicting!
 
