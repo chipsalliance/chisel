@@ -3,7 +3,8 @@ package chisel3.simulator
 import svsim._
 import chisel3._
 
-object PeekPokeAPI extends PeekPokeAPI {}
+object PeekPokeAPI extends PeekPokeAPI
+
 trait PeekPokeAPI {
   case class FailedExpectationException[T](observed: T, expected: T, message: String)
       extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
