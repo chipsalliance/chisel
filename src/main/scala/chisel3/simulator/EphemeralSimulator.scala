@@ -3,9 +3,16 @@ package chisel3.simulator
 import svsim._
 import chisel3.RawModule
 
-/**
-  * `EphemeralSimulator` provides a simple API for ephemeral invocations (such as `scala-cli` scripts) to simulate Chisel modules. To keep things really simple, it only provides the peek/poke API provides enough control while hiding some of the lower-level svsim complexity.
-  * The recommended way to use `EphemeralSimulator` is simply to `import chisel3.simulator.EphemeralSimulator._` and then call `simulate(new MyChiselModule()) { module => ... }`.
+/** Provides a simple API for ephemeral invocations (such as `scala-cli` scripts) to 
+  * simulate Chisel modules. To keep things really simple, it only provides the 
+  * peek/poke API provides enough control while hiding some of the lower-level svsim 
+  * complexity.
+  * @example
+  * ```
+  * import chisel3.simulator.EphemeralSimulator._
+  * ...
+  * simulate(new MyChiselModule()) { module => ... }
+  * ```
   */
 object EphemeralSimulator extends PeekPokeAPI {
 
