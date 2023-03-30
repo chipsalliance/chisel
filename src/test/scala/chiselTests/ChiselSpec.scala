@@ -63,7 +63,6 @@ trait ChiselRunners extends Assertions {
           )
         )
       },
-      // Seq("--assert", "-Wno-fatal", "-Wno-WIDTH", "-Wno-STMTDLY")
       verilator.Backend
         .CompilationSettings(disabledWarnings = Seq("WIDTH", "STMTDLY"), disableFatalExitOnWarnings = true),
       customSimulationWorkingDirectory = None,
