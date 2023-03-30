@@ -8,6 +8,8 @@ import chisel3.aop.Aspect
 import chisel3.stage.{ChiselGeneratorAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.testers._
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
+import chisel3.simulator._
+import svsim._
 import firrtl.annotations.Annotation
 import firrtl.ir.Circuit
 import firrtl.stage.FirrtlCircuitAnnotation
@@ -25,18 +27,85 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import java.io.{ByteArrayOutputStream, PrintStream}
 import java.security.Permission
 import scala.reflect.ClassTag
+import java.text.SimpleDateFormat
+import java.util.Calendar
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions {
+  private val verilatorBackend = verilator.Backend.initializeFromProcessEnvironment()
+  private val timeStampFormat = new SimpleDateFormat("yyyyMMddHHmmss")
   def runTester(
     t:                    => BasicTester,
     additionalVResources: Seq[String] = Seq(),
     annotations:          AnnotationSeq = Seq()
   ): Boolean = {
-    val defaultBackend = chisel3.testers.TesterDriver.defaultBackend
-    val hasBackend = TestUtils.containsBackend(annotations)
-    val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
-    TesterDriver.execute(() => t, additionalVResources, annos)
+    val workspacePath = Seq(
+      "test_run_dir",
+      getClass.getSimpleName,
+      /// This is taken from the legacy `TesterDriver` class. It isn't ideal and we hope to improve this eventually.
+      timeStampFormat.format(Calendar.getInstance().getTime())
+    ).mkString("/")
+    val workspace = new Workspace(workspacePath)
+    workspace.reset()
+    val elaboratedModule = workspace.elaborateGeneratedModule({ () => t })
+    additionalVResources.foreach(workspace.addPrimarySourceFromResource(getClass(), _))
+    workspace.generateAdditionalSources()
+    val simulation = workspace.compile(verilatorBackend)(
+      "verilator", {
+        import CommonCompilationSettings._
+        CommonCompilationSettings(
+          availableParallelism = AvailableParallelism.UpTo(Runtime.getRuntime().availableProcessors()),
+          optimizationStyle = OptimizationStyle.OptimizeForCompilationSpeed,
+          verilogPreprocessorDefines = Seq(
+            VerilogPreprocessorDefine("ASSERT_VERBOSE_COND", s"!${Workspace.testbenchModuleName}.reset"),
+            VerilogPreprocessorDefine("STOP_COND", s"!${Workspace.testbenchModuleName}.reset")
+          )
+        )
+      },
+      verilator.Backend.CompilationSettings(),
+      customSimulationWorkingDirectory = None,
+      verbose = false
+    )
+    try {
+      simulation
+        .runElaboratedModule(elaboratedModule) { module =>
+          val dut = module.wrapped
+          val clock = module.port(dut.clock)
+          val reset = module.port(dut.reset)
+          reset.set(1)
+          clock.tick(
+            timestepsPerPhase = 1,
+            maxCycles = 10,
+            inPhaseValue = 1,
+            outOfPhaseValue = 0,
+            sentinel = None
+          )
+          reset.set(0)
+
+          val elapsedCycles = clock.tick(
+            timestepsPerPhase = 1,
+            maxCycles = 10000,
+            inPhaseValue = 1,
+            outOfPhaseValue = 0,
+            sentinel = None
+          )
+        }
+      true
+    } catch {
+      // We eventually want to have a more structured way of detecting assertions, but this works for now.
+      case svsim.Simulation.UnexpectedEndOfMessages =>
+        val filename = s"$workspacePath/workdir-verilator/simulation-log.txt"
+        for (line <- scala.io.Source.fromFile(filename).getLines()) {
+          if (line.contains("Verilog $finish")) {
+            // We don't immediately exit on $finish, so we need to ignore assertions that happen after a call to $finish
+            return true
+          }
+          if (line.contains("Assertion failed")) {
+            return false
+          }
+        }
+        return true
+    }
   }
   def assertTesterPasses(
     t:                    => BasicTester,
