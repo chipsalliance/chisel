@@ -42,6 +42,21 @@ object DataMirror {
     */
   def isReg(x: Data): Boolean = hasBinding[RegBinding](x)
 
+  /** Get an early guess for the name of this [[Data]]
+    *
+    * '''Warning: it is not guaranteed that this name will end up in the output FIRRTL or Verilog.'''
+    *
+    * Name guesses are not stable and may change due to a subsequent [[Data.suggestName]] or
+    * plugin-related naming.
+    * Name guesses are not necessarily legal Verilog identifiers.
+    * Name guesses for elements of Bundles or Records will include periods, and guesses for elements
+    * of Vecs will include square brackets.
+    */
+  def queryNameGuess(x: Data): String = {
+    requireIsHardware(x, "To queryNameGuess,")
+    x.earlyName
+  }
+
   /** Check if two Chisel types are the same type.
     * Internally, this is dispatched to each Chisel type's
     * `typeEquivalent` function for each type to determine
@@ -134,7 +149,7 @@ object DataMirror {
     def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
       case _: Element => Seq()
       case r: Record =>
-        r.elements.toSeq.flatMap {
+        r._elements.toSeq.flatMap {
           case (eltName, elt) =>
             if (r._isOpaqueType) { getPortNames(s"${name}", elt) }
             else { getPortNames(s"${name}_${eltName}", elt) }
@@ -245,8 +260,8 @@ object DataMirror {
       (lOpt, rOpt) match {
         case (Some(l), Some(r)) =>
           collector.lift((l, r)) match {
-            case Some(x: T) => Some((Some(x), None))
-            case None => None
+            case Some(x) => Some((Some(x), None))
+            case None    => None
           }
         case other => None
       }
@@ -254,12 +269,12 @@ object DataMirror {
     collectMembersOverAllForAnyFunction(Some(left), Some(right)) {
       case (Some(l), Some(r)) =>
         collector.lift((l, r)) match {
-          case Some(x: T) => Some((Some(x), None))
-          case None => None
+          case Some(x) => Some((Some(x), None))
+          case None    => None
         }
       case other => None
     }.collect {
-      case (Some(x: T), None) => (x)
+      case (Some(x), None) => (x)
     }
   }
 
@@ -279,11 +294,11 @@ object DataMirror {
     collectMembersOverAllForAnyFunction(Some(left), Some(right)) {
       case (lOpt: Option[D], rOpt: Option[D]) =>
         collector.lift((lOpt, rOpt)) match {
-          case Some(x: T) => Some((Some(x), None))
-          case None => None
+          case Some(x) => Some((Some(x), None))
+          case None    => None
         }
     }.collect {
-      case (Some(x: T), None) => x
+      case (Some(x), None) => x
     }
   }
 

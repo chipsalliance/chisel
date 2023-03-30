@@ -23,7 +23,6 @@ trait SourceInfoTransformMacro {
   import c.universe._
   def thisObj: Tree = c.prefix.tree
   def implicitSourceInfo = q"implicitly[_root_.chisel3.experimental.SourceInfo]"
-  def implicitCompileOptions = q"implicitly[_root_.chisel3.CompileOptions]"
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
@@ -31,7 +30,7 @@ object UIntTransform
 class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def bitset(off: c.Tree, dat: c.Tree): c.Tree = {
-    q"$thisObj.do_bitSet($off, $dat)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_bitSet($off, $dat)($implicitSourceInfo)"
   }
 }
 
@@ -41,7 +40,7 @@ object InstTransform
 class InstTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](bc: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($bc)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_apply($bc)($implicitSourceInfo)"
   }
 }
 
@@ -51,7 +50,7 @@ object DefinitionTransform
 class DefinitionTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($proto)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_apply($proto)($implicitSourceInfo)"
   }
 }
 
@@ -70,7 +69,7 @@ object InstanceTransform
 class InstanceTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](definition: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($definition)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_apply($definition)($implicitSourceInfo)"
   }
 }
 
@@ -79,10 +78,10 @@ object MemTransform
 class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](size: c.Tree, t: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($size, $t)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_apply($size, $t)($implicitSourceInfo)"
   }
   def apply_ruw[T: c.WeakTypeTag](size: c.Tree, t: c.Tree, ruw: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($size, $t, $ruw)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_apply($size, $t, $ruw)($implicitSourceInfo)"
   }
 }
 
@@ -92,7 +91,23 @@ class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](cond: c.Tree, con: c.Tree, alt: c.Tree): c.Tree = {
     val tpe = weakTypeOf[T]
-    q"$thisObj.do_apply[$tpe]($cond, $con, $alt)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_apply[$tpe]($cond, $con, $alt)($implicitSourceInfo)"
+  }
+}
+
+class MuxLookupTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+
+  def applyCurried[S: c.WeakTypeTag, T: c.WeakTypeTag](key: c.Tree, default: c.Tree)(mapping: c.Tree): c.Tree = {
+    val sType = weakTypeOf[S]
+    val tType = weakTypeOf[T]
+    q"$thisObj.do_apply[$sType, $tType]($key, $default, $mapping)($implicitSourceInfo)"
+  }
+
+  def applyEnum[S: c.WeakTypeTag, T: c.WeakTypeTag](key: c.Tree, default: c.Tree)(mapping: c.Tree): c.Tree = {
+    val sType = weakTypeOf[S]
+    val tType = weakTypeOf[T]
+    q"$thisObj.do_applyEnum[$sType, $tType]($key, $default, $mapping)($implicitSourceInfo)"
   }
 }
 
@@ -101,43 +116,43 @@ object VecTransform
 class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply_elts(elts: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($elts)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_apply($elts)($implicitSourceInfo)"
   }
   def apply_elt0(elt0: c.Tree, elts: c.Tree*): c.Tree = {
-    q"$thisObj.do_apply($elt0, ..$elts)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_apply($elt0, ..$elts)($implicitSourceInfo)"
   }
   def tabulate(n: c.Tree)(gen: c.Tree): c.Tree = {
-    q"$thisObj.do_tabulate($n)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_tabulate($n)($gen)($implicitSourceInfo)"
   }
   def tabulate2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree = {
-    q"$thisObj.do_tabulate($n,$m)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_tabulate($n,$m)($gen)($implicitSourceInfo)"
   }
   def tabulate3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree = {
-    q"$thisObj.do_tabulate($n,$m,$p)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_tabulate($n,$m,$p)($gen)($implicitSourceInfo)"
   }
   def fill(n: c.Tree)(gen: c.Tree): c.Tree = {
-    q"$thisObj.do_fill($n)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_fill($n)($gen)($implicitSourceInfo)"
   }
   def fill2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree = {
-    q"$thisObj.do_fill($n,$m)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_fill($n,$m)($gen)($implicitSourceInfo)"
   }
   def fill3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree = {
-    q"$thisObj.do_fill($n,$m,$p)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_fill($n,$m,$p)($gen)($implicitSourceInfo)"
   }
   def fill4D(n: c.Tree, m: c.Tree, p: c.Tree, q: c.Tree)(gen: c.Tree): c.Tree = {
-    q"$thisObj.do_fill($n,$m,$p,$q)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_fill($n,$m,$p,$q)($gen)($implicitSourceInfo)"
   }
   def iterate(start: c.Tree, len: c.Tree)(f: c.Tree): c.Tree = {
-    q"$thisObj.do_iterate($start,$len)($f)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_iterate($start,$len)($f)($implicitSourceInfo)"
   }
   def contains(x: c.Tree)(ev: c.Tree): c.Tree = {
-    q"$thisObj.do_contains($x)($implicitSourceInfo, $ev, $implicitCompileOptions)"
+    q"$thisObj.do_contains($x)($implicitSourceInfo, $ev)"
   }
   def reduceTree(redOp: c.Tree, layerOp: c.Tree): c.Tree = {
-    q"$thisObj.do_reduceTree($redOp,$layerOp)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_reduceTree($redOp,$layerOp)($implicitSourceInfo)"
   }
   def reduceTreeDefault(redOp: c.Tree): c.Tree = {
-    q"$thisObj.do_reduceTree($redOp)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.do_reduceTree($redOp)($implicitSourceInfo)"
   }
 }
 
@@ -168,106 +183,88 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
   def noArg: c.Tree = {
-    q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($implicitSourceInfo)"
   }
 
   /** Necessary for dummy methods to auto-apply their arguments to this macro */
   def noArgDummy(dummy: c.Tree*): c.Tree = {
-    q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($implicitSourceInfo)"
   }
 
   def thatArg(that: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo)"
   }
 
   def nArg(n: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($n)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($n)($implicitSourceInfo)"
   }
 
   def pArg(p: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($p)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($p)($implicitSourceInfo)"
   }
 
   def inArg(in: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($in)($implicitSourceInfo)"
   }
 
   def xArg(x: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($x)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($x)($implicitSourceInfo)"
   }
 
   def xyArg(x: c.Tree, y: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($x, $y)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($x, $y)($implicitSourceInfo)"
   }
 
   def nxArg(n: c.Tree, x: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($n, $x)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($n, $x)($implicitSourceInfo)"
   }
 
   def idxEnClockArg(idx: c.Tree, en: c.Tree, clock: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($idx, $en, $clock)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($idx, $en, $clock)($implicitSourceInfo)"
   }
 
   def xEnArg(x: c.Tree, en: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($x, $en)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($x, $en)($implicitSourceInfo)"
   }
 
   def arArg(a: c.Tree, r: c.Tree*): c.Tree = {
-    q"$thisObj.$doFuncTerm($a, ..$r)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($a, ..$r)($implicitSourceInfo)"
   }
 
   def rArg(r: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($r)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($r)($implicitSourceInfo)"
   }
 
   def nInArg(n: c.Tree, in: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($n, $in)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($n, $in)($implicitSourceInfo)"
   }
 
   def nextEnableArg(next: c.Tree, enable: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($next, $enable)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($next, $enable)($implicitSourceInfo)"
   }
 
   def nextInitEnableArg(next: c.Tree, init: c.Tree, enable: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($next, $init, $enable)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($next, $init, $enable)($implicitSourceInfo)"
   }
 
   def inNArg(in: c.Tree, n: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in, $n)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($in, $n)($implicitSourceInfo)"
   }
 
   def inNEnArg(in: c.Tree, n: c.Tree, en: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in, $n, $en)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($in, $n, $en)($implicitSourceInfo)"
   }
 
   def inNResetEnArg(in: c.Tree, n: c.Tree, reset: c.Tree, en: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in, $n, $reset, $en)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($in, $n, $reset, $en)($implicitSourceInfo)"
   }
 
   def inNResetDataArg(in: c.Tree, n: c.Tree, resetData: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in, $n, $resetData)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($in, $n, $resetData)($implicitSourceInfo)"
   }
 
   def inNResetDataEnArg(in: c.Tree, n: c.Tree, resetData: c.Tree, en: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in, $n, $resetData, $en)($implicitSourceInfo, $implicitCompileOptions)"
-  }
-}
-
-// Workaround for https://github.com/sbt/sbt/issues/3966
-object CompileOptionsTransform
-class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
-  import c.universe._
-
-  def thatArg(that: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($that)($implicitCompileOptions)"
-  }
-
-  def inArg(in: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in)($implicitCompileOptions)"
-  }
-
-  def pArg(p: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($p)($implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($in, $n, $resetData, $en)($implicitSourceInfo)"
   }
 }
 
@@ -281,16 +278,16 @@ class SourceInfoWhiteboxTransform(val c: whitebox.Context) extends AutoSourceTra
   import c.universe._
 
   def noArg: c.Tree = {
-    q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($implicitSourceInfo)"
   }
 
   /** Necessary for dummy methods to auto-apply their arguments to this macro */
   def noArgDummy(dummy: c.Tree*): c.Tree = {
-    q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($implicitSourceInfo)"
   }
 
   def thatArg(that: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo)"
   }
 }
 
@@ -318,6 +315,6 @@ class IntLiteralApplyTransform(val c: Context) extends AutoSourceTransform {
         }
       case _ => // do nothing
     }
-    q"$thisObj.$doFuncTerm($x)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($x)($implicitSourceInfo)"
   }
 }

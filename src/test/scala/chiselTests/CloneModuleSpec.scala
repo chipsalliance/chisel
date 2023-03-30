@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.{log2Ceil, Decoupled, DeqIO, EnqIO, Queue, QueueIO}
-import chisel3.experimental.{CloneModuleAsRecord, IO}
+import chisel3.experimental.CloneModuleAsRecord
 import chisel3.testers.BasicTester
 
 class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends Module {

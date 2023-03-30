@@ -22,19 +22,19 @@ lazy val micrositeSettings = Seq(
   micrositeName := "Chisel/FIRRTL",
   micrositeDescription := "Chisel/FIRRTL\nHardware Compiler Framework",
   micrositeUrl := "https://chipsalliance.github.io/",
-  micrositeBaseUrl := "chisel3",
+  micrositeBaseUrl := "chisel",
   micrositeConfigYaml := ConfigYml(
     yamlCustomProperties = Map("plugins" -> Seq("jekyll-redirect-from"))
   ),
   micrositeAuthor := "the Chisel/FIRRTL Developers",
   micrositeTwitter := "@chisel_lang",
   micrositeGithubOwner := "chipsalliance",
-  micrositeGithubRepo := "chisel3",
+  micrositeGithubRepo := "chisel",
   micrositeGithubLinks := false,
   micrositeShareOnSocial := false,
   micrositeDocumentationUrl := "chisel3/",
   micrositeDocumentationLabelDescription := "Documentation",
-  micrositeGitterChannelUrl := "chipsalliance/chisel3",
+  micrositeGitterChannelUrl := "chipsalliance/chisel",
   micrositeHighlightLanguages ++= Seq("verilog"),
   mdocIn := file("docs/src/main/tut"),
   /* Copy markdown files from each of the submodules to build out the website:
@@ -70,7 +70,7 @@ lazy val micrositeSettings = Seq(
   ghpagesNoJekyll := false,
   ghpagesRepository := file("build/gh-pages"),
   ghpagesBranch := "gh-pages",
-  git.remoteRepo := "git@github.com:chipsalliance/chisel3.git",
+  git.remoteRepo := "git@github.com:chipsalliance/chisel.git",
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.yml" | "*.md" |
     "*.svg" | "*.woff" | "*.ttf",
   includeFilter in Jekyll := (includeFilter in makeSite).value,
@@ -94,7 +94,7 @@ lazy val contributors =
         val uniqueContributors =
           // Even though we no longer host all these projects,
           // we still honor their contributions
-          Seq( GitHubRepository("chipsalliance", "chisel3"),
+          Seq( GitHubRepository("chipsalliance", "chisel"),
                GitHubRepository("chipsalliance", "firrtl"),
                GitHubRepository("chipsalliance", "treadle"),
                GitHubRepository("ucb-bar", "chiseltest"),

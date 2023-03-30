@@ -7,8 +7,7 @@ import chisel3.aop._
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
 import chisel3.stage.{ChiselOptions, DesignAnnotation}
-import firrtl.annotations.ModuleTarget
-import firrtl.stage.RunFirrtlTransformAnnotation
+import firrtl.annotations.{Annotation, ModuleTarget}
 import firrtl.options.Viewer.view
 import firrtl.{ir, _}
 
@@ -62,7 +61,8 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         new DynamicContext(
           annotationsInAspect,
           chiselOptions.throwOnFirstError,
-          chiselOptions.warningsAsErrors
+          chiselOptions.warningsAsErrors,
+          chiselOptions.sourceRoots
         )
       // Add existing module names into the namespace. If injection logic instantiates new modules
       //  which would share the same name, they will get uniquified accordingly
@@ -85,7 +85,9 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         case other => other
       }
 
-      val annotations = chiselIR.annotations.map(_.toFirrtl).filterNot { a => a.isInstanceOf[DesignAnnotation[_]] }
+      val annotations: Seq[Annotation] = chiselIR.firrtlAnnotations.toSeq.filterNot { a =>
+        a.isInstanceOf[DesignAnnotation[_]]
+      }
 
       /** Statements to be injected via aspect. */
       val stmts = mutable.ArrayBuffer[ir.Statement]()

@@ -3,30 +3,21 @@
 package chiselTests.stage.phases
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
+import chisel3.experimental.ChiselAnnotation
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{Convert, Elaborate}
 
-import firrtl.{AnnotationSeq, CircuitForm, CircuitState, DependencyAPIMigration, Transform, UnknownForm}
+import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Phase
-import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class ConvertSpecFirrtlTransform extends Transform with DependencyAPIMigration {
-  override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Transform) = false
-  def execute(state:          CircuitState): CircuitState = state
-}
-
 case class ConvertSpecFirrtlAnnotation(name: String) extends NoTargetAnnotation
 
-case class ConvertSpecChiselAnnotation(name: String) extends ChiselAnnotation with RunFirrtlTransform {
-  def toFirrtl:       Annotation = ConvertSpecFirrtlAnnotation(name)
-  def transformClass: Class[_ <: Transform] = classOf[ConvertSpecFirrtlTransform]
+case class ConvertSpecChiselAnnotation(name: String) extends ChiselAnnotation {
+  def toFirrtl: Annotation = ConvertSpecFirrtlAnnotation(name)
 }
 
 class ConvertSpecFoo extends RawModule {
@@ -51,15 +42,12 @@ class ConvertSpec extends AnyFlatSpec with Matchers {
       .foldLeft(annos)((a, p) => p.transform(a))
 
     info("FIRRTL circuit generated")
-    annosx.collect { case a: FirrtlCircuitAnnotation => a.circuit.main }.toSeq should be(Seq("foo"))
+    val circuit = annosx.collectFirst { case a: FirrtlCircuitAnnotation => a.circuit }.get
+    circuit.main should be("foo")
 
     info("FIRRTL annotations generated")
-    annosx.collect { case a: ConvertSpecFirrtlAnnotation => a.name }.toSeq should be(Seq("bar"))
+    circuit.annotations.collect { case a: ConvertSpecFirrtlAnnotation => a.name }.toSeq should be(Seq("bar"))
 
-    info("FIRRTL transform annotations generated")
-    annosx.collect { case a: RunFirrtlTransformAnnotation => a.transform.getClass }.toSeq should be(
-      Seq(classOf[ConvertSpecFirrtlTransform])
-    )
   }
 
 }

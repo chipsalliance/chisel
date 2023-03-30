@@ -2,11 +2,11 @@
 
 package chisel3.connectable
 
-import chisel3.{Aggregate, BiConnectException, Data, DontCare, RawModule}
-import chisel3.internal.{prefix, BiConnect, Builder}
+import chisel3.{Aggregate, BiConnectException, Data, DontCare, InternalErrorException, RawModule}
+import chisel3.internal.{BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.DefInvalid
-import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
 import Alignment.matchingZipOfChildren
 
@@ -62,7 +62,6 @@ private[chisel3] case object ColonLessGreaterEq extends Connection {
           consumer.base,
           producer.base,
           UnlocatableSourceInfo,
-          Connection.chisel5CompileOptions,
           Builder.referenceUserModule
         ) && consumer.base.typeEquivalent(producer.base)
       } catch {
@@ -109,18 +108,6 @@ private[chisel3] object Connection {
     implicit sourceInfo: SourceInfo
   ): Unit = {
     doConnection(cRoot, pRoot, cOp)
-  }
-
-  // Consumed by the := operator, set to what chisel3 will eventually become.
-  implicit val chisel5CompileOptions = new chisel3.CompileOptions {
-    val connectFieldsMustMatch:      Boolean = true
-    val declaredTypeMustBeUnbound:   Boolean = true
-    val dontTryConnectionsSwapped:   Boolean = false
-    val dontAssumeDirectionality:    Boolean = true
-    val checkSynthesizable:          Boolean = true
-    val explicitInvalidate:          Boolean = true
-    val inferModuleReset:            Boolean = true
-    override def emitStrictConnects: Boolean = true
   }
 
   private def leafConnect(
@@ -269,6 +256,7 @@ private[chisel3] object Connection {
         case List(a, b) =>
           BiConnect.markAnalogConnected(sourceInfo, a, b, currentModule)
           BiConnect.markAnalogConnected(sourceInfo, b, a, currentModule)
+        case _ => throw new InternalErrorException("Match error: as.toList=${as.toList}")
       }
     } catch { // convert Exceptions to Builder.error's so compilation can continue
       case attach.AttachException(message) => Builder.error(message)

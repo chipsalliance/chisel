@@ -55,7 +55,7 @@ Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](htt
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 ![CI](https://github.com/chipsalliance/chisel3/actions/workflows/test.yml/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel3.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel3/releases/latest)
-[![Scala version support](https://index.scala-lang.org/chipsalliance/chisel3/chisel3/latest-by-scala-version.svg?color=blue)](https://index.scala-lang.org/chipsalliance/chisel3/chisel3)
+[![chisel3 Scala version support](https://index.scala-lang.org/chipsalliance/chisel/chisel3/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/chipsalliance/chisel/chisel3)
 [![Sonatype Snapshots](https://img.shields.io/nexus/s/edu.berkeley.cs/chisel3_2.13?server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/content/repositories/snapshots/edu/berkeley/cs/)
 [![Scaladoc](https://www.javadoc.io/badge/edu.berkeley.cs/chisel3_2.13.svg?color=blue&label=Scaladoc)](https://javadoc.io/doc/edu.berkeley.cs/chisel3_2.13/latest)
 
@@ -392,4 +392,4 @@ You are encouraged to do your development against the latest SNAPSHOT, but note 
 
 ### Roadmap
 
-See (Roadmap)[https://github.com/chipsalliance/chisel3/blob/master/README.md].
+See [Roadmap](https://github.com/chipsalliance/chisel3/blob/master/ROADMAP.md).

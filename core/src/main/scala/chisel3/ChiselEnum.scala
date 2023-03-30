@@ -3,14 +3,15 @@
 package chisel3
 
 import scala.language.experimental.macros
+import scala.language.existentials
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
-import chisel3.experimental.{annotate, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{throwException, Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId}
+import chisel3.internal.{throwException, Binding, Builder, BuilderContextCache, ChildBinding, ConstrainedBinding}
 
 import chisel3.experimental.EnumAnnotations._
 
@@ -51,8 +52,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
   private[chisel3] override def connectFromBits(
     that: Bits
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     this := factory.apply(that.asUInt)
   }
@@ -64,25 +64,25 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
   final def >(that:   EnumType): Bool = macro SourceInfoTransform.thatArg
   final def >=(that:  EnumType): Bool = macro SourceInfoTransform.thatArg
 
-  def do_===(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_===(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, EqualOp, that)
-  def do_=/=(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_=/=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, NotEqualOp, that)
-  def do_<(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_<(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, LessOp, that)
-  def do_>(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_>(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, GreaterOp, that)
-  def do_<=(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_<=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, LessEqOp, that)
-  def do_>=(that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+  def do_>=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, GreaterEqOp, that)
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt =
     pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
 
   protected[chisel3] override def width: Width = factory.width
 
-  def isValid(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def isValid(implicit sourceInfo: SourceInfo): Bool = {
     if (litOption.isDefined) {
       true.B
     } else {
@@ -95,7 +95,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
     * @param s a [[scala.collection.Seq$ Seq]] of enumeration values to look for
     * @return a hardware [[Bool]] that indicates if this value matches any of the given values
     */
-  final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo): Bool = {
     VecInit(s.map(this === _)).asUInt.orR
   }
 
@@ -109,11 +109,10 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
     u1: EnumType,
     u2: EnumType*
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Bool = isOneOf(u1 +: u2.toSeq)
 
-  def next(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
+  def next(implicit sourceInfo: SourceInfo): this.type = {
     if (litOption.isDefined) {
       val index = factory.all.indexOf(this)
 
@@ -153,7 +152,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
         case b: Bundle => enumFields(b)
         case _ => Seq()
       }
-    case b: Bundle =>
+    case b: Record =>
       b.elements.collect {
         case (name, e: EnumType) if this.typeEquivalent(e) => Seq(Seq(name))
         case (name, v: Vec[_]) if this.typeEquivalent(v.sample_element) => Seq(Seq(name))
@@ -183,13 +182,16 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
       case None    => EnumComponentChiselAnnotation(this, enumTypeName)
     }
 
-    if (!Builder.enumAnnos.contains(anno)) {
-      Builder.enumAnnos += anno
+    // Enum annotations are added every time a ChiselEnum is bound
+    // To keep the number down, we keep them unique in the annotations
+    val enumAnnos = Builder.contextCache.getOrElseUpdate(ChiselEnum.CacheKey, mutable.HashSet.empty[ChiselAnnotation])
+    if (!enumAnnos.contains(anno)) {
+      enumAnnos += anno
       annotate(anno)
     }
 
-    if (!Builder.enumAnnos.contains(factory.globalAnnotation)) {
-      Builder.enumAnnos += factory.globalAnnotation
+    if (!enumAnnos.contains(factory.globalAnnotation)) {
+      enumAnnos += factory.globalAnnotation
       annotate(factory.globalAnnotation)
     }
   }
@@ -198,7 +200,6 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
 
   def toPrintable: Printable = {
     implicit val sourceInfo = UnlocatableSourceInfo
-    implicit val compileOptions = ExplicitCompileOptions.Strict
     val allNames = factory.allNames.zip(factory.all)
     val nameSize = allNames.map(_._1.length).max
     def leftPad(str: String): String = {
@@ -218,6 +219,10 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
     }
     result.map(Character(_)).foldLeft(p"")(_ + _)
   }
+}
+
+private[chisel3] object ChiselEnum {
+  private[chisel3] case object CacheKey extends BuilderContextCache.Key[mutable.HashSet[ChiselAnnotation]]
 }
 
 abstract class ChiselEnum {
@@ -245,7 +250,7 @@ abstract class ChiselEnum {
   }
 
   private[chisel3] def globalAnnotation: EnumDefChiselAnnotation =
-    EnumDefChiselAnnotation(enumTypeName, (enumNames, enumValues).zipped.toMap)
+    EnumDefChiselAnnotation(enumTypeName, enumNames.zip(enumValues).toMap)
 
   def getWidth: Int = width.get
 
@@ -294,8 +299,7 @@ abstract class ChiselEnum {
     n:    UInt,
     warn: Boolean
   )(
-    implicit sourceInfo:      SourceInfo,
-    connectionCompileOptions: CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Type = {
     if (n.litOption.isDefined) {
       enumInstances.find(_.litValue == n.litValue) match {
@@ -326,7 +330,7 @@ abstract class ChiselEnum {
     * @param n the UInt to cast
     * @return the equivalent Enum to the value of the cast UInt
     */
-  def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type =
+  def apply(n: UInt)(implicit sourceInfo: SourceInfo): Type =
     castImpl(n, warn = true)
 
   /** Safely cast an [[UInt]] to the type of this Enum
@@ -335,7 +339,7 @@ abstract class ChiselEnum {
     * @return the equivalent Enum to the value of the cast UInt and a Bool indicating if the
     *         Enum is valid
     */
-  def safe(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): (Type, Bool) = {
+  def safe(n: UInt)(implicit sourceInfo: SourceInfo): (Type, Bool) = {
     val t = castImpl(n, warn = false)
     (t, t.isValid)
   }

@@ -8,7 +8,7 @@ import firrtl.options.Viewer.view
 
 import chisel3.stage._
 import chisel3.stage.CircuitSerializationAnnotation._
-import chisel3.internal.ChiselException
+import chisel3.ChiselException
 
 /** Adds [[stage.CircuitSerializationAnnotation]]s based on [[ChiselOutputFileAnnotation]]
   */
@@ -26,11 +26,7 @@ class AddSerializationAnnotations extends Phase {
         s"Unable to locate the elaborated circuit, did ${classOf[Elaborate].getName} run correctly"
       )
     }
-    val baseFilename = chiselOptions.outputFile.getOrElse(circuit.name)
-
-    val (filename, format) =
-      if (baseFilename.endsWith(".pb")) (baseFilename.stripSuffix(".pb"), ProtoBufFileFormat)
-      else (baseFilename.stripSuffix(".fir"), FirrtlFileFormat)
-    CircuitSerializationAnnotation(circuit, filename, format) +: annotations
+    val filename = chiselOptions.outputFile.getOrElse(circuit.name).stripSuffix(".fir")
+    CircuitSerializationAnnotation(circuit, filename, FirrtlFileFormat) +: annotations
   }
 }

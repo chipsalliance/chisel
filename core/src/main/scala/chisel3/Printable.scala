@@ -62,7 +62,7 @@ object Printable {
   /** Pack standard printf fmt, args* style into Printable
     */
   def pack(fmt: String, data: Data*): Printable = {
-    val args = data.toIterator
+    val args = data.iterator
     // Error handling
     def carrotAt(index: Int) = (" " * index) + "^"
     def errorMsg(index: Int) =

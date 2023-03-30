@@ -96,7 +96,13 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         case acc: ValDef if acc.symbol.isParamAccessor =>
           paramAccessors += acc.symbol
         case con: DefDef if con.symbol.isPrimaryConstructor =>
-          primaryConstructor = Some(con)
+          if (con.symbol.isPrivate) {
+            val msg = "Private bundle constructors cannot automatically be cloned, try making it package private"
+            global.reporter.error(con.pos, msg)
+          } else {
+            primaryConstructor = Some(con)
+          }
+
         case d: DefDef if isNullaryMethodNamed("_cloneTypeImpl", d) =>
           val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
@@ -144,6 +150,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       val ttpe =
         if (tparamList.nonEmpty) AppliedTypeTree(Ident(record.symbol), tparamList) else Ident(record.symbol)
       val newUntyped = New(ttpe, conArgs)
+
+      // TODO For private default constructors this crashes with a
+      // TypeError. Figure out how to make this local to the object so
+      // that private default constructors work.
       val neww = localTyper.typed(newUntyped)
 
       // Create the symbol for the method and have it be associated with the Record class

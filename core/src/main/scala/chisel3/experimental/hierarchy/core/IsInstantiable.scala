@@ -3,7 +3,7 @@
 package chisel3.experimental.hierarchy.core
 
 /** While this is public, it is not recommended for users to extend directly.
-  * Instead, use the [[@instantiable]] annotation on your trait or class.
+  * Instead, use the [[instantiable]] annotation on your trait or class.
   *
   * This trait indicates whether a class can be returned from an Instance.
   */
