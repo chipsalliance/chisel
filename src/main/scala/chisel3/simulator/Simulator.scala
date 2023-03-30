@@ -3,10 +3,6 @@ package chisel3.simulator
 import chisel3.{Data, RawModule}
 import scala.util.Try
 import svsim._
-import chisel3.simulator.SimulatedModule
-import chisel3.simulator.SimulatedModule
-import chisel3.simulator.SimulatedModule
-import chisel3.simulator.SimulatedModule
 
 final object Simulator {
   trait BackendProcessor {

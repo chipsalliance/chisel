@@ -58,11 +58,14 @@ trait ChiselRunners extends Assertions {
           optimizationStyle = OptimizationStyle.OptimizeForCompilationSpeed,
           verilogPreprocessorDefines = Seq(
             VerilogPreprocessorDefine("ASSERT_VERBOSE_COND", s"!${Workspace.testbenchModuleName}.reset"),
+            VerilogPreprocessorDefine("PRINTF_COND", s"!${Workspace.testbenchModuleName}.reset"),
             VerilogPreprocessorDefine("STOP_COND", s"!${Workspace.testbenchModuleName}.reset")
           )
         )
       },
-      verilator.Backend.CompilationSettings(),
+      // Seq("--assert", "-Wno-fatal", "-Wno-WIDTH", "-Wno-STMTDLY")
+      verilator.Backend
+        .CompilationSettings(disabledWarnings = Seq("WIDTH", "STMTDLY"), disableFatalExitOnWarnings = true),
       customSimulationWorkingDirectory = None,
       verbose = false
     )

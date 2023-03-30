@@ -18,7 +18,8 @@ object Backend {
     outputSplit:                Option[Int] = None,
     outputSplitCFuncs:          Option[Int] = None,
     disabledWarnings:           Seq[String] = Seq(),
-    disableFatalExitOnWarnings: Boolean = false)
+    disableFatalExitOnWarnings: Boolean = false,
+    enableAllAssertions:        Boolean = false)
 
   def initializeFromProcessEnvironment() = {
     val process = Runtime.getRuntime().exec(Array("which", "verilator"))
@@ -80,11 +81,13 @@ final class Backend(
           case None => Seq()
         },
 
-        if (backendSpecificSettings.disableFatalExitOnWarnings) {
-          Seq("-Wno-fatal")
-        } else {
-          Seq()
+        Seq(
+          ("-Wno-fatal", backendSpecificSettings.disableFatalExitOnWarnings),
+          ("--assert", backendSpecificSettings.enableAllAssertions),
+        ).collect {
+          case (flag, true) => flag
         },
+        
         backendSpecificSettings.disabledWarnings.map("-Wno-" + _),
 
         commonSettings.optimizationStyle match {
