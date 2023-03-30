@@ -17,6 +17,7 @@ class TypenameSpec extends ChiselFlatSpec {
 
       val io = IO(new Bundle {
         val uint = Decoupled(UInt(4.W))
+        val sint = Decoupled(SInt(8.W))
         val bool = Decoupled(Bool())
         val vec = Decoupled(Vec(3, UInt(8.W)))
         val asyncReset = Decoupled(AsyncReset())
@@ -28,6 +29,10 @@ class TypenameSpec extends ChiselFlatSpec {
       val uintEnq = Wire(Decoupled(UInt(4.W)))
       val uintDeq = Queue(uintEnq, 16) // Queue16_UInt4
       uintEnq <> io.uint
+
+      val sintEnq = Wire(Decoupled(SInt(8.W)))
+      val sintDeq = Queue(sintEnq, 8) // Queue8_SInt8
+      sintEnq <> io.sint
 
       val boolEnq = Wire(Decoupled(Bool()))
       val boolDeq = Queue(boolEnq, 5) // Queue5_Bool
@@ -55,6 +60,7 @@ class TypenameSpec extends ChiselFlatSpec {
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Test)
     chirrtl should include("module Queue16_UInt4")
+    chirrtl should include("module Queue8_SInt8")
     chirrtl should include("module Queue5_Bool")
     chirrtl should include("module Queue32_Vec3_UInt8")
     chirrtl should include("module Queue17_AsyncReset")
