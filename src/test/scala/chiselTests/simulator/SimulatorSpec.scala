@@ -6,22 +6,6 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
 
-class GCD extends Module {
-  val io = IO(new Bundle {
-    val a = Input(UInt(32.W))
-    val b = Input(UInt(32.W))
-    val loadValues = Input(Bool())
-    val result = Output(UInt(32.W))
-    val resultIsValid = Output(Bool())
-  })
-  val x = Reg(UInt(32.W))
-  val y = Reg(UInt(32.W))
-  when(x > y) { x := x -% y }.otherwise { y := y -% x }
-  when(io.loadValues) { x := io.a; y := io.b }
-  io.result := x
-  io.resultIsValid := y === 0.U
-}
-
 class VerilatorSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
   val backend = verilator.Backend.initializeFromProcessEnvironment()
   val tag = "verilator"
