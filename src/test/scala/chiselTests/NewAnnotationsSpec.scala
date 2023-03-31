@@ -55,6 +55,10 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
           Array("--target", "chirrtl", "--target-dir", "test_run_dir"),
           Seq(ChiselGeneratorAnnotation(() => new UsesMuchUsedModule))
         )
+        .flatMap {
+          case FirrtlCircuitAnnotation(circuit) => circuit.annotations
+          case _                                => None
+        }
 
       val dontTouchAnnos = dutAnnos.collect { case DontTouchAnnotation(target) => target.serialize }
       val noDedupAnnos = dutAnnos.collect { case NoDedupAnnotation(target) => target.serialize }

@@ -529,4 +529,7 @@ case class ExtModule(
     extends DefModule
     with UseSerializer
 
-case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends FirrtlNode with HasInfo with UseSerializer
+case class Circuit(info: Info, modules: Seq[DefModule], main: String, annotations: AnnotationSeq)
+    extends FirrtlNode
+    with HasInfo
+    with UseSerializer

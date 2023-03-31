@@ -2,6 +2,8 @@
 
 package firrtl.ir
 
+import firrtl.annotations.JsonProtocol
+
 case class Version(major: Int, minor: Int, patch: Int) {
   def serialize: String = s"$major.$minor.$patch"
   def incompatible(that: Version): Boolean =
@@ -365,11 +367,15 @@ object Serializer {
   }
 
   private def sIt(node: Circuit)(implicit indent: Int): Iterator[String] = node match {
-    case Circuit(info, modules, main) =>
+    case Circuit(info, modules, main, annotations) =>
       val prelude = {
         implicit val b = new StringBuilder // Scope this so we don't accidentally pass it anywhere
         b ++= s"FIRRTL version ${version.serialize}\n"
-        b ++= "circuit "; b ++= main; b ++= " :"; s(info)
+        b ++= "circuit "; b ++= main; b ++= " :";
+        if (annotations.nonEmpty) {
+          b ++= "%["; b ++= JsonProtocol.serialize(annotations); b ++= "]";
+        }
+        s(info)
         b.toString
       }
       Iterator(prelude) ++
