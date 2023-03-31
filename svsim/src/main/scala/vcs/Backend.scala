@@ -64,7 +64,8 @@ object Backend {
     traceSettings:               CompilationSettings.TraceSettings = CompilationSettings.TraceSettings(),
     simulationSettings:          SimulationSettings = SimulationSettings(),
     licenceExpireWarningTimeout: Option[Int] = None,
-    archOverride:                Option[String] = None)
+    archOverride:                Option[String] = None,
+    waitForLicenseIfUnavailable: Boolean = false)
 
   def initializeFromProcessEnvironment() = {
     (sys.env.get("VCS_HOME"), sys.env.get("LM_LICENSE_FILE")) match {
@@ -122,10 +123,11 @@ final class Backend(
           "-e", "simulation_main",
         ),
 
-        if (backendSpecificSettings.randomlyInitializeRegisters) {
-          Seq("+vcs+initreg+random")
-        } else {
-          Seq()
+        Seq(
+          ("-licqueue", backendSpecificSettings.waitForLicenseIfUnavailable),
+          ("+vcs+initreg+random", backendSpecificSettings.randomlyInitializeRegisters)
+        ).collect {
+          case (flag, true) => flag
         },
 
         commonSettings.defaultTimescale match {
