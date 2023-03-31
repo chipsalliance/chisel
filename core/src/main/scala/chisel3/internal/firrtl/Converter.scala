@@ -363,7 +363,7 @@ private[chisel3] object Converter {
         id.desiredName,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
-    case ctx @ DefIntModule(id, name, ports, topDir, params) =>
+    case ctx @ DefIntrinsicModule(id, name, ports, topDir, params) =>
       fir.IntModule(
         fir.NoInfo,
         name,

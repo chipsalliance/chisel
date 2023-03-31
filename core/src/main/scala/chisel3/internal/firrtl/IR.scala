@@ -379,8 +379,8 @@ case class DefBlackBox(
 
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class DefIntModule(
-  id:     BaseIntModule,
+case class DefIntrinsicModule(
+  id:     BaseIntrinsicModule,
   name:   String,
   ports:  Seq[Port],
   topDir: SpecifiedDirection,
