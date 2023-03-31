@@ -400,7 +400,7 @@ private[chisel3] trait NamedComponent extends HasId {
 }
 
 // Mutable global state for chisel that can appear outside a Builder context
-private[chisel3] class ChiselContext() {
+private[chisel3] class ChiselContext(threadId: Int) {
   val idGen = new IdGen
 
   // Records the different prefixes which have been scoped at this point in time
@@ -410,6 +410,10 @@ private[chisel3] class ChiselContext() {
   // The namespace outside of Builder context is useless, but it ensures that views can still be created
   // and the resulting .toTarget is very clearly useless (_$$View$$_...)
   val viewNamespace = Namespace.empty
+
+  val root = Context(s"%$threadId")
+
+  var activeCircuit: Context = null
 }
 
 private[chisel3] class DynamicContext(
@@ -505,7 +509,7 @@ private[chisel3] object Builder extends LazyLogging {
   // Ensure we have a thread-specific ChiselContext
   private val chiselContext = new ThreadLocal[ChiselContext] {
     override def initialValue: ChiselContext = {
-      new ChiselContext
+      new ChiselContext(this.hashCode())
     }
   }
 
@@ -816,7 +820,11 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext: DynamicContext,
     forceModName:   Boolean = true
   ): (Circuit, T) = {
-    dynamicContextVar.withValue(Some(dynamicContext)) {
+    val circuitId = s"circuit_${dynamicContext.hashCode.toString.take(8)}"
+    val circuitContext = Context(circuitId)
+    Builder.chiselContext.get().activeCircuit = circuitContext
+    // Because we don't have a package name, just use this circuit id thing for both definition and instance name
+    val ret = dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal
       logger.info("Elaborating design...")
@@ -829,6 +837,9 @@ private[chisel3] object Builder extends LazyLogging {
 
       (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq), mod)
     }
+    // Add built circuit to the root Context for future imports
+    Builder.chiselContext.get().root.instantiateChild(circuitId, circuitContext)
+    ret
   }
   initializeSingletons()
 }

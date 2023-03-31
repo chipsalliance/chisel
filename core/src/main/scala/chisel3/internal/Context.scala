@@ -21,7 +21,7 @@ private[internal] trait CloneToContext {
   * @param parent if a parent is present; if None, this is a "top" context
   * @param provenance if a provenance is preset; if None, this is an "origin" context
   */
-private[chisel3] class Context(val key: String, val parent: Option[Context], val provenance: Option[Context]) {
+private[chisel3] class Context private (val key: String, val parent: Option[Context], val provenance: Option[Context]) {
   // Cache of children keys that this context has
   private val localChildrenKeys = new collection.mutable.LinkedHashSet[String]()
   // Cache of children Contexts
@@ -224,4 +224,8 @@ private[chisel3] class Context(val key: String, val parent: Option[Context], val
       }
     }
   }
+}
+
+object Context {
+  def apply(key: String): Context = new Context(key, None, None)
 }

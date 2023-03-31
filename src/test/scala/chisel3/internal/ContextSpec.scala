@@ -9,11 +9,11 @@ import chiselTests.{ChiselFunSpec, Utils}
 class ContextSpec extends ChiselFunSpec with Utils {
   describe("(0) Context") {
     it("(0.a): instantiateChild, checked with target") {
-      val defLeaf = new Context("Leaf", None, None)
-      val defBranch = new Context("Branch", None, None)
+      val defLeaf = Context("Leaf")
+      val defBranch = Context("Branch")
       defBranch.instantiateChild("l0", defLeaf)
       defBranch.instantiateChild("l1", defLeaf)
-      val defRoot = new Context("Root", None, None)
+      val defRoot = Context("Root")
       defRoot.instantiateChild("b0", defBranch)
       defRoot.instantiateChild("b1", defBranch)
 
@@ -25,11 +25,11 @@ class ContextSpec extends ChiselFunSpec with Utils {
       assert(defRoot("b1")("l1").target == "Root/b1/l1")
     }
     it("(0.b): copyTo") {
-      val L = new Context("Leaf", None, None)
-      val B = new Context("Branch", None, None)
+      val L = Context("Leaf")
+      val B = Context("Branch")
       val B_l0 = B.instantiateChild("l0", L)
       val B_l1 = B.instantiateChild("l1", L)
-      val R = new Context("Root", None, None)
+      val R = Context("Root")
       val R_b0 = R.instantiateChild("b0", B)
       val R_b1 = R.instantiateChild("b1", B)
       val R_b0_l1 = R("b0")("l1")
