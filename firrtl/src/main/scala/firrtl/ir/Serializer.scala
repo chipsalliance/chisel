@@ -2,6 +2,8 @@
 
 package firrtl.ir
 
+import firrtl.annotations.JsonProtocol
+
 case class Version(major: Int, minor: Int, patch: Int) {
   def serialize: String = s"$major.$minor.$patch"
   def incompatible(that: Version): Boolean =
@@ -13,7 +15,7 @@ object Serializer {
   val Indent = "  "
 
   // The version supported by the serializer.
-  val version = Version(1, 1, 0)
+  val version = Version(1, 2, 0)
 
   /** Converts a `FirrtlNode` into its string representation with
     * default indentation.
@@ -65,7 +67,7 @@ object Serializer {
       case n: Circuit   => sIt(n)(indent)
       case other => Iterator(serialize(other, indent))
     }
-  }
+  }.view // TODO replace .view with constructing a view directly above, but must drop 2.12 first.
 
   private def flattenInfo(infos: Seq[Info]): Seq[FileInfo] = infos.flatMap {
     case NoInfo => Seq()
@@ -365,11 +367,15 @@ object Serializer {
   }
 
   private def sIt(node: Circuit)(implicit indent: Int): Iterator[String] = node match {
-    case Circuit(info, modules, main) =>
+    case Circuit(info, modules, main, annotations) =>
       val prelude = {
         implicit val b = new StringBuilder // Scope this so we don't accidentally pass it anywhere
         b ++= s"FIRRTL version ${version.serialize}\n"
-        b ++= "circuit "; b ++= main; b ++= " :"; s(info)
+        b ++= "circuit "; b ++= main; b ++= " :";
+        if (annotations.nonEmpty) {
+          b ++= "%["; b ++= JsonProtocol.serialize(annotations); b ++= "]";
+        }
+        s(info)
         b.toString
       }
       Iterator(prelude) ++

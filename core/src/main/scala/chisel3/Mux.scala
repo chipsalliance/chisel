@@ -32,8 +32,7 @@ object Mux extends SourceInfoDoc {
     con:  T,
     alt:  T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     requireIsHardware(cond, "mux condition")
     requireIsHardware(con, "mux true value")
