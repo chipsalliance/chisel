@@ -29,7 +29,8 @@ class AddImplicitOutputFileSpec extends AnyFlatSpec with Matchers {
         )
       )
     ),
-    "foo"
+    "foo",
+    Seq.empty
   )
 
   behavior.of(classOf[AddImplicitOutputFile].toString)

@@ -38,7 +38,8 @@ class ExtModuleTests extends FirrtlFlatSpec {
           )
         )
       ),
-      "Top"
+      "Top",
+      Seq.empty
     )
 
     circuit.serialize should be(input)
