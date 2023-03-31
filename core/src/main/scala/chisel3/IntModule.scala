@@ -10,7 +10,7 @@ import scala.annotation.nowarn
 
 package internal {
 
-  private[chisel3] abstract class BaseIntModule(intrinsicName : String) extends BaseModule {
+  private[chisel3] abstract class BaseIntModule(intrinsicName: String) extends BaseModule {
     val intrinsic = intrinsicName
   }
 
@@ -19,7 +19,8 @@ package internal {
 package experimental {
 
   @nowarn("msg=class Port") // delete when Port becomes private
-  abstract class IntModule(intrinsicName : String, val params: Map[String, Param] = Map.empty[String, Param]) extends BaseIntModule(intrinsicName) {
+  abstract class IntModule(intrinsicName: String, val params: Map[String, Param] = Map.empty[String, Param])
+      extends BaseIntModule(intrinsicName) {
     private[chisel3] override def generateComponent(): Option[Component] = {
       require(!_closed, "Can't generate intmodule more than once")
       _closed = true

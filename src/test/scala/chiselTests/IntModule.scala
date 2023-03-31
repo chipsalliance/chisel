@@ -9,7 +9,6 @@ import chisel3.reflect.DataMirror
 import chisel3.testers.{BasicTester, TesterDriver}
 import circt.stage.ChiselStage
 
-
 class IntModuleTest extends IntModule("TestIntrinsic") {
   val foo = IO(new Bundle() {
     val in = Input(Bool())
@@ -42,7 +41,6 @@ class IntModuleTester extends BasicTester {
   val intM3 = Module(new IntModuleRealParam(1.0))
   val intM4 = Module(new IntModuleNoIO("someIntName"))
 }
-
 
 class IntModuleSpec extends ChiselFlatSpec {
   def myGenerateFirrtl(t: => Module): String = ChiselStage.emitCHIRRTL(t)
