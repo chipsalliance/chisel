@@ -32,15 +32,15 @@ trait PeekPokeAPI {
       * Stops early if the `sentinelPort` is equal to the `sentinelValue`.
       */
     def stepUntil(sentinelPort: Data, sentinelValue: BigInt, maxCycles: Int): Unit = {
-      val context = currentContext()
-      context.willEvaluate()
-      val simulationPort = context.simulationPorts(clock)
+      val module = AnySimulatedModule.current
+      module.willEvaluate()
+      val simulationPort = module.port(clock)
       simulationPort.tick(
         timestepsPerPhase = 1,
         maxCycles = maxCycles,
         inPhaseValue = 0,
         outOfPhaseValue = 1,
-        sentinel = Some(context.simulationPorts(sentinelPort), sentinelValue)
+        sentinel = Some(module.port(sentinelPort), sentinelValue)
       )
     }
   }
