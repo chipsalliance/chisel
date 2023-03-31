@@ -5,7 +5,7 @@ import chisel3.RawModule
 
 /** Provides a simple API for "ephemeral" invocations (where you don't care about the artifacts after the invocation completes) to
   * simulate Chisel modules. To keep things really simple, it only provides the
-  * peek/poke API provides enough control while hiding some of the lower-level svsim
+  * peek/poke API, which provides enough control while hiding some of the lower-level svsim
   * complexity.
   * @example
   * ```
