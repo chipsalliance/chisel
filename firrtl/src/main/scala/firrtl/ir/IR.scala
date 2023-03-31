@@ -529,4 +529,18 @@ case class ExtModule(
     extends DefModule
     with UseSerializer
 
+/** Intrinsic Module
+  *
+  * Used for compiler intrinsics.
+  * @param intrinsic Defined intrinsic of the module
+  */
+case class IntModule(
+  info:      Info,
+  name:      String,
+  ports:     Seq[Port],
+  intrinsic: String,
+  params:    Seq[Param])
+    extends DefModule
+    with UseSerializer
+
 case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends FirrtlNode with HasInfo with UseSerializer
