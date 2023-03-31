@@ -362,6 +362,13 @@ object Serializer {
       newLineAndIndent(1); b ++= "defname = "; b ++= defname
       params.foreach { p => newLineAndIndent(1); s(p) }
       Iterator(b.toString)
+    case IntModule(info, name, ports, intrinsic, params) =>
+      implicit val b = new StringBuilder
+      doIndent(0); b ++= "intmodule "; b ++= name; b ++= " :"; s(info)
+      ports.foreach { p => newLineAndIndent(1); s(p) }
+      newLineAndIndent(1); b ++= "intrinsic = "; b ++= intrinsic
+      params.foreach { p => newLineAndIndent(1); s(p) }
+      Iterator(b.toString)
     case other =>
       Iterator(Indent * indent, other.serialize) // Handle user-defined nodes
   }
