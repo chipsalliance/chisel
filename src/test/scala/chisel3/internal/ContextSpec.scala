@@ -50,4 +50,33 @@ class ContextSpec extends ChiselFunSpec with Utils {
       assert(R.copyTo(R_b0_l1) == R)
     }
   }
+  describe("(1) Context used in modules and data") {
+    it("Reports context in connection error") {
+      class Top extends Module {
+        val m0 = Module(new Middle)
+        val m1 = Module(new Middle)
+        m0.b0.in := m0.b1.out // Connect to and from data outside of local module's scope!
+      }
+      class Middle extends Module {
+        val b0 = Module(new Bottom)
+        val b1 = Module(new Bottom)
+      }
+      class Bottom extends Module {
+        val in  = IO(Input(UInt(3.W)))
+        val out = IO(Output(UInt(3.W)))
+      }
+      val e = intercept[chisel3.ChiselException] {
+        circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--full-stacktrace"))
+      }
+
+
+      List(
+        "Connection between sink (Bottom.in: IO[UInt<3>]) and source (Bottom_1.out: IO[UInt<3>]) failed",
+        "Top/m0=Middle/b0=Bottom/in",    // Generated from Context.target
+        "Top/m0=Middle/b1=Bottom_1/out", // Generated from Context.target
+        "unavailable to current module",
+        "Top"                            // Generated from Context.target
+      ).forall(s => e.getMessage.contains(s))
+    }
+  }
 }

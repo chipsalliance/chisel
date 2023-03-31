@@ -108,6 +108,10 @@ private[chisel3] class IdGen {
 }
 
 private[chisel3] trait HasId extends chisel3.InstanceId {
+  private[chisel3] val _id:                Long = Builder.idGen.next
+  private[chisel3] def _instanceIdentifier: String = Builder.getInstanceIdentifier.getOrElse("%" + _id.toString)
+  val instanceIdentifier: String = _instanceIdentifier
+
   // using nullable var for better memory usage
   private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
@@ -122,9 +126,8 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     _circuitVar = target.getOrElse(null)
   }
 
-  private[chisel3] val _id:                Long = Builder.idGen.next
-  private[chisel3] def _instanceIdentifier: String = Builder.getInstanceIdentifier.getOrElse("%" + _id.toString)
-  val instanceIdentifier: String = _instanceIdentifier
+  private[chisel3] var contextVar: Option[Context] = None
+  private[chisel3] def context = contextVar
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
   override def hashCode: Int = super.hashCode()
@@ -421,7 +424,8 @@ private[chisel3] class ChiselContext(threadId: Int) {
 
   val root = Context(s"%$threadId")
 
-  var activeCircuit: Context = null
+  var activeCircuit: Option[Context] = None
+  var currentContext: Option[Context] = None
 }
 
 private[chisel3] class DynamicContext(
@@ -648,6 +652,7 @@ private[chisel3] object Builder extends LazyLogging {
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
   }
+  def activeCircuit: Context = chiselContext.get().activeCircuit.get
   def aspectModule(module: BaseModule): Option[BaseModule] = dynamicContextVar.value match {
     case Some(dynamicContext) => dynamicContext.aspectModule.get(module)
     case _                    => None
@@ -842,9 +847,9 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext: DynamicContext,
     forceModName:   Boolean = true
   ): (Circuit, T) = {
-    val circuitId = s"circuit_${dynamicContext.hashCode.toString.take(8)}"
+    val circuitId = s"circuit_${dynamicContext.hashCode.toString.take(3)}"
     val circuitContext = Context(circuitId)
-    Builder.chiselContext.get().activeCircuit = circuitContext
+    Builder.chiselContext.get().activeCircuit = Some(circuitContext)
     // Because we don't have a package name, just use this circuit id thing for both definition and instance name
     val ret = dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
@@ -861,6 +866,7 @@ private[chisel3] object Builder extends LazyLogging {
     }
     // Add built circuit to the root Context for future imports
     Builder.chiselContext.get().root.instantiateChild(circuitId, circuitContext)
+    Builder.chiselContext.get().activeCircuit = None
     ret
   }
   initializeSingletons()

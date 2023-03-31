@@ -52,8 +52,8 @@ private[chisel3] object MonoConnect {
     MonoConnectException(s"Source ${formatName(source)} has escaped the scope of the when in which it was constructed.")
   def SinkEscapedWhenScopeException(sink: Data) =
     MonoConnectException(s"Sink ${formatName(sink)} has escaped the scope of the when in which it was constructed.")
-  def UnknownRelationException =
-    MonoConnectException("Sink or source unavailable to current module.")
+  def UnknownRelationException(sink: Data, source: Data, currentModule: BaseModule) =
+    MonoConnectException(s": ${sink.context.get.target} or ${source.context.get.target} unavailable to current module ${currentModule.context.get.target}.")
   // These are when recursing down aggregate types
   def MismatchedVecException =
     MonoConnectException("Sink and Source are different length Vecs.")
@@ -458,6 +458,6 @@ private[chisel3] object MonoConnect {
 
     // Not quite sure where left and right are compared to current module
     // so just error out
-    else throw UnknownRelationException
+    else throw UnknownRelationException(_sink, _source, context_mod)
   }
 }

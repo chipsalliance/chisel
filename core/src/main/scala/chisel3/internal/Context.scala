@@ -3,8 +3,8 @@
 package chisel3.internal
 
 /** All values of contexts must cloneable to a top with more context */
-private[internal] trait CloneToContext {
-  def cloneTo(c: Context): CloneToContext
+private[chisel3] trait CloneToContext {
+  def cloneTo(c: Context): CloneToContext = this // For now this does not work, but it is only necessary when box-types are a thing
 }
 
 /** Data-structure to represent hierarchical contexts
@@ -65,6 +65,20 @@ private[chisel3] class Context private (val key: String, val parent: Option[Cont
     val child = new Context(childKey, Some(this), Some(provenance))
     children.put(childKey, child)
     child
+  }
+  // Necessary if instance == definition (pre D/I world)
+  def instantiateOriginChild(childKey: String): Context = {
+    require(isOrigin)
+    require(children.get(childKey).isEmpty)
+    createNewOriginChildKey(childKey)
+    val child = new Context(childKey, Some(this), None)
+    children.put(childKey, child)
+    child
+  }
+  def instantiateOriginChildWithValue(childKey: String, value: CloneToContext): Context = {
+    val c = instantiateOriginChild(childKey)
+    c.setValue(value)
+    c
   }
 
   /** Return the appropriate child of `this`, error if this child key is not defined `this.origin` */

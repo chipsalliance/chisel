@@ -259,7 +259,7 @@ package experimental {
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
-  abstract class BaseModule extends HasId with IsInstantiable {
+  abstract class BaseModule extends HasId with IsInstantiable with CloneToContext {
     _parent.foreach(_.addId(this))
 
     final def identifierTarget: IsModule = {
@@ -293,6 +293,14 @@ package experimental {
       Builder.globalIdentifierNamespace.name(madeProposal)
     }
     final val definitionIdentifier = _definitionIdentifier
+
+    // Maybe one day we can make this not a var, but it requires Bundle fields to know their parent bundle prior to their execution (e.g. Aligned(..) and Type(new Bundle))
+    contextVar = Some(_parent match {
+      case None => Builder.activeCircuit.instantiateOriginChildWithValue(definitionIdentifier, this)
+      case Some(p) => p.context.get.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
+    })
+
+
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //

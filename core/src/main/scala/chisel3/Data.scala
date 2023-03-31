@@ -340,7 +340,7 @@ object Flipped {
   * @groupdesc Connect Utilities for connecting hardware components
   * @define coll data
   */
-abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+abstract class Data extends HasId with NamedComponent with SourceInfoDoc with CloneToContext {
   import _root_.firrtl.annotations.ReferenceTarget
   override final def identifierTarget: ReferenceTarget = {
     _binding match {
@@ -418,6 +418,21 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       throw RebindingException(s"Attempted reassignment of binding to $this, from: ${target}")
     }
     _bindingVar = target
+  }
+
+  override def context = contextVar.orElse {
+    val myContext = _binding match {
+      case Some(ChildBinding(p: Data)) =>
+        p.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
+      case Some(t: ConstrainedBinding) =>
+        t.location.get.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
+      case Some(CrossModuleBinding) =>
+        _parent.get.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
+      case Some(x) => throw new Exception(this.toString + " = " + x)
+      case None => throw new Exception(this.toString + " = None")
+    }
+    contextVar = Some(myContext)
+    Some(myContext)
   }
 
   private[chisel3] def hasBinding: Boolean = _binding.isDefined
