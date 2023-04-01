@@ -16,14 +16,11 @@ class IntModuleTest extends IntrinsicModule("TestIntrinsic") {
   })
 }
 
-class IntModuleStringParam(str: String) extends IntrinsicModule("OtherIntrinsic", Map("STRING" -> str)) {
-}
+class IntModuleStringParam(str: String) extends IntrinsicModule("OtherIntrinsic", Map("STRING" -> str)) {}
 
-class IntModuleRealParam(dbl: Double) extends IntrinsicModule("OtherIntrinsic", Map("REAL" -> dbl)) {
-}
+class IntModuleRealParam(dbl: Double) extends IntrinsicModule("OtherIntrinsic", Map("REAL" -> dbl)) {}
 
-class IntModuleGenName(GenIntName: String) extends IntrinsicModule(GenIntName) {
-}
+class IntModuleGenName(GenIntName: String) extends IntrinsicModule(GenIntName) {}
 
 class IntModuleTester extends BasicTester {
   val intM1 = Module(new IntModuleTest)
@@ -33,16 +30,18 @@ class IntModuleTester extends BasicTester {
 }
 
 class IntrinsicModuleSpec extends ChiselFlatSpec {
-  (ChiselStage.emitCHIRRTL(new IntModuleTester)
-    .split('\n').map(x => x.trim)
-     should contain).allOf(
-      "intmodule IntModuleTest :",
-      "intrinsic = TestIntrinsic",
-      "intmodule IntModuleStringParam :",
-      "parameter STRING = \"one\"",
-      "intmodule IntModuleRealParam :",
-      "intrinsic = OtherIntrinsic",
-      "intmodule IntModuleGenName :",
-      "intrinsic = someIntName"
-    )
+  (ChiselStage
+    .emitCHIRRTL(new IntModuleTester)
+    .split('\n')
+    .map(x => x.trim)
+    should contain).allOf(
+    "intmodule IntModuleTest :",
+    "intrinsic = TestIntrinsic",
+    "intmodule IntModuleStringParam :",
+    "parameter STRING = \"one\"",
+    "intmodule IntModuleRealParam :",
+    "intrinsic = OtherIntrinsic",
+    "intmodule IntModuleGenName :",
+    "intrinsic = someIntName"
+  )
 }
