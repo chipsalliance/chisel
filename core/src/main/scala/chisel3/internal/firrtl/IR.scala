@@ -360,7 +360,7 @@ abstract class Component extends Arg {
 }
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+case class DefModule(id: BaseModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefBlackBox(

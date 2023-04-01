@@ -4,6 +4,7 @@ package chisel3.stage.phases
 
 import chisel3.aop.Aspect
 import chisel3.RawModule
+import chisel3.experimental.BaseModule
 import chisel3.stage.DesignAnnotation
 import firrtl.AnnotationSeq
 import firrtl.options.Phase
@@ -16,13 +17,13 @@ import scala.collection.mutable
   */
 class AspectPhase extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    var dut: Option[RawModule] = None
+    var dut: Option[BaseModule] = None
     val aspects = mutable.ArrayBuffer[Aspect[_]]()
 
     val remainingAnnotations = annotations.flatMap {
-      case DesignAnnotation(d) =>
+      case x@DesignAnnotation(d) =>
         dut = Some(d)
-        Nil
+        Seq(x)
       case a: Aspect[_] =>
         aspects += a
         Nil

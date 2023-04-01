@@ -26,7 +26,7 @@ class Elaborate extends Phase {
   override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
-    case ChiselGeneratorAnnotation(gen) =>
+    case ChiselGeneratorAnnotation(gen, buildImplementation) =>
       val chiselOptions = view[ChiselOptions](annotations)
       try {
         val context =
@@ -36,6 +36,7 @@ class Elaborate extends Phase {
             chiselOptions.warningsAsErrors,
             chiselOptions.sourceRoots
           )
+        context.buildImplementation = buildImplementation
         val (circuit, dut) =
           Builder.build(Module(gen()), context)
         Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))

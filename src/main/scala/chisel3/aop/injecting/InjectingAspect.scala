@@ -5,6 +5,7 @@ package chisel3.aop.injecting
 import chisel3.{withClockAndReset, Module, ModuleAspect, RawModule}
 import chisel3.aop._
 import chisel3.internal.{Builder, DynamicContext}
+import chisel3.experimental.{BaseModule, noPrefix}
 import chisel3.internal.firrtl.DefModule
 import chisel3.stage.{ChiselOptions, DesignAnnotation}
 import firrtl.annotations.{Annotation, ModuleTarget}
@@ -21,7 +22,7 @@ import scala.collection.mutable
   * @tparam T Type of top-level module
   * @tparam M Type of root module (join point)
   */
-case class InjectingAspect[T <: RawModule, M <: RawModule](
+case class InjectingAspect[T <: BaseModule, M <: BaseModule](
   selectRoots: T => Iterable[M],
   injection:   M => Unit)
     extends InjectorAspect[T, M](
@@ -37,7 +38,7 @@ case class InjectingAspect[T <: RawModule, M <: RawModule](
   * @tparam T Type of top-level module
   * @tparam M Type of root module (join point)
   */
-abstract class InjectorAspect[T <: RawModule, M <: RawModule](
+abstract class InjectorAspect[T <: BaseModule, M <: BaseModule](
   selectRoots: T => Iterable[M],
   injection:   M => Unit)
     extends Aspect[T] {
@@ -74,7 +75,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         Module(new ModuleAspect(module) {
           module match {
             case x: Module    => withClockAndReset(x.clock, x.reset) { injection(module) }
-            case x: RawModule => injection(module)
+            case x: BaseModule => injection(module)
           }
         }),
         dynamicContext

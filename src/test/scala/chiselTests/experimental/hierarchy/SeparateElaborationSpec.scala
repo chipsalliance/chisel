@@ -50,7 +50,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
     annos.flatMap { a =>
       a match {
         case a: ChiselCircuitAnnotation =>
-          a.circuit.components.map { c => ImportDefinitionAnnotation(c.id.toDefinition) }
+          a.circuit.components.map { c => ImportDefinitionAnnotation(c.id.toInterface) }
         case _ => Seq.empty
       }
     }
