@@ -32,13 +32,17 @@ available is documented by an implementation.</p>
 <p>This following creates an intrinsic module for the intrinsic named 
 “OtherIntrinsic”.  It takes a parameter named “STRING” and has several ports.</p>
 
-<p>class ExampleIntrinsicModule(str: String) extends IntrinsicModule(“OtherIntrinsic”, Map(“STRING” -&gt; str)) {
-  val foo = IO(new Bundle() {
-    val in = Input(UInt())
-    val out = Output(UInt(32.W))
-  })
-}</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.IntrinsicModule</span>
 
+<span class="k">class</span> <span class="nc">ExampleIntrinsicModule</span><span class="o">(</span><span class="n">str</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">IntrinsicModule</span><span class="o">(</span>
+  <span class="s">"OtherIntrinsic"</span><span class="o">,</span>
+  <span class="nc">Map</span><span class="o">(</span><span class="s">"STRING"</span> <span class="o">-&gt;</span> <span class="n">str</span><span class="o">))</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">())</span>
+    <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))</span>
+  <span class="o">})</span>
+<span class="o">}</span>
+</code></pre></div></div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/chisel/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/chisel/lunr/lunr.js"></script><script>
 // For all code blocks, copy the language from the containing div
 // to the inner code tag (where hljs expects it to be)
