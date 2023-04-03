@@ -255,7 +255,7 @@ final class Workspace(
   def compile[T <: Backend](
     backend:                          T
   )(workingDirectoryTag:              String,
-    commonSettings:                   SvsimCompilationSettings,
+    commonSettings:                   CommonCompilationSettings,
     backendSpecificSettings:          backend.CompilationSettings,
     customSimulationWorkingDirectory: Option[String],
     verbose:                          Boolean

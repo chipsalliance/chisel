@@ -42,7 +42,7 @@ object Backend {
         (fsdbEnabled, svsim.Backend.enableFsdbTracingFlag)
       ).collect {
         case (true, value) =>
-          svsim.SvsimCompilationSettings.VerilogPreprocessorDefine(value)
+          svsim.CommonCompilationSettings.VerilogPreprocessorDefine(value)
       }
       private[vcs] def environment = fsdbSettings match {
         case None                                        => Seq()
@@ -64,7 +64,8 @@ object Backend {
     traceSettings:               CompilationSettings.TraceSettings = CompilationSettings.TraceSettings(),
     simulationSettings:          SimulationSettings = SimulationSettings(),
     licenceExpireWarningTimeout: Option[Int] = None,
-    archOverride:                Option[String] = None)
+    archOverride:                Option[String] = None,
+    waitForLicenseIfUnavailable: Boolean = false)
 
   def initializeFromProcessEnvironment() = {
     (sys.env.get("VCS_HOME"), sys.env.get("LM_LICENSE_FILE")) match {
@@ -93,7 +94,7 @@ final class Backend(
     outputBinaryName:        String,
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
-    commonSettings:          SvsimCompilationSettings,
+    commonSettings:          CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): svsim.Backend.InvocationSettings = {
     // These environment variables apply to both compilation and simulation
@@ -107,7 +108,7 @@ final class Backend(
     ).flatten
 
     //format: off
-    import SvsimCompilationSettings._
+    import CommonCompilationSettings._
     import Backend.CompilationSettings._
     svsim.Backend.InvocationSettings(
       compilerPath = s"$vcsHome/bin/vcs",
@@ -122,10 +123,11 @@ final class Backend(
           "-e", "simulation_main",
         ),
 
-        if (backendSpecificSettings.randomlyInitializeRegisters) {
-          Seq("+vcs+initreg+random")
-        } else {
-          Seq()
+        Seq(
+          ("-licqueue", backendSpecificSettings.waitForLicenseIfUnavailable),
+          ("+vcs+initreg+random", backendSpecificSettings.randomlyInitializeRegisters)
+        ).collect {
+          case (flag, true) => flag
         },
 
         commonSettings.defaultTimescale match {
