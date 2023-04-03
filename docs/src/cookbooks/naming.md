@@ -72,7 +72,7 @@ ChiselStage.emitSystemVerilog(new ExampleWhenPrefix)
 `_GEN` signals are usually generated from the FIRRTL compiler, rather than the Chisel library. We are working on
 renaming these signals with more context-dependent names, but it is a work in progress. Thanks for caring!
 
-### My module names are super unstable - I change one thing and Module_1 becomes Module_42. Help!
+### How do I make my modules have more stable names instead of 'Module_1' and 'Module_42'?
 
 This is an example of the module instability problem, which results from several modules all sharing the exact same name. To fix this, you must add more specificity to your `Module`'s name to avoid these name collisions.
 
@@ -87,9 +87,12 @@ class MyModule[T <: Data](gen: T) extends Module {
 
 We can override `desiredName` of the module to include the type name of the `gen` parameter like so:
 
-```scala mdoc:silent:reset
+```scala mdoc:invisible:reset
 import chisel3._
+import chisel3.util.Queue
+```
 
+```scala mdoc
 class MyModule[T <: Data](gen: T) extends Module {
   override def desiredName = s"MyModule_${gen.typeName}"
 }
@@ -102,41 +105,19 @@ val foo = Module(new MyModule(UInt(4.W))) // MyModule_UInt4
 val bar = Module(new MyModule(Vec(3, UInt(4.W)))) // MyModule_Vec3_UInt4
 ```
 
-### Does the `typeName` apply for built-in module names too, most notably `Queue`?
+Note that all base Chisel util modules, like `Queue`, already implement `desiredName` like this:
 
-All Chisel built-in library modules, like `Queue` and `Pipe`, already have their `desiredName` overridden in this manner as well. For instance, one infamous problem arose from instantiating multiple `Queues`:
-
-```scala
-import chisel3._
-import chisel3.util.{Decoupled, Queue}
-
-val fooDeq = Queue(fooEnq, 8) // Verilog module would be named 'Queue'
-val barDeq = Queue(barEnq, 8) // ... and 'Queue_1'
-// multiple other Queues... let's assume there are 40 more
-val bazDeq = Queue(bazEnq, 8) // ... and finally 'Queue_42'
+```scala mdoc:compile-only
+val fooQueue = Module(new Queue(UInt(8.W), 4)) // Verilog module would be named 'Queue4_UInt8'
+val barQueue = Module(new Queue(SInt(12.W), 3)) // ... and 'Queue3_SInt12'
+val bazQueue = Module(new Queue(Bool(), 16)) // ... and 'Queue16_Bool'
 ```
 
-By introducing minor changes to the Chisel code, the `Queue` module hierarchy can drastically and unpredictably change -- the `Queue_2` module might rename itself to `Queue_42`, resulting in a lot of confusion and troubles!
+### How would I write my own `typeName` for my data types?
 
-Previously, the recommended solution was to manually override `desiredName` in a `Queue` for extra specificity, but now, both the `typeName` of a `Queue`'s inner type and the Queue's depth are automatically included in its `desiredName`, with *almost* no changes:
-
-```scala
-val fooQueue = Queue(fooEnq, 8) // Verilog module would be named 'Queue8_UInt8'
-val barQueue = Queue(barEnq, 8) // ... and 'Queue8_SInt8'
-val bazQueue = Queue(bazEnq, 8) // ... and 'Queue8_Bool'
-```
-
-### I have already overriden `desiredName` to use a `typeName` but my module names are still conflicting!
-
-In this case, the default `desiredName` or `typeName` implementations for the types you are using aren't sufficient enough to disambiguate conflicting modules.
-
-You either must add additional information to the `desiredName` of your module, or if you're using your own user-defined `Bundle`, increase the specificity of its own `typeName`. All `Data` types have a simple default implementation of `typeName` (which is simply their own name), but you can override this yourself, of course!
-
-In general, the suggested pattern for `typeName`, and subsequently `desiredName`, is to fold single integer-like parameters with the name itself (for example, `Queue4`, `UInt3`, `MyBundle9`) to form 'words' and separate these 'words' with underscores (`Queue4_UInt3`, `FooBundle_BarType4`). The following example shows how to construct such a `typeName` with a simple parameterized bundle:
+If you're using your own user-defined `Bundle`, you can increase the specificity of its own `typeName` by overriding it. All `Data` types have a simple default implementation of `typeName` (which is simply its class name), but you can override this yourself:
 
 ```scala mdoc:silent
-import chisel3._
-
 class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle {
   // Generate a stable typeName for this Bundle. Two 'words' are present
   // in this implementation: the bundle's name plus its integer parameter
@@ -149,14 +130,15 @@ class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle {
 }
 ```
 
-```scala mdoc:silent
-val example1 = new MyBundle(Bool(), 1) // MyBundle1_Bool
-val example2 = new MyBundle(Vec(3, UInt(4.W)), 9) // MyBundle9_Vec3_UInt4
+Now if you use your `MyBundle` in a module like a `Queue`:
+
+```scala mdoc:compile-only
+val fooQueue = Module(new Queue(new MyBundle(UInt(4.W), 3), 16)) // Queue16_MyBundle3_UInt4
 ```
 
-`Bundles` that have multiple integer arguments aren't presently addressed by any of the built-in modules, and so implementing a descriptive and sufficiently differentiable `typeName` for such `Bundles` is left as an exercise to the reader.
+The suggested pattern for `typeName`, and subsequently `desiredName`, is to fold single integer-like parameters with the name itself (for example, `Queue4`, `UInt3`, `MyBundle9`) to form 'words' and separate these 'words' with underscores (`Queue4_UInt3`, `FooBundle_BarType4`).
 
-Integers should not occur with an underscore before them at the very end of the `typeName` (`MyBundle_1`) because this is the _same_ syntax used for duplicates, and so would cause confusion. Having to disambiguate modules all named `Queue32_MyBundle_4_1`, `Queue32_MyBundle_4_2`, `Queue32_MyBundle_4_3`, and so on would be undesirable, indeed!
+`Bundles` that have multiple integer arguments aren't presently addressed by any of the built-in modules, and so implementing a descriptive and sufficiently differentiable `typeName` for such `Bundles` is left as an exercise to the reader. However, integers should not occur with an underscore before them at the very end of the `typeName` (e.g. `MyBundle_1`) because this is the _same_ syntax used for duplicates, and so would cause confusion. Having to disambiguate modules all named `Queue32_MyBundle_4_1`, `Queue32_MyBundle_4_2`, `Queue32_MyBundle_4_3`, and so on would be undesirable, indeed!
 
 ### I want to add some hardware or assertions, but each time I do all the signal names get bumped!
 
@@ -184,8 +166,9 @@ class ExampleNoPrefix extends Module {
   out := add
 }
 ```
+
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new ExampleNoPrefix)
+emitVerilog(new ExampleNoPrefix)
 ```
 
 ### I am still not getting the name I want. For example, inlining an instance changes my name!
@@ -217,7 +200,7 @@ class MyLeaf extends Module {
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new WrapperExample)
+emitVerilog(new WrapperExample)
 ```
 
 This can be used to rename instances and non-aggregate typed signals.
