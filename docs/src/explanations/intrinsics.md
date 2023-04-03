@@ -42,4 +42,3 @@ class ExampleIntrinsicModule(str: String) extends IntrinsicModule(
     val out = Output(UInt(32.W))
   })
 }
-```
