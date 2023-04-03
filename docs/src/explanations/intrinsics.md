@@ -27,10 +27,19 @@ Parameters can be passed as an argument to the IntModule constructor.
 This following creates an intrinsic module for the intrinsic named 
 "OtherIntrinsic".  It takes a parameter named "STRING" and has several ports.
 
-class ExampleIntrinsicModule(str: String) extends IntrinsicModule("OtherIntrinsic", Map("STRING" -> str)) {
+```scala mdoc:invisible
+import chisel3._
+```
+
+```scala mdoc:compile-only
+import chisel3.experimental.IntrinsicModule
+
+class ExampleIntrinsicModule(str: String) extends IntrinsicModule(
+  "OtherIntrinsic",
+  Map("STRING" -> str)) {
   val foo = IO(new Bundle() {
     val in = Input(UInt())
     val out = Output(UInt(32.W))
   })
 }
-
+```
