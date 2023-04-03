@@ -89,13 +89,31 @@ object assert extends VerifPrintMacrosDoc {
   )(sourceInfo: c.Tree
   ): c.Tree = {
     import c.universe._
+
+    val errorString = "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
+      "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+      "an elaboration time check, call assert with a Boolean condition."
+
+    // Error on Data in the AST by matching on the Scala 2.13 string
+    // interpolation lowering to concatenation
+    def throwOnChiselData(x: c.Tree): Unit = x match {
+      case q"$x+$y" => {
+        if (x.tpe <:< typeOf[chisel3.Data] || y.tpe <:< typeOf[chisel3.Data]) {
+          c.error(c.enclosingPosition, errorString)
+        } else {
+          throwOnChiselData(x)
+          throwOnChiselData(y)
+        }
+      }
+      case _ =>
+    }
+    throwOnChiselData(message)
+
     message match {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
         c.error(
           c.enclosingPosition,
-          "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
-            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
-            "an elaboration time check, call assert with a Boolean condition."
+          errorString
         )
       case _ =>
     }
@@ -262,13 +280,31 @@ object assume extends VerifPrintMacrosDoc {
   )(sourceInfo: c.Tree
   ): c.Tree = {
     import c.universe._
+
+    val errorString = "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
+      "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+      "an elaboration time check, call assert with a Boolean condition."
+
+    // Error on Data in the AST by matching on the Scala 2.13 string
+    // interpolation lowering to concatenation
+    def throwOnChiselData(x: c.Tree): Unit = x match {
+      case q"$x+$y" => {
+        if (x.tpe <:< typeOf[chisel3.Data] || y.tpe <:< typeOf[chisel3.Data]) {
+          c.error(c.enclosingPosition, errorString)
+        } else {
+          throwOnChiselData(x)
+          throwOnChiselData(y)
+        }
+      }
+      case _ =>
+    }
+    throwOnChiselData(message)
+
     message match {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
         c.error(
           c.enclosingPosition,
-          "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
-            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
-            "an elaboration time check, call assert with a Boolean condition."
+          errorString
         )
       case _ =>
     }
