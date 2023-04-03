@@ -11,7 +11,7 @@ Intrinsics provide a way for specific compilers to extend the capabilities of
 the language in ways which are not implementable with library code.
 
 Modules defined as an `IntrinsicModule` will be instantiated as normal modules, 
-but the intrinsic field communicates to the compile what functionality to use to 
+but the intrinsic field communicates to the compiler what functionality to use to 
 implement the module.  Implementations may not be actual modules, the module 
 nature of intrinsics is merely for instantiation purposes.
 
