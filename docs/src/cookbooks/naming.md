@@ -87,8 +87,11 @@ class MyModule[T <: Data](gen: T) extends Module {
 
 We can override `desiredName` of the module to include the type name of the `gen` parameter like so:
 
-```scala
-override def desiredName = s"MyModule_${gen.typeName}
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyModule[T <: Data](gen: T) extends Module {
+  override def desiredName = s"MyModule_${gen.typeName}"
 }
 ```
 
