@@ -62,20 +62,19 @@ class ContextSpec extends ChiselFunSpec with Utils {
         val b1 = Module(new Bottom)
       }
       class Bottom extends Module {
-        val in  = IO(Input(UInt(3.W)))
+        val in = IO(Input(UInt(3.W)))
         val out = IO(Output(UInt(3.W)))
       }
       val e = intercept[chisel3.ChiselException] {
         circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--full-stacktrace"))
       }
 
-
       List(
         "Connection between sink (Bottom.in: IO[UInt<3>]) and source (Bottom_1.out: IO[UInt<3>]) failed",
-        "Top/m0=Middle/b0=Bottom/in",    // Generated from Context.target
+        "Top/m0=Middle/b0=Bottom/in", // Generated from Context.target
         "Top/m0=Middle/b1=Bottom_1/out", // Generated from Context.target
         "unavailable to current module",
-        "Top"                            // Generated from Context.target
+        "Top" // Generated from Context.target
       ).forall(s => e.getMessage.contains(s))
     }
   }

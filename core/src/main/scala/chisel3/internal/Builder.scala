@@ -108,13 +108,17 @@ private[chisel3] class IdGen {
 }
 
 private[chisel3] trait HasId extends chisel3.InstanceId {
-  private[chisel3] val _id:                Long = Builder.idGen.next
+  private[chisel3] val _id:                 Long = Builder.idGen.next
   private[chisel3] def _instanceIdentifier: String = Builder.getInstanceIdentifier.getOrElse("%" + _id.toString)
-  val instanceIdentifier: String = _instanceIdentifier
+  val instanceIdentifier:                   String = _instanceIdentifier
 
   // using nullable var for better memory usage
-  private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
-  private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
+  private[chisel3] var _parentVar: BaseModule = null //Builder.currentModule.getOrElse(null)
+  private[chisel3] def _parent: Option[BaseModule] = {
+    Option(_parentVar)
+    //println(context.foreach(c => c.visualizeWithDefinition))
+    context.flatMap(_.parentCollectFirst { case x: BaseModule if x != this => x })
+  }
   private[chisel3] def _parent_=(target: Option[BaseModule]): Unit = {
     _parentVar = target.getOrElse(null)
   }
@@ -424,7 +428,7 @@ private[chisel3] class ChiselContext(threadId: Int) {
 
   val root = Context(s"%$threadId")
 
-  var activeCircuit: Option[Context] = None
+  var activeCircuit:  Option[Context] = None
   var currentContext: Option[Context] = None
 }
 
@@ -643,7 +647,15 @@ private[chisel3] object Builder extends LazyLogging {
   def clearInstanceIdentifier(): Unit = {
     chiselContext.get().instanceIdentifier = None
   }
-  def getInstanceIdentifier: Option[String] = chiselContext.get().instanceIdentifier
+  def getInstanceIdentifier: Option[String] = {
+    val ret = chiselContext.get().instanceIdentifier
+    // We never want to return the same instance identifer twice, as it can cause naming conflicts
+    //  currently, this ocfurs for Records where you cannot eagerly get the elemnt field name early
+    // This was causing the identifeir of the Record to also get grabbed by every element
+    //  Instead, now the elements just use their _id for now
+    clearInstanceIdentifier()
+    ret
+  }
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dynamicContext) => dynamicContext.currentModule
@@ -847,7 +859,7 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext: DynamicContext,
     forceModName:   Boolean = true
   ): (Circuit, T) = {
-    val circuitId = s"circuit_${dynamicContext.hashCode.toString.take(3)}"
+    val circuitId = s"circuit_${dynamicContext.hashCode.toString}"
     val circuitContext = Context(circuitId)
     Builder.chiselContext.get().activeCircuit = Some(circuitContext)
     // Because we don't have a package name, just use this circuit id thing for both definition and instance name

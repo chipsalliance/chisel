@@ -351,7 +351,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
       case Some(CrossModuleBinding) =>
         _parent.get.identifierTarget.ref(instanceIdentifier)
       case Some(x) => throw new Exception(this.toString + " = " + x)
-      case None => throw new Exception(this.toString + " = None")
+      case None    => throw new Exception(this.toString + " = None")
     }
   }
   // This is a bad API that punches through object boundaries.
@@ -423,16 +423,22 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
   override def context = contextVar.orElse {
     val myContext = _binding match {
       case Some(ChildBinding(p: Data)) =>
-        p.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
+        p.context.map(_.instantiateOriginChildWithValue(instanceIdentifier, this))
       case Some(t: ConstrainedBinding) =>
-        t.location.get.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
+        val parentContext = t.location.get.context.get
+        if (parentContext.isChild(instanceIdentifier)) {
+          Some(parentContext(instanceIdentifier))
+        } else {
+          Some(parentContext.instantiateOriginChildWithValue(instanceIdentifier, this))
+        }
       case Some(CrossModuleBinding) =>
-        _parent.get.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
-      case Some(x) => throw new Exception(this.toString + " = " + x)
-      case None => throw new Exception(this.toString + " = None")
+        Some(_parent.get.context.get.instantiateOriginChildWithValue(instanceIdentifier, this))
+      case Some(e: UnconstrainedBinding) => None
+      case Some(x) => throw new Exception("Building context from binding failed: " + this.toString + " = " + x)
+      case None    => None
     }
-    contextVar = Some(myContext)
-    Some(myContext)
+    contextVar = myContext
+    myContext
   }
 
   private[chisel3] def hasBinding: Boolean = _binding.isDefined

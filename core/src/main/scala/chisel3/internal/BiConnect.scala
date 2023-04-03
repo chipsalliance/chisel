@@ -34,7 +34,9 @@ private[chisel3] object BiConnect {
   def UnknownDriverException =
     BiConnectException(": Locally unclear whether Left or Right (both internal)")
   def UnknownRelationException(left: Data, right: Data) =
-    BiConnectException(s": Left ${left.context.get.target} or Right ${right.context.get.target} unavailable to current module.")
+    BiConnectException(
+      s": Left ${left.context.get.target} or Right ${right.context.get.target} unavailable to current module."
+    )
   // These are when recursing down aggregate types
   def MismatchedVecException =
     BiConnectException(": Left and Right are different length Vecs.")

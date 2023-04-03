@@ -260,13 +260,12 @@ package experimental {
     */
   // TODO: seal this?
   abstract class BaseModule extends HasId with IsInstantiable with CloneToContext {
-    _parent.foreach(_.addId(this))
+    _parentVar = Builder.currentModule.getOrElse(null)
 
     final def identifierTarget: IsModule = {
-      if(_parent.isEmpty) {
+      if (_parent.isEmpty) {
         ModuleTarget(definitionIdentifier, definitionIdentifier)
-      }
-      else {
+      } else {
         _parent.get.identifierTarget.instOf(instanceIdentifier, definitionIdentifier)
       }
     }
@@ -295,11 +294,13 @@ package experimental {
     final val definitionIdentifier = _definitionIdentifier
 
     // Maybe one day we can make this not a var, but it requires Bundle fields to know their parent bundle prior to their execution (e.g. Aligned(..) and Type(new Bundle))
-    contextVar = Some(_parent match {
+    contextVar = Some(Option(Builder.currentModule.getOrElse(null)) match {
       case None => Builder.activeCircuit.instantiateOriginChildWithValue(definitionIdentifier, this)
-      case Some(p) => p.context.get.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
+      case Some(p) =>
+        p.context.get.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
     })
 
+    _parent.foreach(_.addId(this))
 
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.

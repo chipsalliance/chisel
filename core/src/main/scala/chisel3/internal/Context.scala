@@ -4,7 +4,8 @@ package chisel3.internal
 
 /** All values of contexts must cloneable to a top with more context */
 private[chisel3] trait CloneToContext {
-  def cloneTo(c: Context): CloneToContext = this // For now this does not work, but it is only necessary when box-types are a thing
+  def cloneTo(c: Context): CloneToContext =
+    this // For now this does not work, but it is only necessary when box-types are a thing
 }
 
 /** Data-structure to represent hierarchical contexts
@@ -59,8 +60,11 @@ private[chisel3] class Context private (val key: String, val parent: Option[Cont
 
   /* Creates a new child Context of `this`; can only call when `this.isOrigin` is true */
   def instantiateChild(childKey: String, provenance: Context): Context = {
-    require(isOrigin)
-    require(children.get(childKey).isEmpty)
+    require(isOrigin, s"Cannot instantiate children from a non-origin context: $target")
+    require(
+      children.get(childKey).isEmpty,
+      s"Cannot instantiate $childKey as it already exists: ${apply(childKey).target}"
+    )
     createNewOriginChildKey(childKey)
     val child = new Context(childKey, Some(this), Some(provenance))
     children.put(childKey, child)
@@ -68,8 +72,11 @@ private[chisel3] class Context private (val key: String, val parent: Option[Cont
   }
   // Necessary if instance == definition (pre D/I world)
   def instantiateOriginChild(childKey: String): Context = {
-    require(isOrigin)
-    require(children.get(childKey).isEmpty)
+    require(isOrigin, s"Cannot instantiate children from a non-origin context: $target")
+    require(
+      children.get(childKey).isEmpty,
+      s"Cannot instantiate $childKey as it already exists: ${apply(childKey).target}"
+    )
     createNewOriginChildKey(childKey)
     val child = new Context(childKey, Some(this), None)
     children.put(childKey, child)
@@ -215,6 +222,13 @@ private[chisel3] class Context private (val key: String, val parent: Option[Cont
 
   /** Parent chain of keys with id and origin.key */
   def targetWithDefinition: String = parentContextPath.map(_.keyWithId).reverse.mkString("/")
+
+  def parentCollectFirst[T](pf: PartialFunction[Any, T]): Option[T] = {
+    getValue match {
+      case None    => parent.flatMap(_.parentCollectFirst(pf))
+      case Some(x) => pf.lift(x).orElse(parent.flatMap(_.parentCollectFirst(pf)))
+    }
+  }
 
   /* Iterators to walk Context trees */
 

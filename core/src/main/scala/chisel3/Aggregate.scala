@@ -192,7 +192,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    this.maybeAddToParentIds(target)
+    _parentVar = Builder.currentModule.getOrElse(null)
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -204,16 +204,24 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     // Since all children are the same, we can just use the sample_element rather than all children
     direction =
       ActualDirection.fromChildren(Set(sample_element.direction), resolvedDirection).getOrElse(ActualDirection.Empty)
+    this.maybeAddToParentIds(target)
   }
 
   // Note: the constructor takes a gen() function instead of a Seq to enforce
   // that all elements must be the same and because it makes FIRRTL generation
   // simpler.
   private lazy val self: Seq[T] = {
-    val _self = Vector.fill(length)(gen)
-    for ((elt, i) <- _self.zipWithIndex)
+    (0 until length).toVector.map { i =>
+      Builder.setInstanceIdentifier(i.toString)
+      val elt = gen
+      Builder.clearInstanceIdentifier()
       elt.setRef(this, i)
-    _self
+      elt
+    }
+    //val _self = Vector.fill(length)(gen)
+    //for ((elt, i) <- _self.zipWithIndex)
+    //  elt.setRef(this, i)
+    //_self
   }
 
   /**
@@ -1002,7 +1010,7 @@ abstract class Record extends Aggregate {
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    this.maybeAddToParentIds(target)
+    _parentVar = Builder.currentModule.getOrElse(null)
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -1035,6 +1043,7 @@ abstract class Record extends Aggregate {
           case _                              => ActualDirection.Bidirectional(ActualDirection.Default)
         }
     }
+    this.maybeAddToParentIds(target)
     setElementRefs()
   }
 
