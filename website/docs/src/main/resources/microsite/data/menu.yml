@@ -100,6 +100,10 @@ options:
         url: chisel3/docs/explanations/blackboxes.html
         menu_type: chisel3
         menu_section: blackboxes
+      - title: Intrinsics
+        url: chisel3/docs/explanations/intrinsics.html
+        menu_type: chisel3
+        menu_section: intrinsics
       - title: Enumerations
         url: chisel3/docs/explanations/chisel-enum.html
         menu_type: chisel3
