@@ -28,6 +28,7 @@ read these documents in the following order:
 * [Memories](memories)
 * [Interfaces and Connections](interfaces-and-connections)
 * [Black Boxes](blackboxes)
+* [Intrinsics](intrinsics)
 * [Enumerations](chisel-enum)
 * [Functional Module Creation](functional-module-creation)
 * [Muxes and Input Selection](muxes-and-input-selection)
