@@ -546,7 +546,7 @@ static void resolveSettablePort(int id, SettablePort *out,
   out->bitWidth = 0;
   out->setter = NULL;
   if (port_setter(id, &out->bitWidth, &out->setter)) {
-    failWithError("Invalid port ID '%d'.", id);
+    failWithError("Encountered invalid port ID '%d' when %s.", id, description);
   }
   if (out->bitWidth <= 0) {
     failWithError("Encountered port with invalid bit width when %s.",
@@ -559,7 +559,7 @@ static void resolveGettablePort(int id, GettablePort *out,
   out->bitWidth = 0;
   out->getter = NULL;
   if (port_getter(id, &out->bitWidth, &out->getter)) {
-    failWithError("Invalid port ID '%d'.", id);
+    failWithError("Encountered invalid port ID '%d' when %s.", id, description);
   }
   if (out->bitWidth <= 0) {
     failWithError("Encountered port with invalid bit width when %s.",

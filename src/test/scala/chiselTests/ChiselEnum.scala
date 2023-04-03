@@ -9,6 +9,7 @@ import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
 import chisel3.util._
 import chisel3.testers.BasicTester
+import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -802,10 +803,15 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     corrects.forall(c => annos.exists(isCorrect(_, c)))
 
   def test(strongEnumAnnotatorGen: () => Module): Unit = {
-    val annos = (new ChiselStage).execute(
-      Array("--target-dir", "test_run_dir", "--target", "chirrtl"),
-      Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))
-    )
+    val annos = (new ChiselStage)
+      .execute(
+        Array("--target-dir", "test_run_dir", "--target", "chirrtl"),
+        Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))
+      )
+      .flatMap {
+        case FirrtlCircuitAnnotation(circuit) => circuit.annotations
+        case _                                => None
+      }
 
     val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
     val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
