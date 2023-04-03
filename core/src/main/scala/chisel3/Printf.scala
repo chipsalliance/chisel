@@ -91,20 +91,20 @@ object printf {
       "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
       "an elaboration time print, use println."
 
-    // Find a Data in the AST by matching on the Scala 2.13 string
-    // concatentation pattern
-    def findChiselData(x: c.Tree): Unit = x match {
+    // Error on Data in the AST by matching on the Scala 2.13 string
+    // interpolation lowering to concatenation
+    def throwOnChiselData(x: c.Tree): Unit = x match {
       case q"$x+$y" => {
         if (x.tpe <:< typeOf[chisel3.Data] || y.tpe <:< typeOf[chisel3.Data]) {
           c.error(c.enclosingPosition, errorString)
         } else {
-          findChiselData(x)
-          findChiselData(y)
+          throwOnChiselData(x)
+          throwOnChiselData(y)
         }
       }
       case _ =>
     }
-    findChiselData(fmt)
+    throwOnChiselData(fmt)
 
     fmt match {
       case q"scala.StringContext.apply(..$_).s(..$_)" =>
