@@ -79,37 +79,81 @@ This is an example of the module instability problem, which results from several
 This can be done by leveraging the `desiredName` and `typeName` APIs. 
 `desiredName` is for indicating the names of `Modules` (e.g. influenced by the parameters passed in), and `typeName` is useful for modules which are type-parameterized by subclasses of `Data`. Overriding `desiredName` can reduce or even eliminate name collisions. For instance, suppose your module looks like the following:
 
-```scala mdoc
+```scala mdoc:silent
 class MyModule[T <: Data](gen: T) extends Module {
-  val in = IO(Input(gen))
-  val out = IO(Output(gen))
-  out := in
+  // ...
 }
 ```
 
-We can override `desiredName` to include the type name of the `gen` parameter like so:
+We can override `desiredName` of the module to include the type name of the `gen` parameter like so:
 
-```scala mdoc
-override def desiredName = s"MyModule_${gen.typeName}"
+```scala
+override def desiredName = s"MyModule_${gen.typeName}
+}
 ```
 
 Any instances of your `MyModule` will now have Verilog module names containing the type parameter.
 
-```scala mdoc
+```scala
 val foo = Module(new MyModule(UInt(4.W))) // MyModule_UInt4
-val foo = Module(new MyModule(Vec(3, UInt(4.W)))) // MyModule_Vec3_UInt4
+val bar = Module(new MyModule(Vec(3, UInt(4.W)))) // MyModule_Vec3_UInt4
 ```
 
+### Does the `typeName` apply for built-in module names too, most notably `Queue`?
 
-All Chisel built-in library modules, like `Queue` and `Pipe`, already have their `desiredName` overridden in this manner. Assuming that users of these also override the `typeName` of their Data type parameters in a distinct fashion, this will solve the `Queue` stability problem.
+All Chisel built-in library modules, like `Queue` and `Pipe`, already have their `desiredName` overridden in this manner as well. For instance, one infamous problem arose from instantiating multiple `Queues`:
+
+```scala
+import chisel3._
+import chisel3.util.{Decoupled, Queue}
+
+val fooDeq = Queue(fooEnq, 8) // Verilog module would be named 'Queue'
+val barDeq = Queue(barEnq, 8) // ... and 'Queue_1'
+// multiple other Queues... let's assume there are 40 more
+val bazDeq = Queue(bazEnq, 8) // ... and finally 'Queue_42'
+```
+
+By introducing minor changes to the Chisel code, the `Queue` module hierarchy can drastically and unpredictably change -- the `Queue_2` module might rename itself to `Queue_42`, resulting in a lot of confusion and troubles!
+
+Previously, the recommended solution was to manually override `desiredName` in a `Queue` for extra specificity, but now, both the `typeName` of a `Queue`'s inner type and the Queue's depth are automatically included in its `desiredName`, with *almost* no changes:
+
+```scala
+val fooQueue = Queue(fooEnq, 8) // Verilog module would be named 'Queue8_UInt8'
+val barQueue = Queue(barEnq, 8) // ... and 'Queue8_SInt8'
+val bazQueue = Queue(bazEnq, 8) // ... and 'Queue8_Bool'
+```
 
 ### I have already overriden `desiredName` to use a `typeName` but my module names are still conflicting!
 
-You either must add additional information to the `desiredName`, or if you're using your own user-defined `Bundle`, increase the specificity of its own `typeName`. All `Data` types have a simple default implementation of `typeName` (which is simply their own name), but you can override this yourself, of course!
+In this case, the default `desiredName` or `typeName` implementations for the types you are using aren't sufficient enough to disambiguate conflicting modules.
 
-In general, the suggested pattern for `typeName`, and subsequently `desiredName`, is to fold single integer-like parameters with the name itself (for example, `Queue4`, `UInt3`, `MyBundle9`) and separate these with underscores (`Queue4_UInt3`, `FooBundle_BarType4`).
+You either must add additional information to the `desiredName` of your module, or if you're using your own user-defined `Bundle`, increase the specificity of its own `typeName`. All `Data` types have a simple default implementation of `typeName` (which is simply their own name), but you can override this yourself, of course!
 
-Integers should not occur with an underscore before it at the very end of the name (`MyBundle_1`) because this is the _same_ syntax used for duplicates, and so would cause confusion. Having to disambiguate modules all named `FooModule_MyBundle_4_1`, `FooModule_MyBundle_4_2`, `FooModule_MyBundle_4_3`, and so on would be undesirable, indeed!
+In general, the suggested pattern for `typeName`, and subsequently `desiredName`, is to fold single integer-like parameters with the name itself (for example, `Queue4`, `UInt3`, `MyBundle9`) to form 'words' and separate these 'words' with underscores (`Queue4_UInt3`, `FooBundle_BarType4`). The following example shows how to construct such a `typeName` with a simple parameterized bundle:
+
+```scala mdoc:silent
+import chisel3._
+
+class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle {
+  // Generate a stable typeName for this Bundle. Two 'words' are present
+  // in this implementation: the bundle's name plus its integer parameter
+  // (something like 'MyBundle9')
+  // and the generator's typeName, which itself can be composed of 'words'
+  // (something like 'Vec3_UInt4')
+  override def typeName = s"MyBundle${intParam}_${gen.typeName}"
+
+  // ...
+}
+```
+
+```scala mdoc:silent
+val example1 = new MyBundle(Bool(), 1) // MyBundle1_Bool
+val example2 = new MyBundle(Vec(3, UInt(4.W)), 9) // MyBundle9_Vec3_UInt4
+```
+
+`Bundles` that have multiple integer arguments aren't presently addressed by any of the built-in modules, and so implementing a descriptive and sufficiently differentiable `typeName` for such `Bundles` is left as an exercise to the reader.
+
+Integers should not occur with an underscore before them at the very end of the `typeName` (`MyBundle_1`) because this is the _same_ syntax used for duplicates, and so would cause confusion. Having to disambiguate modules all named `Queue32_MyBundle_4_1`, `Queue32_MyBundle_4_2`, `Queue32_MyBundle_4_3`, and so on would be undesirable, indeed!
 
 ### I want to add some hardware or assertions, but each time I do all the signal names get bumped!
 
