@@ -25,7 +25,7 @@ Parameters can be passed as an argument to the IntModule constructor.
 ### Example
 
 This following creates an intrinsic module for the intrinsic named 
-"OtherIntrinsic".  It takes a parameter name "STRING" and has several ports.
+"OtherIntrinsic".  It takes a parameter named "STRING" and has several ports.
 
 class ExampleIntrinsicModule(str: String) extends IntrinsicModule("OtherIntrinsic", Map("STRING" -> str)) {
   val foo = IO(new Bundle() {
