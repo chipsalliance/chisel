@@ -97,7 +97,7 @@ class MyModule[T <: Data](gen: T) extends Module {
 
 Any instances of your `MyModule` will now have Verilog module names containing the type parameter.
 
-```scala mdoc:compileOnly
+```scala mdoc:compile-only
 val foo = Module(new MyModule(UInt(4.W))) // MyModule_UInt4
 val bar = Module(new MyModule(Vec(3, UInt(4.W)))) // MyModule_Vec3_UInt4
 ```
