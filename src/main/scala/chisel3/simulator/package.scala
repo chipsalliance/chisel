@@ -78,7 +78,8 @@ package object simulator {
             }
             case element: Element =>
               DataMirror.directionOf(element) match {
-                case ActualDirection.Input  => Seq((element, ModuleInfo.Port(name, isSettable = true)))
+                case ActualDirection.Input =>
+                  Seq((element, ModuleInfo.Port(name, isGettable = true, isSettable = true)))
                 case ActualDirection.Output => Seq((element, ModuleInfo.Port(name, isGettable = true)))
                 case _                      => Seq()
               }
