@@ -94,7 +94,7 @@ override def desiredName = s"MyModule_${gen.typeName}
 
 Any instances of your `MyModule` will now have Verilog module names containing the type parameter.
 
-```scala
+```scala mdoc:compileOnly
 val foo = Module(new MyModule(UInt(4.W))) // MyModule_UInt4
 val bar = Module(new MyModule(Vec(3, UInt(4.W)))) // MyModule_Vec3_UInt4
 ```
