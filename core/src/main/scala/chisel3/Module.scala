@@ -401,7 +401,8 @@ package experimental {
     }
 
     /** Legalized name of this module. */
-    final lazy val name =
+    final lazy val name: String = {
+      _parent.map(_.name) // Name parent before me!
       try {
         // PseudoModules are not "true modules" and thus should share
         // their original modules names without uniquification
@@ -412,11 +413,12 @@ package experimental {
       } catch {
         case e: NullPointerException =>
           throwException(
-            s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?",
+            s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available? Instantiating children modules will eagerly evaluate 'name'",
             e
           )
         case t: Throwable => throw t
       }
+    }
 
     /** Returns a FIRRTL ModuleName that references this object
       *
