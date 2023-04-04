@@ -42,7 +42,7 @@ class IsXSpec extends AnyFlatSpec with Matchers {
         "input i : UInt<65>",
         "output found : UInt<1>",
         "intrinsic = circt.isX",
-        "input i : { a : UInt, b : SInt}",
+        "input i : { a : UInt, b : SInt}"
       )
     )
   }

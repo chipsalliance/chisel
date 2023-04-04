@@ -25,12 +25,6 @@ private class PlusArgsValueTop extends Module {
   io.xv := tmpx.result
 }
 
-/** A test for intrinsics.  Since chisel is producing intrinsics as tagged
-  * extmodules (for now), we explicitly test the chirrtl and annotations rather
-  * than the processed firrtl or verilog.  It is worth noting that annotations
-  * are implemented (for now) in a way which makes the output valid for all
-  * firrtl compilers, hence we write a localized, not end-to-end test
-  */
 class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new PlusArgsValueTop)

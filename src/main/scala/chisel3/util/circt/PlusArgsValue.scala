@@ -8,7 +8,7 @@ import chisel3.internal.Builder
 
 import circt.Intrinsic
 
-/** Create a module which generates a verilog $plusargs$value.  This returns a
+/** Create a module which generates a verilog \$plusargs\$value.  This returns a
   * value as indicated by the format string and a flag for whether the value
   * was found.
   */
