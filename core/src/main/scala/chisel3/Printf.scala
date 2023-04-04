@@ -36,6 +36,38 @@ object printf {
     formatIn.map(escaped).mkString("")
   }
 
+  private[chisel3] def _checkFormatString(c: blackbox.Context)(fmt: c.Tree): Unit = {
+    import c.universe._
+
+    val errorString = "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
+      "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+      "an elaboration time print, use println."
+
+    // Error on Data in the AST by matching on the Scala 2.13 string
+    // interpolation lowering to concatenation
+    def throwOnChiselData(x: c.Tree): Unit = x match {
+      case q"$x+$y" => {
+        if (x.tpe <:< typeOf[chisel3.Data] || y.tpe <:< typeOf[chisel3.Data]) {
+          c.error(c.enclosingPosition, errorString)
+        } else {
+          throwOnChiselData(x)
+          throwOnChiselData(y)
+        }
+      }
+      case _ =>
+    }
+    throwOnChiselData(fmt)
+
+    fmt match {
+      case q"scala.StringContext.apply(..$_).s(..$_)" =>
+        c.error(
+          c.enclosingPosition,
+          errorString
+        )
+      case _ =>
+    }
+  }
+
   /** Named class for [[printf]]s. */
   final class Printf private[chisel3] (val pable: Printable) extends VerificationStatement
 
@@ -86,34 +118,7 @@ object printf {
   )(sourceInfo: c.Tree
   ): c.Tree = {
     import c.universe._
-
-    val errorString = "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
-      "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
-      "an elaboration time print, use println."
-
-    // Error on Data in the AST by matching on the Scala 2.13 string
-    // interpolation lowering to concatenation
-    def throwOnChiselData(x: c.Tree): Unit = x match {
-      case q"$x+$y" => {
-        if (x.tpe <:< typeOf[chisel3.Data] || y.tpe <:< typeOf[chisel3.Data]) {
-          c.error(c.enclosingPosition, errorString)
-        } else {
-          throwOnChiselData(x)
-          throwOnChiselData(y)
-        }
-      }
-      case _ =>
-    }
-    throwOnChiselData(fmt)
-
-    fmt match {
-      case q"scala.StringContext.apply(..$_).s(..$_)" =>
-        c.error(
-          c.enclosingPosition,
-          errorString
-        )
-      case _ =>
-    }
+    _checkFormatString(c)(fmt)
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("printfWithReset"))
     q"$apply_impl_do(_root_.chisel3.Printable.pack($fmt, ..$data))($sourceInfo)"
   }
