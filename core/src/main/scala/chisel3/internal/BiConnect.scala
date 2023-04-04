@@ -203,7 +203,7 @@ private[chisel3] object BiConnect {
           left.firrtlPartialConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
-          for ((field, left_sub) <- left_r.elements) {
+          for ((field, left_sub) <- left_r._elements) {
             try {
               connect(sourceInfo, connectCompileOptions, left_sub, right, context_mod)
             } catch {
@@ -218,7 +218,7 @@ private[chisel3] object BiConnect {
           left.firrtlPartialConnect(right)(sourceInfo)
         } else {
           // For each field in left, descend with right
-          for ((field, right_sub) <- right_r.elements) {
+          for ((field, right_sub) <- right_r._elements) {
             try {
               connect(sourceInfo, connectCompileOptions, left, right_sub, context_mod)
             } catch {
@@ -245,16 +245,16 @@ private[chisel3] object BiConnect {
     // For each field in left, descend with right.
     // Don't bother doing this check if we don't expect it to necessarily pass.
     if (connectCompileOptions.connectFieldsMustMatch) {
-      for ((field, right_sub) <- right_r.elements) {
-        if (!left_r.elements.isDefinedAt(field)) {
+      for ((field, right_sub) <- right_r._elements) {
+        if (!left_r._elements.isDefinedAt(field)) {
           throw MissingLeftFieldException(field)
         }
       }
     }
     // For each field in left, descend with right
-    for ((field, left_sub) <- left_r.elements) {
+    for ((field, left_sub) <- left_r._elements) {
       try {
-        right_r.elements.get(field) match {
+        right_r._elements.get(field) match {
           case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
           case None => {
             if (connectCompileOptions.connectFieldsMustMatch) {
