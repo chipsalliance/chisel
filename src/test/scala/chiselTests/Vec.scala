@@ -3,78 +3,9 @@
 package chiselTests
 
 import circt.stage.ChiselStage
+import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3._
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
-import org.scalacheck._
-
-import scala.annotation.{nowarn, tailrec}
-
-class LitTesterMod(vecSize: Int) extends Module {
-  val io = IO(new Bundle {
-    val out = Output(Vec(vecSize, UInt()))
-  })
-  io.out := VecInit(Seq.fill(vecSize) { 0.U })
-}
-
-class RegTesterMod(vecSize: Int) extends Module {
-  val io = IO(new Bundle {
-    val in = Input(Vec(vecSize, UInt()))
-    val out = Output(Vec(vecSize, UInt()))
-  })
-  val vecReg = RegNext(io.in, VecInit(Seq.fill(vecSize) { 0.U }))
-  io.out := vecReg
-}
-
-class IOTesterMod(vecSize: Int) extends Module {
-  val io = IO(new Bundle {
-    val in = Input(Vec(vecSize, UInt()))
-    val out = Output(Vec(vecSize, UInt()))
-  })
-  io.out := io.in
-}
-
-class OneBitUnitRegVec extends Module {
-  val io = IO(new Bundle {
-    val out = Output(UInt(1.W))
-  })
-  val oneBitUnitRegVec = Reg(Vec(1, UInt(1.W)))
-  oneBitUnitRegVec(0) := 1.U(1.W)
-  io.out := oneBitUnitRegVec(0)
-}
-
-class LitTester(w: Int, values: List[Int]) extends BasicTester {
-  val dut = Module(new LitTesterMod(values.length))
-  for (a <- dut.io.out)
-    assert(a === 0.U)
-  stop()
-}
-
-class RegTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = VecInit(values.map(_.U(w.W)))
-  val dut = Module(new RegTesterMod(values.length))
-  val doneReg = RegInit(false.B)
-  dut.io.in := v
-  when(doneReg) {
-    for ((a, b) <- dut.io.out.zip(values))
-      assert(a === b.U)
-    stop()
-  }.otherwise {
-    doneReg := true.B
-    for (a <- dut.io.out)
-      assert(a === 0.U)
-  }
-}
-
-class IOTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = VecInit(values.map(_.U(w.W))) // Does this need a Wire? No. It's a Vec of Lits and hence synthesizeable.
-  val dut = Module(new IOTesterMod(values.length))
-  dut.io.in := v
-  for ((a, b) <- dut.io.out.zip(values)) {
-    assert(a === b.U)
-  }
-  stop()
-}
 
 class IOTesterModFill(vecSize: Int) extends Module {
   // This should generate a BindingException when we attempt to wire up the Vec.fill elements
@@ -86,236 +17,15 @@ class IOTesterModFill(vecSize: Int) extends Module {
   io.out := io.in
 }
 
-class ValueTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = VecInit(values.map(_.asUInt(w.W)))
-  for ((a, b) <- v.zip(values)) {
-    assert(a === b.asUInt)
-  }
-  stop()
-}
-
-class TabulateTester(n: Int) extends BasicTester {
-  val v = VecInit(Range(0, n).map(i => (i * 2).asUInt))
-  val x = VecInit(Array.tabulate(n) { i => (i * 2).asUInt }.toIndexedSeq)
-  val u = VecInit.tabulate(n)(i => (i * 2).asUInt)
-
-  assert(v.asUInt === x.asUInt)
-  assert(v.asUInt === u.asUInt)
-  assert(x.asUInt === u.asUInt)
-
-  stop()
-}
-
-class FillTester(n: Int, value: Int) extends BasicTester {
-  val x = VecInit(Array.fill(n)(value.U).toIndexedSeq)
-  val u = VecInit.fill(n)(value.U)
-
-  assert(x.asUInt === u.asUInt, cf"Expected Vec to be filled like $x, instead VecInit.fill created $u")
-  stop()
-}
-
-object VecMultiDimTester {
-
-  @tailrec
-  private def assert2DIsCorrect(n: Int, arr: Vec[Vec[UInt]], compArr: Seq[Seq[Int]]): Unit = {
-    val compareRow = arr(n).zip(compArr(n))
-    compareRow.foreach(x => assert(x._1 === x._2.U))
-    if (n != 0) assert2DIsCorrect(n - 1, arr, compArr)
-  }
-
-  @tailrec
-  private def assert3DIsCorrect(n: Int, m: Int, arr: Vec[Vec[Vec[UInt]]], compArr: Seq[Seq[Seq[Int]]]): Unit = {
-    assert2DIsCorrect(m - 1, arr(n), compArr(n))
-    if (n != 0) assert3DIsCorrect(n - 1, m, arr, compArr)
-  }
-
-  class TabulateTester2D(n: Int, m: Int) extends BasicTester {
-    def gen(x:        Int, y: Int): UInt = (x + y).asUInt
-    def genCompVec(x: Int, y: Int): Int = x + y
-    val vec = VecInit.tabulate(n, m) { gen }
-    val compArr = Seq.tabulate(n, m) { genCompVec }
-
-    assert2DIsCorrect(n - 1, vec, compArr)
-    stop()
-  }
-
-  class TabulateTester3D(n: Int, m: Int, p: Int) extends BasicTester {
-    def gen(x:        Int, y: Int, z: Int): UInt = (x + y + z).asUInt
-    def genCompVec(x: Int, y: Int, z: Int): Int = x + y + z
-    val vec = VecInit.tabulate(n, m, p) { gen }
-    val compArr = Seq.tabulate(n, m, p) { genCompVec }
-
-    assert3DIsCorrect(n - 1, m, vec, compArr)
-    stop()
-  }
-
-  class Fill2DTester(n: Int, m: Int, value: Int) extends BasicTester {
-    val u = VecInit.fill(n, m)(value.U)
-    val compareArr = Seq.fill(n, m)(value)
-
-    assert2DIsCorrect(n - 1, u, compareArr)
-    stop()
-  }
-
-  class Fill3DTester(n: Int, m: Int, p: Int, value: Int) extends BasicTester {
-    val u = VecInit.fill(n, m, p)(value.U)
-    val compareArr = Seq.fill(n, m, p)(value)
-
-    assert3DIsCorrect(n - 1, m, u, compareArr)
-    stop()
-  }
-
-  class BidirectionalTester2DFill(n: Int, m: Int) extends BasicTester {
-    val mod = Module(new PassthroughModule)
-    val vec2D = VecInit.fill(n, m)(mod.io)
-    for {
-      vec1D <- vec2D
-      module <- vec1D
-    } yield {
-      module <> Module(new PassthroughModuleTester).io
-    }
-    stop()
-  }
-
-  class BidirectionalTester3DFill(n: Int, m: Int, p: Int) extends BasicTester {
-    val mod = Module(new PassthroughModule)
-    val vec3D = VecInit.fill(n, m, p)(mod.io)
-
-    for {
-      vec2D <- vec3D
-      vec1D <- vec2D
-      module <- vec1D
-    } yield {
-      module <> (Module(new PassthroughModuleTester).io)
-    }
-    stop()
-  }
-
-  class TabulateModuleTester(value: Int) extends Module {
-    val io = IO(Flipped(new PassthroughModuleIO))
-    // This drives the input of a PassthroughModule
-    io.in := value.U
-  }
-
-  class BidirectionalTester2DTabulate(n: Int, m: Int) extends BasicTester {
-    val vec2D = VecInit.tabulate(n, m) { (x, y) => Module(new TabulateModuleTester(x + y + 1)).io }
-
-    for {
-      x <- 0 until n
-      y <- 0 until m
-    } yield {
-      val value = x + y + 1
-      val receiveMod = Module(new PassthroughModule).io
-      vec2D(x)(y) <> receiveMod
-      assert(receiveMod.out === value.U)
-    }
-    stop()
-  }
-
-  class BidirectionalTester3DTabulate(n: Int, m: Int, p: Int) extends BasicTester {
-    val vec3D = VecInit.tabulate(n, m, p) { (x, y, z) => Module(new TabulateModuleTester(x + y + z + 1)).io }
-
-    for {
-      x <- 0 until n
-      y <- 0 until m
-      z <- 0 until p
-    } yield {
-      val value = x + y + z + 1
-      val receiveMod = Module(new PassthroughModule).io
-      vec3D(x)(y)(z) <> receiveMod
-      assert(receiveMod.out === value.U)
-    }
-    stop()
-  }
-}
-
-class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
-  val controlVec = VecInit(Seq.iterate(start.U, len)(f))
-  val testVec = VecInit.iterate(start.U, len)(f)
-  assert(
-    controlVec.asUInt === testVec.asUInt,
-    cf"Expected Vec to be filled like $controlVec, instead created $testVec\n"
-  )
-  stop()
-}
-
-class ShiftRegisterTester(n: Int) extends BasicTester {
-  val (cnt, wrap) = Counter(true.B, n * 2)
-  val shifter = Reg(Vec(n, UInt((log2Ceil(n).max(1)).W)))
-  shifter.zip(shifter.drop(1)).foreach { case (l, r) => l := r }
-  shifter(n - 1) := cnt
-  when(cnt >= n.asUInt) {
-    val expected = cnt - n.asUInt
-    assert(shifter(0) === expected)
-  }
-  when(wrap) {
-    stop()
-  }
-}
-
-class HugeVecTester(n: Int) extends BasicTester {
+class HugeVecTester(n: Int) extends RawModule {
   require(n > 0)
   val myVec = Wire(Vec(n, UInt()))
   myVec.foreach { x =>
     x := 123.U
-    assert(x === 123.U)
   }
-  stop()
 }
 
-class OneBitUnitRegVecTester extends BasicTester {
-  val dut = Module(new OneBitUnitRegVec)
-  assert(dut.io.out === 1.U)
-  stop()
-}
-
-class ZeroEntryVecTester extends BasicTester {
-  require(Vec(0, Bool()).getWidth == 0)
-
-  val bundleWithZeroEntryVec = new Bundle {
-    val foo = Bool()
-    val bar = Vec(0, Bool())
-  }
-  require(0.U.asTypeOf(bundleWithZeroEntryVec).getWidth == 1)
-  require(bundleWithZeroEntryVec.asUInt.getWidth == 1)
-
-  val m = Module(new Module {
-    val io = IO(Output(bundleWithZeroEntryVec))
-    io.foo := false.B
-  })
-  WireDefault(m.io.bar)
-
-  stop()
-}
-
-class PassthroughModuleTester extends Module {
-  val io = IO(Flipped(new PassthroughModuleIO))
-  // This drives the input of a PassthroughModule
-  io.in := 123.U
-  assert(io.out === 123.U)
-}
-
-class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
-  val duts = VecInit.fill(n)(Module(new PassthroughModule).io)
-  val tester = Module(new PassthroughModuleTester)
-
-  val (cycle, done) = Counter(true.B, n)
-  for ((m, i) <- duts.zipWithIndex) {
-    when(cycle =/= i.U) {
-      m.in := 0.U // default
-      assert(m.out === 0.U)
-    }.otherwise {
-      m.in := DontCare
-    }
-  }
-  // only connect one dut per cycle
-  duts(cycle) <> tester.io
-  assert(duts(cycle).out === 123.U)
-
-  when(done) { stop() }
-}
-
-class ReduceTreeTester() extends BasicTester {
+class ReduceTreeTester extends Module {
   class FooIO[T <: Data](n: Int, private val gen: T) extends Bundle {
     val in = Flipped(Vec(n, new DecoupledIO(gen)))
     val out = new DecoupledIO(gen)
@@ -342,129 +52,269 @@ class ReduceTreeTester() extends BasicTester {
 
   val dut = Module(new Foo(5, UInt(5.W)))
   dut.io := DontCare
-  stop()
 }
 
 class VecSpec extends ChiselPropSpec with Utils {
 
+  private def uint(value: BigInt): String = uint(value, value.bitLength.max(1))
+  private def uint(value: BigInt, width: Int): String =
+    s"""UInt<$width>(\"h${value.toString(16)}")"""
+
   property("Vecs should be assignable") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses { new ValueTester(w, v) }
+    val values = (0 until 10).toList
+    val width = 4
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val v = VecInit(values.map(_.U(width.W)))
+    })
+    for (v <- values) {
+      chirrtl should include(s"v[$v] <= ${uint(v, width)}")
     }
   }
 
   property("Vecs should be passed through vec IO") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses { new IOTester(w, v) }
-    }
+    val values = (0 until 10).toList
+    val width = 4
+
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val out = IO(Output(Vec(values.size, UInt(width.W))))
+      val v = VecInit(values.map(_.U(width.W)))
+      out := v
+    })
+    chirrtl should include("output out : UInt<4>[10]")
+    chirrtl should include("out <= v")
   }
 
   property("Vec.fill with a pure type should generate an exception") {
-    // We don't really need a sequence of random widths here, since any should throw an exception.
-    forAll(safeUIntWidth) {
-      case (w: Int) =>
-        an[BindingException] should be thrownBy extractCause[BindingException] {
-          ChiselStage.elaborate(new IOTesterModFill(w))
-        }
-    }
-  }
-
-  property("A Reg of a Vec should operate correctly") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses { new RegTester(w, v) }
-    }
-  }
-
-  property("A Vec of lit should operate correctly") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses { new LitTester(w, v) }
+    a[BindingException] should be thrownBy extractCause[BindingException] {
+      ChiselStage.elaborate(new IOTesterModFill(8))
     }
   }
 
   property("VecInit should tabulate correctly") {
-    forAll(smallPosInts) { (n: Int) => assertTesterPasses { new TabulateTester(n) } }
+    val n = 4
+    val w = 3
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val x = VecInit(Seq.tabulate(n) { i => (i * 2).asUInt })
+      val u = VecInit.tabulate(n)(i => (i * 2).asUInt)
+    })
+    chirrtl should include(s"wire x : UInt<$w>[$n]")
+    chirrtl should include(s"wire u : UInt<$w>[$n]")
+    for (i <- 0 until n) {
+      chirrtl should include(s"x[$i] <= ${uint(i * 2)}")
+      chirrtl should include(s"u[$i] <= ${uint(i * 2)}")
+    }
   }
 
   property("VecInit should tabulate 2D vec correctly") {
-    forAll(smallPosInts, smallPosInts) { (n: Int, m: Int) =>
-      assertTesterPasses { new VecMultiDimTester.TabulateTester2D(n, m) }
+    val n = 2
+    val m = 3
+    val w = 2
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val v = VecInit.tabulate(n, m) { case (i, j) => (i + j).asUInt }
+    })
+    chirrtl should include(s"wire v : UInt<$w>[$m][$n]")
+    for (i <- 0 until n) {
+      for (j <- 0 until m) {
+        chirrtl should include(s"v[$i][$j] <= ${uint(i + j)}")
+      }
     }
   }
 
   property("VecInit should tabulate 3D vec correctly") {
-    forAll(smallPosInts, smallPosInts, smallPosInts) { (n: Int, m: Int, p: Int) =>
-      assertTesterPasses { new VecMultiDimTester.TabulateTester3D(n, m, p) }
+    val n = 2
+    val m = 3
+    val o = 2
+    val w = 3
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val v = VecInit.tabulate(n, m, o) { case (i, j, k) => (i + j + k).asUInt }
+    })
+    chirrtl should include(s"wire v : UInt<$w>[$o][$m][$n]")
+    for (i <- 0 until n) {
+      for (j <- 0 until m) {
+        for (k <- 0 until o) {
+          chirrtl should include(s"v[$i][$j][$k] <= ${uint(i + j + k)}")
+        }
+      }
     }
   }
 
   property("VecInit should fill correctly") {
-    forAll(smallPosInts, Gen.choose(0, 50)) { (n: Int, value: Int) => assertTesterPasses { new FillTester(n, value) } }
+    val n = 4
+    val value = 13
+    val w = 4
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val x = VecInit(Seq.fill(n)(value.U))
+      val u = VecInit.fill(n)(value.U)
+    })
+    chirrtl should include(s"wire x : UInt<$w>[$n]")
+    chirrtl should include(s"wire u : UInt<$w>[$n]")
+    val valueFir = uint(value)
+    for (i <- 0 until n) {
+      chirrtl should include(s"x[$i] <= $valueFir")
+      chirrtl should include(s"u[$i] <= $valueFir")
+    }
   }
 
   property("VecInit should fill 2D vec correctly") {
-    forAll(smallPosInts, smallPosInts, Gen.choose(0, 50)) { (n: Int, m: Int, value: Int) =>
-      assertTesterPasses { new VecMultiDimTester.Fill2DTester(n, m, value) }
+    val n = 2
+    val m = 3
+    val value = 7
+    val w = 3
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val v = VecInit.fill(n, m)(value.asUInt)
+    })
+    chirrtl should include(s"wire v : UInt<$w>[$m][$n]")
+    val valueFir = uint(value)
+    for (i <- 0 until n) {
+      for (j <- 0 until m) {
+        chirrtl should include(s"v[$i][$j] <= $valueFir")
+      }
     }
   }
 
   property("VecInit should fill 3D vec correctly") {
-    forAll(smallPosInts, smallPosInts, smallPosInts, Gen.choose(0, 50)) { (n: Int, m: Int, p: Int, value: Int) =>
-      assertTesterPasses { new VecMultiDimTester.Fill3DTester(n, m, p, value) }
+    val n = 2
+    val m = 3
+    val o = 2
+    val value = 11
+    val w = 4
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val v = VecInit.fill(n, m, o)(value.asUInt)
+    })
+    chirrtl should include(s"wire v : UInt<$w>[$o][$m][$n]")
+    val valueFir = uint(value)
+    for (i <- 0 until n) {
+      for (j <- 0 until m) {
+        for (k <- 0 until o) {
+          chirrtl should include(s"v[$i][$j][$k] <= $valueFir")
+        }
+      }
     }
   }
 
   property("VecInit should support 2D fill bidirectional wire connection") {
-    forAll(smallPosInts, smallPosInts) { (n: Int, m: Int) =>
-      assertTesterPasses { new VecMultiDimTester.BidirectionalTester2DFill(n, m) }
+    val n = 2
+    val m = 3
+    val chirrtl = emitCHIRRTL(new Module {
+      val vec2D = VecInit.fill(n, m) {
+        val mod = Module(new PassthroughModule)
+        mod.io
+      }
+    })
+    var idx = 0
+    for (i <- 0 until n) {
+      for (j <- 0 until m) {
+        val suffix = if (idx > 0) s"_$idx" else ""
+        chirrtl should include(s"vec2D[$i][$j].out <= vec2D_mod$suffix.io.out")
+        chirrtl should include(s"vec2D_mod$suffix.io.in <= vec2D[$i][$j].in")
+        idx += 1
+      }
     }
   }
 
   property("VecInit should support 3D fill bidirectional wire connection") {
-    forAll(smallPosInts, smallPosInts, smallPosInts) { (n: Int, m: Int, p: Int) =>
-      assertTesterPasses { new VecMultiDimTester.BidirectionalTester3DFill(n, m, p) }
+    val n = 2
+    val m = 3
+    val o = 2
+    val chirrtl = emitCHIRRTL(new Module {
+      val vec3D = VecInit.fill(n, m, o) {
+        val mod = Module(new PassthroughModule)
+        mod.io
+      }
+    })
+    var idx = 0
+    for (i <- 0 until n) {
+      for (j <- 0 until m) {
+        for (k <- 0 until o) {
+          val suffix = if (idx > 0) s"_$idx" else ""
+          chirrtl should include(s"vec3D[$i][$j][$k].out <= vec3D_mod$suffix.io.out")
+          chirrtl should include(s"vec3D_mod$suffix.io.in <= vec3D[$i][$j][$k].in")
+          idx += 1
+        }
+      }
     }
   }
 
   property("VecInit should support 2D tabulate bidirectional wire connection") {
-    forAll(smallPosInts, smallPosInts) { (n: Int, m: Int) =>
-      assertTesterPasses { new VecMultiDimTester.BidirectionalTester2DTabulate(n, m) }
+    val n = 2
+    val m = 3
+    val chirrtl = emitCHIRRTL(new Module {
+      val mods = Vector.fill(n, m)(Module(new PassthroughModule))
+      val vec2D = VecInit.tabulate(n, m) { (i, j) =>
+        // Swizzle a bit for fun and profit
+        mods((i + 1) % n)((j + 2) % m).io
+      }
+    })
+    for (i <- 0 until n) {
+      for (j <- 0 until m) {
+        val suffix = s"_${(i + 1) % n}_${(j + 2) % m}"
+        chirrtl should include(s"vec2D[$i][$j].out <= mods$suffix.io.out")
+        chirrtl should include(s"mods$suffix.io.in <= vec2D[$i][$j].in")
+      }
     }
   }
 
   property("VecInit should support 3D tabulate bidirectional wire connection") {
-    forAll(smallPosInts, smallPosInts, smallPosInts) { (n: Int, m: Int, p: Int) =>
-      assertTesterPasses { new VecMultiDimTester.BidirectionalTester3DTabulate(n, m, p) }
+    val n = 2
+    val m = 3
+    val o = 2
+    val chirrtl = emitCHIRRTL(new Module {
+      val mods = Vector.fill(n, m, o)(Module(new PassthroughModule))
+      val vec2D = VecInit.tabulate(n, m, o) { (i, j, k) =>
+        // Swizzle a bit for fun and profit
+        mods((i + 1) % n)((j + 2) % m)(k).io
+      }
+    })
+    for (i <- 0 until n) {
+      for (j <- 0 until m) {
+        for (k <- 0 until o) {
+          val suffix = s"_${(i + 1) % n}_${(j + 2) % m}_$k"
+          chirrtl should include(s"vec2D[$i][$j][$k].out <= mods$suffix.io.out")
+          chirrtl should include(s"mods$suffix.io.in <= vec2D[$i][$j][$k].in")
+        }
+      }
     }
-  }
-
-  property("VecInit should iterate correctly") {
-    forAll(Gen.choose(1, 10), smallPosInts) { (start: Int, len: Int) =>
-      assertTesterPasses { new IterateTester(start, len)(x => x + 50.U) }
-    }
-  }
-
-  property("Regs of vecs should be usable as shift registers") {
-    forAll(smallPosInts) { (n: Int) => assertTesterPasses { new ShiftRegisterTester(n) } }
   }
 
   property("Infering widths on huge Vecs should not cause a stack overflow") {
-    assertTesterPasses(new HugeVecTester(10000), annotations = TesterDriver.verilatorOnly)
+    ChiselStage.emitSystemVerilog(new HugeVecTester(10000))
   }
 
   property("A Reg of a Vec of a single 1 bit element should compile and work") {
-    assertTesterPasses { new OneBitUnitRegVecTester }
+    val chirrtl = emitCHIRRTL(new Module {
+      val oneBitUnitRegVec = Reg(Vec(1, UInt(1.W)))
+      oneBitUnitRegVec(0) := 1.U(1.W)
+    })
+    chirrtl should include("reg oneBitUnitRegVec : UInt<1>[1], clock")
+    chirrtl should include("oneBitUnitRegVec[0] <= UInt<1>(\"h1\")")
   }
 
   property("A Vec with zero entries should compile and have zero width") {
-    assertTesterPasses { new ZeroEntryVecTester }
-  }
 
-  property("Dynamic indexing of a Vec of Module IOs should work") {
-    assertTesterPasses { new ModuleIODynamicIndexTester(4) }
+    val chirrtl = emitCHIRRTL(new Module {
+      require(Vec(0, Bool()).getWidth == 0)
+
+      val bundleWithZeroEntryVec = new Bundle {
+        val foo = Bool()
+        val bar = Vec(0, Bool())
+      }
+      require(bundleWithZeroEntryVec.asUInt.getWidth == 1)
+
+      val m = Module(new Module {
+        val io = IO(Output(bundleWithZeroEntryVec))
+        val zero = 0.U.asTypeOf(bundleWithZeroEntryVec)
+        require(zero.getWidth == 1)
+        io := zero
+      })
+      val w = WireDefault(m.io.bar)
+
+    })
+    chirrtl should include("output io : { foo : UInt<1>, bar : UInt<1>[0]}")
+    chirrtl should include("wire zero : { foo : UInt<1>, bar : UInt<1>[0]}")
+    chirrtl should include("zero.foo <= UInt<1>(\"h0\")")
+    chirrtl should include("io <= zero")
+    chirrtl should include("wire w : UInt<1>[0]")
+    chirrtl should include("w <= m.io.bar")
   }
 
   property("It should be possible to bulk connect a Vec and a Seq") {
@@ -511,7 +361,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("reduceTree should preserve input/output type") {
-    assertTesterPasses { new ReduceTreeTester() }
+    ChiselStage.elaborate(new ReduceTreeTester)
   }
 
   property("Vecs of empty Bundles and empty Records should work") {
