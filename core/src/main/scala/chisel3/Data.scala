@@ -433,6 +433,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
         }
       case Some(CrossModuleBinding) =>
         Some(_parent.get.context.get.instantiateOriginChildWithValue(instanceIdentifier, this))
+      case Some(ViewBinding(_)) =>
+        // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
+        Some(ViewParent.context.get.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
+      case Some(AggregateViewBinding(_)) =>
+        // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
+        Some(ViewParent.context.get.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
       case Some(e: UnconstrainedBinding) => None
       case Some(x) => throw new Exception("Building context from binding failed: " + this.toString + " = " + x)
       case None    => None

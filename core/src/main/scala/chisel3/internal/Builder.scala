@@ -323,7 +323,10 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
         case (None, _) =>
           throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }
-    case None => throwException("this cannot happen")
+    case None => this match {
+      case d: Data if d.isLit => throwException(s"Cannot call instanceName on a literal: $this")
+      case _ => throwException("this cannot happen")
+    }
   }
   def pathName: String = _parent match {
     case None             => instanceName
@@ -859,7 +862,8 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext: DynamicContext,
     forceModName:   Boolean = true
   ): (Circuit, T) = {
-    val circuitId = s"circuit_${dynamicContext.hashCode.toString}"
+    
+    val circuitId = s"circuit$$${java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(BigInt(dynamicContext.hashCode).toByteArray)}"
     val circuitContext = Context(circuitId)
     Builder.chiselContext.get().activeCircuit = Some(circuitContext)
     // Because we don't have a package name, just use this circuit id thing for both definition and instance name
