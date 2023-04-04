@@ -184,19 +184,13 @@ private[chisel3] object MonoConnect {
           // For each field, descend with right
           for ((field, sink_sub) <- sink_r._elements) {
             try {
-<<<<<<< HEAD
-              source_r.elements.get(field) match {
+              source_r._elements.get(field) match {
                 case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
                 case None => {
                   if (connectCompileOptions.connectFieldsMustMatch) {
                     throw MissingFieldException(field)
                   }
                 }
-=======
-              source_r._elements.get(field) match {
-                case Some(source_sub) => connect(sourceInfo, sink_sub, source_sub, context_mod)
-                case None             => throw MissingFieldException(field)
->>>>>>> a85156619 (Detect bound hardware when processing record elements (#3037))
               }
             } catch {
               case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
