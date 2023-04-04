@@ -42,19 +42,19 @@ class ScopeTesterModule extends Module {
 
 class PrintfSpec extends ChiselFlatSpec {
   "A printf with a single argument" should "elaborate" in {
-    ChiselStage.elaborate(new SinglePrintfTester)
+    ChiselStage.emitCHIRRTL(new SinglePrintfTester)
   }
   "A printf with multiple arguments" should "elaborate" in {
-    ChiselStage.elaborate(new MultiPrintfTester)
+    ChiselStage.emitCHIRRTL(new MultiPrintfTester)
   }
   "A printf with ASCII characters 1-127" should "elaborate" in {
-    ChiselStage.elaborate(new ASCIIPrintfTester)
+    ChiselStage.emitCHIRRTL(new ASCIIPrintfTester)
   }
   "A printf with Printable ASCII characters 1-127" should "elaborate" in {
-    ChiselStage.elaborate(new ASCIIPrintableTester)
+    ChiselStage.emitCHIRRTL(new ASCIIPrintableTester)
   }
   "A printf with Printable targeting a format string using a port in another module" should "elaborate" in {
-    ChiselStage.elaborate {
+    ChiselStage.emitCHIRRTL {
       new Module {
         val mod = Module(new ScopeTesterModule)
         printf(mod.p)
@@ -63,7 +63,7 @@ class PrintfSpec extends ChiselFlatSpec {
   }
   "A printf with Printable targeting a format string using a wire inside another module" should "error" in {
     a[ChiselException] should be thrownBy {
-      circt.stage.ChiselStage.elaborate {
+      circt.stage.ChiselStage.emitCHIRRTL {
         new Module {
           val mod = Module(new ScopeTesterModule)
           printf(mod.wp)

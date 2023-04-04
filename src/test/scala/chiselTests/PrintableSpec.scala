@@ -270,7 +270,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
     a[java.util.UnknownFormatConversionException] should be thrownBy {
       extractCause[java.util.UnknownFormatConversionException] {
-        ChiselStage.elaborate { new MyModule }
+        ChiselStage.emitCHIRRTL { new MyModule }
       }
     }
   }
@@ -295,7 +295,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
     a[java.util.UnknownFormatConversionException] should be thrownBy {
       extractCause[java.util.UnknownFormatConversionException] {
-        ChiselStage.elaborate { new MyModule }
+        ChiselStage.emitCHIRRTL { new MyModule }
       }
     }
   }

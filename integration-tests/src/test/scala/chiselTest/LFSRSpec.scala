@@ -126,7 +126,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
   it should "throw an exception if initialized to a seed of zero for XOR configuration" in {
     {
       the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-        ChiselStage.elaborate(new FooLFSR(XOR, Some(0)))
+        ChiselStage.emitCHIRRTL(new FooLFSR(XOR, Some(0)))
       }
     }.getMessage should include("Seed cannot be zero")
   }
@@ -134,7 +134,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
   it should "throw an exception if initialized to a seed of all ones for XNOR configuration" in {
     {
       the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-        ChiselStage.elaborate(new FooLFSR(XNOR, Some(15)))
+        ChiselStage.emitCHIRRTL(new FooLFSR(XNOR, Some(15)))
       }
     }.getMessage should include("Seed cannot be all ones")
   }
@@ -152,7 +152,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
   it should "throw an exception if no LFSR taps are known" in {
     {
       the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-        ChiselStage.elaborate(new MaxPeriodGaloisLFSR(787))
+        ChiselStage.emitCHIRRTL(new MaxPeriodGaloisLFSR(787))
       }
     }.getMessage should include("No max period LFSR taps stored for requested width")
   }
