@@ -21,7 +21,7 @@ object IsX {
   /** Creates an intrinsic which returns whether the input is a verilog 'x'.
     *
     * @example {{{
-    * b := isX(a)
+    * b := IsX(a)
     * }}}
     */
   def apply[T <: Data](gen: T): Data = {
