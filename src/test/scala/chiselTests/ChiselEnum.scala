@@ -5,9 +5,11 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.AffectsChiselPrefix
 import chisel3.internal.firrtl.UnknownWidth
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.ChiselGeneratorAnnotation
+import circt.stage.ChiselStage
 import chisel3.util._
 import chisel3.testers.BasicTester
+import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -361,7 +363,6 @@ class IsOneOfTester extends BasicTester {
 }
 
 class ChiselEnumSpec extends ChiselFlatSpec with Utils {
-  import chisel3.internal.ChiselException
 
   behavior.of("ChiselEnum")
 
@@ -576,7 +577,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "work with Printables" in {
-    ChiselStage.emitChirrtl(new LoadStoreExample) should include(
+    ChiselStage.emitCHIRRTL(new LoadStoreExample) should include(
       """printf(clock, UInt<1>("h1"), "%c%c%c%c%c", _chiselTestsOpcodePrintable[0], _chiselTestsOpcodePrintable[1], _chiselTestsOpcodePrintable[2], _chiselTestsOpcodePrintable[3], _chiselTestsOpcodePrintable[4])"""
     )
   }
@@ -744,7 +745,7 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     CorrectVecAnno("bund.inner_bundle1.v", enumExampleName, Set())
   )
 
-  def printAnnos(annos: Seq[Annotation]) {
+  def printAnnos(annos: Seq[Annotation]): Unit = {
     println("Enum definitions:")
     annos.foreach {
       case EnumDefAnnotation(enumTypeName, definition) => println(s"\t$enumTypeName: $definition")
@@ -801,11 +802,16 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
   def allCorrectVecs(annos: Seq[EnumVecAnnotation], corrects: Seq[CorrectVecAnno]): Boolean =
     corrects.forall(c => annos.exists(isCorrect(_, c)))
 
-  def test(strongEnumAnnotatorGen: () => Module) {
-    val annos = (new ChiselStage).execute(
-      Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
-      Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))
-    )
+  def test(strongEnumAnnotatorGen: () => Module): Unit = {
+    val annos = (new ChiselStage)
+      .execute(
+        Array("--target-dir", "test_run_dir", "--target", "chirrtl"),
+        Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))
+      )
+      .flatMap {
+        case FirrtlCircuitAnnotation(circuit) => circuit.annotations
+        case _                                => None
+      }
 
     val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
     val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }

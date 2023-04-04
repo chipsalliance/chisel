@@ -8,11 +8,10 @@ import chisel3.reflect.DataMirror
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
-import chisel3.reflect.DataMirror
 
 import scala.collection.immutable.{ListMap, SeqMap}
 
-trait RecordSpecUtils {
+object RecordSpec {
   class MyBundle extends Bundle {
     val foo = UInt(32.W)
     val bar = UInt(32.W)
@@ -211,17 +210,19 @@ trait RecordSpecUtils {
   }
   class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] {
     def boxed = true
-    lazy val elements = SeqMap("underlying" -> gen.cloneType)
+    lazy val elements = SeqMap("underlying" -> gen)
     def underlying = elements.head._2
   }
   class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType {
     def boxed = false
-    lazy val elements = SeqMap("" -> gen.cloneType)
+    lazy val elements = SeqMap("" -> gen)
     def underlying = elements.head._2
   }
 }
 
-class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
+class RecordSpec extends ChiselFlatSpec with Utils {
+  import RecordSpec._
+
   behavior.of("Records")
 
   they should "bulk connect similarly to Bundles" in {
@@ -280,7 +281,7 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   they should "work correctly with DataMirror in nested OpaqueType Records" in {
     var mod: NestedRecordModule = null
     ChiselStage.elaborate { mod = new NestedRecordModule; mod }
-    val ports = chisel3.experimental.DataMirror.fullModulePorts(mod.inst)
+    val ports = DataMirror.fullModulePorts(mod.inst)
     val expectedPorts = Seq(
       ("clock", mod.inst.clock),
       ("reset", mod.inst.reset),
@@ -420,5 +421,28 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     }
 
     err.getMessage should include("bundle plugin was unable to clone")
+  }
+
+  "Attempting to create a Record with bound nested elements" should "error" in {
+    class InnerNestedRecord[T <: Data](gen: T) extends Record {
+      val elements = SeqMap("a" -> gen)
+    }
+    class NestedRecord[T <: Data](gen: T) extends Record {
+      val inner1 = new InnerNestedRecord(gen)
+      val inner2 = new InnerNestedRecord(UInt(4.W))
+      val elements = SeqMap("a" -> inner1, "b" -> inner2)
+    }
+    class MyRecord[T <: Data](gen: T) extends Record {
+      val nested = new NestedRecord(gen)
+      val elements = SeqMap("a" -> nested)
+    }
+
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.elaborate(new Module {
+        val myReg = RegInit(0.U(8.W))
+        val io = IO(Input(new MyRecord(myReg)))
+      })
+    }
+    e.getMessage should include("must be a Chisel type, not hardware")
   }
 }

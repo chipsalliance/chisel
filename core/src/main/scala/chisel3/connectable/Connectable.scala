@@ -125,7 +125,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    * - Connecting two [[util.DecoupledIO]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
+    * - Connecting two `util.DecoupledIO`'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
     * - Functionally equivalent to chisel3.:=, but different than Chisel.:=
     *
     * @group connection
@@ -143,7 +143,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    *  - Connecting two [[util.DecoupledIO]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
+    *  - Connecting two `util.DecoupledIO`'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
     *
     * @group connection
     *
@@ -160,7 +160,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    *  - Connecting two [[util.DecoupledIO]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
+    *  - Connecting two `util.DecoupledIO`'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
     *
     * @group connection
     *
@@ -182,7 +182,7 @@ object Connectable {
     * - An additional type restriction is that all relative orientations of `consumer` and `producer` must match exactly.
     *
     * Additional notes:
-    *  - Connecting two wires of [[util.DecoupledIO]] chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
+    *  - Connecting two wires of `util.DecoupledIO` chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
     *  - If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
     *  - "turk-duck-en" is a dish where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
     *
@@ -258,6 +258,23 @@ object Connectable {
       }
     }
 
+    /** There are cases when we need to reverse a FIRRTL connection
+      *
+      * Namely, OpaqueTypes of flipped fields since the flip is not present in the emitted FIRRTL
+      * @todo when refactoring internals, this firrtl-specific behavior should probably be moved
+      *   into Chisel IR lowering to FIRRTL IR. Such a change will likely conflict with the logic in
+      *   BiConnect which uses AbsoluteDirection to "Do the right thing"TM.
+      */
+    private def doFirrtlConnect[S <: Data](consumer: T, producer: S)(implicit sourceInfo: SourceInfo): Unit = {
+      val flip = consumer match {
+        case rec: Record if rec._isOpaqueType =>
+          rec.elementsIterator.next().specifiedDirection == SpecifiedDirection.Flip
+        case _ => false
+      }
+      val (lhs, rhs) = if (flip) (producer, consumer) else (consumer, producer)
+      lhs.firrtlConnect(rhs)
+    }
+
     /** $colonLessGreaterEq
       *
       * @group connection
@@ -266,7 +283,7 @@ object Connectable {
     final def :<>=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
-        consumer.base.firrtlConnect(producer)
+        doFirrtlConnect(consumer.base, producer)
       } else {
         connect(consumer, producer, ColonLessGreaterEq)
       }
@@ -280,7 +297,7 @@ object Connectable {
     final def :<>=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
-          consumer.base.firrtlConnect(producer.base)
+          doFirrtlConnect(consumer.base, producer.base)
         } else {
           connect(consumer, producer, ColonLessGreaterEq)
         }

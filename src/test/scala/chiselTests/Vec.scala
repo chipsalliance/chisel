@@ -7,7 +7,8 @@ import chisel3._
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import org.scalacheck._
-import scala.annotation.tailrec
+
+import scala.annotation.{nowarn, tailrec}
 
 class LitTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
@@ -95,7 +96,7 @@ class ValueTester(w: Int, values: List[Int]) extends BasicTester {
 
 class TabulateTester(n: Int) extends BasicTester {
   val v = VecInit(Range(0, n).map(i => (i * 2).asUInt))
-  val x = VecInit(Array.tabulate(n) { i => (i * 2).asUInt })
+  val x = VecInit(Array.tabulate(n) { i => (i * 2).asUInt }.toIndexedSeq)
   val u = VecInit.tabulate(n)(i => (i * 2).asUInt)
 
   assert(v.asUInt === x.asUInt)
@@ -106,7 +107,7 @@ class TabulateTester(n: Int) extends BasicTester {
 }
 
 class FillTester(n: Int, value: Int) extends BasicTester {
-  val x = VecInit(Array.fill(n)(value.U))
+  val x = VecInit(Array.fill(n)(value.U).toIndexedSeq)
   val u = VecInit.fill(n)(value.U)
 
   assert(x.asUInt === u.asUInt, cf"Expected Vec to be filled like $x, instead VecInit.fill created $u")
@@ -241,7 +242,7 @@ class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
 class ShiftRegisterTester(n: Int) extends BasicTester {
   val (cnt, wrap) = Counter(true.B, n * 2)
   val shifter = Reg(Vec(n, UInt((log2Ceil(n).max(1)).W)))
-  (shifter, shifter.drop(1)).zipped.foreach(_ := _)
+  shifter.zip(shifter.drop(1)).foreach { case (l, r) => l := r }
   shifter(n - 1) := cnt
   when(cnt >= n.asUInt) {
     val expected = cnt - n.asUInt
@@ -345,9 +346,6 @@ class ReduceTreeTester() extends BasicTester {
 }
 
 class VecSpec extends ChiselPropSpec with Utils {
-  // Disable shrinking on error.
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Vecs should be assignable") {
     forAll(safeUIntN(8)) {

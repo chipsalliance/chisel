@@ -2,12 +2,11 @@
 
 package chiselTests.aop
 
-import chisel3.testers.{BasicTester, TesterDriver}
-import chiselTests.{ChiselFlatSpec, Utils}
 import chisel3._
 import chisel3.aop.Select
 import chisel3.aop.injecting.InjectingAspect
-import logger.{LogLevel, LogLevelAnnotation}
+import chisel3.testers.{BasicTester, TesterDriver}
+import chiselTests.{ChiselFlatSpec, Utils}
 
 object InjectionHierarchy {
 
@@ -132,10 +131,11 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
   "Test" should "fail if inserted the wrong values" in {
     assertTesterFails { new AspectTester(Seq(9, 9, 9)) }
   }
-  "Test" should "pass if pass wrong values, but correct with aspect" in {
+  //TODO: SFC->MFC, this test is ignored because aspects yet fully supported by CIRCT/firtool
+  "Test" should "pass if pass wrong values, but correct with aspect" ignore {
     assertTesterPasses({ new AspectTester(Seq(9, 9, 9)) }, Nil, Seq(correctValueAspect) ++ TesterDriver.verilatorOnly)
   }
-  "Test" should "pass if pass wrong values, then wrong aspect, then correct aspect" in {
+  "Test" should "pass if pass wrong values, then wrong aspect, then correct aspect" ignore {
     assertTesterPasses(
       new AspectTester(Seq(9, 9, 9)),
       Nil,
@@ -146,7 +146,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     assertTesterFails({ new AspectTester(Seq(9, 9, 9)) }, Nil, Seq(correctValueAspect, wrongValueAspect))
   }
 
-  "Test" should "pass if the submodules in SubmoduleManipulationTester can be manipulated by manipulateSubmoduleAspect" in {
+  "Test" should "pass if the submodules in SubmoduleManipulationTester can be manipulated by manipulateSubmoduleAspect" ignore {
     assertTesterPasses(
       { new SubmoduleManipulationTester },
       Nil,
@@ -154,7 +154,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     )
   }
 
-  "Module name collisions when adding a new module" should "be resolved" in {
+  "Module name collisions when adding a new module" should "be resolved" ignore {
     assertTesterPasses(
       { new SubmoduleManipulationTester },
       Nil,
@@ -162,7 +162,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     )
   }
 
-  "Adding external modules" should "work" in {
+  "Adding external modules" should "work" ignore {
     assertTesterPasses(
       { new SubmoduleManipulationTester },
       Nil,
@@ -170,7 +170,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     )
   }
 
-  "Injection into multiple submodules of the same class" should "work" in {
+  "Injection into multiple submodules of the same class" should "work" ignore {
     assertTesterPasses(
       { new MultiModuleInjectionTester },
       Nil,

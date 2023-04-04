@@ -4,9 +4,20 @@ package chisel3.util.circt
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
-import chisel3.internal.Builder
+import chisel3.internal.{Builder, BuilderContextCache}
 
 import circt.Intrinsic
+
+// We have to unique designedName per type, be we can't due to name conflicts
+// on bundles.  Thus we use a globally unique id.
+private object SizeOfGlobalIDGen {
+  private case object CacheKey extends BuilderContextCache.Key[Int]
+  def getID() = {
+    val oldID = Builder.contextCache.getOrElse(CacheKey, 0)
+    Builder.contextCache.put(CacheKey, oldID + 1)
+    oldID
+  }
+}
 
 /** Create a module with a parameterized type which returns the size of the type
   * as a compile-time constant.  This lets you write code which depends on the

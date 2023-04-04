@@ -3,9 +3,13 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.testers.BasicTester
 import chisel3.util.circt.SizeOf
+
+import circt.stage.ChiselStage
+
+import firrtl.stage.FirrtlCircuitAnnotation
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -36,17 +40,21 @@ private class SizeOfTop extends Module {
   */
 class SizeOfSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
-    val fir = ChiselStage.emitChirrtl(new SizeOfTop)
-    val a1 = """(?s)extmodule SizeOf_(\d+).*defname = SizeOf_\1.*extmodule SizeOf_(\d+).*defname = SizeOf_\2""".r
+    val fir = ChiselStage.emitCHIRRTL(new SizeOfTop)
+    val a1 = """extmodule SizeOf_0""".r
     (fir should include).regex(a1)
 
     // The second elaboration uses a unique name since the Builder is reused (?)
     val c = """Intrinsic\(~SizeOfTop\|SizeOf.*,circt.sizeof\)"""
-    ((new chisel3.stage.ChiselStage)
+    ((new ChiselStage)
       .execute(
-        args = Array("--no-run-firrtl"),
+        args = Array("--target", "chirrtl"),
         annotations = Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new SizeOfTop))
       )
+      .flatMap {
+        case FirrtlCircuitAnnotation(circuit) => circuit.annotations
+        case _                                => None
+      }
       .mkString("\n") should include).regex(c)
   }
 }

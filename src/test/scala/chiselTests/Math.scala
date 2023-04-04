@@ -2,13 +2,8 @@
 
 package chiselTests
 
-import org.scalacheck.Shrink
-
 class Math extends ChiselPropSpec {
   import chisel3.util._
-  // Disable shrinking on error.
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("unsignedBitLength is computed correctly") {
     forAll(safeUIntWidth) {

@@ -3,9 +3,8 @@
 package chiselTests.experimental
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ExtModule}
 import chisel3.experimental.dataview._
-import chisel3.util.{log2Ceil, Decoupled, DecoupledIO, Queue, QueueIO}
+import chisel3.util._
 import chiselTests.ChiselFlatSpec
 import firrtl.transforms.DontTouchAnnotation
 

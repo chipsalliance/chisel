@@ -5,30 +5,16 @@ package chiselTests
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
+import chisel3.experimental.{BaseModule, ChiselAnnotation}
 import chisel3.util.experimental.BoringUtils
 
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, DependencyAPIMigration, Transform}
-import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.Dependency
-import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import firrtl.passes.wiring.{WiringException, WiringTransform}
-import firrtl.stage.Forms
+import firrtl.annotations.Annotation
+import firrtl.transforms.DontTouchAnnotation
 
 abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
   val dut: BaseModule
   val (_, done) = Counter(true.B, 2)
   when(done) { stop() }
-}
-
-class StripNoDedupAnnotation extends Transform with DependencyAPIMigration {
-  override def prerequisites = Forms.ChirrtlForm
-  override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Dependency[WiringTransform] +: Forms.ChirrtlEmitters
-  override def invalidates(a: Transform) = false
-  def execute(state: CircuitState): CircuitState = {
-    state.copy(annotations = state.annotations.filter { case _: NoDedupAnnotation => false; case _ => true })
-  }
 }
 
 class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
@@ -95,12 +81,16 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     BoringUtils.bore(dut.sources(2).x, Seq(dut.sinks(3).x, dut.sinks(4).x, dut.sinks(5).x))
   }
 
-  trait FailViaDedup { this: TopTester =>
-    case object FooAnnotation extends NoTargetAnnotation
-    chisel3.experimental.annotate(new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl:       Annotation = FooAnnotation
-      def transformClass: Class[_ <: Transform] = classOf[StripNoDedupAnnotation]
-    })
+  class TopTesterFail extends ShouldntAssertTester {
+    val dut = Module(new Top(4))
+    BoringUtils.addSource(dut.sources(1).x, "foo", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(1).x, "foo", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(2).x, "foo", disableDedup = true)
+
+    BoringUtils.addSource(dut.sources(2).x, "bar", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(3).x, "bar", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(4).x, "bar", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(5).x, "bar", disableDedup = true)
   }
 
   behavior.of("BoringUtils.bore")
@@ -109,10 +99,13 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     runTester(new TopTester, annotations = TesterDriver.verilatorOnly) should be(true)
   }
 
-  it should "throw an exception if NoDedupAnnotations are removed" in {
-    intercept[WiringException] {
-      runTester(new TopTester with FailViaDedup, annotations = Seq(TesterDriver.VerilatorBackend))
-    }.getMessage should startWith("Unable to determine source mapping for sink")
+  // TODO: this test is not really testing anything as MFC does boring during
+  // LowerAnnotations (which happens right after parsing).  Consider reworking
+  // this into a test that uses D/I (or some other mechanism of having a
+  // pre-deduplicated circuit).  This is likely better handled as a test in
+  // CIRCT than in Chisel.
+  it should "still work even with dedup off" in {
+    runTester(new TopTesterFail, annotations = Seq(TesterDriver.VerilatorBackend))
   }
 
   class InternalBore extends RawModule {

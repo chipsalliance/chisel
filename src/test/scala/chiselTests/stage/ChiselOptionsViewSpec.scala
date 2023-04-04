@@ -17,15 +17,11 @@ class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
   it should "construct a view from an AnnotationSeq" in {
     val bar = Circuit("bar", Seq.empty, Seq.empty, RenameMap())
     val annotations = Seq(
-      NoRunFirrtlCompilerAnnotation,
       PrintFullStackTraceAnnotation,
       ChiselOutputFileAnnotation("foo"),
       ChiselCircuitAnnotation(bar)
     )
     val out = view[ChiselOptions](annotations)
-
-    info("runFirrtlCompiler was set to false")
-    out.runFirrtlCompiler should be(false)
 
     info("printFullStackTrace was set to true")
     out.printFullStackTrace should be(true)

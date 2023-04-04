@@ -92,7 +92,7 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
     import chisel3.util.experimental.decode.decoder
     // [0 - 256] part into: [0 - 31], [32 - 47, 64 - 127], [192 - 255]
     // "0011????" "10??????" is empty to error
-    chisel3.stage.ChiselStage.emitSystemVerilog(new Module {
+    circt.stage.ChiselStage.emitSystemVerilog(new Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(4.W)))
       out := decoder.bitset(
@@ -120,7 +120,7 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
     import chisel3.util.experimental.decode.decoder
     // [0 - 256] part into: [0 - 31], [32 - 47, 64 - 127], [192 - 255]
     // "0011????" "10??????" is empty to error
-    chisel3.stage.ChiselStage.emitSystemVerilog(new Module {
+    circt.stage.ChiselStage.emitSystemVerilog(new Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(4.W)))
       out := decoder.bitset(

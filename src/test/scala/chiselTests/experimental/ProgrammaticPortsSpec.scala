@@ -15,7 +15,6 @@ class PrivatePort extends NamedModuleTester {
 
 // Example of using composition to add ports to a Module
 class CompositionalPort(module: NamedModuleTester, name: String) {
-  import chisel3.experimental.IO
   val foo = module.expectName(IO(Output(Bool())), name)
   foo.suggestName(name)
   foo := true.B
