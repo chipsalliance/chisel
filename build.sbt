@@ -17,6 +17,11 @@ ThisBuild / firtoolVersion := {
   }
 }
 
+val emitVersion = taskKey[Unit]("Write the version to version.txt")
+emitVersion := {
+  IO.write(new java.io.File("version.txt"), version.value)
+}
+
 lazy val minimalSettings = Seq(
   organization := "org.chipsalliance",
   scalacOptions := Seq("-deprecation", "-feature"),
