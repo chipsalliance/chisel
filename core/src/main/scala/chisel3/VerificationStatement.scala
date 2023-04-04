@@ -92,16 +92,7 @@ object assert extends VerifPrintMacrosDoc {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    message match {
-      case q"scala.StringContext.apply(..$_).s(..$_)" =>
-        c.error(
-          c.enclosingPosition,
-          "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
-            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
-            "an elaboration time check, call assert with a Boolean condition."
-        )
-      case _ =>
-    }
+    printf._checkFormatString(c)(message)
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
   }
@@ -273,16 +264,7 @@ object assume extends VerifPrintMacrosDoc {
     compileOptions: c.Tree
   ): c.Tree = {
     import c.universe._
-    message match {
-      case q"scala.StringContext.apply(..$_).s(..$_)" =>
-        c.error(
-          c.enclosingPosition,
-          "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
-            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
-            "an elaboration time check, call assert with a Boolean condition."
-        )
-      case _ =>
-    }
+    printf._checkFormatString(c)(message)
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo, $compileOptions)"
   }
