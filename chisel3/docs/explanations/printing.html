@@ -22,16 +22,15 @@ ga('send', 'pageview');
 
 <p>Chisel also supports printf in a style similar to <a href="http://docs.scala-lang.org/overviews/core/string-interpolation.html">Scala’s String Interpolation</a>. Chisel provides a custom string interpolator <code class="language-plaintext highlighter-rouge">cf</code> which follows C-style format specifiers (see section <a href="#c-style">C-style</a> below).</p>
 
-<p>Note that the Scala s-interpolator is not supported in Chisel.
-Future versions of Chisel will throw an error when using the s-interpolator
-within a printf.</p>
+<p>Note that the Scala s-interpolator is not supported in Chisel constructs and will throw an error:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
   <span class="nf">printf</span><span class="o">(</span><span class="n">s</span><span class="s">"in = $in\n"</span><span class="o">)</span>
-         <span class="o">^</span>
-         <span class="o">+-----</span> <span class="nc">Do</span> <span class="nc">NOT</span> <span class="n">use</span> <span class="n">the</span> <span class="n">s</span><span class="o">-</span><span class="n">interpolator</span> <span class="n">in</span> <span class="n">a</span> <span class="n">printf</span>
 <span class="o">}</span>
+<span class="c1">// error: The s-interpolator prints the Scala .toString of Data objects rather than the value of the hardware wire during simulation. Use the cf-interpolator instead. If you want an elaboration time print, use println.</span>
+<span class="c1">//   printf(s"in = $in\n")</span>
+<span class="c1">//   ^^^^^^^^^^^^^^^^^^^^^</span>
 </code></pre></div></div>
 
 <p>Instead, use Chisel’s <code class="language-plaintext highlighter-rouge">cf</code> interpolator as in the following examples:</p>
