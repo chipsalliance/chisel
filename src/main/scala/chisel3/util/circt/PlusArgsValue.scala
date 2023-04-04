@@ -22,7 +22,7 @@ private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String)
 
 object PlusArgsValue {
 
-  /** Creates an intrinsic which calls $test$plusargs.
+  /** Creates an intrinsic which calls \$test\$plusargs.
     *
     * @example {{{
     * b := PlusArgsValue(UInt(32.W), "FOO=%d")

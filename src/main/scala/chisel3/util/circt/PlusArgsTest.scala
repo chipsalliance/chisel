@@ -19,7 +19,7 @@ private class PlusArgsTestIntrinsic[T <: Data](gen: T, str: String)
 
 object PlusArgsTest {
 
-  /** Creates an intrinsic which calls $test$plusargs.
+  /** Creates an intrinsic which calls \$test\$plusargs.
     *
     * @example {{{
     * b := PlusArgsTest(UInt<32.W>, "FOO")
