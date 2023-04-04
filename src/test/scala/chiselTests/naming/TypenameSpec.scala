@@ -30,6 +30,10 @@ class TypenameSpec extends ChiselFlatSpec {
       val uintDeq = Queue(uintEnq, 16) // Queue16_UInt4
       uintEnq <> io.uint
 
+      val uintInferredEnq = Wire(Decoupled(UInt()))
+      val uintInferredDeq = Queue(uintInferredEnq, 15) // Queue16_UInt
+      uintInferredEnq <> io.uint
+
       val sintEnq = Wire(Decoupled(SInt(8.W)))
       val sintDeq = Queue(sintEnq, 8) // Queue8_SInt8
       sintEnq <> io.sint
@@ -60,6 +64,7 @@ class TypenameSpec extends ChiselFlatSpec {
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Test)
     chirrtl should include("module Queue16_UInt4")
+    chirrtl should include("module Queue15_UInt")
     chirrtl should include("module Queue8_SInt8")
     chirrtl should include("module Queue5_Bool")
     chirrtl should include("module Queue32_Vec3_UInt8")
