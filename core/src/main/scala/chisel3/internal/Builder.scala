@@ -325,6 +325,9 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
       }
     case None => this match {
       case d: Data if d.isLit => throwException(s"Cannot call instanceName on a literal: $this")
+      case d: Data if !d.hasBinding => throwException(
+        "You cannot access the .instanceName or .toTarget of non-hardware Data" + _errorContext
+      )
       case _ => throwException("this cannot happen")
     }
   }

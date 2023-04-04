@@ -6,7 +6,8 @@ import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
 
-class Arbiter[T <: Data: Manifest](n: Int, private val gen: T) extends Module {
+// TODO: when this was a private val, it was getting bound multiple times, or something like that. very weird. look into this more
+class Arbiter[T <: Data: Manifest](n: Int, gen: => T) extends Module {
   val io = IO(new Bundle {
     val in = Flipped(Vec(n, new DecoupledIO(gen)))
     val out = new DecoupledIO(gen)

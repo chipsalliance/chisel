@@ -57,7 +57,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
       e.tpe.toTarget
     }
     e.getMessage should include(
-      "You cannot access the .instanceName or .toTarget of non-hardware Data: 'tpe', in module 'Example'"
+      "You cannot access the .instanceName or .toTarget of non-hardware Data: 'tpe'"
     )
   }
 }
