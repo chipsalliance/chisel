@@ -3,9 +3,9 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers.BasicTester
 import chisel3.util.circt.PlusArgsValue
+import circt.stage.ChiselStage
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -33,18 +33,15 @@ private class PlusArgsValueTop extends Module {
   */
 class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
-    val fir = ChiselStage.emitChirrtl(new PlusArgsValueTop)
-    val a1 =
-      """(?s)extmodule PlusArgsValue_(\d+).*defname = PlusArgsValue_\1.*extmodule PlusArgsValue_(\d+).*defname = PlusArgsValue_\2""".r
-    (fir should include).regex(a1)
-
-    // The second elaboration uses a unique name since the Builder is reused (?)
-    val c = """Intrinsic\(~PlusArgsValueTop\|PlusArgsValue.*,circt.plusargs.value\)"""
-    ((new chisel3.stage.ChiselStage)
-      .execute(
-        args = Array("--no-run-firrtl"),
-        annotations = Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new PlusArgsValueTop))
-      )
-      .mkString("\n") should include).regex(c)
+    val fir = ChiselStage.emitCHIRRTL(new PlusArgsValueTop)
+    println(fir)
+    (fir.split('\n').map(x => x.trim) should contain).inOrder(
+      "intmodule PlusArgsValueIntrinsic :",
+      "output found : UInt<1>",
+      "output result : UInt<32>",
+      "intrinsic = circt.plusargs.value",
+      "parameter FORMAT = \"FOO=%d\"",
+      "parameter FORMAT = \"BAR=%d\""
+    )
   }
 }

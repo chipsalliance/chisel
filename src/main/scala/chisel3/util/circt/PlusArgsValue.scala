@@ -3,7 +3,7 @@
 package chisel3.util.circt
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule, FlatIO}
+import chisel3.experimental.{FlatIO, IntrinsicModule}
 import chisel3.internal.Builder
 
 import circt.Intrinsic
@@ -12,16 +12,12 @@ import circt.Intrinsic
   * value as indicated by the format string and a flag for whether the value
   * was found.
   */
-private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String) extends ExtModule(Map("FORMAT" -> str)) {
+private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String)
+    extends IntrinsicModule("circt.plusargs.value", Map("FORMAT" -> str)) {
   val io = FlatIO(new Bundle {
     val found = Output(UInt(1.W))
     val result = Output(gen)
   })
-  annotate(new ChiselAnnotation {
-    override def toFirrtl =
-      Intrinsic(toTarget, "circt.plusargs.value")
-  })
-  override val desiredName = "PlusArgsValue_" + Builder.idGen.next
 }
 
 object PlusArgsValue {

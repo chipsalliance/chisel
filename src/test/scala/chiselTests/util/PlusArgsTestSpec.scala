@@ -3,9 +3,9 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers.BasicTester
 import chisel3.util.circt.PlusArgsTest
+import circt.stage.ChiselStage
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -22,26 +22,16 @@ private class PlusArgsTestTop extends Module {
   io.x := PlusArgsTest(io.z, "BAR")
 }
 
-/** A test for intrinsics.  Since chisel is producing intrinsics as tagged
-  * extmodules (for now), we explicitly test the chirrtl and annotations rather
-  * than the processed firrtl or verilog.  It is worth noting that annotations
-  * are implemented (for now) in a way which makes the output valid for all
-  * firrtl compilers, hence we write a localized, not end-to-end test
-  */
 class PlusArgsTestSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
-    val fir = ChiselStage.emitChirrtl(new PlusArgsTestTop)
-    val a1 =
-      """(?s)extmodule PlusArgsTest_(\d+).*defname = PlusArgsTest_\1.*extmodule PlusArgsTest_(\d+).*defname = PlusArgsTest_\2""".r
-    (fir should include).regex(a1)
-
-    // The second elaboration uses a unique name since the Builder is reused (?)
-    val c = """Intrinsic\(~PlusArgsTestTop\|PlusArgsTest.*,circt.plusargs.test\)"""
-    ((new chisel3.stage.ChiselStage)
-      .execute(
-        args = Array("--no-run-firrtl"),
-        annotations = Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new PlusArgsTestTop))
-      )
-      .mkString("\n") should include).regex(c)
+    val fir = ChiselStage.emitCHIRRTL(new PlusArgsTestTop)
+    println(fir)
+    (fir.split('\n').map(x => x.trim) should contain).allOf(
+      "intmodule PlusArgsTestIntrinsic :",
+      "output found : UInt<1>",
+      "intrinsic = circt.plusargs.test",
+      "parameter FORMAT = \"FOO\"",
+      "parameter FORMAT = \"BAR\""
+    )
   }
 }

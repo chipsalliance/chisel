@@ -3,7 +3,7 @@
 package chisel3.util.circt
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, ExtModule}
+import chisel3.experimental.IntrinsicModule
 import chisel3.internal.Builder
 
 import circt.Intrinsic
@@ -12,13 +12,9 @@ import circt.Intrinsic
   * $test$plusargs to test for the existance of the string str in the
   * simulator command line.
   */
-private class PlusArgsTestIntrinsic[T <: Data](gen: T, str: String) extends ExtModule(Map("FORMAT" -> str)) {
+private class PlusArgsTestIntrinsic[T <: Data](gen: T, str: String)
+    extends IntrinsicModule("circt.plusargs.test", Map("FORMAT" -> str)) {
   val found = IO(Output(UInt(1.W)))
-  annotate(new ChiselAnnotation {
-    override def toFirrtl =
-      Intrinsic(toTarget, "circt.plusargs.test")
-  })
-  override val desiredName = "PlusArgsTest_" + Builder.idGen.next
 }
 
 object PlusArgsTest {
