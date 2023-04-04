@@ -420,25 +420,25 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
     _bindingVar = target
   }
 
-  override def context = contextVar.orElse {
+  override def contextOpt = contextVar.orElse {
     val myContext = _binding match {
       case Some(ChildBinding(p: Data)) =>
-        p.context.map(_.instantiateOriginChildWithValue(instanceIdentifier, this))
+        p.contextOpt.map(_.instantiateOriginChildWithValue(instanceIdentifier, this))
       case Some(t: ConstrainedBinding) =>
-        val parentContext = t.location.get.context.get
+        val parentContext = t.location.get.context
         if (parentContext.isChild(instanceIdentifier)) {
           Some(parentContext(instanceIdentifier))
         } else {
           Some(parentContext.instantiateOriginChildWithValue(instanceIdentifier, this))
         }
       case Some(CrossModuleBinding) =>
-        Some(_parent.get.context.get.instantiateOriginChildWithValue(instanceIdentifier, this))
+        Some(_parent.get.context.instantiateOriginChildWithValue(instanceIdentifier, this))
       case Some(ViewBinding(_)) =>
         // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
-        Some(ViewParent.context.get.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
+        Some(ViewParent.context.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
       case Some(AggregateViewBinding(_)) =>
         // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
-        Some(ViewParent.context.get.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
+        Some(ViewParent.context.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
       case Some(e: UnconstrainedBinding) => None
       case Some(x) => throw new Exception("Building context from binding failed: " + this.toString + " = " + x)
       case None    => None

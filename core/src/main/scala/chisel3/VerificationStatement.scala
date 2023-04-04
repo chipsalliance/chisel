@@ -441,7 +441,7 @@ abstract class VerificationStatement extends NamedComponent with CloneToContext 
   // Maybe one day we can make this not a var, but it requires Bundle fields to know their parent bundle prior to their execution (e.g. Aligned(..) and Type(new Bundle))
   contextVar = Some(Option(Builder.currentModule.getOrElse(null)) match {
     case None    => Builder.activeCircuit.instantiateOriginChildWithValue(instanceIdentifier, this)
-    case Some(p) => p.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
+    case Some(p) => p.context.instantiateOriginChildWithValue(instanceIdentifier, this)
   })
   _parent.foreach(_.addId(this))
 }

@@ -117,7 +117,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   private[chisel3] def _parent: Option[BaseModule] = {
     Option(_parentVar)
     //println(context.foreach(c => c.visualizeWithDefinition))
-    context.flatMap(_.parentCollectFirst { case x: BaseModule if x != this => x })
+    contextOpt.flatMap(_.parentCollectFirst { case x: BaseModule if x != this => x })
   }
   private[chisel3] def _parent_=(target: Option[BaseModule]): Unit = {
     _parentVar = target.getOrElse(null)
@@ -131,7 +131,8 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   }
 
   private[chisel3] var contextVar: Option[Context] = None
-  private[chisel3] def context = contextVar
+  private[chisel3] def contextOpt = contextVar
+  final private[chisel3] def context = contextOpt.get
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
   override def hashCode: Int = super.hashCode()

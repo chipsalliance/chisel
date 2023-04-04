@@ -56,7 +56,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   _parentVar = Builder.currentModule.getOrElse(null)
   contextVar = Some(Option(Builder.currentModule.getOrElse(null)) match {
     case None    => Builder.activeCircuit.instantiateOriginChildWithValue(instanceIdentifier, this)
-    case Some(p) => p.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
+    case Some(p) => p.context.instantiateOriginChildWithValue(instanceIdentifier, this)
   })
   _parent.foreach(_.addId(this))
 

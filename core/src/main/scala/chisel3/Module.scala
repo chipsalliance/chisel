@@ -297,7 +297,7 @@ package experimental {
     contextVar = Some(Option(Builder.currentModule.getOrElse(null)) match {
       case None => Builder.activeCircuit.instantiateOriginChildWithValue(definitionIdentifier, this)
       case Some(p) =>
-        p.context.get.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
+        p.context.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
     })
 
     _parent.foreach(_.addId(this))
