@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/* TODO(azidar):
- - (future PR) instance identifiers
- - test non-case class arguments
- - investigate definitionIdentifiers for more cornercases
- */
-
 package chisel3.internal
 
 import chisel3.{assert => _, _}

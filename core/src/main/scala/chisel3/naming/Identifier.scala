@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3.naming
 
 trait IdentifierProposer[T] {
@@ -28,14 +30,14 @@ object IdentifierProposer {
         }
       }
     }
-    s.substring(firstOkChar, if (finalChar == -1) lastOkChar + 1 else finalChar).map { x => if (!legal(x)) '_' else x }
+    if(s == "") s else s.substring(firstOkChar, if (finalChar == -1) lastOkChar + 1 else finalChar).map { x => if (!legal(x)) '_' else x }
   }
 
   // Summons correct IdentifierProposer to generate a proposal
   def getProposal[T](obj: T)(implicit ip: IdentifierProposer[T]): String = filterProposal(ip.propose(obj))
 
   // Algorithm to create an identifier proposal derived from a list of proposals
-  def makeProposal(proposals: String*): String = proposals.mkString("_")
+  def makeProposal(proposals: String*): String = proposals.filter(_ != "").mkString("_")
 
   // Catch-all proposer is to call toString, maybe use Java reflection instead?
   implicit def proposerAll[T] = new IdentifierProposer[T] {
