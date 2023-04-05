@@ -11,7 +11,7 @@ import circt.Intrinsic
 /** Create a module with a parameterized type which returns whether the input
   * is a verilog 'x'.
   */
-private class IsXIntrinsic[T <: Data](gen: T) extends IntrinsicModule("circt.isX") {
+private class IsXIntrinsic[T <: Data](gen: T) extends IntrinsicModule("circt_isX") {
   val i = IO(Input(gen))
   val found = IO(Output(UInt(1.W)))
 }

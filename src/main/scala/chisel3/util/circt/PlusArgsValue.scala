@@ -13,7 +13,7 @@ import circt.Intrinsic
   * was found.
   */
 private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String)
-    extends IntrinsicModule("circt.plusargs.value", Map("FORMAT" -> str)) {
+    extends IntrinsicModule("circt_plusargs_value", Map("FORMAT" -> str)) {
   val io = FlatIO(new Bundle {
     val found = Output(Bool())
     val result = Output(gen)

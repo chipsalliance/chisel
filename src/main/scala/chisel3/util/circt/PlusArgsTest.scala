@@ -13,7 +13,7 @@ import circt.Intrinsic
   * simulator command line.
   */
 private class PlusArgsTestIntrinsic[T <: Data](gen: T, str: String)
-    extends IntrinsicModule("circt.plusargs.test", Map("FORMAT" -> str)) {
+    extends IntrinsicModule("circt_plusargs_test", Map("FORMAT" -> str)) {
   val found = IO(Output(Bool()))
 }
 

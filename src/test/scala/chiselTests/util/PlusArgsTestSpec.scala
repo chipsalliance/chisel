@@ -29,7 +29,7 @@ class PlusArgsTestSpec extends AnyFlatSpec with Matchers {
     (fir.split('\n').map(_.trim) should contain).allOf(
       "intmodule PlusArgsTestIntrinsic :",
       "output found : UInt<1>",
-      "intrinsic = circt.plusargs.test",
+      "intrinsic = circt_plusargs_test",
       "parameter FORMAT = \"FOO\"",
       "parameter FORMAT = \"BAR\""
     )

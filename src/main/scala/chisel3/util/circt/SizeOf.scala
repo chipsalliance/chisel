@@ -10,7 +10,7 @@ import chisel3.internal.{Builder, BuilderContextCache}
   * as a compile-time constant.  This lets you write code which depends on the
   * results of type inference.
   */
-private class SizeOfIntrinsic[T <: Data](gen: T) extends IntrinsicModule("circt.sizeof") {
+private class SizeOfIntrinsic[T <: Data](gen: T) extends IntrinsicModule("circt_sizeof") {
   val i = IO(Input(gen))
   val size = IO(Output(UInt(32.W)))
 }

@@ -41,7 +41,7 @@ class IsXSpec extends AnyFlatSpec with Matchers {
         "intmodule IsXIntrinsic :",
         "input i : UInt<65>",
         "output found : UInt<1>",
-        "intrinsic = circt.isX",
+        "intrinsic = circt_isX",
         "input i : { a : UInt, b : SInt}"
       )
     )

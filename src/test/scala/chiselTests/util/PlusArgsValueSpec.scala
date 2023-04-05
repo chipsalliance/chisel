@@ -13,16 +13,16 @@ import org.scalatest.matchers.should.Matchers
 import scala.io.Source
 
 private class PlusArgsValueTop extends Module {
-  val io = IO(new Bundle {
-    val wf = Output(UInt(1.W))
-    val wv = Output(UInt(32.W))
-    val xf = Output(UInt(1.W))
-    val xv = Output(UInt(32.W))
-  })
+  val wf = IO(Output(UInt(1.W)))
+  val wv = IO(Output(UInt(32.W)))
+  val xf = IO(Output(UInt(1.W)))
+  val xv = IO(Output(UInt(32.W)))
   val tmpw = PlusArgsValue(UInt(32.W), "FOO=%d")
-  val tmpx = PlusArgsValue(io.xv, "BAR=%d")
-  io.xf := tmpx.found
-  io.xv := tmpx.result
+  val tmpx = PlusArgsValue(xv, "BAR=%d")
+  wf := tmpw.found
+  wv := tmpw.result
+  xf := tmpx.found
+  xv := tmpx.result
 }
 
 class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
@@ -33,7 +33,7 @@ class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
       "intmodule PlusArgsValueIntrinsic :",
       "output found : UInt<1>",
       "output result : UInt<32>",
-      "intrinsic = circt.plusargs.value",
+      "intrinsic = circt_plusargs_value",
       "parameter FORMAT = \"FOO=%d\"",
       "parameter FORMAT = \"BAR=%d\""
     )
