@@ -90,12 +90,62 @@ intermediate signals and can’t name them at all or has to make up a unique nam
 <p><code class="language-plaintext highlighter-rouge">_GEN</code> signals are usually generated from the FIRRTL compiler, rather than the Chisel library. We are working on
 renaming these signals with more context-dependent names, but it is a work in progress. Thanks for caring!</p>
 
-<h3 id="my-module-names-are-super-unstable---i-change-one-thing-and-queue_1-becomes-queue_42-help">My module names are super unstable - I change one thing and Queue_1 becomes Queue_42. Help!</h3>
+<h3 id="how-do-i-make-my-modules-have-more-stable-names-instead-of-module_1-and-module_42">How do I make my modules have more stable names instead of ‘Module_1’ and ‘Module_42’?</h3>
 
-<p>This is the infamous <code class="language-plaintext highlighter-rouge">Queue</code> instability problem. In general, these cases are best solved at the source - the module
-itself! If you overwrite <code class="language-plaintext highlighter-rouge">desiredName</code> to include parameter information (see the
-<a href="../explanations/naming#set-a-module-name">explanation</a> for more info), then this can avoid this problem permanantly.
-We’ve done this with some Chisel utilities with great results!</p>
+<p>This is an example of the module instability problem, which results from several modules all sharing the exact same name. To fix this, you must add more specificity to your <code class="language-plaintext highlighter-rouge">Module</code>’s name to avoid these name collisions.</p>
+
+<p>This can be done by leveraging the <code class="language-plaintext highlighter-rouge">desiredName</code> and <code class="language-plaintext highlighter-rouge">typeName</code> APIs. 
+<code class="language-plaintext highlighter-rouge">desiredName</code> is for indicating the names of <code class="language-plaintext highlighter-rouge">Modules</code> (e.g. influenced by the parameters passed in), and <code class="language-plaintext highlighter-rouge">typeName</code> is useful for modules which are type-parameterized by subclasses of <code class="language-plaintext highlighter-rouge">Data</code>. Overriding <code class="language-plaintext highlighter-rouge">desiredName</code> can reduce or even eliminate name collisions. For instance, suppose your module looks like the following:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyModule</span><span class="o">[</span><span class="kt">T</span> <span class="k">&lt;:</span> <span class="kt">Data</span><span class="o">](</span><span class="n">gen</span><span class="k">:</span> <span class="kt">T</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>We can override <code class="language-plaintext highlighter-rouge">desiredName</code> of the module to include the type name of the <code class="language-plaintext highlighter-rouge">gen</code> parameter like so:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyModule</span><span class="o">[</span><span class="kt">T</span> <span class="k">&lt;:</span> <span class="kt">Data</span><span class="o">](</span><span class="n">gen</span><span class="k">:</span> <span class="kt">T</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">override</span> <span class="k">def</span> <span class="nf">desiredName</span> <span class="k">=</span> <span class="n">s</span><span class="s">"MyModule_${gen.typeName}"</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Any instances of your <code class="language-plaintext highlighter-rouge">MyModule</code> will now have Verilog module names containing the type parameter.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyModule</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span> <span class="c1">// MyModule_UInt4 // MyModule_UInt4</span>
+<span class="k">val</span> <span class="nv">bar</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyModule</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">3</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">))))</span> <span class="c1">// MyModule_Vec3_UInt4</span>
+</code></pre></div></div>
+
+<p>Note that all base Chisel util modules, like <code class="language-plaintext highlighter-rouge">Queue</code>, already implement <code class="language-plaintext highlighter-rouge">desiredName</code> like this:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">fooQueue</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Queue</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="mi">4</span><span class="o">))</span> <span class="c1">// Verilog module would be named 'Queue4_UInt8' // Verilog module would be named 'Queue4_UInt8'</span>
+<span class="k">val</span> <span class="nv">barQueue</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Queue</span><span class="o">(</span><span class="nc">SInt</span><span class="o">(</span><span class="mf">12.</span><span class="n">W</span><span class="o">),</span> <span class="mi">3</span><span class="o">))</span> <span class="c1">// ... and 'Queue3_SInt12' // ... and 'Queue3_SInt12'</span>
+<span class="k">val</span> <span class="nv">bazQueue</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Queue</span><span class="o">(</span><span class="nc">Bool</span><span class="o">(),</span> <span class="mi">16</span><span class="o">))</span> <span class="c1">// ... and 'Queue16_Bool'</span>
+</code></pre></div></div>
+
+<h3 id="how-would-i-write-my-own-typename-for-my-data-types">How would I write my own <code class="language-plaintext highlighter-rouge">typeName</code> for my data types?</h3>
+
+<p>If you’re using your own user-defined <code class="language-plaintext highlighter-rouge">Bundle</code>, you can increase the specificity of its own <code class="language-plaintext highlighter-rouge">typeName</code> by overriding it. All <code class="language-plaintext highlighter-rouge">Data</code> types have a simple default implementation of <code class="language-plaintext highlighter-rouge">typeName</code> (which is simply its class name), but you can override this yourself:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyBundle</span><span class="o">[</span><span class="kt">T</span> <span class="k">&lt;:</span> <span class="kt">Data</span><span class="o">](</span><span class="n">gen</span><span class="k">:</span> <span class="kt">T</span><span class="o">,</span> <span class="n">intParam</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="c1">// Generate a stable typeName for this Bundle. Two 'words' are present</span>
+  <span class="c1">// in this implementation: the bundle's name plus its integer parameter</span>
+  <span class="c1">// (something like 'MyBundle9')</span>
+  <span class="c1">// and the generator's typeName, which itself can be composed of 'words'</span>
+  <span class="c1">// (something like 'Vec3_UInt4')</span>
+  <span class="k">override</span> <span class="k">def</span> <span class="nf">typeName</span> <span class="k">=</span> <span class="n">s</span><span class="s">"MyBundle${intParam}_${gen.typeName}"</span>
+
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Now if you use your <code class="language-plaintext highlighter-rouge">MyBundle</code> in a module like a <code class="language-plaintext highlighter-rouge">Queue</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">fooQueue</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Queue</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">),</span> <span class="mi">3</span><span class="o">),</span> <span class="mi">16</span><span class="o">))</span> <span class="c1">// Queue16_MyBundle3_UInt4</span>
+</code></pre></div></div>
+
+<p>The suggested pattern for <code class="language-plaintext highlighter-rouge">typeName</code>, and subsequently <code class="language-plaintext highlighter-rouge">desiredName</code>, is to fold single integer-like parameters with the name itself (for example, <code class="language-plaintext highlighter-rouge">Queue4</code>, <code class="language-plaintext highlighter-rouge">UInt3</code>, <code class="language-plaintext highlighter-rouge">MyBundle9</code>) to form ‘words’ and separate these ‘words’ with underscores (<code class="language-plaintext highlighter-rouge">Queue4_UInt3</code>, <code class="language-plaintext highlighter-rouge">FooBundle_BarType4</code>).</p>
+
+<p><code class="language-plaintext highlighter-rouge">Bundles</code> that have multiple integer arguments aren’t presently addressed by any of the built-in modules, and so implementing a descriptive and sufficiently differentiable <code class="language-plaintext highlighter-rouge">typeName</code> for such <code class="language-plaintext highlighter-rouge">Bundles</code> is left as an exercise to the reader. However, integers should not occur with an underscore before them at the very end of the <code class="language-plaintext highlighter-rouge">typeName</code> (e.g. <code class="language-plaintext highlighter-rouge">MyBundle_1</code>) because this is the <em>same</em> syntax used for duplicates, and so would cause confusion. Having to disambiguate modules all named <code class="language-plaintext highlighter-rouge">Queue32_MyBundle_4_1</code>, <code class="language-plaintext highlighter-rouge">Queue32_MyBundle_4_2</code>, <code class="language-plaintext highlighter-rouge">Queue32_MyBundle_4_3</code>, and so on would be undesirable, indeed!</p>
 
 <h3 id="i-want-to-add-some-hardware-or-assertions-but-each-time-i-do-all-the-signal-names-get-bumped">I want to add some hardware or assertions, but each time I do all the signal names get bumped!</h3>
 
@@ -122,15 +172,16 @@ name collisions, which are what triggers all those annoying signal name bumps!</
   <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
 <span class="o">}</span>
 </code></pre></div></div>
+
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.37.0</span>
 <span class="k">module</span> <span class="n">ExampleNoPrefix</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
   <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>	<span class="c1">// &lt;stdin&gt;:4:11</span>
                <span class="n">reset</span><span class="p">,</span>	<span class="c1">// &lt;stdin&gt;:5:11</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>	<span class="c1">// naming.md:73:14</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>	<span class="c1">// naming.md:74:15</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>	<span class="c1">// naming.md:158:14</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>	<span class="c1">// naming.md:159:15</span>
 <span class="p">);</span>
 
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:76:{27,32}</span>
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, naming.md:161:{27,32}</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -164,8 +215,8 @@ name collisions, which are what triggers all those annoying signal name bumps!</
 </code></pre></div></div>
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.37.0</span>
 <span class="k">module</span> <span class="n">MyLeaf</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:17:10</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>	<span class="c1">// naming.md:114:14</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>	<span class="c1">// naming.md:115:15</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>	<span class="c1">// naming.md:199:14</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>	<span class="c1">// naming.md:200:15</span>
 <span class="p">);</span>
 
   <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:17:10</span>
@@ -174,11 +225,11 @@ name collisions, which are what triggers all those annoying signal name bumps!</
 <span class="k">module</span> <span class="n">WrapperExample</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:37:10</span>
   <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>	<span class="c1">// &lt;stdin&gt;:38:11</span>
                <span class="n">reset</span><span class="p">,</span>	<span class="c1">// &lt;stdin&gt;:39:11</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>	<span class="c1">// naming.md:95:14</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>	<span class="c1">// naming.md:96:15</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>	<span class="c1">// naming.md:180:14</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>	<span class="c1">// naming.md:181:15</span>
 <span class="p">);</span>
 
-  <span class="n">MyLeaf</span> <span class="n">inst</span> <span class="p">(</span>	<span class="c1">// naming.md:106:20</span>
+  <span class="n">MyLeaf</span> <span class="n">inst</span> <span class="p">(</span>	<span class="c1">// naming.md:191:20</span>
     <span class="p">.</span><span class="n">in</span>  <span class="p">(</span><span class="n">in</span><span class="p">),</span>
     <span class="p">.</span><span class="n">out</span> <span class="p">(</span><span class="n">out</span><span class="p">)</span>
   <span class="p">);</span>
