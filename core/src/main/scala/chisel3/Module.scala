@@ -284,7 +284,8 @@ package experimental {
       val madeProposal = chisel3.naming.IdentifierProposer.makeProposal(this._moduleDefinitionIdentifierProposal)
       Builder.globalIdentifierNamespace.name(madeProposal)
     }
-    final val definitionIdentifier = _definitionIdentifier
+    // Represents an eagerly-determined unique and descriptive identifier for this module
+    final private[chisel3] val definitionIdentifier = _definitionIdentifier
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //

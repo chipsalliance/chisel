@@ -6,12 +6,12 @@
  - investigate definitionIdentifiers for more cornercases
  */
 
-package chiselTests
-package naming
+package chisel3.internal
 
 import chisel3.{assert => _, _}
 import chisel3.experimental.BaseModule
 import chisel3.naming.{fixTraitIdentifier, IdentifierProposer}
+import chiselTests.ChiselFunSpec
 
 class ConcreteClass(i: Int) extends Module
 trait NormalTrait extends Module
@@ -27,19 +27,19 @@ class HasByNameArg(g: => Module) extends Module {
   val x = Module(g)
 }
 
-class IdentifierSpec extends ChiselFunSpec with Utils {
+class IdentifierSpec extends ChiselFunSpec {
   it("(1): definitionIdentifier works on classes, abstract classes, but not traits") {
     class TopA extends Module {
       assert(Module(new ConcreteClass(0)).definitionIdentifier == "ConcreteClass_0")
-      assert(Module(new ConcreteClass(0) {}).definitionIdentifier == "ConcreteClass_0_1")
+      assert(Module(new ConcreteClass(0) {}).definitionIdentifier == "ConcreteClass_0$1")
       assert(Module(new NormalTrait {}).definitionIdentifier == "_1_Anon") // Traits don't work, Scala compiler bug?!?
       assert(Module(new AbstractClass {}).definitionIdentifier == "AbstractClass")
       assert(Module(new AbstArgsClass(1) {}).definitionIdentifier == "AbstArgsClass_1")
       assert(Module(new NestedAbtrClz(1) {}).definitionIdentifier == "NestedAbtrClz_1")
       assert(Module(new NestedCrctClz(1)).definitionIdentifier == "NestedCrctClz_1")
-      assert(Module(new NestedCrctClz(1) {}).definitionIdentifier == "NestedCrctClz_1_1")
+      assert(Module(new NestedCrctClz(1) {}).definitionIdentifier == "NestedCrctClz_1$1")
       assert(Module(new NestedTratClz(1)).definitionIdentifier == "NestedTratClz_1")
-      assert(Module(new NestedTratClz(1) {}).definitionIdentifier == "NestedTratClz_1_1")
+      assert(Module(new NestedTratClz(1) {}).definitionIdentifier == "NestedTratClz_1$1")
     }
     circt.stage.ChiselStage.emitCHIRRTL(new TopA, Array("--full-stacktrace"))
   }

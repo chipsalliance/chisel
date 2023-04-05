@@ -29,8 +29,8 @@ object IdentifierProposer {
     def propose(o: T): String = o.toString
   }
 
-  implicit def proposerString = new IdentifierProposer[String] { def propose(o: String): String = o }
-  implicit def proposerInt = new IdentifierProposer[Int] { def propose(o: Int): String = o.toString }
+  implicit val proposerString = proposerAll[String]
+  implicit val proposerInt = proposerAll[Int]
 
   import scala.language.higherKinds // Required to avoid warning for proposerIterable type parameter
   implicit def proposerIterable[T, F[_] <: Iterable[_]](implicit ip: IdentifierProposer[T]) =
@@ -38,12 +38,4 @@ object IdentifierProposer {
       def propose(o: F[T]): String = makeProposal(o.toList.map { x => ip.propose(x.asInstanceOf[T]) }: _*)
     }
 
-  def names(c: Class[_]): List[String] = {
-    List(
-      this.getClass.getName,
-      this.getClass.getSimpleName,
-      this.getClass.toString,
-      this.getClass.getCanonicalName
-    )
-  }
 }

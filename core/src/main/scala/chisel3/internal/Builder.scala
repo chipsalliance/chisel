@@ -22,7 +22,7 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import java.io.File
 
-private[chisel3] class Namespace(keywords: Set[String]) {
+private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
   // This HashMap is compressed, not every name in the namespace is present here.
   // If the same name is requested multiple times, it only takes 1 entry in the HashMap and the
   // value is incremented for each time the name is requested.
@@ -36,7 +36,7 @@ private[chisel3] class Namespace(keywords: Set[String]) {
 
   @tailrec
   private def rename(n: String, index: Long): String = {
-    val tryName = s"${n}_${index}"
+    val tryName = s"${n}${separator}${index}"
     if (names.contains(tryName)) {
       rename(n, index + 1)
     } else {
@@ -55,7 +55,7 @@ private[chisel3] class Namespace(keywords: Set[String]) {
     }
     // Will get i == 0 for all digits or _\d+ with empty prefix, those have no prefix so returning 0 is correct
     if (i == n.size) 0 // no digits
-    else if (n(i) != '_') 0 // no _
+    else if (n(i) != separator) 0 // no _
     else i
   }
 
@@ -95,6 +95,7 @@ private[chisel3] class Namespace(keywords: Set[String]) {
 private[chisel3] object Namespace {
 
   /** Constructs an empty Namespace */
+  def empty(separator: Char): Namespace = new Namespace(Set.empty[String], separator)
   def empty: Namespace = new Namespace(Set.empty[String])
 }
 
@@ -448,7 +449,7 @@ private[chisel3] class DynamicContext(
   }
 
   val globalNamespace = Namespace.empty
-  val globalIdentifierNamespace = Namespace.empty
+  val globalIdentifierNamespace = Namespace.empty('$')
 
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name

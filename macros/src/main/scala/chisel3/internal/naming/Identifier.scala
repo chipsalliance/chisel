@@ -33,7 +33,7 @@ private[chisel3] object identifyMacro {
           val newMethod = q"override protected def _traitModuleDefinitionIdentifierProposal = Some(${tpname.toString})"
           val newStats = newMethod +: stats
           (
-            q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats }",
+            q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$newStats }",
           )
         case _ =>
           c.error(c.enclosingPosition, "Can only use @identify on traits, not classes, objects, vals, or defs")
