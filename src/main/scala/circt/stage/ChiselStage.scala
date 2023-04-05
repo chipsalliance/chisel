@@ -211,6 +211,10 @@ object ChiselStage {
     *
     * @param gen a call-by-name Chisel module
     */
+  @deprecated(
+    "this exposes the internal Chisel circuit which was not supposed to be public---use either ChiselStage.convert or ChiselStage.emitCHIRRTL instead",
+    "Chisel 5.0"
+  )
   def elaborate(
     gen:  => RawModule,
     args: Array[String] = Array.empty

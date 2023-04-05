@@ -3,7 +3,9 @@ package chisel3.simulator
 import svsim._
 import chisel3._
 
-object PeekPokeAPI {
+object PeekPokeAPI extends PeekPokeAPI
+
+trait PeekPokeAPI {
   case class FailedExpectationException[T](observed: T, expected: T, message: String)
       extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
 
@@ -25,6 +27,23 @@ object PeekPokeAPI {
           sentinel = None
         )
       }
+    }
+
+    /** Ticks this clock up to `maxCycles`.
+      *
+      * Stops early if the `sentinelPort` is equal to the `sentinelValue`.
+      */
+    def stepUntil(sentinelPort: Data, sentinelValue: BigInt, maxCycles: Int): Unit = {
+      val context = currentContext()
+      context.willEvaluate()
+      val simulationPort = context.simulationPorts(clock)
+      simulationPort.tick(
+        timestepsPerPhase = 1,
+        maxCycles = maxCycles,
+        inPhaseValue = 0,
+        outOfPhaseValue = 1,
+        sentinel = Some(context.simulationPorts(sentinelPort), sentinelValue)
+      )
     }
   }
 

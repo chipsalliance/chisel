@@ -79,7 +79,8 @@ object SerializerSpec {
         childModuleIR,
         testModuleIR
       ),
-      "test"
+      "test",
+      Seq.empty
     )
 
 }
@@ -112,7 +113,8 @@ object SMemTestCircuit {
           )
         )
       ),
-      "Example"
+      "Example",
+      Seq.empty
     )
 
   def findRuw(c: Circuit): ReadUnderWrite.Value = {

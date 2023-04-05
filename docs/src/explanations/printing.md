@@ -15,25 +15,16 @@ Chisel provides the `printf` function for debugging purposes. It comes in two fl
 
 Chisel also supports printf in a style similar to [Scala's String Interpolation](http://docs.scala-lang.org/overviews/core/string-interpolation.html). Chisel provides a custom string interpolator `cf` which follows C-style format specifiers (see section [C-style](#c-style) below).
 
-Note that the Scala s-interpolator is not supported in Chisel.
-Future versions of Chisel will throw an error when using the s-interpolator
-within a printf.
+Note that the Scala s-interpolator is not supported in Chisel constructs and will throw an error:
 
 ```scala mdoc:invisible
 import chisel3._
-
-//TODO: Make the following Module fail when using s-interpolator in a printf
-// This used to fail under 2.12 but the macro that implemented this does
-// not work properly in Scala 2.13
-// When fixed add mdoc:fail to following ```scala block and clean up
 ```
 
-```scala
+```scala mdoc:fail
 class MyModule extends Module {
   val in = IO(Input(UInt(8.W)))
   printf(s"in = $in\n")
-         ^
-         +----- Do NOT use the s-interpolator in a printf
 }
 ```
 

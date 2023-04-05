@@ -30,7 +30,8 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
         )
       )
     ),
-    main
+    main,
+    Seq.empty
   )
 
   val grault: ir.Circuit = circuitIR("grault")

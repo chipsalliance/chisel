@@ -75,19 +75,19 @@ class BetterNamingTests extends ChiselFlatSpec {
 
   it should "provide unique counters for each name" in {
     var module: PerNameIndexing = null
-    ChiselStage.elaborate { module = new PerNameIndexing(4); module }
+    ChiselStage.emitCHIRRTL { module = new PerNameIndexing(4); module }
     assert(module.getNameFailures() == Nil)
   }
 
   it should "provide names for things defined in Iterable[HasId] and Option[HasId]" in {
     var module: IterableNaming = null
-    ChiselStage.elaborate { module = new IterableNaming; module }
+    ChiselStage.emitCHIRRTL { module = new IterableNaming; module }
     assert(module.getNameFailures() == Nil)
   }
 
   it should "allow digits to be field names in Records" in {
     var module: DigitFieldNamesInRecord = null
-    ChiselStage.elaborate { module = new DigitFieldNamesInRecord; module }
+    ChiselStage.emitCHIRRTL { module = new DigitFieldNamesInRecord; module }
     assert(module.getNameFailures() == Nil)
   }
 
