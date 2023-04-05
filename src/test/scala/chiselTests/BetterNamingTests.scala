@@ -23,7 +23,14 @@ class PerNameIndexing(count: Int) extends NamedModuleTester {
     expectModuleName(Module(new Other(i)), genModName("Other", i))
   }
   val queues = Seq.tabulate(count) { i =>
-    expectModuleName(Module(new Queue(UInt(i.W), 16)), genModName("Queue", i))
+    expectModuleName(
+      Module(new Queue(UInt(i.W), 16) {
+        // For this test we need to override desiredName to give the old name, so that indexing
+        // is properly tested
+        override def desiredName = "Queue"
+      }),
+      genModName("Queue", i)
+    )
   }
 }
 
