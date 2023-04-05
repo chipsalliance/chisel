@@ -345,6 +345,13 @@ class ReduceTreeTester() extends BasicTester {
   stop()
 }
 
+class VecFillZeroTester extends BasicTester {
+  val zeroFilledVec = VecInit.fill(0)(false.B)
+  require(zeroFilledVec.getWidth == 0)
+
+  stop()
+}
+
 class VecSpec extends ChiselPropSpec with Utils {
 
   property("Vecs should be assignable") {
@@ -445,6 +452,10 @@ class VecSpec extends ChiselPropSpec with Utils {
     forAll(Gen.choose(1, 10), smallPosInts) { (start: Int, len: Int) =>
       assertTesterPasses { new IterateTester(start, len)(x => x + 50.U) }
     }
+  }
+
+  property("VecInit.fill(0) should compile and yield a zero width Vec") {
+    assertTesterPasses { new VecFillZeroTester }
   }
 
   property("Regs of vecs should be usable as shift registers") {
