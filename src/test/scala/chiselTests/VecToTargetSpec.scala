@@ -65,7 +65,7 @@ trait VecToTargetSpecUtils extends Utils {
 class VecToTargetSpec extends ChiselFunSpec with VecToTargetSpecUtils {
   describe("Vec subaccess") {
     var foo: Foo = null
-    ChiselStage.elaborate { foo = new Foo; foo }
+    ChiselStage.emitCHIRRTL { foo = new Foo; foo }
 
     describe("with a Scala literal") {
       (it should behave).like(conversionSucceeds(foo.vecSubaccessScalaLit))

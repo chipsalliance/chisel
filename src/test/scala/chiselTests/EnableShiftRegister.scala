@@ -46,7 +46,7 @@ class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c) {
 class EnableShiftRegisterSpec extends ChiselPropSpec {
 
   property("EnableShiftRegister should elaborate") {
-    ChiselStage.elaborate { new EnableShiftRegister }
+    ChiselStage.emitCHIRRTL { new EnableShiftRegister }
   }
 
   ignore("EnableShiftRegisterTester should return the correct result") {}
