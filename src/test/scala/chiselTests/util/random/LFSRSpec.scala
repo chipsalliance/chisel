@@ -4,12 +4,10 @@ package chiselTests.util.random
 
 import chisel3._
 import circt.stage.ChiselStage
-import chisel3.util.{Cat, Counter, Enum}
+import chisel3.util.{Cat, Counter}
 import chisel3.util.random._
 import chisel3.testers.{BasicTester, TesterDriver}
 import chiselTests.{ChiselFlatSpec, Utils}
-
-import math.pow
 
 class FooLFSR(val reduction: LFSRReduce, seed: Option[BigInt]) extends PRNG(4, seed) with LFSR {
   def delta(s: Seq[Bool]): Seq[Bool] = s

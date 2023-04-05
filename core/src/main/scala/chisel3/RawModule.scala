@@ -132,4 +132,5 @@ trait RequireSyncReset extends Module {
 }
 
 /** Mix with a [[RawModule]] to automatically connect DontCare to the module's ports, wires, and children instance IOs. */
+@deprecated("Explicitly assign DontCare to IOs of instances", "Chisel 3.6")
 trait ImplicitInvalidate { self: RawModule => }

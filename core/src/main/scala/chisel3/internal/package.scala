@@ -120,6 +120,7 @@ package object internal {
     */
 
   @nowarn("msg=in class Module is deprecated")
+  @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
   abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions) extends Module {
     // Provide a non-deprecated constructor
     def this(
@@ -185,6 +186,7 @@ package object internal {
     * '''Do not use this class in user code'''. Use whichever `BlackBox` is imported by your wildcard
     * import (preferably `import chisel3._`).
     */
+  @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
   abstract class LegacyBlackBox(
     params: Map[String, Param] = Map.empty[String, Param]
   )(
