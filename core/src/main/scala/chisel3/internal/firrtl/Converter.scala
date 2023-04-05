@@ -93,6 +93,10 @@ private[chisel3] object Converter {
     // TODO Simplify
     case lit: ILit =>
       throw new InternalErrorException(s"Unexpected ILit: $lit")
+    case e @ ProbeExpr(probe) =>
+      fir.ProbeExpr(convert(probe, ctx, info))
+    case e @ ProbeRead(probe) =>
+      fir.ProbeRead(convert(probe, ctx, info))
     case other =>
       throw new InternalErrorException(s"Unexpected type in convert $other")
   }
@@ -175,6 +179,31 @@ private[chisel3] object Converter {
           convert(clock, ctx, info),
           firrtl.Utils.one,
           e.name
+        )
+      )
+    case e @ ProbeDefine(sourceInfo, sink, probeExpr) =>
+      Some(fir.ProbeDefine(convert(sourceInfo), convert(sink, ctx, sourceInfo), convert(probeExpr, ctx, sourceInfo)))
+    case e @ ProbeForceInitial(sourceInfo, probe, value) =>
+      Some(fir.ProbeForceInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo), convert(value, ctx, sourceInfo)))
+    case e @ ProbeReleaseInitial(sourceInfo, probe) =>
+      Some(fir.ProbeReleaseInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo)))
+    case e @ ProbeForce(sourceInfo, clock, cond, probe, value) =>
+      Some(
+        fir.ProbeForce(
+          convert(sourceInfo),
+          convert(clock, ctx, sourceInfo),
+          convert(cond, ctx, sourceInfo),
+          convert(probe, ctx, sourceInfo),
+          convert(value, ctx, sourceInfo)
+        )
+      )
+    case e @ ProbeRelease(sourceInfo, clock, cond, probe) =>
+      Some(
+        fir.ProbeRelease(
+          convert(sourceInfo),
+          convert(clock, ctx, sourceInfo),
+          convert(cond, ctx, sourceInfo),
+          convert(probe, ctx, sourceInfo)
         )
       )
     case e @ Verification(_, op, info, clk, pred, msg) =>
@@ -302,7 +331,18 @@ private[chisel3] object Converter {
 
   def extractType(data: Data, info: SourceInfo): fir.Type = extractType(data, false, info)
 
-  def extractType(data: Data, clearDir: Boolean, info: SourceInfo): fir.Type = data match {
+  def extractType(data: Data, clearDir: Boolean, info: SourceInfo, checkProbe: Boolean = true): fir.Type = {
+    if (checkProbe && data.probeInfo.isProbe) {
+      if (data.probeInfo.writable)
+        fir.RWProbeType(extractType(data, clearDir, info, false))
+      else
+        fir.ProbeType(extractType(data, clearDir, info, false))
+    } else {
+      extractTypeImpl(data, clearDir, info)
+    }
+  }
+
+  def extractTypeImpl(data: Data, clearDir: Boolean, info: SourceInfo): fir.Type = data match {
     case _: Clock      => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType  => fir.ResetType

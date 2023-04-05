@@ -341,6 +341,8 @@ object Flipped {
   * @define coll data
   */
 abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+  import Data.ProbeInfo
+
   // This is a bad API that punches through object boundaries.
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {
@@ -371,6 +373,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _                                                                        => super.autoSeed(name)
     }
   }
+
+  // Denotes if this is a probe type
+  private var _probeInfo:         ProbeInfo = ProbeInfo(false, false)
+  private[chisel3] def probeInfo: ProbeInfo = _probeInfo
+  private[chisel3] def probeInfo_=(probeInfo: ProbeInfo) = _probeInfo = probeInfo
 
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
@@ -759,6 +766,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
+
+  case class ProbeInfo(val isProbe: Boolean, val writable: Boolean)
 
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)

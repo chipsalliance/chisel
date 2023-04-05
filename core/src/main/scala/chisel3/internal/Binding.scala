@@ -107,6 +107,10 @@ case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
 
+private[chisel3] case class ProbeBinding(enclosure: RawModule, visibility: Option[WhenContext], target: Data)
+    extends ConstrainedBinding
+    with ConditionalDeclarable
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ChildBinding(parent: Data) extends Binding {
   def location: Option[BaseModule] = parent.topBinding.location

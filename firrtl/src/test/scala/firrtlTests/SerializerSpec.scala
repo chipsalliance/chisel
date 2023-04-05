@@ -197,22 +197,22 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     Serializer.serialize(rwProbeBundle) should be("wire foo : RWProbe<{ bar : UInt<32>}>")
 
     val probeDefine = ProbeDefine(NoInfo, SubField(Reference("c"), "in"), ProbeExpr(Reference("in")))
-    Serializer.serialize(probeDefine) should be ("define c.in = probe(in)")
+    Serializer.serialize(probeDefine) should be("define c.in = probe(in)")
 
     val probeRead = Connect(NoInfo, Reference("out"), ProbeRead(Reference("c.out")))
-    Serializer.serialize(probeRead) should be ("out <= read(c.out)")
+    Serializer.serialize(probeRead) should be("out <= read(c.out)")
 
     val probeForceInitial = ProbeForceInitial(NoInfo, Reference("outProbe"), UIntLiteral(100, IntWidth(8)))
-    Serializer.serialize(probeForceInitial) should be ("force_initial(outProbe, UInt<8>(\"h64\"))")
+    Serializer.serialize(probeForceInitial) should be("force_initial(outProbe, UInt<8>(\"h64\"))")
 
     val probeReleaseInitial = ProbeReleaseInitial(NoInfo, Reference("outProbe"))
-    Serializer.serialize(probeReleaseInitial) should be ("release_initial(outProbe)")
+    Serializer.serialize(probeReleaseInitial) should be("release_initial(outProbe)")
 
     val probeForce = ProbeForce(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"), Reference("in"))
-    Serializer.serialize(probeForce) should be ("force(clock, cond, outProbe, in)")
+    Serializer.serialize(probeForce) should be("force(clock, cond, outProbe, in)")
 
     val probeRelease = ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"))
-    Serializer.serialize(probeRelease) should be ("release(clock, cond, outProbe)")
+    Serializer.serialize(probeRelease) should be("release(clock, cond, outProbe)")
   }
 
   it should "support lazy serialization" in {
