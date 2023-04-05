@@ -29,7 +29,7 @@ class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new PlusArgsValueTop)
     println(fir)
-    (fir.split('\n').map(x => x.trim) should contain).inOrder(
+    (fir.split('\n').map(_.trim) should contain).inOrder(
       "intmodule PlusArgsValueIntrinsic :",
       "output found : UInt<1>",
       "output result : UInt<32>",

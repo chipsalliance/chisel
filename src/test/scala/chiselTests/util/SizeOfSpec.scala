@@ -32,7 +32,7 @@ class SizeOfSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new SizeOfTop)
     println(fir)
-    (fir.split('\n').map(x => x.trim) should contain)
+    (fir.split('\n').map(_.trim) should contain)
       .allOf("intmodule SizeOfIntrinsic :", "input i : UInt<65>", "output size : UInt<32>", "intrinsic = circt.sizeof")
   }
 }

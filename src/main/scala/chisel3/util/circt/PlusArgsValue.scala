@@ -15,7 +15,7 @@ import circt.Intrinsic
 private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String)
     extends IntrinsicModule("circt.plusargs.value", Map("FORMAT" -> str)) {
   val io = FlatIO(new Bundle {
-    val found = Output(UInt(1.W))
+    val found = Output(Bool())
     val result = Output(gen)
   })
 }
@@ -31,12 +31,10 @@ object PlusArgsValue {
     * }}}
     */
   def apply[T <: Data](gen: T, str: String) = {
-    if (gen.isSynthesizable) {
-      val inst = Module(new PlusArgsValueIntrinsic(chiselTypeOf(gen), str))
-      inst.io
+    Module(if (gen.isSynthesizable) {
+      new PlusArgsValueIntrinsic(chiselTypeOf(gen), str)
     } else {
-      val inst = Module(new PlusArgsValueIntrinsic(gen, str))
-      inst.io
-    }
+      new PlusArgsValueIntrinsic(gen, str)
+    }).io
   }
 }

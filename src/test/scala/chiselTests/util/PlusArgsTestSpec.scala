@@ -26,7 +26,7 @@ class PlusArgsTestSpec extends AnyFlatSpec with Matchers {
   it should "Should work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new PlusArgsTestTop)
     println(fir)
-    (fir.split('\n').map(x => x.trim) should contain).allOf(
+    (fir.split('\n').map(_.trim) should contain).allOf(
       "intmodule PlusArgsTestIntrinsic :",
       "output found : UInt<1>",
       "intrinsic = circt.plusargs.test",

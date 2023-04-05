@@ -14,7 +14,7 @@ import circt.Intrinsic
   */
 private class PlusArgsTestIntrinsic[T <: Data](gen: T, str: String)
     extends IntrinsicModule("circt.plusargs.test", Map("FORMAT" -> str)) {
-  val found = IO(Output(UInt(1.W)))
+  val found = IO(Output(Bool()))
 }
 
 object PlusArgsTest {
@@ -26,12 +26,10 @@ object PlusArgsTest {
     * }}}
     */
   def apply[T <: Data](gen: T, str: String): Data = {
-    if (gen.isSynthesizable) {
-      val inst = Module(new PlusArgsTestIntrinsic(chiselTypeOf(gen), str))
-      inst.found
+    Module(if (gen.isSynthesizable) {
+      new PlusArgsTestIntrinsic(chiselTypeOf(gen), str)
     } else {
-      val inst = Module(new PlusArgsTestIntrinsic(gen, str))
-      inst.found
-    }
+      new PlusArgsTestIntrinsic(gen, str)
+    }).found
   }
 }
