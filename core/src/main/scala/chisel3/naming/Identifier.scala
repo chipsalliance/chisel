@@ -30,7 +30,11 @@ object IdentifierProposer {
         }
       }
     }
-    if(s == "") s else s.substring(firstOkChar, if (finalChar == -1) lastOkChar + 1 else finalChar).map { x => if (!legal(x)) '_' else x }
+    if (s == "") s
+    else
+      s.substring(firstOkChar, if (finalChar == -1) lastOkChar + 1 else finalChar).map { x =>
+        if (!legal(x)) '_' else x
+      }
   }
 
   // Summons correct IdentifierProposer to generate a proposal
