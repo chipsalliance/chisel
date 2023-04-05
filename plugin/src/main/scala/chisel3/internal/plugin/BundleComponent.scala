@@ -40,8 +40,6 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
   private class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with ChiselInnerUtils {
 
-
-
     def cloneTypeFull(tree: Tree): Tree =
       localTyper.typed(q"chisel3.reflect.DataMirror.internal.chiselTypeClone[${tree.tpe}]($tree)")
 

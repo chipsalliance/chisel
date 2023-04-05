@@ -7,15 +7,28 @@ trait IdentifierProposer[T] {
 object IdentifierProposer {
 
   // Any proposal needs valid characters
+  // E.g. `chisel3.internal.Blah@123412` -> `chisel3_internal_Blah`
+  // E.g. `(Foo)` -> `Foo`
+  // E.g. `Foo(1)` -> `Foo_1`
   def filterProposal(s: String): String = {
-    s.split('@')
-      .head
-      .replaceAll("\\s", "")
-      .replaceAll("[^a-zA-Z0-9]", "_")
-      .dropWhile(_ == '_')
-      .reverse
-      .dropWhile(_ == '_')
-      .reverse
+    def legalStartOrEnd(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+    def legal(c:           Char) = legalStartOrEnd(c) || c == '_'
+    def terminate(c:       Char) = c == '@'
+    var firstOkChar: Int = -1
+    var lastOkChar:  Int = 0
+    var finalChar:   Int = -1
+    for (i <- (0 until s.length)) {
+      if (finalChar != -1 && finalChar < i) {} else {
+        if (terminate(s(i))) finalChar = i
+        else {
+          if (legalStartOrEnd(s(i))) {
+            lastOkChar = i
+            if (firstOkChar == -1) firstOkChar = i
+          }
+        }
+      }
+    }
+    s.substring(firstOkChar, if (finalChar == -1) lastOkChar + 1 else finalChar).map { x => if (!legal(x)) '_' else x }
   }
 
   // Summons correct IdentifierProposer to generate a proposal

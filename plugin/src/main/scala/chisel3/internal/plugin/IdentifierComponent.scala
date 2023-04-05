@@ -13,7 +13,7 @@ import scala.tools.nsc.transform.TypingTransformers
 //   a Plugin and a PluginComponent.
 class IdentifierComponent(val global: Global, arguments: ChiselPluginArguments)
     extends PluginComponent
-    with TypingTransformers 
+    with TypingTransformers
     with ChiselOuterUtils {
   import global._
   val runsAfter: List[String] = "typer" :: Nil
