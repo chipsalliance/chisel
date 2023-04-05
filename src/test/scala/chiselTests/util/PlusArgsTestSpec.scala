@@ -13,13 +13,11 @@ import org.scalatest.matchers.should.Matchers
 import scala.io.Source
 
 private class PlusArgsTestTop extends Module {
-  val io = IO(new Bundle {
-    val w = Output(UInt(1.W))
-    val x = Output(UInt(1.W))
-    val z = Input(UInt(32.W))
-  })
-  io.w := PlusArgsTest(UInt(32.W), "FOO")
-  io.x := PlusArgsTest(io.z, "BAR")
+  val w = IO(Output(UInt(1.W)))
+  val x = IO(Output(UInt(1.W)))
+  val z = IO(Input(UInt(32.W)))
+  w := PlusArgsTest(UInt(32.W), "FOO")
+  x := PlusArgsTest(z, "BAR")
 }
 
 class PlusArgsTestSpec extends AnyFlatSpec with Matchers {

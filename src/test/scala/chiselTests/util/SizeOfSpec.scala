@@ -18,14 +18,12 @@ private class SizeOfBundle extends Bundle {
 }
 
 private class SizeOfTop extends Module {
-  val io = IO(new Bundle {
-    val w = Input(UInt(65.W))
-    val x = Input(new SizeOfBundle)
-    val outw = UInt(32.W)
-    val outx = UInt(32.W)
-  })
-  io.outw := SizeOf(io.w)
-  io.outx := SizeOf(io.x)
+  val w = IO(Input(UInt(65.W)))
+  val x = IO(Input(new SizeOfBundle))
+  val outw = IO(Output(UInt(32.W)))
+  val outx = IO(Output(UInt(32.W)))
+  outw := SizeOf(w)
+  outx := SizeOf(x)
 }
 
 class SizeOfSpec extends AnyFlatSpec with Matchers {
