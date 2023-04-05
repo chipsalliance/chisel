@@ -772,7 +772,7 @@ object VecInit extends SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo): Vec[T] =
-    apply(Seq.fill(n)(gen))
+    if (n == 0) { Vec(0, gen.cloneType) } else { apply(Seq.fill(n)(gen)) }
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
     * function applied to an element of data type T.
