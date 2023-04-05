@@ -42,9 +42,14 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       },
       Array("--full-stacktrace")
     )
-    println(chirrtl)
-    // chirrtl should include ("wire foo : const UInt<8>")
-    // chirrtl should include ("reg bar : const SInt<4>")
+    chirrtl should include("output io : { flip in : Probe<UInt<1>>, out : Probe<UInt<1>>}")
+    chirrtl should include("define u1.io.in = probe(io.x)")
+    chirrtl should include("define u2.io.in = u1.io.out")
+    chirrtl should include("io.y <= read(u2.io.out)")
+    chirrtl should include("force_initial(u1.io.out, UInt<1>(\"h0\")")
+    chirrtl should include("release_initial(u1.io.out")
+    chirrtl should include("force(clock, io.x, u2.io.out, u1.io.out)")
+    chirrtl should include("release(clock, io.y, u2.io.out)")
   }
 
 }
