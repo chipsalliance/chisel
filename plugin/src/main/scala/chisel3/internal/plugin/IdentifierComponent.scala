@@ -13,7 +13,8 @@ import scala.tools.nsc.transform.TypingTransformers
 //   a Plugin and a PluginComponent.
 class IdentifierComponent(val global: Global, arguments: ChiselPluginArguments)
     extends PluginComponent
-    with TypingTransformers {
+    with TypingTransformers 
+    with ChiselOuterUtils {
   import global._
   val runsAfter: List[String] = "typer" :: Nil
   val phaseName: String = "identifiercomponent"
@@ -27,22 +28,7 @@ class IdentifierComponent(val global: Global, arguments: ChiselPluginArguments)
     }
   }
 
-  private class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-
-    def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
-
-    val baseModuleTpe: Type = inferType(tq"chisel3.experimental.BaseModule")
-    val stringTpe:     Type = inferType(tq"String")
-
-    private def stringFromTypeName(name: TypeName): String =
-      name.toString.trim() // Remove trailing space (Scalac implementation detail)
-
-    // Not cached because it should only be run once per class (thus once per Type)
-    def isAModule(sym: Symbol): Boolean = { sym.tpe <:< baseModuleTpe }
-    def isExactBaseModule(sym: Symbol): Boolean = { sym.tpe =:= baseModuleTpe }
-
-    def isNullaryMethodNamed(name: String, defdef: DefDef): Boolean =
-      defdef.name.decodedName.toString == name && defdef.tparams.isEmpty && defdef.vparamss.isEmpty
+  private class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with ChiselInnerUtils {
 
     def getConstructorAndParams(body: List[Tree]): (Option[DefDef], Seq[Symbol]) = {
       val paramAccessors = mutable.ListBuffer[Symbol]()
@@ -103,10 +89,8 @@ class IdentifierComponent(val global: Global, arguments: ChiselPluginArguments)
         val thiz: global.This = gen.mkAttributedThis(module.symbol)
         val original = baseModuleTpe.termSymbol
 
-        // ==================== Generate _cloneTypeImpl ====================
+        // ==================== Generate _moduleDefinitionIdentifierProposal ====================
         val identifierMethod = generateIdentifierMethod(module, thiz, original)
-
-        // ==================== Generate _usingPlugin ====================
 
         val withMethods = deriveClassDef(module) { t =>
           localTyper.typed(deriveTemplate(t) { x => x ++ Seq(identifierMethod) }).asInstanceOf[Template]
