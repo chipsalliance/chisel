@@ -51,6 +51,6 @@ class DataViewIntegrationSpec extends ChiselFlatSpec {
   "Users" should "be able to view and annotate Modules" in {
     val (_, annos) = getFirrtlAndAnnos(new MyModule)
     val ts = annos.collect { case DontTouchAnnotation(t) => t.serialize }
-    ts should equal(Seq("~MyModule|Queue>enq_ptr_value"))
+    ts should equal(Seq("~MyModule|Queue4_UInt8>enq_ptr_value"))
   }
 }

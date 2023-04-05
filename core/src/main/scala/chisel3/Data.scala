@@ -769,6 +769,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Default pretty printing */
   def toPrintable: Printable
+
+  /** A non-ambiguous name of this `Data` for use in generated Verilog names */
+  def typeName: String = this.getClass.getSimpleName
 }
 
 object Data {
