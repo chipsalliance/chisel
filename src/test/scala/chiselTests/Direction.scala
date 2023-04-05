@@ -49,36 +49,36 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 
   property("Outputs should be assignable") {
-    ChiselStage.elaborate(new GoodDirection)
+    ChiselStage.emitCHIRRTL(new GoodDirection)
   }
 
   property("Inputs should not be assignable") {
     a[Exception] should be thrownBy extractCause[Exception] {
-      ChiselStage.elaborate(new BadDirection)
+      ChiselStage.emitCHIRRTL(new BadDirection)
     }
     a[Exception] should be thrownBy extractCause[Exception] {
-      ChiselStage.elaborate(new BadSubDirection)
+      ChiselStage.emitCHIRRTL(new BadSubDirection)
     }
   }
 
   property("Top-level forced outputs should be assignable") {
-    ChiselStage.elaborate(new TopDirectionOutput)
+    ChiselStage.emitCHIRRTL(new TopDirectionOutput)
   }
 
   property("Empty Vecs with directioned sample_element should not cause direction errors") {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = Vec(0, Output(UInt(8.W)))
       })
     })
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = Flipped(Vec(0, Output(UInt(8.W))))
       })
     })
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = Output(Vec(0, UInt(8.W)))
@@ -89,7 +89,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   property(
     "Empty Vecs with no direction on the sample_element should not cause direction errors, as Chisel and chisel3 directions are merged"
   ) {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = Vec(0, UInt(8.W))
@@ -98,19 +98,19 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Empty Bundles should not cause direction errors") {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = new Bundle {}
       })
     })
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = Flipped(new Bundle {})
       })
     })
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = new Bundle {
@@ -123,7 +123,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   property(
     "Explicitly directioned but empty Bundles should not cause direction errors because Chisel and chisel3 directionality are merged"
   ) {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = UInt(8.W)
         val x = Input(new Bundle {})
@@ -160,7 +160,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Directions should be preserved through cloning and binding of Bundles") {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       class MyBundle extends Bundle {
         val foo = Input(UInt(8.W))
         val bar = Output(UInt(8.W))
@@ -197,7 +197,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Directions should be preserved through cloning and binding of Vecs") {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val a = Vec(1, Input(UInt(8.W)))
       val b = Vec(1, a)
       val c = Vec(1, Flipped(a))

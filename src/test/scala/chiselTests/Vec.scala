@@ -86,7 +86,7 @@ class VecSpec extends ChiselPropSpec with Utils {
 
   property("Vec.fill with a pure type should generate an exception") {
     a[BindingException] should be thrownBy extractCause[BindingException] {
-      ChiselStage.elaborate(new IOTesterModFill(8))
+      ChiselStage.emitCHIRRTL(new IOTesterModFill(8))
     }
   }
 
@@ -318,7 +318,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("It should be possible to bulk connect a Vec and a Seq") {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val out = Output(Vec(4, UInt(8.W)))
       })
@@ -329,7 +329,7 @@ class VecSpec extends ChiselPropSpec with Utils {
 
   property("Bulk connecting a Vec and Seq of different sizes should report a ChiselException") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val out = Output(Vec(4, UInt(8.W)))
         })
@@ -340,7 +340,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("It should be possible to initialize a Vec with DontCare") {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val out = Output(Vec(4, UInt(8.W)))
       })
@@ -350,7 +350,7 @@ class VecSpec extends ChiselPropSpec with Utils {
 
   property("Indexing a Chisel type Vec by a hardware type should give a sane error message") {
     a[ExpectedHardwareException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate {
+      ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(new Bundle {})
           val foo = Vec(2, Bool())
@@ -361,7 +361,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("reduceTree should preserve input/output type") {
-    ChiselStage.elaborate(new ReduceTreeTester)
+    ChiselStage.emitCHIRRTL(new ReduceTreeTester)
   }
 
   property("Vecs of empty Bundles and empty Records should work") {

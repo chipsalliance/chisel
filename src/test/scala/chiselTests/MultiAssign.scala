@@ -35,7 +35,7 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
   "Reassignments to literals" should "be disallowed" in {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new BasicTester {
             15.U := 7.U
           }
@@ -47,7 +47,7 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
   "Reassignments to ops" should "be disallowed" in {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new BasicTester {
             (15.U + 1.U) := 7.U
           }
@@ -59,7 +59,7 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
   "Reassignments to bit slices" should "be disallowed" in {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new BasicTester {
             (15.U)(1, 0) := 7.U
           }
@@ -71,7 +71,7 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
   "Bulk-connecting two read-only nodes" should "be disallowed" in {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new BasicTester {
             (15.U + 1.U) <> 7.U
           }
