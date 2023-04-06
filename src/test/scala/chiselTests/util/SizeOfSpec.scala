@@ -7,6 +7,8 @@ import chisel3.util.circt.SizeOf
 
 import circt.stage.ChiselStage
 
+import firrtl.stage.FirrtlCircuitAnnotation
+
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -53,6 +55,10 @@ class SizeOfSpec extends AnyFlatSpec with Matchers {
         args = Array("--target", "chirrtl"),
         annotations = Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new SizeOfTop))
       )
+      .flatMap {
+        case FirrtlCircuitAnnotation(circuit) => circuit.annotations
+        case _                                => None
+      }
       .mkString("\n") should include).regex(c)
   }
 }

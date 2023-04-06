@@ -61,7 +61,7 @@ class ImplicitModuleDirectlyInRawModuleTester extends BasicTester {
 
 class RawModuleSpec extends ChiselFlatSpec with Utils {
   "RawModule" should "elaborate" in {
-    ChiselStage.elaborate { new RawModuleWithImplicitModule }
+    ChiselStage.emitCHIRRTL { new RawModuleWithImplicitModule }
   }
 
   "RawModule" should "work" in {
@@ -75,7 +75,7 @@ class RawModuleSpec extends ChiselFlatSpec with Utils {
   "ImplicitModule directly in a RawModule" should "fail" in {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new RawModuleWithDirectImplicitModule }
+        ChiselStage.emitCHIRRTL { new RawModuleWithDirectImplicitModule }
       }
     }
   }
@@ -83,7 +83,7 @@ class RawModuleSpec extends ChiselFlatSpec with Utils {
   "ImplicitModule directly in a RawModule in an ImplicitModule" should "fail" in {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new ImplicitModuleDirectlyInRawModuleTester }
+        ChiselStage.emitCHIRRTL { new ImplicitModuleDirectlyInRawModuleTester }
       }
     }
   }

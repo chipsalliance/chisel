@@ -40,9 +40,13 @@
 
 #ifdef SVSIM_ENABLE_VERILATOR_SUPPORT
 #include "verilated-sources/VsvsimTestbench__Dpi.h"
+#define DPI_TASK_RETURN_TYPE int
+#define DPI_TASK_RETURN_VALUE 0
 #endif
 #ifdef SVSIM_ENABLE_VCS_SUPPORT
 #include "vc_hdrs.h"
+#define DPI_TASK_RETURN_TYPE void
+#define DPI_TASK_RETURN_VALUE
 #endif
 
 extern "C" {
@@ -542,7 +546,7 @@ static void resolveSettablePort(int id, SettablePort *out,
   out->bitWidth = 0;
   out->setter = NULL;
   if (port_setter(id, &out->bitWidth, &out->setter)) {
-    failWithError("Invalid port ID '%d'.", id);
+    failWithError("Encountered invalid port ID '%d' when %s.", id, description);
   }
   if (out->bitWidth <= 0) {
     failWithError("Encountered port with invalid bit width when %s.",
@@ -555,7 +559,7 @@ static void resolveGettablePort(int id, GettablePort *out,
   out->bitWidth = 0;
   out->getter = NULL;
   if (port_getter(id, &out->bitWidth, &out->getter)) {
-    failWithError("Invalid port ID '%d'.", id);
+    failWithError("Encountered invalid port ID '%d' when %s.", id, description);
   }
   if (out->bitWidth <= 0) {
     failWithError("Encountered port with invalid bit width when %s.",
@@ -783,7 +787,7 @@ static void processCommand() {
 }
 
 bool aslrShenanigansDetected = false;
-typeof(simulation_body()) simulation_body() {
+DPI_TASK_RETURN_TYPE simulation_body() {
   if (aslrShenanigansDetected) {
     failWithError("Backend did not relaunch the executable with ASLR disabled "
                   "as expected.");
@@ -793,7 +797,7 @@ typeof(simulation_body()) simulation_body() {
   sendReady();
   while (!receivedDone)
     processCommand();
-  return 0;
+  return DPI_TASK_RETURN_VALUE;
 }
 
 int main(int argc, const char *argv[]) {

@@ -26,7 +26,7 @@ class InstanceNameSpec extends ChiselFlatSpec {
   behavior.of("instanceName")
   val moduleName = "InstanceNameModule"
   var m: InstanceNameModule = _
-  ChiselStage.elaborate { m = new InstanceNameModule; m }
+  ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
 
   it should "work with module IO" in {
     val io = m.io.pathName

@@ -37,10 +37,10 @@ final class Backend(
     outputBinaryName:        String,
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
-    commonSettings:          SvsimCompilationSettings,
+    commonSettings:          CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): svsim.Backend.InvocationSettings = {
-    import SvsimCompilationSettings._
+    import CommonCompilationSettings._
     import Backend.CompilationSettings._
     //format: off
     svsim.Backend.InvocationSettings(

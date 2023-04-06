@@ -4,15 +4,15 @@ package svsim
 
 /** Settings supported by all svsim backends.
   */
-case class SvsimCompilationSettings(
-  verilogPreprocessorDefines: Seq[SvsimCompilationSettings.VerilogPreprocessorDefine] = Seq(),
-  optimizationStyle:          SvsimCompilationSettings.OptimizationStyle = SvsimCompilationSettings.OptimizationStyle.Default,
-  availableParallelism: SvsimCompilationSettings.AvailableParallelism =
-    SvsimCompilationSettings.AvailableParallelism.Default,
-  defaultTimescale:  Option[SvsimCompilationSettings.Timescale] = None,
+case class CommonCompilationSettings(
+  verilogPreprocessorDefines: Seq[CommonCompilationSettings.VerilogPreprocessorDefine] = Seq(),
+  optimizationStyle:          CommonCompilationSettings.OptimizationStyle = CommonCompilationSettings.OptimizationStyle.Default,
+  availableParallelism: CommonCompilationSettings.AvailableParallelism =
+    CommonCompilationSettings.AvailableParallelism.Default,
+  defaultTimescale:  Option[CommonCompilationSettings.Timescale] = None,
   libraryExtensions: Option[Seq[String]] = None,
   libraryPaths:      Option[Seq[String]] = None)
-object SvsimCompilationSettings {
+object CommonCompilationSettings {
   object VerilogPreprocessorDefine {
     def apply(name: String, value: String) = new VerilogPreprocessorDefine(name, Some(value))
     def apply(name: String) = new VerilogPreprocessorDefine(name, None)
@@ -50,7 +50,7 @@ object SvsimCompilationSettings {
     case class UpTo(value: Int) extends AvailableParallelism
   }
 
-  val default = SvsimCompilationSettings()
+  val default = CommonCompilationSettings()
 
   sealed trait Timescale
   object Timescale {
@@ -64,7 +64,7 @@ trait Backend {
     outputBinaryName:        String,
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
-    commonSettings:          SvsimCompilationSettings,
+    commonSettings:          CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): Backend.InvocationSettings
 }

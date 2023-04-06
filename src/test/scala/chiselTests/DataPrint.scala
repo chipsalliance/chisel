@@ -27,7 +27,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   }
 
   "Data types" should "have a meaningful string representation" in {
-    ChiselStage.elaborate {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         UInt().toString should be("UInt")
         UInt(8.W).toString should be("UInt<8>")
@@ -85,11 +85,11 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   }
 
   "Bound data types" should "have a meaningful string representation" in {
-    ChiselStage.elaborate { new BoundDataModule }
+    ChiselStage.emitCHIRRTL { new BoundDataModule }
   }
 
   "Literals" should "have a meaningful string representation" in {
-    ChiselStage.elaborate {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         3.U.toString should be("UInt<2>(3)")
         3.U(5.W).toString should be("UInt<5>(3)")

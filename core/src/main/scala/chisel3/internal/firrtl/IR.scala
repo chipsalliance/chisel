@@ -335,14 +335,17 @@ case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) ext
   "Chisel 3.5"
 )
 case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Formal extends Enumeration {
   val Assert = Value("assert")
   val Assume = Value("assume")
   val Cover = Value("cover")
 }
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Verification[T <: VerificationStatement](
   id:         T,
@@ -352,19 +355,31 @@ case class Verification[T <: VerificationStatement](
   predicate:  Arg,
   message:    String)
     extends Definition
+
 @nowarn("msg=class Port") // delete when Port becomes private
 abstract class Component extends Arg {
   def id:    BaseModule
   def name:  String
   def ports: Seq[Port]
 }
+
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefBlackBox(
   id:     BaseBlackBox,
+  name:   String,
+  ports:  Seq[Port],
+  topDir: SpecifiedDirection,
+  params: Map[String, Param])
+    extends Component
+
+@nowarn("msg=class Port") // delete when Port becomes private
+private[chisel3] case class DefIntrinsicModule(
+  id:     BaseIntrinsicModule,
   name:   String,
   ports:  Seq[Port],
   topDir: SpecifiedDirection,

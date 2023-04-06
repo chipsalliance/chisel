@@ -88,7 +88,7 @@ building blocks in a higher-level framework.
 
 `svsim` currently provides two `Backend`s: `verilator.Backend` and
 `vcs.Backend`. Settings which **all** `svsim` `Backend`s must support (like
-SystemVerilog preprocessor defines) live in `SvsimCompilationSettings`, and each
+SystemVerilog preprocessor defines) live in `CommonCompilationSettings`, and each
 backend has its own backend-specific `CompilationSettings`.
 
 ## Advanced Usage

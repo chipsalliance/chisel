@@ -27,7 +27,7 @@ class CatSpec extends ChiselFlatSpec {
 
   it should "not fail to elaborate a zero-element Vec" in {
 
-    ChiselStage.elaborate(new JackIsATypeSystemGod)
+    ChiselStage.emitCHIRRTL(new JackIsATypeSystemGod)
 
   }
 
