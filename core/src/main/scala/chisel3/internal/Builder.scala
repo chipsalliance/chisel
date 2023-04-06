@@ -308,6 +308,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   def instanceName: String = _parent match {
     case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
     case Some(p) =>
+      p.tryClose()
       (p._component, this) match {
         case (Some(c), _) => refName(c)
         case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
@@ -460,6 +461,7 @@ private[chisel3] class DynamicContext(
       identifiers.foreach(globalIdentifierNamespace.name(_))
   }
 
+  val componentsToGenerate = ArrayBuffer[BaseModule]()
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
@@ -533,6 +535,7 @@ private[chisel3] object Builder extends LazyLogging {
 
   def globalNamespace:           Namespace = dynamicContext.globalNamespace
   def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
+  def componentsToGenerate:      ArrayBuffer[BaseModule] = dynamicContext.componentsToGenerate
   def components:                ArrayBuffer[Component] = dynamicContext.components
   def annotations:               ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
@@ -833,6 +836,8 @@ private[chisel3] object Builder extends LazyLogging {
       }
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
+
+      componentsToGenerate.foreach(_.tryClose())
 
       (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq), mod)
     }

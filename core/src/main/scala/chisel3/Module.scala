@@ -67,19 +67,14 @@ object Module extends SourceInfoDoc {
     Builder.currentClock = saveClock // Back to clock and reset scope
     Builder.currentReset = saveReset
 
-    // Only add the component if the module generates one
-    val componentOpt = module.generateComponent()
-    for (component <- componentOpt) {
-      Builder.components += component
-    }
+    Builder.componentsToGenerate += module
 
     Builder.setPrefix(savePrefix)
 
     // Handle connections at enclosing scope
     // We use _component because Modules that don't generate them may still have one
-    if (Builder.currentModule.isDefined && module._component.isDefined) {
-      val component = module._component.get
-      pushCommand(DefInstance(sourceInfo, module, component.ports))
+    if (Builder.currentModule.isDefined) {
+      pushCommand(DefInstance(sourceInfo, module, Seq.empty))
       module.initializeInParent()
     }
     module
@@ -212,12 +207,11 @@ package internal {
     )(
       implicit sourceInfo: SourceInfo
     ): ClonePorts = {
-      require(proto.isClosed, "Can't clone a module before module close")
+      proto.tryClose()
       // Fake Module to serve as the _parent of the cloned ports
       // We make this before clonePorts because we want it to come up first in naming in
       // currentModule
       val cloneParent = Module(new ModuleClone(proto))
-      require(proto.isClosed, "Can't clone a module before module close")
       require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")
       // Fake Module to serve as the _parent of the cloned ports
       // We don't create this inside the ModuleClone because we need the ref to be set by the
@@ -311,6 +305,13 @@ package experimental {
 
     /** Internal check if a Module is closed */
     private[chisel3] def isClosed = _closed
+
+    /** Close this Module if it is not already closed. */
+    private[chisel3] def tryClose() = _closed match {
+      case false =>
+        generateComponent().foreach(Builder.components += _)
+      case true =>
+    }
 
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
@@ -512,7 +513,7 @@ package experimental {
       * TODO: Use SeqMap/VectorMap when those data structures become available.
       */
     private[chisel3] def getChiselPorts: Seq[(String, Data)] = {
-      require(_closed, "Can't get ports before module close")
+      tryClose()
       _component.get.ports.map { port =>
         (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
       }
