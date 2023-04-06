@@ -6,7 +6,7 @@ import scala.tools.nsc
 import scala.tools.nsc.{Global, Phase}
 import scala.tools.nsc.transform.TypingTransformers
 
-trait ChiselOuterUtils { outerSelf: TypingTransformers =>
+private[plugin] trait ChiselOuterUtils { outerSelf: TypingTransformers =>
   import global._
   trait ChiselInnerUtils { innerSelf: outerSelf.TypingTransformer =>
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
