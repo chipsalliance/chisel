@@ -648,7 +648,7 @@ private[chisel3] object Builder extends LazyLogging {
   def getPrefix: Prefix = chiselContext.get().prefixStack
 
   def setInstanceIdentifier(n: String): Unit = {
-    chiselContext.get().instanceIdentifier = Some(n)
+    chiselContext.get().instanceIdentifier = currentModule.map(_._identifierNamespace.name(n)).orElse(Some(n))
   }
   def clearInstanceIdentifier(): Unit = {
     chiselContext.get().instanceIdentifier = None
