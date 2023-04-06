@@ -233,7 +233,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
             case Some(names) =>
               val onames: List[Option[String]] =
                 fieldsOfInterest.zip(names).map { case (ok, name) => if (ok) Some(name) else None }
-              val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($rhs)"
+              val newRHS = transform(rhs)
+              val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($newRHS)"
               treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
             case None => // It's not clear how this could happen but we don't want to crash
               super.transform(tree)
