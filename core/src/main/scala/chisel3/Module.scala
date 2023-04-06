@@ -518,15 +518,6 @@ package experimental {
       }
     }
 
-    /** Compatibility function. Allows Chisel2 code which had ports without the IO wrapper to
-      * compile under Bindings checks. Does nothing in non-compatibility mode.
-      *
-      * Should NOT be used elsewhere. This API will NOT last.
-      *
-      * TODO: remove this, perhaps by removing Bindings checks in compatibility mode.
-      */
-    def _compatAutoWrapPorts(): Unit = {}
-
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
