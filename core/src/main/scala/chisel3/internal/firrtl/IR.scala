@@ -213,11 +213,11 @@ case class Index(imm: Arg, value: Arg) extends Arg {
 }
 
 private[chisel3] case class ProbeExpr(probe: Arg) extends Arg {
-  def name: String = s"$probe"
+  override def name: String = s"$probe"
 }
 
 private[chisel3] case class ProbeRead(probe: Arg) extends Arg {
-  def name = s"$probe"
+  override def name = s"$probe"
 }
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")

@@ -183,9 +183,10 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     val probeInt = DefWire(NoInfo, "foo", ProbeType(UIntType(IntWidth(3))))
     Serializer.serialize(probeInt) should be("wire foo : Probe<UInt<3>>")
 
-    val rwProbeBundle = DefWire(
+    val rwProbeBundle = Port(
       NoInfo,
       "foo",
+      Output,
       RWProbeType(
         BundleType(
           Seq(
@@ -194,7 +195,7 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
         )
       )
     )
-    Serializer.serialize(rwProbeBundle) should be("wire foo : RWProbe<{ bar : UInt<32>}>")
+    Serializer.serialize(rwProbeBundle) should be("output foo : RWProbe<{ bar : UInt<32>}>")
 
     val probeDefine = ProbeDefine(NoInfo, SubField(Reference("c"), "in"), ProbeExpr(Reference("in")))
     Serializer.serialize(probeDefine) should be("define c.in = probe(in)")

@@ -374,10 +374,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  // Denotes if this is a probe type
-  private var _probeInfo:         ProbeInfo = ProbeInfo(false, false)
-  private[chisel3] def probeInfo: ProbeInfo = _probeInfo
-  private[chisel3] def probeInfo_=(probeInfo: ProbeInfo) = _probeInfo = probeInfo
+  // probeInfo only exists if this is a probe type
+  private var _probeInfoVar:      ProbeInfo = null
+  private var _probeInfo:         Option[ProbeInfo] = Option(_probeInfoVar)
+  private[chisel3] def probeInfo: Option[ProbeInfo] = _probeInfo
+  private[chisel3] def probeInfo_=(probeInfo: Option[ProbeInfo]) = _probeInfo = probeInfo
 
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
@@ -767,7 +768,7 @@ object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
 
-  case class ProbeInfo(val isProbe: Boolean, val writable: Boolean)
+  case class ProbeInfo(val writable: Boolean)
 
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)

@@ -6,6 +6,10 @@ import chiselTests.{ChiselFlatSpec, Utils}
 import circt.stage.ChiselStage
 
 class ProbeSpec extends ChiselFlatSpec with Utils {
+  // Strip SourceInfos and split into lines
+  private def processChirrtl(chirrtl: String): Array[String] =
+    chirrtl.split('\n').map(line => line.takeWhile(_ != '@').trim())
+
   "U-Turn example" should "emit FIRRTL probe statements and expressions" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new Module {
@@ -43,14 +47,16 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       Array("--full-stacktrace")
     )
 
-    chirrtl should include("output io : { flip in : Probe<UInt<1>>, out : Probe<UInt<1>>}")
-    chirrtl should include("define u1.io.in = probe(io.x)")
-    chirrtl should include("define u2.io.in = u1.io.out")
-    chirrtl should include("io.y <= read(u2.io.out)")
-    chirrtl should include("force_initial(u1.io.out, UInt<1>(\"h0\")")
-    chirrtl should include("release_initial(u1.io.out")
-    chirrtl should include("force(clock, io.x, u2.io.out, u1.io.out)")
-    chirrtl should include("release(clock, io.y, u2.io.out)")
+    (processChirrtl(chirrtl) should contain).allOf(
+      "output io : { flip in : Probe<UInt<1>>, out : Probe<UInt<1>>}",
+      "define u1.io.in = probe(io.x)",
+      "define u2.io.in = u1.io.out",
+      "io.y <= read(u2.io.out)",
+      "force_initial(u1.io.out, UInt<1>(\"h0\"))",
+      "release_initial(u1.io.out)",
+      "force(clock, io.x, u2.io.out, u1.io.out)",
+      "release(clock, io.y, u2.io.out)",
+    )
   }
 
   "Connectors" should "work with probes" in {
@@ -81,14 +87,16 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       Array("--full-stacktrace")
     )
 
-    chirrtl should include("io.w.baz <= probe(io.a).baz")
-    chirrtl should include("io.w.bar <= probe(io.a).bar")
-    chirrtl should include("io.x.baz <= io.a.baz")
-    chirrtl should include("io.x.bar <= io.a.bar")
-    chirrtl should include("io.z.baz <= io.a.baz")
-    chirrtl should include("io.z.bar <= io.a.bar")
-    chirrtl should include("io.y.baz <= io.a.baz")
-    chirrtl should include("io.y.bar <= io.a.bar")
+    (processChirrtl(chirrtl) should contain).allOf(
+      "io.w.baz <= probe(io.a).baz",
+      "io.w.bar <= probe(io.a).bar",
+      "io.x.baz <= io.a.baz",
+      "io.x.bar <= io.a.bar",
+      "io.z.baz <= io.a.baz",
+      "io.z.bar <= io.a.bar",
+      "io.y.baz <= io.a.baz",
+      "io.y.bar <= io.a.bar",
+    )
   }
 
 }

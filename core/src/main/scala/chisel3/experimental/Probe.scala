@@ -8,8 +8,6 @@ import chisel3.internal.Builder
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 
-// import firrtl.ir._
-
 /** Utilities for creating and working with probe types.
   */
 object Probe {
@@ -22,7 +20,7 @@ object Probe {
     val data = source // should only evaluate source once
     requireIsChiselType(data)
     val ret = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
-    ret.probeInfo = ProbeInfo(true, writable)
+    ret.probeInfo = Some(ProbeInfo(writable))
     ret
   }
 
@@ -30,8 +28,8 @@ object Probe {
 
   def writable[T <: Data](source: => T): T = apply_impl(source, true)
 
-  def requireIsProbe(probeExpr: Data): Unit = {
-    require(probeExpr.probeInfo.isProbe, s"expected $probeExpr to be a probe.")
+  private def requireIsProbe(probeExpr: Data): Unit = {
+    require(probeExpr.probeInfo.nonEmpty, s"expected $probeExpr to be a probe.")
   }
 
   def define(sink: Data, probeExpr: Data)(implicit sourceInfo: SourceInfo): Unit = {
@@ -39,7 +37,7 @@ object Probe {
     pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
   }
 
-  def probe[T <: Data](source: => T): Data = {
+  private def probe_impl[T <: Data](source: => T, writable: Boolean): Data = {
     val prevId = Builder.idGen.value
     val t = source
 
@@ -47,10 +45,14 @@ object Probe {
     val clone = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     clone.bind(chisel3.internal.ProbeBinding(Builder.forcedUserModule, Builder.currentWhen, t))
     clone.setRef(ProbeExpr(t.getRef))
-    clone.probeInfo = ProbeInfo(true, t.probeInfo.writable)
+    clone.probeInfo = Some(ProbeInfo(writable))
 
     clone
   }
+
+  def probe[T <: Data](source: => T): Data = probe_impl(source, false)
+
+  def rwprobe[T <: Data](source: => T): Data = probe_impl(source, true)
 
   def read[T <: Data](source: => T): Data = {
     val prevId = Builder.idGen.value
