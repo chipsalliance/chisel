@@ -13,7 +13,7 @@ import circt.Intrinsic
   */
 private class IsXIntrinsic[T <: Data](gen: T) extends IntrinsicModule("circt_isX") {
   val i = IO(Input(gen))
-  val found = IO(Output(UInt(1.W)))
+  val found = IO(Output(Bool()))
 }
 
 object IsX {
@@ -24,7 +24,7 @@ object IsX {
     * b := IsX(a)
     * }}}
     */
-  def apply[T <: Data](gen: T): Data = {
+  def apply[T <: Data](gen: T): Bool = {
     val inst = Module(new IsXIntrinsic(chiselTypeOf(gen)))
     inst.i := gen
     inst.found

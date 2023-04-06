@@ -25,7 +25,7 @@ object PlusArgsTest {
     * b := PlusArgsTest(UInt<32.W>, "FOO")
     * }}}
     */
-  def apply[T <: Data](gen: T, str: String): Data = {
+  def apply[T <: Data](gen: T, str: String): Bool = {
     Module(if (gen.isSynthesizable) {
       new PlusArgsTestIntrinsic(chiselTypeOf(gen), str)
     } else {

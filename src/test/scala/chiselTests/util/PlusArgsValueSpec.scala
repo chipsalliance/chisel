@@ -17,8 +17,10 @@ private class PlusArgsValueTop extends Module {
   val wv = IO(Output(UInt(32.W)))
   val xf = IO(Output(UInt(1.W)))
   val xv = IO(Output(UInt(32.W)))
+  val zv = IO(Output(UInt(32.W)))
   val tmpw = PlusArgsValue(UInt(32.W), "FOO=%d")
   val tmpx = PlusArgsValue(xv, "BAR=%d")
+  zv := PlusArgsValue(xv, "BAR=%d", 42.U)
   wf := tmpw.found
   wv := tmpw.result
   xf := tmpx.found
@@ -35,7 +37,8 @@ class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
       "output result : UInt<32>",
       "intrinsic = circt_plusargs_value",
       "parameter FORMAT = \"FOO=%d\"",
-      "parameter FORMAT = \"BAR=%d\""
+      "parameter FORMAT = \"BAR=%d\"",
+      "node _zv_T = mux(PlusArgsValueIntrinsic_2.found, PlusArgsValueIntrinsic_2.result, UInt<6>(\"h2a\")) @[src/main/scala/chisel3/util/circt/PlusArgsValue.scala 52:8]"
     )
   }
 }
