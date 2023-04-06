@@ -3,8 +3,9 @@
 package chisel3.internal
 
 /** All values of contexts must cloneable to a top with more context */
-private[internal] trait CloneToContext {
-  def cloneTo(c: Context): CloneToContext
+private[chisel3] trait CloneToContext {
+  def cloneTo(c: Context): CloneToContext =
+    this // For now this does not work, but it is only necessary when box-types are a thing
 }
 
 /** Data-structure to represent hierarchical contexts
@@ -21,15 +22,15 @@ private[internal] trait CloneToContext {
   * @param parent if a parent is present; if None, this is a "top" context
   * @param provenance if a provenance is preset; if None, this is an "origin" context
   */
-private[chisel3] class Context(val key: String, val parent: Option[Context], val provenance: Option[Context]) {
-  // Cache of children keys that this context has
-  private val localChildrenKeys = new collection.mutable.LinkedHashSet[String]()
-  // Cache of children Contexts
-  private val children = new collection.mutable.LinkedHashMap[String, Context]()
+private[chisel3] abstract class Context(val key: String, val parent: Option[Context], val provenance: Option[Context]) {
+  def localStoreChild(child:  Context): Unit
+  def localAccessChild(key:   String):  Context
+  def localContainsChild(key: String):  Boolean
+  def localChildKeys(): Iterable[String]
 
   /** At this moment in time, all known children keys of this or any provenance Contexts */
-  def childrenKeys: List[String] = if (isOrigin) localChildrenKeys.toList else provenance.map(_.childrenKeys).get
-  def isChild(childKey: String): Boolean = childrenKeys.contains(childKey)
+  def childrenKeys: Iterable[String] = if (isOrigin) localChildKeys() else provenance.map(_.childrenKeys).get
+  def isChild(childKey: String): Boolean = childrenKeys.find(_ == childKey).nonEmpty
 
   /* Accessors to important contexts, relative to this */
 
@@ -48,23 +49,34 @@ private[chisel3] class Context(val key: String, val parent: Option[Context], val
 
   /* Helpers to determine whether this Context has these properties */
 
-  lazy val isTop = parent.isEmpty
-  lazy val isOrigin = origin == this
-  lazy val isTemplate = template == this
+  def isTop = parent.isEmpty
+  def isOrigin = origin == this
+  def isTemplate = template == this
 
   /* Creates a new child key to `this.origin` */
-  private def createNewOriginChildKey(k: String): Unit = {
-    if (isOrigin) localChildrenKeys += k else provenance.map(_.createNewOriginChildKey(k))
+  private def createNewOriginChild(childKey: String, childProvenance: Option[Context]): Context = {
+    require(isOrigin, s"Cannot instantiate children from a non-origin context: $target")
+    require(
+      !localContainsChild(childKey),
+      s"Cannot instantiate $childKey as it already exists: ${apply(childKey).target}"
+    )
+    val child = new ArrayBufferContext(childKey, Some(this), childProvenance)
+    localStoreChild(child)
+    child
   }
 
   /* Creates a new child Context of `this`; can only call when `this.isOrigin` is true */
-  def instantiateChild(childKey: String, provenance: Context): Context = {
-    require(isOrigin)
-    require(children.get(childKey).isEmpty)
-    createNewOriginChildKey(childKey)
-    val child = new Context(childKey, Some(this), Some(provenance))
-    children.put(childKey, child)
-    child
+  def instantiateChild(childKey: String, childProvenance: Context): Context = {
+    createNewOriginChild(childKey, Some(childProvenance))
+  }
+  // Necessary if instance == definition (pre D/I world)
+  def instantiateOriginChild(childKey: String): Context = {
+    createNewOriginChild(childKey, None)
+  }
+  def instantiateOriginChildWithValue(childKey: String, value: CloneToContext): Context = {
+    val c = instantiateOriginChild(childKey)
+    c.setValue(value)
+    c
   }
 
   /** Return the appropriate child of `this`, error if this child key is not defined `this.origin` */
@@ -75,14 +87,14 @@ private[chisel3] class Context(val key: String, val parent: Option[Context], val
 
   /** Accessing children contexts from `this`; either hit in the children cache, or build, cache, and return a new Context with provenance back to its origin */
   private def getOrDeriveChild(childKey: String): Option[Context] = {
-    if (childrenKeys.contains(childKey)) {
-      if (children.contains(childKey)) {
-        val c = children(childKey)
+    if (isChild(childKey)) {
+      if (localContainsChild(childKey)) {
+        val c = localAccessChild(childKey)
         Some(c)
       } else {
         val computedProvenance = provenance.flatMap(s => s.getOrDeriveChild(childKey))
-        val ret = new Context(childKey, Some(this), computedProvenance)
-        children.put(childKey, ret)
+        val ret = new ArrayBufferContext(childKey, Some(this), computedProvenance)
+        localStoreChild(ret)
         Some(ret)
       }
     } else None
@@ -202,6 +214,13 @@ private[chisel3] class Context(val key: String, val parent: Option[Context], val
   /** Parent chain of keys with id and origin.key */
   def targetWithDefinition: String = parentContextPath.map(_.keyWithId).reverse.mkString("/")
 
+  def parentCollectFirst[T](pf: PartialFunction[Any, T]): Option[T] = {
+    getValue match {
+      case None    => parent.flatMap(_.parentCollectFirst(pf))
+      case Some(x) => pf.lift(x).orElse(parent.flatMap(_.parentCollectFirst(pf)))
+    }
+  }
+
   /* Iterators to walk Context trees */
 
   def iterateDown[T](depth: Int, f: PartialFunction[(Int, Context), Unit], descend: (Context => Boolean)): Unit = {
@@ -223,5 +242,40 @@ private[chisel3] class Context(val key: String, val parent: Option[Context], val
           c.iterateUp(depth + 1, f, ascend)
       }
     }
+  }
+}
+
+object Context {
+  def apply(key: String): Context = new ArrayBufferContext(key, None, None)
+}
+
+private[chisel3] class ArrayBufferContext(
+  key:         String,
+  parent:      Option[Context],
+  provenance:  Option[Context],
+  initialSize: Int = 4)
+    extends Context(key, parent, provenance) {
+  private val children = new collection.mutable.ArrayBuffer[Context](initialSize)
+  def localAccessChild(key: String): chisel3.internal.Context = children.find(_.key == key).get
+  def localChildKeys(): Iterable[String] = children.map(_.key).toList
+  def localContainsChild(key: String): Boolean = children.find(_.key == key).nonEmpty
+  def localStoreChild(child: chisel3.internal.Context): Unit = {
+    children += child
+  }
+}
+
+private[chisel3] class HashMapContext(key: String, parent: Option[Context], provenance: Option[Context])
+    extends Context(key, parent, provenance) {
+  // Cache of children keys that this context has
+  private val localChildrenKeys = new collection.mutable.LinkedHashSet[String]()
+  // Cache of children Contexts
+  private val children = new collection.mutable.LinkedHashMap[String, Context]()
+
+  def localAccessChild(key: String): chisel3.internal.Context = children(key)
+  def localChildKeys(): Iterable[String] = localChildrenKeys.toList
+  def localContainsChild(key: String): Boolean = localChildrenKeys.contains(key)
+  def localStoreChild(child: chisel3.internal.Context): Unit = {
+    localChildrenKeys += child.key
+    children.put(child.key, child)
   }
 }
