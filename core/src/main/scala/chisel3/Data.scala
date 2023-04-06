@@ -341,6 +341,19 @@ object Flipped {
   * @define coll data
   */
 abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+  import _root_.firrtl.annotations.ReferenceTarget
+  override final def identifierTarget: ReferenceTarget = {
+    _binding match {
+      case Some(ChildBinding(p: Data)) =>
+        p.identifierTarget.field(instanceIdentifier)
+      case Some(t: ConstrainedBinding) =>
+        t.location.get.identifierTarget.ref(instanceIdentifier)
+      case Some(CrossModuleBinding) =>
+        _parent.get.identifierTarget.ref(instanceIdentifier)
+      case Some(x) => throw new Exception(this.toString + " = " + x)
+      case None => throw new Exception(this.toString + " = None")
+    }
+  }
   // This is a bad API that punches through object boundaries.
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {

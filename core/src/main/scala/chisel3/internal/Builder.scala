@@ -123,7 +123,9 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     _circuitVar = target.getOrElse(null)
   }
 
-  private[chisel3] val _id: Long = Builder.idGen.next
+  private[chisel3] val _id:                Long = Builder.idGen.next
+  private[chisel3] def _instanceIdentifier: String = Builder.getInstanceIdentifier.getOrElse("%" + _id.toString)
+  val instanceIdentifier: String = _instanceIdentifier
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
   override def hashCode: Int = super.hashCode()
@@ -358,6 +360,10 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ReferenceTarget that references this object
     * @note Should not be called until circuit elaboration is complete
     */
+  // Reversed
+  def identifierTarget: ReferenceTarget = {
+    _parent.get.identifierTarget.ref(instanceIdentifier)
+  }
   final def toTarget: ReferenceTarget = {
     assertValidTarget()
     val name = this.instanceName
@@ -406,6 +412,8 @@ private[chisel3] class ChiselContext() {
 
   // Records the different prefixes which have been scoped at this point in time
   var prefixStack: Prefix = Nil
+
+  var instanceIdentifier: Option[String] = None
 
   // Views belong to a separate namespace (for renaming)
   // The namespace outside of Builder context is useless, but it ensures that views can still be created
@@ -621,6 +629,14 @@ private[chisel3] object Builder extends LazyLogging {
 
   // Returns the prefix stack at this moment
   def getPrefix: Prefix = chiselContext.get().prefixStack
+
+  def setInstanceIdentifier(n: String): Unit = {
+    chiselContext.get().instanceIdentifier = Some(n)
+  }
+  def clearInstanceIdentifier(): Unit = {
+    chiselContext.get().instanceIdentifier = None
+  }
+  def getInstanceIdentifier: Option[String] = chiselContext.get().instanceIdentifier
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dynamicContext) => dynamicContext.currentModule
