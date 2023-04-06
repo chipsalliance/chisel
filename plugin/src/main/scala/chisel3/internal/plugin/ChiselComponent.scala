@@ -13,7 +13,8 @@ import scala.tools.nsc.transform.TypingTransformers
 //   a Plugin and a PluginComponent.
 class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     extends PluginComponent
-    with TypingTransformers {
+    with TypingTransformers
+    with ChiselOuterUtils {
   import global._
   val runsAfter: List[String] = List[String]("typer")
   val phaseName: String = "chiselcomponent"
@@ -27,7 +28,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     }
   }
 
-  class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with ChiselInnerUtils {
 
     private def shouldMatchGen(bases: Tree*): Type => Boolean = {
       val cache = mutable.HashMap.empty[Type, Boolean]
@@ -93,9 +94,6 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       shouldMatchGen(
         tq"chisel3.experimental.AffectsChiselPrefix"
       )
-
-    // Given a type tree, infer the type and return it
-    private def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
     // Indicates whether a ValDef is properly formed to get name
     private def okVal(dd: ValDef): Boolean = {

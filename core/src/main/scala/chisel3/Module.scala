@@ -137,6 +137,7 @@ object Module extends SourceInfoDoc {
         }
     }
   }
+
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -261,6 +262,31 @@ package experimental {
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 
+    // Used with chisel3.naming.fixTraitIdentifier
+    protected def _traitModuleDefinitionIdentifierProposal: Option[String] = None
+
+    protected def _moduleDefinitionIdentifierProposal = {
+      val baseName = _traitModuleDefinitionIdentifierProposal.getOrElse(this.getClass.getName)
+
+      /* A sequence of string filters applied to the name */
+      val filters: Seq[String => String] =
+        Seq(((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon")) // Merge the "$$anon" name with previous name
+        )
+
+      filters
+        .foldLeft(baseName) { case (str, filter) => filter(str) } // 1. Apply filters to baseName
+        .split("\\.|\\$") // 2. Split string at '.' or '$'
+        .filterNot(_.forall(_.isDigit)) // 3. Drop purely numeric names
+        .last // 4. Use the last name
+    }
+    // Needed this to override identifier for DefinitionClone
+    private[chisel3] def _definitionIdentifier = {
+      val madeProposal = chisel3.naming.IdentifierProposer.makeProposal(this._moduleDefinitionIdentifierProposal)
+      Builder.globalIdentifierNamespace.name(madeProposal)
+    }
+
+    /** Represents an eagerly-determined unique and descriptive identifier for this module */
+    final val definitionIdentifier = _definitionIdentifier
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
