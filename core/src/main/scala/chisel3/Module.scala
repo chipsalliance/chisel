@@ -285,7 +285,7 @@ package experimental {
       Builder.globalIdentifierNamespace.name(madeProposal)
     }
     // Represents an eagerly-determined unique and descriptive identifier for this module
-    final private[chisel3] val definitionIdentifier = _definitionIdentifier
+    final val definitionIdentifier = _definitionIdentifier
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
