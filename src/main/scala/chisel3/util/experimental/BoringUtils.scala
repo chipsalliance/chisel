@@ -193,4 +193,39 @@ object BoringUtils {
     sinks.foreach(addSink(_, genName, true, true))
     genName
   }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create ports to allow access the
+    * requrested source.
+    */
+  def bore(source: Data): Data = {
+    val context = Builder.captureContext()
+    val thisModule = context.currentModule.get
+
+    var rhs = source
+    var module = source.topBinding.location.get
+
+    while (module != thisModule) {
+
+      /** Change the context to the current module. */
+      context.currentModule = Some(module)
+      Builder.restoreContext(context)
+
+      val bore = source.cloneTypeFull
+
+      /** Create a port. */
+      module.bindIoInPlace(bore)
+
+      bore :<>= rhs
+
+      rhs = bore
+      module = module._parent.get
+    }
+
+    /** Reset the context to the current module. */
+    context.currentModule = Some(thisModule)
+    Builder.restoreContext(context)
+
+    rhs
+  }
 }

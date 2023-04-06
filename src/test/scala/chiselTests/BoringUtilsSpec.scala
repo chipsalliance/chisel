@@ -125,4 +125,48 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be(true)
   }
 
+  it should "work using new API" in {
+    class Baz extends RawModule {
+      val a_wire = WireInit(UInt(1.W), DontCare)
+      dontTouch(a_wire)
+    }
+    class Bar extends RawModule {
+      val b_wire = WireInit(UInt(2.W), DontCare)
+      dontTouch(b_wire)
+
+      val baz = Module(new Baz)
+    }
+    class Foo extends RawModule {
+      val a = IO(Output(UInt()))
+      val b = IO(Output(UInt()))
+      val c = IO(Output(UInt()))
+
+      val c_wire = WireInit(UInt(3.W), DontCare)
+      dontTouch(c_wire)
+
+      val bar = Module(new Bar)
+
+      a := BoringUtils.bore(bar.baz.a_wire)
+      b := BoringUtils.bore(bar.b_wire)
+      c := BoringUtils.bore(c_wire)
+    }
+    (circt.stage.ChiselStage
+      .emitCHIRRTL(new Foo)
+      .split('\n')
+      .map(_.takeWhile(_ != '@'))
+      .map(_.trim) should contain).inOrder(
+      "module Baz :",
+      "output a_bore : UInt<1>",
+      "a_bore <= a_wire",
+      "module Bar :",
+      "output b_bore : UInt<2>",
+      "a_bore <= baz.a_bore",
+      "b_bore <= b_wire",
+      "module Foo :",
+      "a <= bar.a_bore",
+      "b <= bar.b_bore",
+      "c <= c_wire"
+    )
+  }
+
 }
