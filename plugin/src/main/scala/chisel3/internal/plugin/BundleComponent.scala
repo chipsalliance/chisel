@@ -21,7 +21,8 @@ import scala.tools.nsc.transform.TypingTransformers
   */
 private[plugin] class BundleComponent(val global: Global, arguments: ChiselPluginArguments)
     extends PluginComponent
-    with TypingTransformers {
+    with TypingTransformers
+    with ChiselOuterUtils {
   import global._
 
   val phaseName: String = "chiselbundlephase"
@@ -37,55 +38,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     }
   }
 
-  private class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-
-    def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
-
-    val bundleTpe:      Type = inferType(tq"chisel3.Bundle")
-    val recordTpe:      Type = inferType(tq"chisel3.Record")
-    val dataTpe:        Type = inferType(tq"chisel3.Data")
-    val ignoreSeqTpe:   Type = inferType(tq"chisel3.IgnoreSeqInBundle")
-    val seqOfDataTpe:   Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
-    val someOfDataTpe:  Type = inferType(tq"scala.Option[chisel3.Data]")
-    val itStringAnyTpe: Type = inferType(tq"scala.collection.Iterable[(String,Any)]")
-
-    // Not cached because it should only be run once per class (thus once per Type)
-    def isABundle(sym: Symbol): Boolean = { sym.tpe <:< bundleTpe }
-
-    def isARecord(sym: Symbol): Boolean = { sym.tpe <:< recordTpe }
-
-    def isIgnoreSeqInBundle(sym: Symbol): Boolean = { sym.tpe <:< ignoreSeqTpe }
-
-    def isSeqOfData(sym: Symbol): Boolean = {
-      val tpe = sym.tpe
-      tpe match {
-        case NullaryMethodType(resultType) =>
-          resultType <:< seqOfDataTpe
-        case _ =>
-          false
-      }
-    }
-
-    def isOptionOfData(symbol: Symbol): Boolean = {
-      val tpe = symbol.tpe
-      tpe match {
-        case NullaryMethodType(resultType) =>
-          resultType <:< someOfDataTpe
-        case _ =>
-          false
-      }
-    }
-    def isExactBundle(sym: Symbol): Boolean = { sym.tpe =:= bundleTpe }
-
-    // Cached because this is run on every argument to every Bundle
-    val isDataCache = new mutable.HashMap[Type, Boolean]
-    def isData(sym: Symbol): Boolean = isDataCache.getOrElseUpdate(sym.tpe, sym.tpe <:< dataTpe)
+  private class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with ChiselInnerUtils {
 
     def cloneTypeFull(tree: Tree): Tree =
       localTyper.typed(q"chisel3.reflect.DataMirror.internal.chiselTypeClone[${tree.tpe}]($tree)")
-
-    def isNullaryMethodNamed(name: String, defdef: DefDef): Boolean =
-      defdef.name.decodedName.toString == name && defdef.tparams.isEmpty && defdef.vparamss.isEmpty
 
     def isVarArgs(sym: Symbol): Boolean = definitions.isRepeatedParamType(sym.tpe)
 
