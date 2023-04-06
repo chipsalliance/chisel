@@ -44,16 +44,18 @@ private[chisel3] object MonoConnect {
     MonoConnectException(
       s"""${formatName(source)} cannot be read from module ${sink.parentNameOpt.getOrElse("(unknown)")}."""
     )
-  def UnwritableSinkException(sink: Data, source: Data) =
+  def UnwritableSinkException(sink: Data, source: Data, context_mod: BaseModule) =
     MonoConnectException(
-      s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}."""
+      s"""${formatName(sink)} cannot be written from module ${context_mod.name}."""
     )
   def SourceEscapedWhenScopeException(source: Data) =
     MonoConnectException(s"Source ${formatName(source)} has escaped the scope of the when in which it was constructed.")
   def SinkEscapedWhenScopeException(sink: Data) =
     MonoConnectException(s"Sink ${formatName(sink)} has escaped the scope of the when in which it was constructed.")
-  def UnknownRelationException =
-    MonoConnectException("Sink or source unavailable to current module.")
+  def UnknownRelationException(sink: Data, source: Data, context_mod: BaseModule) =
+    MonoConnectException(
+      s": ${sink.context.get.target} or ${source.context.get.target} unavailable to current module ${context_mod.context.get.target}."
+    )
   // These are when recursing down aggregate types
   def MismatchedVecException =
     MonoConnectException("Sink and Source are different length Vecs.")
@@ -225,7 +227,7 @@ private[chisel3] object MonoConnect {
     import ActualDirection.{Bidirectional, Input, Output}
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
+    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source, context_mod))
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
     val sink_parent_opt = Builder.retrieveParent(sink_mod, context_mod)
@@ -383,7 +385,7 @@ private[chisel3] object MonoConnect {
     val source = reify(_source)
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
+    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source, context_mod))
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
     val sink_parent_opt = Builder.retrieveParent(sink_mod, context_mod)
@@ -408,7 +410,7 @@ private[chisel3] object MonoConnect {
         //    CURRENT MOD   CURRENT MOD
         case (Output, _)   => issueConnect(sink, source)
         case (Internal, _) => issueConnect(sink, source)
-        case (Input, _)    => throw UnwritableSinkException(sink, source)
+        case (Input, _)    => throw UnwritableSinkException(sink, source, context_mod)
       }
     }
 
@@ -424,7 +426,7 @@ private[chisel3] object MonoConnect {
         case (Output, Input)    => issueConnect(sink, source)
         case (_, Internal)      => throw UnreadableSourceException(sink, source)
         case (Input, Output)    => issueConnect(source, sink)
-        case (Input, _)         => throw UnwritableSinkException(sink, source)
+        case (Input, _)         => throw UnwritableSinkException(sink, source, context_mod)
       }
     }
 
@@ -435,8 +437,8 @@ private[chisel3] object MonoConnect {
         //    SINK          SOURCE
         //    CHILD MOD     CURRENT MOD
         case (Input, _)    => issueConnect(sink, source)
-        case (Output, _)   => throw UnwritableSinkException(sink, source)
-        case (Internal, _) => throw UnwritableSinkException(sink, source)
+        case (Output, _)   => throw UnwritableSinkException(sink, source, context_mod)
+        case (Internal, _) => throw UnwritableSinkException(sink, source, context_mod)
       }
     }
 
@@ -450,14 +452,14 @@ private[chisel3] object MonoConnect {
         //    CHILD MOD     CHILD MOD
         case (Input, Input)  => issueConnect(sink, source)
         case (Input, Output) => issueConnect(sink, source)
-        case (Output, _)     => throw UnwritableSinkException(sink, source)
+        case (Output, _)     => throw UnwritableSinkException(sink, source, context_mod)
         case (_, Internal)   => throw UnreadableSourceException(sink, source)
-        case (Internal, _)   => throw UnwritableSinkException(sink, source)
+        case (Internal, _)   => throw UnwritableSinkException(sink, source, context_mod)
       }
     }
 
     // Not quite sure where left and right are compared to current module
     // so just error out
-    else throw UnknownRelationException
+    else throw UnknownRelationException(_sink, _source, context_mod)
   }
 }

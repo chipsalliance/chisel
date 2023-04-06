@@ -33,8 +33,10 @@ private[chisel3] object BiConnect {
     BiConnectException(": Neither Left nor Right is a driver")
   def UnknownDriverException =
     BiConnectException(": Locally unclear whether Left or Right (both internal)")
-  def UnknownRelationException =
-    BiConnectException(": Left or Right unavailable to current module.")
+  def UnknownRelationException(left: Data, right: Data) =
+    BiConnectException(
+      s": Left ${left.context.get.target} or Right ${right.context.get.target} unavailable to current module."
+    )
   // These are when recursing down aggregate types
   def MismatchedVecException =
     BiConnectException(": Left and Right are different length Vecs.")
@@ -353,7 +355,7 @@ private[chisel3] object BiConnect {
 
         case (Input, Output) => throw BothDriversException
         case (Output, Input) => throw NeitherDriverException
-        case (_, Internal)   => throw UnknownRelationException
+        case (_, Internal)   => throw UnknownRelationException(left, right)
       }
     }
 
@@ -370,7 +372,7 @@ private[chisel3] object BiConnect {
 
         case (Input, Output) => throw NeitherDriverException
         case (Output, Input) => throw BothDriversException
-        case (Internal, _)   => throw UnknownRelationException
+        case (Internal, _)   => throw UnknownRelationException(left, right)
       }
     }
 
@@ -404,14 +406,14 @@ private[chisel3] object BiConnect {
 
         case (Input, Input)   => throw NeitherDriverException
         case (Output, Output) => throw BothDriversException
-        case (_, Internal)    => throw UnknownRelationException
-        case (Internal, _)    => throw UnknownRelationException
+        case (_, Internal)    => throw UnknownRelationException(left, right)
+        case (Internal, _)    => throw UnknownRelationException(left, right)
       }
     }
 
     // Not quite sure where left and right are compared to current module
     // so just error out
-    else throw UnknownRelationException
+    else throw UnknownRelationException(left, right)
   }
 
   // This function checks if analog element-level attaching is allowed, then marks the Analog as connected

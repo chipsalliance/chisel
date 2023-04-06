@@ -63,7 +63,9 @@ object Lookupable {
         newParent match {
           case Proto(p) if p == parent => data
           case Clone(m: BaseModule) =>
+            Builder.setInstanceIdentifier(data.instanceIdentifier)
             val newChild = data.cloneTypeFull
+            Builder.clearInstanceIdentifier()
             newChild.setRef(data.getRef, true)
             newChild.bind(internal.CrossModuleBinding)
             newChild.setAllParents(Some(m))
@@ -269,7 +271,9 @@ object Lookupable {
         rec(m) match {
           case Proto(mx) => Clone(mx)
           case Clone(i: InstanceClone[_]) =>
+            Builder.setInstanceIdentifier(i.instanceIdentifier)
             val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
+            Builder.clearInstanceIdentifier()
             newChild._parent = i._parent
             Clone(newChild)
           case _ => throw new InternalErrorException("Match error: rec(m)=${rec(m)}")
@@ -278,7 +282,9 @@ object Lookupable {
         rec(m) match {
           case Proto(mx) => Clone(mx)
           case Clone(i: InstanceClone[_]) =>
+            Builder.setInstanceIdentifier(i.instanceIdentifier)
             val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
+            Builder.clearInstanceIdentifier()
             newChild._parent = i._parent
             Clone(newChild)
           case _ => throw new InternalErrorException("Match error: rec(m)=${rec(m)}")

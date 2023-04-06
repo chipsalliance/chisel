@@ -108,9 +108,17 @@ private[chisel3] class IdGen {
 }
 
 private[chisel3] trait HasId extends chisel3.InstanceId {
+  private[chisel3] val _id:                 Long = Builder.idGen.next
+  private[chisel3] def _instanceIdentifier: String = Builder.getInstanceIdentifier.getOrElse("%" + _id.toString)
+  val instanceIdentifier:                   String = _instanceIdentifier
+
   // using nullable var for better memory usage
-  private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
-  private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
+  private[chisel3] var _parentVar: BaseModule = null //Builder.currentModule.getOrElse(null)
+  private[chisel3] def _parent: Option[BaseModule] = {
+    Option(_parentVar)
+    //println(context.foreach(c => c.visualizeWithDefinition))
+    context.flatMap(_.parentCollectFirst { case x: BaseModule if x != this => x })
+  }
   private[chisel3] def _parent_=(target: Option[BaseModule]): Unit = {
     _parentVar = target.getOrElse(null)
   }
@@ -122,7 +130,8 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     _circuitVar = target.getOrElse(null)
   }
 
-  private[chisel3] val _id: Long = Builder.idGen.next
+  private[chisel3] var contextVar: Option[Context] = None
+  private[chisel3] def context = contextVar
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
   override def hashCode: Int = super.hashCode()
@@ -314,7 +323,13 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
         case (None, _) =>
           throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }
-    case None => throwException("this cannot happen")
+    case None => this match {
+      case d: Data if d.isLit => throwException(s"Cannot call instanceName on a literal: $this")
+      case d: Data if !d.hasBinding => throwException(
+        "You cannot access the .instanceName or .toTarget of non-hardware Data" + _errorContext
+      )
+      case _ => throwException("this cannot happen")
+    }
   }
   def pathName: String = _parent match {
     case None             => instanceName
@@ -357,6 +372,10 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ReferenceTarget that references this object
     * @note Should not be called until circuit elaboration is complete
     */
+  // Reversed
+  def identifierTarget: ReferenceTarget = {
+    _parent.get.identifierTarget.ref(instanceIdentifier)
+  }
   final def toTarget: ReferenceTarget = {
     assertValidTarget()
     val name = this.instanceName
@@ -400,16 +419,23 @@ private[chisel3] trait NamedComponent extends HasId {
 }
 
 // Mutable global state for chisel that can appear outside a Builder context
-private[chisel3] class ChiselContext() {
+private[chisel3] class ChiselContext(threadId: Int) {
   val idGen = new IdGen
 
   // Records the different prefixes which have been scoped at this point in time
   var prefixStack: Prefix = Nil
 
+  var instanceIdentifier: Option[String] = None
+
   // Views belong to a separate namespace (for renaming)
   // The namespace outside of Builder context is useless, but it ensures that views can still be created
   // and the resulting .toTarget is very clearly useless (_$$View$$_...)
   val viewNamespace = Namespace.empty
+
+  val root = Context(s"%$threadId")
+
+  var activeCircuit:  Option[Context] = None
+  var currentContext: Option[Context] = None
 }
 
 private[chisel3] class DynamicContext(
@@ -417,41 +443,46 @@ private[chisel3] class DynamicContext(
   val throwOnFirstError: Boolean,
   val warningsAsErrors:  Boolean,
   val sourceRoots:       Seq[File]) {
-  val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+  val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
-  // Map holding the actual names of extModules
-  // Pick the definition name by default in case not passed through annotation.
-  val importDefinitionMap = importDefinitionAnnos
+  // Map from proto module name to ext-module name
+  // Pick the definition name by default in case not overridden
+  // 1. Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
+  // 2. Return the distinct definition / extMod names
+  val importedDefinitionMap = importedDefinitionAnnos
     .map(a => a.definition.proto.name -> a.overrideDefName.getOrElse(a.definition.proto.name))
     .toMap
 
-  // Helper function which does 2 things
-  // 1. Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
-  // 2. Return the distinct definition / extMod names
-  private def checkAndGeDistinctProtoExtModNames() = {
-    val importAllDefinitionProtoNames = importDefinitionAnnos.map { a => a.definition.proto.name }
-    val importDistinctDefinitionProtoNames = importDefinitionMap.keys.toSeq
-    val importAllDefinitionExtModNames = importDefinitionMap.toSeq.map(_._2)
-    val importDistinctDefinitionExtModNames = importAllDefinitionExtModNames.distinct
+  private def checkAndGetDistinctProtoExtModNames() = {
+    val allProtoNames = importedDefinitionAnnos.map { a => a.definition.proto.name }
+    val distinctProtoNames = importedDefinitionMap.keys.toSeq
+    val allExtModNames = importedDefinitionMap.toSeq.map(_._2)
+    val distinctExtModNames = allExtModNames.distinct
 
-    if (importDistinctDefinitionProtoNames.length < importAllDefinitionProtoNames.length) {
-      val duplicates = importAllDefinitionProtoNames.diff(importDistinctDefinitionProtoNames).mkString(", ")
+    if (distinctProtoNames.length < allProtoNames.length) {
+      val duplicates = allProtoNames.diff(distinctProtoNames).mkString(", ")
       throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
     }
-    if (importDistinctDefinitionExtModNames.length < importAllDefinitionExtModNames.length) {
-      val duplicates = importAllDefinitionExtModNames.diff(importDistinctDefinitionExtModNames).mkString(", ")
+    if (distinctExtModNames.length < allExtModNames.length) {
+      val duplicates = allExtModNames.diff(distinctExtModNames).mkString(", ")
       throwException(s"Expected distinct overrideDef names but found duplicates for: $duplicates")
     }
-    (importAllDefinitionProtoNames ++ importAllDefinitionExtModNames).distinct
+    (
+      (allProtoNames ++ allExtModNames).distinct,
+      importedDefinitionAnnos.map(a => a.definition.proto.definitionIdentifier)
+    )
   }
 
   val globalNamespace = Namespace.empty
+  val globalIdentifierNamespace = Namespace.empty
 
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-  checkAndGeDistinctProtoExtModNames().foreach {
-    globalNamespace.name(_)
+  checkAndGetDistinctProtoExtModNames() match {
+    case (names, identifiers) =>
+      names.foreach(globalNamespace.name(_))
+      identifiers.foreach(globalIdentifierNamespace.name(_))
   }
 
   val components = ArrayBuffer[Component]()
@@ -505,7 +536,7 @@ private[chisel3] object Builder extends LazyLogging {
   // Ensure we have a thread-specific ChiselContext
   private val chiselContext = new ThreadLocal[ChiselContext] {
     override def initialValue: ChiselContext = {
-      new ChiselContext
+      new ChiselContext(this.hashCode())
     }
   }
 
@@ -525,18 +556,19 @@ private[chisel3] object Builder extends LazyLogging {
 
   def idGen: IdGen = chiselContext.get.idGen
 
-  def globalNamespace: Namespace = dynamicContext.globalNamespace
-  def components:      ArrayBuffer[Component] = dynamicContext.components
-  def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def globalNamespace:           Namespace = dynamicContext.globalNamespace
+  def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
+  def components:                ArrayBuffer[Component] = dynamicContext.components
+  def annotations:               ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
   // TODO : Unify this with annotations in the future - done this way for backward compatability
   def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
 
-  def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
-  def namingStack:         NamingStack = dynamicContext.namingStack
-  def importDefinitionMap: Map[String, String] = dynamicContext.importDefinitionMap
+  def annotationSeq:         AnnotationSeq = dynamicContext.annotationSeq
+  def namingStack:           NamingStack = dynamicContext.namingStack
+  def importedDefinitionMap: Map[String, String] = dynamicContext.importedDefinitionMap
 
   def unnamedViews:  ArrayBuffer[Data] = dynamicContext.unnamedViews
   def viewNamespace: Namespace = chiselContext.get.viewNamespace
@@ -615,6 +647,22 @@ private[chisel3] object Builder extends LazyLogging {
   // Returns the prefix stack at this moment
   def getPrefix: Prefix = chiselContext.get().prefixStack
 
+  def setInstanceIdentifier(n: String): Unit = {
+    chiselContext.get().instanceIdentifier = currentModule.map(_._identifierNamespace.name(n)).orElse(Some(n))
+  }
+  def clearInstanceIdentifier(): Unit = {
+    chiselContext.get().instanceIdentifier = None
+  }
+  def getInstanceIdentifier: Option[String] = {
+    val ret = chiselContext.get().instanceIdentifier
+    // We never want to return the same instance identifer twice, as it can cause naming conflicts
+    //  currently, this ocfurs for Records where you cannot eagerly get the elemnt field name early
+    // This was causing the identifeir of the Record to also get grabbed by every element
+    //  Instead, now the elements just use their _id for now
+    clearInstanceIdentifier()
+    ret
+  }
+
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dynamicContext) => dynamicContext.currentModule
     case _                    => None
@@ -622,6 +670,7 @@ private[chisel3] object Builder extends LazyLogging {
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
   }
+  def activeCircuit: Context = chiselContext.get().activeCircuit.get
   def aspectModule(module: BaseModule): Option[BaseModule] = dynamicContextVar.value match {
     case Some(dynamicContext) => dynamicContext.aspectModule.get(module)
     case _                    => None
@@ -816,7 +865,12 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext: DynamicContext,
     forceModName:   Boolean = true
   ): (Circuit, T) = {
-    dynamicContextVar.withValue(Some(dynamicContext)) {
+    
+    val circuitId = s"circuit$$${java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(BigInt(dynamicContext.hashCode).toByteArray)}"
+    val circuitContext = Context(circuitId)
+    Builder.chiselContext.get().activeCircuit = Some(circuitContext)
+    // Because we don't have a package name, just use this circuit id thing for both definition and instance name
+    val ret = dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal
       logger.info("Elaborating design...")
@@ -829,6 +883,10 @@ private[chisel3] object Builder extends LazyLogging {
 
       (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq), mod)
     }
+    // Add built circuit to the root Context for future imports
+    Builder.chiselContext.get().root.instantiateChild(circuitId, circuitContext)
+    Builder.chiselContext.get().activeCircuit = None
+    ret
   }
   initializeSingletons()
 }

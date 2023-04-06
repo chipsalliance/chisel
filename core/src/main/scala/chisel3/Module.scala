@@ -137,6 +137,7 @@ object Module extends SourceInfoDoc {
         }
     }
   }
+
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -258,7 +259,47 @@ package experimental {
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
-  abstract class BaseModule extends HasId with IsInstantiable {
+  abstract class BaseModule extends HasId with IsInstantiable with CloneToContext {
+    _parentVar = Builder.currentModule.getOrElse(null)
+
+    final def identifierTarget: IsModule = {
+      if (_parent.isEmpty) {
+        ModuleTarget(definitionIdentifier, definitionIdentifier)
+      } else {
+        _parent.get.identifierTarget.instOf(instanceIdentifier, definitionIdentifier)
+      }
+    }
+    // Used with chisel3.naming.fixTraitIdentifier
+    protected def _traitModuleDefinitionIdentifierProposal: Option[String] = None
+
+    protected def _moduleDefinitionIdentifierProposal = {
+      val baseName = _traitModuleDefinitionIdentifierProposal.getOrElse(this.getClass.getName)
+
+      /* A sequence of string filters applied to the name */
+      val filters: Seq[String => String] =
+        Seq(((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon")) // Merge the "$$anon" name with previous name
+        )
+
+      filters
+        .foldLeft(baseName) { case (str, filter) => filter(str) } // 1. Apply filters to baseName
+        .split("\\.|\\$") // 2. Split string at '.' or '$'
+        .filterNot(_.forall(_.isDigit)) // 3. Drop purely numeric names
+        .last // 4. Use the last name
+    }
+    // Needed this to override identifier for DefinitionClone
+    private[chisel3] def _definitionIdentifier = {
+      val madeProposal = chisel3.naming.IdentifierProposer.makeProposal(this._moduleDefinitionIdentifierProposal)
+      Builder.globalIdentifierNamespace.name(madeProposal)
+    }
+    final val definitionIdentifier = _definitionIdentifier
+
+    // Maybe one day we can make this not a var, but it requires Bundle fields to know their parent bundle prior to their execution (e.g. Aligned(..) and Type(new Bundle))
+    contextVar = Some(Option(Builder.currentModule.getOrElse(null)) match {
+      case None => Builder.activeCircuit.instantiateOriginChildWithValue(definitionIdentifier, this)
+      case Some(p) =>
+        p.context.get.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
+    })
+
     _parent.foreach(_.addId(this))
 
     //
@@ -288,6 +329,7 @@ package experimental {
 
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
+    private[chisel3] val _identifierNamespace = Namespace.empty
     private val _ids = ArrayBuffer[HasId]()
     private[chisel3] def addId(d: HasId): Unit = {
       if (Builder.aspectModule(this).isDefined) {

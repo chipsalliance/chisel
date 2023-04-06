@@ -340,7 +340,20 @@ object Flipped {
   * @groupdesc Connect Utilities for connecting hardware components
   * @define coll data
   */
-abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+abstract class Data extends HasId with NamedComponent with SourceInfoDoc with CloneToContext {
+  import _root_.firrtl.annotations.ReferenceTarget
+  override final def identifierTarget: ReferenceTarget = {
+    _binding match {
+      case Some(ChildBinding(p: Data)) =>
+        p.identifierTarget.field(instanceIdentifier)
+      case Some(t: ConstrainedBinding) =>
+        t.location.get.identifierTarget.ref(instanceIdentifier)
+      case Some(CrossModuleBinding) =>
+        _parent.get.identifierTarget.ref(instanceIdentifier)
+      case Some(x) => throw new Exception(this.toString + " = " + x)
+      case None    => throw new Exception(this.toString + " = None")
+    }
+  }
   // This is a bad API that punches through object boundaries.
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {
@@ -405,6 +418,33 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       throw RebindingException(s"Attempted reassignment of binding to $this, from: ${target}")
     }
     _bindingVar = target
+  }
+
+  override def context = contextVar.orElse {
+    val myContext = _binding match {
+      case Some(ChildBinding(p: Data)) =>
+        p.context.map(_.instantiateOriginChildWithValue(instanceIdentifier, this))
+      case Some(t: ConstrainedBinding) =>
+        val parentContext = t.location.get.context.get
+        if (parentContext.isChild(instanceIdentifier)) {
+          Some(parentContext(instanceIdentifier))
+        } else {
+          Some(parentContext.instantiateOriginChildWithValue(instanceIdentifier, this))
+        }
+      case Some(CrossModuleBinding) =>
+        Some(_parent.get.context.get.instantiateOriginChildWithValue(instanceIdentifier, this))
+      case Some(ViewBinding(_)) =>
+        // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
+        Some(ViewParent.context.get.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
+      case Some(AggregateViewBinding(_)) =>
+        // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
+        Some(ViewParent.context.get.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
+      case Some(e: UnconstrainedBinding) => None
+      case Some(x) => throw new Exception("Building context from binding failed: " + this.toString + " = " + x)
+      case None    => None
+    }
+    contextVar = myContext
+    myContext
   }
 
   private[chisel3] def hasBinding: Boolean = _binding.isDefined
