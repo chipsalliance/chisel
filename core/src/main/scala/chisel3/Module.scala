@@ -284,6 +284,7 @@ package experimental {
       val madeProposal = chisel3.naming.IdentifierProposer.makeProposal(this._moduleDefinitionIdentifierProposal)
       Builder.globalIdentifierNamespace.name(madeProposal)
     }
+
     /** Represents an eagerly-determined unique and descriptive identifier for this module */
     final val definitionIdentifier = _definitionIdentifier
     //
