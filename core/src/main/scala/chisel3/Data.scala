@@ -432,7 +432,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case _: MemTypeBinding[_] => None
   }
 
-  private[chisel3] def topBinding: TopBinding = topBindingOpt.get
+  private[chisel3] def topBinding: TopBinding = {
+    val t = topBindingOpt.get
+    if (_probeInfo.nonEmpty) {
+      require(t.isInstanceOf[PortBinding] || t.isInstanceOf[ProbeBinding], s"Probes must be bound to ports, not ${t}")
+    }
+    t
+  }
 
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target

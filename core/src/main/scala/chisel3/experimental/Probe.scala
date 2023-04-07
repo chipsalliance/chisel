@@ -77,12 +77,12 @@ object Probe {
     pushCommand(ProbeReleaseInitial(sourceInfo, probe.ref))
   }
 
-  def force(clock: Clock, cond: Data, probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  def force(clock: Clock, cond: Bool, probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireIsProbe(probe)
     pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, value.ref))
   }
 
-  def release(clock: Clock, cond: Data, probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  def release(clock: Clock, cond: Bool, probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireIsProbe(probe)
     pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
   }

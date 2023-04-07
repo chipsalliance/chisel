@@ -15,8 +15,8 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       new Module {
 
         val io = IO(new Bundle {
-          val x = Input(UInt(1.W))
-          val y = Output(UInt(1.W))
+          val x = Input(Bool())
+          val y = Output(Bool())
         })
 
         class UTurn() extends RawModule {
@@ -55,7 +55,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "force_initial(u1.io.out, UInt<1>(\"h0\"))",
       "release_initial(u1.io.out)",
       "force(clock, io.x, u2.io.out, u1.io.out)",
-      "release(clock, io.y, u2.io.out)",
+      "release(clock, io.y, u2.io.out)"
     )
   }
 
@@ -95,7 +95,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "io.z.baz <= io.a.baz",
       "io.z.bar <= io.a.bar",
       "io.y.baz <= io.a.baz",
-      "io.y.bar <= io.a.bar",
+      "io.y.bar <= io.a.bar"
     )
   }
 
