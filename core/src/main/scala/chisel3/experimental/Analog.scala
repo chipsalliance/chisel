@@ -28,6 +28,10 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
 
   override def toString: String = stringAccessor(s"Analog$width")
 
+  /** A stable typeName for this `Analog`
+    */
+  override def typeName = s"Analog$width"
+
   private[chisel3] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width
 

@@ -405,7 +405,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   "vec literals with non-literal values should fail" in {
     val exc = intercept[VecLiteralException] {
       extractCause[VecLiteralException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new RawModule {
             (Vec(3, UInt(11.W)).Lit(0 -> UInt()))
           }

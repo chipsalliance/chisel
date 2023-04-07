@@ -368,34 +368,34 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "fail to instantiate non-literal enums with the Value function" in {
     an[ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError] {
-      ChiselStage.elaborate(new SimpleConnector(NonLiteralEnumType(), NonLiteralEnumType()))
+      ChiselStage.emitCHIRRTL(new SimpleConnector(NonLiteralEnumType(), NonLiteralEnumType()))
     }
   }
 
   it should "fail to instantiate non-increasing enums with the Value function" in {
     an[ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError] {
-      ChiselStage.elaborate(new SimpleConnector(NonIncreasingEnum(), NonIncreasingEnum()))
+      ChiselStage.emitCHIRRTL(new SimpleConnector(NonIncreasingEnum(), NonIncreasingEnum()))
     }
   }
 
   it should "connect enums of the same type" in {
-    ChiselStage.elaborate(new SimpleConnector(EnumExample(), EnumExample()))
-    ChiselStage.elaborate(new SimpleConnector(EnumExample(), EnumExample.Type()))
+    ChiselStage.emitCHIRRTL(new SimpleConnector(EnumExample(), EnumExample()))
+    ChiselStage.emitCHIRRTL(new SimpleConnector(EnumExample(), EnumExample.Type()))
   }
 
   it should "fail to connect a strong enum to a UInt" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new SimpleConnector(EnumExample(), UInt()))
+      ChiselStage.emitCHIRRTL(new SimpleConnector(EnumExample(), UInt()))
     }
   }
 
   it should "fail to connect enums of different types" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new SimpleConnector(EnumExample(), OtherEnum()))
+      ChiselStage.emitCHIRRTL(new SimpleConnector(EnumExample(), OtherEnum()))
     }
 
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new SimpleConnector(EnumExample.Type(), OtherEnum.Type()))
+      ChiselStage.emitCHIRRTL(new SimpleConnector(EnumExample.Type(), OtherEnum.Type()))
     }
   }
 
@@ -417,21 +417,21 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "prevent illegal literal casts to enums" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new CastToInvalidEnumTester)
+      ChiselStage.emitCHIRRTL(new CastToInvalidEnumTester)
     }
   }
 
   it should "only allow non-literal casts to enums if the width is smaller than or equal to the enum width" in {
     for (w <- 0 to EnumExample.getWidth)
-      ChiselStage.elaborate(new CastFromNonLitWidth(Some(w)))
+      ChiselStage.emitCHIRRTL(new CastFromNonLitWidth(Some(w)))
 
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new CastFromNonLitWidth)
+      ChiselStage.emitCHIRRTL(new CastFromNonLitWidth)
     }
 
     for (w <- (EnumExample.getWidth + 1) to (EnumExample.getWidth + 100)) {
       a[ChiselException] should be thrownBy extractCause[ChiselException] {
-        ChiselStage.elaborate(new CastFromNonLitWidth(Some(w)))
+        ChiselStage.emitCHIRRTL(new CastFromNonLitWidth(Some(w)))
       }
     }
   }
@@ -442,7 +442,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "fail to compare enums of different types" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new InvalidEnumOpsTester)
+      ChiselStage.emitCHIRRTL(new InvalidEnumOpsTester)
     }
   }
 
@@ -483,7 +483,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
       val out = IO(Output(MyEnum()))
       out := MyEnum(in)
     }
-    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
     log should include("warn")
     log should include("Casting non-literal UInt")
   }
@@ -498,7 +498,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
       val out = IO(Output(TotalEnum()))
       out := TotalEnum(in)
     }
-    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
     (log should not).include("warn")
   }
 
@@ -515,7 +515,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
         out := res
       }
     }
-    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
     (log should not).include("warn")
   }
 
@@ -536,7 +536,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
       }
       out2 := TestEnum2(in)
     }
-    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
     log should include("warn")
     log should include("TestEnum2") // not suppressed
     (log should not).include("TestEnum1") // suppressed
@@ -552,7 +552,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
       val out = IO(Output(MyEnum()))
       out := MyEnum.safe(in)._1
     }
-    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
     (log should not).include("warn")
   }
 
@@ -568,7 +568,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
       assert(valid.litToBoolean, "It should be true.B")
       out := res
     }
-    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
     (log should not).include("warn")
   }
 

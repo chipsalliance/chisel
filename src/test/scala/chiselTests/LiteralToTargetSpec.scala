@@ -22,7 +22,7 @@ class LiteralToTargetSpec extends AnyFreeSpec with Matchers {
         bar.a.toTarget
       }
 
-      ChiselStage.elaborate(new Foo)
+      ChiselStage.emitCHIRRTL(new Foo)
     } should have).message("Illegal component name: UInt<1>(\"h01\") (note: literals are illegal)")
   }
 }

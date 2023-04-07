@@ -124,7 +124,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "return like a normal Scala block" in {
-    ChiselStage.elaborate(new BasicTester {
+    ChiselStage.emitCHIRRTL(new BasicTester {
       assert(withClock(this.clock) { 5 } == 5)
     })
   }
@@ -135,7 +135,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
       val port0 = mem(0.U)
     }
-    val (logMemDifferingClock, _) = grabLog(ChiselStage.elaborate(new modMemDifferingClock))
+    val (logMemDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemDifferingClock))
     logMemDifferingClock should include("memory is different")
 
     class modSyncReadMemDifferingClock extends Module {
@@ -143,7 +143,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
       val port0 = mem(0.U)
     }
-    val (logSyncReadMemDifferingClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemDifferingClock))
+    val (logSyncReadMemDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemDifferingClock))
     logSyncReadMemDifferingClock should include("memory is different")
   }
 
@@ -153,7 +153,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
       mem(1.U) := 1.U
     }
-    val (logMemWriteDifferingClock, _) = grabLog(ChiselStage.elaborate(new modMemWriteDifferingClock))
+    val (logMemWriteDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemWriteDifferingClock))
     logMemWriteDifferingClock should include("memory is different")
 
     class modSyncReadMemWriteDifferingClock extends Module {
@@ -161,7 +161,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
       mem.write(1.U, 1.U)
     }
-    val (logSyncReadMemWriteDifferingClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemWriteDifferingClock))
+    val (logSyncReadMemWriteDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemWriteDifferingClock))
     logSyncReadMemWriteDifferingClock should include("memory is different")
   }
 
@@ -171,7 +171,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
       val readVal = mem.read(0.U)
     }
-    val (logSyncReadMemReadDifferingClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemReadDifferingClock))
+    val (logSyncReadMemReadDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemReadDifferingClock))
     logSyncReadMemReadDifferingClock should include("memory is different")
   }
 
@@ -181,7 +181,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = Mem(4, UInt(8.W))
       val port0 = mem(0.U, myClock)
     }
-    val (logMemPortClock, _) = grabLog(ChiselStage.elaborate(new modMemPortClock))
+    val (logMemPortClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemPortClock))
     (logMemPortClock should not).include("memory is different")
 
     class modSyncReadMemPortClock extends Module {
@@ -189,7 +189,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = SyncReadMem(4, UInt(8.W))
       val port0 = mem(0.U, myClock)
     }
-    val (logSyncReadMemPortClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemPortClock))
+    val (logSyncReadMemPortClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemPortClock))
     (logSyncReadMemPortClock should not).include("memory is different")
   }
 
@@ -199,7 +199,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = Mem(4, UInt(8.W))
       mem.write(0.U, 0.U, myClock)
     }
-    val (logMemWriteClock, _) = grabLog(ChiselStage.elaborate(new modMemWriteClock))
+    val (logMemWriteClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemWriteClock))
     (logMemWriteClock should not).include("memory is different")
 
     class modSyncReadMemWriteClock extends Module {
@@ -207,7 +207,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = SyncReadMem(4, UInt(8.W))
       mem.write(0.U, 0.U, myClock)
     }
-    val (logSyncReadMemWriteClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemWriteClock))
+    val (logSyncReadMemWriteClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemWriteClock))
     (logSyncReadMemWriteClock should not).include("memory is different")
   }
 
@@ -217,7 +217,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = Mem(4, UInt(8.W))
       val readVal = mem.read(0.U, myClock)
     }
-    val (logMemReadClock, _) = grabLog(ChiselStage.elaborate(new modMemReadClock))
+    val (logMemReadClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemReadClock))
     (logMemReadClock should not).include("memory is different")
 
     class modSyncReadMemReadClock extends Module {
@@ -225,7 +225,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       val mem = SyncReadMem(4, UInt(8.W))
       val readVal = mem.read(0.U, myClock)
     }
-    val (logSyncReadMemReadClock, _) = grabLog(ChiselStage.elaborate(new modSyncReadMemReadClock))
+    val (logSyncReadMemReadClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemReadClock))
     (logSyncReadMemReadClock should not).include("memory is different")
   }
 
@@ -238,7 +238,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "return like a normal Scala block" in {
-    ChiselStage.elaborate(new BasicTester {
+    ChiselStage.emitCHIRRTL(new BasicTester {
       assert(withReset(this.reset) { 5 } == 5)
     })
   }
@@ -256,7 +256,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   }
 
   "withClockAndReset" should "return like a normal Scala block" in {
-    ChiselStage.elaborate(new BasicTester {
+    ChiselStage.emitCHIRRTL(new BasicTester {
       assert(withClockAndReset(this.clock, this.reset) { 5 } == 5)
     })
   }

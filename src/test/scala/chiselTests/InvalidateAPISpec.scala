@@ -88,7 +88,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
     }
     val exception = intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate(new ModuleWithDontCareSink)
+        ChiselStage.emitCHIRRTL(new ModuleWithDontCareSink)
       }
     }
     exception.getMessage should include("DontCare cannot be a connection sink")
@@ -101,7 +101,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
     }
     val exception = intercept[BiConnectException] {
       extractCause[BiConnectException] {
-        circt.stage.ChiselStage.elaborate(new ModuleWithDontCareSink)
+        circt.stage.ChiselStage.emitCHIRRTL(new ModuleWithDontCareSink)
       }
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
