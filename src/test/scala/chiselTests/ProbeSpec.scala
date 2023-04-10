@@ -34,7 +34,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         class UTurn() extends RawModule {
           val io = IO(new Bundle {
             val in = Input(Probe(Bool()))
-            val out = Output(Probe(Bool()))
+            val out = Output(Probe.writable(Bool()))
           })
           io.out := io.in
         }
@@ -60,7 +60,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
 
     (processChirrtl(chirrtl) should contain).allOf(
-      "output io : { flip in : Probe<UInt<1>>, out : Probe<UInt<1>>}",
+      "output io : { flip in : Probe<UInt<1>>, out : RWProbe<UInt<1>>}",
       "define u1.io.in = probe(io.x)",
       "define u2.io.in = u1.io.out",
       "io.y <= read(u2.io.out)",
@@ -125,7 +125,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
 
         val io = IO(new Bundle {
           val in = Input(UInt(2.W))
-          val out = Output(UInt(16.W))
+          val out = Output(Probe.writable(UInt(16.W)))
         })
 
         val child = Module(new VecChild())

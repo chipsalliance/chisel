@@ -14,9 +14,6 @@ import chisel3.internal.firrtl._
   */
 object Probe {
 
-  /** Create a probe type from a Chisel type. This is not used for
-    * hardware.
-    */
   private def apply_impl[T <: Data](source: => T, writable: Boolean): T = {
     val prevId = Builder.idGen.value
     val data = source // should only evaluate source once
@@ -26,15 +23,28 @@ object Probe {
     ret
   }
 
+  /** Create a read-only probe type from a Chisel type. This is only used for
+    * ports and not for hardware.
+    */
   def apply[T <: Data](source: => T): T = apply_impl(source, false)
 
+  /** Create a writable probe type from a Chisel type. This is only used for
+    * ports and not for hardware.
+    */
   def writable[T <: Data](source: => T): T = apply_impl(source, true)
 
   private def requireIsProbe(probeExpr: Data): Unit = {
     require(isProbe(probeExpr), s"expected $probeExpr to be a probe.")
   }
 
+  private def requireIsWritableProbe(probeExpr: Data): Unit = {
+    requireIsProbe(probeExpr)
+    require(probeExpr.probeInfo.get.writable, s"expected $probeExpr to be writable.")
+  }
+
+  /** Initialize a Probe with a provided probe expression. */
   def define(sink: Data, probeExpr: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    requireIsProbe(sink)
     requireIsProbe(probeExpr)
     pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
   }
@@ -52,10 +62,13 @@ object Probe {
     clone
   }
 
+  /** Create a read-only probe. */
   def probe[T <: Data](source: => T): Data = probe_impl(source, false)
 
+  /** Create a read/write probe. */
   def rwprobe[T <: Data](source: => T): Data = probe_impl(source, true)
 
+  /** Access the value of a probe. */
   def read[T <: Data](source: => T): Data = {
     val prevId = Builder.idGen.value
     val t = source
@@ -65,27 +78,32 @@ object Probe {
     val clone = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     clone.bind(chisel3.internal.ProbeBinding(Builder.forcedUserModule, Builder.currentWhen, t))
     clone.setRef(ProbeRead(t.ref))
+    clone.probeInfo = t.probeInfo
 
     clone
   }
 
+  /** Override existing driver of a writable probe on initialization. */
   def forceInitial(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireIsProbe(probe)
+    requireIsWritableProbe(probe)
     pushCommand(ProbeForceInitial(sourceInfo, probe.ref, value.ref))
   }
 
+  /** Release initial driver on a probe. */
   def releaseInitial(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireIsProbe(probe)
+    requireIsWritableProbe(probe)
     pushCommand(ProbeReleaseInitial(sourceInfo, probe.ref))
   }
 
+  /** Override existing driver of a writable probe. */
   def force(clock: Clock, cond: Bool, probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireIsProbe(probe)
+    requireIsWritableProbe(probe)
     pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, value.ref))
   }
 
+  /** Release driver on a probe. */
   def release(clock: Clock, cond: Bool, probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireIsProbe(probe)
+    requireIsWritableProbe(probe)
     pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
   }
 

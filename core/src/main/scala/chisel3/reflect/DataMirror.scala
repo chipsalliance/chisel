@@ -46,7 +46,7 @@ object DataMirror {
     * @param x the `Data` to check
     * @return `true` if x is a Probe, `false` otherwise
     */
-  def isProbe(x: Data): Boolean = x.probeInfo.nonEmpty || hasBinding[ProbeBinding](x)
+  def isProbe(x: Data): Boolean = x.probeInfo.nonEmpty
 
   /** Get an early guess for the name of this [[Data]]
     *
