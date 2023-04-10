@@ -8,6 +8,20 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
   private def processChirrtl(chirrtl: String): Array[String] =
     chirrtl.split('\n').map(line => line.takeWhile(_ != '@').trim())
 
+  "Simple probe usage" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new Module {
+        val a = IO(Output(Probe(Bool())))
+
+        val w = WireInit(Bool(), false.B)
+        val w_probe = Probe.probe(w)
+        Probe.define(a, w_probe)
+      },
+      Array("--full-stacktrace")
+    )
+    processChirrtl(chirrtl) should contain("define a = probe(w)")
+  }
+
   "U-Turn example" should "emit FIRRTL probe statements and expressions" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new Module {
@@ -94,6 +108,36 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "io.z.bar <= io.a.bar",
       "io.y.baz <= io.a.baz",
       "io.y.bar <= io.a.bar"
+    )
+  }
+
+  "Probes" should "be able to access vector subindices" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new Module {
+
+        class VecChild() extends RawModule {
+          val io = IO(new Bundle {
+            val in = Input(Vec(2, UInt(16.W)))
+            val out = Output((Vec(2, Vec(2, Probe.writable(UInt(16.W))))))
+          })
+          io.out.foreach { ele: Vec[UInt] => ele := io.in }
+        }
+
+        val io = IO(new Bundle {
+          val in = Input(UInt(2.W))
+          val out = Output(UInt(16.W))
+        })
+
+        val child = Module(new VecChild())
+
+        Probe.define(io.out, child.io.out(0)(1))
+      },
+      Array("--full-stacktrace")
+    )
+
+    (processChirrtl(chirrtl) should contain).allOf(
+      "output io : { flip in : UInt<16>[2], out : RWProbe<UInt<16>>[2][2]}",
+      "define io.out = child.io.out[0][1]"
     )
   }
 

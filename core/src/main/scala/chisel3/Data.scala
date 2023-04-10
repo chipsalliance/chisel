@@ -669,6 +669,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     val clone = this.cloneType // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
+    clone.probeInfo = probeInfo
     clone
   }
 

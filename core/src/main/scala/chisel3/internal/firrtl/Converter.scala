@@ -333,10 +333,11 @@ private[chisel3] object Converter {
 
   def extractType(data: Data, clearDir: Boolean, info: SourceInfo, checkProbe: Boolean = true): fir.Type = {
     if (checkProbe && data.probeInfo.nonEmpty) {
-      if (data.probeInfo.get.writable)
+      if (data.probeInfo.get.writable) {
         fir.RWProbeType(extractType(data, clearDir, info, false))
-      else
+      } else {
         fir.ProbeType(extractType(data, clearDir, info, false))
+      }
     } else {
       extractTypeImpl(data, clearDir, info)
     }

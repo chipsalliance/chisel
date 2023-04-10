@@ -187,15 +187,17 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
       NoInfo,
       "foo",
       Output,
-      RWProbeType(
-        BundleType(
-          Seq(
-            Field("bar", Default, UIntType(IntWidth(32)))
-          )
-        )
-      )
+      RWProbeType(BundleType(Seq(Field("bar", Default, UIntType(IntWidth(32))))))
     )
     Serializer.serialize(rwProbeBundle) should be("output foo : RWProbe<{ bar : UInt<32>}>")
+
+    val probeVec = Port(
+      NoInfo,
+      "foo",
+      Output,
+      RWProbeType(VectorType(UIntType(IntWidth(32)), 4))
+    )
+    Serializer.serialize(probeVec) should be("output foo : RWProbe<UInt<32>[4]>")
 
     val probeDefine = ProbeDefine(NoInfo, SubField(Reference("c"), "in"), ProbeExpr(Reference("in")))
     Serializer.serialize(probeDefine) should be("define c.in = probe(in)")
