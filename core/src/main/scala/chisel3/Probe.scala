@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental
+package chisel3
 
 import chisel3._
 import chisel3.Data.ProbeInfo
-import chisel3.internal.Builder
+import chisel3.internal.{requireIsChiselType, Builder}
 import chisel3.internal.Builder.pushCommand
+import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.internal.firrtl._
 
 /** Utilities for creating and working with probe types.

@@ -1,8 +1,6 @@
-package chiselTests.experimental
+package chiselTests
 
 import chisel3._
-import chisel3.experimental.Probe
-import chiselTests.{ChiselFlatSpec, Utils}
 import circt.stage.ChiselStage
 
 class ProbeSpec extends ChiselFlatSpec with Utils {
