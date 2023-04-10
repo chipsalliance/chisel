@@ -46,7 +46,7 @@ object Probe {
     // construct probe to return with cloned info
     val clone = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     clone.bind(chisel3.internal.ProbeBinding(Builder.forcedUserModule, Builder.currentWhen, t))
-    clone.setRef(ProbeExpr(t.getRef))
+    clone.setRef(ProbeExpr(t.ref))
     clone.probeInfo = Some(ProbeInfo(writable))
 
     clone
@@ -64,7 +64,7 @@ object Probe {
     // construct probe to return with cloned info
     val clone = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     clone.bind(chisel3.internal.ProbeBinding(Builder.forcedUserModule, Builder.currentWhen, t))
-    clone.setRef(ProbeRead(t.getRef))
+    clone.setRef(ProbeRead(t.ref))
 
     clone
   }
