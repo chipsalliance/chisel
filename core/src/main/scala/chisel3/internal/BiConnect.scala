@@ -108,6 +108,12 @@ private[chisel3] object BiConnect {
           throw MismatchedVecException
         }
 
+        // Check for zero-width Vectors: both Vecs must be type equivalent, e.g.
+        // a UInt<8>[0] should not be connectable with a SInt<8>[0]
+        // TODO: This is a "band-aid" fix and needs to be unified with the existing logic in a
+        // more generalized and robust way, to account for things like Views
+        if (left_v.length == 0 && !left_v.typeEquivalent(right_v)) { throw MismatchedException(left_v.cloneType.toString, right_v.cloneType.toString) }
+
         val leftReified:  Option[Aggregate] = if (isView(left_v)) reifyToAggregate(left_v) else Some(left_v)
         val rightReified: Option[Aggregate] = if (isView(right_v)) reifyToAggregate(right_v) else Some(right_v)
 

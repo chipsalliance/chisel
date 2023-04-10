@@ -196,6 +196,14 @@ private[chisel3] object Connection {
         // Recursive Case 4: non-empty orientations
         case (consumerAlignment: NonEmptyAlignment, producerAlignment: NonEmptyAlignment) =>
           (consumerAlignment.member, producerAlignment.member) match {
+
+        // Check for zero-width Vectors: both Vecs must be type equivalent, e.g.
+        // a UInt<8>[0] should not be connectable with a SInt<8>[0]
+        // TODO: This is a "band-aid" fix and needs to be unified with the existing logic in a
+        // more generalized and robust way, to account for things like Views
+            case (consumer: Vec[Data @unchecked], producer: Vec[Data @unchecked])
+              if (consumer.length == 0 && !consumer.typeEquivalent(producer)) =>
+              s"consumer (${consumer.cloneType.toString}) and producer (${producer.cloneType.toString}) have different types."
             case (consumer: Aggregate, producer: Aggregate) =>
               matchingZipOfChildren(Some(consumerAlignment), Some(producerAlignment)).foreach {
                 case (ceo, peo) =>
