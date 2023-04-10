@@ -82,6 +82,16 @@ class Firrtl(val crossScalaVersion: String)
   def scoptIvy = v.scopt
 }
 
+object svsim extends mill.Cross[Svsim](v.scalaCrossVersions: _*)
+
+class Svsim(val crossScalaVersion: String)
+  extends common.SvsimModule
+    with ChiselPublishModule
+    with CrossSbtModule
+    with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / os.up / "svsim"
+}
+
 object firrtlut extends mill.Cross[FirrtlUnitTest](v.scalaCrossVersions: _*)
 
 class FirrtlUnitTest(val crossScalaVersion: String)
@@ -162,6 +172,8 @@ class Chisel(val crossScalaVersion: String)
     with CrossSbtModule
     with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
+
+  def svsimModule = svsim(crossScalaVersion)
 
   def macrosModule = macros(crossScalaVersion)
 
