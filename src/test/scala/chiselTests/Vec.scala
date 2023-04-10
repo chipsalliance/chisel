@@ -276,6 +276,55 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
+  property("VecInit.fill(0) should compile and yield a zero-width vector") {
+    val chirrtl = emitCHIRRTL(new Module {
+      val io = IO(new Bundle {
+        val out = Vec(0, UInt(8.W))
+      })
+
+      val zeroWidthVec = VecInit.fill(0)(8.U(8.W))
+      require(zeroWidthVec.getWidth == 0)
+      io.out := zeroWidthVec
+    })
+
+    chirrtl should include("wire zeroWidthVec : UInt<8>[0]")
+  }
+
+  property("Connecting 0-width vectors should have strong typing semantics") {
+    type ConnectOp = (Data, Data) => Unit
+
+    def test[T <: Data](gen: => T)(connect: ConnectOp) = {
+      val chirrtl = emitCHIRRTL(new Module {
+        val io = IO(new Bundle {
+          val out = Vec(0, UInt(8.W))
+        })
+
+        val zeroWidthVec = VecInit.fill(0)(gen)
+
+        connect(io.out, zeroWidthVec)
+      })
+      println(chirrtl)
+    }
+
+    val connections: Seq[ConnectOp] = Seq(
+      (sink, source) => { sink := source },
+      (sink, source) => { sink <> source },
+      (sink, source) => { sink :#= source },
+      (sink, source) => { sink :<= source },
+      (sink, source) => { sink :>= source },
+      (sink, source) => { sink :<>= source }
+    )
+
+    for (connect <- connections)
+      // Connect a UInt<8>[0] to an UInt<8>[0].
+      test(8.U(8.W))(connect)
+
+      // Attempt to connect a SInt<8>[0] to an UInt<8>[0].
+      a[ChiselException] should be thrownBy extractCause[ChiselException] {
+        test(8.S(8.W))(connect)
+      }
+  }
+
   property("Infering widths on huge Vecs should not cause a stack overflow") {
     ChiselStage.emitSystemVerilog(new HugeVecTester(10000))
   }
