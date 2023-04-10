@@ -16,7 +16,8 @@ object Probe {
 
   private def apply_impl[T <: Data](source: => T, writable: Boolean): T = {
     val prevId = Builder.idGen.value
-    val data = source // should only evaluate source once
+    // call Output() to coerce passivity
+    val data = Output(source) // should only evaluate source once
     requireIsChiselType(data)
     val ret = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
     ret.probeInfo = Some(ProbeInfo(writable))
@@ -49,15 +50,11 @@ object Probe {
     pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
   }
 
-  private def probe_impl[T <: Data](source: => T, writable: Boolean): Data = {
-    val prevId = Builder.idGen.value
-    val t = source
-
+  private def probe_impl[T <: Data](source: T, writable: Boolean): Data = {
     // construct probe to return with cloned info
-    val clone = if (!t.mustClone(prevId)) t else t.cloneTypeFull
-    clone.bind(chisel3.internal.ProbeBinding(Builder.forcedUserModule, Builder.currentWhen, t))
-    clone.setRef(ProbeExpr(t.ref))
-    clone.probeInfo = Some(ProbeInfo(writable))
+    val clone = Probe.apply_impl(source.cloneType, writable)
+    clone.bind(chisel3.internal.ProbeBinding(Builder.forcedUserModule, Builder.currentWhen, source))
+    clone.setRef(ProbeExpr(source.ref))
 
     clone
   }

@@ -663,7 +663,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
     * Returns a copy of this data type, with hardware bindings (if any) removed.
-    * Directionality data is still preserved.
+    * Directionality data and probe information is still preserved.
     */
   private[chisel3] def cloneTypeFull: this.type = {
     val clone = this.cloneType // get a fresh object, without bindings
