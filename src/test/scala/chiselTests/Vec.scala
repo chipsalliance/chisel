@@ -315,7 +315,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       (sink, source) => { sink :<>= source }
     )
 
-    for (connect <- connections)
+    for (connect <- connections) {
       // Connect a UInt<8>[0] to an UInt<8>[0].
       test(8.U(8.W))(connect)
 
@@ -323,6 +323,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       a[ChiselException] should be thrownBy extractCause[ChiselException] {
         test(8.S(8.W))(connect)
       }
+    }
   }
 
   property("Infering widths on huge Vecs should not cause a stack overflow") {
