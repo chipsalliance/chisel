@@ -4,6 +4,7 @@ package chisel3
 
 import chisel3._
 import chisel3.Data.ProbeInfo
+import chisel3.reflect.DataMirror.isProbe
 import chisel3.internal.{requireIsChiselType, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.sourceinfo.SourceInfo
@@ -30,7 +31,7 @@ object Probe {
   def writable[T <: Data](source: => T): T = apply_impl(source, true)
 
   private def requireIsProbe(probeExpr: Data): Unit = {
-    require(probeExpr.probeInfo.nonEmpty, s"expected $probeExpr to be a probe.")
+    require(isProbe(probeExpr), s"expected $probeExpr to be a probe.")
   }
 
   def define(sink: Data, probeExpr: Data)(implicit sourceInfo: SourceInfo): Unit = {
