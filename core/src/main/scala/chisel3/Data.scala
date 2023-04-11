@@ -786,51 +786,52 @@ object Data {
     *
     * Only zips immediate children (vs members, which are all children/grandchildren etc.)
     */
-  implicit private[chisel3] val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
+  implicit val dataMatchingZipOfChildren: DataMirror.HasMatchingZipOfChildren[Data] =
+    new DataMirror.HasMatchingZipOfChildren[Data] {
 
-    implicit class VecOptOps(vOpt: Option[Vec[Data]]) {
-      // Like .get, but its already defined on Option
-      def grab(i: Int): Option[Data] = vOpt.flatMap { _.lift(i) }
-      def size = vOpt.map(_.size).getOrElse(0)
-    }
-    implicit class RecordOptGet(rOpt: Option[Record]) {
-      // Like .get, but its already defined on Option
-      def grab(k: String): Option[Data] = rOpt.flatMap { _._elements.get(k) }
-      def keys: Iterable[String] = rOpt.map { r => r._elements.map(_._1) }.getOrElse(Seq.empty[String])
-    }
-    //TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
-    private def isDifferent(l: Option[Data], r: Option[Data]): Boolean =
-      l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
-    private def isRecord(l: Option[Data], r: Option[Data]): Boolean =
-      l.orElse(r).map { _.isInstanceOf[Record] }.getOrElse(false)
-    private def isVec(l: Option[Data], r: Option[Data]): Boolean =
-      l.orElse(r).map { _.isInstanceOf[Vec[_]] }.getOrElse(false)
-    private def isElement(l: Option[Data], r: Option[Data]): Boolean =
-      l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
-
-    /** Zips matching children of `left` and `right`; returns Nil if both are empty
-      *
-      * The canonical API to iterate through two Chisel types or components, where
-      * matching children are provided together, while non-matching members are provided
-      * separately
-      *
-      * Only zips immediate children (vs members, which are all children/grandchildren etc.)
-      *
-      * Returns Nil if both are different types
-      */
-    def matchingZipOfChildren(left: Option[Data], right: Option[Data]): Seq[(Option[Data], Option[Data])] =
-      (left, right) match {
-        case (None, None)                            => Nil
-        case (lOpt, rOpt) if isDifferent(lOpt, rOpt) => Nil
-        case (lOpt: Option[Vec[Data] @unchecked], rOpt: Option[Vec[Data] @unchecked]) if isVec(lOpt, rOpt) =>
-          (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
-        case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
-          (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
-        case (lOpt: Option[Element @unchecked], rOpt: Option[Element @unchecked]) if isElement(lOpt, rOpt) => Nil
-        case _ =>
-          throw new InternalErrorException(s"Match Error: left=$left, right=$right")
+      implicit class VecOptOps(vOpt: Option[Vec[Data]]) {
+        // Like .get, but its already defined on Option
+        def grab(i: Int): Option[Data] = vOpt.flatMap { _.lift(i) }
+        def size = vOpt.map(_.size).getOrElse(0)
       }
-  }
+      implicit class RecordOptGet(rOpt: Option[Record]) {
+        // Like .get, but its already defined on Option
+        def grab(k: String): Option[Data] = rOpt.flatMap { _._elements.get(k) }
+        def keys: Iterable[String] = rOpt.map { r => r._elements.map(_._1) }.getOrElse(Seq.empty[String])
+      }
+      //TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
+      private def isDifferent(l: Option[Data], r: Option[Data]): Boolean =
+        l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
+      private def isRecord(l: Option[Data], r: Option[Data]): Boolean =
+        l.orElse(r).map { _.isInstanceOf[Record] }.getOrElse(false)
+      private def isVec(l: Option[Data], r: Option[Data]): Boolean =
+        l.orElse(r).map { _.isInstanceOf[Vec[_]] }.getOrElse(false)
+      private def isElement(l: Option[Data], r: Option[Data]): Boolean =
+        l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
+
+      /** Zips matching children of `left` and `right`; returns Nil if both are empty
+        *
+        * The canonical API to iterate through two Chisel types or components, where
+        * matching children are provided together, while non-matching members are provided
+        * separately
+        *
+        * Only zips immediate children (vs members, which are all children/grandchildren etc.)
+        *
+        * Returns Nil if both are different types
+        */
+      def matchingZipOfChildren(left: Option[Data], right: Option[Data]): Seq[(Option[Data], Option[Data])] =
+        (left, right) match {
+          case (None, None)                            => Nil
+          case (lOpt, rOpt) if isDifferent(lOpt, rOpt) => Nil
+          case (lOpt: Option[Vec[Data] @unchecked], rOpt: Option[Vec[Data] @unchecked]) if isVec(lOpt, rOpt) =>
+            (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
+          case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
+            (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
+          case (lOpt: Option[Element @unchecked], rOpt: Option[Element @unchecked]) if isElement(lOpt, rOpt) => Nil
+          case _ =>
+            throw new InternalErrorException(s"Match Error: left=$left, right=$right")
+        }
+    }
 
   /**
     * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
