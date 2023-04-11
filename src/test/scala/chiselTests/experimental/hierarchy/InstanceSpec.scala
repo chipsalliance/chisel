@@ -413,6 +413,21 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, _) = getFirrtlAndAnnos(new AddTwoNestedInstantiableDataWrapper(4))
       exactly(3, chirrtl.serialize.split('\n')) should include("i1.in <= i0.out")
     }
+    it(
+      "(3.r): @public should create probes"
+    ) {
+      @instantiable
+      class Leaf extends Module {
+        @public val wire = Probe._autoProbe(WireInit(true.B))
+      }
+      class Top() extends Module {
+        val a = IO(Output(Probe(Bool())))
+        val i = Instance(Definition(new Leaf))
+        a := i.wire
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top())
+      exactly(3, chirrtl.serialize.split('\n')) should include("a <= i._probes.wire")
+    }
   }
   describe("(4) toInstance") {
     it("(4.a): should work on modules") {

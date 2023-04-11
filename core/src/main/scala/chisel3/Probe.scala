@@ -24,6 +24,11 @@ object Probe {
     ret
   }
 
+  def _autoProbe[T](a: T)(implicit si: SourceInfo): T = a match {
+    case d: Data => Builder.currentModule.get._refsToProbe += ((d, si)); a
+    case _ => a
+  }
+
   /** Create a read-only probe type from a Chisel type. This is only used for
     * ports and not for hardware.
     */
