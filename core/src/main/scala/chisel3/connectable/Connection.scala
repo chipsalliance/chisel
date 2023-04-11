@@ -62,7 +62,6 @@ private[chisel3] case object ColonLessGreaterEq extends Connection {
           consumer.base,
           producer.base,
           UnlocatableSourceInfo,
-          Connection.chisel5CompileOptions,
           Builder.referenceUserModule
         ) && consumer.base.typeEquivalent(producer.base)
       } catch {
@@ -109,18 +108,6 @@ private[chisel3] object Connection {
     implicit sourceInfo: SourceInfo
   ): Unit = {
     doConnection(cRoot, pRoot, cOp)
-  }
-
-  // Consumed by the := operator, set to what chisel3 will eventually become.
-  implicit val chisel5CompileOptions = new chisel3.CompileOptions {
-    val connectFieldsMustMatch:      Boolean = true
-    val declaredTypeMustBeUnbound:   Boolean = true
-    val dontTryConnectionsSwapped:   Boolean = false
-    val dontAssumeDirectionality:    Boolean = true
-    val checkSynthesizable:          Boolean = true
-    val explicitInvalidate:          Boolean = true
-    val inferModuleReset:            Boolean = true
-    override def emitStrictConnects: Boolean = true
   }
 
   private def leafConnect(

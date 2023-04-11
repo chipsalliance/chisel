@@ -333,9 +333,9 @@ private[chisel3] object Converter {
           fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info))
       }
       if (!d._isOpaqueType)
-        fir.BundleType(d.elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
+        fir.BundleType(d._elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
       else
-        extractType(d.elements.head._2, childClearDir, info)
+        extractType(d._elements.head._2, childClearDir, info)
     }
   }
 
@@ -371,14 +371,22 @@ private[chisel3] object Converter {
         id.desiredName,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
+    case ctx @ DefIntrinsicModule(id, name, ports, topDir, params) =>
+      fir.IntModule(
+        fir.NoInfo,
+        name,
+        ports.map(p => convert(p, topDir)),
+        id.intrinsic,
+        params.keys.toList.sorted.map { name => convert(name, params(name)) }
+      )
   }
 
   def convert(circuit: Circuit): fir.Circuit =
-    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name)
+    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name, circuit.firrtlAnnotations.toSeq)
 
   // TODO Unclear if this should just be the default
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
-    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name)
+    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name, circuit.firrtlAnnotations.toSeq)
   }
 }

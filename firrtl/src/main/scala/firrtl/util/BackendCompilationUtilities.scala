@@ -150,7 +150,7 @@ object BackendCompilationUtilities extends LazyLogging {
         s"+define+PRINTF_COND=!$topModule.reset",
         s"+define+STOP_COND=!$topModule.reset",
         "-CFLAGS",
-        s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -DVL_USER_FINISH -include V$dutFile.h""",
+        s"""-std=c++11 -Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -DVL_USER_FINISH -include V$dutFile.h""",
         "-Mdir",
         dir.getAbsolutePath,
         "--exe",

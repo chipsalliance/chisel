@@ -25,7 +25,7 @@ class WarningSpec extends ChiselFlatSpec with Utils {
   }
 
   "Warnings" should "be de-duplicated" in {
-    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
     def countSubstring(s: String, sub: String) =
       s.sliding(sub.length).count(_ == sub)
     countSubstring(log, "Casting non-literal UInt") should be(1)

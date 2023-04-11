@@ -8,7 +8,7 @@ import firrtl.testutils._
 class ExtModuleTests extends FirrtlFlatSpec {
   "extmodule" should "serialize and re-parse equivalently" in {
     val input =
-      """|FIRRTL version 1.1.0
+      """|FIRRTL version 1.2.0
          |circuit Top :
          |  extmodule Top :
          |    input y : UInt<0>
@@ -38,7 +38,8 @@ class ExtModuleTests extends FirrtlFlatSpec {
           )
         )
       ),
-      "Top"
+      "Top",
+      Seq.empty
     )
 
     circuit.serialize should be(input)

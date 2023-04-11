@@ -114,12 +114,12 @@ class SIntLitZeroWidthTester extends BasicTester {
 class SIntOpsSpec extends ChiselPropSpec with Utils {
 
   property("SIntOps should elaborate") {
-    ChiselStage.elaborate { new SIntOps }
+    ChiselStage.emitCHIRRTL { new SIntOps }
   }
 
   property("Negative shift amounts are invalid") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new NegativeShift(SInt()))
+      ChiselStage.emitCHIRRTL(new NegativeShift(SInt()))
     }
   }
 

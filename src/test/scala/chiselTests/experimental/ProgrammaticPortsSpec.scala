@@ -35,7 +35,7 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
 
   private def doTest(testMod: => NamedModuleTester): Unit = {
     var module: NamedModuleTester = null
-    ChiselStage.elaborate { module = testMod; module }
+    ChiselStage.emitCHIRRTL { module = testMod; module }
     assert(module.getNameFailures() == Nil)
   }
 
@@ -65,7 +65,7 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
 
   "SuggestName collisions on ports" should "be illegal" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val foo = IO(UInt(8.W)).suggestName("apple")
         val bar = IO(UInt(8.W)).suggestName("apple")
       })

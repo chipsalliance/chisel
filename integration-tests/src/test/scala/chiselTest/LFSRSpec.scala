@@ -4,12 +4,10 @@ package chiselTests.util.random
 
 import chisel3._
 import circt.stage.ChiselStage
-import chisel3.util.{Cat, Counter, Enum}
+import chisel3.util.{Cat, Counter}
 import chisel3.util.random._
 import chisel3.testers.{BasicTester, TesterDriver}
 import chiselTests.{ChiselFlatSpec, Utils}
-
-import math.pow
 
 class FooLFSR(val reduction: LFSRReduce, seed: Option[BigInt]) extends PRNG(4, seed) with LFSR {
   def delta(s: Seq[Bool]): Seq[Bool] = s
@@ -128,7 +126,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
   it should "throw an exception if initialized to a seed of zero for XOR configuration" in {
     {
       the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-        ChiselStage.elaborate(new FooLFSR(XOR, Some(0)))
+        ChiselStage.emitCHIRRTL(new FooLFSR(XOR, Some(0)))
       }
     }.getMessage should include("Seed cannot be zero")
   }
@@ -136,7 +134,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
   it should "throw an exception if initialized to a seed of all ones for XNOR configuration" in {
     {
       the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-        ChiselStage.elaborate(new FooLFSR(XNOR, Some(15)))
+        ChiselStage.emitCHIRRTL(new FooLFSR(XNOR, Some(15)))
       }
     }.getMessage should include("Seed cannot be all ones")
   }
@@ -154,7 +152,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
   it should "throw an exception if no LFSR taps are known" in {
     {
       the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-        ChiselStage.elaborate(new MaxPeriodGaloisLFSR(787))
+        ChiselStage.emitCHIRRTL(new MaxPeriodGaloisLFSR(787))
       }
     }.getMessage should include("No max period LFSR taps stored for requested width")
   }

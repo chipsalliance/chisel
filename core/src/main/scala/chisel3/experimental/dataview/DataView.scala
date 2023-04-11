@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.experimental.{HWTuple10, HWTuple2, HWTuple3, HWTuple4, HWTuple5, HWTuple6, HWTuple7, HWTuple8, HWTuple9}
 import chisel3.experimental.{ChiselSubtypeOf, SourceInfo, UnlocatableSourceInfo}
-import chisel3.ExplicitCompileOptions.Strict
 
 import scala.reflect.runtime.universe.WeakTypeTag
 import annotation.implicitNotFound
@@ -165,7 +164,7 @@ object DataView {
   ): DataView[Seq[A], Vec[B]] = {
     // TODO this would need a better way to determine the prototype for the Vec
     DataView.mapping[Seq[A], Vec[B]](
-      xs => Vec(xs.size, chiselTypeClone(xs.head.viewAs[B]))(sourceInfo, Strict), // xs.head is not correct in general
+      xs => Vec(xs.size, chiselTypeClone(xs.head.viewAs[B]))(sourceInfo), // xs.head is not correct in general
       { case (s, v) => s.zip(v).map { case (a, b) => a.viewAs[B] -> b } }
     )
   }
@@ -608,8 +607,8 @@ object PartialDataView {
       mkView,
       {
         case (a, b) =>
-          val aElts = a.elements
-          val bElts = b.elements
+          val aElts = a._elements
+          val bElts = b._elements
           val bKeys = bElts.keySet
           val keys = aElts.keysIterator.filter(bKeys.contains)
           keys.map(k => aElts(k) -> bElts(k)).toSeq

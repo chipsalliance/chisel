@@ -57,6 +57,7 @@ class ChiselPlugin(val global: Global) extends Plugin {
   val components: List[PluginComponent] = List[PluginComponent](
     new ChiselComponent(global, arguments),
     new BundleComponent(global, arguments),
+    new IdentifierComponent(global, arguments),
     new DeprecateSFCComponent(global, arguments)
   )
 
