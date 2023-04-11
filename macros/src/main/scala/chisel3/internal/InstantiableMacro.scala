@@ -18,6 +18,34 @@ private[chisel3] object instantiableMacro {
       //  function and the argument to the generated implicit class.
       val resultStats = stats.flatMap { stat =>
         stat match {
+          case hasProbe: ValOrDefDef if hasProbe.mods.annotations.toString.contains("new probe()") =>
+            def isValid(v: ValDef) = {
+              import c.universe.Flag._
+              !(v.mods.hasFlag(PRIVATE) || v.mods.hasFlag(PROTECTED)) && v.mods.hasFlag(FINAL)
+            }
+            hasProbe match {
+              case aDef: DefDef =>
+                c.error(aDef.pos, s"Cannot mark a def as @public")
+                Nil
+              // For now, we only omit protected/private vals
+              case aVal: ValDef if !isValid(aVal) =>
+                c.error(aVal.pos, s"@probe val's must be public and final")
+                Nil
+              case aVal: ValDef if isValid(aVal) =>
+                extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
+                if (aVal.name.toString == aVal.children.last.toString) Nil
+                require(aVal.rhs != EmptyTree)
+                Seq(
+                  treeCopy.ValDef(
+                    aVal,
+                    aVal.mods,
+                    aVal.name,
+                    aVal.tpt,
+                    q"chisel3.Probe._autoProbe(${aVal.rhs}, new chisel3.internal.MacroGenerated{})"
+                  )
+                )
+              case other => Seq(other)
+            }
           case hasPublic: ValOrDefDef if hasPublic.mods.annotations.toString.contains("new public()") =>
             hasPublic match {
               case aDef: DefDef =>
@@ -103,3 +131,4 @@ private[chisel3] class instantiable extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro instantiableMacro.impl
 }
 private[chisel3] class public extends StaticAnnotation
+private[chisel3] class probe extends StaticAnnotation

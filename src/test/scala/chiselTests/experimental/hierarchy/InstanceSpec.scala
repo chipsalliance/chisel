@@ -5,7 +5,7 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+import chisel3.experimental.hierarchy.{instantiable, probe, public, Definition, Instance}
 import chisel3.util.{DecoupledIO, Valid}
 
 // TODO/Notes
@@ -412,6 +412,33 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     ) {
       val (chirrtl, _) = getFirrtlAndAnnos(new AddTwoNestedInstantiableDataWrapper(4))
       exactly(3, chirrtl.serialize.split('\n')) should include("i1.in <= i0.out")
+    }
+    it("(3.r): @probe should create probes") {
+      @instantiable
+      class Leaf extends Module {
+        @probe final val w = WireInit(true.B)
+      }
+      class Top() extends Module {
+        val a = IO(Output(Probe(Bool())))
+        val i = Instance(Definition(new Leaf))
+        Probe.define(a, i.w)
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top())
+      exactly(1, chirrtl.serialize.split('\n')) should include("define a = i._ref_w")
+    }
+    it("(3.s): @probe should create not create a probe if its already a probe") {
+      @instantiable
+      class Leaf extends Module {
+        @probe final val w = WireInit(true.B)
+      }
+      @instantiable
+      class Top() extends Module {
+        val i = Instance(Definition(new Leaf))
+        @probe final val x = i.w
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top())
+      println(chirrtl.serialize) // TODO: _ref_i_ref_w should be named as 'x' or '_ref_x'?
+      exactly(1, chirrtl.serialize.split('\n')) should include("define _ref_i_ref_w = i._ref_w")
     }
   }
   describe("(4) toInstance") {

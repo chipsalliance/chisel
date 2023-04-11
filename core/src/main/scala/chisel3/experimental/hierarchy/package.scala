@@ -45,6 +45,7 @@ package object hierarchy {
     * }}}
     */
   class public extends chisel3.internal.public
+  class probe extends chisel3.internal.probe
 
   type Instance[P] = core.Instance[P]
   val Instance = core.Instance

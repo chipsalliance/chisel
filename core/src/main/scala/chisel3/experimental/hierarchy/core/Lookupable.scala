@@ -345,7 +345,10 @@ object Lookupable {
         def getIoMap(hierarchy: Hierarchy[_]): Option[Map[Data, Data]] = {
           hierarchy.underlying match {
             case Clone(x: ModuleClone[_]) => Some(x.ioMap)
-            case Proto(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data) => data -> data }.toMap)
+            case Proto(x: BaseModule) =>
+              Some(
+                x._refPorts.toMap ++ x.getChiselPorts.map { case (_, data) => data -> data }.toMap
+              )
             case Clone(x: InstantiableClone[_]) => getIoMap(x._innerContext)
             case Clone(x: InstanceClone[_]) => None
             case other => {
