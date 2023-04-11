@@ -42,23 +42,23 @@ object ConnectableSpec {
     }
   }
 
-  def vec[T <: Data](tpe:                 T, n:          Int = 3)(implicit c: CompileOptions) = Vec(n, tpe)
-  def alignedBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
+  def vec[T <: Data](tpe:                 T, n: Int = 3) = Vec(n, tpe)
+  def alignedBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(Flipped(fieldType))
   }
-  def mixedBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
+  def mixedBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(fieldType)
   }
 
-  def alignedFooBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
+  def alignedFooBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
   }
-  def flippedBarBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
+  def flippedBarBundle[T <: Data](fieldType: T) = new Bundle {
     val bar = Flipped(fieldType)
   }
-  def opaqueType[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Record with OpaqueType {
+  def opaqueType[T <: Data](fieldType: T) = new Record with OpaqueType {
     lazy val elements = SeqMap("" -> Flipped(Flipped(fieldType)))
   }
 

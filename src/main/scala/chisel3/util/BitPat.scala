@@ -110,10 +110,10 @@ object BitPat {
     final def =/=(that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
     /** @group SourceInfoTransformMacro */
-    def do_===(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
+    def do_===(that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x
 
     /** @group SourceInfoTransformMacro */
-    def do_=/=(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
+    def do_=/=(that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
   }
 }
 
@@ -331,29 +331,29 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
     MurmurHash3.seqHash(Seq(this.value, this.mask, this.width))
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
+  def do_apply(x: Int)(implicit sourceInfo: SourceInfo): BitPat = {
     do_apply(x, x)
   }
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
+  def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo): BitPat = {
     require(width > x && y >= 0, s"Invalid bit range ($x, $y), index should be bounded by (${width - 1}, 0)")
     require(x >= y, s"Invalid bit range ($x, $y), x should be greater or equal to y.")
     BitPat(s"b${rawString.slice(width - x - 1, width - y)}")
   }
 
   /** @group SourceInfoTransformMacro */
-  def do_===(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def do_===(that: UInt)(implicit sourceInfo: SourceInfo): Bool = {
     value.asUInt === (that & mask.asUInt)
   }
 
   /** @group SourceInfoTransformMacro */
-  def do_=/=(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def do_=/=(that: UInt)(implicit sourceInfo: SourceInfo): Bool = {
     !(this === that)
   }
 
   /** @group SourceInfoTransformMacro */
-  def do_##(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
+  def do_##(that: BitPat)(implicit sourceInfo: SourceInfo): BitPat = {
     new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)
   }
 

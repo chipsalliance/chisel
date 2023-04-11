@@ -13,7 +13,6 @@ import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.reflect.DataMirror
 import chisel3.reflect.DataMirror.internal.isSynthesizable
 import chisel3.internal.Builder
-import chisel3.ExplicitCompileOptions
 
 /** Create an [[Instance]] of a [[Module]]
   *
@@ -106,7 +105,7 @@ object Instantiate {
   }
 
   import chisel3.internal.BuilderContextCache
-  private case class CacheKey[A <: BaseModule](args: Any, tt: ru.WeakTypeTag[A], co: CompileOptions)
+  private case class CacheKey[A <: BaseModule](args: Any, tt: ru.WeakTypeTag[A])
       extends BuilderContextCache.Key[Definition[A]]
 
   /** This is not part of the public API, do not call directly! */
@@ -114,19 +113,17 @@ object Instantiate {
     args: K,
     f:    K => A
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Instance[A] = {
     val tag = implicitly[ru.WeakTypeTag[A]]
     // Include type of module in key since different modules could have the same arguments
-    // CompileOptions need to be included but are likely a source of confusion for users
-    val key = CacheKey(boxAllData(args), tag, compileOptions)
+    val key = CacheKey(boxAllData(args), tag)
     val defn = Builder.contextCache
       .getOrElseUpdate(
         key, {
           // The definition needs to have no source locator because otherwise it will be unstably
           // derived from the first invocation of Instantiate for the particular Module
-          Definition.do_apply(f(args))(UnlocatableSourceInfo, compileOptions)
+          Definition.do_apply(f(args))(UnlocatableSourceInfo)
         }
       )
       .asInstanceOf[Definition[A]]

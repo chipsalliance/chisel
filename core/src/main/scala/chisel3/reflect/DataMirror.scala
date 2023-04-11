@@ -149,7 +149,7 @@ object DataMirror {
     def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
       case _: Element => Seq()
       case r: Record =>
-        r.elements.toSeq.flatMap {
+        r._elements.toSeq.flatMap {
           case (eltName, elt) =>
             if (r._isOpaqueType) { getPortNames(s"${name}", elt) }
             else { getPortNames(s"${name}_${eltName}", elt) }

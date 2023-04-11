@@ -207,21 +207,21 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
 
   property("MixedVecs should not be able to take hardware types") {
     a[ExpectedChiselTypeException] should be thrownBy extractCause[ExpectedChiselTypeException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {})
         val hw = Wire(MixedVec(Seq(UInt(8.W), Bool())))
         val illegal = MixedVec(hw)
       })
     }
     a[ExpectedChiselTypeException] should be thrownBy extractCause[ExpectedChiselTypeException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {})
         val hw = Reg(MixedVec(Seq(UInt(8.W), Bool())))
         val illegal = MixedVec(hw)
       })
     }
     a[ExpectedChiselTypeException] should be thrownBy extractCause[ExpectedChiselTypeException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val v = Input(MixedVec(Seq(UInt(8.W), Bool())))
         })
@@ -256,7 +256,7 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
 
   property("Connecting a MixedVec and something of different size should report a ChiselException") {
     an[IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val out = Output(MixedVec(Seq(UInt(8.W), Bool())))
         })
@@ -265,7 +265,7 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
       })
     }
     an[IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val out = Output(MixedVec(Seq(UInt(8.W), Bool())))
         })
