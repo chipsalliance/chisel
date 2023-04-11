@@ -34,7 +34,6 @@ object ChiselPlugin {
     val scalaVersion = scala.util.Properties.versionNumberString.split('.')
     val scalaVersionOk = scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12
     val skipFile = arguments.skipFiles(unit.source.file.path)
-
     if (scalaVersionOk && !skipFile) {
       true
     } else {
@@ -60,8 +59,6 @@ class ChiselPlugin(val global: Global) extends Plugin {
     new BundleComponent(global, arguments),
     new DeprecateSFCComponent(global, arguments)
   )
-
-  private var alreadyWarned = false
 
   override def init(options: List[String], error: String => Unit): Boolean = {
     // Deprecate Scala 2.12 via the compiler plugin
