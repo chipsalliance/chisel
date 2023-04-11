@@ -130,7 +130,7 @@ private[chisel3] object MonoConnect {
         // TODO: This is a "band-aid" fix and needs to be unified with the existing logic in a
         // more generalized and robust way, to account for things like Views
         if (sink_v.length == 0 && !sink_v.typeEquivalent(source_v)) {
-          throw MismatchedException(sink_v.cloneType.toString, source_v.cloneType.toString)
+          throw MismatchedException(sink, source)
         }
 
         val sinkReified:   Option[Aggregate] = if (isView(sink_v)) reifyToAggregate(sink_v) else Some(sink_v)
