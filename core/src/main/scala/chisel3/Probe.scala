@@ -24,8 +24,9 @@ object Probe {
     ret
   }
 
-  def _autoProbe[T](a: T)(implicit si: SourceInfo): T = a match {
-    case d: Data => Builder.currentModule.get._refsToProbe += ((d, si)); a
+  def _autoProbe[T](a: T, macroGenerated: internal.MacroGenerated)(implicit si: SourceInfo): T = a match {
+    case d: Data =>
+      Builder.currentModule.get._refsToProbe += ((d, si)); a
     case _ => a
   }
 

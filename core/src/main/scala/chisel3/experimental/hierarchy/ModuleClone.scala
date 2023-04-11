@@ -36,7 +36,10 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends Pse
         Map(protoBB._io.get -> getPorts._elements("io"))
       case _ =>
         val name2Port = getPorts._elements
-        getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+        val normalIOMap = getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+        val refPorts = getProto._refPorts.toMap.map { case (d, r) => d -> normalIOMap(r) }
+        val x = refPorts ++ normalIOMap
+        x
     }
   }
   // This module doesn't actually exist in the FIRRTL so no initialization to do

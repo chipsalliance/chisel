@@ -53,10 +53,13 @@ object Module extends SourceInfoDoc {
     val module: T = bc // bc is actually evaluated here
 
     // Add autoRef ports
-    module._refsToProbe.foreach { case (d, si) =>
-      module._refPorts += ((d, IO(Output(Probe(Bool())))(si).suggestName("_ref_" + d._computeName(None))))
+    module._refsToProbe.foreach {
+      case (d, si) =>
+        val port = IO(Output(Probe(d.cloneTypeFull)))(si).suggestName("_ref_" + d.earlyName)
+        module._refPorts += ((d, port))
+        val probeValue = if (chisel3.reflect.DataMirror.isProbe(d)) d else Probe.probe(d)
+        Probe.define(port, probeValue)
     }
-
 
     if (Builder.whenDepth != 0) {
       throwException("Internal Error! when() scope depth is != 0, this should have been caught!")

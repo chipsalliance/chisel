@@ -413,20 +413,32 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, _) = getFirrtlAndAnnos(new AddTwoNestedInstantiableDataWrapper(4))
       exactly(3, chirrtl.serialize.split('\n')) should include("i1.in <= i0.out")
     }
-    it(
-      "(3.r): @public should create probes"
-    ) {
+    it("(3.r): @public should create probes") {
       @instantiable
       class Leaf extends Module {
-        @public val wire = Probe._autoProbe(WireInit(true.B))
+        @public val w = WireInit(true.B)
       }
       class Top() extends Module {
         val a = IO(Output(Probe(Bool())))
         val i = Instance(Definition(new Leaf))
-        a := i.wire
+        a := i.w
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top())
-      exactly(3, chirrtl.serialize.split('\n')) should include("a <= i._probes.wire")
+      exactly(1, chirrtl.serialize.split('\n')) should include("a <= i._ref_w")
+    }
+    it("(3.s): @public should create not create a probe if its already a probe") {
+      @instantiable
+      class Leaf extends Module {
+        @public val w = WireInit(true.B)
+      }
+      @instantiable
+      class Top() extends Module {
+        val i = Instance(Definition(new Leaf))
+        @public val x = i.w
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top())
+      println(chirrtl.serialize) // TODO: _ref_i_ref_w should be named as 'x' or '_ref_x'?
+      exactly(1, chirrtl.serialize.split('\n')) should include("define _ref_i_ref_w = i._ref_w")
     }
   }
   describe("(4) toInstance") {
