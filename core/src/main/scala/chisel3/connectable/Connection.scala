@@ -203,7 +203,8 @@ private[chisel3] object Connection {
             // more generalized and robust way
             case (consumer: Vec[Data @unchecked], producer: Vec[Data @unchecked])
                 if (consumer.length == 0 && !consumer.typeEquivalent(producer)) =>
-              errors = (s"Consumer (${consumer.cloneType.toString}) and producer (${producer.cloneType.toString}) have different types.") +: errors
+              errors =
+                (s"Consumer (${consumer.cloneType.toString}) and producer (${producer.cloneType.toString}) have different types.") +: errors
 
             case (consumer: Aggregate, producer: Aggregate) =>
               matchingZipOfChildren(Some(consumerAlignment), Some(producerAlignment)).foreach {
