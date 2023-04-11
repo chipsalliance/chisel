@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental
+package chisel3
 
 import chisel3._
-import chisel3.internal.Builder
+import chisel3.internal.{Builder, requireIsChiselType}
 
 /** Create a constant type in FIRRTL, which is guaranteed to take a single
   * constant value.

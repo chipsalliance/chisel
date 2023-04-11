@@ -620,7 +620,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       implicit val compileOptions = ExplicitCompileOptions.Strict
       implicit val sourceInfo = UnlocatableSourceInfo
       if (makeConst) {
-        WireDefault(chisel3.experimental.Const(chiselTypeOf(this)), this).ref
+        WireDefault(Const(chiselTypeOf(this)), this).ref
       } else {
         WireDefault(this).ref
       }

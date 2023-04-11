@@ -1,8 +1,7 @@
-package chiselTests.experimental
+package chiselTests
 
 import chisel3._
 import chiselTests.{ChiselFlatSpec, Utils}
-import chisel3.experimental.Const
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 import circt.stage.ChiselStage
