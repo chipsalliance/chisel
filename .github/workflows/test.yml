@@ -195,6 +195,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:

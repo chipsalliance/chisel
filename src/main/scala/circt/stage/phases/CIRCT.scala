@@ -4,6 +4,7 @@ package circt.stage.phases
 
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
 import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation, SourceRootAnnotation}
+import chisel3.BuildInfo.{version => chiselVersion, firtoolVersion}
 
 import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
@@ -26,6 +27,7 @@ import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
 import _root_.logger.LogLevel
 import chisel3.InternalErrorException
 
+import scala.util.control.NoStackTrace
 import scala.collection.mutable
 import java.io.File
 
@@ -81,6 +83,10 @@ private[this] object Exceptions {
         |${"-" * 78}""".stripMargin
   }
 
+  def versionAdvice: String =
+    s"Note that this version of Chisel ($chiselVersion) was published against firtool version " +
+      firtoolVersion.getOrElse("<unknown>") + "."
+
   /** Indicates that the firtool binary failed with a non-zero exit code.  This generally indicates a compiler error
     * either originating from a user error or from a crash.
     *
@@ -92,10 +98,11 @@ private[this] object Exceptions {
   class FirtoolNonZeroExitCode(binary: String, exitCode: Int, stdout: String, stderr: String)
       extends RuntimeException(
         dramaticError(
-          header = s"${binary} returned a non-zero exit code",
+          header = s"${binary} returned a non-zero exit code. $versionAdvice",
           body = s"ExitCode:\n${exitCode}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}"
         )
       )
+      with NoStackTrace
 
   /** Indicates that the firtool binary was not found.  This likely indicates that the user didn't install
     * CIRCT/firtool.

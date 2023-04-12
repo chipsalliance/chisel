@@ -5,6 +5,18 @@ enablePlugins(SiteScaladocPlugin)
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
+lazy val firtoolVersion = settingKey[Option[String]]("Determine the version of firtool on the PATH")
+ThisBuild / firtoolVersion := {
+  import scala.sys.process._
+  val Version = """^CIRCT firtool-(\S+)$""".r
+  try {
+    val lines = Process(Seq("firtool", "--version")).lineStream
+    lines.collectFirst { case Version(v) => v }
+  } catch {
+    case e: java.io.IOException => None
+  }
+}
+
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT"
   // chiseltest intentionally excluded so that release automation does not try to set its version
@@ -69,6 +81,16 @@ lazy val publishSettings = Seq(
   versionScheme := Some("pvp"),
   publishMavenStyle := true,
   Test / publishArtifact := false,
+  // We are just using 'publish / skip' as a hook to run checks required for publishing,
+  // but that are not necessarily required for local development or running testing in CI
+  publish / skip := {
+    // Check that firtool exists on the PATH so Chisel can use the version it was tested against
+    // in error messages
+    if (firtoolVersion.value.isEmpty) {
+      sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
+    }
+    (publish / skip).value
+  },
   pomIncludeRepository := { x => false },
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
@@ -197,7 +219,7 @@ lazy val core = (project in file("core"))
   .settings(
     buildInfoPackage := "chisel3",
     buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion, firtoolVersion)
   )
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
