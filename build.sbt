@@ -5,14 +5,6 @@ enablePlugins(SiteScaladocPlugin)
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
-<<<<<<< HEAD
-val defaultVersions = Map(
-  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT"
-  // chiseltest intentionally excluded so that release automation does not try to set its version
-  // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
-  // when doing publishing and will not find a chiseltest release since chiseltest depends on
-  // chisel3
-=======
 lazy val firtoolVersion = settingKey[Option[String]]("Determine the version of firtool on the PATH")
 ThisBuild / firtoolVersion := {
   import scala.sys.process._
@@ -25,12 +17,12 @@ ThisBuild / firtoolVersion := {
   }
 }
 
-lazy val minimalSettings = Seq(
-  organization := "org.chipsalliance",
-  scalacOptions := Seq("-deprecation", "-feature"),
-  scalaVersion := "2.13.10",
-  crossScalaVersions := Seq("2.13.10", "2.12.17")
->>>>>>> 06b569daa (Report firtool version when firtool invocation errors (#3174))
+val defaultVersions = Map(
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT"
+  // chiseltest intentionally excluded so that release automation does not try to set its version
+  // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
+  // when doing publishing and will not find a chiseltest release since chiseltest depends on
+  // chisel3
 )
 
 lazy val commonSettings = Seq(
@@ -89,8 +81,17 @@ lazy val publishSettings = Seq(
   versionScheme := Some("pvp"),
   publishMavenStyle := true,
   Test / publishArtifact := false,
+  // We are just using 'publish / skip' as a hook to run checks required for publishing,
+  // but that are not necessarily required for local development or running testing in CI
+  publish / skip := {
+    // Check that firtool exists on the PATH so Chisel can use the version it was tested against
+    // in error messages
+    if (firtoolVersion.value.isEmpty) {
+      sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
+    }
+    (publish / skip).value
+  },
   pomIncludeRepository := { x => false },
-<<<<<<< HEAD
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
@@ -106,33 +107,6 @@ lazy val publishSettings = Seq(
         <url>http://www.eecs.berkeley.edu/~jrb/</url>
       </developer>
     </developers>,
-=======
-  homepage := Some(url("https://www.chisel-lang.org")),
-  organizationHomepage := Some(url("https://www.chipsalliance.org")),
-  licenses := List(License.Apache2),
-  developers := List(
-    Developer("jackkoenig", "Jack Koenig", "jack.koenig3@gmail.com", url("https://github.com/jackkoenig")),
-    Developer("azidar", "Adam Izraelevitz", "azidar@gmail.com", url("https://github.com/azidar")),
-    Developer("seldridge", "Schuyler Eldridge", "schuyler.eldridge@gmail.com", url("https://github.com/seldridge"))
-  ),
-  sonatypeCredentialHost := "s01.oss.sonatype.org",
-  sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
-  // We are just using 'publish / skip' as a hook to run checks required for publishing,
-  // but that are not necessarily required for local development or running testing in CI
-  publish / skip := {
-    // Check that SBT Dynver can properly derive a version which requires unshallow clone
-    val v = version.value
-    if (dynverGitDescribeOutput.value.hasNoTags) {
-      sys.error(s"Failed to derive version from git tags. Maybe run `git fetch --unshallow`? Version: $v")
-    }
-    // Check that firtool exists on the PATH so Chisel can use the version it was tested against
-    // in error messages
-    if (firtoolVersion.value.isEmpty) {
-      sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
-    }
-    (publish / skip).value
-  },
->>>>>>> 06b569daa (Report firtool version when firtool invocation errors (#3174))
   publishTo := {
     val v = version.value
     val nexus = "https://oss.sonatype.org/"
