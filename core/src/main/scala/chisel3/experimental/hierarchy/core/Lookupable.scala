@@ -380,9 +380,10 @@ object Lookupable {
             val existingMod = Builder.currentModule
             Builder.currentModule = Some(mod)
             val newChild: T = mem match {
-              case m: Mem[_] => new Mem(m.t.asInstanceOf[Data].cloneTypeFull, m.length).asInstanceOf[T]
+              case m: Mem[_] => new Mem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, sourceInfo).asInstanceOf[T]
               case m: SyncReadMem[_] =>
-                new SyncReadMem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, m.readUnderWrite).asInstanceOf[T]
+                new SyncReadMem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, m.readUnderWrite, sourceInfo)
+                  .asInstanceOf[T]
             }
             Builder.currentModule = existingMod
             newChild.setRef(mem.getRef, true)

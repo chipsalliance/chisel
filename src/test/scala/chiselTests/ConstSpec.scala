@@ -16,12 +16,15 @@ class ConstSpec extends ChiselFlatSpec with Utils {
   }
 
   "Const modifier on a register" should "fail" in {
-    val err = intercept[java.lang.IllegalArgumentException] {
-      ChiselStage.emitCHIRRTL(new Module {
-        val foo = Reg(Const(SInt(4.W)))
-      })
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val foo = Reg(Const(SInt(4.W)))
+        },
+        Array("--throw-on-first-error")
+      )
     }
-    err.getMessage should be("requirement failed: Cannot create register with constant value.")
+    exc.getMessage should be("Cannot create register with constant value.")
   }
 
   "Const modifier on I/O" should "emit FIRRTL const descriptors" in {
@@ -44,6 +47,16 @@ class ConstSpec extends ChiselFlatSpec with Utils {
     chirrtl should include("output io : const { flip in : const AsyncReset[5], out : const UInt<1>}")
   }
 
-  // TODO mems
+  "Memories of Const type" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val mem = SyncReadMem(1024, Const(Vec(4, UInt(32.W))))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Mem type cannot be const.")
+  }
 
 }
