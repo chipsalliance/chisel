@@ -8,13 +8,20 @@ import circt.stage.ChiselStage
 
 class ConstSpec extends ChiselFlatSpec with Utils {
 
-  "Const modifier on a wire or register" should "emit FIRRTL const descriptors" in {
+  "Const modifier on a wire" should "emit FIRRTL const descriptors" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val foo = Wire(Const(UInt(8.W)))
-      val bar = Reg(Const(SInt(4.W)))
     })
     chirrtl should include("wire foo : const UInt<8>")
-    chirrtl should include("reg bar : const SInt<4>")
+  }
+
+  "Const modifier on a register" should "fail" in {
+    val err = intercept[java.lang.IllegalArgumentException] {
+      ChiselStage.emitCHIRRTL(new Module {
+        val foo = Reg(Const(SInt(4.W)))
+      })
+    }
+    err.getMessage should be("requirement failed: Cannot create register with constant value.")
   }
 
   "Const modifier on I/O" should "emit FIRRTL const descriptors" in {
@@ -36,5 +43,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
     })
     chirrtl should include("output io : const { flip in : const AsyncReset[5], out : const UInt<1>}")
   }
+
+  // TODO mems
 
 }
