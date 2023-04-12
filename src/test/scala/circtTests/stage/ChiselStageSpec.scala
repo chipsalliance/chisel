@@ -521,6 +521,13 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       lines(idx + 2) should equal("         ^")
     }
 
+    it("should report the firtool version against which Chisel was published in error messages") {
+      val e = intercept[java.lang.Exception] {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.ErrorCaughtByFirtool)
+      }
+      val version = chisel3.BuildInfo.firtoolVersion.getOrElse("<unknown>")
+      e.getMessage should include(s"firtool version $version")
+    }
   }
 
   describe("ChiselStage custom transform support") {
