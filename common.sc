@@ -103,6 +103,8 @@ trait CoreModule
 
   def upickleModuleIvy: Dep
 
+  def firtoolVersion: T[String]
+
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, firrtlModule)
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
@@ -118,6 +120,7 @@ trait CoreModule
     Map(
       "buildInfoPackage" -> artifactName(),
       "version" -> buildVersion(),
+      "firtoolVersion" -> firtoolVersion(),
       "scalaVersion" -> scalaVersion()
     )
   }

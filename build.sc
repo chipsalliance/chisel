@@ -146,6 +146,20 @@ class Core(val crossScalaVersion: String)
   def osLibModuleIvy = v.osLib
 
   def upickleModuleIvy = v.upickle
+
+  def firtoolVersion = T {
+    import scala.sys.process._
+    val Version = """^CIRCT firtool-(\S+)$""".r
+    try {
+      val lines = Process(Seq("firtool", "--version")).lineStream
+      lines.collectFirst { 
+        case Version(v) => v
+        case _ => "unknown"
+      }.get
+    } catch {
+      case e: java.io.IOException => sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
+    }
+  }
 }
 
 object plugin extends mill.Cross[Plugin](v.pluginScalaCrossVersions: _*)
