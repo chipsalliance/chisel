@@ -183,15 +183,14 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
       ConstType(
         BundleType(
           Seq(
-            Field("real", Default, UIntType(IntWidth(32))),
-            Field("imag", Default, UIntType(IntWidth(32))),
-            Field("other", Default, ConstType(SIntType(IntWidth(1))))
+            Field("foo", Default, UIntType(IntWidth(32))),
+            Field("bar", Default, ConstType(SIntType(IntWidth(1))))
           )
         )
       )
     )
     Serializer.serialize(constBundle) should be(
-      "wire constBundle : const { real : UInt<32>, imag : UInt<32>, other : const SInt<1>}"
+      "wire constBundle : const { foo : UInt<32>, bar : const SInt<1>}"
     )
 
     val constVec = DefWire(NoInfo, "constVec", VectorType(ClockType, 10))
