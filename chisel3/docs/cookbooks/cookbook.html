@@ -926,7 +926,7 @@ to a register:</p>
 </code></pre></div></div>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">BadRegConnect</span><span class="o">)</span>
-<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code</span>
+<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code. Note that this version of Chisel (0.0.0+1-06b569da-SNAPSHOT) was published against firtool version 1.37.0.</span>
 <span class="c1">// ------------------------------------------------------------------------------</span>
 <span class="c1">// ExitCode:</span>
 <span class="c1">// 1</span>
@@ -937,20 +937,6 @@ to a register:</p>
 <span class="c1">// cookbook.md:903:20: note: see current operation: %5 = "firrtl.reg"(%arg0) {annotations = [], name = "monitor", nameKind = #firrtl&lt;name_kind interesting_name&gt;} : (!firrtl.clock) -&gt; !firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;</span>
 <span class="c1">// </span>
 <span class="c1">// ------------------------------------------------------------------------------</span>
-<span class="c1">// 	at circt.stage.phases.CIRCT.transform(CIRCT.scala:245)</span>
-<span class="c1">// 	at circt.stage.phases.CIRCT.transform(CIRCT.scala:119)</span>
-<span class="c1">// 	at firrtl.options.DependencyManager.$anonfun$transform$5(DependencyManager.scala:280)</span>
-<span class="c1">// 	at firrtl.Utils$.time(Utils.scala:53)</span>
-<span class="c1">// 	at firrtl.options.DependencyManager.$anonfun$transform$3(DependencyManager.scala:280)</span>
-<span class="c1">// 	at scala.collection.LinearSeqOps.foldLeft(LinearSeq.scala:183)</span>
-<span class="c1">// 	at scala.collection.LinearSeqOps.foldLeft$(LinearSeq.scala:179)</span>
-<span class="c1">// 	at scala.collection.immutable.List.foldLeft(List.scala:79)</span>
-<span class="c1">// 	at firrtl.options.DependencyManager.transform(DependencyManager.scala:269)</span>
-<span class="c1">// 	at firrtl.options.DependencyManager.transform$(DependencyManager.scala:255)</span>
-<span class="c1">// 	at firrtl.options.PhaseManager.transform(DependencyManager.scala:443)</span>
-<span class="c1">// 	at circt.stage.ChiselStage$.emitSystemVerilog(ChiselStage.scala:185)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp44$$anonfun$172.apply(cookbook.md:912)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp44$$anonfun$172.apply(cookbook.md:912)</span>
 </code></pre></div></div>
 
 <p>While there is no construct to “strip direction” in Chisel3, wrapping a type in <code class="language-plaintext highlighter-rouge">Output(...)</code>
