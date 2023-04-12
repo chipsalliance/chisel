@@ -302,15 +302,8 @@ private[chisel3] object Converter {
 
   def extractType(data: Data, info: SourceInfo): fir.Type = extractType(data, false, info)
 
-  def extractType(data: Data, clearDir: Boolean, info: SourceInfo, checkConst: Boolean = true): fir.Type = {
-    if (checkConst && data.isConst) {
-      fir.ConstType(extractType(data, clearDir, info, false))
-    } else {
-      extractTypeImpl(data, clearDir, info)
-    }
-  }
-
-  def extractTypeImpl(data: Data, clearDir: Boolean, info: SourceInfo): fir.Type = data match {
+  def extractType(data: Data, clearDir: Boolean, info: SourceInfo, checkConst: Boolean = true): fir.Type = data match {
+    case _ if (checkConst && data.isConst) => fir.ConstType(extractType(data, clearDir, info, false))
     case _: Clock      => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType  => fir.ResetType
