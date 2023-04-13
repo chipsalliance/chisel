@@ -14,7 +14,17 @@ import chisel3.stage.{
 }
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
-import firrtl.options.{BareShell, Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
+import firrtl.options.{
+  BareShell,
+  CustomFileEmission,
+  Dependency,
+  Phase,
+  PhaseManager,
+  Shell,
+  Stage,
+  StageMain,
+  Unserializable
+}
 import firrtl.stage.FirrtlCircuitAnnotation
 
 trait CLI { this: BareShell =>
@@ -96,14 +106,18 @@ object ChiselStage {
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
     ) ++ (new BareShell("circt") with CLI).parse(args)
 
-    phase
-      .transform(annos)
-      .collectFirst {
-        case a: ChiselCircuitAnnotation => CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat).getBytes
-      }
-      .get
-      .map(_.toChar)
-      .mkString
+    val resultAnnos = phase.transform(annos)
+
+    var circuitAnno: Option[CircuitSerializationAnnotation] = None
+    val inFileAnnos = resultAnnos.flatMap {
+      case a: ChiselCircuitAnnotation =>
+        circuitAnno = Some(CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat))
+        None
+      case _: Unserializable     => None
+      case _: CustomFileEmission => None
+      case a => Some(a)
+    }
+    circuitAnno.get.emitLazily(inFileAnnos).mkString
   }
 
   /** Return a CHIRRTL circuit for a Chisel module

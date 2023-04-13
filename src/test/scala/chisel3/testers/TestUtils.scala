@@ -31,7 +31,7 @@ object TestUtils {
     val circuit = processedAnnos.collectFirst {
       case FirrtlCircuitAnnotation(a) => a
     }.get
-    (circuit, processedAnnos ++ circuit.annotations)
+    (circuit, processedAnnos)
   }
 
 }
