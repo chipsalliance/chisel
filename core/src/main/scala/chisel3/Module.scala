@@ -296,6 +296,8 @@ package experimental {
     val context = {
       Builder.currentContext match {
         case None => Builder.activeCircuit.instantiateOriginChildWithValue(definitionIdentifier, this)
+        case Some(c) if c.key.startsWith("circuit$") =>
+          c.instantiateOriginChildWithValue(definitionIdentifier, this)
         case Some(c) =>
           c.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
       }

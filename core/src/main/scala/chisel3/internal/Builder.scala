@@ -863,7 +863,6 @@ private[chisel3] object Builder extends LazyLogging {
     val circuitId =
       s"circuit$$${java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(BigInt(dc.hashCode).toByteArray)}"
     val circuitContext = Context(circuitId)//Builder.chiselContext.get().root.instantiateOriginChild(circuitId)
-    println(circuitContext.target)
     circuitContext.setValue(dc)
     circuitContext
   }
@@ -895,7 +894,7 @@ private[chisel3] object Builder extends LazyLogging {
     }
     Builder.chiselContext.get().activeCircuit = None
     Builder.currentContext = None
-    (circuitContext.value.asInstanceOf[DynamicContext].componentResult.get, circuitContext.getChild(ret.definitionIdentifier).asInstanceOf[T])
+    (circuitContext.value.asInstanceOf[DynamicContext].componentResult.get, circuitContext(ret.definitionIdentifier).value.asInstanceOf[T])
   }
 
   initializeSingletons()
