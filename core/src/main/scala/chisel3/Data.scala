@@ -16,6 +16,7 @@ import chisel3.reflect.DataMirror
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 import scala.reflect.ClassTag
 import scala.util.Try
+import _root_.firrtl.ir.NoInfo
 
 /** User-specified directions.
   */
@@ -425,20 +426,25 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case (_: SampleElementBinding[_] | _: MemTypeBinding[_]) => false
   }.getOrElse(false)
 
-  private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
-    case ChildBinding(parent) => parent.topBindingOpt
-    case bindingVal: TopBinding => Some(bindingVal)
-    case SampleElementBinding(parent) => parent.topBindingOpt
-    case _: MemTypeBinding[_] => None
+  private[chisel3] def topBindingOpt: Option[TopBinding] = {
+    val binding = _binding.flatMap {
+      case ChildBinding(parent) => parent.topBindingOpt
+      case bindingVal: TopBinding => Some(bindingVal)
+      case SampleElementBinding(parent) => parent.topBindingOpt
+      case _: MemTypeBinding[_] => None
+    }
+    if (_probeInfo.nonEmpty) {
+      require(binding.nonEmpty, "Probe is unbound.")
+      val bindingVal = binding.get
+      require(
+        bindingVal.isInstanceOf[PortBinding] || bindingVal.isInstanceOf[ProbeBinding],
+        s"Probes must be bound to ports, not ${binding.get}"
+      )
+    }
+    binding
   }
 
-  private[chisel3] def topBinding: TopBinding = {
-    val t = topBindingOpt.get
-    if (_probeInfo.nonEmpty) {
-      require(t.isInstanceOf[PortBinding] || t.isInstanceOf[ProbeBinding], s"Probes must be bound to ports, not ${t}")
-    }
-    t
-  }
+  private[chisel3] def topBinding: TopBinding = topBindingOpt.get
 
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target
@@ -775,7 +781,7 @@ object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
 
-  case class ProbeInfo(val writable: Boolean)
+  private[chisel3] case class ProbeInfo(val writable: Boolean)
 
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)
