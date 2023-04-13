@@ -1,7 +1,5 @@
 import mill._
 import mill.scalalib._
-import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
-import mill.contrib.buildinfo.BuildInfo
 
 // 12 or 13
 private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1).toInt
@@ -93,8 +91,7 @@ trait FirrtlUnitTestModule
 
 trait CoreModule
   extends ScalaModule
-    with HasMacroAnnotations
-    with BuildInfo {
+    with HasMacroAnnotations {
   def firrtlModule: FirrtlModule
 
   def macrosModule: MacrosModule
@@ -103,7 +100,6 @@ trait CoreModule
 
   def upickleModuleIvy: Dep
 
-  def firtoolVersion: T[String]
 
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, firrtlModule)
 
@@ -111,19 +107,6 @@ trait CoreModule
     osLibModuleIvy,
     upickleModuleIvy
   )
-
-  override def buildInfoPackageName = Some("chisel3")
-
-  def buildVersion = T("build-from-source")
-
-  override def buildInfoMembers = T {
-    Map(
-      "buildInfoPackage" -> artifactName(),
-      "version" -> buildVersion(),
-      "firtoolVersion" -> firtoolVersion(),
-      "scalaVersion" -> scalaVersion()
-    )
-  }
 }
 
 trait PluginModule

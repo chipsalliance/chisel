@@ -152,13 +152,41 @@ class Core(val crossScalaVersion: String)
     val Version = """^CIRCT firtool-(\S+)$""".r
     try {
       val lines = Process(Seq("firtool", "--version")).lineStream
-      lines.collectFirst { 
-        case Version(v) => v
-        case _ => "unknown"
+      lines.collectFirst {
+        case Version(v) => Some(v)
+        case _ => None
       }.get
     } catch {
-      case e: java.io.IOException => sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
+      case e: java.io.IOException => None
     }
+  }
+
+  def buildVersion = T("build-from-source")
+
+  private def generateBuildInfo = T {
+    val outputFile = T.dest / "chisel3" / "BuildInfo.scala"
+    val firtoolVersionString = firtoolVersion().map("Some(" + _ + ")").getOrElse("None")
+    val contents =
+      s"""
+         |package chisel3
+         |case object BuildInfo {
+         |  val buildInfoPackage: String = "${artifactName()}"
+         |  val version: String = "${buildVersion()}"
+         |  val scalaVersion: String = "${scalaVersion()}"
+         |  val firtoolVersion: scala.Option[String] = $firtoolVersionString
+         |  override val toString: String = {
+         |    "buildInfoPackage: %s, version: %s, scalaVersion: %s, firtoolVersion %s".format(
+         |        buildInfoPackage, version, scalaVersion, firtoolVersion
+         |    )
+         |  }
+         |}
+         |""".stripMargin
+    os.write(outputFile, contents, createFolders = true)
+    PathRef(T.dest)
+  }
+
+  override def generatedSources = T {
+    super.generatedSources() :+ generateBuildInfo()
   }
 }
 
