@@ -53,7 +53,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     with NamedComponent
     with SourceInfoDoc {
 
-  if (t.isConst) Builder.error("Mem type cannot be const.")
+  if (t.isConst) Builder.error("Mem type cannot be const.")(sourceInfo)
 
   _parent.foreach(_.addId(this))
 

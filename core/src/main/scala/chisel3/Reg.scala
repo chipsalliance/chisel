@@ -39,7 +39,7 @@ object Reg {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "reg type")
-    if (t.isConst) Builder.error("Cannot create register with constant value.")
+    if (t.isConst) Builder.error("Cannot create register with constant value.")(sourceInfo)
     val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     val clock = Node(Builder.forcedClock)
 
