@@ -516,7 +516,7 @@ For example, a user may want to hook up anonymous <code class="language-plaintex
 Alternatively, one may want to connect two types that have different widths.</p>
 
 <p><code class="language-plaintext highlighter-rouge">Connectable</code> is the mechanism to specialize connection operator behavior in these scenarios.
-For additional members which are not present in the other component being connected to or for mismatched widths, they can be explicitly waived from the operator to be ignored, rather than trigger an error.</p>
+For additional members which are not present in the other component being connected to, or for mismatched widths, or for always excluding a member from being connected too, they can be explicitly called out from the <code class="language-plaintext highlighter-rouge">Connectable</code> object, rather than trigger an error.</p>
 
 <p>In addition, there are other techniques that can be used to address similar use cases including <code class="language-plaintext highlighter-rouge">.viewAsSuperType</code>, a static cast to a supertype (e.g. <code class="language-plaintext highlighter-rouge">(x: T)</code>), or creating a custom dataview.
 For a discussion about when to use each technique, please continue <a href="#techniques-for-connecting-structurally-inequivalent-chisel-types">here</a>.</p>
@@ -525,7 +525,7 @@ For a discussion about when to use each technique, please continue <a href="#tec
 
 <h3 id="connecting-records">Connecting Records</h3>
 
-<p>A not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, they should be ignored.
+<p>A not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, the errors caused due to them being unmatched should be ignored.
 To accomplish this, use the other operators to initialize all Record members, then use <code class="language-plaintext highlighter-rouge">:&lt;&gt;=</code> with <code class="language-plaintext highlighter-rouge">waiveAll</code> to connect only the matching members.</p>
 
 <blockquote>
@@ -633,7 +633,7 @@ To accomplish this, use the other operators to initialize all Record members, th
 
 </code></pre></div></div>
 
-<h3 id="always-ignore-extra-members-partial-connection-operator">Always ignore extra members (partial connection operator)</h3>
+<h3 id="always-ignore-errors-caused-by-extra-members-partial-connection-operator">Always ignore errors caused by extra members (partial connection operator)</h3>
 
 <p>The most unsafe connection is to connect only members that are present in both consumer and producer, and ignore all other members.
 This is unsafe because this connection will never error on any Chisel types.</p>
@@ -699,6 +699,44 @@ Connectable operators disallow this implicit truncation behavior and require the
 
 </code></pre></div></div>
 
+<h3 id="excluding-members-from-any-operator-on-a-connectable">Excluding members from any operator on a Connectable</h3>
+
+<p>If a user wants to always exclude a field from a connect, use the <code class="language-plaintext highlighter-rouge">exclude</code> mechanism which will never connect the field (as if it didn’t exist to the connection).</p>
+
+<p>Note that if a field matches in both producer and consumer, but only one is excluded, the other non-excluded field will still trigger an error; to fix this, use either <code class="language-plaintext highlighter-rouge">waive</code> or <code class="language-plaintext highlighter-rouge">exclude</code>.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.collection.immutable.SeqMap</span>
+
+<span class="k">class</span> <span class="nc">BundleWithSpecialField</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nv">special</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Example15</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">p</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">BundleWithSpecialField</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">c</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">BundleWithSpecialField</span><span class="o">())</span>
+
+  <span class="nv">c</span><span class="o">.</span><span class="py">special</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span> <span class="c1">// must initialize it</span>
+
+  <span class="nv">c</span><span class="o">.</span><span class="py">exclude</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">special</span><span class="o">)</span> <span class="o">:&lt;&gt;=</span> <span class="nv">p</span><span class="o">.</span><span class="py">exclude</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">special</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This generates the following Verilog, where the <code class="language-plaintext highlighter-rouge">special</code> field is not connected:</p>
+
+<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.37.0</span>
+<span class="k">module</span> <span class="n">Example15</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">p_foo</span><span class="p">,</span>	<span class="c1">// connectable.md:350:13</span>
+  <span class="kt">input</span>        <span class="n">p_special</span><span class="p">,</span>	<span class="c1">// connectable.md:350:13</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">c_foo</span><span class="p">,</span>	<span class="c1">// connectable.md:351:13</span>
+  <span class="kt">output</span>       <span class="n">c_special</span>	<span class="c1">// connectable.md:351:13</span>
+<span class="p">);</span>
+
+  <span class="k">assign</span> <span class="n">c_foo</span> <span class="o">=</span> <span class="n">p_foo</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
+  <span class="k">assign</span> <span class="n">c_special</span> <span class="o">=</span> <span class="mh">1'h1</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, connectable.md:353:13</span>
+<span class="k">endmodule</span>
+
+</code></pre></div></div>
+
 <h2 id="techniques-for-connecting-structurally-inequivalent-chisel-types">Techniques for connecting structurally inequivalent Chisel types</h2>
 
 <p><code class="language-plaintext highlighter-rouge">DataView</code> and <code class="language-plaintext highlighter-rouge">viewAsSupertype</code> create a view of the component that has a different Chisel type.
@@ -725,7 +763,7 @@ The down-side to this approach is its verbosity and that adding new members to a
 <ul>
   <li><code class="language-plaintext highlighter-rouge">DataView</code> and <code class="language-plaintext highlighter-rouge">viewAsSupertype</code> will preemptively remove members that are not present in the new view which has a different Chisel type, thus <code class="language-plaintext highlighter-rouge">DataView</code> <em>does</em> affect what is connected</li>
   <li><code class="language-plaintext highlighter-rouge">Connectable</code> can be used to waive the error on members who end up being dangling or unconnected.
-Importantly, <code class="language-plaintext highlighter-rouge">Connectable</code> <em>does not</em> affect what is connected</li>
+Importantly, <code class="language-plaintext highlighter-rouge">Connectable</code> waives <em>do not</em> affect what is connected</li>
   <li>Static cast does not remove extra members, thus a static cast <em>does not</em> affect what is connected</li>
 </ul>
 
@@ -755,17 +793,17 @@ Because it changes the Chisel type to omit both <code class="language-plaintext 
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.37.0</span>
 <span class="k">module</span> <span class="n">Example12</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
-  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:349:15</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span>	<span class="c1">// connectable.md:349:15</span>
-  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:350:15</span>
-  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:349:15</span>
-                <span class="n">out_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:350:15</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span>	<span class="c1">// connectable.md:350:15</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:377:15</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span>	<span class="c1">// connectable.md:377:15</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:378:15</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:377:15</span>
+                <span class="n">out_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:378:15</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span>	<span class="c1">// connectable.md:378:15</span>
 <span class="p">);</span>
 
   <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
   <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
-  <span class="k">assign</span> <span class="n">out_bits</span> <span class="o">=</span> <span class="mh">32'h0</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, connectable.md:352:7</span>
+  <span class="k">assign</span> <span class="n">out_bits</span> <span class="o">=</span> <span class="mh">32'h0</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, connectable.md:380:7</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -786,16 +824,16 @@ The <code class="language-plaintext highlighter-rouge">waive(_.bits)</code> does
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>Note that the <code class="language-plaintext highlighter-rouge">bits</code> fields ARE connected, even though they are waived, as <code class="language-plaintext highlighter-rouge">waive</code> just changes whether an error should be thrown if they are missing, NOT to not connect them if they are structurally equivalent.</p>
+<p>Note that the <code class="language-plaintext highlighter-rouge">bits</code> fields ARE connected, even though they are waived, as <code class="language-plaintext highlighter-rouge">waive</code> just changes whether an error should be thrown if they are missing, NOT to not connect them if they are structurally equivalent. To always omit the connection, use <code class="language-plaintext highlighter-rouge">exclude</code> on one side and either <code class="language-plaintext highlighter-rouge">exclude</code> or <code class="language-plaintext highlighter-rouge">waive</code> on the other side.</p>
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.37.0</span>
 <span class="k">module</span> <span class="n">Example13</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
-  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:371:15</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span>	<span class="c1">// connectable.md:371:15</span>
-  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:372:15</span>
-  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:371:15</span>
-                <span class="n">out_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:372:15</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span>	<span class="c1">// connectable.md:372:15</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:399:15</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span>	<span class="c1">// connectable.md:399:15</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:400:15</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:399:15</span>
+                <span class="n">out_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:400:15</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_bits</span>	<span class="c1">// connectable.md:400:15</span>
 <span class="p">);</span>
 
   <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
@@ -831,11 +869,11 @@ The <code class="language-plaintext highlighter-rouge">waive(_.bits)</code> does
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.37.0</span>
 <span class="k">module</span> <span class="n">Example5</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
-  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:401:15</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span>	<span class="c1">// connectable.md:401:15</span>
-  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:402:15</span>
-  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:401:15</span>
-                <span class="n">out_valid</span>	<span class="c1">// connectable.md:402:15</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:429:15</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span>	<span class="c1">// connectable.md:429:15</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:430:15</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:429:15</span>
+                <span class="n">out_valid</span>	<span class="c1">// connectable.md:430:15</span>
 <span class="p">);</span>
 
   <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
@@ -871,12 +909,12 @@ The <code class="language-plaintext highlighter-rouge">waive(_.bits)</code> does
 
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.37.0</span>
 <span class="k">module</span> <span class="n">Example7</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
-  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:427:15</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span>	<span class="c1">// connectable.md:427:15</span>
-  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:428:15</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_echo</span><span class="p">,</span>	<span class="c1">// connectable.md:428:15</span>
-  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:427:15</span>
-                <span class="n">out_valid</span>	<span class="c1">// connectable.md:428:15</span>
+  <span class="kt">input</span>         <span class="n">in_valid</span><span class="p">,</span>	<span class="c1">// connectable.md:455:15</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in_bits</span><span class="p">,</span>	<span class="c1">// connectable.md:455:15</span>
+  <span class="kt">input</span>         <span class="n">out_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:456:15</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out_echo</span><span class="p">,</span>	<span class="c1">// connectable.md:456:15</span>
+  <span class="kt">output</span>        <span class="n">in_ready</span><span class="p">,</span>	<span class="c1">// connectable.md:455:15</span>
+                <span class="n">out_valid</span>	<span class="c1">// connectable.md:456:15</span>
 <span class="p">);</span>
 
   <span class="k">assign</span> <span class="n">in_ready</span> <span class="o">=</span> <span class="n">out_ready</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
