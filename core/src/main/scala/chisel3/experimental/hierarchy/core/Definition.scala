@@ -4,6 +4,7 @@ package chisel3.experimental.hierarchy.core
 
 import scala.language.experimental.macros
 import chisel3._
+import chisel3.internal.CloneToContext
 
 import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
@@ -23,6 +24,7 @@ import scala.annotation.nowarn
   */
 final case class Definition[+A] private[chisel3] (private[chisel3] underlying: Underlying[A])
     extends IsLookupable
+    with CloneToContext
     with SealedHierarchy[A] {
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
@@ -103,7 +105,7 @@ object Definition extends SourceInfoDoc {
     val cx = Builder.currentContext
     val pr = Builder.activeCircuit.value.asInstanceOf[DynamicContext].inDefinition
     Builder.activeCircuit.value.asInstanceOf[DynamicContext].inDefinition = true
-    val (ir, module) = Builder.build(Module(proto), Builder.activeCircuit, false)
+    val module = Builder.buildDefinition(Module(proto), Builder.activeCircuit, false)
     Builder.currentContext = cx
     Builder.activeCircuit.value.asInstanceOf[DynamicContext].inDefinition = pr
     new Definition(Proto(module))

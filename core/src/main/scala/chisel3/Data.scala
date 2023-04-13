@@ -536,7 +536,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
 
   private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
 
-  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
+  private[chisel3] def parentNameOpt: Option[String] = ContextQuery.localParentProtoModuleName(this.context)
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
@@ -669,7 +669,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
   // Recursively set the parent of the start Data and any children (eg. in an Aggregate)
   private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit = {
     def rec(data: Data): Unit = {
-      //data._parent = parent
       data match {
         case _:   Element =>
         case agg: Aggregate =>

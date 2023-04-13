@@ -247,8 +247,6 @@ object Lookupable {
           Builder.setInstanceIdentifier(x.instanceIdentifier)
           Module.do_pseudo_apply(new experimental.hierarchy.InstanceClone(x, name))
         }
-        //newChild._parent = p
-        println(s"def clone: ${p.get.identifierTarget}, ${x.identifierTarget}, ${newChild.identifierTarget}")
         Clone(newChild)
       }
       (m, context) match {

@@ -4,6 +4,7 @@ package chisel3.experimental.hierarchy.core
 
 import scala.language.experimental.macros
 import chisel3._
+import chisel3.internal.CloneToContext
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
 import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo}
@@ -19,7 +20,7 @@ import scala.annotation.nowarn
   *
   * @param underlying The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Underlying[A]) extends SealedHierarchy[A] {
+final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Underlying[A]) extends SealedHierarchy[A] with CloneToContext {
   underlying match {
     case Proto(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Proto with a clone!")
     case other => //Ok

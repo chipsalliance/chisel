@@ -21,7 +21,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val definition = Definition(new AddOne)
         val i0 = Instance(definition)
       }
-      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--full-stacktrace"))
       chirrtl should include("inst i0 of AddOne")
     }
     it("(0.b): name of an instanceclone should not error") {
@@ -492,7 +492,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i = Instance(Definition(new AddTwo()))
         amark(i.i0.innerWire, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
+      val (_, annos) = getFirrtlAndAnnos(new Top, Seq(PrintFullStackTraceAnnotation))
       annos.collect { case c: MarkAnnotation => c } should contain(
         MarkAnnotation("~Top|Top/i:AddTwo/i0:AddOne>innerWire".rt, "blah")
       )

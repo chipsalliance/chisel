@@ -242,9 +242,9 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     dir:        MemPortDirection,
     clock:      Clock
   ): T = {
-    if (Builder.currentModule != _parent) {
+    if (!Builder.inCurrectLocalScope(context)) {
       throwException(
-        s"Cannot create a memory port in a different module (${Builder.currentModule.get.name}) than where the memory is (${_parent.get.name})."
+        s"Cannot create a memory port in a different module (${Builder.currentModule.get.name}) than where the memory is (${ContextQuery.localParentProtoModuleName(context)})."
       )
     }
     requireIsHardware(idx, "memory port index")

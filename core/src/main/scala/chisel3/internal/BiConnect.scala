@@ -287,7 +287,7 @@ private[chisel3] object BiConnect {
     }
 
     // do not bulk connect the 'io' pseudo-bundle of a BlackBox since it will be decomposed in FIRRTL
-    def blackBoxCheck = Seq(source, sink).map(_._parent).forall {
+    def blackBoxCheck = Seq(source, sink).map { x => ContextQuery.localParentProto(x.context) }.forall {
       case Some(_: BlackBox) => false
       case _ => true
     }

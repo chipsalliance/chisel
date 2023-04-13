@@ -173,7 +173,7 @@ abstract class Module extends RawModule {
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
-    val inferReset = (_parent.isDefined || Builder.inDefinition)
+    val inferReset = (!isMain || Builder.inDefinition)
     if (inferReset) Reset() else Bool()
   }
 
@@ -262,13 +262,8 @@ package experimental {
   // TODO: seal this?
   abstract class BaseModule extends HasId with IsInstantiable with CloneToContext {
 
-    final def identifierTarget: IsModule = {
-      if (_parent.isEmpty) {
-        ModuleTarget(definitionIdentifier, definitionIdentifier)
-      } else {
-        _parent.get.identifierTarget.instOf(instanceIdentifier, definitionIdentifier)
-      }
-    }
+    final def identifierTarget: IsModule = ContextQuery.identifierTarget(context).get.asInstanceOf[IsModule]
+
     // Used with chisel3.naming.fixTraitIdentifier
     protected def _traitModuleDefinitionIdentifierProposal: Option[String] = None
 
@@ -293,13 +288,17 @@ package experimental {
     }
     final val definitionIdentifier = _definitionIdentifier
 
-    val context = {
+    val (context, isMain) = {
       Builder.currentContext match {
-        case None => Builder.activeCircuit.instantiateOriginChildWithValue(definitionIdentifier, this)
+        case None => (Builder.activeCircuit.instantiateOriginChildWithValue(definitionIdentifier, this), false)
         case Some(c) if c.key.startsWith("circuit$") =>
-          c.instantiateOriginChildWithValue(definitionIdentifier, this)
+          if(Builder.main.isEmpty) {
+            // This module must be the main
+            Builder.main = this
+          }
+          (c.instantiateOriginChildWithValue(definitionIdentifier, this), true)
         case Some(c) =>
-          c.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
+          (c.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this), false)
       }
     }
     val contextOpt = Some(context)
@@ -493,7 +492,7 @@ package experimental {
       * BaseModule.toTarget's API returning [[ModuleTarget]] while providing an internal API for getting
       * the correct [[InstanceTarget]]s whenever using the Definition/Instance API.
       */
-    private[chisel3] def getTarget: IsModule = this match {
+    private[chisel3] def getTarget: IsModule = ContextQuery.nameTarget(context).get.asInstanceOf[IsModule]/*this match {
       case m: experimental.hierarchy.InstanceClone[_] if m._parent.nonEmpty =>
         m._parent.get.getTarget.instOf(instanceName, name)
       case m: experimental.hierarchy.ModuleClone[_] if m._madeFromDefinition =>
@@ -502,13 +501,13 @@ package experimental {
       case m: experimental.hierarchy.DefinitionClone[_] if m._circuit.nonEmpty =>
         ModuleTarget(this._circuit.get.circuitName, this.name)
       case _ => this.toTarget
-    }
+    }*/
 
     /** Returns a FIRRTL ModuleTarget that references this object
       *
       * @note Should not be called until circuit elaboration is complete
       */
-    final def toAbsoluteTarget: IsModule = {
+    final def toAbsoluteTarget: IsModule = ContextQuery.nameTarget(context).get.asInstanceOf[IsModule]/*{
       _parent match {
         case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, name)
         case None         =>
@@ -521,6 +520,7 @@ package experimental {
           if (this == ViewParent) ViewParent.absoluteTarget else getTarget
       }
     }
+    */
 
     /**
       * Internal API. Returns a list of this module's generated top-level ports as a map of a String
@@ -537,15 +537,6 @@ package experimental {
         (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
       }
     }
-
-    /** Compatibility function. Allows Chisel2 code which had ports without the IO wrapper to
-      * compile under Bindings checks. Does nothing in non-compatibility mode.
-      *
-      * Should NOT be used elsewhere. This API will NOT last.
-      *
-      * TODO: remove this, perhaps by removing Bindings checks in compatibility mode.
-      */
-    def _compatAutoWrapPorts(): Unit = {}
 
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
@@ -594,8 +585,8 @@ package experimental {
     private[chisel3] var _component: Option[Component] = None
 
     /** Signal name (for simulation). */
-    override def instanceName: String =
-      if (_parent == None) name
+    override def instanceName: String = 
+      if (ContextQuery.isATopModule(context)) name
       else
         _component match {
           case None    => getRef.name

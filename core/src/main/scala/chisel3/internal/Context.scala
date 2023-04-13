@@ -163,6 +163,7 @@ private[chisel3] class Context private (val key: String, val parent: Option[Cont
     require(hasValue, s"No value: cannot call value on $this:\n$visualize")
     getValue.get
   }
+  def valueAs[T]: T = value.asInstanceOf[T]
 
   /** Optionally returns the first value defined along the provenance path; e.g. values with more top-context have higher priority */
   def getValue: Option[CloneToContext] = valueVar.orElse(provenance.flatMap(_.getValue).map(x => x.cloneTo(this)))

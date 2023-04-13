@@ -273,6 +273,9 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     }
   }
 
+  // Module proto that is open, e.g. the root of this context
+  // ~Top|Top/i:I>q 's scope is Top 
+  // ~Top|I>q 's scope is I
   private[chisel3] def scope: Option[Context]
   final private[chisel3] def _parent: Option[BaseModule] = scope.flatMap(_.getValue.asInstanceOf[Option[BaseModule]])
 
@@ -316,7 +319,9 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   private[chisel3] def localScopeName: String = scope.map(_.origin.key).getOrElse("")
   private[chisel3] def fullScopeName: String = scope.map(_.target).getOrElse("")
 
-  private[chisel3] def localInstanceFinalNameOpt: Option[String] = _parent.flatMap { p => if (p.isClosed) Some(_ref.get.localName) else None }
+  private[chisel3] def localInstanceFinalNameOpt: Option[String] = _parent.flatMap { p =>
+     if (_ref.isDefined) Some(_ref.get.localName) else None
+  }
   private[chisel3] def localInstanceGuessNameOpt: Option[String] = _computeName(None)
   private[chisel3] def localInstanceName(useFinal: Boolean, useGuess: Boolean, useIdentifier: Boolean): String = {
     val namingPriority =
@@ -484,6 +489,7 @@ private[chisel3] class DynamicContext(
 
   // Final result
   var componentResult: Option[firrtl.Circuit] = None
+  var main: Option[BaseModule] = None
 }
 
 private[chisel3] object Builder extends LazyLogging {
@@ -502,6 +508,11 @@ private[chisel3] object Builder extends LazyLogging {
     //dynamicContextVar.value.get
   }
 
+  def main: Option[BaseModule] = dynamicContext.main
+  def main_=(s: BaseModule): Unit = {
+    require(dynamicContext.main.isEmpty)
+    dynamicContext.main = Some(s)
+  }
   // Used to suppress warnings when casting from a UInt to an Enum
   var suppressEnumCastWarning: Boolean = false
 
@@ -640,6 +651,10 @@ private[chisel3] object Builder extends LazyLogging {
     ret
   }
 
+  def inCurrectLocalScope(c: Context): Boolean = {
+    ContextQuery.localParentProtoModuleIdentifier(c) == currentModuleIdentifier
+  }
+  def currentModuleIdentifier: Option[String] = currentModule.map(_.definitionIdentifier)
   def currentModule: Option[BaseModule] = dynamicContextOpt match {
     case Some(dynamicContext) => chiselContext.get().currentContext.flatMap(_.parentCollectFirst { case Context(_, Some(x: BaseModule)) => x })
     case _                    => None
@@ -650,6 +665,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
   def withCurrentContext[T](target: Option[Context])(thunk: => T): T = {
     val cm = Builder.currentContext
+    Builder.currentContext = target
     val ret = thunk
     Builder.currentContext = cm
     ret
@@ -867,6 +883,24 @@ private[chisel3] object Builder extends LazyLogging {
     circuitContext
   }
 
+  private[chisel3] def buildDefinition[T <: BaseModule](
+    f: => T,
+    circuitContext: Context,
+    forceModName:   Boolean = true
+  ): T = {
+    ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
+    // in tiny designs/testcases that never access anything in chisel3.internal
+    logger.info("Elaborating design...")
+    val mod = f
+    if (forceModName) { // This avoids definition name index skipping with D/I
+      mod.forceName(mod.name, globalNamespace)
+    }
+    errors.checkpoint(logger)
+    logger.info("Done elaborating.")
+
+    mod
+  }
+
   private[chisel3] def build[T <: BaseModule](
     f: => T,
     circuitContext: Context,
@@ -874,24 +908,14 @@ private[chisel3] object Builder extends LazyLogging {
   ): (Circuit, T) = {
     Builder.chiselContext.get().activeCircuit = Some(circuitContext)
     Builder.currentContext = Some(circuitContext)
-    // Because we don't have a package name, just use this circuit id thing for both definition and instance name
-    val ret = {
-      ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
-      // in tiny designs/testcases that never access anything in chisel3.internal
-      logger.info("Elaborating design...")
-      val mod = f
-      if (forceModName) { // This avoids definition name index skipping with D/I
-        mod.forceName(mod.name, globalNamespace)
-      }
-      errors.checkpoint(logger)
-      logger.info("Done elaborating.")
 
-      require(circuitContext.value.asInstanceOf[DynamicContext].componentResult.isEmpty)
-      circuitContext.value.asInstanceOf[DynamicContext].componentResult = Some(
-        Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq)
-      )
-      mod
-    }
+    val ret = buildDefinition(f, circuitContext, forceModName)
+
+    require(circuitContext.value.asInstanceOf[DynamicContext].componentResult.isEmpty)
+    circuitContext.value.asInstanceOf[DynamicContext].componentResult = Some(
+      Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq)
+    )
+
     Builder.chiselContext.get().activeCircuit = None
     Builder.currentContext = None
     (circuitContext.value.asInstanceOf[DynamicContext].componentResult.get, circuitContext(ret.definitionIdentifier).value.asInstanceOf[T])

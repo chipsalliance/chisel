@@ -136,7 +136,6 @@ abstract class BlackBox(
   protected def _compatIoPortBound() = _io.exists(portsContains(_))
 
   private[chisel3] override def generateComponent(): Option[Component] = {
-    _compatAutoWrapPorts() // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
     if (!_io.exists(portsContains)) {

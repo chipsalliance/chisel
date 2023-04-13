@@ -61,7 +61,7 @@ class ImplicitModuleDirectlyInRawModuleTester extends BasicTester {
 
 class RawModuleSpec extends ChiselFlatSpec with Utils {
   "RawModule" should "elaborate" in {
-    ChiselStage.elaborate { new RawModuleWithImplicitModule }
+    ChiselStage.elaborate ({ new RawModuleWithImplicitModule }, Array("--full-stacktrace"))
   }
 
   "RawModule" should "work" in {
