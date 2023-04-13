@@ -24,9 +24,12 @@ object ChiselStageSpec {
     val b = Output(Bool())
   }
 
-  class Foo extends RawModule {
+  class Foo(hasDontTouch: Boolean = false) extends RawModule {
     val a = IO(new FooBundle)
     val b = IO(Flipped(new FooBundle))
+    if (hasDontTouch) {
+      dontTouch(a)
+    }
     b <> a
   }
 
@@ -277,6 +280,26 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         file should exist
       }
     }
+
+    it("should emit Annotations inline in emitted CHIRRTL") {
+      val targetDir = os.pwd / "ChiselStageSpec" / "should-inline-Annotations-in-emitted-CHIRRTL"
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo(hasDontTouch = true)))
+        )
+
+      info("output file included an Annotation")
+      os.read(targetDir / "Foo.fir") should include("firrtl.transforms.DontTouchAnnotation")
+    }
   }
 
   describe("ChiselStage exception handling") {
@@ -404,7 +427,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:74:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:77:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -425,7 +448,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:74:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:77:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -498,6 +521,13 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       lines(idx + 2) should equal("         ^")
     }
 
+    it("should report the firtool version against which Chisel was published in error messages") {
+      val e = intercept[java.lang.Exception] {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.ErrorCaughtByFirtool)
+      }
+      val version = chisel3.BuildInfo.firtoolVersion.getOrElse("<unknown>")
+      e.getMessage should include(s"firtool version $version")
+    }
   }
 
   describe("ChiselStage custom transform support") {
@@ -869,8 +899,12 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
     it("should emit specification FIRRTL (CHIRRTL) with the correct FIRRTL spec version") {
 
-      val text = ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo)
+      val text = ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo(hasDontTouch = true))
+      info("found a version string")
       text should include("FIRRTL version 1.2.0")
+      info("found an Annotation")
+      text should include("firrtl.transforms.DontTouchAnnotation")
+      info("found a circuit")
       text should include("circuit Foo")
 
     }

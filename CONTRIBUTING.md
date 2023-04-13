@@ -14,7 +14,9 @@
 
 6. Please make your PRs against the `master` branch. The project admins, when reviewing your PR, will decide which stable version (if any) your change should be backported to. The backports will be opened automatically on your behalf once your `master` PR is merged.
 
-7. If your backport PR(s) get labeled with `bp-conflict`, it means they cannot be automatically be merged. You can help get them merged by openening a PR against the already-existing backport branch (will be named something like `mergify/bp/3.5.x/pr-2512`) with the necessary cleanup changes. The admins will merge your cleanup PR and remove the `bp-conflict` label if appropriate.
+7. The PR template will require you to select "Type of Improvement." A reviewer or someone with write access will add the appropriate label to your PR based on this type of improvement which will include your PR in the correct category in the release notes.
+
+8. If your backport PR(s) get labeled with `bp-conflict`, it means they cannot be automatically be merged. You can help get them merged by openening a PR against the already-existing backport branch (will be named something like `mergify/bp/3.5.x/pr-2512`) with the necessary cleanup changes. The admins will merge your cleanup PR and remove the `bp-conflict` label if appropriate.
 
  
 ### Frequently Asked Questions

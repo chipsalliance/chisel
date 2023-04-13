@@ -107,7 +107,7 @@ trait ChiselRunners extends Assertions {
 
   def elaborateAndGetModule[A <: RawModule](t: => A): A = {
     var res: Any = null
-    ChiselStage.elaborate {
+    ChiselStage.emitCHIRRTL {
       res = t
       res.asInstanceOf[A]
     }

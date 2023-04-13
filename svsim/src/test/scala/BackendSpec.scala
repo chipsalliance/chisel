@@ -42,6 +42,23 @@ trait BackendSpec extends AnyFunSpec with Matchers {
       val workspace = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}")
       var simulation: Simulation = null
 
+      it("fails to compile a testbench without generated sources") {
+        import Resources._
+        workspace.reset()
+        workspace.elaborateGCD()
+        assertThrows[Exception] {
+          simulation = workspace.compile(
+            backend
+          )(
+            workingDirectoryTag = name,
+            commonSettings = CommonCompilationSettings(),
+            backendSpecificSettings = compilationSettings,
+            customSimulationWorkingDirectory = None,
+            verbose = false
+          )
+        }
+      }
+
       it("compiles an example testbench") {
         import Resources._
         workspace.reset()
@@ -51,9 +68,10 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           backend
         )(
           workingDirectoryTag = name,
-          commonSettings = SvsimCompilationSettings(),
+          commonSettings = CommonCompilationSettings(),
           backendSpecificSettings = compilationSettings,
-          customSimulationWorkingDirectory = None
+          customSimulationWorkingDirectory = None,
+          verbose = false
         )
       }
 

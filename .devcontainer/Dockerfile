@@ -59,18 +59,11 @@ RUN \
     apt-get install -y \
       cmake \
       ninja-build
-# Check out source code (may take a while)
-RUN mkdir /circt && \
-    git clone https://github.com/llvm/circt /circt/source && \
-    cd /circt/source && \
-    git submodule update --init
-# For development, we use the top of `main` even though it is possible this will be incompatible with the current Chisel. We expect Chisel to follow CIRCT pretty closely, and CIRCT to become more stable over time so this seems better than having to update this every time.
-ARG FIRTOOL_TAG=main
-# Checkout as a separate build step so the first checkout is more likely to stay cached
-RUN cd /circt/source && \
-    git fetch origin && \
-    git checkout $FIRTOOL_TAG && \
-    git submodule update
+# You can select a specific release by changing this to, for example, `download/firtool-1.36.0`. The `download` part is weird because the GitHub URL changes based on if you use `latest` or not.
+ARG CIRCT_RELEASE=latest/download
+# Grab the source of the release from GitHub
+ADD https://github.com/llvm/circt/releases/$CIRCT_RELEASE/circt-full-sources.tar.gz /circt/source-bundle.tar.gz
+RUN cd /circt && mkdir source && tar xvf source-bundle.tar.gz --strip-components=1 -C /circt/source
 # Install firtool
 RUN cd /circt/source && \
     cmake \

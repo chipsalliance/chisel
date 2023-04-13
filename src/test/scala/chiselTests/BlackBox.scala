@@ -219,7 +219,7 @@ class BlackBoxSpec extends ChiselFlatSpec {
     assertTesterPasses({ new BlackBoxWithParamsTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
   }
   "DataMirror.modulePorts" should "work with BlackBox" in {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {})
       val m = Module(new BlackBoxPassthrough)
       assert(DataMirror.modulePorts(m) == Seq("in" -> m.io.in, "out" -> m.io.out))
@@ -231,7 +231,7 @@ class BlackBoxSpec extends ChiselFlatSpec {
 
   "A BlackBox with no 'val io'" should "give a reasonable error message" in {
     (the[ChiselException] thrownBy {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val inst = Module(new BlackBoxNoIO)
       })
     }).getMessage should include("must have a port named 'io' of type Record")
@@ -239,7 +239,7 @@ class BlackBoxSpec extends ChiselFlatSpec {
 
   "A BlackBox with non-Record 'val io'" should "give a reasonable error message" in {
     (the[ChiselException] thrownBy {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val inst = Module(new BlackBoxUIntIO)
       })
     }).getMessage should include("must have a port named 'io' of type Record")
