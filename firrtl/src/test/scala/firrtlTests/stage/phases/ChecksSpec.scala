@@ -14,7 +14,7 @@ class ChecksSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new Checks }
 
-  val inputCircuit = FirrtlCircuitAnnotation(firrtl.ir.Circuit(firrtl.ir.NoInfo, Seq.empty, "Foo", Seq.empty))
+  val inputCircuit = FirrtlCircuitAnnotation(firrtl.ir.Circuit(firrtl.ir.NoInfo, Seq.empty, "Foo"))
   val outputFile = OutputFileAnnotation("bar")
   val outputAnnotationFile = OutputAnnotationFileAnnotation("baz")
   val infoMode = InfoModeAnnotation("ignore")
