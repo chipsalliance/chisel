@@ -5,20 +5,15 @@ enablePlugins(SiteScaladocPlugin)
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
-lazy val firtoolVersion = settingKey[String]("Determine the version of firtool on the PATH")
+lazy val firtoolVersion = settingKey[Option[String]]("Determine the version of firtool on the PATH")
 ThisBuild / firtoolVersion := {
   import scala.sys.process._
   val Version = """^CIRCT firtool-(\S+)$""".r
   try {
     val lines = Process(Seq("firtool", "--version")).lineStream
-    lines.collectFirst { 
-      case Version(v) => v 
-      case _ => "unknown git version"
-    }.get
+    lines.collectFirst { case Version(v) => v }
   } catch {
-    // Check that firtool exists on the PATH so Chisel can use the version it was tested against
-    // in error messages
-    case e: java.io.IOException => sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
+    case e: java.io.IOException => None
   }
 }
 
@@ -99,6 +94,11 @@ lazy val publishSettings = Seq(
     val v = version.value
     if (dynverGitDescribeOutput.value.hasNoTags) {
       sys.error(s"Failed to derive version from git tags. Maybe run `git fetch --unshallow`? Version: $v")
+    }
+    // Check that firtool exists on the PATH so Chisel can use the version it was tested against
+    // in error messages
+    if (firtoolVersion.value.isEmpty) {
+      sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
     }
     (publish / skip).value
   },

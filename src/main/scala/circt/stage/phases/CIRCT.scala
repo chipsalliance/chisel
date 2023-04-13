@@ -84,7 +84,8 @@ private[this] object Exceptions {
   }
 
   def versionAdvice: String =
-    s"Note that this version of Chisel ($chiselVersion) was published against firtool version $firtoolVersion."
+    s"Note that this version of Chisel ($chiselVersion) was published against firtool version " +
+      firtoolVersion.getOrElse("<unknown>") + "."
 
   /** Indicates that the firtool binary failed with a non-zero exit code.  This generally indicates a compiler error
     * either originating from a user error or from a crash.
