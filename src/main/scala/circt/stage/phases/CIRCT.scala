@@ -205,7 +205,7 @@ class CIRCT extends Phase {
           case Some(PreserveAggregate.All)       => Seq("-preserve-aggregate=all")
           case None                              => None
         }) ++
-        circtOptions.preserveAggregate.map(_ => "-preserve-public-types=0") ++
+        circtOptions.preserveAggregate.map(_ => "-scalarize-top-module=0") ++
         /* Communicate the annotation file through a file. */
         (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
         includeDirs.flatMap(d => Seq("--include-dir", d.toString)) ++
