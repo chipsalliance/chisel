@@ -103,10 +103,21 @@ package object dataview {
       val tex = unfoldView(te).find(targetContains).getOrElse(err("Target", te))
       val vex = unfoldView(ve).find(viewFieldLookup.contains).getOrElse(err("View", ve))
 
-      if (tex.getClass != vex.getClass) {
-        val fieldName = viewFieldName(vex)
-        throw InvalidViewException(s"Field $fieldName specified as view of non-type-equivalent value $tex")
+      (tex, vex) match {
+        /* Allow views where the types are equal. */
+        case (a, b) if a.getClass == b.getClass =>
+        /* Allow UInt <=> Reset views. */
+        case (a: UInt, _: Reset) if a.isWidthKnown && a.getWidth == 1 => true
+        case (_: Reset, a: UInt) if a.isWidthKnown && a.getWidth == 1 => true
+        /* Allow AsyncReset <=> Reset views. */
+        case (a: AsyncReset, _: Reset) => true
+        case (_: Reset, a: AsyncReset) => true
+        /* All other views produce a runtime error. */
+        case _ =>
+          val fieldName = viewFieldName(vex)
+          throw InvalidViewException(s"Field $fieldName specified as view of non-type-equivalent value $tex")
       }
+
       // View width must be unknown or match target width
       if (vex.widthKnown && vex.width != tex.width) {
         def widthAsString(x: Element) = x.widthOption.map("<" + _ + ">").getOrElse("<unknown>")
