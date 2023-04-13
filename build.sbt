@@ -126,7 +126,7 @@ lazy val firrtlSettings = Seq(
     "org.json4s" %% "json4s-native" % "4.0.6",
     "org.apache.commons" % "commons-text" % "1.10.0",
     "io.github.alexarchambault" %% "data-class" % "0.2.5",
-    "com.lihaoyi" %% "os-lib" % "0.9.1"
+    "com.lihaoyi" %% "os-lib" % "0.8.1"
   ),
   // macros for the data-class library
   libraryDependencies ++= {
@@ -322,7 +322,7 @@ lazy val core = (project in file("core"))
     name := "chisel-core",
     libraryDependencies ++= Seq(
       "com.lihaoyi" %% "upickle" % "2.0.0",
-      "com.lihaoyi" %% "os-lib" % "0.9.1"
+      "com.lihaoyi" %% "os-lib" % "0.8.1"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
       "-explaintypes",
