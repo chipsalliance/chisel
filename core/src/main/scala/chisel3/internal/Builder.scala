@@ -112,26 +112,11 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   private[chisel3] def _instanceIdentifier: String = Builder.getInstanceIdentifier.getOrElse("%" + _id.toString)
   val instanceIdentifier:                   String = _instanceIdentifier
 
-  // using nullable var for better memory usage
-  private[chisel3] var _parentVar: BaseModule = null //Builder.currentModule.getOrElse(null)
-  private[chisel3] def _parent: Option[BaseModule] = {
-    Option(_parentVar)
-    //println(context.foreach(c => c.visualizeWithDefinition))
-    context.flatMap(_.parentCollectFirst { case x: BaseModule if x != this => x })
-  }
-  private[chisel3] def _parent_=(target: Option[BaseModule]): Unit = {
-    _parentVar = target.getOrElse(null)
-  }
+  //private[chisel3] var _circuitVar
+  final private[chisel3] def _circuit: Option[BaseModule] = scope.flatMap(_.top.getValue.asInstanceOf[Option[BaseModule]])
 
-  // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
-  private var _circuitVar:       BaseModule = null // using nullable var for better memory usage
-  private[chisel3] def _circuit: Option[BaseModule] = Option(_circuitVar)
-  private[chisel3] def _circuit_=(target: Option[BaseModule]): Unit = {
-    _circuitVar = target.getOrElse(null)
-  }
-
-  private[chisel3] var contextVar: Option[Context] = None
-  private[chisel3] def context = contextVar
+  private[chisel3] def contextOpt: Option[Context]
+  private[chisel3] def context: Context
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
   override def hashCode: Int = super.hashCode()
@@ -288,25 +273,21 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     }
   }
 
+  private[chisel3] def scope: Option[Context]
+  final private[chisel3] def _parent: Option[BaseModule] = scope.flatMap(_.getValue.asInstanceOf[Option[BaseModule]])
+
   private[chisel3] def _errorContext: String = {
-    val nameGuess: String = _computeName(None) match {
-      case Some(name) => s": '$name'"
-      case None       => ""
-    }
+    val nameGuess: String = s": '${localInstanceName(true, true, true)}'"
 
-    val parentGuess: String = _parent match {
-      case Some(ViewParent) => s", in module '${reifyParent.pathName}'"
-      case Some(p)          => s", in module '${p.pathName}'"
-      case None             => ""
-    }
+    val parentGuess: String = s", in module '$localScopeName'"
 
-    nameGuess + parentGuess
+    nameGuess + localScopeName
   }
 
   // Helper for reifying views if they map to a single Target
   private[chisel3] def reifyTarget: Option[Data] = this match {
     case d: Data => reifySingleData(d) // Only Data can be views
-    case bad => throwException(s"This shouldn't be possible - got $bad with ${_parent}")
+    case bad => throwException(s"This shouldn't be possible - got $bad with ${scope}")
   }
 
   // Helper for reifying the parent of a view if the view maps to a single Target
@@ -315,36 +296,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   // Implementation of public methods.
   def instanceName: String = _parent match {
     case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
-    case Some(p) =>
-      (p._component, this) match {
-        case (Some(c), _) => refName(c)
-        case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
-        case (None, _: MemBase[_]) => _ref.get.localName
-        case (None, _) =>
-          throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
-      }
-    case None => this match {
-      case d: Data if d.isLit => throwException(s"Cannot call instanceName on a literal: $this")
-      case d: Data if !d.hasBinding => throwException(
-        "You cannot access the .instanceName or .toTarget of non-hardware Data" + _errorContext
-      )
-      case _ => throwException("this cannot happen")
-    }
-  }
-  def pathName: String = _parent match {
-    case None             => instanceName
-    case Some(ViewParent) => s"${reifyParent.pathName}.$instanceName"
-    case Some(p)          => s"${p.pathName}.$instanceName"
-  }
-  def parentPathName: String = _parent match {
-    case Some(ViewParent) => reifyParent.pathName
-    case Some(p)          => p.pathName
-    case None             => throwException(s"$instanceName doesn't have a parent")
-  }
-  def parentModName: String = _parent match {
-    case Some(ViewParent) => reifyParent.name
-    case Some(p)          => p.name
-    case None             => throwException(s"$instanceName doesn't have a parent")
+    case _ => localInstanceName(true, false, false)
   }
   // TODO Should this be public?
   protected def circuitName: String = _parent match {
@@ -356,6 +308,23 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     case Some(ViewParent) => reifyParent.circuitName
     case Some(p)          => p.circuitName
   }
+
+  // Identifer: only using identifier keys to build a path
+  // FinalName: only using final names to build a path
+  // FinalNameOrIdentifier: pick names in precedence from (1) final name, (2) identifier
+  // FinalNameOrGuessedNameOrIdentifier: pick names in precedence from (1) final name, (2) a guess from seeds present, (3) identifier
+  private[chisel3] def localScopeName: String = scope.map(_.origin.key).getOrElse("")
+  private[chisel3] def fullScopeName: String = scope.map(_.target).getOrElse("")
+
+  private[chisel3] def localInstanceFinalNameOpt: Option[String] = _parent.flatMap { p => if (p.isClosed) Some(_ref.get.localName) else None }
+  private[chisel3] def localInstanceGuessNameOpt: Option[String] = _computeName(None)
+  private[chisel3] def localInstanceName(useFinal: Boolean, useGuess: Boolean, useIdentifier: Boolean): String = {
+    val namingPriority =
+      (if (useFinal) List(localInstanceFinalNameOpt) else Nil) ++
+      (if (useGuess) List(localInstanceGuessNameOpt) else Nil) ++
+      (if (useIdentifier) List(Some(instanceIdentifier)) else Nil)
+    namingPriority.foldLeft(Option.empty[String]) { case (acc, n) => acc.orElse(n) }.get
+  }
 }
 
 /** Holds the implementation of toNamed for Data and MemBase */
@@ -366,7 +335,8 @@ private[chisel3] trait NamedComponent extends HasId {
     */
   final def toNamed: ComponentName = {
     assertValidTarget()
-    ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+    val rt = this.toTarget
+    ComponentName(rt.ref, ModuleName(rt.module, CircuitName(rt.circuit)))
   }
 
   /** Returns a FIRRTL ReferenceTarget that references this object
@@ -442,7 +412,7 @@ private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
   val throwOnFirstError: Boolean,
   val warningsAsErrors:  Boolean,
-  val sourceRoots:       Seq[File]) {
+  val sourceRoots:       Seq[File]) extends CloneToContext {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -511,6 +481,9 @@ private[chisel3] class DynamicContext(
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
   var inDefinition: Boolean = false
+
+  // Final result
+  var componentResult: Option[firrtl.Circuit] = None
 }
 
 private[chisel3] object Builder extends LazyLogging {
@@ -519,10 +492,14 @@ private[chisel3] object Builder extends LazyLogging {
   type Prefix = List[String]
 
   // All global mutable state must be referenced via dynamicContextVar!!
-  private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
+  //private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
+  private def dynamicContextOpt: Option[DynamicContext] = 
+    chiselContext.get().activeCircuit.flatMap(_.getValue.asInstanceOf[Option[DynamicContext]])
   private def dynamicContext: DynamicContext = {
-    require(dynamicContextVar.value.isDefined, "must be inside Builder context")
-    dynamicContextVar.value.get
+    require(chiselContext.get().activeCircuit.isDefined, "must be inside active circuit context")
+    chiselContext.get().activeCircuit.get.value.asInstanceOf[DynamicContext]
+    //require(dynamicContextVar.value.isDefined, "must be inside Builder context")
+    //dynamicContextVar.value.get
   }
 
   // Used to suppress warnings when casting from a UInt to an Enum
@@ -531,7 +508,7 @@ private[chisel3] object Builder extends LazyLogging {
   // Returns the current dynamic context
   def captureContext(): DynamicContext = dynamicContext
   // Sets the current dynamic contents
-  def restoreContext(dc: DynamicContext) = dynamicContextVar.value = Some(dc)
+  //def restoreContext(dc: DynamicContext) = dynamicContextVar.value = Some(dc)
 
   // Ensure we have a thread-specific ChiselContext
   private val chiselContext = new ThreadLocal[ChiselContext] {
@@ -552,7 +529,7 @@ private[chisel3] object Builder extends LazyLogging {
     //  https://stackoverflow.com/questions/28631656/runnable-thread-state-but-in-object-wait
   }
 
-  def namingStackOption: Option[NamingStack] = dynamicContextVar.value.map(_.namingStack)
+  def namingStackOption: Option[NamingStack] = dynamicContextOpt.map(_.namingStack)
 
   def idGen: IdGen = chiselContext.get.idGen
 
@@ -663,15 +640,22 @@ private[chisel3] object Builder extends LazyLogging {
     ret
   }
 
-  def currentModule: Option[BaseModule] = dynamicContextVar.value match {
-    case Some(dynamicContext) => dynamicContext.currentModule
+  def currentModule: Option[BaseModule] = dynamicContextOpt match {
+    case Some(dynamicContext) => chiselContext.get().currentContext.flatMap(_.parentCollectFirst { case Context(_, Some(x: BaseModule)) => x })
     case _                    => None
   }
-  def currentModule_=(target: Option[BaseModule]): Unit = {
-    dynamicContext.currentModule = target
+  def currentContext: Option[Context] = chiselContext.get().currentContext
+  def currentContext_=(target: Option[Context]): Unit = {
+    chiselContext.get().currentContext = target
+  }
+  def withCurrentContext[T](target: Option[Context])(thunk: => T): T = {
+    val cm = Builder.currentContext
+    val ret = thunk
+    Builder.currentContext = cm
+    ret
   }
   def activeCircuit: Context = chiselContext.get().activeCircuit.get
-  def aspectModule(module: BaseModule): Option[BaseModule] = dynamicContextVar.value match {
+  def aspectModule(module: BaseModule): Option[BaseModule] = dynamicContextOpt match {
     case Some(dynamicContext) => dynamicContext.aspectModule.get(module)
     case _                    => None
   }
@@ -731,7 +715,7 @@ private[chisel3] object Builder extends LazyLogging {
         // A bare api call is, e.g. calling Wire() from the scala console).
       )
   }
-  def hasDynamicContext: Boolean = dynamicContextVar.value.isDefined
+  def hasDynamicContext: Boolean = dynamicContextOpt.isDefined
 
   def readyForModuleConstr: Boolean = dynamicContext.readyForModuleConstr
   def readyForModuleConstr_=(target: Boolean): Unit = {
@@ -768,7 +752,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def inDefinition: Boolean = {
-    dynamicContextVar.value
+    dynamicContextOpt
       .map(_.inDefinition)
       .getOrElse(false)
   }
@@ -815,17 +799,17 @@ private[chisel3] object Builder extends LazyLogging {
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String)(implicit sourceInfo: SourceInfo): Unit = {
     // If --throw-on-first-error is requested, throw an exception instead of aggregating errors
-    if (dynamicContextVar.value.isDefined && !dynamicContextVar.value.get.throwOnFirstError) {
+    if (dynamicContextOpt.isDefined && !dynamicContextOpt.get.throwOnFirstError) {
       errors.error(m, sourceInfo)
     } else {
       throwException(m)
     }
   }
   def warning(m: => String)(implicit sourceInfo: SourceInfo): Unit =
-    if (dynamicContextVar.value.isDefined) errors.warning(m, sourceInfo)
-  def warningNoLoc(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warningNoLoc(m)
+    if (dynamicContextOpt.isDefined) errors.warning(m, sourceInfo)
+  def warningNoLoc(m: => String): Unit = if (dynamicContextOpt.isDefined) errors.warningNoLoc(m)
   def deprecated(m:   => String, location: Option[String] = None): Unit =
-    if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
+    if (dynamicContextOpt.isDefined) errors.deprecated(m, location)
 
   /** Record an exception as an error, and throw it.
     *
@@ -860,17 +844,39 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
+  // TODO: Implement this
+  // Decision! I can import definitions, not circuits, under the activeCircuit, as an extModule, at the time i'm building the circuit.
+  //  - pro: namespaces are handled early as all imports are known upfront - I like this
+  //  - pro: an "Instantiate" api would just look up the context stack to find a definition, which is great
+  //  - pro: its where all other Definitions can be kept for that circuit
+  //  - pro: the "import" can be with a "key", so it is lookupable later!!!
+  //private[chisel3] def importDefinition[T](d: Definition[T], as: Option[String] = None): Definition[T] = {
+  //  Builder.activeCircuit.instantiateOriginChildWithValue(as.getOrElse(d.context.key), d.context)
+  //}
+  private[chisel3] def newCircuit(
+      annotations: AnnotationSeq = Nil,
+      throwOnFirstError: Boolean = false,
+      warningsAsErrors: Boolean = false,
+      sourceRoots: Seq[File] = Seq(new File("."))
+  ): Context = {
+    val dc = new DynamicContext(annotations, throwOnFirstError, warningsAsErrors, sourceRoots)
+    val circuitId =
+      s"circuit$$${java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(BigInt(dc.hashCode).toByteArray)}"
+    val circuitContext = Context(circuitId)//Builder.chiselContext.get().root.instantiateOriginChild(circuitId)
+    println(circuitContext.target)
+    circuitContext.setValue(dc)
+    circuitContext
+  }
+
   private[chisel3] def build[T <: BaseModule](
-    f:              => T,
-    dynamicContext: DynamicContext,
+    f: => T,
+    circuitContext: Context,
     forceModName:   Boolean = true
   ): (Circuit, T) = {
-    
-    val circuitId = s"circuit$$${java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(BigInt(dynamicContext.hashCode).toByteArray)}"
-    val circuitContext = Context(circuitId)
     Builder.chiselContext.get().activeCircuit = Some(circuitContext)
+    Builder.currentContext = Some(circuitContext)
     // Because we don't have a package name, just use this circuit id thing for both definition and instance name
-    val ret = dynamicContextVar.withValue(Some(dynamicContext)) {
+    val ret = {
       ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal
       logger.info("Elaborating design...")
@@ -881,13 +887,17 @@ private[chisel3] object Builder extends LazyLogging {
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 
-      (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq), mod)
+      require(circuitContext.value.asInstanceOf[DynamicContext].componentResult.isEmpty)
+      circuitContext.value.asInstanceOf[DynamicContext].componentResult = Some(
+        Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq)
+      )
+      mod
     }
-    // Add built circuit to the root Context for future imports
-    Builder.chiselContext.get().root.instantiateChild(circuitId, circuitContext)
     Builder.chiselContext.get().activeCircuit = None
-    ret
+    Builder.currentContext = None
+    (circuitContext.value.asInstanceOf[DynamicContext].componentResult.get, circuitContext.getChild(ret.definitionIdentifier).asInstanceOf[T])
   }
+
   initializeSingletons()
 }
 

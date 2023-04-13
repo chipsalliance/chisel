@@ -29,13 +29,12 @@ class Elaborate extends Phase {
     case ChiselGeneratorAnnotation(gen) =>
       val chiselOptions = view[ChiselOptions](annotations)
       try {
-        val context =
-          new DynamicContext(
-            annotations,
-            chiselOptions.throwOnFirstError,
-            chiselOptions.warningsAsErrors,
-            chiselOptions.sourceRoots
-          )
+        val context = Builder.newCircuit(
+          annotations,
+          chiselOptions.throwOnFirstError,
+          chiselOptions.warningsAsErrors,
+          chiselOptions.sourceRoots
+        )
         val (circuit, dut) =
           Builder.build(Module(gen()), context)
         Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))

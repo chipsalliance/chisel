@@ -53,12 +53,10 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     with NamedComponent
     with CloneToContext
     with SourceInfoDoc {
-  _parentVar = Builder.currentModule.getOrElse(null)
-  contextVar = Some(Option(Builder.currentModule.getOrElse(null)) match {
-    case None    => Builder.activeCircuit.instantiateOriginChildWithValue(instanceIdentifier, this)
-    case Some(p) => p.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
-  })
-  _parent.foreach(_.addId(this))
+
+  final val context = Builder.currentContext.get.instantiateOriginChildWithValue(instanceIdentifier, this)
+  final val contextOpt = Some(context)
+  override def scope = context.parentCollectFirst { case c@ Context(_, Some(b: chisel3.experimental.BaseModule)) if b != this => c }
 
   // if the memory is created in a scope with an implicit clock (-> clockInst is defined), we will perform checks that
   // ensure memory ports are created with the same clock unless explicitly specified to use a different clock

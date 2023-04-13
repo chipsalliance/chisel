@@ -126,12 +126,6 @@ class CloneModuleSpec extends ChiselPropSpec {
     mod.q2_io.deq.toNamed.serialize should be("Top.Queue.io.deq")
     mod.q1.io.enq.instanceName should be("io.enq")
     mod.q2_io.deq.instanceName should be("io.deq")
-    mod.q1.io.enq.pathName should be("Top.q1.io.enq")
-    mod.q2_io.deq.pathName should be("Top.q2.io.deq")
-    mod.q1.io.enq.parentPathName should be("Top.q1")
-    mod.q2_io.deq.parentPathName should be("Top.q2")
-    mod.q1.io.enq.parentModName should be("Queue")
-    mod.q2_io.deq.parentModName should be("Queue")
 
     // ********** Checking the wire cloned from the output of CloneModuleAsRecord **********
     val wire_io = mod.q2_wire("io").asInstanceOf[QueueIO[UInt]]
@@ -144,12 +138,6 @@ class CloneModuleSpec extends ChiselPropSpec {
     wire_io.enq.toNamed.serialize should be("Top.Top.q2_wire.io.enq")
     mod.q2_wire.instanceName should be("q2_wire")
     wire_io.enq.instanceName should be("q2_wire.io.enq")
-    mod.q2_wire.pathName should be("Top.q2_wire")
-    wire_io.enq.pathName should be("Top.q2_wire.io.enq")
-    mod.q2_wire.parentPathName should be("Top")
-    wire_io.enq.parentPathName should be("Top")
-    mod.q2_wire.parentModName should be("Top")
-    wire_io.enq.parentModName should be("Top")
   }
 
 }

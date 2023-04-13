@@ -35,7 +35,7 @@ object Module extends SourceInfoDoc {
     }
     Builder.readyForModuleConstr = true
 
-    val parent = Builder.currentModule
+    val parentContext = Builder.currentContext
     val parentWhenStack = Builder.whenStack
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
@@ -62,7 +62,7 @@ object Module extends SourceInfoDoc {
           sourceInfo.makeMessage(" See " + _)
       )
     }
-    Builder.currentModule = parent // Back to parent!
+    Builder.currentContext = parentContext // Back to parent!
     Builder.whenStack = parentWhenStack
     Builder.currentClock = saveClock // Back to clock and reset scope
     Builder.currentReset = saveReset
@@ -74,6 +74,7 @@ object Module extends SourceInfoDoc {
     }
 
     Builder.setPrefix(savePrefix)
+
 
     // Handle connections at enclosing scope
     // We use _component because Modules that don't generate them may still have one
@@ -99,9 +100,9 @@ object Module extends SourceInfoDoc {
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    val parent = Builder.currentModule
+    val parentContext = Builder.currentContext
     val module: T = bc // bc is actually evaluated here
-    if (!parent.isEmpty) { Builder.currentModule = parent }
+    if (!parentContext.isEmpty) { Builder.currentContext = parentContext }
 
     module
   }
@@ -260,7 +261,6 @@ package experimental {
     */
   // TODO: seal this?
   abstract class BaseModule extends HasId with IsInstantiable with CloneToContext {
-    _parentVar = Builder.currentModule.getOrElse(null)
 
     final def identifierTarget: IsModule = {
       if (_parent.isEmpty) {
@@ -293,14 +293,15 @@ package experimental {
     }
     final val definitionIdentifier = _definitionIdentifier
 
-    // Maybe one day we can make this not a var, but it requires Bundle fields to know their parent bundle prior to their execution (e.g. Aligned(..) and Type(new Bundle))
-    contextVar = Some(Option(Builder.currentModule.getOrElse(null)) match {
-      case None => Builder.activeCircuit.instantiateOriginChildWithValue(definitionIdentifier, this)
-      case Some(p) =>
-        p.context.get.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
-    })
-
-    _parent.foreach(_.addId(this))
+    val context = {
+      Builder.currentContext match {
+        case None => Builder.activeCircuit.instantiateOriginChildWithValue(definitionIdentifier, this)
+        case Some(c) =>
+          c.instantiateOriginChildWithValue(instanceIdentifier + "=" + definitionIdentifier, this)
+      }
+    }
+    val contextOpt = Some(context)
+    override def scope = context.parentCollectFirst { case c@ Context(_, Some(b: BaseModule)) if b != this => c }
 
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
@@ -315,7 +316,7 @@ package experimental {
     if (Builder.hasDynamicContext) {
       readyForModuleConstr = false
 
-      Builder.currentModule = Some(this)
+      Builder.currentContext = this.contextOpt
       Builder.whenStack = Nil
     }
 
@@ -331,14 +332,15 @@ package experimental {
     private[chisel3] val _namespace = Namespace.empty
     private[chisel3] val _identifierNamespace = Namespace.empty
     private val _ids = ArrayBuffer[HasId]()
-    private[chisel3] def addId(d: HasId): Unit = {
-      if (Builder.aspectModule(this).isDefined) {
-        aspectModule(this).get.addId(d)
-      } else {
-        require(!_closed, "Can't write to module after module close")
-        _ids += d
-      }
-    }
+    // All aspects are broken
+    //private[chisel3] def addId(d: HasId): Unit = {
+    //  if (Builder.aspectModule(this).isDefined) {
+    //    aspectModule(this).get.addId(d)
+    //  } else {
+    //    require(!_closed, "Can't write to module after module close")
+    //    _ids += d
+    //  }
+    //}
 
     // Returns the last id contained within a Module
     private[chisel3] def _lastId: Long = _ids.last match {
@@ -351,7 +353,7 @@ package experimental {
 
     private[chisel3] def getIds: Iterable[HasId] = {
       require(_closed, "Can't get ids before module close")
-      _ids
+      context.childrenSoFar.map(_.value.asInstanceOf[HasId])
     }
 
     private val _ports = new ArrayBuffer[(Data, SourceInfo)]()

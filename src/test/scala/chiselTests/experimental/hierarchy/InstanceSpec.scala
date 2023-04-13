@@ -7,6 +7,7 @@ import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.util.{DecoupledIO, Valid}
+import chisel3.stage.PrintFullStackTraceAnnotation
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -81,9 +82,12 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val definition: Definition[AddOne] = Definition(new AddOne)
         val i0:         Instance[AddOne] = Instance(definition)
+        println("HERE")
         mark(i0.innerWire, "i0.innerWire")
+        println("THERE")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
+      val (_, annos) = getFirrtlAndAnnos(new Top, Seq(PrintFullStackTraceAnnotation))
+      println("Where")
       annos.collect { case c: MarkAnnotation => c } should contain(
         MarkAnnotation("~Top|Top/i0:AddOne>innerWire".rt, "i0.innerWire")
       )

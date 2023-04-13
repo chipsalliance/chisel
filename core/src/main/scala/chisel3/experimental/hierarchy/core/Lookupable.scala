@@ -65,9 +65,8 @@ object Lookupable {
           case Clone(m: BaseModule) =>
             Builder.setInstanceIdentifier(data.instanceIdentifier)
             val newChild = data.cloneTypeFull
-            Builder.clearInstanceIdentifier()
             newChild.setRef(data.getRef, true)
-            newChild.bind(internal.CrossModuleBinding)
+            newChild.bind(internal.CrossModuleBinding(m))
             newChild.setAllParents(Some(m))
             newChild
           case _ => throw new InternalErrorException("Match error: newParent=$newParent")
@@ -244,8 +243,12 @@ object Lookupable {
     // Recursive call
     def rec[A <: BaseModule](m: A): Underlying[A] = {
       def clone(x: A, p: Option[BaseModule], name: () => String): Underlying[A] = {
-        val newChild = Module.do_pseudo_apply(new experimental.hierarchy.InstanceClone(x, name))
-        newChild._parent = p
+        val newChild = Builder.withCurrentContext(p.flatMap(_.contextOpt)) {
+          Builder.setInstanceIdentifier(x.instanceIdentifier)
+          Module.do_pseudo_apply(new experimental.hierarchy.InstanceClone(x, name))
+        }
+        //newChild._parent = p
+        println(s"def clone: ${p.get.identifierTarget}, ${x.identifierTarget}, ${newChild.identifierTarget}")
         Clone(newChild)
       }
       (m, context) match {
@@ -265,16 +268,21 @@ object Lookupable {
           }
       }
     }
-    module match {
+    val x = module match {
       case Proto(m) => rec(m)
       case Clone(m: ModuleClone[_]) =>
         rec(m) match {
           case Proto(mx) => Clone(mx)
           case Clone(i: InstanceClone[_]) =>
             Builder.setInstanceIdentifier(i.instanceIdentifier)
-            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
+            val newChild = Builder.withCurrentContext(i._parent.flatMap(_.contextOpt)) {
+              Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
+            }
             Builder.clearInstanceIdentifier()
-            newChild._parent = i._parent
+            println(newChild.identifierTarget)
+            println(i._parent.get.identifierTarget)
+            println(i.identifierTarget)
+            //newChild._parent = i._parent
             Clone(newChild)
           case _ => throw new InternalErrorException("Match error: rec(m)=${rec(m)}")
         }
@@ -283,14 +291,22 @@ object Lookupable {
           case Proto(mx) => Clone(mx)
           case Clone(i: InstanceClone[_]) =>
             Builder.setInstanceIdentifier(i.instanceIdentifier)
-            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
+            val newChild = Builder.withCurrentContext(i._parent.flatMap(_.contextOpt)) {
+              Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
+            }
+            println(newChild.identifierTarget)
             Builder.clearInstanceIdentifier()
-            newChild._parent = i._parent
+            //newChild._parent = i._parent
             Clone(newChild)
           case _ => throw new InternalErrorException("Match error: rec(m)=${rec(m)}")
         }
       case _ => throw new InternalErrorException("Match error: module=$module")
     }
+    x match {
+      case Clone(y: BaseModule) => println(y.identifierTarget)
+      case _ =>
+    }
+    x
   }
 
   class SimpleLookupable[X] extends Lookupable[X] {
@@ -384,13 +400,13 @@ object Lookupable {
           case Proto(p) if p == parent => mem
           case Clone(mod: BaseModule) =>
             val existingMod = Builder.currentModule
-            Builder.currentModule = Some(mod)
-            val newChild: T = mem match {
-              case m: Mem[_] => new Mem(m.t.asInstanceOf[Data].cloneTypeFull, m.length).asInstanceOf[T]
-              case m: SyncReadMem[_] =>
-                new SyncReadMem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, m.readUnderWrite).asInstanceOf[T]
+            val newChild: T = Builder.withCurrentContext(mod.contextOpt) {
+              mem match {
+                case m: Mem[_] => new Mem(m.t.asInstanceOf[Data].cloneTypeFull, m.length).asInstanceOf[T]
+                case m: SyncReadMem[_] =>
+                  new SyncReadMem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, m.readUnderWrite).asInstanceOf[T]
+              }
             }
-            Builder.currentModule = existingMod
             newChild.setRef(mem.getRef, true)
             newChild
           case _ =>

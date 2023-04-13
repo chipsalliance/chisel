@@ -87,7 +87,7 @@ package object internal {
     override private[chisel3] def generateComponent():  Option[Component] = None
     override private[chisel3] def initializeInParent(): Unit = ()
     // This module is not really part of the circuit
-    _parent = None
+    //_parent = None
 
     // Sigil to mark views, starts with '_' to make it a legal FIRRTL target
     override def desiredName = "_$$View$$_"
@@ -99,6 +99,7 @@ package object internal {
     *
     * @note this is a val instead of an object because of the need to wrap in Module(...)
     */
-  private[chisel3] val ViewParent =
+  private[chisel3] val ViewParent = {
     Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo)
+  }
 }

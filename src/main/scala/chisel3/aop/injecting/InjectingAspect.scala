@@ -57,17 +57,16 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
   final def toAnnotation(modules: Iterable[M], circuit: String, moduleNames: Seq[String]): AnnotationSeq = {
     modules.map { module =>
       val chiselOptions = view[ChiselOptions](annotationsInAspect)
-      val dynamicContext =
-        new DynamicContext(
+      val circuitContext = Builder.newCircuit(
           annotationsInAspect,
           chiselOptions.throwOnFirstError,
           chiselOptions.warningsAsErrors,
           chiselOptions.sourceRoots
-        )
+      )
       // Add existing module names into the namespace. If injection logic instantiates new modules
       //  which would share the same name, they will get uniquified accordingly
       moduleNames.foreach { n =>
-        dynamicContext.globalNamespace.name(n)
+        circuitContext.value.asInstanceOf[DynamicContext].globalNamespace.name(n)
       }
 
       val (chiselIR, _) = Builder.build(
@@ -77,7 +76,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
             case x: RawModule => injection(module)
           }
         }),
-        dynamicContext
+        circuitContext
       )
 
       val comps = chiselIR.components.map {

@@ -145,9 +145,7 @@ private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Data]) exte
 
 /** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-private[chisel3] case object CrossModuleBinding extends TopBinding {
-  def location = None
-}
+private[chisel3] case class CrossModuleBinding(enclosure: BaseModule) extends ConstrainedBinding
 
 sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 // Literal binding attached to a element that is not part of a Bundle.

@@ -159,9 +159,6 @@ package object chisel3 {
     */
   trait InstanceId {
     def instanceName:   String
-    def pathName:       String
-    def parentPathName: String
-    def parentModName:  String
 
     /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
     def toNamed: Named

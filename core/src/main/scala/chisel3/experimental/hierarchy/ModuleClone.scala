@@ -11,8 +11,9 @@ import chisel3._
 // Private internal class to serve as a _parent for Data in cloned ports
 private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends PseudoModule with core.IsClone[T] {
   override def toString = s"ModuleClone(${getProto})"
+  override private[chisel3] def _definitionIdentifier = getProto.definitionIdentifier
   // Do not call default addId function, which may modify a module that is already "closed"
-  override def addId(d: HasId): Unit = ()
+  //override def addId(d: HasId): Unit = ()
   def getPorts = _portsRecord
   // ClonePorts that hold the bound ports for this module
   // Used for setting the refs of both this module and the Record

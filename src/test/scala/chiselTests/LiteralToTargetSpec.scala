@@ -23,6 +23,6 @@ class LiteralToTargetSpec extends AnyFreeSpec with Matchers {
       }
 
       ChiselStage.elaborate(new Foo)
-    } should have).message("Illegal component name: UInt<1>(\"h01\") (note: literals are illegal)")
+    } should have).message("Cannot call instanceName on a literal: UInt<1>(1)")
   }
 }

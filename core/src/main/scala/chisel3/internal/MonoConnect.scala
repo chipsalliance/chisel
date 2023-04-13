@@ -54,7 +54,7 @@ private[chisel3] object MonoConnect {
     MonoConnectException(s"Sink ${formatName(sink)} has escaped the scope of the when in which it was constructed.")
   def UnknownRelationException(sink: Data, source: Data, context_mod: BaseModule) =
     MonoConnectException(
-      s": ${sink.context.get.target} or ${source.context.get.target} unavailable to current module ${context_mod.context.get.target}."
+      s": ${sink.context.target} or ${source.context.target} unavailable to current module ${context_mod.context.target}."
     )
   // These are when recursing down aggregate types
   def MismatchedVecException =
@@ -227,7 +227,8 @@ private[chisel3] object MonoConnect {
     import ActualDirection.{Bidirectional, Input, Output}
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source, context_mod))
+    val sink_mod: BaseModule =
+      sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source, context_mod))
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
     val sink_parent_opt = Builder.retrieveParent(sink_mod, context_mod)
@@ -385,7 +386,8 @@ private[chisel3] object MonoConnect {
     val source = reify(_source)
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source, context_mod))
+    val sink_mod: BaseModule =
+      sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source, context_mod))
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
     val sink_parent_opt = Builder.retrieveParent(sink_mod, context_mod)

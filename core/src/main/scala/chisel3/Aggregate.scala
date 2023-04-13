@@ -192,7 +192,6 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    _parentVar = Builder.currentModule.getOrElse(null)
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -1010,7 +1009,6 @@ abstract class Record extends Aggregate {
   }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    _parentVar = Builder.currentModule.getOrElse(null)
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)

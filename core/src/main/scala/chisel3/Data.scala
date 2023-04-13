@@ -348,8 +348,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
         p.identifierTarget.field(instanceIdentifier)
       case Some(t: ConstrainedBinding) =>
         t.location.get.identifierTarget.ref(instanceIdentifier)
-      case Some(CrossModuleBinding) =>
-        _parent.get.identifierTarget.ref(instanceIdentifier)
       case Some(x) => throw new Exception(this.toString + " = " + x)
       case None    => throw new Exception(this.toString + " = None")
     }
@@ -420,31 +418,38 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
     _bindingVar = target
   }
 
-  override def context = contextVar.orElse {
-    val myContext = _binding match {
-      case Some(ChildBinding(p: Data)) =>
-        p.context.map(_.instantiateOriginChildWithValue(instanceIdentifier, this))
-      case Some(t: ConstrainedBinding) =>
-        val parentContext = t.location.get.context.get
-        if (parentContext.isChild(instanceIdentifier)) {
-          Some(parentContext(instanceIdentifier))
-        } else {
-          Some(parentContext.instantiateOriginChildWithValue(instanceIdentifier, this))
-        }
-      case Some(CrossModuleBinding) =>
-        Some(_parent.get.context.get.instantiateOriginChildWithValue(instanceIdentifier, this))
+  private[chisel3] def scope: Option[Context] = {
+    _binding match {
+      case Some(ChildBinding(p: Data)) => p.scope
+      case Some(t: ConstrainedBinding) => t.location.get.contextOpt
       case Some(ViewBinding(_)) =>
         // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
-        Some(ViewParent.context.get.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
+        ViewParent.contextOpt
       case Some(AggregateViewBinding(_)) =>
         // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
-        Some(ViewParent.context.get.instantiateOriginChildWithValue(instanceIdentifier + _id.toString, this))
+        ViewParent.contextOpt
       case Some(e: UnconstrainedBinding) => None
       case Some(x) => throw new Exception("Building context from binding failed: " + this.toString + " = " + x)
       case None    => None
     }
-    contextVar = myContext
-    myContext
+  }
+
+
+  override def context = contextOpt.get
+  override def contextOpt = _binding match {
+    case Some(ChildBinding(p: Data)) =>
+      p.contextOpt.map(_.instantiateOrGetOriginChildWithValue(instanceIdentifier, this))
+    case Some(t: ConstrainedBinding) =>
+      Some(t.location.get.context.instantiateOrGetOriginChildWithValue(instanceIdentifier, this))
+    case Some(ViewBinding(_)) =>
+      // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
+      Some(ViewParent.context.instantiateOrGetOriginChildWithValue(instanceIdentifier + _id.toString, this))
+    case Some(AggregateViewBinding(_)) =>
+      // For now, adding id to instance identifier because dataview names leave their local scope, as they are now children of `ViewParent
+      Some(ViewParent.context.instantiateOrGetOriginChildWithValue(instanceIdentifier + _id.toString, this))
+    case Some(e: UnconstrainedBinding) => None
+    case Some(x) => throw new Exception("Building context from binding failed: " + this.toString + " = " + x)
+    case None    => None
   }
 
   private[chisel3] def hasBinding: Boolean = _binding.isDefined
@@ -476,8 +481,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
   /** Adds this `Data` to its parents _ids if it should be added */
   private[chisel3] def maybeAddToParentIds(target: Binding): Unit = {
     // ConstrainedBinding means the thing actually corresponds to a Module, no need to add to _ids otherwise
-    if (target.isInstanceOf[ConstrainedBinding]) {
-      _parent.foreach(_.addId(this))
+    target match {
+      case c: ConstrainedBinding => context // Side-effecting to add this.context to enclosure's children
+      case other =>
     }
   }
 
@@ -663,7 +669,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Cl
   // Recursively set the parent of the start Data and any children (eg. in an Aggregate)
   private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit = {
     def rec(data: Data): Unit = {
-      data._parent = parent
+      //data._parent = parent
       data match {
         case _:   Element =>
         case agg: Aggregate =>

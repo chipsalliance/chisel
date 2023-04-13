@@ -27,9 +27,6 @@ class DataViewTargetSpec extends ChiselFlatSpec {
     _.toTarget.toString,
     _.toAbsoluteTarget.toString,
     _.instanceName,
-    _.pathName,
-    _.parentPathName,
-    _.parentModName
   )
 
   // Check helpers

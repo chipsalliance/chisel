@@ -437,13 +437,9 @@ object stop {
 
 /** Base class for all verification statements: Assert, Assume, Cover, Stop and Printf. */
 abstract class VerificationStatement extends NamedComponent with CloneToContext {
-  _parentVar = Builder.currentModule.getOrElse(null)
-  // Maybe one day we can make this not a var, but it requires Bundle fields to know their parent bundle prior to their execution (e.g. Aligned(..) and Type(new Bundle))
-  contextVar = Some(Option(Builder.currentModule.getOrElse(null)) match {
-    case None    => Builder.activeCircuit.instantiateOriginChildWithValue(instanceIdentifier, this)
-    case Some(p) => p.context.get.instantiateOriginChildWithValue(instanceIdentifier, this)
-  })
-  _parent.foreach(_.addId(this))
+  final val context = Builder.currentContext.get.instantiateOriginChildWithValue(instanceIdentifier, this)
+  final val contextOpt = Some(context)
+  override def scope = context.parentCollectFirst { case c@ Context(_, Some(b: chisel3.experimental.BaseModule)) if b != this => c }
 }
 
 /** Helper functions for common functionality required by stop, assert, assume or cover */

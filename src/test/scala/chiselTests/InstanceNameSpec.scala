@@ -29,8 +29,8 @@ class InstanceNameSpec extends ChiselFlatSpec {
   ChiselStage.elaborate { m = new InstanceNameModule; m }
 
   it should "work with module IO" in {
-    val io = m.io.pathName
-    assert(io == moduleName + ".io")
+    val io = m.io.toTarget.serialize
+    assert(io == s"~$moduleName|$moduleName>io")
   }
 
   // TODO: Ummm, it shouldn't work for literals, right?!?!?!
@@ -40,16 +40,16 @@ class InstanceNameSpec extends ChiselFlatSpec {
   //}
 
   it should "NOT work for non-hardware values" in {
-    a[ChiselException] shouldBe thrownBy { m.y.pathName }
-    a[ChiselException] shouldBe thrownBy { m.z.pathName }
+    a[ChiselException] shouldBe thrownBy { m.y.instanceName }
+    a[ChiselException] shouldBe thrownBy { m.z.instanceName }
   }
 
   it should "NOT work for non-hardware bundle elements" in {
-    a[ChiselException] shouldBe thrownBy { m.z.foo.pathName }
+    a[ChiselException] shouldBe thrownBy { m.z.foo.instanceName }
   }
 
   it should "work with modules" in {
-    val q = m.q.pathName
-    assert(q == moduleName + ".q")
+    val q = m.q.toTarget.serialize
+    assert(q == s"~$moduleName|$moduleName>q")
   }
 }

@@ -31,6 +31,7 @@ private[chisel3] class Context private (val key: String, val parent: Option[Cont
   /** At this moment in time, all known children keys of this or any provenance Contexts */
   def childrenKeys: List[String] = if (isOrigin) localChildrenKeys.toList else provenance.map(_.childrenKeys).get
   def isChild(childKey: String): Boolean = childrenKeys.contains(childKey)
+  def childrenSoFar: Iterable[Context] = children.map(_._2)
 
   /* Accessors to important contexts, relative to this */
 
@@ -86,6 +87,15 @@ private[chisel3] class Context private (val key: String, val parent: Option[Cont
     val c = instantiateOriginChild(childKey)
     c.setValue(value)
     c
+  }
+  def instantiateOrGetOriginChildWithValue(childKey: String, value: CloneToContext): Context = {
+    if(isChild(childKey)) {
+      val ret = apply(childKey)
+      require(ret.value == value)
+      ret
+    } else {
+      instantiateOriginChildWithValue(childKey, value)
+    }
   }
 
   /** Return the appropriate child of `this`, error if this child key is not defined `this.origin` */
@@ -223,11 +233,12 @@ private[chisel3] class Context private (val key: String, val parent: Option[Cont
   /** Parent chain of keys with id and origin.key */
   def targetWithDefinition: String = parentContextPath.map(_.keyWithId).reverse.mkString("/")
 
-  def parentCollectFirst[T](pf: PartialFunction[Any, T]): Option[T] = {
-    getValue match {
-      case None    => parent.flatMap(_.parentCollectFirst(pf))
-      case Some(x) => pf.lift(x).orElse(parent.flatMap(_.parentCollectFirst(pf)))
-    }
+  def parentCollectFirst[T](pf: PartialFunction[Context, T]): Option[T] = {
+    pf.lift(this).orElse(parent.flatMap(_.parentCollectFirst(pf)))
+    //getValue match {
+    //  case None    => parent.flatMap(_.parentCollectFirst(pf))
+    //  case Some(x) => pf.lift(x).orElse(parent.flatMap(_.parentCollectFirst(pf)))
+    //}
   }
 
   /* Iterators to walk Context trees */
@@ -256,4 +267,5 @@ private[chisel3] class Context private (val key: String, val parent: Option[Cont
 
 object Context {
   def apply(key: String): Context = new Context(key, None, None)
+  def unapply(c: Context): Option[(String, Option[Any])] = Some((c.key, c.getValue))
 }

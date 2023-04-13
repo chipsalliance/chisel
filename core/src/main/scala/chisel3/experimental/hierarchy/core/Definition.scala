@@ -54,8 +54,9 @@ final case class Definition[+A] private[chisel3] (private[chisel3] underlying: U
       val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value))(
         chisel3.experimental.UnlocatableSourceInfo
       )
-      newChild._circuit = value._circuit.orElse(Some(value))
-      newChild._parent = None
+      // TODO: fix all of D/I
+      //newChild._circuit = value._circuit.orElse(Some(value))
+      //newChild._parent = None
       Some(newChild)
     case value: IsInstantiable => None
   }
@@ -99,17 +100,12 @@ object Definition extends SourceInfoDoc {
   )(
     implicit sourceInfo: SourceInfo
   ): Definition[T] = {
-    val dynamicContext = {
-      val context = Builder.captureContext()
-      new DynamicContext(Nil, context.throwOnFirstError, context.warningsAsErrors, context.sourceRoots)
-    }
-    Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
-    dynamicContext.inDefinition = true
-    val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
-    Builder.components ++= ir.components
-    Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
-    module._circuit = Builder.currentModule
-    dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
+    val cx = Builder.currentContext
+    val pr = Builder.activeCircuit.value.asInstanceOf[DynamicContext].inDefinition
+    Builder.activeCircuit.value.asInstanceOf[DynamicContext].inDefinition = true
+    val (ir, module) = Builder.build(Module(proto), Builder.activeCircuit, false)
+    Builder.currentContext = cx
+    Builder.activeCircuit.value.asInstanceOf[DynamicContext].inDefinition = pr
     new Definition(Proto(module))
   }
 

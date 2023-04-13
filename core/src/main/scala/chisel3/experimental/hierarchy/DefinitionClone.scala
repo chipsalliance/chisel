@@ -20,7 +20,7 @@ private[chisel3] class DefinitionClone[T <: BaseModule](val getProto: T) extends
   // No addition components are generated
   private[chisel3] def generateComponent(): Option[Component] = None
   // Do not call default addId function, which may modify a module that is already "closed"
-  override def addId(d: HasId): Unit = ()
+  //override def addId(d: HasId): Unit = ()
   // Necessary for toTarget to work
   private[chisel3] def initializeInParent(): Unit = ()
   // Module name is the same as proto's module name
