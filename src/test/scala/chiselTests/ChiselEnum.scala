@@ -577,7 +577,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "work with Printables" in {
     ChiselStage.emitCHIRRTL(new LoadStoreExample) should include(
-      """printf(clock, UInt<1>("h1"), "%c%c%c%c%c", _chiselTestsOpcodePrintable[0], _chiselTestsOpcodePrintable[1], _chiselTestsOpcodePrintable[2], _chiselTestsOpcodePrintable[3], _chiselTestsOpcodePrintable[4])"""
+      """printf(clock, UInt<1>(0h1), "%c%c%c%c%c", _chiselTestsOpcodePrintable[0], _chiselTestsOpcodePrintable[1], _chiselTestsOpcodePrintable[2], _chiselTestsOpcodePrintable[3], _chiselTestsOpcodePrintable[4])"""
     )
   }
 }

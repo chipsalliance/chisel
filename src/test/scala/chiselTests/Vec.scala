@@ -58,7 +58,7 @@ class VecSpec extends ChiselPropSpec with Utils {
 
   private def uint(value: BigInt): String = uint(value, value.bitLength.max(1))
   private def uint(value: BigInt, width: Int): String =
-    s"""UInt<$width>(\"h${value.toString(16)}")"""
+    s"""UInt<$width>(0h${value.toString(16)})"""
 
   property("Vecs should be assignable") {
     val values = (0 until 10).toList
@@ -67,7 +67,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       val v = VecInit(values.map(_.U(width.W)))
     })
     for (v <- values) {
-      chirrtl should include(s"v[$v] <= ${uint(v, width)}")
+      chirrtl should include(s"connect v[$v], ${uint(v, width)}")
     }
   }
 
@@ -81,7 +81,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       out := v
     })
     chirrtl should include("output out : UInt<4>[10]")
-    chirrtl should include("out <= v")
+    chirrtl should include("connect out, v")
   }
 
   property("Vec.fill with a pure type should generate an exception") {
@@ -100,8 +100,8 @@ class VecSpec extends ChiselPropSpec with Utils {
     chirrtl should include(s"wire x : UInt<$w>[$n]")
     chirrtl should include(s"wire u : UInt<$w>[$n]")
     for (i <- 0 until n) {
-      chirrtl should include(s"x[$i] <= ${uint(i * 2)}")
-      chirrtl should include(s"u[$i] <= ${uint(i * 2)}")
+      chirrtl should include(s"connect x[$i], ${uint(i * 2)}")
+      chirrtl should include(s"connect u[$i], ${uint(i * 2)}")
     }
   }
 
@@ -115,7 +115,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     chirrtl should include(s"wire v : UInt<$w>[$m][$n]")
     for (i <- 0 until n) {
       for (j <- 0 until m) {
-        chirrtl should include(s"v[$i][$j] <= ${uint(i + j)}")
+        chirrtl should include(s"connect v[$i][$j], ${uint(i + j)}")
       }
     }
   }
@@ -132,7 +132,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     for (i <- 0 until n) {
       for (j <- 0 until m) {
         for (k <- 0 until o) {
-          chirrtl should include(s"v[$i][$j][$k] <= ${uint(i + j + k)}")
+          chirrtl should include(s"connect v[$i][$j][$k], ${uint(i + j + k)}")
         }
       }
     }
@@ -150,8 +150,8 @@ class VecSpec extends ChiselPropSpec with Utils {
     chirrtl should include(s"wire u : UInt<$w>[$n]")
     val valueFir = uint(value)
     for (i <- 0 until n) {
-      chirrtl should include(s"x[$i] <= $valueFir")
-      chirrtl should include(s"u[$i] <= $valueFir")
+      chirrtl should include(s"connect x[$i], $valueFir")
+      chirrtl should include(s"connect u[$i], $valueFir")
     }
   }
 
@@ -176,7 +176,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     val valueFir = uint(value)
     for (i <- 0 until n) {
       for (j <- 0 until m) {
-        chirrtl should include(s"v[$i][$j] <= $valueFir")
+        chirrtl should include(s"connect v[$i][$j], $valueFir")
       }
     }
   }
@@ -195,7 +195,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     for (i <- 0 until n) {
       for (j <- 0 until m) {
         for (k <- 0 until o) {
-          chirrtl should include(s"v[$i][$j][$k] <= $valueFir")
+          chirrtl should include(s"connect v[$i][$j][$k], $valueFir")
         }
       }
     }
@@ -214,8 +214,8 @@ class VecSpec extends ChiselPropSpec with Utils {
     for (i <- 0 until n) {
       for (j <- 0 until m) {
         val suffix = if (idx > 0) s"_$idx" else ""
-        chirrtl should include(s"vec2D[$i][$j].out <= vec2D_mod$suffix.io.out")
-        chirrtl should include(s"vec2D_mod$suffix.io.in <= vec2D[$i][$j].in")
+        chirrtl should include(s"connect vec2D[$i][$j].out, vec2D_mod$suffix.io.out")
+        chirrtl should include(s"connect vec2D_mod$suffix.io.in, vec2D[$i][$j].in")
         idx += 1
       }
     }
@@ -236,8 +236,8 @@ class VecSpec extends ChiselPropSpec with Utils {
       for (j <- 0 until m) {
         for (k <- 0 until o) {
           val suffix = if (idx > 0) s"_$idx" else ""
-          chirrtl should include(s"vec3D[$i][$j][$k].out <= vec3D_mod$suffix.io.out")
-          chirrtl should include(s"vec3D_mod$suffix.io.in <= vec3D[$i][$j][$k].in")
+          chirrtl should include(s"connect vec3D[$i][$j][$k].out, vec3D_mod$suffix.io.out")
+          chirrtl should include(s"connect vec3D_mod$suffix.io.in, vec3D[$i][$j][$k].in")
           idx += 1
         }
       }
@@ -257,8 +257,8 @@ class VecSpec extends ChiselPropSpec with Utils {
     for (i <- 0 until n) {
       for (j <- 0 until m) {
         val suffix = s"_${(i + 1) % n}_${(j + 2) % m}"
-        chirrtl should include(s"vec2D[$i][$j].out <= mods$suffix.io.out")
-        chirrtl should include(s"mods$suffix.io.in <= vec2D[$i][$j].in")
+        chirrtl should include(s"connect vec2D[$i][$j].out, mods$suffix.io.out")
+        chirrtl should include(s"connect mods$suffix.io.in, vec2D[$i][$j].in")
       }
     }
   }
@@ -278,8 +278,8 @@ class VecSpec extends ChiselPropSpec with Utils {
       for (j <- 0 until m) {
         for (k <- 0 until o) {
           val suffix = s"_${(i + 1) % n}_${(j + 2) % m}_$k"
-          chirrtl should include(s"vec2D[$i][$j][$k].out <= mods$suffix.io.out")
-          chirrtl should include(s"mods$suffix.io.in <= vec2D[$i][$j][$k].in")
+          chirrtl should include(s"connect vec2D[$i][$j][$k].out, mods$suffix.io.out")
+          chirrtl should include(s"connect mods$suffix.io.in, vec2D[$i][$j][$k].in")
         }
       }
     }
@@ -295,7 +295,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       oneBitUnitRegVec(0) := 1.U(1.W)
     })
     chirrtl should include("reg oneBitUnitRegVec : UInt<1>[1], clock")
-    chirrtl should include("oneBitUnitRegVec[0] <= UInt<1>(\"h1\")")
+    chirrtl should include("connect oneBitUnitRegVec[0], UInt<1>(0h1)")
   }
 
   property("A Vec with zero entries should compile and have zero width") {
@@ -320,10 +320,10 @@ class VecSpec extends ChiselPropSpec with Utils {
     })
     chirrtl should include("output io : { foo : UInt<1>, bar : UInt<1>[0]}")
     chirrtl should include("wire zero : { foo : UInt<1>, bar : UInt<1>[0]}")
-    chirrtl should include("zero.foo <= UInt<1>(\"h0\")")
-    chirrtl should include("io <= zero")
+    chirrtl should include("connect zero.foo, UInt<1>(0h0)")
+    chirrtl should include("connect io, zero")
     chirrtl should include("wire w : UInt<1>[0]")
-    chirrtl should include("w <= m.io.bar")
+    chirrtl should include("connect w, m.io.bar")
   }
 
   property("It should be possible to bulk connect a Vec and a Seq") {
@@ -390,7 +390,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     for (gen <- List(new EmptyBundle, new EmptyRecord)) {
       val chirrtl = ChiselStage.emitCHIRRTL(new MyModule(gen))
       chirrtl should include("input in : { }")
-      chirrtl should include("reg reg : { }[4]")
+      chirrtl should include("regreset reg : { }[4]")
     }
   }
 
@@ -400,7 +400,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       val out = IO(Output(UInt(8.W)))
       out := vec(1.U)
     }))
-    chirrtl should include("out <= vec[1]")
+    chirrtl should include("connect out, vec[1]")
     log should be("")
   }
 
@@ -410,7 +410,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       val out = IO(Output(UInt(8.W)))
       out := vec(10.U)
     }))
-    chirrtl should include("""out <= vec[UInt<2>("h2")]""")
+    chirrtl should include("""connect out, vec[UInt<2>(0h2)]""")
     log should include("Dynamic index with width 4 is too wide for Vec of size 4 (expected index width 2)")
   }
 

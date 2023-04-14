@@ -493,14 +493,14 @@ class SRAMSpec extends ChiselFunSpec {
             val rdPortName = s"mem_out_readPorts_${rd}_data_MPORT"
             chirrtl should include(s"when mem.readPorts[$rd].enable")
             chirrtl should include(s"read mport $rdPortName")
-            chirrtl should include(s"mem.readPorts[$rd].data <= $rdPortName")
+            chirrtl should include(s"connect mem.readPorts[$rd].data, $rdPortName")
           }
 
           for (wr <- 0 until numWR) {
             val wrPortName = s"mem_MPORT${if (wr == 0) "" else s"_$wr"}"
             chirrtl should include(s"when mem.writePorts[$wr].enable")
             chirrtl should include(s"write mport $wrPortName")
-            chirrtl should include(s"$wrPortName <= mem.writePorts[$wr].data")
+            chirrtl should include(s"connect $wrPortName, mem.writePorts[$wr].data")
           }
 
           for (rw <- 0 until numRW) {
@@ -508,7 +508,7 @@ class SRAMSpec extends ChiselFunSpec {
             chirrtl should include(s"when mem.readwritePorts[$rw].enable")
             chirrtl should include(s"rdwr mport $rwPortName")
             chirrtl should include(s"when mem.readwritePorts[$rw].isWrite")
-            chirrtl should include(s"$rwPortName <= mem.readwritePorts[$rw].writeData")
+            chirrtl should include(s"connect $rwPortName, mem.readwritePorts[$rw].writeData")
           }
         }
     }
@@ -538,10 +538,12 @@ class SRAMSpec extends ChiselFunSpec {
 
     for (i <- 0 until 3) {
       chirrtl should include(s"when mem.writePorts[0].mask[$i]")
-      chirrtl should include(s"mem_MPORT[$i] <= mem.writePorts[0].data[$i]")
+      chirrtl should include(s"connect mem_MPORT[$i], mem.writePorts[0].data[$i]")
 
       chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
-      chirrtl should include(s"mem_out_readwritePorts_0_readData_MPORT[$i] <= mem.readwritePorts[0].writeData[$i]")
+      chirrtl should include(
+        s"connect mem_out_readwritePorts_0_readData_MPORT[$i], mem.readwritePorts[0].writeData[$i]"
+      )
     }
   }
   describe("Read-only SRAM") {

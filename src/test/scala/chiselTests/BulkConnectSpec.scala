@@ -19,8 +19,8 @@ class BulkConnectSpec extends ChiselPropSpec {
       io.outMono := io.inMono
       io.outBi <> io.inBi
     })
-    chirrtl should include("io.outMono <= io.inMono")
-    chirrtl should include("io.outBi <= io.inBi")
+    chirrtl should include("connect io.outMono, io.inMono")
+    chirrtl should include("connect io.outBi, io.inBi")
   }
 
   property("Chisel connects should not emit FIRRTL bulk connects between differing FIRRTL types") {
@@ -40,8 +40,8 @@ class BulkConnectSpec extends ChiselPropSpec {
       out <> in
     })
     // out <- in is illegal FIRRTL
-    exactly(2, chirrtl.split('\n')) should include("out.foo.bar <= in.foo.bar")
-    chirrtl shouldNot include("out <= in")
+    exactly(2, chirrtl.split('\n')) should include("connect out.foo.bar, in.foo.bar")
+    chirrtl shouldNot include("connect out, in")
     chirrtl shouldNot include("out <- in")
   }
 
@@ -58,11 +58,11 @@ class BulkConnectSpec extends ChiselPropSpec {
       deq <> enq
     })
 
-    chirrtl shouldNot include("wire <= enq")
-    chirrtl should include("wire.bits <= enq.bits")
-    chirrtl should include("wire.valid <= enq.valid")
-    chirrtl should include("wire.ready <= enq.ready")
-    chirrtl should include("deq <= enq")
+    chirrtl shouldNot include("connect wire, enq")
+    chirrtl should include("connect wire.bits, enq.bits")
+    chirrtl should include("connect wire.valid, enq.valid")
+    chirrtl should include("connect wire.ready, enq.ready")
+    chirrtl should include("connect deq, enq")
   }
 
   property("Chisel connects should not emit a FIRRTL bulk connect for BlackBox IO Bundles") {
@@ -81,8 +81,8 @@ class BulkConnectSpec extends ChiselPropSpec {
       io <> bb.io
     })
     // There won't be a bb.io Bundle in FIRRTL, so connections have to be done element-wise
-    chirrtl should include("bb.O <= io.O")
-    chirrtl should include("io.I <= bb.I")
+    chirrtl should include("connect bb.O, io.O")
+    chirrtl should include("connect io.I, bb.I")
   }
 
   property("MonoConnect should bulk connect undirectioned internal wires") {
@@ -92,6 +92,6 @@ class BulkConnectSpec extends ChiselPropSpec {
       val w2 = Wire(Vec(2, UInt(8.W)))
       w2 := w1
     })
-    chirrtl should include("w2 <= w1")
+    chirrtl should include("connect w2, w1")
   }
 }

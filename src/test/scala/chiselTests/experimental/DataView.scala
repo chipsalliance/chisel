@@ -66,7 +66,7 @@ class DataViewSpec extends ChiselFlatSpec {
       out := in.viewAs[BundleB]
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("out.bar <= in.foo")
+    chirrtl should include("connect out.bar, in.foo")
   }
 
   it should "be a bidirectional mapping" in {
@@ -77,7 +77,7 @@ class DataViewSpec extends ChiselFlatSpec {
       out.viewAs[BundleA] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("out.bar <= in.foo")
+    chirrtl should include("connect out.bar, in.foo")
   }
 
   it should "handle viewing UInts as UInts" in {
@@ -89,8 +89,8 @@ class DataViewSpec extends ChiselFlatSpec {
       bar.viewAs[UInt] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("foo <= in")
-    chirrtl should include("bar <= in")
+    chirrtl should include("connect foo, in")
+    chirrtl should include("connect bar, in")
   }
 
   it should "handle viewing Analogs as Analogs" in {
@@ -115,8 +115,8 @@ class DataViewSpec extends ChiselFlatSpec {
       buzz.viewAs[MyBundle] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("fizz <= in")
-    chirrtl should include("buzz <= in")
+    chirrtl should include("connect fizz, in")
+    chirrtl should include("connect buzz, in")
   }
 
   it should "handle viewing Vecs as their same concrete type" in {
@@ -128,8 +128,8 @@ class DataViewSpec extends ChiselFlatSpec {
       buzz.viewAs[Vec[UInt]] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("fizz <= in")
-    chirrtl should include("buzz <= in")
+    chirrtl should include("connect fizz, in")
+    chirrtl should include("connect buzz, in")
   }
 
   it should "handle viewing Vecs as Bundles and vice versa" in {
@@ -142,10 +142,10 @@ class DataViewSpec extends ChiselFlatSpec {
       out2.viewAs[MyBundle] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("out[0] <= in.bar")
-    chirrtl should include("out[1] <= in.foo")
-    chirrtl should include("out2[0] <= in.bar")
-    chirrtl should include("out2[1] <= in.foo")
+    chirrtl should include("connect out[0], in.bar")
+    chirrtl should include("connect out[1], in.foo")
+    chirrtl should include("connect out2[0], in.bar")
+    chirrtl should include("connect out2[1], in.foo")
   }
 
   it should "work with bidirectional connections for nested types" in {
@@ -158,14 +158,14 @@ class DataViewSpec extends ChiselFlatSpec {
       deq2.viewAs[DecoupledIO[FizzBuzz]] <> enq
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("deq.valid <= enq.valid")
-    chirrtl should include("enq.ready <= deq.ready")
-    chirrtl should include("deq.fizz <= enq.bits.fizz")
-    chirrtl should include("deq.buzz <= enq.bits.buzz")
-    chirrtl should include("deq2.valid <= enq.valid")
-    chirrtl should include("enq.ready <= deq2.ready")
-    chirrtl should include("deq2.fizz <= enq.bits.fizz")
-    chirrtl should include("deq2.buzz <= enq.bits.buzz")
+    chirrtl should include("connect deq.valid, enq.valid")
+    chirrtl should include("connect enq.ready, deq.ready")
+    chirrtl should include("connect deq.fizz, enq.bits.fizz")
+    chirrtl should include("connect deq.buzz, enq.bits.buzz")
+    chirrtl should include("connect deq2.valid, enq.valid")
+    chirrtl should include("connect enq.ready, deq2.ready")
+    chirrtl should include("connect deq2.fizz, enq.bits.fizz")
+    chirrtl should include("connect deq2.buzz, enq.bits.buzz")
   }
 
   it should "support viewing a Bundle as a Parent Bundle type" in {
@@ -185,8 +185,8 @@ class DataViewSpec extends ChiselFlatSpec {
       fooOut := barIn.viewAsSupertype(new Foo)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("barOut.foo <= fooIn.foo")
-    chirrtl should include("fooOut.foo <= barIn.foo")
+    chirrtl should include("connect barOut.foo, fooIn.foo")
+    chirrtl should include("connect fooOut.foo, barIn.foo")
   }
 
   it should "support viewing a Record as a Parent Record type" in {
@@ -210,8 +210,8 @@ class DataViewSpec extends ChiselFlatSpec {
       fooOut := barIn.viewAsSupertype(new Foo)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("barOut.foo <= fooIn.foo")
-    chirrtl should include("fooOut.foo <= barIn.foo")
+    chirrtl should include("connect barOut.foo, fooIn.foo")
+    chirrtl should include("connect fooOut.foo, barIn.foo")
   }
 
   it should "fail if you try viewing a Record as a poorly inherited Parent Record type" in {
@@ -250,8 +250,8 @@ class DataViewSpec extends ChiselFlatSpec {
       ifcMon.viewAsSupertype(chiselTypeOf(ifc)) :>= ifc
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("ifc.foo.bits is invalid")
-    chirrtl should include("ifc.foo.ready <= ifcMon.foo.ready")
+    chirrtl should include("invalidate ifc.foo.bits")
+    chirrtl should include("connect ifc.foo.ready, ifcMon.foo.ready")
   }
 
   it should "be easy to make a PartialDataView viewing a Bundle as a Parent Bundle type" in {
@@ -272,8 +272,8 @@ class DataViewSpec extends ChiselFlatSpec {
       fooOut := barIn.viewAs[Foo]
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("barOut.foo <= fooIn.foo")
-    chirrtl should include("fooOut.foo <= barIn.foo")
+    chirrtl should include("connect barOut.foo, fooIn.foo")
+    chirrtl should include("connect fooOut.foo, barIn.foo")
   }
 
   it should "support viewing structural supertypes" in {
@@ -303,10 +303,10 @@ class DataViewSpec extends ChiselFlatSpec {
       io.outa.viewAsSupertype(new C) <> io.inc
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("io.b.x <= io.a.x")
-    chirrtl should include("io.c.z <= io.a.z")
-    chirrtl should include("io.outa.z <= io.inc.z")
-    chirrtl should include("io.outa.y <= io.inc.y")
+    chirrtl should include("connect io.b.x, io.a.x")
+    chirrtl should include("connect io.c.z, io.a.z")
+    chirrtl should include("connect io.outa.z, io.inc.z")
+    chirrtl should include("connect io.outa.y, io.inc.y")
   }
 
   it should "support viewing structural supertypes with bundles" in {
@@ -339,11 +339,11 @@ class DataViewSpec extends ChiselFlatSpec {
       io.outa.viewAsSupertype(new C) <> io.inc
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("io.b.x <= io.a.x")
-    chirrtl should include("io.c.z <= io.a.z")
-    chirrtl should include("io.outa.foo <= io.inc.foo")
-    chirrtl should include("io.b.foo <= io.a.foo")
-    chirrtl should include("io.c.foo <= io.a.foo")
+    chirrtl should include("connect io.b.x, io.a.x")
+    chirrtl should include("connect io.c.z, io.a.z")
+    chirrtl should include("connect io.outa.foo, io.inc.foo")
+    chirrtl should include("connect io.b.foo, io.a.foo")
+    chirrtl should include("connect io.c.foo, io.a.foo")
   }
 
   it should "error during elaboration for sub-type errors that cannot be found at compile-time" in {
@@ -469,13 +469,13 @@ class DataViewSpec extends ChiselFlatSpec {
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val expected = List(
       "node x = and(a, b.value)",
-      "and <= x",
+      "connect and, x",
       "node y = mux(cond, a, b.value)",
-      "mux <= y",
+      "connect mux, y",
       "node aBits = bits(a, 3, 0)",
       "node bBits = bits(b.value, 3, 0)",
       "node abCat = cat(aBits, bBits)",
-      "bitsCat <= abCat"
+      "connect bitsCat, abCat"
     )
     for (line <- expected) {
       chirrtl should include(line)
@@ -492,7 +492,7 @@ class DataViewSpec extends ChiselFlatSpec {
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     chirrtl should include("node cat = cat(barIn.foo, barIn.bar)")
-    chirrtl should include("fooOut <= cat")
+    chirrtl should include("connect fooOut, cat")
   }
 
   it should "be composable" in {
@@ -513,8 +513,8 @@ class DataViewSpec extends ChiselFlatSpec {
       z := b.viewAs[Bar].viewAs[Fizz]
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("y.fizz <= a.foo")
-    chirrtl should include("z.fizz <= b.foo")
+    chirrtl should include("connect y.fizz, a.foo")
+    chirrtl should include("connect z.fizz, b.foo")
   }
 
   it should "enable using Seq like Data" in {
@@ -579,8 +579,8 @@ class DataViewSpec extends ChiselFlatSpec {
       dataOut := selected
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("vec[addr] <= dataIn")
-    chirrtl should include("dataOut <= vec[addr]")
+    chirrtl should include("connect vec[addr], dataIn")
+    chirrtl should include("connect dataOut, vec[addr]")
   }
 
   it should "support dynamic indexing for Vecs that correspond 1:1 in a view" in {
@@ -609,8 +609,8 @@ class DataViewSpec extends ChiselFlatSpec {
       dataOut := selected
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("vec[addrReg] <= dataIn")
-    chirrtl should include("dataOut <= vec[addrReg]")
+    chirrtl should include("connect vec[addrReg], dataIn")
+    chirrtl should include("connect dataOut, vec[addrReg]")
   }
 
   it should "allow views between reset types" in {
@@ -642,8 +642,8 @@ class DataViewSpec extends ChiselFlatSpec {
       .split('\n')
       .map(_.takeWhile(_ != '@'))
       .map(_.trim) should contain).allOf(
-      "a.bool <= b.reset_0",
-      "a.asyncreset <= b.reset_1"
+      "connect a.bool, b.reset_0",
+      "connect a.asyncreset, b.reset_1"
     )
   }
 
@@ -777,7 +777,7 @@ class DataViewSpec extends ChiselFlatSpec {
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    val expected = ('a' to 'f').map(c => s"$c is invalid")
+    val expected = ('a' to 'f').map(c => s"invalidate $c")
     for (line <- expected) {
       chirrtl should include(line)
     }

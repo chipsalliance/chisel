@@ -27,13 +27,13 @@ class DecoupledSpec extends ChiselFlatSpec {
       })
 
     // Check for data assignment
-    chirrtl should include("""node _deq_map_bits_T = add(enq.bits, UInt<1>("h1")""")
+    chirrtl should include("""node _deq_map_bits_T = add(enq.bits, UInt<1>(0h1)""")
     chirrtl should include("""node _deq_map_bits = tail(_deq_map_bits_T, 1)""")
-    chirrtl should include("""_deq_map.bits <= _deq_map_bits""")
-    chirrtl should include("""deq <= _deq_map""")
+    chirrtl should include("""connect _deq_map.bits, _deq_map_bits""")
+    chirrtl should include("""connect deq, _deq_map""")
 
     // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
-    chirrtl should include("""enq.ready <= _deq_map.ready""")
+    chirrtl should include("""connect enq.ready, _deq_map.ready""")
   }
 
   "Decoupled.map" should "apply a function to a wrapped Bundle" in {
@@ -66,22 +66,22 @@ class DecoupledSpec extends ChiselFlatSpec {
     // Check for data assignment
     chirrtl should include("""wire _deq_map_bits : { foo : UInt<8>, bar : UInt<8>, fizz : UInt<1>, buzz : UInt<1>}""")
 
-    chirrtl should include("""node _deq_map_bits_res_foo_T = add(enq.bits.foo, UInt<1>("h1")""")
+    chirrtl should include("""node _deq_map_bits_res_foo_T = add(enq.bits.foo, UInt<1>(0h1)""")
     chirrtl should include("""node _deq_map_bits_res_foo_T_1 = tail(_deq_map_bits_res_foo_T, 1)""")
-    chirrtl should include("""_deq_map_bits.foo <= _deq_map_bits_res_foo_T_1""")
+    chirrtl should include("""connect _deq_map_bits.foo, _deq_map_bits_res_foo_T_1""")
 
-    chirrtl should include("""node _deq_map_bits_res_bar_T = sub(enq.bits.bar, UInt<1>("h1")""")
+    chirrtl should include("""node _deq_map_bits_res_bar_T = sub(enq.bits.bar, UInt<1>(0h1)""")
     chirrtl should include("""node _deq_map_bits_res_bar_T_1 = tail(_deq_map_bits_res_bar_T, 1)""")
-    chirrtl should include("""_deq_map_bits.bar <= _deq_map_bits_res_bar_T_1""")
+    chirrtl should include("""connect _deq_map_bits.bar, _deq_map_bits_res_bar_T_1""")
 
-    chirrtl should include("""_deq_map_bits.fizz <= UInt<1>("h0")""")
-    chirrtl should include("""_deq_map_bits.buzz <= UInt<1>("h1")""")
+    chirrtl should include("""connect _deq_map_bits.fizz, UInt<1>(0h0)""")
+    chirrtl should include("""connect _deq_map_bits.buzz, UInt<1>(0h1)""")
 
-    chirrtl should include("""_deq_map.bits <= _deq_map_bits""")
-    chirrtl should include("""deq <= _deq_map""")
+    chirrtl should include("""connect _deq_map.bits, _deq_map_bits""")
+    chirrtl should include("""connect deq, _deq_map""")
 
     // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
-    chirrtl should include("""enq.ready <= _deq_map.ready""")
+    chirrtl should include("""connect enq.ready, _deq_map.ready""")
   }
 
   "Decoupled.map" should "apply a function to a wrapped Bundle and return a different typed DecoupledIO" in {
@@ -102,10 +102,10 @@ class DecoupledSpec extends ChiselFlatSpec {
 
     // Check for data assignment
     chirrtl should include("""node _deq_map_bits = and(enq.bits.foo, enq.bits.bar)""")
-    chirrtl should include("""_deq_map.bits <= _deq_map_bits""")
-    chirrtl should include("""deq <= _deq_map""")
+    chirrtl should include("""connect _deq_map.bits, _deq_map_bits""")
+    chirrtl should include("""connect deq, _deq_map""")
 
     // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
-    chirrtl should include("""enq.ready <= _deq_map.ready""")
+    chirrtl should include("""connect enq.ready, _deq_map.ready""")
   }
 }

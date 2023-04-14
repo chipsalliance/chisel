@@ -15,7 +15,7 @@ object Serializer {
   val Indent = "  "
 
   // The version supported by the serializer.
-  val version = Version(2, 0, 0)
+  val version = Version(3, 0, 0)
 
   /** Converts a `FirrtlNode` into its string representation with
     * default indentation.
@@ -89,7 +89,7 @@ object Serializer {
     case DoPrim(op, args, consts, _) =>
       b ++= op.toString; b += '('; s(args, ", ", consts.isEmpty); s(consts, ", "); b += ')'
     case UIntLiteral(value, width) =>
-      b ++= "UInt"; s(width); b ++= "(\"h"; b ++= value.toString(16); b ++= "\")"
+      b ++= "UInt"; s(width); b ++= "(0h"; b ++= value.toString(16); b ++= ")"
     case SubField(expr, name, _)   => s(expr); b += '.'; b ++= name
     case SubIndex(expr, value, _)  => s(expr); b += '['; b ++= value.toString; b += ']'
     case SubAccess(expr, index, _) => s(expr); b += '['; s(index); b += ']'
@@ -97,7 +97,7 @@ object Serializer {
       b ++= "mux("; s(cond); b ++= ", "; s(tval); b ++= ", "; s(fval); b += ')'
     case ValidIf(cond, value, _) => b ++= "validif("; s(cond); b ++= ", "; s(value); b += ')'
     case SIntLiteral(value, width) =>
-      b ++= "SInt"; s(width); b ++= "(\"h"; b ++= value.toString(16); b ++= "\")"
+      b ++= "SInt"; s(width); b ++= "(0h"; b ++= value.toString(16); b ++= ")"
     case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
@@ -228,7 +228,7 @@ object Serializer {
 
   private def s(node: Statement)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case DefNode(info, name, value) => b ++= "node "; b ++= name; b ++= " = "; s(value); s(info)
-    case Connect(info, loc, expr)   => s(loc); b ++= " <= "; s(expr); s(info)
+    case Connect(info, loc, expr)   => b ++= "connect "; s(loc); b ++= ", "; s(expr); s(info)
     case c: Conditionally => b ++= sIt(c).mkString
     case EmptyStmt => b ++= "skip"
     case bb: Block => b ++= sIt(bb).mkString
@@ -239,13 +239,13 @@ object Serializer {
       b ++= "printf("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= string.escape
       if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
       sStmtName(print.name); s(info)
-    case IsInvalid(info, expr)    => s(expr); b ++= " is invalid"; s(info)
+    case IsInvalid(info, expr)    => b ++= "invalidate "; s(expr); s(info)
     case DefWire(info, name, tpe) => b ++= "wire "; b ++= name; b ++= " : "; s(tpe); s(info)
     case DefRegister(info, name, tpe, clock) =>
       b ++= "reg "; b ++= name; b ++= " : "; s(tpe); b ++= ", "; s(clock); s(info)
     case DefRegisterWithReset(info, name, tpe, clock, reset, init) =>
-      b ++= "reg "; b ++= name; b ++= " : "; s(tpe); b ++= ", "; s(clock); b ++= " with :"; newLineAndIndent(1)
-      b ++= "reset => ("; s(reset); b ++= ", "; s(init); b += ')'; s(info)
+      b ++= "regreset "; b ++= name; b ++= " : "; s(tpe); b ++= ", "; s(clock); b ++= ", "; s(reset); b ++= ", ";
+      s(init); s(info)
     case DefInstance(info, name, module, _) => b ++= "inst "; b ++= name; b ++= " of "; b ++= module; s(info)
     case DefMemory(
           info,

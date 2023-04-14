@@ -34,8 +34,8 @@ object SerializerSpec {
       |  output out : UInt<8>
       |
       |  inst c of child
-      |  c.in <= in
-      |  out <= c.out""".stripMargin
+      |  connect c.in, in
+      |  connect out, c.out""".stripMargin
 
   val testModuleTabbed: String = tab(testModule)
 
@@ -234,10 +234,10 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     Serializer.serialize(rwProbeDefine) should be("define c.in = rwprobe(in)")
 
     val probeRead = Connect(NoInfo, Reference("out"), ProbeRead(Reference("c.out")))
-    Serializer.serialize(probeRead) should be("out <= read(c.out)")
+    Serializer.serialize(probeRead) should be("connect out, read(c.out)")
 
     val probeForceInitial = ProbeForceInitial(NoInfo, Reference("outProbe"), UIntLiteral(100, IntWidth(8)))
-    Serializer.serialize(probeForceInitial) should be("force_initial(outProbe, UInt<8>(\"h64\"))")
+    Serializer.serialize(probeForceInitial) should be("force_initial(outProbe, UInt<8>(0h64))")
 
     val probeReleaseInitial = ProbeReleaseInitial(NoInfo, Reference("outProbe"))
     Serializer.serialize(probeReleaseInitial) should be("release_initial(outProbe)")
