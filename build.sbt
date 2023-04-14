@@ -161,11 +161,7 @@ lazy val firrtlSettings = Seq(
       case Some((2, major)) if major <= 12 => Seq()
       case _                               => Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
     }
-  },
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  )
+  }
 )
 
 lazy val mimaSettings = Seq(
