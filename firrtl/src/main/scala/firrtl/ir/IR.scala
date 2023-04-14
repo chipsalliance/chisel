@@ -3,6 +3,8 @@
 package firrtl
 package ir
 
+import firrtl.annotations.Annotation
+
 import dataclass.{data, since}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
@@ -543,7 +545,6 @@ case class IntModule(
     extends DefModule
     with UseSerializer
 
-case class Circuit(info: Info, modules: Seq[DefModule], main: String, annotations: AnnotationSeq)
-    extends FirrtlNode
-    with HasInfo
-    with UseSerializer
+case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends FirrtlNode with HasInfo with UseSerializer
+
+case class CircuitWithAnnos(circuit: Circuit, annotations: Seq[Annotation]) extends FirrtlNode with UseSerializer

@@ -5,6 +5,18 @@ enablePlugins(SiteScaladocPlugin)
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
+lazy val firtoolVersion = settingKey[Option[String]]("Determine the version of firtool on the PATH")
+ThisBuild / firtoolVersion := {
+  import scala.sys.process._
+  val Version = """^CIRCT firtool-(\S+)$""".r
+  try {
+    val lines = Process(Seq("firtool", "--version")).lineStream
+    lines.collectFirst { case Version(v) => v }
+  } catch {
+    case e: java.io.IOException => None
+  }
+}
+
 lazy val minimalSettings = Seq(
   organization := "org.chipsalliance",
   scalacOptions := Seq("-deprecation", "-feature"),
@@ -54,7 +66,9 @@ lazy val warningSuppression = Seq(
     "msg=migration to the MLIR:s",
     "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
     "msg=object JavaConverters in package collection is deprecated:s",
-    "msg=undefined in comment for method cf in class PrintableHelper:s"
+    "msg=undefined in comment for method cf in class PrintableHelper:s",
+    // This is deprecated for external users but not internal use
+    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s"
   ).mkString(",")
 )
 
@@ -75,14 +89,18 @@ lazy val publishSettings = Seq(
   ),
   sonatypeCredentialHost := "s01.oss.sonatype.org",
   sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
-  // Check that SBT Dynver can properly derive a version which requires unshallow clone
-  // We are just using 'publish / skip' as a hook to run this check when publishing
-  // This allows us to only require unshallow clones when publishing but lets CI do
-  // shallow clones for standard testing
+  // We are just using 'publish / skip' as a hook to run checks required for publishing,
+  // but that are not necessarily required for local development or running testing in CI
   publish / skip := {
+    // Check that SBT Dynver can properly derive a version which requires unshallow clone
     val v = version.value
     if (dynverGitDescribeOutput.value.hasNoTags) {
       sys.error(s"Failed to derive version from git tags. Maybe run `git fetch --unshallow`? Version: $v")
+    }
+    // Check that firtool exists on the PATH so Chisel can use the version it was tested against
+    // in error messages
+    if (firtoolVersion.value.isEmpty) {
+      sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
     }
     (publish / skip).value
   },
@@ -143,11 +161,7 @@ lazy val firrtlSettings = Seq(
       case Some((2, major)) if major <= 12 => Seq()
       case _                               => Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
     }
-  },
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  )
+  }
 )
 
 lazy val mimaSettings = Seq(
@@ -309,7 +323,7 @@ lazy val core = (project in file("core"))
   .settings(
     buildInfoPackage := "chisel3",
     buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion, firtoolVersion)
   )
   .settings(
     // Published as part of unipublish
