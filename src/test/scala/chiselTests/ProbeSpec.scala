@@ -11,15 +11,15 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
   "Simple probe usage" should "work" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new Module {
-        val a = IO(Output(Probe(Bool())))
+        val a = IO(Output(RWProbe(Bool())))
 
         val w = WireInit(Bool(), false.B)
-        val w_probe = Probe.probe(w)
+        val w_probe = RWProbeValue(w)
         Probe.define(a, w_probe)
       },
       Array("--full-stacktrace")
     )
-    processChirrtl(chirrtl) should contain("define a = probe(w)")
+    processChirrtl(chirrtl) should contain("define a = rwprobe(w)")
   }
 
   "U-Turn example" should "emit FIRRTL probe statements and expressions" in {
@@ -34,7 +34,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         class UTurn() extends RawModule {
           val io = IO(new Bundle {
             val in = Input(Probe(Bool()))
-            val out = Output(Probe.writable(Bool()))
+            val out = Output(RWProbe(Bool()))
           })
           io.out := io.in
         }
@@ -42,7 +42,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         val u1 = Module(new UTurn())
         val u2 = Module(new UTurn())
 
-        val n = Probe.probe(io.x)
+        val n = ProbeValue(io.x)
 
         Probe.define(u1.io.in, n)
         Probe.define(u2.io.in, u1.io.out)
@@ -89,7 +89,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         })
 
         // connecting two probe types
-        io.w := Probe.probe(io.a) // FIXME this should be a define
+        io.w := ProbeValue(io.a) // FIXME this should be a define
 
         // connecting bundles containing probe types
         // FIXME these error -- talk to Adam
@@ -125,7 +125,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         }
 
         val io = IO(new Bundle {
-          val out = Output(Probe.writable(UInt(16.W)))
+          val out = Output(RWProbe(UInt(16.W)))
           val probeVec = Output(Probe(Vec(2, UInt(16.W))))
           val vecProbe = Output(Vec(2, Probe(UInt(16.W))))
         })

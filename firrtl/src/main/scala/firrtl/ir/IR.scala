@@ -332,6 +332,8 @@ object Print {
 
 case class ProbeDefine(info: Info, sink: Expression, probeExpr: Expression) extends Statement with UseSerializer
 case class ProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
+
+case class RWProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
 case class ProbeRead(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
 
 case class ProbeForceInitial(info: Info, probe: Expression, value: Expression) extends Statement with UseSerializer

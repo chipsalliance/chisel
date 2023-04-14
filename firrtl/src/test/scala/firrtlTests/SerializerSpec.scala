@@ -202,6 +202,9 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     val probeDefine = ProbeDefine(NoInfo, SubField(Reference("c"), "in"), ProbeExpr(Reference("in")))
     Serializer.serialize(probeDefine) should be("define c.in = probe(in)")
 
+    val rwProbeDefine = ProbeDefine(NoInfo, SubField(Reference("c"), "in"), RWProbeExpr(Reference("in")))
+    Serializer.serialize(rwProbeDefine) should be("define c.in = rwprobe(in)")
+
     val probeRead = Connect(NoInfo, Reference("out"), ProbeRead(Reference("c.out")))
     Serializer.serialize(probeRead) should be("out <= read(c.out)")
 

@@ -95,6 +95,8 @@ private[chisel3] object Converter {
       throw new InternalErrorException(s"Unexpected ILit: $lit")
     case e @ ProbeExpr(probe) =>
       fir.ProbeExpr(convert(probe, ctx, info))
+    case e @ RWProbeExpr(probe) =>
+      fir.RWProbeExpr(convert(probe, ctx, info))
     case e @ ProbeRead(probe) =>
       fir.ProbeRead(convert(probe, ctx, info))
     case other =>

@@ -216,6 +216,10 @@ private[chisel3] case class ProbeExpr(probe: Arg) extends Arg {
   override def name: String = s"$probe"
 }
 
+private[chisel3] case class RWProbeExpr(probe: Arg) extends Arg {
+  override def name: String = s"$probe"
+}
+
 private[chisel3] case class ProbeRead(probe: Arg) extends Arg {
   override def name = s"$probe"
 }

@@ -96,9 +96,10 @@ object Serializer {
     case ValidIf(cond, value, _) => b ++= "validif("; s(cond); b ++= ", "; s(value); b += ')'
     case SIntLiteral(value, width) =>
       b ++= "SInt"; s(width); b ++= "(\"h"; b ++= value.toString(16); b ++= "\")"
-    case ProbeExpr(expr, _) => b ++= "probe("; s(expr); b += ')'
-    case ProbeRead(expr, _) => b ++= "read("; s(expr); b += ')'
-    case other              => b ++= other.serialize // Handle user-defined nodes
+    case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
+    case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
+    case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
+    case other                => b ++= other.serialize // Handle user-defined nodes
   }
 
   // Helper for some not-real Statements that only exist for Serialization

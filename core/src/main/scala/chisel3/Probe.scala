@@ -12,9 +12,18 @@ import chisel3.internal.firrtl._
 
 /** Utilities for creating and working with probe types.
   */
-object Probe { // object Probe, object RWProbe
+private[chisel3] sealed trait ProbeBase {
 
-  private def apply_impl[T <: Data](source: => T, writable: Boolean): T = {
+  private def requireIsProbe(probeExpr: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    if (!isProbe(probeExpr)) Builder.error(s"expected $probeExpr to be a probe.")
+  }
+
+  private def requireIsWritableProbe(probeExpr: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    requireIsProbe(probeExpr)
+    if (!probeExpr.probeInfo.get.writable) Builder.error(s"expected $probeExpr to be writable.")
+  }
+
+  protected def apply[T <: Data](source: => T, writable: Boolean): T = {
     val prevId = Builder.idGen.value
     // call Output() to coerce passivity
     val data = Output(source) // should only evaluate source once
@@ -24,25 +33,6 @@ object Probe { // object Probe, object RWProbe
     ret
   }
 
-  /** Create a read-only probe type from a Chisel type. This is only used for
-    * ports and not for hardware.
-    */
-  def apply[T <: Data](source: => T): T = apply_impl(source, false)
-
-  /** Create a writable probe type from a Chisel type. This is only used for
-    * ports and not for hardware.
-    */
-  def writable[T <: Data](source: => T): T = apply_impl(source, true) // TODO pull this into a separate object
-
-  private def requireIsProbe(probeExpr: Data): Unit = {
-    require(isProbe(probeExpr), s"expected $probeExpr to be a probe.")
-  }
-
-  private def requireIsWritableProbe(probeExpr: Data): Unit = {
-    requireIsProbe(probeExpr)
-    require(probeExpr.probeInfo.get.writable, s"expected $probeExpr to be writable.")
-  }
-
   /** Initialize a Probe with a provided probe expression. */
   def define(sink: Data, probeExpr: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireIsProbe(sink)
@@ -50,23 +40,8 @@ object Probe { // object Probe, object RWProbe
     pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
   }
 
-  private def probe_impl[T <: Data](source: T, writable: Boolean): T = {
-    // construct probe to return with cloned info
-    val clone = Probe.apply_impl(source.cloneType, writable)
-    clone.bind(chisel3.internal.ProbeBinding(Builder.forcedUserModule, Builder.currentWhen, source))
-    clone.setRef(ProbeExpr(source.ref))
-
-    clone
-  }
-
-  /** Create a read-only probe expression. */
-  def probe[T <: Data](source: => T): T = probe_impl(source, false) // TODO object ProbeValue
-
-  /** Create a read/write probe expression. */
-  def rwprobe[T <: Data](source: => T): T = probe_impl(source, true) // TODO object RWProbeValue
-
   /** Access the value of a probe. */
-  def read[T <: Data](source: => T): T = {
+  def read[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     val t = source
     requireIsProbe(t)
@@ -103,5 +78,20 @@ object Probe { // object Probe, object RWProbe
     requireIsWritableProbe(probe)
     pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
   }
+}
 
+object Probe extends ProbeBase {
+
+  /** Create a read-only probe type from a Chisel type. This is only used for
+    * ports.
+    */
+  def apply[T <: Data](source: => T): T = super.apply(source, false)
+}
+
+object RWProbe extends ProbeBase {
+
+  /** Create a writable probe type from a Chisel type. This is only used for
+    * ports.
+    */
+  def apply[T <: Data](source: => T): T = super.apply(source, true)
 }
