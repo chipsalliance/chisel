@@ -66,7 +66,9 @@ lazy val warningSuppression = Seq(
     "msg=migration to the MLIR:s",
     "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
     "msg=object JavaConverters in package collection is deprecated:s",
-    "msg=undefined in comment for method cf in class PrintableHelper:s"
+    "msg=undefined in comment for method cf in class PrintableHelper:s",
+    // This is deprecated for external users but not internal use
+    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s"
   ).mkString(",")
 )
 
@@ -159,11 +161,7 @@ lazy val firrtlSettings = Seq(
       case Some((2, major)) if major <= 12 => Seq()
       case _                               => Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
     }
-  },
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  )
+  }
 )
 
 lazy val mimaSettings = Seq(

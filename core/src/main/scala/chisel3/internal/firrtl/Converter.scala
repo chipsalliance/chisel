@@ -375,11 +375,11 @@ private[chisel3] object Converter {
   }
 
   def convert(circuit: Circuit): fir.Circuit =
-    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name, circuit.firrtlAnnotations.toSeq)
+    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name)
 
   // TODO Unclear if this should just be the default
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
-    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name, circuit.firrtlAnnotations.toSeq)
+    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name)
   }
 }
