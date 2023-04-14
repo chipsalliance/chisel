@@ -30,7 +30,24 @@ private[chisel3] object instantiableMacro {
                 Nil
               case aVal: ValDef =>
                 extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
-                if (aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
+                if (aVal.name.toString == aVal.children.last.toString) Nil
+                else {
+                  // TODO: Declaring something public without an implementation means that i could, in the subclass
+                  //   assign the concrete value without having @public, and thus not call autoPort...
+                  if (aVal.rhs == EmptyTree) {
+                    Seq(aVal)
+                  } else {
+                    Seq(
+                      treeCopy.ValDef(
+                        aVal,
+                        aVal.mods,
+                        aVal.name,
+                        aVal.tpt,
+                        q"chisel3.Probe._autoProbe(${aVal.rhs}, new chisel3.internal.MacroGenerated{})"
+                      )
+                    )
+                  }
+                }
               case other => Seq(other)
             }
           case other => Seq(other)

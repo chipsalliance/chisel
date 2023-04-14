@@ -196,6 +196,7 @@ abstract class Literal extends Expression {
   val value: BigInt
   val width: Width
 }
+
 case class UIntLiteral(value: BigInt, width: Width) extends Literal with UseSerializer {
   def tpe = UIntType(width)
 }
@@ -331,6 +332,19 @@ object Print {
   }
 }
 
+case class ProbeDefine(info: Info, sink: Expression, probeExpr: Expression) extends Statement with UseSerializer
+case class ProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
+case class ProbeRead(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
+
+case class ProbeForceInitial(info: Info, probe: Expression, value: Expression) extends Statement with UseSerializer
+case class ProbeReleaseInitial(info: Info, probe: Expression) extends Statement with UseSerializer
+case class ProbeForce(info: Info, clock: Expression, cond: Expression, probe: Expression, value: Expression)
+    extends Statement
+    with UseSerializer
+case class ProbeRelease(info: Info, clock: Expression, cond: Expression, probe: Expression)
+    extends Statement
+    with UseSerializer
+
 // formal
 object Formal extends Enumeration {
   val Assert = Value("assert")
@@ -447,6 +461,9 @@ object GroundType {
   def unapply(ground: GroundType): Option[Width] = Some(ground.width)
 }
 abstract class AggregateType extends Type
+
+case class ProbeType(underlying: Type) extends Type with UseSerializer
+case class RWProbeType(underlying: Type) extends Type with UseSerializer
 case class UIntType(width: Width) extends GroundType with UseSerializer
 case class SIntType(width: Width) extends GroundType with UseSerializer
 

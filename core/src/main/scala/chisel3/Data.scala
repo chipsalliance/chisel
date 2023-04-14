@@ -341,6 +341,8 @@ object Flipped {
   * @define coll data
   */
 abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+  import Data.ProbeInfo
+
   // This is a bad API that punches through object boundaries.
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {
@@ -371,6 +373,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _                                                                        => super.autoSeed(name)
     }
   }
+
+  // probeInfo only exists if this is a probe type
+  private var _probeInfoVar:      ProbeInfo = null
+  private var _probeInfo:         Option[ProbeInfo] = Option(_probeInfoVar)
+  private[chisel3] def probeInfo: Option[ProbeInfo] = _probeInfo
+  private[chisel3] def probeInfo_=(probeInfo: Option[ProbeInfo]) = _probeInfo = probeInfo
 
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
@@ -424,7 +432,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case _: MemTypeBinding[_] => None
   }
 
-  private[chisel3] def topBinding: TopBinding = topBindingOpt.get
+  private[chisel3] def topBinding: TopBinding = {
+    val t = topBindingOpt.get
+    if (_probeInfo.nonEmpty) {
+      require(t.isInstanceOf[PortBinding] || t.isInstanceOf[ProbeBinding], s"Probes must be bound to ports, not ${t}")
+    }
+    t
+  }
 
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target
@@ -649,12 +663,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
     * Returns a copy of this data type, with hardware bindings (if any) removed.
-    * Directionality data is still preserved.
+    * Directionality data and probe information is still preserved.
     */
   private[chisel3] def cloneTypeFull: this.type = {
     val clone = this.cloneType // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
+    clone.probeInfo = probeInfo
     clone
   }
 
@@ -762,6 +777,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
+
+  case class ProbeInfo(val writable: Boolean)
 
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)

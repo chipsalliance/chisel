@@ -98,7 +98,9 @@ object Serializer {
     case ValidIf(cond, value, _) => b ++= "validif("; s(cond); b ++= ", "; s(value); b += ')'
     case SIntLiteral(value, width) =>
       b ++= "SInt"; s(width); b ++= "(\"h"; b ++= value.toString(16); b ++= "\")"
-    case other => b ++= other.serialize // Handle user-defined nodes
+    case ProbeExpr(expr, _) => b ++= "probe("; s(expr); b += ')'
+    case ProbeRead(expr, _) => b ++= "read("; s(expr); b += ')'
+    case other              => b ++= other.serialize // Handle user-defined nodes
   }
 
   // Helper for some not-real Statements that only exist for Serialization
@@ -282,6 +284,16 @@ object Serializer {
     case firrtl.CDefMPort(info, name, _, mem, exps, direction) =>
       b ++= direction.serialize; b ++= " mport "; b ++= name; b ++= " = "; b ++= mem
       b += '['; s(exps.head); b ++= "], "; s(exps(1)); s(info)
+    case ProbeDefine(info, sink, probeExpr) =>
+      b ++= "define "; s(sink); b ++= " = "; s(probeExpr); s(info)
+    case ProbeForceInitial(info, probe, value) =>
+      b ++= "force_initial("; s(probe); b ++= ", "; s(value); b += ')'; s(info)
+    case ProbeReleaseInitial(info, probe) =>
+      b ++= "release_initial("; s(probe); b += ')'; s(info)
+    case ProbeForce(info, clock, cond, probe, value) =>
+      b ++= "force("; s(clock); b ++= ", "; s(cond); b ++= ", "; s(probe); b ++= ", "; s(value); b += ')'; s(info)
+    case ProbeRelease(info, clock, cond, probe) =>
+      b ++= "release("; s(clock); b ++= ", "; s(cond); b ++= ", "; s(probe); b += ')'; s(info)
     case other => b ++= other.serialize // Handle user-defined nodes
   }
 
@@ -313,6 +325,8 @@ object Serializer {
 
   private def s(node: Type)(implicit b: StringBuilder, indent: Int): Unit = node match {
     // Types
+    case ProbeType(underlying: Type) => b ++= "Probe<"; s(underlying); b += '>'
+    case RWProbeType(underlying: Type) => b ++= "RWProbe<"; s(underlying); b += '>'
     case UIntType(width: Width) => b ++= "UInt"; s(width)
     case SIntType(width: Width) => b ++= "SInt"; s(width)
     case BundleType(fields)    => b ++= "{ "; sField(fields, ", "); b += '}'

@@ -52,6 +52,15 @@ object Module extends SourceInfoDoc {
     //   - set currentClockAndReset
     val module: T = bc // bc is actually evaluated here
 
+    // Add autoRef ports
+    module._refsToProbe.foreach {
+      case (d, si) =>
+        val port = IO(Output(Probe(d.cloneTypeFull)))(si).suggestName("_ref_" + d.earlyName)
+        module._refPorts += ((d, port))
+        val probeValue = if (chisel3.reflect.DataMirror.isProbe(d)) d else Probe.probe(d)
+        Probe.define(port, probeValue)
+    }
+
     if (Builder.whenDepth != 0) {
       throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
     }
@@ -365,6 +374,11 @@ package experimental {
       _ports.collectFirst { case (data, _) if data.seedOpt.contains(name) => data }
 
     protected def portsSize: Int = _ports.size
+
+    // (marked: Data, SourceInfo)
+    private[chisel3] val _refsToProbe = new ArrayBuffer[(Data, SourceInfo)]()
+    // (marked: Data, port: Data)
+    private[chisel3] val _refPorts = new ArrayBuffer[(Data, Data)]()
 
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
       * Also closes the module so no more construction can happen inside.
