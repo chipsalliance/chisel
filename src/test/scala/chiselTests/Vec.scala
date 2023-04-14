@@ -303,7 +303,6 @@ class VecSpec extends ChiselPropSpec with Utils {
 
         connect(io.out, zeroWidthVec)
       })
-      println(chirrtl)
     }
 
     val connections: Seq[ConnectOp] = Seq(
