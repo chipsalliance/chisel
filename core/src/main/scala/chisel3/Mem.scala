@@ -232,6 +232,70 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
       when(cond) { port := datum }
   }
 
+  /** Creates a read-write accessor into the memory with dynamic addressing. See the
+    * class documentation of the memory for more detailed information.
+    */
+  def readWrite(idx: UInt, data: T): T = readWrite_impl(idx, data, Builder.forcedClock, true)
+
+  private def readWrite_impl(
+    idx:   UInt,
+    data:  T,
+    clock: Clock,
+    warn:  Boolean
+  ): T = {
+    if (warn && clockInst.isDefined && clock != clockInst.get) {
+      clockWarning(None, MemPortDirection.RDWR)
+    }
+    implicit val sourceInfo = UnlocatableSourceInfo
+    val port = makePort(UnlocatableSourceInfo, idx, MemPortDirection.RDWR, clock)
+    port := data
+
+    port
+  }
+
+  /** Creates a masked read-write accessor into the memory.
+    *
+    * @param idx memory element index to write into
+    * @param data new data to write
+    * @param mask write mask as a Seq of Bool: a write to the Vec element in
+    * memory is only performed if the corresponding mask index is true.
+    *
+    * @note this is only allowed if the memory's element data type is a Vec
+    */
+  def readWrite(
+    idx:  UInt,
+    data: T,
+    mask: Seq[Bool]
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): T =
+    masked_readWrite_impl(idx, data, mask, Builder.forcedClock, true)
+
+  private def masked_readWrite_impl(
+    idx:   UInt,
+    data:  T,
+    mask:  Seq[Bool],
+    clock: Clock,
+    warn:  Boolean
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): T = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+    if (warn && clockInst.isDefined && clock != clockInst.get) {
+      clockWarning(None, MemPortDirection.RDWR)
+    }
+    val accessor = makePort(sourceInfo, idx, MemPortDirection.RDWR, clock).asInstanceOf[Vec[Data]]
+    val dataVec = data.asInstanceOf[Vec[Data]]
+    if (accessor.length != dataVec.length) {
+      Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
+    }
+    if (accessor.length != mask.length) {
+      Builder.error(s"Mem write mask must contain ${accessor.length} elements (found ${mask.length})")
+    }
+    for (((cond, port), datum) <- mask.zip(accessor).zip(dataVec))
+      when(cond) { port := datum }
+  }
+
   private def makePort(
     sourceInfo: SourceInfo,
     idx:        UInt,
