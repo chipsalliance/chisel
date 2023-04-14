@@ -276,21 +276,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
-  property("VecInit.fill(0) should compile and yield a zero-width vector") {
-    val chirrtl = emitCHIRRTL(new Module {
-      val io = IO(new Bundle {
-        val out = Vec(0, UInt(8.W))
-      })
-
-      val zeroWidthVec = VecInit.fill(0)(8.U(8.W))
-      require(zeroWidthVec.getWidth == 0)
-      io.out := zeroWidthVec
-    })
-
-    chirrtl should include("wire zeroWidthVec : UInt<8>[0]")
-  }
-
-  property("Connecting 0-width vectors should have strong typing semantics") {
+  property("0-width vectors should be compilable and have strongly-typed connection semantics") {
     type ConnectOp = (Data, Data) => Unit
 
     def test[T <: Data](gen: => T)(connect: ConnectOp) = {
@@ -299,10 +285,17 @@ class VecSpec extends ChiselPropSpec with Utils {
           val out = Vec(0, UInt(8.W))
         })
 
+        // Check if this is compilable, should pass
         val zeroWidthVec = VecInit.fill(0)(gen)
 
+        // Check for strong-typed connections. Passes if gen is UInt(8.W),
+        // fails if gen is anything that isn't type equivalent
         connect(io.out, zeroWidthVec)
       })
+
+      // No need to check for SInt<8>[0] because the elaboration will fail for
+      // those cases
+      chirrtl should include(s"wire zeroWidthVec : UInt<8>[0]")
     }
 
     val connections: Seq[ConnectOp] = Seq(
