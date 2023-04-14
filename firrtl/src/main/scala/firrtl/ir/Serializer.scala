@@ -263,8 +263,7 @@ object Serializer {
       writers.foreach { w => b ++= "writer => "; b ++= w; newLineAndIndent(1) }
       readwriters.foreach { r => b ++= "readwriter => "; b ++= r; newLineAndIndent(1) }
       b ++= "read-under-write => "; b ++= readUnderWrite.toString
-    case PartialConnect(info, loc, expr) => s(loc); b ++= " <- "; s(expr); s(info)
-    case Attach(info, exprs)             =>
+    case Attach(info, exprs) =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
       b ++= "attach ("; s(exprs, ", "); b += ')'; s(info)
     case veri @ Verification(op, info, clk, pred, en, msg) =>

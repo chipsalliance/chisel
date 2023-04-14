@@ -81,17 +81,6 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  // Emits the FIRRTL `this <- that`, or `this is invalid` if that == DontCare
-  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    // If the source is a DontCare, generate a DefInvalid for the sink,
-    //  otherwise, issue a Partial Connect.
-    if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, lref))
-    } else {
-      pushCommand(PartialConnect(sourceInfo, lref, Node(that)))
-    }
-  }
-
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt))
   }
