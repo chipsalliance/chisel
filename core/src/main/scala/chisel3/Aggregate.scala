@@ -784,8 +784,14 @@ object VecInit extends SourceInfoDoc {
   def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
 
   /** @group SourceInfoTransformMacro */
+<<<<<<< HEAD
   def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply(Seq.fill(n)(gen))
+=======
+  def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo): Vec[T] =
+    if (n == 0) { Wire(Vec(0, gen.cloneTypeFull)) }
+    else { apply(Seq.fill(n)(gen)) }
+>>>>>>> d64bada01 (Patch VecInit.fill(0) invocation to successfully compile and yield a zero-width Vec (#3171))
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
     * function applied to an element of data type T.
