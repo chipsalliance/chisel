@@ -200,5 +200,7 @@ options:
     nested_options:
       - title: Latest
         url: api/chisel3/latest/
+      - title: 3.6
+        url: api/chisel3/3.6/
       - title: 3.5
         url: api/chisel3/3.5/
