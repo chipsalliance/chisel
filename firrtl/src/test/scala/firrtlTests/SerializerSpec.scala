@@ -165,6 +165,36 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     serialized should be(childModuleTabbed)
   }
 
+  it should "support emitting const types" in {
+    val constInt = DefWire(NoInfo, "constInt", ConstType(UIntType(IntWidth(3))))
+    Serializer.serialize(constInt) should be("wire constInt : const UInt<3>")
+
+    val constAsyncReset = DefWire(NoInfo, "constAsyncReset", ConstType(AsyncResetType))
+    Serializer.serialize(constAsyncReset) should be("wire constAsyncReset : const AsyncReset")
+
+    val constInput = Port(NoInfo, "in", Input, ConstType(SIntType(IntWidth(8))))
+    Serializer.serialize(constInput) should be("input in : const SInt<8>")
+
+    val constBundle = DefWire(
+      NoInfo,
+      "constBundle",
+      ConstType(
+        BundleType(
+          Seq(
+            Field("foo", Default, UIntType(IntWidth(32))),
+            Field("bar", Default, ConstType(SIntType(IntWidth(1))))
+          )
+        )
+      )
+    )
+    Serializer.serialize(constBundle) should be(
+      "wire constBundle : const { foo : UInt<32>, bar : const SInt<1>}"
+    )
+
+    val constVec = DefWire(NoInfo, "constVec", VectorType(ClockType, 10))
+    Serializer.serialize(constVec) should be("wire constVec : Clock[10]")
+  }
+
   it should "emit whens with empty Blocks correctly" in {
     val when = Conditionally(NoInfo, Reference("cond"), Block(Seq()), EmptyStmt)
     val serialized = Serializer.serialize(when, 1)

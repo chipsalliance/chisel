@@ -372,6 +372,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
+  // If this Data is constant, it must hold a constant value
+  private var _isConst:         Boolean = false
+  private[chisel3] def isConst: Boolean = _isConst
+  private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
+
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
   private var _specifiedDirection:         SpecifiedDirection = SpecifiedDirection.Unspecified
@@ -579,10 +584,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   // Internal API: returns a ref, if bound
   private[chisel3] final def ref: Arg = {
-    def materializeWire(): Arg = {
+    def materializeWire(makeConst: Boolean = false): Arg = {
       if (!Builder.currentModule.isDefined) throwException(s"internal error: cannot materialize ref for $this")
       implicit val sourceInfo = UnlocatableSourceInfo
-      WireDefault(this).ref
+      if (makeConst) {
+        WireDefault(Const(chiselTypeOf(this)), this).ref
+      } else {
+        WireDefault(this).ref
+      }
     }
     requireIsHardware(this)
     topBindingOpt match {
@@ -599,12 +608,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(BundleLitBinding(litMap)) =>
         litMap.get(this) match {
           case Some(litArg) => litArg
-          case _            => materializeWire() // FIXME FIRRTL doesn't have Bundle literal expressions
+          // TODO make a Const once const is supported in firtool
+          case _ => materializeWire() // FIXME FIRRTL doesn't have Bundle literal expressions
         }
       case Some(VecLitBinding(litMap)) =>
         litMap.get(this) match {
           case Some(litArg) => litArg
-          case _            => materializeWire() // FIXME FIRRTL doesn't have Vec literal expressions
+          // TODO make a Const once const is supported in firtool
+          case _ => materializeWire() // FIXME FIRRTL doesn't have Vec literal expressions
         }
       case Some(DontCareBinding()) =>
         materializeWire() // FIXME FIRRTL doesn't have a DontCare expression so materialize a Wire
@@ -655,6 +666,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     val clone = this.cloneType // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
+    clone.isConst = isConst
     clone
   }
 

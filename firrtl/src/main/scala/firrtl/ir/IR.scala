@@ -447,6 +447,9 @@ object GroundType {
   def unapply(ground: GroundType): Option[Width] = Some(ground.width)
 }
 abstract class AggregateType extends Type
+
+case class ConstType(underlying: Type) extends Type with UseSerializer
+
 case class UIntType(width: Width) extends GroundType with UseSerializer
 case class SIntType(width: Width) extends GroundType with UseSerializer
 

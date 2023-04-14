@@ -37,7 +37,7 @@ object Mem {
   ): Mem[T] = {
     requireIsChiselType(t, "memory type")
     val mt = t.cloneTypeFull
-    val mem = new Mem(mt, size)
+    val mem = new Mem(mt, size, sourceInfo)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
@@ -48,10 +48,13 @@ object Mem {
     do_apply(BigInt(size), t)(sourceInfo)
 }
 
-sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
+sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInfo: SourceInfo)
     extends HasId
     with NamedComponent
     with SourceInfoDoc {
+
+  if (t.isConst) Builder.error("Mem type cannot be const.")(sourceInfo)
+
   _parent.foreach(_.addId(this))
 
   // if the memory is created in a scope with an implicit clock (-> clockInst is defined), we will perform checks that
@@ -264,7 +267,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt) extends MemBase(t, length) {
+sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt, sourceInfo: SourceInfo)
+    extends MemBase(t, length, sourceInfo) {
   override protected def clockWarning(sourceInfo: Option[SourceInfo], dir: MemPortDirection): Unit = {
     // Do not issue clock warnings on reads, since they are not clocked
     if (dir != MemPortDirection.READ)
@@ -305,7 +309,7 @@ object SyncReadMem {
   ): SyncReadMem[T] = {
     requireIsChiselType(t, "memory type")
     val mt = t.cloneTypeFull
-    val mem = new SyncReadMem(mt, size, ruw)
+    val mem = new SyncReadMem(mt, size, ruw, sourceInfo)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
     mem
@@ -343,8 +347,12 @@ object SyncReadMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
-    extends MemBase[T](t, n) {
+sealed class SyncReadMem[T <: Data] private[chisel3] (
+  t:                  T,
+  n:                  BigInt,
+  val readUnderWrite: SyncReadMem.ReadUnderWrite,
+  sourceInfo:         SourceInfo)
+    extends MemBase[T](t, n, sourceInfo) {
 
   override def read(x: UInt): T = macro SourceInfoTransform.xArg
 
