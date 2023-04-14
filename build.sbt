@@ -6,8 +6,8 @@ addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
 val defaultVersions = Map(
-  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6.0-RC3",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6.0-RC3",
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6.0",
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.6.0",
   // chiseltest intentionally excluded so that release automation does not try to set its version
   // The projects using chiseltest are not published, but SBT resolves dependencies for all projects
   // when doing publishing and will not find a chiseltest release since chiseltest depends on
@@ -18,7 +18,7 @@ lazy val commonSettings = Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
   organization := "edu.berkeley.cs",
-  version := "3.6.0-RC3",
+  version := "3.6.0",
   autoAPIMappings := true,
   scalaVersion := "2.13.10",
   crossScalaVersions := Seq("2.13.10", "2.12.17"),
