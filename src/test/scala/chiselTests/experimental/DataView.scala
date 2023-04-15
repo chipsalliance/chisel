@@ -548,7 +548,7 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "allow views between reset types" in {
     class A extends Bundle {
-      val uint = AsyncReset()
+      val bool = Bool()
       val asyncreset = AsyncReset()
     }
 
@@ -563,7 +563,7 @@ class DataViewSpec extends ChiselFlatSpec {
 
       implicit val view = DataView[A, B](
         _ => new B,
-        _.uint -> _.reset_0,
+        _.bool -> _.reset_0,
         _.asyncreset -> _.reset_1
       )
 
@@ -575,7 +575,7 @@ class DataViewSpec extends ChiselFlatSpec {
       .split('\n')
       .map(_.takeWhile(_ != '@'))
       .map(_.trim) should contain).allOf(
-      "a.uint <= b.reset_0",
+      "a.bool <= b.reset_0",
       "a.asyncreset <= b.reset_1"
     )
   }

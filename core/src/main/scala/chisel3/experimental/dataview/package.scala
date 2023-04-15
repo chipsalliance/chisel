@@ -106,12 +106,12 @@ package object dataview {
       (tex, vex) match {
         /* Allow views where the types are equal. */
         case (a, b) if a.getClass == b.getClass =>
-        /* Allow UInt <=> Reset views. */
-        case (a: UInt, _: Reset) if a.isWidthKnown && a.getWidth == 1 => true
-        case (_: Reset, a: UInt) if a.isWidthKnown && a.getWidth == 1 => true
+        /* allow bool <=> reset views. */
+        case (a: Bool, _: Reset) =>
+        case (_: Reset, a: Bool) =>
         /* Allow AsyncReset <=> Reset views. */
-        case (a: AsyncReset, _: Reset) => true
-        case (_: Reset, a: AsyncReset) => true
+        case (a: AsyncReset, _: Reset) =>
+        case (_: Reset, a: AsyncReset) =>
         /* All other views produce a runtime error. */
         case _ =>
           val fieldName = viewFieldName(vex)
