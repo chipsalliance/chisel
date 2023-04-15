@@ -117,7 +117,6 @@ package object dataview {
           val fieldName = viewFieldName(vex)
           throw InvalidViewException(s"Field $fieldName specified as view of non-type-equivalent value $tex")
       }
-
       // View width must be unknown or match target width
       if (vex.widthKnown && vex.width != tex.width) {
         def widthAsString(x: Element) = x.widthOption.map("<" + _ + ">").getOrElse("<unknown>")
