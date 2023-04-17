@@ -1,6 +1,6 @@
-package chisel3
+package chisel3.probe
 
-import chisel3.{Probe, RWProbe}
+import chisel3.Data
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.{ProbeExpr, RWProbeExpr}
 import chisel3.experimental.SourceInfo
