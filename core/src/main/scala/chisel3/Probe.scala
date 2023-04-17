@@ -53,6 +53,24 @@ private[chisel3] sealed trait ProbeBase {
 
     clone
   }
+}
+
+object Probe extends ProbeBase {
+
+  /** Mark a Chisel type as with a probe modifier.
+    */
+  def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
+
+  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, false)
+}
+
+object RWProbe extends ProbeBase {
+
+  /** Mark a Chisel type with a writable probe modifier.
+    */
+  def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
+
+  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, true)
 
   /** Override existing driver of a writable probe on initialization. */
   def forceInitial(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
@@ -77,22 +95,4 @@ private[chisel3] sealed trait ProbeBase {
     requireHasWritableProbeTypeModifier(probe)
     pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
   }
-}
-
-object Probe extends ProbeBase {
-
-  /** Mark a Chisel type as with a probe modifier.
-    */
-  def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
-
-  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, false)
-}
-
-object RWProbe extends ProbeBase {
-
-  /** Mark a Chisel type with a writable probe modifier.
-    */
-  def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
-
-  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, true)
 }
