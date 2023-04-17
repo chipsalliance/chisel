@@ -8,7 +8,6 @@ import chisel3.stage.{ChiselGeneratorAnnotation}
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import firrtl.annotations.{CircuitTarget, SingleTargetAnnotation, Target}
-import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -128,10 +127,6 @@ class AnnotatingDiamondSpec extends AnyFreeSpec with Matchers {
           Array("--target-dir", "test_run_dir", "--target", "chirrtl"),
           Seq(ChiselGeneratorAnnotation(() => new TopOfDiamond))
         )
-        .flatMap {
-          case FirrtlCircuitAnnotation(circuit) => circuit.annotations
-          case _                                => None
-        }
         .filter {
           case _: IdentityAnnotation => true
           case _ => false

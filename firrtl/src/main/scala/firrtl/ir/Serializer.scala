@@ -2,7 +2,7 @@
 
 package firrtl.ir
 
-import firrtl.annotations.JsonProtocol
+import firrtl.annotations.{Annotation, JsonProtocol}
 
 case class Version(major: Int, minor: Int, patch: Int) {
   def serialize: String = s"$major.$minor.$patch"
@@ -15,7 +15,7 @@ object Serializer {
   val Indent = "  "
 
   // The version supported by the serializer.
-  val version = Version(1, 2, 0)
+  val version = Version(2, 0, 0)
 
   /** Converts a `FirrtlNode` into its string representation with
     * default indentation.
@@ -28,19 +28,20 @@ object Serializer {
   def serialize(node: FirrtlNode, indent: Int): String = {
     val builder = new StringBuilder()
     node match {
-      case n: Info        => s(n)(builder, indent)
-      case n: StringLit   => s(n)(builder, indent)
-      case n: Expression  => s(n)(builder, indent)
-      case n: Statement   => builder ++= lazily(n, indent).mkString
-      case n: Width       => s(n)(builder, indent)
-      case n: Orientation => s(n)(builder, indent)
-      case n: Field       => s(n)(builder, indent)
-      case n: Type        => s(n)(builder, indent)
-      case n: Direction   => s(n)(builder, indent)
-      case n: Port        => s(n)(builder, indent)
-      case n: Param       => s(n)(builder, indent)
-      case n: DefModule   => builder ++= lazily(n, indent).mkString
-      case n: Circuit     => builder ++= lazily(n, indent).mkString
+      case n: Info             => s(n)(builder, indent)
+      case n: StringLit        => s(n)(builder, indent)
+      case n: Expression       => s(n)(builder, indent)
+      case n: Statement        => builder ++= lazily(n, indent).mkString
+      case n: Width            => s(n)(builder, indent)
+      case n: Orientation      => s(n)(builder, indent)
+      case n: Field            => s(n)(builder, indent)
+      case n: Type             => s(n)(builder, indent)
+      case n: Direction        => s(n)(builder, indent)
+      case n: Port             => s(n)(builder, indent)
+      case n: Param            => s(n)(builder, indent)
+      case n: DefModule        => builder ++= lazily(n, indent).mkString
+      case n: Circuit          => builder ++= lazily(n, indent).mkString
+      case n: CircuitWithAnnos => builder ++= lazily(n, indent).mkString
       case other => builder ++= other.serialize // Handle user-defined nodes
     }
     builder.toString()
@@ -62,9 +63,10 @@ object Serializer {
     */
   def lazily(node: FirrtlNode, indent: Int): Iterable[String] = new Iterable[String] {
     def iterator = node match {
-      case n: Statement => sIt(n)(indent)
-      case n: DefModule => sIt(n)(indent)
-      case n: Circuit   => sIt(n)(indent)
+      case n: Statement        => sIt(n)(indent)
+      case n: DefModule        => sIt(n)(indent)
+      case n: Circuit          => sIt(n)(indent)
+      case n: CircuitWithAnnos => sIt(n)(indent)
       case other => Iterator(serialize(other, indent))
     }
   }.view // TODO replace .view with constructing a view directly above, but must drop 2.12 first.
@@ -261,8 +263,7 @@ object Serializer {
       writers.foreach { w => b ++= "writer => "; b ++= w; newLineAndIndent(1) }
       readwriters.foreach { r => b ++= "readwriter => "; b ++= r; newLineAndIndent(1) }
       b ++= "read-under-write => "; b ++= readUnderWrite.toString
-    case PartialConnect(info, loc, expr) => s(loc); b ++= " <- "; s(expr); s(info)
-    case Attach(info, exprs)             =>
+    case Attach(info, exprs) =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
       b ++= "attach ("; s(exprs, ", "); b += ')'; s(info)
     case veri @ Verification(op, info, clk, pred, en, msg) =>
@@ -311,6 +312,7 @@ object Serializer {
 
   private def s(node: Type)(implicit b: StringBuilder, indent: Int): Unit = node match {
     // Types
+    case ConstType(underlying: Type) => b ++= "const "; s(underlying)
     case UIntType(width: Width) => b ++= "UInt"; s(width)
     case SIntType(width: Width) => b ++= "SInt"; s(width)
     case BundleType(fields)    => b ++= "{ "; sField(fields, ", "); b += '}'
@@ -373,25 +375,29 @@ object Serializer {
       Iterator(Indent * indent, other.serialize) // Handle user-defined nodes
   }
 
-  private def sIt(node: Circuit)(implicit indent: Int): Iterator[String] = node match {
-    case Circuit(info, modules, main, annotations) =>
-      val prelude = {
-        implicit val b = new StringBuilder // Scope this so we don't accidentally pass it anywhere
-        b ++= s"FIRRTL version ${version.serialize}\n"
-        b ++= "circuit "; b ++= main; b ++= " :";
-        if (annotations.nonEmpty) {
-          b ++= "%["; b ++= JsonProtocol.serialize(annotations); b ++= "]";
-        }
-        s(info)
-        b.toString
+  private def sIt(node: Circuit)(implicit indent: Int): Iterator[String] =
+    sIt(CircuitWithAnnos(node, Nil))
+
+  // TODO make Annotation serialization lazy
+  private def sIt(node: CircuitWithAnnos)(implicit indent: Int): Iterator[String] = {
+    val CircuitWithAnnos(circuit, annotations) = node
+    val prelude = {
+      implicit val b = new StringBuilder
+      b ++= s"FIRRTL version ${version.serialize}\n"
+      b ++= "circuit "; b ++= circuit.main; b ++= " :";
+      if (annotations.nonEmpty) {
+        b ++= "%["; b ++= JsonProtocol.serialize(annotations); b ++= "]";
       }
-      Iterator(prelude) ++
-        modules.iterator.zipWithIndex.flatMap {
-          case (m, i) =>
-            val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")
-            newline ++ sIt(m)(indent + 1)
-        } ++
-        Iterator(s"$NewLine")
+      s(circuit.info)
+      Iterator(b.toString)
+    }
+    prelude ++
+      circuit.modules.iterator.zipWithIndex.flatMap {
+        case (m, i) =>
+          val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")
+          newline ++ sIt(m)(indent + 1)
+      } ++
+      Iterator(s"$NewLine")
   }
 
   /** create a new line with the appropriate indent */

@@ -322,8 +322,6 @@ case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Comman
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class PartialConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command

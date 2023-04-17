@@ -125,6 +125,14 @@ private[chisel3] object MonoConnect {
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if (sink_v.length != source_v.length) { throw MismatchedVecException }
 
+        // Check for zero-width Vectors: both Vecs must be type equivalent, e.g.
+        // a UInt<8>[0] should not be connectable with a SInt<8>[0]
+        // TODO: This is a "band-aid" fix and needs to be unified with the existing logic in a
+        // more generalized and robust way, to account for things like Views
+        if (sink_v.length == 0 && !sink_v.typeEquivalent(source_v)) {
+          throw MismatchedException(sink, source)
+        }
+
         val sinkReified:   Option[Aggregate] = if (isView(sink_v)) reifyToAggregate(sink_v) else Some(sink_v)
         val sourceReified: Option[Aggregate] = if (isView(source_v)) reifyToAggregate(source_v) else Some(source_v)
 
