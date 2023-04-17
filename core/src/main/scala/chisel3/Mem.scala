@@ -235,10 +235,24 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
       when(cond) { port := datum }
   }
 
-  /** Creates a read-write accessor into the memory with dynamic addressing. See the
-    * class documentation of the memory for more detailed information.
+  /** Creates a read-write accessor into the memory with dynamic addressing.
+    *
+    * @param idx memory element index to write into
+    * @param data new data to write
+    *
+    * @return The new read-write port of the memory
     */
   def readWrite(idx: UInt, data: T): T = readWrite_impl(idx, data, Builder.forcedClock, true)
+
+  /** Creates a read-write accessor into the memory with dynamic addressing.
+    *
+    * @param idx memory element index to write into
+    * @param data new data to write
+    * @param clock clock to bind to this accessor
+    *
+    * @return The value read from idx
+    */
+  def readWrite(idx: UInt, data: T, clock: Clock): T = readWrite_impl(idx, data, clock, true)
 
   private def readWrite_impl(
     idx:   UInt,
@@ -274,6 +288,25 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
   ): T =
     masked_readWrite_impl(idx, data, mask, Builder.forcedClock, true)
 
+  /** Creates a masked read-write accessor into the memory.
+    *
+    * @param idx memory element index to write into
+    * @param data new data to write
+    * @param mask write mask as a Seq of Bool: a write to the Vec element in
+    * memory is only performed if the corresponding mask index is true.
+    *
+    * @note this is only allowed if the memory's element data type is a Vec
+    */
+  def readWrite(
+    idx:   UInt,
+    data:  T,
+    mask:  Seq[Bool],
+    clock: Clock
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): T =
+    masked_readWrite_impl(idx, data, mask, clock, true)
+
   private def masked_readWrite_impl(
     idx:   UInt,
     data:  T,
@@ -297,6 +330,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     }
     for (((cond, port), datum) <- mask.zip(accessor).zip(dataVec))
       when(cond) { port := datum }
+
+    accessor.asInstanceOf[T] // TODO: Should this be masked as well?
   }
 
   private def makePort(
@@ -456,4 +491,50 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   }
   // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
   //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
+
+  def readWrite(idx: UInt, writeData: Data, en: Bool, isWrite: Bool): T = macro SourceInfoTransform.idxDataEnIswArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_readWrite(idx: UInt, writeData: Data, en: Bool, isWrite: Bool)(implicit sourceInfo: SourceInfo): T =
+    _readWrite_impl(idx, writeData, en, isWrite, Builder.forcedClock, true)
+
+  def readWrite(idx: UInt, writeData: Data, en: Bool, isWrite: Bool, clock: Clock): T =
+    macro SourceInfoTransform.idxDataEnIswClockArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_readWrite(
+    idx:       UInt,
+    writeData: Data,
+    en:        Bool,
+    isWrite:   Bool,
+    clock:     Clock
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T =
+    _readWrite_impl(idx, writeData, en, isWrite, clock, true)
+
+  /** @group SourceInfoTransformMacro */
+  private def _readWrite_impl(
+    addr:    UInt,
+    data:    Data,
+    enable:  Bool,
+    isWrite: Bool,
+    clock:   Clock,
+    warn:    Boolean
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    val a = Wire(UInt())
+    a := DontCare
+    var port: Option[T] = None
+    when(enable) {
+      a := addr
+      port = Some(super.do_apply_impl(a, clock, MemPortDirection.RDWR, warn))
+
+      when(isWrite) {
+        port.get := data
+      }
+    }
+    port.get
+  }
 }
