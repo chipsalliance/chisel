@@ -459,14 +459,12 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     port.get
   }
 
-
-
   /** Creates a masked read-write accessor into this SyncReadMem.
     *
     * @param idx memory element index to write into
     * @param writeData new data to write
     * @param mask the write mask as a Seq of Bool: a write to the Vec element in
-    * memory is only performed if the corresponding mask index is true. 
+    * memory is only performed if the corresponding mask index is true.
     * @param enable enables access to the memory
     * @param isWrite when enable is true, if this access is a write
     *
@@ -474,11 +472,11 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def readWrite(
-    idx: UInt, 
-    writeData: T, 
-    mask: Seq[Bool], 
-    en: Bool, 
-    isWrite: Bool
+    idx:       UInt,
+    writeData: T,
+    mask:      Seq[Bool],
+    en:        Bool,
+    isWrite:   Bool
   )(
     implicit evidence: T <:< Vec[_]
   ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, Builder.forcedClock, true)
@@ -488,7 +486,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @param idx memory element index to write into
     * @param writeData new data to write
     * @param mask the write mask as a Seq of Bool: a write to the Vec element in
-    * memory is only performed if the corresponding mask index is true. 
+    * memory is only performed if the corresponding mask index is true.
     * @param enable enables access to the memory
     * @param isWrite when enable is true, if this access is a write
     * @param clock clock to bind to this accessor
@@ -497,15 +495,15 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def readWrite(
-    idx: UInt, 
+    idx:       UInt,
     writeData: T,
-    mask: Seq[Bool], 
-    en: Bool,
-    isWrite: Bool, 
-    clock: Clock
+    mask:      Seq[Bool],
+    en:        Bool,
+    isWrite:   Bool,
+    clock:     Clock
   )(
     implicit sourceInfo: SourceInfo,
-    evidence: T <:< Vec[_]
+    evidence:            T <:< Vec[_]
   ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, true)
 
   private def masked_readWrite_impl(
@@ -518,7 +516,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     warn:    Boolean
   )(
     implicit sourceInfo: SourceInfo,
-    evidence: T <:< Vec[_]
+    evidence:            T <:< Vec[_]
   ): T = {
     val a = Wire(UInt())
     a := DontCare
@@ -529,7 +527,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
       port = Some(super.do_apply_impl(a, clock, MemPortDirection.RDWR, warn))
       val accessor = port.get.asInstanceOf[Vec[Data]]
 
-      when(isWrite) { 
+      when(isWrite) {
         val dataVec = data.asInstanceOf[Vec[Data]]
         if (accessor.length != dataVec.length) {
           Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
@@ -538,8 +536,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
           Builder.error(s"Mem write mask must contain ${accessor.length} elements (found ${mask.length})")
         }
 
-        for (((cond, port), datum) <- mask.zip(accessor).zip(dataVec))
-          when(cond) { port := datum }
+        for (((cond, p), datum) <- mask.zip(accessor).zip(dataVec))
+          when(cond) { p := datum }
       }
     }
     port.get
